@@ -1,0 +1,193 @@
+{
+  "greeting": {
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening"
+  },
+  "tagline": "Here's what's happening with your practice today",
+  "sidebar": {
+    "home": "Home",
+    "signOut": "Sign Out"
+  },
+  "sections": {
+    "library": {
+      "title": "Digital Library",
+      "description": "Curated resources",
+      "detail": "Ready-to-use therapeutic forms and activities curated by experts. Duplicate, edit, and customize.",
+      "stats": {
+        "resources": "Resources",
+        "categories": "Categories"
+      },
+      "tags": {
+        "expertCurated": "Expert-curated",
+        "customizable": "Customizable",
+        "evidenceBased": "Evidence-based"
+      }
+    },
+    "resources": {
+      "title": "My Resources",
+      "description": "Personal collection",
+      "detail": "Your saved resources, created content, and organized collections. Easy access to your therapeutic toolkit.",
+      "stats": {
+        "savedItems": "Saved Items",
+        "collections": "Collections"
+      },
+      "tags": {
+        "personalSaved": "Personal saved",
+        "collections": "Collections",
+        "quickAccess": "Quick access"
+      }
+    },
+    "members": {
+      "title": "Member Hub",
+      "description": "Client workspace",
+      "detail": "Manage patients and students in one unified workspace. Save session summaries and track progress.",
+      "stats": {
+        "activeClients": "Active Clients",
+        "sessions": "Sessions"
+      },
+      "tags": {
+        "clientManagement": "Client management",
+        "sessionTracking": "Session tracking",
+        "progressNotes": "Progress notes"
+      }
+    },
+    "analytics": {
+      "title": "Practice Analytics",
+      "description": "Insights & metrics",
+      "detail": "Understand your practice patterns, client engagement, and therapeutic outcomes with meaningful data.",
+      "stats": {
+        "successRate": "Success Rate",
+        "insights": "Insights"
+      },
+      "tags": {
+        "analytics": "Analytics",
+        "clientInsights": "Client insights",
+        "outcomes": "Outcomes"
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Account preferences",
+      "detail": "Manage your account preferences and application settings",
+      "comingSoon": "Coming Soon"
+    },
+    "rituals": {
+      "title": "Rituals",
+      "description": "Daily practices",
+      "detail": "Create and track meaningful daily rituals that support your wellbeing journey.",
+      "stats": {
+        "activeRituals": "Active Rituals",
+        "streak": "Day Streak"
+      },
+      "tags": {
+        "dailyPractice": "Daily practice",
+        "trackProgress": "Track progress",
+        "buildHabits": "Build habits"
+      }
+    },
+    "moments": {
+      "title": "Moments",
+      "description": "Capture insights",
+      "detail": "Reflect and journal about significant moments in your wellbeing journey.",
+      "stats": {
+        "totalMoments": "Total Moments",
+        "thisWeek": "This Week"
+      },
+      "tags": {
+        "journaling": "Journaling",
+        "reflection": "Reflection",
+        "insights": "Insights"
+      }
+    },
+    "balance": {
+      "title": "Balance",
+      "description": "Track wellness",
+      "detail": "Monitor different aspects of your life balance and overall wellness.",
+      "stats": {
+        "balanceScore": "Balance Score",
+        "categories": "Categories"
+      },
+      "tags": {
+        "wellness": "Wellness",
+        "tracking": "Tracking",
+        "holistic": "Holistic"
+      }
+    },
+    "reflection": {
+      "title": "Reflection",
+      "description": "Growth insights",
+      "detail": "Explore your personal growth patterns and celebrate progress over time.",
+      "stats": {
+        "reflections": "Reflections",
+        "growth": "Growth Score"
+      },
+      "tags": {
+        "selfAwareness": "Self-awareness",
+        "progress": "Progress",
+        "celebration": "Celebration"
+      }
+    },
+    "stories": {
+      "title": "Stories",
+      "description": "Create & share",
+      "detail": "Create rich content with text, images, videos, and media. Publish and share with a unique link.",
+      "stats": {
+        "published": "Published",
+        "views": "Views"
+      },
+      "tags": {
+        "richContent": "Rich content",
+        "shareableLink": "Shareable link",
+        "multimedia": "Multimedia"
+      }
+    }
+  },
+  "stats": {
+    "activeClients": {
+      "label": "Active Clients",
+      "change": "this month"
+    },
+    "sessionsThisWeek": {
+      "label": "Sessions This Week",
+      "change": "remaining"
+    },
+    "resourcesSaved": {
+      "label": "Resources Saved",
+      "change": "this week"
+    },
+    "completionRate": {
+      "label": "Completion Rate",
+      "change": "this month"
+    }
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "newSessionNote": "New Session Note",
+    "scheduleAppointment": "Schedule Appointment",
+    "browseResources": "Browse Resources",
+    "viewAnalytics": "View Analytics"
+  },
+  "schedule": {
+    "title": "Today's Schedule",
+    "session": "Session",
+    "checkIn": "Check-in"
+  },
+  "activity": {
+    "title": "Recent Activity",
+    "completedSession": "Completed session with",
+    "addedToLibrary": "Added",
+    "toLibrary": "to library",
+    "updatedNotes": "Updated client notes for",
+    "reviewedAnalytics": "Reviewed analytics dashboard",
+    "hoursAgo": "hours ago",
+    "yesterday": "Yesterday",
+    "daysAgo": "days ago"
+  },
+  "practice": {
+    "title": "Your Practice"
+  },
+  "loading": "Loading your workspace...",
+  "backToDashboard": "Back to Dashboard",
+  "comingSoon": "Coming Soon"
+}

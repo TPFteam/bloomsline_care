@@ -1,0 +1,22 @@
+{
+  "sectionTitle": "Made for practitioners like you",
+  "sectionSubtitle": "Whether you're building your practice solo or growing with a team, Bloomsline grows with you. We understand your journey because we've walked alongside practitioners at every stage.",
+  "stakeholders": [
+    {
+      "type": "Solo Practitioners",
+      "tagline": "Your practice, beautifully organized",
+      "description": "Finally, a space that understands your unique approach. Keep your resources close, your workflow smooth, and your focus where it belongs - on your clients."
+    },
+    {
+      "type": "Clinical Teams",
+      "tagline": "Grow your collective wisdom",
+      "description": "Share insights, learn from each other, maintain quality across your practice. Build the kind of collaborative environment where everyone thrives."
+    },
+    {
+      "type": "Group Practices",
+      "tagline": "Scale without losing your soul",
+      "description": "Maintain the personal touch as you grow. Give each practitioner the tools they need while building shared knowledge and consistent care."
+    }
+  ],
+  "learnMore": "Learn more"
+}

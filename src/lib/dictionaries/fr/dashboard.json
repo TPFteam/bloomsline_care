@@ -1,0 +1,193 @@
+{
+  "greeting": {
+    "morning": "Bonjour",
+    "afternoon": "Bon après-midi",
+    "evening": "Bonsoir"
+  },
+  "tagline": "Voici ce qui se passe avec votre pratique aujourd'hui",
+  "sidebar": {
+    "home": "Accueil",
+    "signOut": "Se déconnecter"
+  },
+  "sections": {
+    "library": {
+      "title": "Bibliothèque Numérique",
+      "description": "Ressources organisées",
+      "detail": "Formulaires et activités thérapeutiques prêts à l'emploi, organisés par des experts. Dupliquez, modifiez et personnalisez.",
+      "stats": {
+        "resources": "Ressources",
+        "categories": "Catégories"
+      },
+      "tags": {
+        "expertCurated": "Organisé par des experts",
+        "customizable": "Personnalisable",
+        "evidenceBased": "Fondé sur des preuves"
+      }
+    },
+    "resources": {
+      "title": "Mes Ressources",
+      "description": "Collection personnelle",
+      "detail": "Vos ressources enregistrées, contenu créé et collections organisées. Accès facile à votre boîte à outils thérapeutique.",
+      "stats": {
+        "savedItems": "Éléments enregistrés",
+        "collections": "Collections"
+      },
+      "tags": {
+        "personalSaved": "Enregistrements personnels",
+        "collections": "Collections",
+        "quickAccess": "Accès rapide"
+      }
+    },
+    "members": {
+      "title": "Hub des Membres",
+      "description": "Espace clients",
+      "detail": "Gérez patients et étudiants dans un espace de travail unifié. Enregistrez les résumés de session et suivez les progrès.",
+      "stats": {
+        "activeClients": "Clients actifs",
+        "sessions": "Sessions"
+      },
+      "tags": {
+        "clientManagement": "Gestion des clients",
+        "sessionTracking": "Suivi des sessions",
+        "progressNotes": "Notes de progrès"
+      }
+    },
+    "analytics": {
+      "title": "Analyses de Pratique",
+      "description": "Statistiques et métriques",
+      "detail": "Comprenez vos modèles de pratique, l'engagement des clients et les résultats thérapeutiques avec des données significatives.",
+      "stats": {
+        "successRate": "Taux de réussite",
+        "insights": "Aperçus"
+      },
+      "tags": {
+        "analytics": "Analyses",
+        "clientInsights": "Aperçus clients",
+        "outcomes": "Résultats"
+      }
+    },
+    "settings": {
+      "title": "Paramètres",
+      "description": "Préférences du compte",
+      "detail": "Gérez vos préférences de compte et les paramètres de l'application",
+      "comingSoon": "Bientôt disponible"
+    },
+    "rituals": {
+      "title": "Rituels",
+      "description": "Pratiques quotidiennes",
+      "detail": "Créez et suivez des rituels quotidiens significatifs qui soutiennent votre parcours de bien-être.",
+      "stats": {
+        "activeRituals": "Rituels actifs",
+        "streak": "Jours de suite"
+      },
+      "tags": {
+        "dailyPractice": "Pratique quotidienne",
+        "trackProgress": "Suivre les progrès",
+        "buildHabits": "Créer des habitudes"
+      }
+    },
+    "moments": {
+      "title": "Moments",
+      "description": "Capturer des idées",
+      "detail": "Réfléchissez et tenez un journal sur les moments significatifs de votre parcours de bien-être.",
+      "stats": {
+        "totalMoments": "Total des moments",
+        "thisWeek": "Cette semaine"
+      },
+      "tags": {
+        "journaling": "Journalisation",
+        "reflection": "Réflexion",
+        "insights": "Idées"
+      }
+    },
+    "balance": {
+      "title": "Équilibre",
+      "description": "Suivre le bien-être",
+      "detail": "Surveillez différents aspects de votre équilibre de vie et de votre bien-être général.",
+      "stats": {
+        "balanceScore": "Score d'équilibre",
+        "categories": "Catégories"
+      },
+      "tags": {
+        "wellness": "Bien-être",
+        "tracking": "Suivi",
+        "holistic": "Holistique"
+      }
+    },
+    "reflection": {
+      "title": "Réflexion",
+      "description": "Idées de croissance",
+      "detail": "Explorez vos modèles de croissance personnelle et célébrez les progrès au fil du temps.",
+      "stats": {
+        "reflections": "Réflexions",
+        "growth": "Score de croissance"
+      },
+      "tags": {
+        "selfAwareness": "Conscience de soi",
+        "progress": "Progrès",
+        "celebration": "Célébration"
+      }
+    },
+    "stories": {
+      "title": "Histoires",
+      "description": "Créer et partager",
+      "detail": "Créez du contenu riche avec du texte, des images, des vidéos et des médias. Publiez et partagez avec un lien unique.",
+      "stats": {
+        "published": "Publiés",
+        "views": "Vues"
+      },
+      "tags": {
+        "richContent": "Contenu riche",
+        "shareableLink": "Lien partageable",
+        "multimedia": "Multimédia"
+      }
+    }
+  },
+  "stats": {
+    "activeClients": {
+      "label": "Clients actifs",
+      "change": "ce mois-ci"
+    },
+    "sessionsThisWeek": {
+      "label": "Sessions cette semaine",
+      "change": "restantes"
+    },
+    "resourcesSaved": {
+      "label": "Ressources enregistrées",
+      "change": "cette semaine"
+    },
+    "completionRate": {
+      "label": "Taux de réalisation",
+      "change": "ce mois-ci"
+    }
+  },
+  "quickActions": {
+    "title": "Actions rapides",
+    "newSessionNote": "Nouvelle note de session",
+    "scheduleAppointment": "Planifier un rendez-vous",
+    "browseResources": "Parcourir les ressources",
+    "viewAnalytics": "Voir les analyses"
+  },
+  "schedule": {
+    "title": "Programme d'aujourd'hui",
+    "session": "Session",
+    "checkIn": "Vérification"
+  },
+  "activity": {
+    "title": "Activité récente",
+    "completedSession": "Session terminée avec",
+    "addedToLibrary": "Ajouté",
+    "toLibrary": "à la bibliothèque",
+    "updatedNotes": "Notes mises à jour pour",
+    "reviewedAnalytics": "Tableau de bord d'analyse consulté",
+    "hoursAgo": "il y a",
+    "yesterday": "Hier",
+    "daysAgo": "il y a"
+  },
+  "practice": {
+    "title": "Votre pratique"
+  },
+  "loading": "Chargement de votre espace de travail...",
+  "backToDashboard": "Retour au tableau de bord",
+  "comingSoon": "Bientôt disponible"
+}

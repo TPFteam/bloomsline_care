@@ -1,0 +1,42 @@
+{
+  "sectionTitle": "Tout ce dont vous avez besoin pour prospérer",
+  "sectionSubtitle": "Conçu avec soin pour les praticiens qui se soucient profondément. Chaque fonctionnalité conçue pour vous donner plus de temps pour ce qui compte vraiment.",
+  "features": [
+    {
+      "title": "Votre sanctuaire de ressources",
+      "description": "Tout ce dont vous avez besoin dans un espace paisible - évaluations, activités, rituels et matériaux qui soutiennent votre approche thérapeutique unique."
+    },
+    {
+      "title": "Créez ce qui vous semble juste",
+      "description": "Faites confiance à votre expertise. Nos outils intuitifs vous permettent de créer des ressources personnalisées qui reflètent vraiment votre style thérapeutique et les besoins de vos clients."
+    },
+    {
+      "title": "Trouvez ce dont vous avez besoin, instantanément",
+      "description": "Plus besoin de chercher dans les dossiers. La recherche intelligente et l'organisation réfléchie signifient que la bonne ressource est toujours à portée de main."
+    },
+    {
+      "title": "Organisez à votre façon",
+      "description": "Créez un système qui vous convient. Étiquetez, regroupez et structurez vos ressources de la manière qui soutient le mieux votre flux de travail."
+    },
+    {
+      "title": "Partagez en toute confiance",
+      "description": "Envoyez en toute sécurité les bonnes ressources au bon moment. Vos clients obtiennent ce dont ils ont besoin, quand ils en ont besoin - simple et privé."
+    },
+    {
+      "title": "Servez les clients dans leur langue",
+      "description": "Passez facilement de l'anglais au français. Parce que la guérison se produit mieux lorsque les clients se sentent vraiment compris."
+    },
+    {
+      "title": "Grandissez ensemble en équipe",
+      "description": "Partagez des idées et des ressources avec des collègues. Construisez une sagesse collective qui rend tout le monde dans votre pratique plus efficace."
+    },
+    {
+      "title": "Voyez ce qui résonne",
+      "description": "Des informations douces sur ce qui fonctionne. Comprenez quelles ressources soutiennent vraiment la croissance de vos clients - sans données écrasantes."
+    },
+    {
+      "title": "Commencez avec des modèles réfléchis",
+      "description": "Des fondations conçues professionnellement que vous pouvez personnaliser. Gagnez du temps sur la structure, dépensez de l'énergie sur la connexion."
+    }
+  ]
+}

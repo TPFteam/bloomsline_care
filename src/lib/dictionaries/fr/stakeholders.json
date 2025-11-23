@@ -1,0 +1,22 @@
+{
+  "sectionTitle": "Conçu pour des praticiens comme vous",
+  "sectionSubtitle": "Que vous construisiez votre pratique en solo ou que vous grandissiez avec une équipe, Bloomsline grandit avec vous. Nous comprenons votre parcours car nous avons accompagné des praticiens à chaque étape.",
+  "stakeholders": [
+    {
+      "type": "Praticiens Solo",
+      "tagline": "Votre pratique, magnifiquement organisée",
+      "description": "Enfin, un espace qui comprend votre approche unique. Gardez vos ressources à portée de main, votre flux de travail fluide et votre attention là où elle appartient - sur vos clients."
+    },
+    {
+      "type": "Équipes Cliniques",
+      "tagline": "Développez votre sagesse collective",
+      "description": "Partagez des idées, apprenez les uns des autres, maintenez la qualité dans toute votre pratique. Construisez le type d'environnement collaboratif où tout le monde prospère."
+    },
+    {
+      "type": "Pratiques de Groupe",
+      "tagline": "Évoluez sans perdre votre âme",
+      "description": "Maintenez la touche personnelle en grandissant. Donnez à chaque praticien les outils dont il a besoin tout en construisant des connaissances partagées et des soins cohérents."
+    }
+  ],
+  "learnMore": "En savoir plus"
+}

@@ -1,0 +1,17 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "features": "Fonctionnalités",
+    "forPractitioners": "Pour les Praticiens",
+    "signIn": "Se connecter",
+    "getStarted": "Commencer"
+  },
+  "footer": {
+    "copyright": "© 2024 Bloomsline. Tous droits réservés."
+  },
+  "buttons": {
+    "tryNow": "Essayer maintenant",
+    "backToHome": "Retour à l'accueil",
+    "learnMore": "En savoir plus"
+  }
+}

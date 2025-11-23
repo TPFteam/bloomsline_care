@@ -1,0 +1,25 @@
+{
+  "sectionTitle": "Des praticiens qui ont trouvé leur rythme",
+  "sectionSubtitle": "Histoires réelles de thérapeutes et psychologues qui ont simplifié leur pratique avec Bloomsline.",
+  "testimonials": [
+    {
+      "quote": "Bloomsline m'a redonné des heures chaque semaine. Au lieu de chercher frénétiquement dans les fichiers, je suis présent avec mes clients. Cela a tout changé.",
+      "author": "Dr. Sarah Chen",
+      "role": "Psychologue Clinicienne",
+      "location": "Montréal, QC"
+    },
+    {
+      "quote": "Enfin, un outil qui ne donne pas l'impression d'avoir été conçu pour des bureaux d'entreprise. Ceci a été fait par quelqu'un qui comprend vraiment le travail thérapeutique.",
+      "author": "Michael Dubois",
+      "role": "Thérapeute des Traumatismes",
+      "location": "Vancouver, BC"
+    },
+    {
+      "quote": "Toute notre pratique est passée à Bloomsline. La facilité de partage des ressources tout en maintenant la confidentialité des clients est exactement ce dont nous avions besoin.",
+      "author": "Dr. Amara Patel",
+      "role": "Directrice de Pratique",
+      "location": "Toronto, ON"
+    }
+  ],
+  "communityNote": "Rejoignez une communauté croissante de praticiens qui passent moins de temps à organiser et plus de temps à faire le travail qui compte. 💚"
+}

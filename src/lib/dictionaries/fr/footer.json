@@ -1,0 +1,54 @@
+{
+  "brandDescription": "Donner aux praticiens de la santé mentale des outils complets pour organiser, créer et partager du contenu thérapeutique en toute confiance.",
+  "contactEmail": "support@bloomsline.com",
+  "contactPhone": "+1 (234) 567-890",
+  "location": "Disponible dans le monde entier",
+  "sections": {
+    "product": {
+      "title": "Produit",
+      "links": [
+        { "label": "Fonctionnalités", "href": "#features" },
+        { "label": "Pour les praticiens", "href": "#solutions" },
+        { "label": "Tarification", "href": "#pricing" },
+        { "label": "Bibliothèque de ressources", "href": "#" },
+        { "label": "Modèles", "href": "#" }
+      ]
+    },
+    "company": {
+      "title": "Entreprise",
+      "links": [
+        { "label": "À propos de Bloomsline", "href": "#about" },
+        { "label": "Notre mission", "href": "#" },
+        { "label": "Blog", "href": "#" },
+        { "label": "Témoignages", "href": "#" },
+        { "label": "Contact", "href": "#" }
+      ]
+    },
+    "resources": {
+      "title": "Ressources",
+      "links": [
+        { "label": "Centre d'aide", "href": "#" },
+        { "label": "Démarrage", "href": "#" },
+        { "label": "Meilleures pratiques", "href": "#" },
+        { "label": "Webinaires", "href": "#" },
+        { "label": "Documentation", "href": "#" }
+      ]
+    },
+    "legal": {
+      "title": "Légal",
+      "links": [
+        { "label": "Politique de confidentialité", "href": "#" },
+        { "label": "Conditions d'utilisation", "href": "#" },
+        { "label": "Conformité HIPAA", "href": "#" },
+        { "label": "Sécurité", "href": "#" },
+        { "label": "Protection des données", "href": "#" }
+      ]
+    }
+  },
+  "copyright": "Bloomsline. Tous droits réservés.",
+  "socialLabels": {
+    "twitter": "Twitter",
+    "linkedin": "LinkedIn",
+    "github": "GitHub"
+  }
+}
