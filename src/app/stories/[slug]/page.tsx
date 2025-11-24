@@ -14,7 +14,7 @@ export default function PublicStoryPage() {
   const params = useParams()
   const router = useRouter()
   const slug = params.slug as string
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
   const [story, setStory] = useState<Story | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -90,7 +90,7 @@ export default function PublicStoryPage() {
       setIsUnlocked(true)
       setNeedsCode(false)
       setCodeError('')
-      fetchStory() // Re-fetch to show content
+      // Don't re-fetch - just unlock and show the existing story
     } else {
       setCodeError('Incorrect code. Please try again.')
     }
@@ -190,7 +190,7 @@ export default function PublicStoryPage() {
                   Shared via <span className="font-semibold text-amber-600">Bloomsline Stories</span>
                 </p>
                 <Button
-                  onClick={() => router.push('/')}
+                  onClick={() => window.open('/', '_blank', 'noopener,noreferrer')}
                   variant="outline"
                   size="sm"
                 >

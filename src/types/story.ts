@@ -5,8 +5,7 @@ export type ContentBlockType =
   | 'text'
   | 'heading'
   | 'list'
-  | 'image'
-  | 'video'
+  | 'media'
   | 'divider'
 
 export interface ContentBlock {
@@ -31,14 +30,15 @@ export interface ListBlockContent {
   ordered: boolean
 }
 
-export interface ImageBlockContent {
+export interface MediaItem {
   url: string
-  caption?: string
+  fileType: 'image' | 'video' | 'audio'
+  fileName: string
   alt?: string
 }
 
-export interface VideoBlockContent {
-  url: string
+export interface MediaBlockContent {
+  items: MediaItem[]
   caption?: string
 }
 

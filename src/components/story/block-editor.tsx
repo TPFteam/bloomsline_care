@@ -7,8 +7,7 @@ import {
   Heading2,
   Heading3,
   List,
-  Image as ImageIcon,
-  Video,
+  FileImage,
   Minus,
   Plus,
   GripVertical,
@@ -56,10 +55,8 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps) {
         return { text: '', level: 2 }
       case 'list':
         return { items: [''], ordered: false }
-      case 'image':
-        return { url: '', caption: '', alt: '' }
-      case 'video':
-        return { url: '', caption: '' }
+      case 'media':
+        return { items: [], caption: '' }
       case 'divider':
         return {}
       default:
@@ -104,6 +101,14 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps) {
         return
       }
 
+      // Detect file type
+      let fileType: 'image' | 'video' | 'audio' = 'image'
+      if (file.type.startsWith('video/')) {
+        fileType = 'video'
+      } else if (file.type.startsWith('audio/')) {
+        fileType = 'audio'
+      }
+
       // Upload to Supabase Storage
       const fileExt = file.name.split('.').pop()
       const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
@@ -119,14 +124,19 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps) {
         .from('story-media')
         .getPublicUrl(fileName)
 
-      // Update block
+      // Update block with file type info - add to items array
       const block = blocks.find(b => b.id === blockId)
-      if (block) {
-        if (block.type === 'image') {
-          updateBlock(blockId, { ...block.content, url: publicUrl, alt: file.name })
-        } else if (block.type === 'video') {
-          updateBlock(blockId, { ...block.content, url: publicUrl })
+      if (block && block.type === 'media') {
+        const newItem = {
+          url: publicUrl,
+          fileType,
+          fileName: file.name,
+          alt: file.name
         }
+        updateBlock(blockId, {
+          ...block.content,
+          items: [...(block.content.items || []), newItem]
+        })
       }
 
       toast.success('File uploaded successfully')
@@ -260,101 +270,72 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps) {
             </div>
           )}
 
-          {block.type === 'image' && (
+          {block.type === 'media' && (
             <div className="space-y-3">
-              {!block.content.url ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center hover:border-pink-300 hover:bg-pink-50/50 transition-all duration-200 group cursor-pointer">
-                  <input
-                    type="file"
-                    id={`image-${block.id}`}
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) handleFileUpload(block.id, file)
-                    }}
-                    className="hidden"
-                    disabled={uploadingBlockId === block.id}
-                  />
-                  <label htmlFor={`image-${block.id}`} className="cursor-pointer">
-                    <div className="w-16 h-16 bg-gradient-to-br from-pink-200 to-pink-300 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm group-hover:shadow-md transition-shadow">
-                      <ImageIcon className="w-7 h-7 text-pink-700" />
+              {/* Display uploaded media items in a grid */}
+              {block.content.items && block.content.items.length > 0 && (
+                <div className="grid grid-cols-2 gap-3">
+                  {block.content.items.map((item: any, index: number) => (
+                    <div key={index} className="relative group">
+                      {item.fileType === 'image' && (
+                        <img src={item.url} alt={item.alt} className="w-full h-48 object-cover rounded-xl shadow-md" />
+                      )}
+                      {item.fileType === 'video' && (
+                        <video src={item.url} controls className="w-full h-48 object-cover rounded-xl shadow-md bg-black" />
+                      )}
+                      {item.fileType === 'audio' && (
+                        <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-xl h-48 flex items-center">
+                          <audio src={item.url} controls className="w-full" />
+                        </div>
+                      )}
+                      <button
+                        onClick={() => {
+                          const newItems = block.content.items.filter((_: any, i: number) => i !== index)
+                          updateBlock(block.id, { ...block.content, items: newItems })
+                        }}
+                        className="absolute top-2 right-2 p-1.5 bg-red-500/90 backdrop-blur-sm text-white rounded-lg hover:bg-red-600 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                    <p className="text-base font-medium text-gray-700 mb-1">
-                      {uploadingBlockId === block.id ? 'Uploading...' : 'Upload Image'}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Click to select from your device
-                    </p>
-                  </label>
-                </div>
-              ) : (
-                <div className="relative group">
-                  <img src={block.content.url} alt={block.content.alt} className="w-full rounded-2xl shadow-md" />
-                  <button
-                    onClick={() => updateBlock(block.id, { url: '', caption: '', alt: '' })}
-                    className="absolute top-3 right-3 p-2 bg-red-500/90 backdrop-blur-sm text-white rounded-xl hover:bg-red-600 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  ))}
                 </div>
               )}
-              {block.content.url && (
-                <input
-                  type="text"
-                  value={block.content.caption || ''}
-                  onChange={(e) => updateBlock(block.id, { ...block.content, caption: e.target.value })}
-                  placeholder="Add a caption..."
-                  className="w-full p-2 border-0 border-b border-gray-200 text-sm text-gray-600 italic placeholder:text-gray-400 focus:border-pink-400 focus:ring-0 outline-none transition-colors"
-                />
-              )}
-            </div>
-          )}
 
-          {block.type === 'video' && (
-            <div className="space-y-3">
-              {!block.content.url ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center hover:border-rose-300 hover:bg-rose-50/50 transition-all duration-200 group cursor-pointer">
-                  <input
-                    type="file"
-                    id={`video-${block.id}`}
-                    accept="video/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) handleFileUpload(block.id, file)
-                    }}
-                    className="hidden"
-                    disabled={uploadingBlockId === block.id}
-                  />
-                  <label htmlFor={`video-${block.id}`} className="cursor-pointer">
-                    <div className="w-16 h-16 bg-gradient-to-br from-rose-200 to-rose-300 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm group-hover:shadow-md transition-shadow">
-                      <Video className="w-7 h-7 text-rose-700" />
-                    </div>
-                    <p className="text-base font-medium text-gray-700 mb-1">
-                      {uploadingBlockId === block.id ? 'Uploading...' : 'Upload Video'}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Click to select from your device
-                    </p>
-                  </label>
-                </div>
-              ) : (
-                <div className="relative group">
-                  <video src={block.content.url} controls className="w-full rounded-2xl shadow-md bg-black" />
-                  <button
-                    onClick={() => updateBlock(block.id, { url: '', caption: '' })}
-                    className="absolute top-3 right-3 p-2 bg-red-500/90 backdrop-blur-sm text-white rounded-xl hover:bg-red-600 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-              {block.content.url && (
+              {/* Upload button - always show to allow adding more files */}
+              <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-amber-300 hover:bg-amber-50/50 transition-all duration-200 group cursor-pointer">
+                <input
+                  type="file"
+                  id={`media-${block.id}`}
+                  accept="image/*,video/*,audio/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleFileUpload(block.id, file)
+                  }}
+                  className="hidden"
+                  disabled={uploadingBlockId === block.id}
+                />
+                <label htmlFor={`media-${block.id}`} className="cursor-pointer">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-200 to-amber-300 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-sm group-hover:shadow-md transition-shadow">
+                    <Plus className="w-6 h-6 text-amber-700" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-700">
+                    {uploadingBlockId === block.id ? 'Uploading...' : block.content.items?.length > 0 ? 'Add More' : 'Upload Media'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Image, video, or audio
+                  </p>
+                </label>
+              </div>
+
+              {/* Caption for entire media block */}
+              {block.content.items && block.content.items.length > 0 && (
                 <input
                   type="text"
                   value={block.content.caption || ''}
                   onChange={(e) => updateBlock(block.id, { ...block.content, caption: e.target.value })}
-                  placeholder="Add a caption..."
-                  className="w-full p-2 border-0 border-b border-gray-200 text-sm text-gray-600 italic placeholder:text-gray-400 focus:border-rose-400 focus:ring-0 outline-none transition-colors"
+                  placeholder="Add a caption for this collection..."
+                  className="w-full p-2 border-0 border-b border-gray-200 text-sm text-gray-600 italic placeholder:text-gray-400 focus:border-amber-400 focus:ring-0 outline-none transition-colors"
                 />
               )}
             </div>
@@ -402,8 +383,7 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps) {
     { type: 'text', icon: AlignLeft, label: 'Paragraph', description: 'Write your thoughts', color: 'from-blue-200 to-blue-300', bgColor: 'bg-blue-50' },
     { type: 'heading', icon: Heading1, label: 'Heading', description: 'Section title', color: 'from-purple-200 to-purple-300', bgColor: 'bg-purple-50' },
     { type: 'list', icon: List, label: 'List', description: 'Bullet or numbered', color: 'from-emerald-200 to-emerald-300', bgColor: 'bg-emerald-50' },
-    { type: 'image', icon: ImageIcon, label: 'Image', description: 'Upload a photo', color: 'from-pink-200 to-pink-300', bgColor: 'bg-pink-50' },
-    { type: 'video', icon: Video, label: 'Video', description: 'Add a video', color: 'from-rose-200 to-rose-300', bgColor: 'bg-rose-50' },
+    { type: 'media', icon: FileImage, label: 'Media', description: 'Image, video, or audio', color: 'from-amber-200 to-amber-300', bgColor: 'bg-amber-50' },
     { type: 'divider', icon: Minus, label: 'Divider', description: 'Separate sections', color: 'from-gray-200 to-gray-300', bgColor: 'bg-gray-50' },
   ]
 

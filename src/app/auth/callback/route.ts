@@ -8,19 +8,26 @@ export async function GET(request: NextRequest) {
   const errorDescription = requestUrl.searchParams.get('error_description')
   const flow = requestUrl.searchParams.get('flow') // 'signup' or 'signin'
 
+  console.log('Auth callback hit with params:', {
+    code: code ? 'present' : 'missing',
+    error,
+    flow,
+    fullUrl: request.url
+  })
+
   // Handle OAuth errors
   if (error) {
+    console.error('OAuth error:', error, errorDescription)
     return NextResponse.redirect(
       `${requestUrl.origin}/sign-in?error=${encodeURIComponent(errorDescription || error)}`
     )
   }
 
   if (code) {
-    let redirectUrl = `${requestUrl.origin}/dashboard`
-
-    // Create response object with redirect
-    const response = NextResponse.redirect(redirectUrl)
-    const supabase = createRouteHandlerClient(request, response)
+    // First, exchange code for session to determine redirect URL
+    // We'll create a temporary response to capture cookies
+    const tempResponse = NextResponse.next()
+    const supabase = createRouteHandlerClient(request, tempResponse)
 
     const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
@@ -49,6 +56,8 @@ export async function GET(request: NextRequest) {
     })
 
     // Determine the redirect URL based on the flow
+    let redirectUrl = `${requestUrl.origin}/dashboard`
+
     if (flow === 'signup' && !isNewUser) {
       // If user came from sign-up page but already has an account
       const userName = data.user?.user_metadata?.full_name?.split(' ')[0] || 'there'
@@ -82,13 +91,17 @@ export async function GET(request: NextRequest) {
     } else if (isNewUser) {
       // New user from sign-up page - redirect to onboarding to select user type
       redirectUrl = `${requestUrl.origin}/onboarding`
-    } else {
-      // Existing user - redirect to dashboard
-      redirectUrl = `${requestUrl.origin}/dashboard`
     }
 
-    // Return response with cookies and correct redirect
-    return NextResponse.redirect(redirectUrl, response)
+    // Create final redirect response and copy cookies from temp response
+    const response = NextResponse.redirect(redirectUrl)
+
+    // Copy all cookies from the temp response to the final redirect response
+    tempResponse.cookies.getAll().forEach((cookie) => {
+      response.cookies.set(cookie.name, cookie.value, cookie)
+    })
+
+    return response
   }
 
   // No code or error, redirect to home
