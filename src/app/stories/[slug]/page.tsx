@@ -41,38 +41,51 @@ export default function PublicStoryPage() {
         return
       }
 
-      // Check if story has a secret code
-      if (data.secret_code && !isUnlocked) {
-        setNeedsCode(true)
-        setStory(data) // Store story data but don't show content yet
-        setLoading(false)
-        return
-      }
-
       // Parse content safely - handle both old text format and new block format
-      let parsedContent = []
-      if (Array.isArray(data.content)) {
-        // Already an array of blocks
-        parsedContent = data.content
-      } else if (typeof data.content === 'string') {
-        try {
-          // Try to parse as JSON (new format)
-          const parsed = JSON.parse(data.content)
-          parsedContent = Array.isArray(parsed) ? parsed : []
-        } catch (e) {
-          // Old plain text format - convert to a single text block
-          parsedContent = [{
-            id: 'legacy',
-            type: 'text',
-            content: { text: data.content },
-            order: 0
-          }]
+      // Do this BEFORE checking secret code so content is always ready
+      let parsedContent: any[] = []
+      if (data.content) {
+        if (Array.isArray(data.content)) {
+          // Already an array of blocks (JSONB from Supabase)
+          parsedContent = data.content
+        } else if (typeof data.content === 'string') {
+          try {
+            // Try to parse as JSON (new format)
+            const parsed = JSON.parse(data.content)
+            parsedContent = Array.isArray(parsed) ? parsed : []
+          } catch (e) {
+            // Old plain text format - convert to a single text block
+            parsedContent = [{
+              id: 'legacy',
+              type: 'text',
+              content: { text: data.content },
+              order: 0
+            }]
+          }
+        } else if (typeof data.content === 'object') {
+          // Single object, wrap in array
+          parsedContent = [data.content]
         }
       }
+
+      console.log('Story content debug:', {
+        rawContent: data.content,
+        parsedContent,
+        contentType: typeof data.content,
+        isArray: Array.isArray(data.content)
+      })
 
       const parsedStory = {
         ...data,
         content: parsedContent
+      }
+
+      // Check if story has a secret code
+      if (data.secret_code && !isUnlocked) {
+        setNeedsCode(true)
+        setStory(parsedStory) // Store PARSED story data
+        setLoading(false)
+        return
       }
 
       setStory(parsedStory)
