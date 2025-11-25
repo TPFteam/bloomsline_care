@@ -212,10 +212,96 @@ export default function StoryPreviewPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50">
-      {/* Top Bar */}
+      {/* Top Bar - Mobile Responsive */}
       <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          {/* Mobile: Two rows */}
+          <div className="flex flex-col py-3 gap-3 lg:hidden">
+            {/* Row 1: Back + Status badges */}
+            <div className="flex items-center justify-between">
+              <Link href="/dashboard/stories">
+                <Button variant="ghost" size="sm" className="px-2">
+                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  <span className="hidden sm:inline">Back</span>
+                </Button>
+              </Link>
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                <div className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+                  Preview
+                </div>
+                {story.secret_code && (
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs">
+                    <Lock className="w-3 h-3" />
+                  </div>
+                )}
+                {story.published ? (
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">
+                    <Eye className="w-3 h-3" />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">
+                    <EyeOff className="w-3 h-3" />
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* Row 2: Action buttons - scrollable */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+              <Link href={`/dashboard/stories/${story.id}/edit`}>
+                <Button variant="outline" size="sm" className="shrink-0">
+                  <Edit className="w-4 h-4" />
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={togglePublish}
+                className="shrink-0"
+              >
+                {story.published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </Button>
+              {story.published && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyShareLink}
+                  className="shrink-0"
+                >
+                  <Share2 className="w-4 h-4" />
+                </Button>
+              )}
+              {story.secret_code && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-purple-600 border-purple-200 hover:bg-purple-50 shrink-0"
+                  onClick={openCodeModal}
+                >
+                  <KeyRound className="w-4 h-4" />
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-500 border-red-200 hover:bg-red-50 shrink-0"
+                onClick={handleDelete}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={showAnalytics ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowAnalytics(!showAnalytics)}
+                className={`shrink-0 ${showAnalytics ? "bg-blue-600 hover:bg-blue-700" : ""}`}
+              >
+                <BarChart3 className="w-4 h-4 mr-1" />
+                {views.length}
+              </Button>
+            </div>
+          </div>
+
+          {/* Desktop: Single row */}
+          <div className="hidden lg:flex items-center justify-between h-16">
             {/* Left side - Back button */}
             <Link href="/dashboard/stories">
               <Button variant="ghost" size="sm">

@@ -1,16 +1,241 @@
 'use client'
 
-import { useState } from 'react'
-import { X, ZoomIn, ZoomOut, Maximize2, Download, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
+import { X, ZoomIn, ZoomOut, Download, RotateCcw } from 'lucide-react'
 import type { ContentBlock } from '@/types/story'
 
 interface BlockRendererProps {
   blocks: ContentBlock[]
 }
 
+interface TouchState {
+  startX: number
+  startY: number
+  startDistance: number
+  startScale: number
+  lastX: number
+  lastY: number
+}
+
 export function BlockRenderer({ blocks }: BlockRendererProps) {
-  const [lightboxImage, setLightboxImage] = useState<{ url: string; caption?: string; index?: number; total?: number } | null>(null)
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; caption?: string; index?: number; total?: number; allImages?: string[] } | null>(null)
   const [zoomLevel, setZoomLevel] = useState(1)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const imageRef = useRef<HTMLImageElement>(null)
+  const touchState = useRef<TouchState | null>(null)
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
+
+  // Set up portal container on mount
+  useEffect(() => {
+    setPortalContainer(document.body)
+  }, [])
+
+  // Reset position and zoom when image changes, and lock body scroll
+  useEffect(() => {
+    if (lightboxImage) {
+      setZoomLevel(1)
+      setPosition({ x: 0, y: 0 })
+      // Lock body scroll
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
+      document.body.style.top = `-${window.scrollY}px`
+    } else {
+      // Restore body scroll
+      const scrollY = document.body.style.top
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+      document.body.style.top = ''
+      window.scrollTo(0, parseInt(scrollY || '0') * -1)
+    }
+
+    return () => {
+      // Cleanup on unmount
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+      document.body.style.top = ''
+    }
+  }, [lightboxImage])
+
+  // Get distance between two touch points
+  const getTouchDistance = (touches: TouchList) => {
+    if (touches.length < 2) return 0
+    const dx = touches[0].clientX - touches[1].clientX
+    const dy = touches[0].clientY - touches[1].clientY
+    return Math.sqrt(dx * dx + dy * dy)
+  }
+
+  // Get center point between two touches
+  const getTouchCenter = (touches: TouchList) => {
+    if (touches.length < 2) {
+      return { x: touches[0].clientX, y: touches[0].clientY }
+    }
+    return {
+      x: (touches[0].clientX + touches[1].clientX) / 2,
+      y: (touches[0].clientY + touches[1].clientY) / 2
+    }
+  }
+
+  // Handle touch start
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      // Single touch - start pan
+      touchState.current = {
+        startX: e.touches[0].clientX - position.x,
+        startY: e.touches[0].clientY - position.y,
+        startDistance: 0,
+        startScale: zoomLevel,
+        lastX: e.touches[0].clientX,
+        lastY: e.touches[0].clientY
+      }
+      setIsDragging(true)
+    } else if (e.touches.length === 2) {
+      // Two finger touch - start pinch zoom
+      e.preventDefault()
+      const distance = getTouchDistance(e.touches)
+      touchState.current = {
+        startX: position.x,
+        startY: position.y,
+        startDistance: distance,
+        startScale: zoomLevel,
+        lastX: getTouchCenter(e.touches).x,
+        lastY: getTouchCenter(e.touches).y
+      }
+    }
+  }, [position, zoomLevel])
+
+  // Handle touch move
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchState.current) return
+
+    if (e.touches.length === 1) {
+      // Single touch pan
+      e.preventDefault()
+      const newX = e.touches[0].clientX - touchState.current.startX
+      const newY = e.touches[0].clientY - touchState.current.startY
+      setPosition({ x: newX, y: newY })
+    } else if (e.touches.length === 2) {
+      // Pinch zoom
+      e.preventDefault()
+      const distance = getTouchDistance(e.touches)
+      const scale = (distance / touchState.current.startDistance) * touchState.current.startScale
+      const newZoom = Math.min(Math.max(scale, 0.5), 4)
+      setZoomLevel(newZoom)
+
+      // Adjust position to zoom towards center of pinch
+      const center = getTouchCenter(e.touches)
+      const deltaX = center.x - touchState.current.lastX
+      const deltaY = center.y - touchState.current.lastY
+      setPosition(prev => ({
+        x: prev.x + deltaX,
+        y: prev.y + deltaY
+      }))
+      touchState.current.lastX = center.x
+      touchState.current.lastY = center.y
+    }
+  }, [])
+
+  // Handle touch end
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 0) {
+      setIsDragging(false)
+
+      // Snap back to center if zoom is 1 or less
+      if (zoomLevel <= 1) {
+        setPosition({ x: 0, y: 0 })
+        setZoomLevel(1)
+      }
+
+      touchState.current = null
+    } else if (e.touches.length === 1) {
+      // Switched from pinch to single touch
+      touchState.current = {
+        startX: e.touches[0].clientX - position.x,
+        startY: e.touches[0].clientY - position.y,
+        startDistance: 0,
+        startScale: zoomLevel,
+        lastX: e.touches[0].clientX,
+        lastY: e.touches[0].clientY
+      }
+    }
+  }, [zoomLevel, position])
+
+  // Handle mouse wheel zoom
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault()
+    const delta = e.deltaY > 0 ? -0.1 : 0.1
+    setZoomLevel(prev => Math.min(Math.max(prev + delta, 0.5), 4))
+  }, [])
+
+  // Handle mouse drag for desktop
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+    touchState.current = {
+      startX: e.clientX - position.x,
+      startY: e.clientY - position.y,
+      startDistance: 0,
+      startScale: zoomLevel,
+      lastX: e.clientX,
+      lastY: e.clientY
+    }
+  }, [position, zoomLevel])
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging || !touchState.current) return
+    e.preventDefault()
+    const newX = e.clientX - touchState.current.startX
+    const newY = e.clientY - touchState.current.startY
+    setPosition({ x: newX, y: newY })
+  }, [isDragging])
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false)
+    touchState.current = null
+  }, [])
+
+  // Handle double tap to zoom
+  const lastTap = useRef<number>(0)
+  const handleDoubleTap = useCallback((e: React.TouchEvent) => {
+    const now = Date.now()
+    if (now - lastTap.current < 300) {
+      // Double tap detected
+      if (zoomLevel > 1) {
+        // Reset zoom
+        setZoomLevel(1)
+        setPosition({ x: 0, y: 0 })
+      } else {
+        // Zoom to 2x at tap position
+        setZoomLevel(2)
+      }
+    }
+    lastTap.current = now
+  }, [zoomLevel])
+
+  // Navigate to next/prev image
+  const navigateImage = useCallback((direction: 'prev' | 'next') => {
+    if (!lightboxImage?.allImages || lightboxImage.allImages.length <= 1) return
+
+    const currentIndex = lightboxImage.index || 0
+    let newIndex: number
+
+    if (direction === 'next') {
+      newIndex = (currentIndex + 1) % lightboxImage.allImages.length
+    } else {
+      newIndex = currentIndex === 0 ? lightboxImage.allImages.length - 1 : currentIndex - 1
+    }
+
+    setLightboxImage({
+      ...lightboxImage,
+      url: lightboxImage.allImages[newIndex],
+      index: newIndex
+    })
+  }, [lightboxImage])
 
   // Safety check: ensure blocks is an array
   if (!blocks || !Array.isArray(blocks)) {
@@ -68,6 +293,9 @@ export function BlockRenderer({ blocks }: BlockRendererProps) {
           alt: block.content.alt
         }] : [])
 
+        // Get all image URLs for gallery navigation
+        const allImageUrls = mediaItems.filter((i: any) => i.fileType === 'image').map((i: any) => i.url)
+
         return (
           <figure className="my-8">
             {mediaItems.length > 0 && (
@@ -77,12 +305,15 @@ export function BlockRenderer({ blocks }: BlockRendererProps) {
                     {item.fileType === 'image' && (
                       <div className="relative rounded-xl overflow-hidden shadow-lg group cursor-pointer"
                            onClick={() => {
-                             setZoomLevel(1) // Reset zoom when opening
+                             const imageIndex = allImageUrls.indexOf(item.url)
+                             setZoomLevel(1)
+                             setPosition({ x: 0, y: 0 })
                              setLightboxImage({
                                url: item.url,
                                caption: block.content.caption,
-                               index: index,
-                               total: mediaItems.filter((i: any) => i.fileType === 'image').length
+                               index: imageIndex,
+                               total: allImageUrls.length,
+                               allImages: allImageUrls
                              })
                            }}>
                         <img
@@ -159,22 +390,16 @@ export function BlockRenderer({ blocks }: BlockRendererProps) {
         ))}
       </div>
 
-      {/* Enhanced Image Lightbox Modal - Popup Style */}
-      {lightboxImage && (
+      {/* Enhanced Image Lightbox with Touch Gestures - Rendered via Portal */}
+      {lightboxImage && portalContainer && createPortal(
         <div
-          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300"
-          onClick={() => {
-            setLightboxImage(null)
-            setZoomLevel(1)
-          }}
+          className="fixed top-0 left-0 right-0 bottom-0 bg-[#f8fafb] flex flex-col"
+          style={{ zIndex: 99999, height: '100dvh', width: '100vw' }}
+          ref={containerRef}
         >
-          {/* Modal Card */}
-          <div
-            className="bg-white rounded-3xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          {/* Header */}
+          <div className="bg-white border-b border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
                 {lightboxImage.total && lightboxImage.total > 1 && (
                   <span className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
@@ -182,7 +407,7 @@ export function BlockRenderer({ blocks }: BlockRendererProps) {
                   </span>
                 )}
                 {lightboxImage.caption && (
-                  <span className="text-sm font-medium text-gray-700 truncate max-w-md">
+                  <span className="text-sm text-gray-600 truncate max-w-xs">
                     {lightboxImage.caption}
                   </span>
                 )}
@@ -192,97 +417,144 @@ export function BlockRenderer({ blocks }: BlockRendererProps) {
                 onClick={() => {
                   setLightboxImage(null)
                   setZoomLevel(1)
+                  setPosition({ x: 0, y: 0 })
                 }}
                 className="p-2 hover:bg-gray-100 rounded-full transition-all"
                 aria-label="Close"
               >
-                <X className="w-5 h-5 text-gray-600" />
+                <X className="w-6 h-6 text-gray-600" />
               </button>
             </div>
+          </div>
 
-            {/* Image Container */}
-            <div className="flex-1 flex items-center justify-center p-8 overflow-auto bg-gray-50">
-              <img
-                src={lightboxImage.url}
-                alt={lightboxImage.caption || 'Full size image'}
-                style={{
-                  transform: `scale(${zoomLevel})`,
-                  transition: 'transform 0.3s ease',
-                }}
-                className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
-              />
-            </div>
+          {/* Image Container with Touch Gestures */}
+          <div
+            className={`flex-1 flex items-center justify-center overflow-hidden touch-none p-4 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            onTouchStart={(e) => {
+              handleTouchStart(e)
+              handleDoubleTap(e)
+            }}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onWheel={handleWheel}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
+            <img
+              ref={imageRef}
+              src={lightboxImage.url}
+              alt={lightboxImage.caption || 'Full size image'}
+              style={{
+                transform: `translate(${position.x}px, ${position.y}px) scale(${zoomLevel})`,
+                transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+                maxWidth: '100%',
+                maxHeight: '100%',
+                objectFit: 'contain',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                touchAction: 'none',
+              }}
+              className="rounded-xl shadow-lg pointer-events-none"
+              draggable={false}
+            />
+          </div>
 
-            {/* Footer with Controls */}
-            <div className="flex items-center justify-center p-4 border-t border-gray-200 bg-white">
-              <div className="flex items-center gap-2">
+          {/* Navigation Arrows (for multiple images) */}
+          {lightboxImage.allImages && lightboxImage.allImages.length > 1 && (
+            <>
+              <button
+                onClick={() => navigateImage('prev')}
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-white shadow-lg hover:bg-gray-50 rounded-full transition-all border border-gray-200"
+                aria-label="Previous image"
+              >
+                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                onClick={() => navigateImage('next')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-white shadow-lg hover:bg-gray-50 rounded-full transition-all border border-gray-200"
+                aria-label="Next image"
+              >
+                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </>
+          )}
+
+          {/* Footer Controls */}
+          <div className="bg-white border-t border-gray-200">
+            <div className="flex flex-col items-center p-4">
+              {/* Control Buttons */}
+              <div className="flex items-center gap-1 bg-gray-100 rounded-full p-1">
                 {/* Zoom Out */}
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setZoomLevel(prev => Math.max(0.5, prev - 0.25))
-                  }}
+                  onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.5))}
                   disabled={zoomLevel <= 0.5}
-                  className="p-2.5 hover:bg-gray-100 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="p-3 hover:bg-white rounded-full transition-all disabled:opacity-40"
                   aria-label="Zoom out"
-                  title="Zoom out"
                 >
                   <ZoomOut className="w-5 h-5 text-gray-700" />
                 </button>
 
-                {/* Zoom Level Display */}
-                <span className="text-sm font-medium text-gray-700 min-w-[60px] text-center">
+                {/* Zoom Level */}
+                <span className="text-sm font-medium text-gray-700 min-w-[50px] text-center">
                   {Math.round(zoomLevel * 100)}%
                 </span>
 
                 {/* Zoom In */}
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setZoomLevel(prev => Math.min(3, prev + 0.25))
-                  }}
-                  disabled={zoomLevel >= 3}
-                  className="p-2.5 hover:bg-gray-100 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  onClick={() => setZoomLevel(prev => Math.min(4, prev + 0.5))}
+                  disabled={zoomLevel >= 4}
+                  className="p-3 hover:bg-white rounded-full transition-all disabled:opacity-40"
                   aria-label="Zoom in"
-                  title="Zoom in"
                 >
                   <ZoomIn className="w-5 h-5 text-gray-700" />
                 </button>
 
-                <div className="w-px h-6 bg-gray-300 mx-2"></div>
+                <div className="w-px h-6 bg-gray-300 mx-1"></div>
 
-                {/* Reset Zoom */}
+                {/* Reset */}
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation()
+                  onClick={() => {
                     setZoomLevel(1)
+                    setPosition({ x: 0, y: 0 })
                   }}
-                  className="p-2.5 hover:bg-gray-100 rounded-lg transition-all"
-                  aria-label="Reset zoom"
-                  title="Reset zoom"
+                  className="p-3 hover:bg-white rounded-full transition-all"
+                  aria-label="Reset"
                 >
-                  <Maximize2 className="w-5 h-5 text-gray-700" />
+                  <RotateCcw className="w-5 h-5 text-gray-700" />
                 </button>
 
                 {/* Download */}
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation()
+                  onClick={() => {
                     const link = document.createElement('a')
                     link.href = lightboxImage.url
                     link.download = `image-${Date.now()}.jpg`
                     link.click()
                   }}
-                  className="p-2.5 hover:bg-gray-100 rounded-lg transition-all"
+                  className="p-3 hover:bg-white rounded-full transition-all"
                   aria-label="Download"
-                  title="Download image"
                 >
                   <Download className="w-5 h-5 text-gray-700" />
                 </button>
               </div>
+
+              {/* Hint text */}
+              <p className="text-gray-400 text-xs mt-3 md:hidden">
+                Pinch to zoom • Double-tap to zoom • Drag to pan
+              </p>
+              <p className="text-gray-400 text-xs mt-3 hidden md:block">
+                Scroll to zoom • Drag to pan
+              </p>
             </div>
           </div>
-        </div>
+        </div>,
+        portalContainer
       )}
     </>
   )
