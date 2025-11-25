@@ -9,6 +9,7 @@ import type { Story } from '@/types/story'
 import { motion } from 'framer-motion'
 import { BlockRenderer } from '@/components/story/block-renderer'
 import { CodeEntryModal } from '@/components/story/code-entry-modal'
+import { getDeviceInfo } from '@/lib/analytics'
 
 export default function PublicStoryPage() {
   const params = useParams()
@@ -21,10 +22,37 @@ export default function PublicStoryPage() {
   const [needsCode, setNeedsCode] = useState(false)
   const [codeError, setCodeError] = useState('')
   const [isUnlocked, setIsUnlocked] = useState(false)
+  const [viewTracked, setViewTracked] = useState(false)
 
   useEffect(() => {
     fetchStory()
   }, [slug])
+
+  // Track view when story is displayed (not locked behind code)
+  useEffect(() => {
+    const trackView = async () => {
+      if (!story || needsCode || viewTracked || notFound) return
+
+      try {
+        const { deviceType, browser } = getDeviceInfo()
+        const referrer = document.referrer || null
+
+        await supabase.from('story_views').insert({
+          story_id: story.id,
+          device_type: deviceType,
+          browser: browser,
+          referrer: referrer
+        })
+
+        setViewTracked(true)
+      } catch (error) {
+        // Silently fail - don't affect user experience
+        console.error('Failed to track view:', error)
+      }
+    }
+
+    trackView()
+  }, [story, needsCode, viewTracked, notFound, supabase])
 
   const fetchStory = async () => {
     try {
