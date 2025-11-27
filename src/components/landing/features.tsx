@@ -6,9 +6,6 @@ import {
   Sparkles,
   FolderTree,
   Share2,
-  Languages,
-  FileText,
-  Users,
   TrendingUp,
   Search,
 } from 'lucide-react'
@@ -21,10 +18,7 @@ const featureIcons = [
   Search,
   FolderTree,
   Share2,
-  Languages,
-  Users,
   TrendingUp,
-  FileText,
 ]
 
 const featureColors = [
@@ -33,10 +27,7 @@ const featureColors = [
   'peach',
   'mint',
   'coral',
-  'lavender',
-  'peach',
   'mint',
-  'coral',
 ] as const
 
 const colorClasses = {

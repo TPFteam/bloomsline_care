@@ -1,42 +1,30 @@
 {
-  "sectionTitle": "Tout ce dont vous avez besoin pour prospérer",
-  "sectionSubtitle": "Conçu avec soin pour les praticiens qui se soucient profondément. Chaque fonctionnalité conçue pour vous donner plus de temps pour ce qui compte vraiment.",
+  "sectionTitle": "Parce que certaines évolutions méritent d’être vues à temps",
+  "sectionSubtitle": "Conçu avec soin pour les professionnels qui ont à cœur d’aider profondément tout en gagnant du temps.",
   "features": [
     {
       "title": "Votre sanctuaire de ressources",
       "description": "Tout ce dont vous avez besoin dans un espace paisible - évaluations, activités, rituels et matériaux qui soutiennent votre approche thérapeutique unique."
     },
     {
-      "title": "Créez ce qui vous semble juste",
-      "description": "Faites confiance à votre expertise. Nos outils intuitifs vous permettent de créer des ressources personnalisées qui reflètent vraiment votre style thérapeutique et les besoins de vos clients."
+      "title": "Composez des outils adaptés à chaque personne",
+      "description": "Un éditeur conçu pour créer des supports personnalisés en quelques instants sans aucune compétence techniques."
     },
     {
-      "title": "Trouvez ce dont vous avez besoin, instantanément",
-      "description": "Plus besoin de chercher dans les dossiers. La recherche intelligente et l'organisation réfléchie signifient que la bonne ressource est toujours à portée de main."
+      "title": "Trouvez l'essentiel en un instant sans parcourir vos notes",
+      "description": "Fini les recherches interminables : un seul mot clé suffit pour accéder instantanément à ce dont vous avez besoin."
     },
     {
-      "title": "Organisez à votre façon",
-      "description": "Créez un système qui vous convient. Étiquetez, regroupez et structurez vos ressources de la manière qui soutient le mieux votre flux de travail."
+      "title": "Visualisez en temps réel les progrès de vos clients",
+      "description": "Une console qui analyse vos échanges et qui met en lumière les profils qui ont le plus besoin de votre attention."
     },
     {
-      "title": "Partagez en toute confiance",
-      "description": "Envoyez en toute sécurité les bonnes ressources au bon moment. Vos clients obtiennent ce dont ils ont besoin, quand ils en ont besoin - simple et privé."
-    },
-    {
-      "title": "Servez les clients dans leur langue",
-      "description": "Passez facilement de l'anglais au français. Parce que la guérison se produit mieux lorsque les clients se sentent vraiment compris."
-    },
-    {
-      "title": "Grandissez ensemble en équipe",
-      "description": "Partagez des idées et des ressources avec des collègues. Construisez une sagesse collective qui rend tout le monde dans votre pratique plus efficace."
+      "title": "Partagez vos supports simplement et en toute sécurité",
+      "description": "Envoyez à vos clients ce dont ils ont besoin, quand ils en ont besoin et suivez leurs engagement en temps réel."
     },
     {
       "title": "Voyez ce qui résonne",
       "description": "Des informations douces sur ce qui fonctionne. Comprenez quelles ressources soutiennent vraiment la croissance de vos clients - sans données écrasantes."
-    },
-    {
-      "title": "Commencez avec des modèles réfléchis",
-      "description": "Des fondations conçues professionnellement que vous pouvez personnaliser. Gagnez du temps sur la structure, dépensez de l'énergie sur la connexion."
     }
   ]
 }

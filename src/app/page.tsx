@@ -1,8 +1,7 @@
 import { Navbar } from "@/components/landing/navbar";
 import { Hero } from "@/components/landing/hero";
 import { Features } from "@/components/landing/features";
-import { Stakeholders } from "@/components/landing/stakeholders";
-import { Testimonials } from "@/components/landing/testimonials";
+import { CommunityNote } from "@/components/landing/community-note";
 import { Footer } from "@/components/landing/footer";
 
 export default function Home() {
@@ -12,8 +11,7 @@ export default function Home() {
       <main>
         <Hero />
         <Features />
-        <Stakeholders />
-        <Testimonials />
+        <CommunityNote />
       </main>
       <Footer />
     </>
