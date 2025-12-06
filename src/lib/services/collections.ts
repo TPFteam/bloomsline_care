@@ -1,0 +1,257 @@
+import { createClient } from '@/lib/supabase/browser-client'
+import type {
+  Collection,
+  CollectionResource,
+  CreateCollectionDTO,
+  UpdateCollectionDTO,
+} from '@/types/collection'
+
+// ============================================
+// COLLECTIONS
+// ============================================
+
+export async function getCollections(): Promise<Collection[]> {
+  const supabase = createClient()
+
+  // Get collections with resource count
+  const { data, error } = await supabase
+    .from('resource_collections')
+    .select(`
+      *,
+      collection_resources(count)
+    `)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching collections:', error)
+    throw error
+  }
+
+  // Transform the data to include resource_count
+  return (data || []).map(collection => ({
+    ...collection,
+    resource_count: collection.collection_resources?.[0]?.count || 0,
+  })) as Collection[]
+}
+
+export async function getCollectionById(id: string): Promise<Collection | null> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('resource_collections')
+    .select(`
+      *,
+      collection_resources(count)
+    `)
+    .eq('id', id)
+    .single()
+
+  if (error) {
+    if (error.code === 'PGRST116') return null // Not found
+    console.error('Error fetching collection:', error)
+    throw error
+  }
+
+  return {
+    ...data,
+    resource_count: data.collection_resources?.[0]?.count || 0,
+  } as Collection
+}
+
+export async function createCollection(collection: CreateCollectionDTO): Promise<Collection> {
+  const supabase = createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data, error } = await supabase
+    .from('resource_collections')
+    .insert({
+      practitioner_id: user.id,
+      name: collection.name,
+      description: collection.description,
+      color: collection.color || 'blue',
+      icon: collection.icon || 'folder',
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating collection:', error)
+    throw error
+  }
+
+  return { ...data, resource_count: 0 } as Collection
+}
+
+export async function updateCollection(id: string, updates: UpdateCollectionDTO): Promise<Collection> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('resource_collections')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating collection:', error)
+    throw error
+  }
+
+  return data as Collection
+}
+
+export async function deleteCollection(id: string): Promise<void> {
+  const supabase = createClient()
+
+  const { error } = await supabase
+    .from('resource_collections')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    console.error('Error deleting collection:', error)
+    throw error
+  }
+}
+
+// ============================================
+// COLLECTION RESOURCES
+// ============================================
+
+export async function getCollectionResources(collectionId: string): Promise<CollectionResource[]> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('collection_resources')
+    .select('*')
+    .eq('collection_id', collectionId)
+    .order('added_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching collection resources:', error)
+    throw error
+  }
+
+  return data as CollectionResource[]
+}
+
+export async function addResourceToCollection(
+  collectionId: string,
+  resourceId?: string,
+  externalResourceId?: string
+): Promise<CollectionResource> {
+  const supabase = createClient()
+
+  if (!resourceId && !externalResourceId) {
+    throw new Error('Either resourceId or externalResourceId is required')
+  }
+
+  const { data, error } = await supabase
+    .from('collection_resources')
+    .insert({
+      collection_id: collectionId,
+      resource_id: resourceId || null,
+      external_resource_id: externalResourceId || null,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error adding resource to collection:', error)
+    throw error
+  }
+
+  return data as CollectionResource
+}
+
+export async function removeResourceFromCollection(
+  collectionId: string,
+  resourceId?: string,
+  externalResourceId?: string
+): Promise<void> {
+  const supabase = createClient()
+
+  let query = supabase
+    .from('collection_resources')
+    .delete()
+    .eq('collection_id', collectionId)
+
+  if (resourceId) {
+    query = query.eq('resource_id', resourceId)
+  } else if (externalResourceId) {
+    query = query.eq('external_resource_id', externalResourceId)
+  } else {
+    throw new Error('Either resourceId or externalResourceId is required')
+  }
+
+  const { error } = await query
+
+  if (error) {
+    console.error('Error removing resource from collection:', error)
+    throw error
+  }
+}
+
+export async function isResourceInCollection(
+  collectionId: string,
+  resourceId?: string,
+  externalResourceId?: string
+): Promise<boolean> {
+  const supabase = createClient()
+
+  let query = supabase
+    .from('collection_resources')
+    .select('id')
+    .eq('collection_id', collectionId)
+
+  if (resourceId) {
+    query = query.eq('resource_id', resourceId)
+  } else if (externalResourceId) {
+    query = query.eq('external_resource_id', externalResourceId)
+  } else {
+    return false
+  }
+
+  const { data, error } = await query.maybeSingle()
+
+  if (error) {
+    console.error('Error checking resource in collection:', error)
+    return false
+  }
+
+  return !!data
+}
+
+// Get all collections that contain a specific resource
+export async function getCollectionsForResource(
+  resourceId?: string,
+  externalResourceId?: string
+): Promise<string[]> {
+  const supabase = createClient()
+
+  let query = supabase
+    .from('collection_resources')
+    .select('collection_id')
+
+  if (resourceId) {
+    query = query.eq('resource_id', resourceId)
+  } else if (externalResourceId) {
+    query = query.eq('external_resource_id', externalResourceId)
+  } else {
+    return []
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Error fetching collections for resource:', error)
+    return []
+  }
+
+  return data.map(r => r.collection_id)
+}

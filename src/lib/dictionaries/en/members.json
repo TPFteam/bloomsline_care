@@ -1,0 +1,278 @@
+{
+  "title": "Member Hub",
+  "subtitle": "Manage your clients and track their progress",
+  "backToDashboard": "Back to Dashboard",
+
+  "stats": {
+    "totalMembers": "Total Members",
+    "activeMembers": "Active Members",
+    "inactiveMembers": "Inactive Members",
+    "pendingMembers": "Pending",
+    "sessionsThisWeek": "Sessions This Week",
+    "engagementRate": "Engagement Rate"
+  },
+
+  "filters": {
+    "all": "All Members",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "searchPlaceholder": "Search by name, email, or phone..."
+  },
+
+  "list": {
+    "showing": "Showing",
+    "of": "of",
+    "members": "members",
+    "noMembers": "No members yet",
+    "noMembersDescription": "Start by adding your first client or patient",
+    "noResults": "No members found",
+    "noResultsDescription": "Try adjusting your search or filters",
+    "lastSession": "Last session",
+    "never": "Never",
+    "engagement": "Engagement"
+  },
+
+  "actions": {
+    "addMember": "Add Member",
+    "viewDetails": "View Details",
+    "editMember": "Edit",
+    "contact": "Contact",
+    "deleteMember": "Delete",
+    "confirmDelete": "Are you sure you want to delete this member? This action cannot be undone."
+  },
+
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending"
+  },
+
+  "engagement": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+
+  "form": {
+    "addTitle": "Add New Member",
+    "editTitle": "Edit Member",
+    "basicInfo": "Basic Information",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "phone": "Phone",
+    "dateOfBirth": "Date of Birth",
+    "status": "Status",
+    "internalNotes": "Internal Notes",
+    "internalNotesPlaceholder": "Private notes about this client...",
+    "preferences": "Client Preferences",
+    "communicationStyle": "Communication Style",
+    "communicationStylePlaceholder": "How does this client prefer to communicate?",
+    "keyStrengths": "Key Strengths",
+    "keyStrengthsPlaceholder": "Add a strength and press Enter",
+    "areasOfSensitivity": "Areas of Sensitivity",
+    "areasOfSensitivityPlaceholder": "Add an area and press Enter",
+    "therapeuticContext": "Therapeutic Context",
+    "therapeuticContextPlaceholder": "Important context for therapy...",
+    "preferredContactMethod": "Preferred Contact Method",
+    "preferredSessionFormat": "Preferred Session Format",
+    "emergencyContact": "Emergency Contact",
+    "emergencyName": "Contact Name",
+    "emergencyRelationship": "Relationship",
+    "emergencyPhone": "Phone",
+    "emergencyEmail": "Email",
+    "emergencyNotes": "Notes",
+    "save": "Save Member",
+    "cancel": "Cancel",
+    "saving": "Saving..."
+  },
+
+  "contactMethods": {
+    "email": "Email",
+    "phone": "Phone",
+    "text": "Text Message"
+  },
+
+  "profile": {
+    "title": "Member Profile",
+    "overview": "Overview & Notes",
+    "sessions": "Session History",
+    "progress": "Progress & Growth",
+    "files": "Files",
+    "sharedResources": "Shared Resources",
+    "memberSince": "Member since",
+    "lastSession": "Last session",
+    "totalSessions": "Total sessions",
+    "editProfile": "Edit Profile"
+  },
+
+  "overview": {
+    "aboutClient": "About This Client",
+    "preferences": "Preferences",
+    "communicationStyle": "Communication Style",
+    "keyStrengths": "Key Strengths",
+    "areasOfSensitivity": "Areas of Sensitivity",
+    "therapeuticContext": "Therapeutic Context",
+    "emergencyContact": "Emergency Contact",
+    "recentNotes": "Recent Notes",
+    "allNotes": "View All Notes",
+    "addNote": "Add Note",
+    "noNotes": "No notes yet",
+    "noNotesDescription": "Add your first note about this client"
+  },
+
+  "sessions": {
+    "title": "Session History",
+    "upcomingSessions": "Upcoming Sessions",
+    "pastSessions": "Past Sessions",
+    "scheduleSession": "Schedule Session",
+    "addSession": "Add Session",
+    "noSessions": "No sessions yet",
+    "noSessionsDescription": "Schedule your first session with this client",
+    "noUpcoming": "No upcoming sessions",
+    "noPast": "No past sessions",
+    "sessionDetails": "Session Details",
+    "sessionType": "Session Type",
+    "sessionFormat": "Format",
+    "duration": "Duration",
+    "minutes": "minutes",
+    "notes": "Notes",
+    "summary": "Summary",
+    "mood": "Mood Rating",
+    "goals": "Session Goals",
+    "outcomes": "Outcomes",
+    "homework": "Homework",
+    "markComplete": "Mark as Completed",
+    "cancel": "Cancel Session",
+    "reschedule": "Reschedule"
+  },
+
+  "sessionTypes": {
+    "initial_consultation": "Initial Consultation",
+    "follow_up": "Follow-up",
+    "check_in": "Check-in",
+    "crisis": "Crisis",
+    "group": "Group Session",
+    "other": "Other"
+  },
+
+  "sessionFormats": {
+    "in_person": "In Person",
+    "virtual": "Virtual",
+    "phone": "Phone Call"
+  },
+
+  "sessionStatus": {
+    "scheduled": "Scheduled",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "no_show": "No Show"
+  },
+
+  "progress": {
+    "title": "Progress & Growth",
+    "milestones": "Milestones",
+    "addMilestone": "Add Milestone",
+    "noMilestones": "No goals yet",
+    "noMilestonesDescription": "Track your client's progress by adding goals and milestones",
+    "planned": "Planned",
+    "inProgress": "In Progress",
+    "achieved": "Achieved",
+    "pending": "Pending",
+    "targetDate": "Target Date",
+    "achievedOn": "Achieved on",
+    "markAchieved": "Mark as Achieved",
+    "progressNotes": "Progress Notes",
+    "growthOverTime": "Growth Over Time",
+    "engagementTrend": "Engagement Trend"
+  },
+
+  "milestoneCategories": {
+    "general": "General",
+    "therapy_goal": "Therapy Goal",
+    "behavioral": "Behavioral",
+    "emotional": "Emotional",
+    "social": "Social",
+    "other": "Other"
+  },
+
+  "files": {
+    "title": "Files & Documents",
+    "uploadFile": "Upload File",
+    "noFiles": "No files yet",
+    "noFilesDescription": "Upload documents, forms, or other files",
+    "fileName": "File Name",
+    "category": "Category",
+    "uploadedOn": "Uploaded on",
+    "download": "Download",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this file?"
+  },
+
+  "fileCategories": {
+    "general": "General",
+    "intake": "Intake Forms",
+    "assessment": "Assessments",
+    "consent": "Consent Forms",
+    "insurance": "Insurance",
+    "correspondence": "Correspondence",
+    "other": "Other"
+  },
+
+  "shared": {
+    "title": "Shared Resources",
+    "shareStory": "Share a Story",
+    "noShared": "No shared resources yet",
+    "noSharedDescription": "Share stories and resources with this client",
+    "sharedOn": "Shared on",
+    "viewedOn": "Viewed on",
+    "notViewed": "Not viewed yet",
+    "message": "Message",
+    "viewStory": "View Story",
+    "unshare": "Unshare"
+  },
+
+  "notes": {
+    "addNote": "Add Note",
+    "editNote": "Edit Note",
+    "noteTitle": "Title (optional)",
+    "noteContent": "Note Content",
+    "noteType": "Note Type",
+    "private": "Private Note",
+    "privateDescription": "Only visible to you",
+    "save": "Save Note",
+    "delete": "Delete Note",
+    "confirmDelete": "Are you sure you want to delete this note?"
+  },
+
+  "noteTypes": {
+    "general": "General",
+    "assessment": "Assessment",
+    "treatment_plan": "Treatment Plan",
+    "milestone": "Milestone",
+    "concern": "Concern",
+    "observation": "Observation"
+  },
+
+  "errors": {
+    "loadFailed": "Failed to load members",
+    "saveFailed": "Failed to save member",
+    "deleteFailed": "Failed to delete member",
+    "sessionLoadFailed": "Failed to load sessions",
+    "sessionSaveFailed": "Failed to save session",
+    "fileUploadFailed": "Failed to upload file",
+    "noteFailed": "Failed to save note"
+  },
+
+  "success": {
+    "memberCreated": "Member added successfully",
+    "memberUpdated": "Member updated successfully",
+    "memberDeleted": "Member deleted successfully",
+    "sessionCreated": "Session scheduled successfully",
+    "sessionUpdated": "Session updated successfully",
+    "noteAdded": "Note added successfully",
+    "fileUploaded": "File uploaded successfully",
+    "resourceShared": "Resource shared successfully"
+  }
+}

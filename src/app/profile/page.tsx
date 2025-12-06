@@ -1,0 +1,1071 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  ArrowLeft,
+  User,
+  GraduationCap,
+  Briefcase,
+  Mail,
+  Settings,
+  Eye,
+  Save,
+  Loader2,
+  CheckCircle2,
+  Globe,
+  Shield,
+  Plus,
+  X,
+  ExternalLink,
+  AlertCircle,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useLanguage } from '@/lib/i18n/context'
+import { createClient } from '@/lib/supabase/browser-client'
+import { toast } from 'sonner'
+import type {
+  PractitionerProfile,
+  Specialty,
+  TherapeuticApproach,
+  AgeGroup,
+  SessionType,
+  ClientAcceptanceStatus,
+  Education,
+  License,
+  Certification,
+  calculateProfileCompleteness,
+} from '@/types/practitioner-profile'
+
+type TabId = 'about' | 'credentials' | 'practice' | 'contact' | 'settings'
+
+// All specialties options
+const SPECIALTIES: Specialty[] = [
+  'anxiety', 'depression', 'trauma_ptsd', 'grief_loss', 'relationships',
+  'family', 'couples', 'stress', 'self_esteem', 'life_transitions',
+  'career', 'addiction', 'eating_disorders', 'ocd', 'adhd',
+  'autism', 'bipolar', 'personality_disorders', 'anger_management',
+  'parenting', 'lgbtq', 'cultural_identity', 'spirituality', 'chronic_illness', 'sleep'
+]
+
+// All approaches options
+const APPROACHES: TherapeuticApproach[] = [
+  'cbt', 'dbt', 'emdr', 'psychodynamic', 'humanistic', 'solution_focused',
+  'narrative', 'mindfulness', 'art_therapy', 'play_therapy', 'family_systems',
+  'gestalt', 'acceptance_commitment', 'motivational_interviewing', 'trauma_informed', 'somatic'
+]
+
+// Age groups
+const AGE_GROUPS: AgeGroup[] = ['children', 'adolescents', 'young_adults', 'adults', 'seniors']
+
+// Session types
+const SESSION_TYPES: SessionType[] = ['individual', 'couples', 'family', 'group']
+
+export default function ProfilePage() {
+  const { t, locale } = useLanguage()
+  const router = useRouter()
+  const supabase = createClient()
+
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState<TabId>('about')
+  const [user, setUser] = useState<{ id: string; full_name: string | null; avatar_url: string | null; email: string } | null>(null)
+  const [profile, setProfile] = useState<Partial<PractitionerProfile>>({
+    headline: '',
+    bio: '',
+    credentials: [],
+    education: [],
+    licenses: [],
+    certifications: [],
+    specialties: [],
+    approaches: [],
+    age_groups: [],
+    session_types: [],
+    languages: ['English'],
+    offers_telehealth: true,
+    offers_in_person: false,
+    client_acceptance_status: 'accepting',
+    show_fees: false,
+    insurance_accepted: [],
+    offers_sliding_scale: false,
+    social_links: { website: null, linkedin: null, twitter: null, instagram: null },
+    contact_email: '',
+    contact_phone: '',
+    is_public: false,
+    slug: '',
+  })
+  const [profileCompleteness, setProfileCompleteness] = useState(0)
+
+  useEffect(() => {
+    fetchProfileData()
+  }, [])
+
+  useEffect(() => {
+    // Calculate profile completeness whenever profile changes
+    const completeness = calculateCompletenessLocal(profile)
+    setProfileCompleteness(completeness)
+  }, [profile])
+
+  const calculateCompletenessLocal = (p: Partial<PractitionerProfile>): number => {
+    let score = 0
+    if (p.headline && p.headline.length > 0) score += 15
+    if (p.bio && p.bio.length > 50) score += 20
+    if (p.credentials && p.credentials.length > 0) score += 10
+    if (p.education && p.education.length > 0) score += 10
+    if (p.licenses && p.licenses.length > 0) score += 10
+    if (p.specialties && p.specialties.length > 0) score += 15
+    if (p.approaches && p.approaches.length > 0) score += 10
+    if (p.contact_email) score += 5
+    if (p.years_experience) score += 5
+    return Math.min(100, score)
+  }
+
+  const fetchProfileData = async () => {
+    setLoading(true)
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) {
+        router.push('/sign-in')
+        setLoading(false)
+        return
+      }
+
+      // Get user data
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, full_name, avatar_url, email')
+        .eq('id', authUser.id)
+        .single()
+
+      if (userError) {
+        console.log('User data not found, using auth user:', userError.code)
+        // Use auth user data as fallback
+        setUser({
+          id: authUser.id,
+          full_name: authUser.user_metadata?.full_name || null,
+          avatar_url: authUser.user_metadata?.avatar_url || null,
+          email: authUser.email || '',
+        })
+      } else if (userData) {
+        setUser(userData)
+      }
+
+      // Get profile data - this table might not exist yet
+      try {
+        const { data: profileData, error } = await supabase
+          .from('practitioner_profiles')
+          .select('*')
+          .eq('user_id', authUser.id)
+          .single()
+
+        if (error && error.code !== 'PGRST116') {
+          // PGRST116 is "not found" which is fine for new profiles
+          if (error.code === '42P01') {
+            // Table doesn't exist yet
+            console.log('Profile table not yet created - run the migration')
+          } else {
+            console.error('Error fetching profile:', error)
+          }
+        }
+
+        if (profileData) {
+          setProfile({
+            ...profileData,
+            contact_email: profileData.contact_email || userData?.email || authUser.email || '',
+          })
+        } else {
+          // Set default contact email from user
+          setProfile(prev => ({
+            ...prev,
+            contact_email: userData?.email || authUser.email || '',
+          }))
+        }
+      } catch (profileError) {
+        console.log('Could not fetch profile data:', profileError)
+        // Continue without profile data - user can still edit
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+      toast.error(t.profile.errors.loadFailed)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!user) return
+
+    setSaving(true)
+    try {
+      const profileData = {
+        user_id: user.id,
+        headline: profile.headline || null,
+        bio: profile.bio || null,
+        intro_video_url: profile.intro_video_url || null,
+        credentials: profile.credentials || [],
+        education: profile.education || [],
+        licenses: profile.licenses || [],
+        certifications: profile.certifications || [],
+        years_experience: profile.years_experience || null,
+        specialties: profile.specialties || [],
+        approaches: profile.approaches || [],
+        age_groups: profile.age_groups || [],
+        session_types: profile.session_types || [],
+        languages: profile.languages || ['English'],
+        practice_location: profile.practice_location || null,
+        offers_telehealth: profile.offers_telehealth ?? true,
+        offers_in_person: profile.offers_in_person ?? false,
+        client_acceptance_status: profile.client_acceptance_status || 'accepting',
+        show_fees: profile.show_fees ?? false,
+        session_fee_min: profile.session_fee_min || null,
+        session_fee_max: profile.session_fee_max || null,
+        fee_currency: profile.fee_currency || 'USD',
+        insurance_accepted: profile.insurance_accepted || [],
+        offers_sliding_scale: profile.offers_sliding_scale ?? false,
+        social_links: profile.social_links || null,
+        contact_email: profile.contact_email || null,
+        contact_phone: profile.contact_phone || null,
+        is_public: profile.is_public ?? false,
+        profile_completeness: profileCompleteness,
+      }
+
+      const { error } = await supabase
+        .from('practitioner_profiles')
+        .upsert(profileData, { onConflict: 'user_id' })
+
+      if (error) {
+        if (error.code === '42P01') {
+          toast.error('Profile system is being set up. Please try again later.')
+          return
+        }
+        throw error
+      }
+
+      toast.success(t.profile.success.saved)
+    } catch (error) {
+      console.error('Error saving profile:', error)
+      toast.error(t.profile.errors.saveFailed)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const tabs: { id: TabId; label: string; icon: typeof User }[] = [
+    { id: 'about', label: t.profile.tabs.about, icon: User },
+    { id: 'credentials', label: t.profile.tabs.credentials, icon: GraduationCap },
+    { id: 'practice', label: t.profile.tabs.practice, icon: Briefcase },
+    { id: 'contact', label: t.profile.tabs.contact, icon: Mail },
+    { id: 'settings', label: t.profile.tabs.settings, icon: Settings },
+  ]
+
+  const toggleArrayItem = <T extends string>(array: T[], item: T): T[] => {
+    if (array.includes(item)) {
+      return array.filter(i => i !== item)
+    }
+    return [...array, item]
+  }
+
+  const addEducation = () => {
+    const newEducation: Education = {
+      id: crypto.randomUUID(),
+      degree: '',
+      institution: '',
+      year_completed: null,
+    }
+    setProfile(prev => ({
+      ...prev,
+      education: [...(prev.education || []), newEducation],
+    }))
+  }
+
+  const updateEducation = (id: string, field: keyof Education, value: string | number | null) => {
+    setProfile(prev => ({
+      ...prev,
+      education: (prev.education || []).map(edu =>
+        edu.id === id ? { ...edu, [field]: value } : edu
+      ),
+    }))
+  }
+
+  const removeEducation = (id: string) => {
+    setProfile(prev => ({
+      ...prev,
+      education: (prev.education || []).filter(edu => edu.id !== id),
+    }))
+  }
+
+  const addLicense = () => {
+    const newLicense: License = {
+      id: crypto.randomUUID(),
+      type: '',
+      number: null,
+      state_province: null,
+      expiration_date: null,
+      is_verified: false,
+    }
+    setProfile(prev => ({
+      ...prev,
+      licenses: [...(prev.licenses || []), newLicense],
+    }))
+  }
+
+  const updateLicense = (id: string, field: keyof License, value: string | boolean | null) => {
+    setProfile(prev => ({
+      ...prev,
+      licenses: (prev.licenses || []).map(lic =>
+        lic.id === id ? { ...lic, [field]: value } : lic
+      ),
+    }))
+  }
+
+  const removeLicense = (id: string) => {
+    setProfile(prev => ({
+      ...prev,
+      licenses: (prev.licenses || []).filter(lic => lic.id !== id),
+    }))
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen gradient-mesh flex items-center justify-center relative overflow-hidden">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-lavender-400/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-mint-400/20 rounded-full blur-3xl" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center glass-card rounded-3xl p-12"
+        >
+          <div className="w-16 h-16 border-4 border-lavender-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+          <p className="text-gray-600 font-medium">{t.dashboard.loading}</p>
+        </motion.div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen gradient-mesh relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-lavender-300/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-mint-300/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
+
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between mb-6"
+        >
+          <Link href="/dashboard">
+            <Button variant="ghost" className="text-gray-600 hover:text-gray-900 glass-subtle hover:bg-white/60 rounded-xl">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              {t.dashboard.backToDashboard}
+            </Button>
+          </Link>
+
+          <div className="flex items-center gap-3">
+            {user && (
+              <Link
+                href={`/p/${profile.is_public && profile.slug ? profile.slug : user.id}`}
+                target="_blank"
+              >
+                <Button variant="outline" className="rounded-xl">
+                  <Eye className="w-4 h-4 mr-2" />
+                  {profile.is_public ? t.profile.viewPublicProfile : 'Preview Profile'}
+                  <ExternalLink className="w-3 h-3 ml-2" />
+                </Button>
+              </Link>
+            )}
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-200/50"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {t.profile.actions.saving}
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  {t.profile.actions.save}
+                </>
+              )}
+            </Button>
+          </div>
+        </motion.div>
+
+        {/* Profile Header Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-gray-200/50 border border-white/60 overflow-hidden mb-6"
+        >
+          <div className="h-1.5 bg-gradient-to-r from-lavender-400 to-mint-500" />
+          <div className="p-6 sm:p-8">
+            <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+              {/* Avatar */}
+              <div className="flex-shrink-0 flex justify-center md:justify-start">
+                <div className="relative group">
+                  <div className="absolute -inset-2 bg-gradient-to-br from-lavender-400/30 to-mint-400/30 rounded-[1.75rem] blur-xl opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-[1.5rem] bg-gradient-to-br from-lavender-100 via-lavender-50 to-lavender-200 flex items-center justify-center text-lavender-700 font-bold text-3xl sm:text-4xl shadow-lg border-2 border-white/80">
+                    {user?.avatar_url ? (
+                      <img src={user.avatar_url} alt="" className="w-full h-full rounded-[1.5rem] object-cover" />
+                    ) : (
+                      user?.full_name?.charAt(0) || 'P'
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 text-center md:text-left">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
+                  {user?.full_name || t.profile.title}
+                </h1>
+                {profile.credentials && profile.credentials.length > 0 && (
+                  <p className="text-gray-600 mb-2">{profile.credentials.join(', ')}</p>
+                )}
+                {profile.headline && (
+                  <p className="text-gray-500 italic">{profile.headline}</p>
+                )}
+                <div className="flex items-center justify-center md:justify-start gap-2 mt-3 flex-wrap">
+                  {profile.is_public ? (
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-50 text-emerald-700">
+                      <Globe className="w-3.5 h-3.5 mr-1.5" />
+                      Public Profile
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+                      <Shield className="w-3.5 h-3.5 mr-1.5" />
+                      Private Profile
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Completeness */}
+              <div className="flex-shrink-0 text-center md:text-right">
+                <div className="inline-flex flex-col items-center bg-gray-50/80 rounded-2xl p-4">
+                  <div className="relative w-20 h-20">
+                    <svg className="w-20 h-20 transform -rotate-90">
+                      <circle
+                        cx="40"
+                        cy="40"
+                        r="35"
+                        stroke="currentColor"
+                        strokeWidth="6"
+                        fill="none"
+                        className="text-gray-200"
+                      />
+                      <circle
+                        cx="40"
+                        cy="40"
+                        r="35"
+                        stroke="currentColor"
+                        strokeWidth="6"
+                        fill="none"
+                        strokeDasharray={`${profileCompleteness * 2.2} 220`}
+                        strokeLinecap="round"
+                        className="text-lavender-500 transition-all duration-500"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xl font-bold text-gray-900">{profileCompleteness}%</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">{t.profile.completeness.title}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Tabs Navigation */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-2 mb-6 shadow-lg shadow-gray-200/30 border border-white/60"
+        >
+          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+            {tabs.map((tab, index) => {
+              const Icon = tab.icon
+              const isActive = activeTab === tab.id
+              return (
+                <motion.button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 + index * 0.05 }}
+                  className={`relative flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+                    isActive ? 'text-white' : 'text-gray-600 hover:bg-white/60'
+                  }`}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeProfileTab"
+                      className="absolute inset-0 bg-gradient-to-r from-lavender-500 to-lavender-600 rounded-xl shadow-lg shadow-lavender-300/50"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-2">
+                    <Icon className="w-4 h-4" />
+                    {tab.label}
+                  </span>
+                </motion.button>
+              )
+            })}
+          </div>
+        </motion.div>
+
+        {/* Tab Content */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {/* About Tab */}
+            {activeTab === 'about' && (
+              <div className="space-y-6">
+                <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6 sm:p-8">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-6">{t.profile.about.title}</h2>
+
+                  {/* Headline */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t.profile.about.headline.label}
+                    </label>
+                    <input
+                      type="text"
+                      value={profile.headline || ''}
+                      onChange={(e) => setProfile(prev => ({ ...prev, headline: e.target.value }))}
+                      placeholder={t.profile.about.headline.placeholder}
+                      maxLength={100}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">{t.profile.about.headline.help}</p>
+                  </div>
+
+                  {/* Bio */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t.profile.about.bio.label}
+                    </label>
+                    <textarea
+                      value={profile.bio || ''}
+                      onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
+                      placeholder={t.profile.about.bio.placeholder}
+                      rows={8}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none resize-none"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">{t.profile.about.bio.help}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Credentials Tab */}
+            {activeTab === 'credentials' && (
+              <div className="space-y-6">
+                <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6 sm:p-8">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-6">{t.profile.credentials.title}</h2>
+
+                  {/* Credentials List */}
+                  <div className="mb-8">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t.profile.credentials.credentialsList.label}
+                    </label>
+                    <input
+                      type="text"
+                      value={profile.credentials?.join(', ') || ''}
+                      onChange={(e) => setProfile(prev => ({
+                        ...prev,
+                        credentials: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                      }))}
+                      placeholder={t.profile.credentials.credentialsList.placeholder}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">{t.profile.credentials.credentialsList.help}</p>
+                  </div>
+
+                  {/* Years of Experience */}
+                  <div className="mb-8">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t.profile.credentials.yearsExperience.label}
+                    </label>
+                    <input
+                      type="number"
+                      value={profile.years_experience || ''}
+                      onChange={(e) => setProfile(prev => ({ ...prev, years_experience: parseInt(e.target.value) || null }))}
+                      placeholder={t.profile.credentials.yearsExperience.placeholder}
+                      min={0}
+                      max={60}
+                      className="w-48 px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                    />
+                  </div>
+
+                  {/* Education */}
+                  <div className="mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-medium text-gray-900">{t.profile.credentials.education.title}</h3>
+                      <Button onClick={addEducation} variant="outline" size="sm" className="rounded-xl">
+                        <Plus className="w-4 h-4 mr-1" />
+                        {t.profile.credentials.education.add}
+                      </Button>
+                    </div>
+                    <div className="space-y-4">
+                      {profile.education?.map((edu) => (
+                        <div key={edu.id} className="flex gap-4 items-start bg-gray-50/80 rounded-xl p-4">
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <input
+                              type="text"
+                              value={edu.degree}
+                              onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
+                              placeholder={t.profile.credentials.education.degreePlaceholder}
+                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none text-sm"
+                            />
+                            <input
+                              type="text"
+                              value={edu.institution}
+                              onChange={(e) => updateEducation(edu.id, 'institution', e.target.value)}
+                              placeholder={t.profile.credentials.education.institutionPlaceholder}
+                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none text-sm"
+                            />
+                            <input
+                              type="number"
+                              value={edu.year_completed || ''}
+                              onChange={(e) => updateEducation(edu.id, 'year_completed', parseInt(e.target.value) || null)}
+                              placeholder={t.profile.credentials.education.year}
+                              min={1950}
+                              max={new Date().getFullYear()}
+                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none text-sm"
+                            />
+                          </div>
+                          <button
+                            onClick={() => removeEducation(edu.id)}
+                            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      {(!profile.education || profile.education.length === 0) && (
+                        <p className="text-sm text-gray-500 text-center py-4">No education added yet</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Licenses */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-medium text-gray-900">{t.profile.credentials.licenses.title}</h3>
+                      <Button onClick={addLicense} variant="outline" size="sm" className="rounded-xl">
+                        <Plus className="w-4 h-4 mr-1" />
+                        {t.profile.credentials.licenses.add}
+                      </Button>
+                    </div>
+                    <div className="space-y-4">
+                      {profile.licenses?.map((lic) => (
+                        <div key={lic.id} className="flex gap-4 items-start bg-gray-50/80 rounded-xl p-4">
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <input
+                              type="text"
+                              value={lic.type}
+                              onChange={(e) => updateLicense(lic.id, 'type', e.target.value)}
+                              placeholder={t.profile.credentials.licenses.typePlaceholder}
+                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none text-sm"
+                            />
+                            <input
+                              type="text"
+                              value={lic.number || ''}
+                              onChange={(e) => updateLicense(lic.id, 'number', e.target.value || null)}
+                              placeholder={t.profile.credentials.licenses.number}
+                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none text-sm"
+                            />
+                            <input
+                              type="text"
+                              value={lic.state_province || ''}
+                              onChange={(e) => updateLicense(lic.id, 'state_province', e.target.value || null)}
+                              placeholder={t.profile.credentials.licenses.state}
+                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none text-sm"
+                            />
+                            <input
+                              type="date"
+                              value={lic.expiration_date || ''}
+                              onChange={(e) => updateLicense(lic.id, 'expiration_date', e.target.value || null)}
+                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none text-sm"
+                            />
+                          </div>
+                          <button
+                            onClick={() => removeLicense(lic.id)}
+                            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      {(!profile.licenses || profile.licenses.length === 0) && (
+                        <p className="text-sm text-gray-500 text-center py-4">No licenses added yet</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Practice Tab */}
+            {activeTab === 'practice' && (
+              <div className="space-y-6">
+                <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6 sm:p-8">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-6">{t.profile.practice.title}</h2>
+
+                  {/* Specialties */}
+                  <div className="mb-8">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      {t.profile.practice.specialties.label}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {SPECIALTIES.map((specialty) => {
+                        const isSelected = profile.specialties?.includes(specialty)
+                        return (
+                          <button
+                            key={specialty}
+                            onClick={() => setProfile(prev => ({
+                              ...prev,
+                              specialties: toggleArrayItem(prev.specialties || [], specialty)
+                            }))}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                              isSelected
+                                ? 'bg-lavender-100 text-lavender-700 border-2 border-lavender-400'
+                                : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                            }`}
+                          >
+                            {t.profile.specialties[specialty as keyof typeof t.profile.specialties] || specialty}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Therapeutic Approaches */}
+                  <div className="mb-8">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      {t.profile.practice.approaches.label}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {APPROACHES.map((approach) => {
+                        const isSelected = profile.approaches?.includes(approach)
+                        return (
+                          <button
+                            key={approach}
+                            onClick={() => setProfile(prev => ({
+                              ...prev,
+                              approaches: toggleArrayItem(prev.approaches || [], approach)
+                            }))}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                              isSelected
+                                ? 'bg-mint-100 text-mint-700 border-2 border-mint-400'
+                                : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                            }`}
+                          >
+                            {t.profile.approaches[approach as keyof typeof t.profile.approaches] || approach}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Age Groups */}
+                  <div className="mb-8">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      {t.profile.practice.ageGroups.label}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {AGE_GROUPS.map((ageGroup) => {
+                        const isSelected = profile.age_groups?.includes(ageGroup)
+                        return (
+                          <button
+                            key={ageGroup}
+                            onClick={() => setProfile(prev => ({
+                              ...prev,
+                              age_groups: toggleArrayItem(prev.age_groups || [], ageGroup)
+                            }))}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                              isSelected
+                                ? 'bg-coral-100 text-coral-700 border-2 border-coral-400'
+                                : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                            }`}
+                          >
+                            {t.profile.ageGroups[ageGroup as keyof typeof t.profile.ageGroups] || ageGroup}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Session Types */}
+                  <div className="mb-8">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      {t.profile.practice.sessionTypes.label}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {SESSION_TYPES.map((sessionType) => {
+                        const isSelected = profile.session_types?.includes(sessionType)
+                        return (
+                          <button
+                            key={sessionType}
+                            onClick={() => setProfile(prev => ({
+                              ...prev,
+                              session_types: toggleArrayItem(prev.session_types || [], sessionType)
+                            }))}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                              isSelected
+                                ? 'bg-peach-100 text-peach-700 border-2 border-peach-400'
+                                : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                            }`}
+                          >
+                            {t.profile.sessionTypes[sessionType as keyof typeof t.profile.sessionTypes] || sessionType}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Availability */}
+                  <div className="mb-8">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">{t.profile.practice.availability.title}</h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-6">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={profile.offers_telehealth}
+                            onChange={(e) => setProfile(prev => ({ ...prev, offers_telehealth: e.target.checked }))}
+                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                          />
+                          <span className="text-sm text-gray-700">{t.profile.practice.availability.telehealth}</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={profile.offers_in_person}
+                            onChange={(e) => setProfile(prev => ({ ...prev, offers_in_person: e.target.checked }))}
+                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                          />
+                          <span className="text-sm text-gray-700">{t.profile.practice.availability.inPerson}</span>
+                        </label>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3">
+                        {(['accepting', 'waitlist', 'not_accepting'] as ClientAcceptanceStatus[]).map((status) => (
+                          <button
+                            key={status}
+                            onClick={() => setProfile(prev => ({ ...prev, client_acceptance_status: status }))}
+                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                              profile.client_acceptance_status === status
+                                ? status === 'accepting'
+                                  ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-400'
+                                  : status === 'waitlist'
+                                  ? 'bg-amber-100 text-amber-700 border-2 border-amber-400'
+                                  : 'bg-red-100 text-red-700 border-2 border-red-400'
+                                : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                            }`}
+                          >
+                            {t.profile.practice.availability[status === 'accepting' ? 'acceptingClients' : status === 'waitlist' ? 'waitlistOnly' : 'notAccepting']}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Languages */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t.profile.practice.languages.label}
+                    </label>
+                    <input
+                      type="text"
+                      value={profile.languages?.join(', ') || ''}
+                      onChange={(e) => setProfile(prev => ({
+                        ...prev,
+                        languages: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                      }))}
+                      placeholder={t.profile.practice.languages.placeholder}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">{t.profile.practice.languages.help}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Contact Tab */}
+            {activeTab === 'contact' && (
+              <div className="space-y-6">
+                <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6 sm:p-8">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-6">{t.profile.contact.title}</h2>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t.profile.contact.email.label}
+                      </label>
+                      <input
+                        type="email"
+                        value={profile.contact_email || ''}
+                        onChange={(e) => setProfile(prev => ({ ...prev, contact_email: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">{t.profile.contact.email.help}</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t.profile.contact.phone.label}
+                      </label>
+                      <input
+                        type="tel"
+                        value={profile.contact_phone || ''}
+                        onChange={(e) => setProfile(prev => ({ ...prev, contact_phone: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">{t.profile.contact.phone.help}</p>
+                    </div>
+                  </div>
+
+                  {/* Social Links */}
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">{t.profile.contact.social.title}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {t.profile.contact.social.website}
+                        </label>
+                        <input
+                          type="url"
+                          value={profile.social_links?.website || ''}
+                          onChange={(e) => setProfile(prev => ({
+                            ...prev,
+                            social_links: {
+                              website: e.target.value || null,
+                              linkedin: prev.social_links?.linkedin ?? null,
+                              twitter: prev.social_links?.twitter ?? null,
+                              instagram: prev.social_links?.instagram ?? null,
+                            }
+                          }))}
+                          placeholder="https://yourwebsite.com"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {t.profile.contact.social.linkedin}
+                        </label>
+                        <input
+                          type="url"
+                          value={profile.social_links?.linkedin || ''}
+                          onChange={(e) => setProfile(prev => ({
+                            ...prev,
+                            social_links: {
+                              website: prev.social_links?.website ?? null,
+                              linkedin: e.target.value || null,
+                              twitter: prev.social_links?.twitter ?? null,
+                              instagram: prev.social_links?.instagram ?? null,
+                            }
+                          }))}
+                          placeholder="https://linkedin.com/in/yourprofile"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Settings Tab */}
+            {activeTab === 'settings' && (
+              <div className="space-y-6">
+                <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6 sm:p-8">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-6">{t.profile.settings.title}</h2>
+
+                  {/* Visibility */}
+                  <div className="mb-8">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">{t.profile.settings.visibility.title}</h3>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <button
+                        onClick={() => setProfile(prev => ({ ...prev, is_public: true }))}
+                        className={`flex-1 p-4 rounded-xl border-2 text-left transition-all ${
+                          profile.is_public
+                            ? 'border-emerald-400 bg-emerald-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <Globe className={`w-5 h-5 ${profile.is_public ? 'text-emerald-600' : 'text-gray-400'}`} />
+                          <span className={`font-medium ${profile.is_public ? 'text-emerald-700' : 'text-gray-700'}`}>
+                            {t.profile.settings.visibility.public}
+                          </span>
+                          {profile.is_public && <CheckCircle2 className="w-5 h-5 text-emerald-500 ml-auto" />}
+                        </div>
+                        <p className="text-sm text-gray-500">{t.profile.settings.visibility.publicDescription}</p>
+                      </button>
+
+                      <button
+                        onClick={() => setProfile(prev => ({ ...prev, is_public: false }))}
+                        className={`flex-1 p-4 rounded-xl border-2 text-left transition-all ${
+                          !profile.is_public
+                            ? 'border-gray-400 bg-gray-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <Shield className={`w-5 h-5 ${!profile.is_public ? 'text-gray-600' : 'text-gray-400'}`} />
+                          <span className={`font-medium ${!profile.is_public ? 'text-gray-700' : 'text-gray-500'}`}>
+                            {t.profile.settings.visibility.private}
+                          </span>
+                          {!profile.is_public && <CheckCircle2 className="w-5 h-5 text-gray-500 ml-auto" />}
+                        </div>
+                        <p className="text-sm text-gray-500">{t.profile.settings.visibility.privateDescription}</p>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Profile URL */}
+                  {profile.is_public && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {t.profile.settings.slug.label}
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500 text-sm">bloomsline.care/p/</span>
+                        <input
+                          type="text"
+                          value={profile.slug || ''}
+                          onChange={(e) => setProfile(prev => ({
+                            ...prev,
+                            slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
+                          }))}
+                          className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">{t.profile.settings.slug.help}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}

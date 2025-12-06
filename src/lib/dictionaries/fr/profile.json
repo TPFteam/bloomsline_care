@@ -1,0 +1,288 @@
+{
+  "title": "Mon Profil",
+  "subtitle": "Gérez votre profil professionnel et votre présence publique",
+  "editProfile": "Modifier le profil",
+  "viewPublicProfile": "Voir le profil public",
+  "profileNotPublic": "Votre profil n'est pas encore public",
+  "makePublic": "Rendre public",
+
+  "tabs": {
+    "about": "À propos",
+    "credentials": "Qualifications",
+    "practice": "Pratique",
+    "contact": "Contact",
+    "settings": "Paramètres"
+  },
+
+  "completeness": {
+    "title": "Complétude du profil",
+    "description": "Complétez votre profil pour augmenter votre visibilité",
+    "complete": "Complet",
+    "tips": {
+      "headline": "Ajoutez un titre accrocheur",
+      "bio": "Rédigez une bio centrée sur le client",
+      "credentials": "Ajoutez vos qualifications",
+      "specialties": "Sélectionnez vos spécialités",
+      "approaches": "Choisissez vos approches thérapeutiques"
+    }
+  },
+
+  "about": {
+    "title": "À propos de vous",
+    "headline": {
+      "label": "Titre professionnel",
+      "placeholder": "Aider les familles à traverser les traumatismes avec compassion",
+      "help": "Un court slogan qui capture votre approche (max 100 caractères)"
+    },
+    "bio": {
+      "label": "Biographie",
+      "placeholder": "Partagez votre histoire et votre approche. Commencez par aborder les préoccupations de vos clients, puis expliquez comment vous pouvez aider...",
+      "help": "Écrivez sur un ton chaleureux et centré sur le client. Concentrez-vous sur 'vous' plutôt que 'je'."
+    },
+    "introVideo": {
+      "label": "Vidéo d'introduction",
+      "help": "Une courte vidéo d'introduction aide les clients à se connecter avec vous",
+      "upload": "Télécharger une vidéo",
+      "remove": "Supprimer la vidéo"
+    }
+  },
+
+  "credentials": {
+    "title": "Qualifications et expérience",
+    "credentialsList": {
+      "label": "Qualifications professionnelles",
+      "placeholder": "ex: Ph.D., Psychologue clinicien",
+      "help": "Ajoutez les qualifications qui apparaissent après votre nom"
+    },
+    "yearsExperience": {
+      "label": "Années d'expérience",
+      "placeholder": "Entrez les années"
+    },
+    "education": {
+      "title": "Formation",
+      "add": "Ajouter une formation",
+      "degree": "Diplôme",
+      "degreePlaceholder": "Doctorat en psychologie clinique",
+      "institution": "Établissement",
+      "institutionPlaceholder": "Nom de l'université",
+      "year": "Année d'obtention"
+    },
+    "licenses": {
+      "title": "Licences",
+      "add": "Ajouter une licence",
+      "type": "Type de licence",
+      "typePlaceholder": "ex: Psychologue",
+      "number": "Numéro de licence",
+      "state": "Province/État",
+      "expiration": "Date d'expiration",
+      "verified": "Vérifié"
+    },
+    "certifications": {
+      "title": "Certifications",
+      "add": "Ajouter une certification",
+      "name": "Nom de la certification",
+      "namePlaceholder": "ex: Thérapeute certifié EMDR",
+      "issuingBody": "Organisation émettrice",
+      "yearObtained": "Année d'obtention"
+    }
+  },
+
+  "practice": {
+    "title": "Détails de la pratique",
+    "specialties": {
+      "label": "Domaines de spécialité",
+      "help": "Sélectionnez les problématiques que vous traitez"
+    },
+    "approaches": {
+      "label": "Approches thérapeutiques",
+      "help": "Sélectionnez les modalités que vous utilisez"
+    },
+    "ageGroups": {
+      "label": "Groupes d'âge",
+      "help": "Sélectionnez les groupes d'âge avec lesquels vous travaillez"
+    },
+    "sessionTypes": {
+      "label": "Types de séances",
+      "help": "Sélectionnez les types de thérapie que vous offrez"
+    },
+    "languages": {
+      "label": "Langues",
+      "placeholder": "Ajoutez les langues que vous parlez",
+      "help": "Langues dans lesquelles vous pouvez mener des séances"
+    },
+    "availability": {
+      "title": "Disponibilité",
+      "acceptingClients": "Accepte de nouveaux clients",
+      "waitlistOnly": "Liste d'attente uniquement",
+      "notAccepting": "N'accepte pas de nouveaux clients",
+      "telehealth": "Offre la télésanté",
+      "inPerson": "Offre des séances en personne"
+    },
+    "location": {
+      "title": "Lieu de pratique",
+      "address": "Adresse",
+      "city": "Ville",
+      "stateProvince": "Province/État",
+      "postalCode": "Code postal",
+      "country": "Pays"
+    },
+    "fees": {
+      "title": "Tarifs et assurances",
+      "showFees": "Afficher les tarifs sur le profil",
+      "sessionFee": "Fourchette de tarifs",
+      "min": "Min",
+      "max": "Max",
+      "currency": "Devise",
+      "slidingScale": "Offre un tarif dégressif",
+      "insurance": "Assurances acceptées",
+      "insurancePlaceholder": "Ajoutez les assurances acceptées"
+    }
+  },
+
+  "contact": {
+    "title": "Coordonnées",
+    "email": {
+      "label": "Courriel de contact public",
+      "help": "Ce courriel sera affiché sur votre profil public"
+    },
+    "phone": {
+      "label": "Téléphone de contact",
+      "help": "Numéro de téléphone optionnel pour les demandes"
+    },
+    "social": {
+      "title": "Liens sociaux",
+      "website": "Site web",
+      "linkedin": "LinkedIn",
+      "twitter": "Twitter/X",
+      "instagram": "Instagram"
+    }
+  },
+
+  "settings": {
+    "title": "Paramètres du profil",
+    "visibility": {
+      "title": "Visibilité du profil",
+      "public": "Profil public",
+      "publicDescription": "Votre profil sera visible par d'autres praticiens et clients potentiels",
+      "private": "Profil privé",
+      "privateDescription": "Seul vous pouvez voir votre profil"
+    },
+    "slug": {
+      "label": "URL du profil",
+      "help": "Votre URL de profil unique",
+      "preview": "Aperçu"
+    },
+    "verification": {
+      "title": "Statut de vérification",
+      "verified": "Vérifié",
+      "notVerified": "Non vérifié",
+      "requestVerification": "Demander la vérification"
+    }
+  },
+
+  "endorsements": {
+    "title": "Recommandations de collègues",
+    "add": "Ajouter une recommandation",
+    "empty": "Aucune recommandation pour l'instant",
+    "emptyDescription": "Demandez à vos collègues de recommander votre travail",
+    "authorName": "Nom du collègue",
+    "authorTitle": "Titre",
+    "authorOrg": "Organisation",
+    "content": "Texte de la recommandation",
+    "approved": "Approuvé",
+    "pending": "En attente d'approbation"
+  },
+
+  "stats": {
+    "title": "Statistiques du profil",
+    "resourcesPublished": "Ressources publiées",
+    "membersHelped": "Clients aidés",
+    "profileViews": "Vues du profil"
+  },
+
+  "specialties": {
+    "anxiety": "Anxiété",
+    "depression": "Dépression",
+    "trauma_ptsd": "Traumatisme & TSPT",
+    "grief_loss": "Deuil & Perte",
+    "relationships": "Relations",
+    "family": "Problèmes familiaux",
+    "couples": "Thérapie de couple",
+    "stress": "Gestion du stress",
+    "self_esteem": "Estime de soi",
+    "life_transitions": "Transitions de vie",
+    "career": "Orientation professionnelle",
+    "addiction": "Dépendance",
+    "eating_disorders": "Troubles alimentaires",
+    "ocd": "TOC",
+    "adhd": "TDAH",
+    "autism": "Spectre autistique",
+    "bipolar": "Trouble bipolaire",
+    "personality_disorders": "Troubles de la personnalité",
+    "anger_management": "Gestion de la colère",
+    "parenting": "Parentalité",
+    "lgbtq": "LGBTQ+",
+    "cultural_identity": "Identité culturelle",
+    "spirituality": "Spiritualité",
+    "chronic_illness": "Maladie chronique",
+    "sleep": "Troubles du sommeil",
+    "other": "Autre"
+  },
+
+  "approaches": {
+    "cbt": "Thérapie cognitivo-comportementale (TCC)",
+    "dbt": "Thérapie comportementale dialectique",
+    "emdr": "EMDR",
+    "psychodynamic": "Psychodynamique",
+    "humanistic": "Humaniste",
+    "solution_focused": "Axée sur les solutions",
+    "narrative": "Thérapie narrative",
+    "mindfulness": "Basée sur la pleine conscience",
+    "art_therapy": "Art-thérapie",
+    "play_therapy": "Thérapie par le jeu",
+    "family_systems": "Systèmes familiaux",
+    "gestalt": "Gestalt",
+    "acceptance_commitment": "Acceptation et engagement (ACT)",
+    "motivational_interviewing": "Entretien motivationnel",
+    "trauma_informed": "Sensible au traumatisme",
+    "somatic": "Somatique",
+    "other": "Autre"
+  },
+
+  "ageGroups": {
+    "children": "Enfants (0-12)",
+    "adolescents": "Adolescents (13-17)",
+    "young_adults": "Jeunes adultes (18-25)",
+    "adults": "Adultes (26-64)",
+    "seniors": "Aînés (65+)"
+  },
+
+  "sessionTypes": {
+    "individual": "Individuelle",
+    "couples": "Couple",
+    "family": "Familiale",
+    "group": "Groupe"
+  },
+
+  "actions": {
+    "save": "Enregistrer les modifications",
+    "saving": "Enregistrement...",
+    "saved": "Modifications enregistrées",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "preview": "Aperçu du profil"
+  },
+
+  "errors": {
+    "loadFailed": "Échec du chargement du profil",
+    "saveFailed": "Échec de l'enregistrement du profil",
+    "slugTaken": "Cette URL est déjà utilisée",
+    "invalidSlug": "L'URL ne peut contenir que des lettres, des chiffres et des tirets"
+  },
+
+  "success": {
+    "saved": "Profil enregistré avec succès",
+    "published": "Le profil est maintenant public",
+    "unpublished": "Le profil est maintenant privé"
+  }
+}

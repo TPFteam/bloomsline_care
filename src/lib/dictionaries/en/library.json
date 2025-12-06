@@ -1,0 +1,215 @@
+{
+  "title": "Digital Library",
+  "subtitle": "Discover evidence-based resources for your practice",
+  "backToDashboard": "Back to Dashboard",
+  "backToLibrary": "Back to Digital Library",
+
+  "search": {
+    "placeholder": "Search resources by title, description, or tags...",
+    "noResults": "No resources found",
+    "noResultsDescription": "Try adjusting your search or filters",
+    "resultsCount": "Showing {count} of {total} resources"
+  },
+
+  "filters": {
+    "title": "Filters",
+    "clearAll": "Clear All",
+    "type": "Resource Type",
+    "category": "Category",
+    "ageGroup": "Age Group",
+    "difficulty": "Difficulty",
+    "duration": "Duration",
+    "curatedOnly": "Curated Only",
+    "allTypes": "All Types",
+    "allCategories": "All Categories",
+    "allAges": "All Ages",
+    "allDifficulties": "All Levels",
+    "anyDuration": "Any Duration",
+    "under15min": "Under 15 min",
+    "under30min": "Under 30 min",
+    "under60min": "Under 1 hour",
+    "over60min": "Over 1 hour"
+  },
+
+  "types": {
+    "assessment": "Assessment",
+    "activity": "Activity",
+    "ritual": "Ritual",
+    "educational": "Educational",
+    "template": "Template"
+  },
+
+  "typeDescriptions": {
+    "assessment": "Evaluation tools and questionnaires",
+    "activity": "Interactive exercises and worksheets",
+    "ritual": "Daily practices and routines",
+    "educational": "Information sheets and guides",
+    "template": "Session templates and forms"
+  },
+
+  "categories": {
+    "anxiety": "Anxiety",
+    "depression": "Depression",
+    "stress": "Stress Management",
+    "relationships": "Relationships",
+    "self_esteem": "Self-Esteem",
+    "mindfulness": "Mindfulness",
+    "coping_skills": "Coping Skills",
+    "communication": "Communication",
+    "grief": "Grief & Loss",
+    "trauma": "Trauma",
+    "children": "Children",
+    "teens": "Teens",
+    "adults": "Adults",
+    "couples": "Couples",
+    "family": "Family",
+    "general": "General"
+  },
+
+  "ageGroups": {
+    "children": "Children (5-12)",
+    "teens": "Teens (13-17)",
+    "adults": "Adults (18+)",
+    "all": "All Ages"
+  },
+
+  "difficulty": {
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced"
+  },
+
+  "resource": {
+    "by": "by",
+    "curated": "Curated",
+    "community": "Community",
+    "saves": "saves",
+    "uses": "uses",
+    "minutes": "min",
+    "viewDetails": "View Details",
+    "saveToLibrary": "Save to My Library",
+    "saved": "Saved",
+    "unsave": "Remove from Saved",
+    "useWithClient": "Use with Client",
+    "duplicate": "Duplicate & Edit",
+    "share": "Share",
+    "preview": "Preview"
+  },
+
+  "detail": {
+    "overview": "Overview",
+    "instructions": "Instructions",
+    "materials": "Materials Needed",
+    "sections": "Content Sections",
+    "tips": "Practitioner Tips",
+    "modifications": "Modifications & Adaptations",
+    "reviews": "Reviews",
+    "relatedResources": "Related Resources",
+    "noMaterials": "No materials required",
+    "noTips": "No tips available",
+    "noModifications": "No modifications listed",
+    "writeReview": "Write a Review",
+    "yourRating": "Your Rating",
+    "submitReview": "Submit Review"
+  },
+
+  "collections": {
+    "title": "My Collections",
+    "favorites": "Favorites",
+    "createCollection": "Create Collection",
+    "editCollection": "Edit Collection",
+    "deleteCollection": "Delete Collection",
+    "collectionName": "Collection Name",
+    "collectionDescription": "Description (optional)",
+    "selectColor": "Select Color",
+    "noCollections": "No collections yet",
+    "noCollectionsDescription": "Create a collection to organize your saved resources",
+    "addToCollection": "Add to Collection",
+    "removeFromCollection": "Remove from Collection",
+    "moveToCollection": "Move to Collection",
+    "confirmDelete": "Are you sure you want to delete this collection? Resources will not be deleted."
+  },
+
+  "myResources": {
+    "title": "My Resources",
+    "subtitle": "Your personal resource collection",
+    "tabs": {
+      "saved": "Saved Resources",
+      "created": "My Creations",
+      "shared": "Shared with Me"
+    },
+    "noSaved": "No saved resources yet",
+    "noSavedDescription": "Browse the library and save resources you'd like to use",
+    "noCreated": "No created resources yet",
+    "noCreatedDescription": "Create your own resources to use with clients",
+    "noShared": "No shared resources",
+    "noSharedDescription": "Resources shared by colleagues will appear here"
+  },
+
+  "create": {
+    "title": "Create Resource",
+    "editTitle": "Edit Resource",
+    "subtitle": "Create something meaningful for your practice",
+    "basicInfo": "Basic Information",
+    "resourceTitle": "Title",
+    "resourceTitlePlaceholder": "e.g., Anxiety Coping Toolkit",
+    "description": "Description",
+    "descriptionPlaceholder": "Brief description of this resource...",
+    "type": "Resource Type",
+    "category": "Category",
+    "content": "Content",
+    "contentPlaceholder": "Write your resource content here...",
+    "tags": "Tags",
+    "tagsPlaceholder": "Add a tag and press Enter",
+    "thumbnail": "Thumbnail Image",
+    "uploadThumbnail": "Upload Image",
+    "attachments": "Attachments",
+    "addAttachment": "Add Attachment",
+    "save": "Save Resource",
+    "saveAndShare": "Save & Share to Practice",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "preview": "Preview"
+  },
+
+  "share": {
+    "title": "Share to Practice Library",
+    "description": "Share this resource with your colleagues. They'll be able to view and duplicate it.",
+    "shareButton": "Share Resource",
+    "unshareButton": "Unshare",
+    "shared": "Shared with Practice",
+    "sharedOn": "Shared on"
+  },
+
+  "stats": {
+    "totalResources": "Total Resources",
+    "categories": "Categories",
+    "savedItems": "Saved Items",
+    "myCreations": "My Creations",
+    "collections": "Collections"
+  },
+
+  "empty": {
+    "title": "Discover Resources",
+    "description": "Browse our curated library of evidence-based therapeutic resources",
+    "browseButton": "Browse Library"
+  },
+
+  "errors": {
+    "loadFailed": "Failed to load resources",
+    "saveFailed": "Failed to save resource",
+    "deleteFailed": "Failed to delete resource",
+    "createFailed": "Failed to create resource",
+    "updateFailed": "Failed to update resource"
+  },
+
+  "success": {
+    "resourceSaved": "Resource saved to your library",
+    "resourceUnsaved": "Resource removed from your library",
+    "resourceCreated": "Resource created successfully",
+    "resourceUpdated": "Resource updated successfully",
+    "resourceDeleted": "Resource deleted successfully",
+    "collectionCreated": "Collection created successfully",
+    "resourceShared": "Resource shared with your practice"
+  }
+}

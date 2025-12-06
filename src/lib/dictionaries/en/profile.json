@@ -1,0 +1,288 @@
+{
+  "title": "My Profile",
+  "subtitle": "Manage your professional profile and public presence",
+  "editProfile": "Edit Profile",
+  "viewPublicProfile": "View Public Profile",
+  "profileNotPublic": "Your profile is not public yet",
+  "makePublic": "Make Public",
+
+  "tabs": {
+    "about": "About",
+    "credentials": "Credentials",
+    "practice": "Practice",
+    "contact": "Contact",
+    "settings": "Settings"
+  },
+
+  "completeness": {
+    "title": "Profile Completeness",
+    "description": "Complete your profile to increase visibility",
+    "complete": "Complete",
+    "tips": {
+      "headline": "Add a compelling headline",
+      "bio": "Write a client-centered bio",
+      "credentials": "Add your credentials",
+      "specialties": "Select your specialties",
+      "approaches": "Choose your therapeutic approaches"
+    }
+  },
+
+  "about": {
+    "title": "About You",
+    "headline": {
+      "label": "Professional Headline",
+      "placeholder": "Helping families navigate trauma with compassion",
+      "help": "A short tagline that captures your approach (max 100 characters)"
+    },
+    "bio": {
+      "label": "Bio",
+      "placeholder": "Share your story and approach. Start by addressing your client's pain points, then explain how you can help...",
+      "help": "Write in a warm, client-centered tone. Focus on 'you' rather than 'I'."
+    },
+    "introVideo": {
+      "label": "Introduction Video",
+      "help": "A short video introduction helps clients connect with you",
+      "upload": "Upload Video",
+      "remove": "Remove Video"
+    }
+  },
+
+  "credentials": {
+    "title": "Credentials & Experience",
+    "credentialsList": {
+      "label": "Professional Credentials",
+      "placeholder": "e.g., LMFT, Ph.D., LPC",
+      "help": "Add credentials that appear after your name"
+    },
+    "yearsExperience": {
+      "label": "Years of Experience",
+      "placeholder": "Enter years"
+    },
+    "education": {
+      "title": "Education",
+      "add": "Add Education",
+      "degree": "Degree",
+      "degreePlaceholder": "Ph.D. in Clinical Psychology",
+      "institution": "Institution",
+      "institutionPlaceholder": "University Name",
+      "year": "Year Completed"
+    },
+    "licenses": {
+      "title": "Licenses",
+      "add": "Add License",
+      "type": "License Type",
+      "typePlaceholder": "e.g., LMFT",
+      "number": "License Number",
+      "state": "State/Province",
+      "expiration": "Expiration Date",
+      "verified": "Verified"
+    },
+    "certifications": {
+      "title": "Certifications",
+      "add": "Add Certification",
+      "name": "Certification Name",
+      "namePlaceholder": "e.g., EMDR Certified Therapist",
+      "issuingBody": "Issuing Organization",
+      "yearObtained": "Year Obtained"
+    }
+  },
+
+  "practice": {
+    "title": "Practice Details",
+    "specialties": {
+      "label": "Areas of Specialty",
+      "help": "Select the issues you specialize in treating"
+    },
+    "approaches": {
+      "label": "Therapeutic Approaches",
+      "help": "Select the modalities you use in your practice"
+    },
+    "ageGroups": {
+      "label": "Age Groups Served",
+      "help": "Select the age groups you work with"
+    },
+    "sessionTypes": {
+      "label": "Session Types",
+      "help": "Select the types of therapy you offer"
+    },
+    "languages": {
+      "label": "Languages",
+      "placeholder": "Add languages you speak",
+      "help": "Languages you can conduct sessions in"
+    },
+    "availability": {
+      "title": "Availability",
+      "acceptingClients": "Accepting New Clients",
+      "waitlistOnly": "Waitlist Only",
+      "notAccepting": "Not Accepting New Clients",
+      "telehealth": "Offer Telehealth",
+      "inPerson": "Offer In-Person Sessions"
+    },
+    "location": {
+      "title": "Practice Location",
+      "address": "Address",
+      "city": "City",
+      "stateProvince": "State/Province",
+      "postalCode": "Postal Code",
+      "country": "Country"
+    },
+    "fees": {
+      "title": "Fees & Insurance",
+      "showFees": "Display fees on profile",
+      "sessionFee": "Session Fee Range",
+      "min": "Min",
+      "max": "Max",
+      "currency": "Currency",
+      "slidingScale": "Offer Sliding Scale",
+      "insurance": "Insurance Accepted",
+      "insurancePlaceholder": "Add accepted insurance providers"
+    }
+  },
+
+  "contact": {
+    "title": "Contact Information",
+    "email": {
+      "label": "Public Contact Email",
+      "help": "This email will be shown on your public profile"
+    },
+    "phone": {
+      "label": "Contact Phone",
+      "help": "Optional phone number for inquiries"
+    },
+    "social": {
+      "title": "Social Links",
+      "website": "Website",
+      "linkedin": "LinkedIn",
+      "twitter": "Twitter/X",
+      "instagram": "Instagram"
+    }
+  },
+
+  "settings": {
+    "title": "Profile Settings",
+    "visibility": {
+      "title": "Profile Visibility",
+      "public": "Public Profile",
+      "publicDescription": "Your profile will be visible to other practitioners and potential clients",
+      "private": "Private Profile",
+      "privateDescription": "Only you can see your profile"
+    },
+    "slug": {
+      "label": "Profile URL",
+      "help": "Your unique profile URL",
+      "preview": "Preview"
+    },
+    "verification": {
+      "title": "Verification Status",
+      "verified": "Verified",
+      "notVerified": "Not Verified",
+      "requestVerification": "Request Verification"
+    }
+  },
+
+  "endorsements": {
+    "title": "Colleague Endorsements",
+    "add": "Add Endorsement",
+    "empty": "No endorsements yet",
+    "emptyDescription": "Ask colleagues to endorse your work",
+    "authorName": "Colleague Name",
+    "authorTitle": "Title",
+    "authorOrg": "Organization",
+    "content": "Endorsement Text",
+    "approved": "Approved",
+    "pending": "Pending Approval"
+  },
+
+  "stats": {
+    "title": "Profile Stats",
+    "resourcesPublished": "Resources Published",
+    "membersHelped": "Clients Helped",
+    "profileViews": "Profile Views"
+  },
+
+  "specialties": {
+    "anxiety": "Anxiety",
+    "depression": "Depression",
+    "trauma_ptsd": "Trauma & PTSD",
+    "grief_loss": "Grief & Loss",
+    "relationships": "Relationships",
+    "family": "Family Issues",
+    "couples": "Couples Therapy",
+    "stress": "Stress Management",
+    "self_esteem": "Self-Esteem",
+    "life_transitions": "Life Transitions",
+    "career": "Career Counseling",
+    "addiction": "Addiction",
+    "eating_disorders": "Eating Disorders",
+    "ocd": "OCD",
+    "adhd": "ADHD",
+    "autism": "Autism Spectrum",
+    "bipolar": "Bipolar Disorder",
+    "personality_disorders": "Personality Disorders",
+    "anger_management": "Anger Management",
+    "parenting": "Parenting",
+    "lgbtq": "LGBTQ+",
+    "cultural_identity": "Cultural Identity",
+    "spirituality": "Spirituality",
+    "chronic_illness": "Chronic Illness",
+    "sleep": "Sleep Issues",
+    "other": "Other"
+  },
+
+  "approaches": {
+    "cbt": "Cognitive Behavioral (CBT)",
+    "dbt": "Dialectical Behavior (DBT)",
+    "emdr": "EMDR",
+    "psychodynamic": "Psychodynamic",
+    "humanistic": "Humanistic",
+    "solution_focused": "Solution-Focused",
+    "narrative": "Narrative Therapy",
+    "mindfulness": "Mindfulness-Based",
+    "art_therapy": "Art Therapy",
+    "play_therapy": "Play Therapy",
+    "family_systems": "Family Systems",
+    "gestalt": "Gestalt",
+    "acceptance_commitment": "Acceptance & Commitment (ACT)",
+    "motivational_interviewing": "Motivational Interviewing",
+    "trauma_informed": "Trauma-Informed",
+    "somatic": "Somatic",
+    "other": "Other"
+  },
+
+  "ageGroups": {
+    "children": "Children (0-12)",
+    "adolescents": "Adolescents (13-17)",
+    "young_adults": "Young Adults (18-25)",
+    "adults": "Adults (26-64)",
+    "seniors": "Seniors (65+)"
+  },
+
+  "sessionTypes": {
+    "individual": "Individual",
+    "couples": "Couples",
+    "family": "Family",
+    "group": "Group"
+  },
+
+  "actions": {
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "saved": "Changes saved",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "preview": "Preview Profile"
+  },
+
+  "errors": {
+    "loadFailed": "Failed to load profile",
+    "saveFailed": "Failed to save profile",
+    "slugTaken": "This URL is already taken",
+    "invalidSlug": "URL can only contain letters, numbers, and hyphens"
+  },
+
+  "success": {
+    "saved": "Profile saved successfully",
+    "published": "Profile is now public",
+    "unpublished": "Profile is now private"
+  }
+}

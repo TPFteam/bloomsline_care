@@ -12,6 +12,7 @@
   "buttons": {
     "tryNow": "Essayer maintenant",
     "backToHome": "Retour à l'accueil",
-    "learnMore": "En savoir plus"
+    "learnMore": "En savoir plus",
+    "scheduleAppointment": "Prendre rendez-vous"
   }
 }

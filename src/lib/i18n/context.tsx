@@ -11,6 +11,9 @@ import enStakeholders from '@/lib/dictionaries/en/stakeholders.json'
 import enTestimonials from '@/lib/dictionaries/en/testimonials.json'
 import enFooter from '@/lib/dictionaries/en/footer.json'
 import enDashboard from '@/lib/dictionaries/en/dashboard.json'
+import enMembers from '@/lib/dictionaries/en/members.json'
+import enLibrary from '@/lib/dictionaries/en/library.json'
+import enProfile from '@/lib/dictionaries/en/profile.json'
 
 // Import French translations
 import frCommon from '@/lib/dictionaries/fr/common.json'
@@ -21,6 +24,9 @@ import frStakeholders from '@/lib/dictionaries/fr/stakeholders.json'
 import frTestimonials from '@/lib/dictionaries/fr/testimonials.json'
 import frFooter from '@/lib/dictionaries/fr/footer.json'
 import frDashboard from '@/lib/dictionaries/fr/dashboard.json'
+import frMembers from '@/lib/dictionaries/fr/members.json'
+import frLibrary from '@/lib/dictionaries/fr/library.json'
+import frProfile from '@/lib/dictionaries/fr/profile.json'
 
 type Locale = 'en' | 'fr'
 
@@ -34,6 +40,9 @@ const enDict = {
   testimonials: enTestimonials,
   footer: enFooter,
   dashboard: enDashboard,
+  members: enMembers,
+  library: enLibrary,
+  profile: enProfile,
 }
 
 const frDict = {
@@ -45,6 +54,9 @@ const frDict = {
   testimonials: frTestimonials,
   footer: frFooter,
   dashboard: frDashboard,
+  members: frMembers,
+  library: frLibrary,
+  profile: frProfile,
 }
 
 type Dictionary = typeof enDict

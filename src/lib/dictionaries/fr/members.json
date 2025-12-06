@@ -1,0 +1,278 @@
+{
+  "title": "Espace Clients",
+  "subtitle": "Gérez vos clients et suivez leurs progrès",
+  "backToDashboard": "Retour au tableau de bord",
+
+  "stats": {
+    "totalMembers": "Total Clients",
+    "activeMembers": "Clients Actifs",
+    "inactiveMembers": "Clients Inactifs",
+    "pendingMembers": "En Attente",
+    "sessionsThisWeek": "Séances Cette Semaine",
+    "engagementRate": "Taux d'Engagement"
+  },
+
+  "filters": {
+    "all": "Tous les Clients",
+    "active": "Actifs",
+    "inactive": "Inactifs",
+    "pending": "En Attente",
+    "searchPlaceholder": "Rechercher par nom, email ou téléphone..."
+  },
+
+  "list": {
+    "showing": "Affichage de",
+    "of": "sur",
+    "members": "clients",
+    "noMembers": "Aucun client pour le moment",
+    "noMembersDescription": "Commencez par ajouter votre premier client ou patient",
+    "noResults": "Aucun client trouvé",
+    "noResultsDescription": "Essayez d'ajuster votre recherche ou vos filtres",
+    "lastSession": "Dernière séance",
+    "never": "Jamais",
+    "engagement": "Engagement"
+  },
+
+  "actions": {
+    "addMember": "Ajouter un Client",
+    "viewDetails": "Voir les Détails",
+    "editMember": "Modifier",
+    "contact": "Contacter",
+    "deleteMember": "Supprimer",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce client ? Cette action est irréversible."
+  },
+
+  "status": {
+    "active": "Actif",
+    "inactive": "Inactif",
+    "pending": "En Attente"
+  },
+
+  "engagement": {
+    "high": "Élevé",
+    "medium": "Moyen",
+    "low": "Faible"
+  },
+
+  "form": {
+    "addTitle": "Ajouter un Nouveau Client",
+    "editTitle": "Modifier le Client",
+    "basicInfo": "Informations de Base",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "email": "Email",
+    "phone": "Téléphone",
+    "dateOfBirth": "Date de Naissance",
+    "status": "Statut",
+    "internalNotes": "Notes Internes",
+    "internalNotesPlaceholder": "Notes privées sur ce client...",
+    "preferences": "Préférences du Client",
+    "communicationStyle": "Style de Communication",
+    "communicationStylePlaceholder": "Comment ce client préfère-t-il communiquer ?",
+    "keyStrengths": "Points Forts",
+    "keyStrengthsPlaceholder": "Ajoutez un point fort et appuyez sur Entrée",
+    "areasOfSensitivity": "Zones de Sensibilité",
+    "areasOfSensitivityPlaceholder": "Ajoutez une zone et appuyez sur Entrée",
+    "therapeuticContext": "Contexte Thérapeutique",
+    "therapeuticContextPlaceholder": "Contexte important pour la thérapie...",
+    "preferredContactMethod": "Méthode de Contact Préférée",
+    "preferredSessionFormat": "Format de Séance Préféré",
+    "emergencyContact": "Contact d'Urgence",
+    "emergencyName": "Nom du Contact",
+    "emergencyRelationship": "Relation",
+    "emergencyPhone": "Téléphone",
+    "emergencyEmail": "Email",
+    "emergencyNotes": "Notes",
+    "save": "Enregistrer le Client",
+    "cancel": "Annuler",
+    "saving": "Enregistrement..."
+  },
+
+  "contactMethods": {
+    "email": "Email",
+    "phone": "Téléphone",
+    "text": "SMS"
+  },
+
+  "profile": {
+    "title": "Profil du Client",
+    "overview": "Aperçu et Notes",
+    "sessions": "Historique des Séances",
+    "progress": "Progrès et Croissance",
+    "files": "Fichiers",
+    "sharedResources": "Ressources Partagées",
+    "memberSince": "Client depuis",
+    "lastSession": "Dernière séance",
+    "totalSessions": "Total des séances",
+    "editProfile": "Modifier le Profil"
+  },
+
+  "overview": {
+    "aboutClient": "À Propos de ce Client",
+    "preferences": "Préférences",
+    "communicationStyle": "Style de Communication",
+    "keyStrengths": "Points Forts",
+    "areasOfSensitivity": "Zones de Sensibilité",
+    "therapeuticContext": "Contexte Thérapeutique",
+    "emergencyContact": "Contact d'Urgence",
+    "recentNotes": "Notes Récentes",
+    "allNotes": "Voir Toutes les Notes",
+    "addNote": "Ajouter une Note",
+    "noNotes": "Aucune note pour le moment",
+    "noNotesDescription": "Ajoutez votre première note sur ce client"
+  },
+
+  "sessions": {
+    "title": "Historique des Séances",
+    "upcomingSessions": "Séances à Venir",
+    "pastSessions": "Séances Passées",
+    "scheduleSession": "Planifier une Séance",
+    "addSession": "Ajouter une Séance",
+    "noSessions": "Aucune séance pour le moment",
+    "noSessionsDescription": "Planifiez votre première séance avec ce client",
+    "noUpcoming": "Aucune séance à venir",
+    "noPast": "Aucune séance passée",
+    "sessionDetails": "Détails de la Séance",
+    "sessionType": "Type de Séance",
+    "sessionFormat": "Format",
+    "duration": "Durée",
+    "minutes": "minutes",
+    "notes": "Notes",
+    "summary": "Résumé",
+    "mood": "Note d'Humeur",
+    "goals": "Objectifs de Séance",
+    "outcomes": "Résultats",
+    "homework": "Travail à Domicile",
+    "markComplete": "Marquer comme Terminée",
+    "cancel": "Annuler la Séance",
+    "reschedule": "Reprogrammer"
+  },
+
+  "sessionTypes": {
+    "initial_consultation": "Consultation Initiale",
+    "follow_up": "Suivi",
+    "check_in": "Point de Situation",
+    "crisis": "Crise",
+    "group": "Séance de Groupe",
+    "other": "Autre"
+  },
+
+  "sessionFormats": {
+    "in_person": "En Personne",
+    "virtual": "Virtuel",
+    "phone": "Appel Téléphonique"
+  },
+
+  "sessionStatus": {
+    "scheduled": "Planifiée",
+    "completed": "Terminée",
+    "cancelled": "Annulée",
+    "no_show": "Absent"
+  },
+
+  "progress": {
+    "title": "Progrès et Croissance",
+    "milestones": "Jalons",
+    "addMilestone": "Ajouter un Jalon",
+    "noMilestones": "Aucun objectif pour le moment",
+    "noMilestonesDescription": "Suivez les progrès de votre client en ajoutant des objectifs et jalons",
+    "planned": "Planifié",
+    "inProgress": "En Cours",
+    "achieved": "Atteint",
+    "pending": "En Attente",
+    "targetDate": "Date Cible",
+    "achievedOn": "Atteint le",
+    "markAchieved": "Marquer comme Atteint",
+    "progressNotes": "Notes de Progrès",
+    "growthOverTime": "Croissance au Fil du Temps",
+    "engagementTrend": "Tendance d'Engagement"
+  },
+
+  "milestoneCategories": {
+    "general": "Général",
+    "therapy_goal": "Objectif Thérapeutique",
+    "behavioral": "Comportemental",
+    "emotional": "Émotionnel",
+    "social": "Social",
+    "other": "Autre"
+  },
+
+  "files": {
+    "title": "Fichiers et Documents",
+    "uploadFile": "Télécharger un Fichier",
+    "noFiles": "Aucun fichier pour le moment",
+    "noFilesDescription": "Téléchargez des documents, formulaires ou autres fichiers",
+    "fileName": "Nom du Fichier",
+    "category": "Catégorie",
+    "uploadedOn": "Téléchargé le",
+    "download": "Télécharger",
+    "delete": "Supprimer",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce fichier ?"
+  },
+
+  "fileCategories": {
+    "general": "Général",
+    "intake": "Formulaires d'Accueil",
+    "assessment": "Évaluations",
+    "consent": "Formulaires de Consentement",
+    "insurance": "Assurance",
+    "correspondence": "Correspondance",
+    "other": "Autre"
+  },
+
+  "shared": {
+    "title": "Ressources Partagées",
+    "shareStory": "Partager une Histoire",
+    "noShared": "Aucune ressource partagée pour le moment",
+    "noSharedDescription": "Partagez des histoires et ressources avec ce client",
+    "sharedOn": "Partagé le",
+    "viewedOn": "Consulté le",
+    "notViewed": "Pas encore consulté",
+    "message": "Message",
+    "viewStory": "Voir l'Histoire",
+    "unshare": "Annuler le Partage"
+  },
+
+  "notes": {
+    "addNote": "Ajouter une Note",
+    "editNote": "Modifier la Note",
+    "noteTitle": "Titre (optionnel)",
+    "noteContent": "Contenu de la Note",
+    "noteType": "Type de Note",
+    "private": "Note Privée",
+    "privateDescription": "Visible uniquement par vous",
+    "save": "Enregistrer la Note",
+    "delete": "Supprimer la Note",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette note ?"
+  },
+
+  "noteTypes": {
+    "general": "Général",
+    "assessment": "Évaluation",
+    "treatment_plan": "Plan de Traitement",
+    "milestone": "Jalon",
+    "concern": "Préoccupation",
+    "observation": "Observation"
+  },
+
+  "errors": {
+    "loadFailed": "Échec du chargement des clients",
+    "saveFailed": "Échec de l'enregistrement du client",
+    "deleteFailed": "Échec de la suppression du client",
+    "sessionLoadFailed": "Échec du chargement des séances",
+    "sessionSaveFailed": "Échec de l'enregistrement de la séance",
+    "fileUploadFailed": "Échec du téléchargement du fichier",
+    "noteFailed": "Échec de l'enregistrement de la note"
+  },
+
+  "success": {
+    "memberCreated": "Client ajouté avec succès",
+    "memberUpdated": "Client mis à jour avec succès",
+    "memberDeleted": "Client supprimé avec succès",
+    "sessionCreated": "Séance planifiée avec succès",
+    "sessionUpdated": "Séance mise à jour avec succès",
+    "noteAdded": "Note ajoutée avec succès",
+    "fileUploaded": "Fichier téléchargé avec succès",
+    "resourceShared": "Ressource partagée avec succès"
+  }
+}

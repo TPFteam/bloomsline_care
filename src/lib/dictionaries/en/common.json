@@ -12,6 +12,7 @@
   "buttons": {
     "tryNow": "Try Now",
     "backToHome": "Back to home",
-    "learnMore": "Learn More"
+    "learnMore": "Learn More",
+    "scheduleAppointment": "Schedule Appointment"
   }
 }
