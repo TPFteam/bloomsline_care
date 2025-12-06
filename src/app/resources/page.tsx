@@ -51,7 +51,9 @@ import { getResources, deleteResource } from '@/lib/services/resources'
 import { getCollections, createCollection, deleteCollection } from '@/lib/services/collections'
 import type { Resource } from '@/types/resource'
 import type { Collection, CollectionColor, CollectionIcon, collectionColorConfig } from '@/types/collection'
+import type { Member } from '@/types/member'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/browser-client'
 
 // Collection icon mapping
 const collectionIcons: Record<CollectionIcon, React.ElementType> = {
@@ -215,6 +217,7 @@ type TabType = 'saved' | 'created' | 'shared'
 export default function MyResourcesPage() {
   const { t, locale } = useLanguage()
   const router = useRouter()
+  const supabase = createClient()
   const [activeTab, setActiveTab] = useState<TabType>('created')
   const [searchQuery, setSearchQuery] = useState('')
   const [dbResources, setDbResources] = useState<Resource[]>([])
@@ -230,6 +233,16 @@ export default function MyResourcesPage() {
   const [newCollectionDescription, setNewCollectionDescription] = useState('')
   const [newCollectionColor, setNewCollectionColor] = useState<CollectionColor>('blue')
   const [newCollectionIcon, setNewCollectionIcon] = useState<CollectionIcon>('folder')
+
+  // Share with member state
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [selectedResourceToShare, setSelectedResourceToShare] = useState<Resource | null>(null)
+  const [members, setMembers] = useState<Member[]>([])
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false)
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
+  const [shareMessage, setShareMessage] = useState('')
+  const [isSharing, setIsSharing] = useState(false)
+  const [memberSearchQuery, setMemberSearchQuery] = useState('')
 
   // Fetch resources from database
   useEffect(() => {
@@ -325,6 +338,92 @@ export default function MyResourcesPage() {
       setIsDeleting(null)
     }
   }
+
+  // Open share modal and fetch members
+  const handleOpenShareModal = async (resource: Resource) => {
+    setSelectedResourceToShare(resource)
+    setShowShareModal(true)
+    setSelectedMemberId(null)
+    setShareMessage('')
+    setMemberSearchQuery('')
+
+    if (members.length === 0) {
+      setIsLoadingMembers(true)
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data, error } = await supabase
+          .from('members')
+          .select('*')
+          .eq('practitioner_id', user.id)
+          .order('first_name', { ascending: true })
+
+        if (error) throw error
+        setMembers(data || [])
+      } catch (error) {
+        console.error('Error fetching members:', error)
+        toast.error(locale === 'fr' ? 'Erreur lors du chargement des membres' : 'Error loading members')
+      } finally {
+        setIsLoadingMembers(false)
+      }
+    }
+  }
+
+  // Share resource with member
+  const handleShareResource = async () => {
+    if (!selectedResourceToShare || !selectedMemberId) {
+      toast.error(locale === 'fr' ? 'Veuillez sélectionner un membre' : 'Please select a member')
+      return
+    }
+
+    setIsSharing(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Insert into member_shared_resources table
+      const { error } = await supabase
+        .from('member_shared_resources')
+        .insert({
+          member_id: selectedMemberId,
+          resource_id: selectedResourceToShare.id,
+          practitioner_id: user.id,
+          message: shareMessage.trim() || null,
+        })
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error(locale === 'fr' ? 'Cette ressource est déjà partagée avec ce membre' : 'This resource is already shared with this member')
+        } else {
+          throw error
+        }
+        return
+      }
+
+      toast.success(locale === 'fr' ? 'Ressource partagée avec succès' : 'Resource shared successfully')
+      setShowShareModal(false)
+      setSelectedResourceToShare(null)
+      setSelectedMemberId(null)
+      setShareMessage('')
+    } catch (error) {
+      console.error('Error sharing resource:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors du partage' : 'Error sharing resource')
+    } finally {
+      setIsSharing(false)
+    }
+  }
+
+  // Filter members by search
+  const filteredMembers = useMemo(() => {
+    if (!memberSearchQuery) return members
+    const query = memberSearchQuery.toLowerCase()
+    return members.filter(m =>
+      m.first_name.toLowerCase().includes(query) ||
+      m.last_name.toLowerCase().includes(query) ||
+      (m.email || '').toLowerCase().includes(query)
+    )
+  }, [members, memberSearchQuery])
 
   // Demo: first 5 resources are "saved"
   const savedResources = useMemo(() => {
@@ -570,6 +669,7 @@ export default function MyResourcesPage() {
                       onEdit={() => router.push(`/resources/${resource.id}/edit`)}
                       onPreview={() => router.push(`/resources/${resource.id}`)}
                       onDelete={() => handleDelete(resource.id)}
+                      onShare={() => handleOpenShareModal(resource)}
                       isDeleting={isDeleting === resource.id}
                       locale={locale}
                       t={t}
@@ -892,6 +992,163 @@ export default function MyResourcesPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Share with Member Modal */}
+        <AnimatePresence>
+          {showShareModal && selectedResourceToShare && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setShowShareModal(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      {locale === 'fr' ? 'Partager avec un membre' : 'Share with Member'}
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {selectedResourceToShare.title}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowShareModal(false)}
+                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
+                  {/* Search Members */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {locale === 'fr' ? 'Rechercher un membre' : 'Search Member'}
+                    </label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={memberSearchQuery}
+                        onChange={(e) => setMemberSearchQuery(e.target.value)}
+                        placeholder={locale === 'fr' ? 'Rechercher...' : 'Search...'}
+                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Members List */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {locale === 'fr' ? 'Sélectionner un membre' : 'Select a Member'}
+                    </label>
+                    {isLoadingMembers ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-lavender-500" />
+                      </div>
+                    ) : filteredMembers.length > 0 ? (
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {filteredMembers.map((member) => (
+                          <button
+                            key={member.id}
+                            onClick={() => setSelectedMemberId(member.id)}
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                              selectedMemberId === member.id
+                                ? 'border-lavender-500 bg-lavender-50'
+                                : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+                              selectedMemberId === member.id
+                                ? 'bg-lavender-500 text-white'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              {member.first_name[0]}{member.last_name[0]}
+                            </div>
+                            <div className="text-left flex-1">
+                              <p className="font-medium text-gray-900">
+                                {member.first_name} {member.last_name}
+                              </p>
+                              {member.email && (
+                                <p className="text-xs text-gray-500">{member.email}</p>
+                              )}
+                            </div>
+                            {selectedMemberId === member.id && (
+                              <div className="w-5 h-5 rounded-full bg-lavender-500 flex items-center justify-center">
+                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 bg-gray-50 rounded-xl">
+                        <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">
+                          {locale === 'fr' ? 'Aucun membre trouvé' : 'No members found'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Optional Message */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {locale === 'fr' ? 'Message (optionnel)' : 'Message (optional)'}
+                    </label>
+                    <textarea
+                      value={shareMessage}
+                      onChange={(e) => setShareMessage(e.target.value)}
+                      placeholder={locale === 'fr' ? 'Ajouter un message personnel...' : 'Add a personal message...'}
+                      rows={3}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50/50">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowShareModal(false)}
+                    className="rounded-xl"
+                  >
+                    {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                  </Button>
+                  <Button
+                    onClick={handleShareResource}
+                    disabled={!selectedMemberId || isSharing}
+                    className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 rounded-xl"
+                  >
+                    {isSharing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {locale === 'fr' ? 'Partage...' : 'Sharing...'}
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="w-4 h-4 mr-2" />
+                        {locale === 'fr' ? 'Partager' : 'Share'}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   )
@@ -978,6 +1235,7 @@ function DbResourceCard({
   onEdit,
   onPreview,
   onDelete,
+  onShare,
   isDeleting,
   locale,
   t,
@@ -986,6 +1244,7 @@ function DbResourceCard({
   onEdit: () => void
   onPreview: () => void
   onDelete: () => void
+  onShare: () => void
   isDeleting: boolean
   locale: 'en' | 'fr'
   t: any
@@ -1055,6 +1314,10 @@ function DbResourceCard({
                 <DropdownMenuItem onClick={onEdit} className="rounded-lg">
                   <Pencil className="w-4 h-4 mr-2" />
                   {t.library.create.editTitle}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onShare} className="rounded-lg text-lavender-600">
+                  <Users className="w-4 h-4 mr-2" />
+                  {locale === 'fr' ? 'Partager avec un membre' : 'Share with Member'}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onDelete} className="text-red-600 rounded-lg">

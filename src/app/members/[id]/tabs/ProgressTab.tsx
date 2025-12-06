@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   TrendingUp,
@@ -14,6 +14,8 @@ import {
   Play,
   X,
   Trash2,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -24,6 +26,167 @@ import type { Milestone, MilestoneCategory, MilestoneStatus } from '@/types/memb
 interface ProgressTabProps {
   memberId: string
 }
+
+// Move categoryColors outside to prevent recreation on each render
+const categoryColors: Record<MilestoneCategory, { bg: string; text: string; dot: string }> = {
+  general: { bg: 'bg-gray-100', text: 'text-gray-700', dot: 'bg-gray-400' },
+  therapy_goal: { bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-400' },
+  behavioral: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-400' },
+  emotional: { bg: 'bg-coral-50', text: 'text-coral-700', dot: 'bg-coral-400' },
+  social: { bg: 'bg-mint-50', text: 'text-mint-700', dot: 'bg-mint-400' },
+  other: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400' },
+}
+
+// Memoized MilestoneCard component to prevent re-renders
+interface MilestoneCardProps {
+  milestone: Milestone
+  columnId: MilestoneStatus
+  onToggleShare: (id: string, shared: boolean) => void
+  onDelete: (id: string) => void
+  onUpdateStatus: (id: string, status: MilestoneStatus) => void
+  categoryLabel: string
+}
+
+const MilestoneCard = memo(function MilestoneCard({
+  milestone,
+  columnId,
+  onToggleShare,
+  onDelete,
+  onUpdateStatus,
+  categoryLabel,
+}: MilestoneCardProps) {
+  const catStyle = categoryColors[milestone.category]
+  const isOverdue = milestone.target_date && new Date(milestone.target_date) < new Date() && columnId !== 'achieved'
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all group"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`w-2 h-2 rounded-full ${catStyle.dot}`} />
+            <span className={`text-xs font-medium ${catStyle.text}`}>
+              {categoryLabel}
+            </span>
+            {milestone.shared_with_member && (
+              <span className="flex items-center gap-1 text-xs text-lavender-600 bg-lavender-50 px-1.5 py-0.5 rounded-full">
+                <Eye className="w-3 h-3" />
+                Shared
+              </span>
+            )}
+          </div>
+          <h4 className="font-medium text-gray-900 text-sm leading-snug">
+            {milestone.title}
+          </h4>
+          {milestone.description && (
+            <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+              {milestone.description}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onToggleShare(milestone.id, milestone.shared_with_member)}
+            className={`p-1.5 rounded-lg transition-all ${
+              milestone.shared_with_member
+                ? 'text-lavender-600 bg-lavender-50 hover:bg-lavender-100'
+                : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-lavender-600 hover:bg-lavender-50'
+            }`}
+            title={milestone.shared_with_member ? 'Hide from member' : 'Share with member'}
+          >
+            {milestone.shared_with_member ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+          </button>
+          <button
+            onClick={() => onDelete(milestone.id)}
+            className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Target Date */}
+      {milestone.target_date && (
+        <div className={`flex items-center gap-1.5 mt-3 text-xs ${isOverdue ? 'text-red-500' : 'text-gray-400'}`}>
+          <Calendar className="w-3 h-3" />
+          <span>{isOverdue ? 'Overdue: ' : ''}{new Date(milestone.target_date).toLocaleDateString()}</span>
+        </div>
+      )}
+
+      {/* Achieved Date */}
+      {columnId === 'achieved' && milestone.achieved_at && (
+        <div className="flex items-center gap-1.5 mt-3 text-xs text-emerald-600">
+          <Sparkles className="w-3 h-3" />
+          <span>Achieved {new Date(milestone.achieved_at).toLocaleDateString()}</span>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex items-center gap-1 mt-3 pt-3 border-t border-gray-50">
+        {columnId === 'planned' && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onUpdateStatus(milestone.id, 'in_progress')}
+            className="h-7 text-xs text-amber-600 hover:bg-amber-50 rounded-lg flex-1"
+          >
+            <Play className="w-3 h-3 mr-1" />
+            Start
+          </Button>
+        )}
+        {columnId === 'planned' && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onUpdateStatus(milestone.id, 'achieved')}
+            className="h-7 text-xs text-emerald-600 hover:bg-emerald-50 rounded-lg flex-1"
+          >
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Done
+          </Button>
+        )}
+        {columnId === 'in_progress' && (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onUpdateStatus(milestone.id, 'planned')}
+              className="h-7 text-xs text-gray-500 hover:bg-gray-50 rounded-lg"
+            >
+              <ArrowRight className="w-3 h-3 mr-1 rotate-180" />
+              Back
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onUpdateStatus(milestone.id, 'achieved')}
+              className="h-7 text-xs text-emerald-600 hover:bg-emerald-50 rounded-lg flex-1"
+            >
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Complete
+            </Button>
+          </>
+        )}
+        {columnId === 'achieved' && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onUpdateStatus(milestone.id, 'in_progress')}
+            className="h-7 text-xs text-gray-500 hover:bg-gray-50 rounded-lg flex-1"
+          >
+            <ArrowRight className="w-3 h-3 mr-1 rotate-180" />
+            Reopen
+          </Button>
+        )}
+      </div>
+    </motion.div>
+  )
+})
 
 export default function ProgressTab({ memberId }: ProgressTabProps) {
   const { t } = useLanguage()
@@ -37,6 +200,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
   const [category, setCategory] = useState<MilestoneCategory>('general')
   const [targetDate, setTargetDate] = useState('')
   const [initialStatus, setInitialStatus] = useState<MilestoneStatus>('planned')
+  const [shareWithMember, setShareWithMember] = useState(false)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -60,7 +224,8 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
       // Map old data format to new format (backwards compatibility)
       const mappedData = (data || []).map(m => ({
         ...m,
-        status: m.status || (m.achieved ? 'achieved' : 'planned') as MilestoneStatus
+        status: m.status || (m.achieved ? 'achieved' : 'planned') as MilestoneStatus,
+        shared_with_member: m.shared_with_member ?? false
       }))
 
       setMilestones(mappedData)
@@ -94,6 +259,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
           status: initialStatus,
           achieved: initialStatus === 'achieved',
           achieved_at: initialStatus === 'achieved' ? new Date().toISOString() : null,
+          shared_with_member: shareWithMember,
         })
 
       if (error) throw error
@@ -105,6 +271,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
       setCategory('general')
       setTargetDate('')
       setInitialStatus('planned')
+      setShareWithMember(false)
       fetchMilestones()
     } catch (error) {
       console.error('Error adding milestone:', error)
@@ -114,7 +281,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
     }
   }
 
-  const handleUpdateStatus = async (milestoneId: string, newStatus: MilestoneStatus) => {
+  const handleUpdateStatus = useCallback(async (milestoneId: string, newStatus: MilestoneStatus) => {
     try {
       const updateData: Record<string, unknown> = {
         status: newStatus,
@@ -144,9 +311,9 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
       console.error('Error updating milestone:', error)
       toast.error('Failed to update goal')
     }
-  }
+  }, [supabase])
 
-  const handleDelete = async (milestoneId: string) => {
+  const handleDelete = useCallback(async (milestoneId: string) => {
     if (!confirm('Are you sure you want to delete this goal?')) return
 
     try {
@@ -163,21 +330,32 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
       console.error('Error deleting milestone:', error)
       toast.error('Failed to delete goal')
     }
-  }
+  }, [supabase])
+
+  const handleToggleShare = useCallback(async (milestoneId: string, currentlyShared: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('milestones')
+        .update({
+          shared_with_member: !currentlyShared,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', milestoneId)
+
+      if (error) throw error
+
+      toast.success(currentlyShared ? 'Goal hidden from member' : 'Goal shared with member')
+      fetchMilestones()
+    } catch (error) {
+      console.error('Error toggling share:', error)
+      toast.error('Failed to update sharing')
+    }
+  }, [supabase])
 
   // Group milestones by status
   const plannedMilestones = milestones.filter(m => m.status === 'planned')
   const inProgressMilestones = milestones.filter(m => m.status === 'in_progress')
   const achievedMilestones = milestones.filter(m => m.status === 'achieved')
-
-  const categoryColors: Record<MilestoneCategory, { bg: string; text: string; dot: string }> = {
-    general: { bg: 'bg-gray-100', text: 'text-gray-700', dot: 'bg-gray-400' },
-    therapy_goal: { bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-400' },
-    behavioral: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-400' },
-    emotional: { bg: 'bg-coral-50', text: 'text-coral-700', dot: 'bg-coral-400' },
-    social: { bg: 'bg-mint-50', text: 'text-mint-700', dot: 'bg-mint-400' },
-    other: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400' },
-  }
 
   const columns: { id: MilestoneStatus; title: string; icon: typeof Clock; color: string; bgColor: string; borderColor: string; items: Milestone[] }[] = [
     {
@@ -220,121 +398,6 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
     )
   }
 
-  const MilestoneCard = ({ milestone, columnId }: { milestone: Milestone; columnId: MilestoneStatus }) => {
-    const catStyle = categoryColors[milestone.category]
-    const isOverdue = milestone.target_date && new Date(milestone.target_date) < new Date() && columnId !== 'achieved'
-
-    return (
-      <motion.div
-        layout
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all group"
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className={`w-2 h-2 rounded-full ${catStyle.dot}`} />
-              <span className={`text-xs font-medium ${catStyle.text}`}>
-                {t.members.milestoneCategories[milestone.category]}
-              </span>
-            </div>
-            <h4 className="font-medium text-gray-900 text-sm leading-snug">
-              {milestone.title}
-            </h4>
-            {milestone.description && (
-              <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                {milestone.description}
-              </p>
-            )}
-          </div>
-          <button
-            onClick={() => handleDelete(milestone.id)}
-            className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Target Date */}
-        {milestone.target_date && (
-          <div className={`flex items-center gap-1.5 mt-3 text-xs ${isOverdue ? 'text-red-500' : 'text-gray-400'}`}>
-            <Calendar className="w-3 h-3" />
-            <span>{isOverdue ? 'Overdue: ' : ''}{new Date(milestone.target_date).toLocaleDateString()}</span>
-          </div>
-        )}
-
-        {/* Achieved Date */}
-        {columnId === 'achieved' && milestone.achieved_at && (
-          <div className="flex items-center gap-1.5 mt-3 text-xs text-emerald-600">
-            <Sparkles className="w-3 h-3" />
-            <span>Achieved {new Date(milestone.achieved_at).toLocaleDateString()}</span>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-1 mt-3 pt-3 border-t border-gray-50">
-          {columnId === 'planned' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleUpdateStatus(milestone.id, 'in_progress')}
-              className="h-7 text-xs text-amber-600 hover:bg-amber-50 rounded-lg flex-1"
-            >
-              <Play className="w-3 h-3 mr-1" />
-              Start
-            </Button>
-          )}
-          {columnId === 'planned' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleUpdateStatus(milestone.id, 'achieved')}
-              className="h-7 text-xs text-emerald-600 hover:bg-emerald-50 rounded-lg flex-1"
-            >
-              <CheckCircle className="w-3 h-3 mr-1" />
-              Done
-            </Button>
-          )}
-          {columnId === 'in_progress' && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleUpdateStatus(milestone.id, 'planned')}
-                className="h-7 text-xs text-gray-500 hover:bg-gray-50 rounded-lg"
-              >
-                <ArrowRight className="w-3 h-3 mr-1 rotate-180" />
-                Back
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleUpdateStatus(milestone.id, 'achieved')}
-                className="h-7 text-xs text-emerald-600 hover:bg-emerald-50 rounded-lg flex-1"
-              >
-                <CheckCircle className="w-3 h-3 mr-1" />
-                Complete
-              </Button>
-            </>
-          )}
-          {columnId === 'achieved' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleUpdateStatus(milestone.id, 'in_progress')}
-              className="h-7 text-xs text-gray-500 hover:bg-gray-50 rounded-lg flex-1"
-            >
-              <ArrowRight className="w-3 h-3 mr-1 rotate-180" />
-              Reopen
-            </Button>
-          )}
-        </div>
-      </motion.div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -359,54 +422,42 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/90 backdrop-blur-xl rounded-2xl p-4 shadow-sm border border-white/60"
+          className="grid grid-cols-4 gap-3"
         >
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-6">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900">{milestones.length}</p>
-                <p className="text-xs text-gray-500">Total Goals</p>
-              </div>
-              <div className="h-8 w-px bg-gray-200" />
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-blue-400" />
-                  <span className="text-sm text-gray-600">{plannedMilestones.length} Planned</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-amber-400" />
-                  <span className="text-sm text-gray-600">{inProgressMilestones.length} In Progress</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-emerald-400" />
-                  <span className="text-sm text-gray-600">{achievedMilestones.length} Achieved</span>
-                </div>
-              </div>
+          {/* Total Goals Card */}
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-4 shadow-sm border border-white/60">
+            <p className="text-xs text-gray-500 mb-1">Total Goals</p>
+            <p className="text-2xl font-bold text-gray-900">{milestones.length}</p>
+          </div>
+
+          {/* Planned Card */}
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl p-4 border border-blue-200/50">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-blue-500" />
+              <p className="text-xs text-blue-600 font-medium">Planned</p>
             </div>
-            {/* Progress Bar */}
-            <div className="flex-1 max-w-xs">
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden flex">
-                {plannedMilestones.length > 0 && (
-                  <div
-                    className="h-full bg-blue-400"
-                    style={{ width: `${(plannedMilestones.length / milestones.length) * 100}%` }}
-                  />
-                )}
-                {inProgressMilestones.length > 0 && (
-                  <div
-                    className="h-full bg-amber-400"
-                    style={{ width: `${(inProgressMilestones.length / milestones.length) * 100}%` }}
-                  />
-                )}
-                {achievedMilestones.length > 0 && (
-                  <div
-                    className="h-full bg-emerald-400"
-                    style={{ width: `${(achievedMilestones.length / milestones.length) * 100}%` }}
-                  />
-                )}
-              </div>
-              <p className="text-xs text-gray-400 mt-1 text-right">
-                {Math.round((achievedMilestones.length / milestones.length) * 100)}% complete
+            <p className="text-2xl font-bold text-blue-700">{plannedMilestones.length}</p>
+          </div>
+
+          {/* In Progress Card */}
+          <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-2xl p-4 border border-amber-200/50">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-amber-500" />
+              <p className="text-xs text-amber-600 font-medium">In Progress</p>
+            </div>
+            <p className="text-2xl font-bold text-amber-700">{inProgressMilestones.length}</p>
+          </div>
+
+          {/* Achieved Card */}
+          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl p-4 border border-emerald-200/50">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <p className="text-xs text-emerald-600 font-medium">Achieved</p>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl font-bold text-emerald-700">{achievedMilestones.length}</p>
+              <p className="text-sm text-emerald-600">
+                ({Math.round((achievedMilestones.length / milestones.length) * 100)}%)
               </p>
             </div>
           </div>
@@ -508,6 +559,40 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
                     />
                   </div>
                 </div>
+
+                {/* Share with member toggle */}
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <label className="flex items-center justify-between cursor-pointer group">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                        shareWithMember ? 'bg-lavender-100' : 'bg-gray-100 group-hover:bg-gray-200'
+                      }`}>
+                        {shareWithMember ? (
+                          <Eye className="w-5 h-5 text-lavender-600" />
+                        ) : (
+                          <EyeOff className="w-5 h-5 text-gray-400" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Share with member</p>
+                        <p className="text-xs text-gray-500">Member can see this goal in their portal</p>
+                      </div>
+                    </div>
+                    <div
+                      className={`relative w-11 h-6 rounded-full transition-colors ${
+                        shareWithMember ? 'bg-lavender-500' : 'bg-gray-300'
+                      }`}
+                      onClick={() => setShareWithMember(!shareWithMember)}
+                    >
+                      <div
+                        className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
+                          shareWithMember ? 'translate-x-5.5 left-0.5' : 'left-0.5'
+                        }`}
+                        style={{ transform: shareWithMember ? 'translateX(22px)' : 'translateX(0)' }}
+                      />
+                    </div>
+                  </label>
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
@@ -589,6 +674,10 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
                         key={milestone.id}
                         milestone={milestone}
                         columnId={column.id}
+                        onToggleShare={handleToggleShare}
+                        onDelete={handleDelete}
+                        onUpdateStatus={handleUpdateStatus}
+                        categoryLabel={t.members.milestoneCategories[milestone.category]}
                       />
                     ))}
                   </AnimatePresence>

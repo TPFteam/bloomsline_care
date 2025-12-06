@@ -89,8 +89,8 @@ export default function NewMemberPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!firstName.trim() || !lastName.trim()) {
-      toast.error('First name and last name are required')
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+      toast.error('First name, last name, and email are required')
       return
     }
 
@@ -134,17 +134,22 @@ export default function NewMemberPage() {
         engagement_level: 'medium' as const,
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('members')
         .insert(memberData)
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error:', error.message, error.details, error.hint, error.code)
+        throw new Error(error.message)
+      }
 
+      console.log('Member created:', data)
       toast.success(t.members.success.memberCreated)
       router.push('/members')
     } catch (error) {
       console.error('Error creating member:', error)
-      toast.error(t.members.errors.saveFailed)
+      toast.error(error instanceof Error ? error.message : t.members.errors.saveFailed)
     } finally {
       setSaving(false)
     }
@@ -158,7 +163,7 @@ export default function NewMemberPage() {
 
   const getSectionCompletion = (sectionId: string) => {
     if (sectionId === 'basic') {
-      return firstName && lastName ? 'complete' : firstName || lastName || email || phone ? 'partial' : 'empty'
+      return firstName && lastName && email ? 'complete' : firstName || lastName || email || phone ? 'partial' : 'empty'
     }
     if (sectionId === 'preferences') {
       return communicationStyle || keyStrengths.length > 0 ? 'partial' : 'empty'
@@ -342,13 +347,14 @@ export default function NewMemberPage() {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                         <Mail className="w-4 h-4 text-lavender-500" />
-                        {t.members.form.email}
+                        {t.members.form.email} *
                       </label>
                       <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none transition-all bg-white/80 backdrop-blur-sm"
+                        required
                       />
                     </div>
                     <div>

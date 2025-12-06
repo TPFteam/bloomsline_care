@@ -213,6 +213,9 @@ export interface Milestone {
   achieved_at: string | null
   target_date: string | null
 
+  // Sharing
+  shared_with_member: boolean
+
   // Metadata
   created_at: string
   updated_at: string

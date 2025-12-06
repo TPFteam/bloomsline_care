@@ -166,7 +166,8 @@
     "newSessionNote": "New Session Note",
     "scheduleAppointment": "Schedule Appointment",
     "browseResources": "Browse Resources",
-    "viewAnalytics": "View Analytics"
+    "viewAnalytics": "View Analytics",
+    "addNewMember": "Add New Member"
   },
   "schedule": {
     "title": "Today's Schedule",

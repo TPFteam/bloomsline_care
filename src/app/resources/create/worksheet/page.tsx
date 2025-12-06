@@ -47,7 +47,6 @@ import {
   Minus,
   Quote,
   Info,
-  SlidersHorizontal,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -66,7 +65,7 @@ import { toast } from 'sonner'
 // Legacy: video, file (kept for backward compatibility)
 type BlockType =
   | 'heading' | 'paragraph' | 'image' | 'divider' | 'quote' | 'tip'
-  | 'prompt' | 'checklist' | 'scale' | 'multiple_choice' | 'yes_no' | 'mood' | 'date_picker' | 'time_input' | 'slider'
+  | 'prompt' | 'checklist' | 'scale' | 'multiple_choice' | 'yes_no' | 'mood' | 'date_picker' | 'time_input' | 'list_input'
   | 'video_response' | 'audio_response' | 'file_response'
   | 'video' | 'file' // Legacy types
 
@@ -117,8 +116,15 @@ interface WorksheetBlock {
   sliderMax?: number
   sliderStep?: number
   sliderUnit?: string
+  sliderMinLabel?: string
+  sliderMaxLabel?: string
   // For quote/tip styling
   style?: 'default' | 'success' | 'warning' | 'info'
+  quoteAuthor?: string
+  // For list input
+  listMinItems?: number
+  listMaxItems?: number
+  listItemPlaceholder?: string
 }
 
 interface BlockTypeOption {
@@ -170,8 +176,8 @@ const blockTypes: BlockTypeOption[] = [
   {
     type: 'prompt',
     icon: HelpCircle,
-    label: { en: 'Writing Prompt', fr: 'Question ouverte' },
-    description: { en: 'Open-ended question for reflection', fr: 'Question ouverte pour réflexion' },
+    label: { en: 'Long Text', fr: 'Texte long' },
+    description: { en: 'Paragraph or long text response', fr: 'Réponse en paragraphe ou texte long' },
   },
   {
     type: 'multiple_choice',
@@ -198,12 +204,6 @@ const blockTypes: BlockTypeOption[] = [
     description: { en: 'Numeric scale (e.g., 1-10)', fr: 'Échelle numérique (ex: 1-10)' },
   },
   {
-    type: 'slider',
-    icon: SlidersHorizontal,
-    label: { en: 'Slider', fr: 'Curseur' },
-    description: { en: 'Drag slider to select value', fr: 'Glisser pour sélectionner une valeur' },
-  },
-  {
     type: 'mood',
     icon: Smile,
     label: { en: 'Mood Selector', fr: 'Sélecteur d\'humeur' },
@@ -220,6 +220,12 @@ const blockTypes: BlockTypeOption[] = [
     icon: Clock,
     label: { en: 'Time', fr: 'Heure' },
     description: { en: 'Enter a time', fr: 'Entrer une heure' },
+  },
+  {
+    type: 'list_input',
+    icon: List,
+    label: { en: 'List Input', fr: 'Liste à remplir' },
+    description: { en: 'Member adds items to a list', fr: 'Le membre ajoute des éléments à une liste' },
   },
   // === MEDIA RESPONSE BLOCKS ===
   {
@@ -297,7 +303,7 @@ function CreateWorksheetContent() {
   const [userId, setUserId] = useState<string | null>(null)
 
   // Step state
-  const [step, setStep] = useState<'template' | 'build' | 'details'>('build')
+  const [step, setStep] = useState<'template' | 'build' | 'details'>('template')
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false)
@@ -473,7 +479,7 @@ function CreateWorksheetContent() {
       ...(type === 'mood' && { moodOptions: defaultMoodOptions }),
       ...(type === 'date_picker' && { }),
       ...(type === 'time_input' && { }),
-      ...(type === 'slider' && { sliderMin: 0, sliderMax: 100, sliderStep: 1, sliderUnit: '%' }),
+      ...(type === 'list_input' && { listMinItems: 1, listMaxItems: 10, listItemPlaceholder: '' }),
       // Media response blocks
       ...(type === 'video_response' && { responseRequired: true, responseMaxDuration: 300, responseHint: '' }),
       ...(type === 'audio_response' && { responseRequired: true, responseMaxDuration: 180, responseHint: '' }),
@@ -810,7 +816,7 @@ function CreateWorksheetContent() {
           <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{block.content}</p>
         )}
 
-        {/* Writing Prompt */}
+        {/* Long Text */}
         {block.type === 'prompt' && (
           <div className="space-y-2">
             <label className="block text-gray-900 font-medium">{block.content}</label>
@@ -819,9 +825,9 @@ function CreateWorksheetContent() {
                 value={testResponses[block.id] || ''}
                 onChange={(e) => updateTestResponse(block.id, e.target.value)}
                 placeholder={block.placeholder}
-                rows={block.lines || 3}
+                rows={4}
                 disabled={testSubmitted}
-                className={`w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent resize-none transition-all ${testSubmitted ? 'bg-gray-50' : ''}`}
+                className={`w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent resize-y transition-all ${testSubmitted ? 'bg-gray-50' : ''}`}
               />
             ) : (
               <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-400 italic">
@@ -953,6 +959,264 @@ function CreateWorksheetContent() {
             </div>
           </div>
         )}
+
+        {/* Multiple Choice */}
+        {block.type === 'multiple_choice' && (
+          <div className="space-y-2">
+            <label className="block text-gray-900 font-medium mb-3">{block.content}</label>
+            <div className="space-y-2">
+              {block.choices?.map((choice: string, index: number) => {
+                const isSelected = isTestMode && testResponses[block.id] === index
+                return (
+                  <button
+                    key={index}
+                    onClick={() => isTestMode && !testSubmitted && updateTestResponse(block.id, index)}
+                    disabled={!isTestMode || testSubmitted}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                      isSelected
+                        ? 'border-lavender-300 bg-lavender-50'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    } ${testSubmitted && isTestMode ? 'cursor-not-allowed opacity-80' : ''}`}
+                  >
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      isSelected ? 'border-lavender-500 bg-lavender-500' : 'border-gray-300'
+                    }`}>
+                      {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                    </div>
+                    <span className="text-gray-700">{choice}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Yes/No Question */}
+        {block.type === 'yes_no' && (
+          <div className="space-y-2">
+            <label className="block text-gray-900 font-medium mb-3">{block.content}</label>
+            <div className="flex gap-3">
+              {['yes', 'no'].map((value) => {
+                const isSelected = isTestMode && testResponses[block.id] === value
+                return (
+                  <button
+                    key={value}
+                    onClick={() => isTestMode && !testSubmitted && updateTestResponse(block.id, value)}
+                    disabled={!isTestMode || testSubmitted}
+                    className={`flex-1 py-3 px-4 rounded-xl border-2 font-medium transition-all ${
+                      isSelected
+                        ? value === 'yes'
+                          ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                          : 'border-rose-400 bg-rose-50 text-rose-700'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    } ${testSubmitted && isTestMode ? 'cursor-not-allowed opacity-80' : ''}`}
+                  >
+                    {value === 'yes' ? (locale === 'fr' ? 'Oui' : 'Yes') : (locale === 'fr' ? 'Non' : 'No')}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Mood Selector */}
+        {block.type === 'mood' && (
+          <div className="space-y-2">
+            <label className="block text-gray-900 font-medium mb-3">{block.content}</label>
+            <div className="flex justify-center gap-2 sm:gap-4">
+              {(block.moodOptions || [
+                { emoji: '😢', label: locale === 'fr' ? 'Très mal' : 'Very Bad' },
+                { emoji: '😕', label: locale === 'fr' ? 'Mal' : 'Bad' },
+                { emoji: '😐', label: locale === 'fr' ? 'Neutre' : 'Neutral' },
+                { emoji: '🙂', label: locale === 'fr' ? 'Bien' : 'Good' },
+                { emoji: '😄', label: locale === 'fr' ? 'Très bien' : 'Very Good' },
+              ]).map((mood, index) => {
+                const isSelected = isTestMode && testResponses[block.id] === index
+                return (
+                  <button
+                    key={index}
+                    onClick={() => isTestMode && !testSubmitted && updateTestResponse(block.id, index)}
+                    disabled={!isTestMode || testSubmitted}
+                    className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all ${
+                      isSelected
+                        ? 'bg-amber-100 ring-2 ring-amber-400'
+                        : 'hover:bg-gray-50'
+                    } ${testSubmitted && isTestMode ? 'cursor-not-allowed opacity-80' : ''}`}
+                  >
+                    <span className="text-3xl">{mood.emoji}</span>
+                    <span className="text-xs text-gray-600">{mood.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Date Picker */}
+        {block.type === 'date_picker' && (
+          <div className="space-y-2">
+            <label className="block text-gray-900 font-medium">{block.content}</label>
+            {isTestMode ? (
+              <input
+                type="date"
+                value={testResponses[block.id] || ''}
+                onChange={(e) => updateTestResponse(block.id, e.target.value)}
+                disabled={testSubmitted}
+                className={`w-full sm:w-auto px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent ${testSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+              />
+            ) : (
+              <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 w-fit">
+                <Calendar className="w-5 h-5 text-gray-400" />
+                <span className="text-gray-500">{locale === 'fr' ? 'Sélectionner une date...' : 'Select a date...'}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Time Input */}
+        {block.type === 'time_input' && (
+          <div className="space-y-2">
+            <label className="block text-gray-900 font-medium">{block.content}</label>
+            {isTestMode ? (
+              <input
+                type="time"
+                value={testResponses[block.id] || ''}
+                onChange={(e) => updateTestResponse(block.id, e.target.value)}
+                disabled={testSubmitted}
+                className={`w-full sm:w-auto px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent ${testSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+              />
+            ) : (
+              <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 w-fit">
+                <Clock className="w-5 h-5 text-gray-400" />
+                <span className="text-gray-500">--:-- --</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* List Input */}
+        {block.type === 'list_input' && (
+          <div className="space-y-2">
+            <label className="block text-gray-900 font-medium">{block.content}</label>
+            {isTestMode ? (
+              <div className="space-y-2">
+                {(testResponses[block.id] || ['']).map((item: string, index: number) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <span className="text-gray-400 text-sm w-6">{index + 1}.</span>
+                    <input
+                      type="text"
+                      value={item}
+                      onChange={(e) => {
+                        const newList = [...(testResponses[block.id] || [''])]
+                        newList[index] = e.target.value
+                        updateTestResponse(block.id, newList)
+                      }}
+                      placeholder={block.listItemPlaceholder || (locale === 'fr' ? 'Entrez un élément...' : 'Enter an item...')}
+                      disabled={testSubmitted}
+                      className={`flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent ${testSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                    />
+                    {!testSubmitted && (testResponses[block.id] || ['']).length > (block.listMinItems || 1) && (
+                      <button
+                        onClick={() => {
+                          const newList = [...(testResponses[block.id] || [''])]
+                          newList.splice(index, 1)
+                          updateTestResponse(block.id, newList)
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {!testSubmitted && (testResponses[block.id] || ['']).length < (block.listMaxItems || 10) && (
+                  <button
+                    onClick={() => {
+                      const newList = [...(testResponses[block.id] || ['']), '']
+                      updateTestResponse(block.id, newList)
+                    }}
+                    className="flex items-center gap-2 text-sm text-lavender-600 hover:text-lavender-700 font-medium mt-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    {locale === 'fr' ? 'Ajouter un élément' : 'Add item'}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {[1, 2, 3].map((num) => (
+                  <div key={num} className="flex items-center gap-2">
+                    <span className="text-gray-400 text-sm w-6">{num}.</span>
+                    <div className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-400 italic">
+                      {block.listItemPlaceholder || (locale === 'fr' ? 'Élément de la liste...' : 'List item...')}
+                    </div>
+                  </div>
+                ))}
+                <p className="text-xs text-gray-400 mt-1">
+                  {locale === 'fr' ? `${block.listMinItems || 1} à ${block.listMaxItems || 10} éléments` : `${block.listMinItems || 1} to ${block.listMaxItems || 10} items`}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Quote/Affirmation */}
+        {block.type === 'quote' && (
+          <blockquote className="pl-4 border-l-4 border-purple-300 py-2">
+            <p className="text-lg text-gray-700 italic">{block.content}</p>
+            {block.quoteAuthor && (
+              <footer className="mt-2 text-sm text-gray-500">— {block.quoteAuthor}</footer>
+            )}
+          </blockquote>
+        )}
+
+        {/* Tip Box */}
+        {block.type === 'tip' && (
+          <div className="p-4 bg-sky-50 border border-sky-200 rounded-xl">
+            <div className="flex gap-3">
+              <Info className="w-5 h-5 text-sky-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sky-800">{block.content}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Divider */}
+        {block.type === 'divider' && (
+          <hr className="border-t border-gray-200 my-4" />
+        )}
+
+        {/* Video Response */}
+        {block.type === 'video_response' && (
+          <div className="space-y-2">
+            <label className="block text-gray-900 font-medium">{block.content}</label>
+            <div className="p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl text-center">
+              <Video className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-500">{locale === 'fr' ? 'Enregistrer une vidéo' : 'Record a video response'}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Audio Response */}
+        {block.type === 'audio_response' && (
+          <div className="space-y-2">
+            <label className="block text-gray-900 font-medium">{block.content}</label>
+            <div className="p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl text-center">
+              <Mic className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-500">{locale === 'fr' ? 'Enregistrer un audio' : 'Record an audio response'}</p>
+            </div>
+          </div>
+        )}
+
+        {/* File Upload Response */}
+        {block.type === 'file_response' && (
+          <div className="space-y-2">
+            <label className="block text-gray-900 font-medium">{block.content}</label>
+            <div className="p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl text-center">
+              <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-500">{locale === 'fr' ? 'Télécharger un fichier' : 'Upload a file'}</p>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -978,6 +1242,7 @@ function CreateWorksheetContent() {
       mood: { bg: 'bg-amber-100', text: 'text-amber-600', accent: 'bg-amber-400' },
       date_picker: { bg: 'bg-rose-100', text: 'text-rose-600', accent: 'bg-rose-400' },
       time_input: { bg: 'bg-cyan-100', text: 'text-cyan-600', accent: 'bg-cyan-400' },
+      list_input: { bg: 'bg-lime-100', text: 'text-lime-600', accent: 'bg-lime-400' },
       // Media response blocks
       video_response: { bg: 'bg-purple-100', text: 'text-purple-600', accent: 'bg-purple-400' },
       audio_response: { bg: 'bg-orange-100', text: 'text-orange-600', accent: 'bg-orange-400' },
@@ -1111,20 +1376,6 @@ function CreateWorksheetContent() {
                         placeholder={locale === 'fr' ? 'Texte d\'aide...' : 'Helper text...'}
                         className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                       />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        {locale === 'fr' ? 'Nombre de lignes' : 'Number of lines'}
-                      </label>
-                      <select
-                        value={block.lines || 3}
-                        onChange={(e) => updateBlock(block.id, { lines: parseInt(e.target.value) })}
-                        className="px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                      >
-                        {[1, 2, 3, 4, 5, 6, 8, 10].map(n => (
-                          <option key={n} value={n}>{n} {locale === 'fr' ? 'lignes' : 'lines'}</option>
-                        ))}
-                      </select>
                     </div>
                   </>
                 )}
@@ -2100,89 +2351,85 @@ function CreateWorksheetContent() {
                   </>
                 )}
 
-                {/* Slider Block */}
-                {block.type === 'slider' && (
+                {/* List Input Block */}
+                {block.type === 'list_input' && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        {locale === 'fr' ? 'Question' : 'Question'}
+                        {locale === 'fr' ? 'Question ou instruction' : 'Question or instruction'}
                       </label>
                       <input
                         type="text"
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
-                        placeholder={locale === 'fr' ? 'Ex: Quel est votre niveau d\'énergie?' : 'e.g., What is your energy level?'}
+                        placeholder={locale === 'fr' ? 'Ex: Listez 3 choses pour lesquelles vous êtes reconnaissant' : 'e.g., List 3 things you are grateful for'}
                         className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                       />
                     </div>
-
-                    {/* Slider Settings */}
-                    <div className="grid grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Texte indicatif (optionnel)' : 'Placeholder text (optional)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={block.listItemPlaceholder || ''}
+                        onChange={(e) => updateBlock(block.id, { listItemPlaceholder: e.target.value })}
+                        placeholder={locale === 'fr' ? 'Ex: Entrez un élément...' : 'e.g., Enter an item...'}
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Min</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          {locale === 'fr' ? 'Minimum d\'éléments' : 'Minimum items'}
+                        </label>
                         <input
                           type="number"
-                          value={block.sliderMin ?? 0}
-                          onChange={(e) => updateBlock(block.id, { sliderMin: parseInt(e.target.value) })}
-                          className="w-full px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Max</label>
-                        <input
-                          type="number"
-                          value={block.sliderMax ?? 100}
-                          onChange={(e) => updateBlock(block.id, { sliderMax: parseInt(e.target.value) })}
-                          className="w-full px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">{locale === 'fr' ? 'Pas' : 'Step'}</label>
-                        <input
-                          type="number"
-                          value={block.sliderStep ?? 1}
-                          onChange={(e) => updateBlock(block.id, { sliderStep: parseInt(e.target.value) })}
                           min={1}
-                          className="w-full px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          max={block.listMaxItems || 10}
+                          value={block.listMinItems || 1}
+                          onChange={(e) => updateBlock(block.id, { listMinItems: parseInt(e.target.value) || 1 })}
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">{locale === 'fr' ? 'Unité' : 'Unit'}</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          {locale === 'fr' ? 'Maximum d\'éléments' : 'Maximum items'}
+                        </label>
                         <input
-                          type="text"
-                          value={block.sliderUnit || ''}
-                          onChange={(e) => updateBlock(block.id, { sliderUnit: e.target.value })}
-                          placeholder="%"
-                          className="w-full px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          type="number"
+                          min={block.listMinItems || 1}
+                          max={20}
+                          value={block.listMaxItems || 10}
+                          onChange={(e) => updateBlock(block.id, { listMaxItems: parseInt(e.target.value) || 10 })}
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                         />
                       </div>
                     </div>
-
-                    {/* Slider Preview */}
-                    <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200/50">
-                      <p className="text-xs font-medium text-blue-600 mb-3 flex items-center gap-1.5">
-                        <SlidersHorizontal className="w-3.5 h-3.5" />
+                    {/* Preview */}
+                    <div className="p-4 bg-gradient-to-br from-lime-50 to-emerald-50 rounded-xl border border-lime-200/50">
+                      <p className="text-xs font-medium text-lime-600 mb-3 flex items-center gap-1.5">
+                        <List className="w-3.5 h-3.5" />
                         {locale === 'fr' ? 'Aperçu pour le membre' : 'Member will see'}
                       </p>
                       <div className="space-y-2">
-                        <input
-                          type="range"
-                          min={block.sliderMin ?? 0}
-                          max={block.sliderMax ?? 100}
-                          step={block.sliderStep ?? 1}
-                          defaultValue={Math.floor(((block.sliderMax ?? 100) - (block.sliderMin ?? 0)) / 2)}
-                          className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer"
-                          disabled
-                        />
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>{block.sliderMin ?? 0}{block.sliderUnit}</span>
-                          <span>{block.sliderMax ?? 100}{block.sliderUnit}</span>
-                        </div>
+                        {[1, 2, 3].slice(0, block.listMinItems || 1).map((num) => (
+                          <div key={num} className="flex items-center gap-2">
+                            <span className="text-gray-400 text-sm w-6">{num}.</span>
+                            <div className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-400">
+                              {block.listItemPlaceholder || (locale === 'fr' ? 'Entrez un élément...' : 'Enter an item...')}
+                            </div>
+                          </div>
+                        ))}
+                        <p className="text-xs text-lime-600 mt-2">
+                          + {locale === 'fr' ? 'Ajouter un élément' : 'Add item'}
+                        </p>
                       </div>
                     </div>
                   </>
                 )}
-              </div>
+
+                </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -2464,7 +2711,7 @@ function CreateWorksheetContent() {
                                   {locale === 'fr' ? 'Questions' : 'Questions'}
                                 </p>
                                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                  {blockTypes.filter(bt => ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'slider', 'mood', 'date_picker', 'time_input'].includes(bt.type)).map((bt) => {
+                                  {blockTypes.filter(bt => ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'mood', 'date_picker', 'time_input', 'list_input'].includes(bt.type)).map((bt) => {
                                     const Icon = bt.icon
                                     return (
                                       <button

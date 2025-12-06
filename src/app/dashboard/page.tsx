@@ -771,8 +771,8 @@ function DashboardContent() {
                 <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{t.dashboard.quickActions.scheduleAppointment}</p>
               </motion.div>
 
-              {/* Browse Resources */}
-              <Link href="/library">
+              {/* Add New Member */}
+              <Link href="/members/new">
                 <motion.div
                   whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
@@ -780,10 +780,10 @@ function DashboardContent() {
                 >
                   <div className="w-12 h-12 rounded-xl bg-mint-100/80 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                     <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-mint-400 to-mint-600 flex items-center justify-center shadow-md">
-                      <BookOpen className="w-4.5 h-4.5 text-white" />
+                      <Plus className="w-4.5 h-4.5 text-white" />
                     </div>
                   </div>
-                  <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{t.dashboard.quickActions.browseResources}</p>
+                  <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{t.dashboard.quickActions.addNewMember || 'Add New Member'}</p>
                 </motion.div>
               </Link>
 

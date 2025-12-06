@@ -166,7 +166,8 @@
     "newSessionNote": "Nouvelle note de session",
     "scheduleAppointment": "Planifier un rendez-vous",
     "browseResources": "Parcourir les ressources",
-    "viewAnalytics": "Voir les analyses"
+    "viewAnalytics": "Voir les analyses",
+    "addNewMember": "Ajouter un membre"
   },
   "schedule": {
     "title": "Programme d'aujourd'hui",

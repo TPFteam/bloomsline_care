@@ -248,8 +248,8 @@ function CreateAssessmentContent() {
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
 
-  // Step state - start directly with build (skip template)
-  const [step, setStep] = useState<'template' | 'build' | 'scoring' | 'details'>('build')
+  // Step state
+  const [step, setStep] = useState<'template' | 'build' | 'scoring' | 'details'>('template')
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false)
