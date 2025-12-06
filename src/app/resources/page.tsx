@@ -642,6 +642,7 @@ export default function MyResourcesPage() {
                   <motion.div
                     key={collection.id}
                     whileHover={{ scale: 1.02, y: -2 }}
+                    onClick={() => router.push(`/resources/collections/${collection.id}`)}
                     className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] shadow-lg shadow-gray-200/40 border border-white/60 p-5 cursor-pointer hover:shadow-xl transition-all group relative"
                   >
                     <div className="flex items-center gap-4">
@@ -658,12 +659,21 @@ export default function MyResourcesPage() {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100">
+                          <button
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
+                          >
                             <MoreHorizontal className="w-4 h-4 text-gray-400" />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="rounded-xl">
-                          <DropdownMenuItem className="rounded-lg">
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/resources/collections/${collection.id}`)
+                            }}
+                            className="rounded-lg"
+                          >
                             <Eye className="w-4 h-4 mr-2" />
                             {locale === 'fr' ? 'Voir' : 'View'}
                           </DropdownMenuItem>
@@ -673,7 +683,10 @@ export default function MyResourcesPage() {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => handleDeleteCollection(collection.id)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteCollection(collection.id)
+                            }}
                             className="text-red-600 rounded-lg"
                           >
                             <Trash2 className="w-4 h-4 mr-2" />

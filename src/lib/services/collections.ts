@@ -140,6 +140,56 @@ export async function getCollectionResources(collectionId: string): Promise<Coll
   return data as CollectionResource[]
 }
 
+// Get collection resources with full resource details
+export async function getCollectionResourcesWithDetails(collectionId: string) {
+  const supabase = createClient()
+
+  // Get collection resources
+  const { data: collectionResources, error: crError } = await supabase
+    .from('collection_resources')
+    .select('*')
+    .eq('collection_id', collectionId)
+    .order('added_at', { ascending: false })
+
+  if (crError) {
+    console.error('Error fetching collection resources:', crError)
+    throw crError
+  }
+
+  if (!collectionResources || collectionResources.length === 0) {
+    return []
+  }
+
+  // Get the resource IDs
+  const resourceIds = collectionResources
+    .filter(cr => cr.resource_id)
+    .map(cr => cr.resource_id)
+
+  if (resourceIds.length === 0) {
+    return []
+  }
+
+  // Fetch the actual resources
+  const { data: resources, error: rError } = await supabase
+    .from('resources')
+    .select('*')
+    .in('id', resourceIds)
+
+  if (rError) {
+    console.error('Error fetching resources:', rError)
+    throw rError
+  }
+
+  // Merge collection resource info with resource details
+  return collectionResources.map(cr => {
+    const resource = resources?.find(r => r.id === cr.resource_id)
+    return {
+      ...cr,
+      resource,
+    }
+  }).filter(cr => cr.resource) // Only return items where we found the resource
+}
+
 export async function addResourceToCollection(
   collectionId: string,
   resourceId?: string,
