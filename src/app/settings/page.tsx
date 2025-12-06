@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { ArrowLeft, Calendar, Clock, Check, X, Plus, Trash2, Loader2, Link as LinkIcon, Copy, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -43,7 +43,7 @@ interface AvailabilitySlot {
   isActive: boolean
 }
 
-export default function SettingsPage() {
+function SettingsContent() {
   const { t } = useLanguage()
   const searchParams = useSearchParams()
 
@@ -640,5 +640,13 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-rose-50/30 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500"></div></div>}>
+      <SettingsContent />
+    </Suspense>
   )
 }

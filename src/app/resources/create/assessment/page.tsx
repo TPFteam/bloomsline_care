@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence, Reorder } from 'framer-motion'
@@ -242,7 +242,7 @@ const assessmentTemplates = [
   },
 ]
 
-export default function CreateAssessmentPage() {
+function CreateAssessmentContent() {
   const { t, locale } = useLanguage()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -2476,5 +2476,13 @@ export default function CreateAssessmentPage() {
         </AnimatePresence>
       </div>
     </div>
+  )
+}
+
+export default function CreateAssessmentPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-rose-50/30 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500"></div></div>}>
+      <CreateAssessmentContent />
+    </Suspense>
   )
 }
