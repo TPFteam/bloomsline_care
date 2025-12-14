@@ -47,6 +47,11 @@ import {
   Minus,
   Quote,
   Info,
+  // Scoring/Assessment icons
+  SlidersHorizontal,
+  Calculator,
+  Star,
+  Gauge,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -54,7 +59,7 @@ import { createResource, getResourceById, updateResource } from '@/lib/services/
 import { uploadResourceFile, validateFile } from '@/lib/services/resource-storage'
 import { supabase } from '@/lib/supabase/client'
 import { createClient } from '@/lib/supabase/browser-client'
-import type { ResourceBlock, WorksheetSettings } from '@/types/resource'
+import type { ResourceBlock, WorksheetSettings, ScoringRange, WorksheetQuestion, WorksheetQuestionType } from '@/types/resource'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { ResourceCategory } from '@/types/library'
 import { toast } from 'sonner'
@@ -62,10 +67,12 @@ import { toast } from 'sonner'
 // Block types for worksheet
 // Content blocks: heading, paragraph, image, divider, quote, tip (practitioner adds content)
 // Response blocks: prompt, checklist, scale, multiple_choice, yes_no, mood, date, time, slider, video_response, audio_response, file_response (member responds)
+// Scoring question types: likert, numeric, matrix_rating (for scored worksheets)
 // Legacy: video, file (kept for backward compatibility)
 type BlockType =
   | 'heading' | 'paragraph' | 'image' | 'divider' | 'quote' | 'tip'
   | 'prompt' | 'checklist' | 'scale' | 'multiple_choice' | 'yes_no' | 'mood' | 'date_picker' | 'time_input' | 'list_input'
+  | 'likert' | 'numeric' | 'slider' | 'matrix_rating'
   | 'video_response' | 'audio_response' | 'file_response'
   | 'video' | 'file' // Legacy types
 
@@ -110,7 +117,7 @@ interface WorksheetBlock {
   choices?: string[]
   allowMultiple?: boolean
   // For mood selector
-  moodOptions?: { emoji: string; label: string }[]
+  moodOptions?: { emoji: string; label: string; value?: number }[]
   // For slider
   sliderMin?: number
   sliderMax?: number
@@ -125,6 +132,19 @@ interface WorksheetBlock {
   listMinItems?: number
   listMaxItems?: number
   listItemPlaceholder?: string
+  // For likert scale
+  scaleLabels?: string[]
+  scaleRange?: number
+  // For numeric input
+  minValue?: number
+  maxValue?: number
+  // For scoring (when enableScoring is true)
+  scoring?: { [key: string]: number }
+  required?: boolean
+  // For matrix rating (rate multiple items on a scale)
+  matrixItems?: string[] // Items to rate (e.g., "Mother", "Father", "Sister")
+  matrixScaleMax?: number // Maximum rating value (e.g., 5 or 10)
+  matrixScaleLabels?: { min: string; max: string } // Labels for min/max (e.g., "Not at all", "Completely")
 }
 
 interface BlockTypeOption {
@@ -199,9 +219,33 @@ const blockTypes: BlockTypeOption[] = [
   },
   {
     type: 'scale',
-    icon: List,
+    icon: Star,
     label: { en: 'Rating Scale', fr: 'Échelle de notation' },
     description: { en: 'Numeric scale (e.g., 1-10)', fr: 'Échelle numérique (ex: 1-10)' },
+  },
+  {
+    type: 'likert',
+    icon: SlidersHorizontal,
+    label: { en: 'Likert Scale', fr: 'Échelle de Likert' },
+    description: { en: 'Agreement or frequency scale', fr: 'Échelle d\'accord ou de fréquence' },
+  },
+  {
+    type: 'numeric',
+    icon: Calculator,
+    label: { en: 'Numeric Input', fr: 'Entrée numérique' },
+    description: { en: 'Enter a number within a range', fr: 'Entrer un nombre dans une plage' },
+  },
+  {
+    type: 'slider',
+    icon: Gauge,
+    label: { en: 'Slider', fr: 'Curseur' },
+    description: { en: 'Slide to select a value', fr: 'Glisser pour sélectionner une valeur' },
+  },
+  {
+    type: 'matrix_rating',
+    icon: List,
+    label: { en: 'Matrix Rating', fr: 'Évaluation matricielle' },
+    description: { en: 'Rate multiple items on a scale', fr: 'Noter plusieurs éléments sur une échelle' },
   },
   {
     type: 'mood',
@@ -252,6 +296,31 @@ const allCategories: ResourceCategory[] = [
   'anxiety', 'depression', 'stress', 'relationships', 'self_esteem',
   'mindfulness', 'coping_skills', 'communication', 'grief', 'trauma',
   'children', 'teens', 'adults', 'couples', 'family', 'general'
+]
+
+// Default Likert scales for scored worksheets
+const likertPresets = {
+  agreement: {
+    en: ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'],
+    fr: ['Fortement en désaccord', 'En désaccord', 'Neutre', 'D\'accord', 'Fortement d\'accord'],
+  },
+  frequency: {
+    en: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always'],
+    fr: ['Jamais', 'Rarement', 'Parfois', 'Souvent', 'Toujours'],
+  },
+  severity: {
+    en: ['Not at all', 'Slightly', 'Moderately', 'Very', 'Extremely'],
+    fr: ['Pas du tout', 'Légèrement', 'Modérément', 'Très', 'Extrêmement'],
+  },
+}
+
+// Default mood options with scoring values
+const defaultScoredMoodOptions = [
+  { emoji: '😢', label: 'Very Bad', value: 1 },
+  { emoji: '😔', label: 'Bad', value: 2 },
+  { emoji: '😐', label: 'Neutral', value: 3 },
+  { emoji: '🙂', label: 'Good', value: 4 },
+  { emoji: '😊', label: 'Very Good', value: 5 },
 ]
 
 // Worksheet templates for quick start
@@ -318,6 +387,17 @@ function CreateWorksheetContent() {
   const [isSaving, setIsSaving] = useState(false)
   const [visibility, setVisibility] = useState<'private' | 'public'>('private')
   const [saveAs, setSaveAs] = useState<'draft' | 'published'>('draft')
+
+  // Scoring state (for assessments/scored worksheets)
+  const [enableScoring, setEnableScoring] = useState(false)
+  const [showScoreToMember, setShowScoreToMember] = useState(true)
+  const [scoringRanges, setScoringRanges] = useState<ScoringRange[]>([
+    { min: 0, max: 4, label: { en: 'Minimal', fr: 'Minimal' } },
+    { min: 5, max: 9, label: { en: 'Mild', fr: 'Léger' } },
+    { min: 10, max: 14, label: { en: 'Moderate', fr: 'Modéré' } },
+    { min: 15, max: 100, label: { en: 'Severe', fr: 'Sévère' } },
+  ])
+  const [selectedLikertPreset, setSelectedLikertPreset] = useState<string>('frequency')
 
   // UI state
   const [showBlockPicker, setShowBlockPicker] = useState(false)
@@ -404,7 +484,8 @@ function CreateWorksheetContent() {
               allowMultiple: block.allowMultiple,
               moodOptions: block.moodOptions?.map((m: any) => ({
                 emoji: m.emoji,
-                label: typeof m.label === 'string' ? m.label : (m.label as Record<string, string>)?.[locale] || ''
+                label: typeof m.label === 'string' ? m.label : (m.label as Record<string, string>)?.[locale] || '',
+                value: m.value,
               })),
               sliderMin: block.sliderMin,
               sliderMax: block.sliderMax,
@@ -415,8 +496,29 @@ function CreateWorksheetContent() {
               responseMaxDuration: block.responseMaxDuration,
               responseAcceptedTypes: block.responseAcceptedTypes,
               responseHint: block.responseHint,
+              // Scoring fields
+              scaleLabels: block.scaleLabels,
+              scaleRange: block.scaleRange,
+              minValue: block.minValue,
+              maxValue: block.maxValue,
+              scoring: block.scoring,
+              required: block.required,
             }))
             setBlocks(loadedBlocks)
+          }
+
+          // Load scoring settings
+          const settings = resource.settings as WorksheetSettings
+          if (settings) {
+            if (settings.enableScoring !== undefined) {
+              setEnableScoring(settings.enableScoring)
+            }
+            if (settings.showScoreToMember !== undefined) {
+              setShowScoreToMember(settings.showScoreToMember)
+            }
+            if (settings.scoringRanges) {
+              setScoringRanges(settings.scoringRanges)
+            }
           }
         }
       } catch (error) {
@@ -460,10 +562,12 @@ function CreateWorksheetContent() {
 
   // Add new block
   const addBlock = (type: BlockType) => {
+    const preset = likertPresets[selectedLikertPreset as keyof typeof likertPresets]
     const newBlock: WorksheetBlock = {
       id: generateId(),
       type,
       content: '',
+      required: true,
       // Content blocks
       ...(type === 'checklist' && { items: [''] }),
       ...(type === 'scale' && { scaleMin: 1, scaleMax: 10, scaleMinLabel: '', scaleMaxLabel: '' }),
@@ -474,12 +578,42 @@ function CreateWorksheetContent() {
       ...(type === 'quote' && { style: 'default' as const }),
       ...(type === 'tip' && { style: 'info' as const }),
       // New response blocks
-      ...(type === 'multiple_choice' && { choices: ['', ''], allowMultiple: false }),
-      ...(type === 'yes_no' && { }),
-      ...(type === 'mood' && { moodOptions: defaultMoodOptions }),
+      ...(type === 'multiple_choice' && {
+        choices: ['', ''],
+        allowMultiple: false,
+        scoring: enableScoring ? { '0': 0, '1': 1 } : undefined,
+      }),
+      ...(type === 'yes_no' && {
+        scoring: enableScoring ? { 'yes': 1, 'no': 0 } : undefined,
+      }),
+      ...(type === 'mood' && { moodOptions: enableScoring ? defaultScoredMoodOptions : defaultMoodOptions }),
       ...(type === 'date_picker' && { }),
       ...(type === 'time_input' && { }),
       ...(type === 'list_input' && { listMinItems: 1, listMaxItems: 10, listItemPlaceholder: '' }),
+      // Scoring question types (likert, numeric, slider)
+      ...(type === 'likert' && {
+        scaleLabels: preset[locale],
+        scaleRange: preset[locale].length,
+        scoring: preset[locale].reduce((acc, _, i) => ({ ...acc, [i.toString()]: i }), {}),
+      }),
+      ...(type === 'numeric' && {
+        minValue: 0,
+        maxValue: 10,
+      }),
+      ...(type === 'slider' && {
+        sliderMin: 0,
+        sliderMax: 100,
+        sliderStep: 1,
+        sliderUnit: '%',
+      }),
+      ...(type === 'matrix_rating' && {
+        matrixItems: [locale === 'fr' ? 'Élément 1' : 'Item 1', locale === 'fr' ? 'Élément 2' : 'Item 2'],
+        matrixScaleMax: 5,
+        matrixScaleLabels: {
+          min: locale === 'fr' ? 'Pas du tout' : 'Not at all',
+          max: locale === 'fr' ? 'Complètement' : 'Completely',
+        },
+      }),
       // Media response blocks
       ...(type === 'video_response' && { responseRequired: true, responseMaxDuration: 300, responseHint: '' }),
       ...(type === 'audio_response' && { responseRequired: true, responseMaxDuration: 180, responseHint: '' }),
@@ -488,6 +622,93 @@ function CreateWorksheetContent() {
     setBlocks([...blocks, newBlock])
     setExpandedBlock(newBlock.id)
     setShowBlockPicker(false)
+  }
+
+  // Apply likert preset to a block
+  const applyLikertPreset = (blockId: string, presetKey: string) => {
+    const preset = likertPresets[presetKey as keyof typeof likertPresets]
+    if (preset) {
+      updateBlock(blockId, {
+        scaleLabels: preset[locale],
+        scaleRange: preset[locale].length,
+        scoring: preset[locale].reduce((acc, _, i) => ({ ...acc, [i.toString()]: i }), {}),
+      })
+    }
+  }
+
+  // Calculate max possible score
+  const calculateMaxScore = () => {
+    return blocks.reduce((total, block) => {
+      if (!enableScoring) return 0
+      if (block.type === 'likert' && block.scoring) {
+        return total + Math.max(...Object.values(block.scoring))
+      }
+      if (block.type === 'yes_no') return total + 1
+      if (block.type === 'numeric') return total + (block.maxValue || 10)
+      if (block.type === 'scale') return total + (block.scaleMax || 10)
+      if (block.type === 'slider') return total + (block.sliderMax || 100)
+      if (block.type === 'multiple_choice' && block.scoring) {
+        return total + Math.max(...Object.values(block.scoring))
+      }
+      if (block.type === 'mood' && block.moodOptions) {
+        const values = block.moodOptions.map(m => m.value || 0)
+        return total + Math.max(...values)
+      }
+      if (block.type === 'matrix_rating') {
+        // Each item can score up to matrixScaleMax
+        const itemCount = block.matrixItems?.length || 0
+        const maxPerItem = block.matrixScaleMax || 5
+        return total + (itemCount * maxPerItem)
+      }
+      return total
+    }, 0)
+  }
+
+  // Calculate test score
+  const calculateTestScore = () => {
+    if (!enableScoring) return 0
+    let score = 0
+    blocks.forEach(block => {
+      const response = testResponses[block.id]
+      if (response !== undefined) {
+        if ((block.type === 'likert' || block.type === 'multiple_choice') && block.scoring) {
+          score += block.scoring[response.toString()] || 0
+        } else if (block.type === 'yes_no') {
+          if (block.scoring) {
+            score += block.scoring[response] || 0
+          } else {
+            score += response === 'yes' ? 1 : 0
+          }
+        } else if (block.type === 'numeric' || block.type === 'scale' || block.type === 'slider') {
+          const numValue = typeof response === 'number' ? response : parseInt(response)
+          score += numValue || 0
+        } else if (block.type === 'mood') {
+          score += response || 0
+        } else if (block.type === 'matrix_rating' && typeof response === 'object') {
+          // Sum all item ratings
+          const ratings = response as Record<string, number>
+          score += Object.values(ratings).reduce((sum, val) => sum + (val || 0), 0)
+        }
+      }
+    })
+    return score
+  }
+
+  // Get score interpretation
+  const getScoreInterpretation = (score: number) => {
+    for (const range of scoringRanges) {
+      if (score >= range.min && score <= range.max) {
+        return range.label[locale]
+      }
+    }
+    return ''
+  }
+
+  // Get scorable blocks count
+  const getScorableBlocksCount = () => {
+    return blocks.filter(b =>
+      ['likert', 'numeric', 'scale', 'slider', 'multiple_choice', 'yes_no', 'mood', 'matrix_rating'].includes(b.type)
+    ).length
   }
 
   // Handle file upload for media blocks
@@ -730,8 +951,41 @@ function CreateWorksheetContent() {
         return baseBlock as ResourceBlock
       })
 
-      // Build settings
-      const settings: WorksheetSettings = {}
+      // Build settings with scoring if enabled
+      const settings: WorksheetSettings = {
+        enableScoring,
+        showScoreToMember: enableScoring ? showScoreToMember : undefined,
+        scoringRanges: enableScoring ? scoringRanges : undefined,
+        maxScore: enableScoring ? calculateMaxScore() : undefined,
+      }
+
+      // If scoring is enabled, also store questions data for assessment-style worksheets
+      if (enableScoring) {
+        settings.questions = blocks
+          .filter(b => ['likert', 'numeric', 'scale', 'slider', 'multiple_choice', 'yes_no', 'mood', 'checklist'].includes(b.type))
+          .map(block => ({
+            id: block.id,
+            type: block.type as WorksheetQuestionType,
+            question: block.content,
+            required: block.required ?? true,
+            options: block.choices,
+            scaleLabels: block.scaleLabels,
+            scaleRange: block.scaleRange,
+            scaleMin: block.scaleMin,
+            scaleMax: block.scaleMax,
+            scaleMinLabel: block.scaleMinLabel,
+            scaleMaxLabel: block.scaleMaxLabel,
+            items: block.items,
+            moodOptions: block.moodOptions?.map(m => ({ emoji: m.emoji, label: m.label, value: m.value || 0 })),
+            sliderMin: block.sliderMin,
+            sliderMax: block.sliderMax,
+            sliderStep: block.sliderStep,
+            sliderUnit: block.sliderUnit,
+            minValue: block.minValue,
+            maxValue: block.maxValue,
+            scoring: block.scoring,
+          }))
+      }
 
       if (isEditMode && editId) {
         // Update existing resource
@@ -1025,17 +1279,18 @@ function CreateWorksheetContent() {
             <label className="block text-gray-900 font-medium mb-3">{block.content}</label>
             <div className="flex justify-center gap-2 sm:gap-4">
               {(block.moodOptions || [
-                { emoji: '😢', label: locale === 'fr' ? 'Très mal' : 'Very Bad' },
-                { emoji: '😕', label: locale === 'fr' ? 'Mal' : 'Bad' },
-                { emoji: '😐', label: locale === 'fr' ? 'Neutre' : 'Neutral' },
-                { emoji: '🙂', label: locale === 'fr' ? 'Bien' : 'Good' },
-                { emoji: '😄', label: locale === 'fr' ? 'Très bien' : 'Very Good' },
+                { emoji: '😢', label: locale === 'fr' ? 'Très mal' : 'Very Bad', value: 1 },
+                { emoji: '😕', label: locale === 'fr' ? 'Mal' : 'Bad', value: 2 },
+                { emoji: '😐', label: locale === 'fr' ? 'Neutre' : 'Neutral', value: 3 },
+                { emoji: '🙂', label: locale === 'fr' ? 'Bien' : 'Good', value: 4 },
+                { emoji: '😄', label: locale === 'fr' ? 'Très bien' : 'Very Good', value: 5 },
               ]).map((mood, index) => {
-                const isSelected = isTestMode && testResponses[block.id] === index
+                const moodValue = mood.value ?? index
+                const isSelected = isTestMode && testResponses[block.id] === moodValue
                 return (
                   <button
                     key={index}
-                    onClick={() => isTestMode && !testSubmitted && updateTestResponse(block.id, index)}
+                    onClick={() => isTestMode && !testSubmitted && updateTestResponse(block.id, moodValue)}
                     disabled={!isTestMode || testSubmitted}
                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all ${
                       isSelected
@@ -1048,6 +1303,142 @@ function CreateWorksheetContent() {
                   </button>
                 )
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Likert Scale */}
+        {block.type === 'likert' && (
+          <div className="space-y-3">
+            <label className="block text-gray-900 font-medium">{block.content}</label>
+            <div className="flex flex-wrap gap-2">
+              {block.scaleLabels?.map((label, index) => {
+                const isSelected = isTestMode && testResponses[block.id] === index
+                return (
+                  <button
+                    key={index}
+                    onClick={() => isTestMode && !testSubmitted && updateTestResponse(block.id, index)}
+                    disabled={!isTestMode || testSubmitted}
+                    className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      isSelected
+                        ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                        : isTestMode
+                          ? 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                          : 'border-gray-200 text-gray-400 bg-gray-50'
+                    } ${testSubmitted && isTestMode ? 'cursor-not-allowed opacity-80' : ''}`}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Numeric Input */}
+        {block.type === 'numeric' && (
+          <div className="space-y-3">
+            <label className="block text-gray-900 font-medium">{block.content}</label>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-500">{block.minValue ?? 0}</span>
+              <input
+                type="range"
+                min={block.minValue ?? 0}
+                max={block.maxValue ?? 10}
+                value={testResponses[block.id] ?? block.minValue ?? 0}
+                onChange={(e) => isTestMode && updateTestResponse(block.id, parseInt(e.target.value))}
+                disabled={!isTestMode || testSubmitted}
+                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+              />
+              <span className="text-sm text-gray-500">{block.maxValue ?? 10}</span>
+              <span className="w-12 text-center font-semibold text-emerald-600">
+                {testResponses[block.id] !== undefined ? testResponses[block.id] : '-'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Slider */}
+        {block.type === 'slider' && (
+          <div className="space-y-3">
+            <label className="block text-gray-900 font-medium">{block.content}</label>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-500">{block.sliderMin ?? 0}</span>
+              <input
+                type="range"
+                min={block.sliderMin ?? 0}
+                max={block.sliderMax ?? 100}
+                step={block.sliderStep ?? 1}
+                value={testResponses[block.id] ?? block.sliderMin ?? 0}
+                onChange={(e) => isTestMode && updateTestResponse(block.id, parseInt(e.target.value))}
+                disabled={!isTestMode || testSubmitted}
+                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-violet-500"
+              />
+              <span className="text-sm text-gray-500">{block.sliderMax ?? 100}</span>
+              <span className="w-20 text-center font-semibold text-violet-600">
+                {testResponses[block.id] !== undefined ? `${testResponses[block.id]}${block.sliderUnit || ''}` : '-'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Matrix Rating */}
+        {block.type === 'matrix_rating' && (
+          <div className="space-y-4">
+            <label className="block text-gray-900 font-medium">{block.content}</label>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th className="text-left text-sm font-medium text-gray-500 pb-3 pr-4 min-w-[150px]"></th>
+                    <th className="text-center text-xs text-gray-400 pb-3 px-2">{block.matrixScaleLabels?.min || '1'}</th>
+                    {Array.from({ length: (block.matrixScaleMax || 5) - 2 }, (_, i) => (
+                      <th key={i} className="text-center text-xs text-gray-400 pb-3 px-2">{i + 2}</th>
+                    ))}
+                    <th className="text-center text-xs text-gray-400 pb-3 px-2">{block.matrixScaleLabels?.max || (block.matrixScaleMax || 5).toString()}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(block.matrixItems || []).map((item, itemIndex) => {
+                    const currentResponse = (testResponses[block.id] as Record<string, number>) || {}
+                    return (
+                      <tr key={itemIndex} className="border-t border-gray-100">
+                        <td className="py-3 pr-4 text-sm text-gray-700">{item}</td>
+                        {Array.from({ length: block.matrixScaleMax || 5 }, (_, scaleIndex) => {
+                          const value = scaleIndex + 1
+                          const isSelected = currentResponse[itemIndex.toString()] === value
+                          return (
+                            <td key={scaleIndex} className="py-3 px-2 text-center">
+                              <button
+                                onClick={() => {
+                                  if (isTestMode && !testSubmitted) {
+                                    const newResponse = { ...currentResponse, [itemIndex.toString()]: value }
+                                    updateTestResponse(block.id, newResponse)
+                                  }
+                                }}
+                                disabled={!isTestMode || testSubmitted}
+                                className={`w-8 h-8 rounded-full border-2 transition-all ${
+                                  isSelected
+                                    ? 'border-indigo-500 bg-indigo-500 text-white'
+                                    : isTestMode
+                                      ? 'border-gray-300 hover:border-indigo-300 hover:bg-indigo-50'
+                                      : 'border-gray-200 bg-gray-50'
+                                } ${testSubmitted ? 'cursor-not-allowed' : ''}`}
+                              >
+                                {isSelected && <span className="text-xs font-medium">{value}</span>}
+                              </button>
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex justify-between text-xs text-gray-400 px-4">
+              <span>{block.matrixScaleLabels?.min || (locale === 'fr' ? 'Pas du tout' : 'Not at all')}</span>
+              <span>{block.matrixScaleLabels?.max || (locale === 'fr' ? 'Complètement' : 'Completely')}</span>
             </div>
           </div>
         )}
@@ -2429,6 +2820,561 @@ function CreateWorksheetContent() {
                   </>
                 )}
 
+                {/* Likert Scale Block */}
+                {block.type === 'likert' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Question' : 'Question'}
+                      </label>
+                      <input
+                        type="text"
+                        value={block.content}
+                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        placeholder={locale === 'fr' ? 'Ex: Je me sens anxieux(se) la plupart du temps' : 'e.g., I feel anxious most of the time'}
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Likert Preset Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Type d\'échelle' : 'Scale Type'}
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(likertPresets).map(([key, preset]) => (
+                          <button
+                            key={key}
+                            onClick={() => applyLikertPreset(block.id, key)}
+                            className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                              block.scaleLabels?.join(',') === preset[locale].join(',')
+                                ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                                : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                            }`}
+                          >
+                            {key === 'agreement' ? (locale === 'fr' ? 'Accord' : 'Agreement') :
+                             key === 'frequency' ? (locale === 'fr' ? 'Fréquence' : 'Frequency') :
+                             locale === 'fr' ? 'Sévérité' : 'Severity'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Scale Labels Preview */}
+                    <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border border-emerald-200/50">
+                      <p className="text-xs font-medium text-emerald-600 mb-3 flex items-center gap-1.5">
+                        <SlidersHorizontal className="w-3.5 h-3.5" />
+                        {locale === 'fr' ? 'Aperçu pour le membre' : 'Member will see'}
+                      </p>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {(block.scaleLabels || likertPresets.frequency[locale]).map((label, i) => (
+                          <button
+                            key={i}
+                            className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg text-gray-600"
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Scoring Config for Likert */}
+                    {enableScoring && (
+                      <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Calculator className="w-4 h-4 text-amber-600" />
+                          <span className="text-sm font-medium text-amber-700">
+                            {locale === 'fr' ? 'Points par réponse' : 'Points per answer'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-5 gap-2">
+                          {(block.scaleLabels || likertPresets.frequency[locale]).map((label, i) => (
+                            <div key={i} className="text-center">
+                              <p className="text-xs text-gray-500 mb-1 truncate" title={label}>{label.substring(0, 8)}...</p>
+                              <input
+                                type="number"
+                                min="0"
+                                max="10"
+                                value={block.scoring?.[i.toString()] ?? i}
+                                onChange={(e) => {
+                                  const newScoring = { ...(block.scoring || {}) }
+                                  newScoring[i.toString()] = parseInt(e.target.value) || 0
+                                  updateBlock(block.id, { scoring: newScoring })
+                                }}
+                                className="w-full px-2 py-1.5 bg-white border border-amber-200 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-amber-600 mt-2">
+                          {locale === 'fr' ? `Score max: ${Math.max(...Object.values(block.scoring || {}).map(Number))} pts` : `Max score: ${Math.max(...Object.values(block.scoring || {}).map(Number))} pts`}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Numeric Input Block */}
+                {block.type === 'numeric' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Question' : 'Question'}
+                      </label>
+                      <input
+                        type="text"
+                        value={block.content}
+                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        placeholder={locale === 'fr' ? 'Ex: Combien d\'heures avez-vous dormi?' : 'e.g., How many hours did you sleep?'}
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          {locale === 'fr' ? 'Valeur minimum' : 'Minimum Value'}
+                        </label>
+                        <input
+                          type="number"
+                          value={block.minValue ?? 0}
+                          onChange={(e) => updateBlock(block.id, { minValue: parseInt(e.target.value) || 0 })}
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          {locale === 'fr' ? 'Valeur maximum' : 'Maximum Value'}
+                        </label>
+                        <input
+                          type="number"
+                          value={block.maxValue ?? 10}
+                          onChange={(e) => updateBlock(block.id, { maxValue: parseInt(e.target.value) || 10 })}
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Preview */}
+                    <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200/50">
+                      <p className="text-xs font-medium text-blue-600 mb-3 flex items-center gap-1.5">
+                        <Calculator className="w-3.5 h-3.5" />
+                        {locale === 'fr' ? 'Aperçu pour le membre' : 'Member will see'}
+                      </p>
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm text-gray-500">{block.minValue ?? 0}</span>
+                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full w-1/2 bg-blue-500 rounded-full"></div>
+                        </div>
+                        <span className="text-sm text-gray-500">{block.maxValue ?? 10}</span>
+                        <span className="w-12 text-center font-semibold text-blue-600">
+                          {Math.floor(((block.maxValue ?? 10) - (block.minValue ?? 0)) / 2 + (block.minValue ?? 0))}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Scoring Info for Numeric */}
+                    {enableScoring && (
+                      <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center gap-2">
+                        <Calculator className="w-4 h-4 text-amber-600" />
+                        <span className="text-sm text-amber-700">
+                          {locale === 'fr'
+                            ? `La valeur sélectionnée sera ajoutée au score (max: ${block.maxValue ?? 10} pts)`
+                            : `Selected value will be added to score (max: ${block.maxValue ?? 10} pts)`}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Slider Block */}
+                {block.type === 'slider' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Question' : 'Question'}
+                      </label>
+                      <input
+                        type="text"
+                        value={block.content}
+                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        placeholder={locale === 'fr' ? 'Ex: Quel est votre niveau de stress?' : 'e.g., What is your stress level?'}
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          {locale === 'fr' ? 'Minimum' : 'Min'}
+                        </label>
+                        <input
+                          type="number"
+                          value={block.sliderMin ?? 0}
+                          onChange={(e) => updateBlock(block.id, { sliderMin: parseInt(e.target.value) || 0 })}
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          {locale === 'fr' ? 'Maximum' : 'Max'}
+                        </label>
+                        <input
+                          type="number"
+                          value={block.sliderMax ?? 100}
+                          onChange={(e) => updateBlock(block.id, { sliderMax: parseInt(e.target.value) || 100 })}
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          {locale === 'fr' ? 'Unité' : 'Unit'}
+                        </label>
+                        <input
+                          type="text"
+                          value={block.sliderUnit ?? '%'}
+                          onChange={(e) => updateBlock(block.id, { sliderUnit: e.target.value })}
+                          placeholder="%"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Preview */}
+                    <div className="p-4 bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl border border-violet-200/50">
+                      <p className="text-xs font-medium text-violet-600 mb-3 flex items-center gap-1.5">
+                        <Gauge className="w-3.5 h-3.5" />
+                        {locale === 'fr' ? 'Aperçu pour le membre' : 'Member will see'}
+                      </p>
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm text-gray-500">{block.sliderMin ?? 0}</span>
+                        <input
+                          type="range"
+                          min={block.sliderMin ?? 0}
+                          max={block.sliderMax ?? 100}
+                          value={(block.sliderMax ?? 100) / 2}
+                          readOnly
+                          className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-violet-500"
+                        />
+                        <span className="text-sm text-gray-500">{block.sliderMax ?? 100}</span>
+                        <span className="w-16 text-center font-semibold text-violet-600">
+                          {(block.sliderMax ?? 100) / 2}{block.sliderUnit ?? '%'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Scoring Info for Slider */}
+                    {enableScoring && (
+                      <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center gap-2">
+                        <Calculator className="w-4 h-4 text-amber-600" />
+                        <span className="text-sm text-amber-700">
+                          {locale === 'fr'
+                            ? `La valeur du curseur sera ajoutée au score (max: ${block.sliderMax ?? 100} pts)`
+                            : `Slider value will be added to score (max: ${block.sliderMax ?? 100} pts)`}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Scoring Section for Multiple Choice - Add after choice list */}
+                {block.type === 'multiple_choice' && enableScoring && (
+                  <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Calculator className="w-4 h-4 text-amber-600" />
+                      <span className="text-sm font-medium text-amber-700">
+                        {locale === 'fr' ? 'Points par réponse' : 'Points per answer'}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {(block.choices || []).map((choice, index) => (
+                        <div key={index} className="flex items-center gap-3">
+                          <span className="text-sm text-gray-600 flex-1 truncate">{choice || `Option ${index + 1}`}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={block.scoring?.[index.toString()] ?? index}
+                            onChange={(e) => {
+                              const newScoring = { ...(block.scoring || {}) }
+                              newScoring[index.toString()] = parseInt(e.target.value) || 0
+                              updateBlock(block.id, { scoring: newScoring })
+                            }}
+                            className="w-16 px-2 py-1.5 bg-white border border-amber-200 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                          />
+                          <span className="text-xs text-amber-600">pts</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Scoring Section for Yes/No */}
+                {block.type === 'yes_no' && enableScoring && (
+                  <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Calculator className="w-4 h-4 text-amber-600" />
+                      <span className="text-sm font-medium text-amber-700">
+                        {locale === 'fr' ? 'Points par réponse' : 'Points per answer'}
+                      </span>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="flex-1 flex items-center gap-2">
+                        <span className="text-sm text-emerald-600 font-medium">{locale === 'fr' ? 'Oui' : 'Yes'}</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={block.scoring?.yes ?? 1}
+                          onChange={(e) => {
+                            const newScoring = { ...(block.scoring || { yes: 1, no: 0 }) }
+                            newScoring.yes = parseInt(e.target.value) || 0
+                            updateBlock(block.id, { scoring: newScoring })
+                          }}
+                          className="w-16 px-2 py-1.5 bg-white border border-amber-200 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        />
+                        <span className="text-xs text-amber-600">pts</span>
+                      </div>
+                      <div className="flex-1 flex items-center gap-2">
+                        <span className="text-sm text-gray-600 font-medium">{locale === 'fr' ? 'Non' : 'No'}</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={block.scoring?.no ?? 0}
+                          onChange={(e) => {
+                            const newScoring = { ...(block.scoring || { yes: 1, no: 0 }) }
+                            newScoring.no = parseInt(e.target.value) || 0
+                            updateBlock(block.id, { scoring: newScoring })
+                          }}
+                          className="w-16 px-2 py-1.5 bg-white border border-amber-200 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        />
+                        <span className="text-xs text-amber-600">pts</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Scoring Section for Mood */}
+                {block.type === 'mood' && enableScoring && (
+                  <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Calculator className="w-4 h-4 text-amber-600" />
+                      <span className="text-sm font-medium text-amber-700">
+                        {locale === 'fr' ? 'Points par humeur' : 'Points per mood'}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-3 justify-center">
+                      {(block.moodOptions || defaultScoredMoodOptions).map((mood, index) => (
+                        <div key={index} className="flex flex-col items-center gap-1">
+                          <span className="text-xl">{mood.emoji}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="10"
+                            value={mood.value ?? index + 1}
+                            onChange={(e) => {
+                              const newOptions = [...(block.moodOptions || defaultScoredMoodOptions)]
+                              newOptions[index] = { ...newOptions[index], value: parseInt(e.target.value) || 0 }
+                              updateBlock(block.id, { moodOptions: newOptions })
+                            }}
+                            className="w-12 px-1 py-1 bg-white border border-amber-200 rounded-lg text-center text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Scoring Section for Scale */}
+                {block.type === 'scale' && enableScoring && (
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center gap-2">
+                    <Calculator className="w-4 h-4 text-amber-600" />
+                    <span className="text-sm text-amber-700">
+                      {locale === 'fr'
+                        ? `La valeur sélectionnée sera ajoutée au score (${block.scaleMin ?? 1} - ${block.scaleMax ?? 10} pts)`
+                        : `Selected value will be added to score (${block.scaleMin ?? 1} - ${block.scaleMax ?? 10} pts)`}
+                    </span>
+                  </div>
+                )}
+
+                {/* Matrix Rating Block */}
+                {block.type === 'matrix_rating' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Question' : 'Question'}
+                      </label>
+                      <input
+                        type="text"
+                        value={block.content}
+                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        placeholder={locale === 'fr' ? 'Ex: Comment évaluez-vous votre relation avec...' : 'e.g., How would you rate your relationship with...'}
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Items to Rate */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {locale === 'fr' ? 'Éléments à évaluer' : 'Items to Rate'}
+                      </label>
+                      <div className="space-y-2">
+                        {(block.matrixItems || []).map((item, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <span className="text-sm text-gray-400 w-6">{index + 1}.</span>
+                            <input
+                              type="text"
+                              value={item}
+                              onChange={(e) => {
+                                const newItems = [...(block.matrixItems || [])]
+                                newItems[index] = e.target.value
+                                updateBlock(block.id, { matrixItems: newItems })
+                              }}
+                              placeholder={locale === 'fr' ? `Élément ${index + 1}` : `Item ${index + 1}`}
+                              className="flex-1 px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                            />
+                            {(block.matrixItems?.length || 0) > 1 && (
+                              <button
+                                onClick={() => {
+                                  const newItems = (block.matrixItems || []).filter((_, i) => i !== index)
+                                  updateBlock(block.id, { matrixItems: newItems })
+                                }}
+                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => {
+                          const newItems = [...(block.matrixItems || []), locale === 'fr' ? `Élément ${(block.matrixItems?.length || 0) + 1}` : `Item ${(block.matrixItems?.length || 0) + 1}`]
+                          updateBlock(block.id, { matrixItems: newItems })
+                        }}
+                        className="mt-2 flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
+                      >
+                        <Plus className="w-4 h-4" />
+                        {locale === 'fr' ? 'Ajouter un élément' : 'Add item'}
+                      </button>
+                    </div>
+
+                    {/* Scale Configuration */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          {locale === 'fr' ? 'Échelle maximum' : 'Scale Maximum'}
+                        </label>
+                        <select
+                          value={block.matrixScaleMax || 5}
+                          onChange={(e) => updateBlock(block.id, { matrixScaleMax: parseInt(e.target.value) })}
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        >
+                          {[3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                            <option key={n} value={n}>1 - {n}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Scale Labels */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          {locale === 'fr' ? 'Étiquette minimum (1)' : 'Min Label (1)'}
+                        </label>
+                        <input
+                          type="text"
+                          value={block.matrixScaleLabels?.min || ''}
+                          onChange={(e) => updateBlock(block.id, {
+                            matrixScaleLabels: {
+                              ...(block.matrixScaleLabels || { min: '', max: '' }),
+                              min: e.target.value
+                            }
+                          })}
+                          placeholder={locale === 'fr' ? 'Pas du tout' : 'Not at all'}
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          {locale === 'fr' ? `Étiquette maximum (${block.matrixScaleMax || 5})` : `Max Label (${block.matrixScaleMax || 5})`}
+                        </label>
+                        <input
+                          type="text"
+                          value={block.matrixScaleLabels?.max || ''}
+                          onChange={(e) => updateBlock(block.id, {
+                            matrixScaleLabels: {
+                              ...(block.matrixScaleLabels || { min: '', max: '' }),
+                              max: e.target.value
+                            }
+                          })}
+                          placeholder={locale === 'fr' ? 'Complètement' : 'Completely'}
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Preview */}
+                    <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-200/50">
+                      <p className="text-xs font-medium text-indigo-600 mb-3 flex items-center gap-1.5">
+                        <List className="w-3.5 h-3.5" />
+                        {locale === 'fr' ? 'Aperçu pour le membre' : 'Member will see'}
+                      </p>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr>
+                              <th className="text-left py-2 pr-4 text-gray-600 font-medium"></th>
+                              {Array.from({ length: block.matrixScaleMax || 5 }, (_, i) => (
+                                <th key={i} className="text-center px-2 py-2 text-gray-500 font-medium">
+                                  {i === 0 && block.matrixScaleLabels?.min ? (
+                                    <span className="text-xs">{block.matrixScaleLabels.min}</span>
+                                  ) : i === (block.matrixScaleMax || 5) - 1 && block.matrixScaleLabels?.max ? (
+                                    <span className="text-xs">{block.matrixScaleLabels.max}</span>
+                                  ) : (
+                                    i + 1
+                                  )}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(block.matrixItems || []).map((item, rowIndex) => (
+                              <tr key={rowIndex} className="border-t border-indigo-100">
+                                <td className="py-2 pr-4 text-gray-700">{item}</td>
+                                {Array.from({ length: block.matrixScaleMax || 5 }, (_, colIndex) => (
+                                  <td key={colIndex} className="text-center px-2 py-2">
+                                    <div className="w-4 h-4 rounded-full border-2 border-gray-300 mx-auto"></div>
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Scoring Info for Matrix Rating */}
+                    {enableScoring && (
+                      <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Calculator className="w-4 h-4 text-amber-600" />
+                          <span className="text-sm font-medium text-amber-700">
+                            {locale === 'fr' ? 'Scoring' : 'Scoring'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-amber-700">
+                          {locale === 'fr'
+                            ? `Chaque élément peut être noté de 1 à ${block.matrixScaleMax || 5}. Score max: ${(block.matrixItems?.length || 0) * (block.matrixScaleMax || 5)} pts (${block.matrixItems?.length || 0} éléments × ${block.matrixScaleMax || 5} pts)`
+                            : `Each item can be rated 1-${block.matrixScaleMax || 5}. Max score: ${(block.matrixItems?.length || 0) * (block.matrixScaleMax || 5)} pts (${block.matrixItems?.length || 0} items × ${block.matrixScaleMax || 5} pts)`}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+
                 </div>
             </motion.div>
           )}
@@ -2729,6 +3675,30 @@ function CreateWorksheetContent() {
                                 </div>
                               </div>
 
+                              {/* Scoring Questions Section (for assessments) */}
+                              <div className="mb-4">
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
+                                  {locale === 'fr' ? 'Questions avec score' : 'Scoring Questions'}
+                                </p>
+                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                  {blockTypes.filter(bt => ['likert', 'numeric', 'slider', 'matrix_rating'].includes(bt.type)).map((bt) => {
+                                    const Icon = bt.icon
+                                    return (
+                                      <button
+                                        key={bt.type}
+                                        onClick={() => addBlock(bt.type)}
+                                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-gray-50 transition-colors text-center group"
+                                      >
+                                        <div className="w-10 h-10 rounded-xl bg-amber-50 group-hover:bg-amber-100 flex items-center justify-center transition-colors">
+                                          <Icon className="w-5 h-5 text-amber-500 group-hover:text-amber-600 transition-colors" />
+                                        </div>
+                                        <p className="text-xs font-medium text-gray-700 group-hover:text-gray-900">{bt.label[locale]}</p>
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+
                               {/* Media Responses Section */}
                               <div>
                                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
@@ -2863,12 +3833,30 @@ function CreateWorksheetContent() {
                                 animate={{ opacity: 1, y: 0 }}
                                 className="mt-8 pt-6 border-t border-gray-100"
                               >
+                                {/* Score Display - Show when scoring is enabled */}
+                                {enableScoring && (
+                                  <div className="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="text-sm font-medium text-gray-700">
+                                        {locale === 'fr' ? 'Score total' : 'Total Score'}
+                                      </span>
+                                      <span className="text-2xl font-bold text-emerald-600">
+                                        {calculateTestScore()} / {calculateMaxScore()}
+                                      </span>
+                                    </div>
+                                    <div className="text-sm text-emerald-700 font-medium">
+                                      {locale === 'fr' ? 'Interprétation: ' : 'Interpretation: '}
+                                      <span className="font-bold">{getScoreInterpretation(calculateTestScore())}</span>
+                                    </div>
+                                  </div>
+                                )}
+
                                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                                   {locale === 'fr' ? 'Résumé des réponses' : 'Response Summary'}
                                 </h3>
                                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                                  {blocks.filter(b => ['prompt', 'checklist', 'scale'].includes(b.type)).map(block => (
+                                  {blocks.filter(b => ['prompt', 'checklist', 'scale', 'likert', 'numeric', 'slider', 'multiple_choice', 'yes_no', 'mood', 'matrix_rating'].includes(b.type)).map(block => (
                                     <div key={block.id} className="text-sm">
                                       <p className="text-gray-500 font-medium mb-1">{block.content}</p>
                                       <p className="text-gray-900">
@@ -2878,6 +3866,46 @@ function CreateWorksheetContent() {
                                           (testResponses[block.id] || []).length > 0
                                             ? `${(testResponses[block.id] || []).length} ${locale === 'fr' ? 'élément(s) coché(s)' : 'item(s) checked'}`
                                             : <span className="text-gray-400 italic">{locale === 'fr' ? 'Aucun élément coché' : 'No items checked'}</span>
+                                        )}
+                                        {block.type === 'likert' && (
+                                          testResponses[block.id] !== undefined
+                                            ? block.scaleLabels?.[testResponses[block.id]] || testResponses[block.id]
+                                            : <span className="text-gray-400 italic">{locale === 'fr' ? 'Non répondu' : 'Not answered'}</span>
+                                        )}
+                                        {block.type === 'numeric' && (
+                                          testResponses[block.id] !== undefined
+                                            ? testResponses[block.id]
+                                            : <span className="text-gray-400 italic">{locale === 'fr' ? 'Non répondu' : 'Not answered'}</span>
+                                        )}
+                                        {block.type === 'slider' && (
+                                          testResponses[block.id] !== undefined
+                                            ? `${testResponses[block.id]}${block.sliderUnit || ''}`
+                                            : <span className="text-gray-400 italic">{locale === 'fr' ? 'Non répondu' : 'Not answered'}</span>
+                                        )}
+                                        {block.type === 'multiple_choice' && (
+                                          testResponses[block.id] !== undefined
+                                            ? block.choices?.[testResponses[block.id]] || testResponses[block.id]
+                                            : <span className="text-gray-400 italic">{locale === 'fr' ? 'Non répondu' : 'Not answered'}</span>
+                                        )}
+                                        {block.type === 'yes_no' && (
+                                          testResponses[block.id]
+                                            ? (testResponses[block.id] === 'yes' ? (locale === 'fr' ? 'Oui' : 'Yes') : (locale === 'fr' ? 'Non' : 'No'))
+                                            : <span className="text-gray-400 italic">{locale === 'fr' ? 'Non répondu' : 'Not answered'}</span>
+                                        )}
+                                        {block.type === 'mood' && (
+                                          testResponses[block.id] !== undefined
+                                            ? block.moodOptions?.find(m => m.value === testResponses[block.id])?.emoji || testResponses[block.id]
+                                            : <span className="text-gray-400 italic">{locale === 'fr' ? 'Non répondu' : 'Not answered'}</span>
+                                        )}
+                                        {block.type === 'matrix_rating' && (
+                                          testResponses[block.id] && Object.keys(testResponses[block.id]).length > 0
+                                            ? (() => {
+                                                const ratings = testResponses[block.id] as Record<string, number>
+                                                const total = Object.values(ratings).reduce((sum, val) => sum + (val || 0), 0)
+                                                const maxPossible = (block.matrixItems?.length || 0) * (block.matrixScaleMax || 5)
+                                                return `${total} / ${maxPossible} (${Object.entries(ratings).map(([item, val]) => `${item}: ${val}`).join(', ')})`
+                                              })()
+                                            : <span className="text-gray-400 italic">{locale === 'fr' ? 'Non répondu' : 'Not answered'}</span>
                                         )}
                                       </p>
                                     </div>
@@ -3062,6 +4090,149 @@ function CreateWorksheetContent() {
                     ))}
                   </div>
                 </motion.div>
+
+                {/* Scoring Section - Only show if there are scorable blocks */}
+                {getScorableBlocksCount() > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 }}
+                    className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          {locale === 'fr' ? 'Notation et scores' : 'Scoring & Assessment'}
+                        </h2>
+                        <p className="text-sm text-gray-500">
+                          {locale === 'fr' ? 'Activer le calcul automatique des scores' : 'Enable automatic score calculation'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setEnableScoring(!enableScoring)}
+                        className={`relative w-11 h-6 rounded-full transition-colors ${
+                          enableScoring ? 'bg-emerald-500' : 'bg-gray-200'
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                            enableScoring ? 'left-6' : 'left-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    <AnimatePresence>
+                      {enableScoring && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="space-y-4"
+                        >
+                          {/* Score breakdown */}
+                          <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-sm font-medium text-gray-700">
+                                {locale === 'fr' ? 'Score maximum possible' : 'Maximum possible score'}
+                              </span>
+                              <span className="text-2xl font-bold text-emerald-600">{calculateMaxScore()} pts</span>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {locale === 'fr'
+                                ? `${getScorableBlocksCount()} question(s) seront notées`
+                                : `${getScorableBlocksCount()} question(s) will be scored`}
+                            </p>
+                          </div>
+
+                          {/* Interpretation Ranges */}
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-700 mb-3">
+                              {locale === 'fr' ? 'Plages d\'interprétation' : 'Interpretation Ranges'}
+                            </h3>
+                            <div className="space-y-2">
+                              {scoringRanges.map((range, index) => {
+                                const colors = [
+                                  { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
+                                  { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700' },
+                                  { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700' },
+                                  { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
+                                ]
+                                const color = colors[index] || { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700' }
+
+                                return (
+                                  <div key={index} className={`flex items-center gap-3 p-3 rounded-xl ${color.bg} border ${color.border}`}>
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="number"
+                                        value={range.min}
+                                        onChange={(e) => {
+                                          const newRanges = [...scoringRanges]
+                                          newRanges[index].min = parseInt(e.target.value) || 0
+                                          setScoringRanges(newRanges)
+                                        }}
+                                        className="w-14 px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-center text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                      />
+                                      <span className="text-gray-400">-</span>
+                                      <input
+                                        type="number"
+                                        value={range.max}
+                                        onChange={(e) => {
+                                          const newRanges = [...scoringRanges]
+                                          newRanges[index].max = parseInt(e.target.value) || 0
+                                          setScoringRanges(newRanges)
+                                        }}
+                                        className="w-14 px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-center text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                      />
+                                      <span className="text-xs text-gray-400">pts</span>
+                                    </div>
+                                    <span className="text-gray-400">=</span>
+                                    <input
+                                      type="text"
+                                      value={range.label[locale]}
+                                      onChange={(e) => {
+                                        const newRanges = [...scoringRanges]
+                                        newRanges[index].label = { ...newRanges[index].label, [locale]: e.target.value }
+                                        setScoringRanges(newRanges)
+                                      }}
+                                      className={`flex-1 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-medium ${color.text} focus:outline-none focus:ring-2 focus:ring-emerald-400`}
+                                    />
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Show Score to Member */}
+                          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700">
+                                {locale === 'fr' ? 'Afficher le score au membre' : 'Show Score to Member'}
+                              </label>
+                              <p className="text-xs text-gray-500">
+                                {locale === 'fr'
+                                  ? 'Le membre verra son score après soumission'
+                                  : 'Member will see their score after submission'}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => setShowScoreToMember(!showScoreToMember)}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                showScoreToMember ? 'bg-emerald-500' : 'bg-gray-300'
+                              }`}
+                            >
+                              <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                                  showScoreToMember ? 'translate-x-6' : 'translate-x-1'
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                )}
 
                 {/* Publish Options */}
                 <div className="space-y-6">

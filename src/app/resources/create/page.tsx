@@ -12,7 +12,6 @@ import {
   Share2,
   X,
   Plus,
-  ClipboardCheck,
   FileText,
   BookOpen,
   Lightbulb,
@@ -28,7 +27,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import type { ResourceCategory } from '@/types/library'
 
 // Simplified resource types for practitioners based on research
-type PractitionerResourceType = 'worksheet' | 'assessment' | 'psychoeducation' | 'exercise'
+type PractitionerResourceType = 'worksheet' | 'psychoeducation' | 'exercise'
 
 interface ResourceTypeOption {
   id: PractitionerResourceType
@@ -40,7 +39,7 @@ interface ResourceTypeOption {
   comingSoon?: boolean
 }
 
-// 4 main resource types practitioners commonly create
+// 3 main resource types practitioners commonly create
 const resourceTypes: ResourceTypeOption[] = [
   {
     id: 'worksheet',
@@ -48,15 +47,7 @@ const resourceTypes: ResourceTypeOption[] = [
     gradient: 'from-blue-400 to-blue-600',
     iconBg: 'bg-blue-100/80',
     glow: 'shadow-blue-200/50',
-    examples: ['CBT thought records', 'Mood diaries', 'Goal setting sheets', 'Coping skills lists'],
-  },
-  {
-    id: 'assessment',
-    icon: ClipboardCheck,
-    gradient: 'from-emerald-400 to-emerald-600',
-    iconBg: 'bg-emerald-100/80',
-    glow: 'shadow-emerald-200/50',
-    examples: ['Intake questionnaires', 'Symptom checklists', 'Progress trackers', 'Risk assessments'],
+    examples: ['CBT thought records', 'Mood diaries', 'Assessments with scoring', 'Symptom checklists'],
   },
   {
     id: 'psychoeducation',
@@ -79,19 +70,14 @@ const resourceTypes: ResourceTypeOption[] = [
 
 const typeLabels: Record<PractitionerResourceType, { en: string; fr: string }> = {
   worksheet: { en: 'Worksheet', fr: 'Feuille de travail' },
-  assessment: { en: 'Assessment', fr: 'Évaluation' },
   psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
   exercise: { en: 'Exercise / Activity', fr: 'Exercice / Activité' },
 }
 
 const typeDescriptions: Record<PractitionerResourceType, { en: string; fr: string }> = {
   worksheet: {
-    en: 'Structured forms for clients to fill out during or between sessions',
-    fr: 'Formulaires structurés à remplir pendant ou entre les séances',
-  },
-  assessment: {
-    en: 'Tools to evaluate symptoms, progress, or gather client information',
-    fr: 'Outils pour évaluer les symptômes, les progrès ou recueillir des informations',
+    en: 'Structured forms and questionnaires with optional scoring for assessments',
+    fr: 'Formulaires structurés et questionnaires avec notation optionnelle pour les évaluations',
   },
   psychoeducation: {
     en: 'Educational materials explaining conditions, treatments, or strategies',

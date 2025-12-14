@@ -740,9 +740,10 @@ export async function getResourceStats(): Promise<{
 
   if (resourcesError) throw resourcesError
 
-  const byType: Record<ResourceType, number> = {
+  // Include 'assessment' for backwards compatibility with existing data
+  const byType: Record<ResourceType | 'assessment', number> = {
     worksheet: 0,
-    assessment: 0,
+    assessment: 0, // Legacy type - counts separately but displays as worksheet
     exercise: 0,
     psychoeducation: 0,
   }

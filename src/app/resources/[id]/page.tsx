@@ -38,14 +38,15 @@ import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { Resource, ResourceType } from '@/types/resource'
 
-const typeIcons: Record<ResourceType, React.ElementType> = {
+// Include 'assessment' as legacy type for backwards compatibility
+const typeIcons: Record<ResourceType | 'assessment', React.ElementType> = {
   worksheet: FileText,
-  assessment: ClipboardCheck,
+  assessment: FileText, // Legacy - displays same as worksheet
   exercise: Puzzle,
   psychoeducation: BookOpen,
 }
 
-const typeConfig: Record<ResourceType, {
+const typeConfig: Record<ResourceType | 'assessment', {
   gradient: string
   bg: string
   text: string
@@ -64,13 +65,14 @@ const typeConfig: Record<ResourceType, {
     lightBg: 'from-emerald-50 to-emerald-100/50',
   },
   assessment: {
-    gradient: 'from-blue-400 to-blue-600',
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    border: 'border-blue-200',
-    iconBg: 'bg-blue-100/80',
-    glow: 'shadow-blue-200/50',
-    lightBg: 'from-blue-50 to-blue-100/50',
+    // Legacy - displays same as worksheet
+    gradient: 'from-emerald-400 to-emerald-600',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    border: 'border-emerald-200',
+    iconBg: 'bg-emerald-100/80',
+    glow: 'shadow-emerald-200/50',
+    lightBg: 'from-emerald-50 to-emerald-100/50',
   },
   exercise: {
     gradient: 'from-amber-400 to-amber-600',
@@ -247,41 +249,53 @@ export default function ResourceDetailPage() {
     )
   }
 
-  const TypeIcon = typeIcons[resource.type] || FileText
-  const config = typeConfig[resource.type] || typeConfig.worksheet
+  // Handle legacy 'assessment' type as 'worksheet' for display
+  const displayType = (resource.type as string) === 'assessment' ? 'worksheet' : resource.type
+  const TypeIcon = typeIcons[resource.type as ResourceType | 'assessment'] || FileText
+  const config = typeConfig[resource.type as ResourceType | 'assessment'] || typeConfig.worksheet
 
-  // Get assessment settings if applicable
-  const assessmentSettings = resource.type === 'assessment' ? resource.settings as {
+  // Get scoring settings - works for legacy assessments AND scored worksheets
+  const isLegacyAssessment = (resource.type as string) === 'assessment'
+  const worksheetSettings = resource.settings as {
     questions?: Array<{
       id: string
       type: string
-      text: string
+      text?: string
+      question?: string
       required?: boolean
-      options?: Array<{ label: string; score: number }>
+      options?: Array<{ label: string; score: number } | string>
+      scaleLabels?: string[]
+      scaleRange?: number
       likertScale?: number
       likertLabels?: { start: string; end: string }
       yesScore?: number
       noScore?: number
       minValue?: number
       maxValue?: number
-      moodOptions?: Array<{ emoji: string; label: string; score: number }>
-      items?: Array<{ text: string; checked: boolean }>
+      moodOptions?: Array<{ emoji: string; label: string; value?: number; score?: number }>
+      items?: Array<{ text: string; checked: boolean } | string>
       scaleMin?: number
       scaleMax?: number
       scaleMinLabel?: string
       scaleMaxLabel?: string
+      scoring?: { [key: string]: number }
     }>
     enableScoring?: boolean
-    scoringRanges?: Array<{ minScore: number; maxScore: number; label: string; description: string }>
+    showScoreToMember?: boolean
+    scoringRanges?: Array<{ min: number; max: number; label: { en: string; fr: string } } | { minScore: number; maxScore: number; label: string; description: string }>
+    maxScore?: number
     instructions?: string
-  } : null
+  } | null
 
-  const typeLabel = {
+  const hasScoring = isLegacyAssessment || worksheetSettings?.enableScoring
+
+  const typeLabels: Record<string, string> = {
     worksheet: locale === 'fr' ? 'Feuille de travail' : 'Worksheet',
-    assessment: locale === 'fr' ? 'Évaluation' : 'Assessment',
+    assessment: locale === 'fr' ? 'Feuille de travail' : 'Worksheet', // Legacy - shows as worksheet
     exercise: locale === 'fr' ? 'Exercice' : 'Exercise',
     psychoeducation: locale === 'fr' ? 'Psychoéducation' : 'Psychoeducation',
-  }[resource.type]
+  }
+  const typeLabel = typeLabels[resource.type as string] || typeLabels.worksheet
 
   return (
     <div className="min-h-screen gradient-mesh relative">
@@ -405,8 +419,8 @@ export default function ResourceDetailPage() {
               </div>
             </motion.div>
 
-            {/* Assessment Questions Preview */}
-            {resource.type === 'assessment' && assessmentSettings?.questions && assessmentSettings.questions.length > 0 && (
+            {/* Assessment/Scored Worksheet Questions Preview */}
+            {hasScoring && worksheetSettings?.questions && worksheetSettings.questions.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -424,20 +438,20 @@ export default function ResourceDetailPage() {
                       {locale === 'fr' ? 'Questions' : 'Questions'}
                     </h2>
                     <p className="text-sm text-gray-500">
-                      {assessmentSettings.questions.length} {locale === 'fr' ? 'question(s)' : 'question(s)'}
+                      {worksheetSettings.questions.length} {locale === 'fr' ? 'question(s)' : 'question(s)'}
                     </p>
                   </div>
                 </div>
 
                 {/* Instructions */}
-                {assessmentSettings.instructions && (
+                {worksheetSettings.instructions && (
                   <div className="mb-5 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                    <p className="text-sm text-blue-700">{typeof assessmentSettings.instructions === 'string' ? assessmentSettings.instructions : (assessmentSettings.instructions as Record<string, string>)?.[locale] || ''}</p>
+                    <p className="text-sm text-blue-700">{typeof worksheetSettings.instructions === 'string' ? worksheetSettings.instructions : (worksheetSettings.instructions as Record<string, string>)?.[locale] || ''}</p>
                   </div>
                 )}
 
                 <div className="space-y-4">
-                  {assessmentSettings.questions.map((question, index) => (
+                  {worksheetSettings.questions.map((question, index) => (
                     <div
                       key={question.id}
                       className="p-4 bg-gray-50/80 rounded-xl border border-gray-100"
@@ -448,7 +462,7 @@ export default function ResourceDetailPage() {
                         </span>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <p className="font-medium text-gray-900">{typeof question.text === 'string' ? question.text : ''}</p>
+                            <p className="font-medium text-gray-900">{question.question || question.text || ''}</p>
                             {question.required && (
                               <span className="text-xs text-red-500">*</span>
                             )}
@@ -457,14 +471,14 @@ export default function ResourceDetailPage() {
                             <Badge variant="outline" className="text-xs">
                               {questionTypeLabels[question.type]?.[locale] || question.type}
                             </Badge>
-                            {assessmentSettings.enableScoring && question.type === 'multiple_choice' && question.options && (
+                            {hasScoring && question.type === 'multiple_choice' && question.options && (
                               <span className="text-xs text-gray-500">
-                                {locale === 'fr' ? 'Score max:' : 'Max score:'} {Math.max(...question.options.map(o => o.score || 0))} pts
+                                {locale === 'fr' ? 'Score max:' : 'Max score:'} {Math.max(...question.options.map(o => typeof o === 'object' && 'score' in o ? (o.score || 0) : 0))} pts
                               </span>
                             )}
-                            {assessmentSettings.enableScoring && question.type === 'likert' && (
+                            {hasScoring && question.type === 'likert' && (
                               <span className="text-xs text-gray-500">
-                                {locale === 'fr' ? 'Score max:' : 'Max score:'} {(question.likertScale || 5) - 1} pts
+                                {locale === 'fr' ? 'Score max:' : 'Max score:'} {(question.scaleRange || question.likertScale || 5) - 1} pts
                               </span>
                             )}
                           </div>
@@ -475,8 +489,8 @@ export default function ResourceDetailPage() {
                               {question.options.map((opt, i) => (
                                 <div key={i} className="flex items-center gap-2 text-sm text-gray-600">
                                   <Circle className="w-3 h-3" />
-                                  <span>{typeof opt.label === 'string' ? opt.label : JSON.stringify(opt.label)}</span>
-                                  {assessmentSettings.enableScoring && (
+                                  <span>{typeof opt === 'string' ? opt : (typeof opt === 'object' && 'label' in opt ? opt.label : JSON.stringify(opt))}</span>
+                                  {hasScoring && typeof opt === 'object' && 'score' in opt && (
                                     <span className="text-xs text-gray-400">({opt.score} pts)</span>
                                   )}
                                 </div>
@@ -486,15 +500,15 @@ export default function ResourceDetailPage() {
 
                           {question.type === 'likert' && (
                             <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
-                              <span>{typeof question.likertLabels?.start === 'string' ? question.likertLabels.start : '1'}</span>
+                              <span>{question.scaleLabels?.[0] || question.likertLabels?.start || '1'}</span>
                               <div className="flex gap-1">
-                                {Array.from({ length: question.likertScale || 5 }).map((_, i) => (
+                                {Array.from({ length: question.scaleRange || question.likertScale || 5 }).map((_, i) => (
                                   <div key={i} className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center text-xs">
                                     {i + 1}
                                   </div>
                                 ))}
                               </div>
-                              <span>{typeof question.likertLabels?.end === 'string' ? question.likertLabels.end : (question.likertScale || 5).toString()}</span>
+                              <span>{question.scaleLabels?.[question.scaleLabels.length - 1] || question.likertLabels?.end || (question.scaleRange || question.likertScale || 5).toString()}</span>
                             </div>
                           )}
 
@@ -503,12 +517,12 @@ export default function ResourceDetailPage() {
                               <span className="flex items-center gap-1 text-emerald-600">
                                 <CheckCircle className="w-4 h-4" />
                                 {locale === 'fr' ? 'Oui' : 'Yes'}
-                                {assessmentSettings.enableScoring && <span className="text-xs">({question.yesScore || 1} pt)</span>}
+                                {hasScoring && <span className="text-xs">({question.yesScore || question.scoring?.yes || 1} pt)</span>}
                               </span>
                               <span className="flex items-center gap-1 text-gray-500">
                                 <Circle className="w-4 h-4" />
                                 {locale === 'fr' ? 'Non' : 'No'}
-                                {assessmentSettings.enableScoring && <span className="text-xs">({question.noScore || 0} pt)</span>}
+                                {hasScoring && <span className="text-xs">({question.noScore || question.scoring?.no || 0} pt)</span>}
                               </span>
                             </div>
                           )}
@@ -529,7 +543,7 @@ export default function ResourceDetailPage() {
                               {question.items.map((item, i) => (
                                 <div key={i} className="flex items-center gap-2 text-sm text-gray-600">
                                   <div className="w-4 h-4 rounded border border-gray-300" />
-                                  <span>{typeof item.text === 'string' ? item.text : typeof item === 'string' ? item : ''}</span>
+                                  <span>{typeof item === 'string' ? item : (typeof item === 'object' && 'text' in item ? item.text : '')}</span>
                                 </div>
                               ))}
                             </div>
@@ -559,7 +573,7 @@ export default function ResourceDetailPage() {
             )}
 
             {/* Scoring Interpretation */}
-            {resource.type === 'assessment' && assessmentSettings?.enableScoring && assessmentSettings.scoringRanges && assessmentSettings.scoringRanges.length > 0 && (
+            {hasScoring && worksheetSettings?.scoringRanges && worksheetSettings.scoringRanges.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -578,9 +592,14 @@ export default function ResourceDetailPage() {
                 </div>
 
                 <div className="space-y-3">
-                  {assessmentSettings.scoringRanges.map((range, index) => {
+                  {worksheetSettings.scoringRanges.map((range, index) => {
                     const colors = ['bg-emerald-100 text-emerald-700 border-emerald-200', 'bg-yellow-100 text-yellow-700 border-yellow-200', 'bg-orange-100 text-orange-700 border-orange-200', 'bg-red-100 text-red-700 border-red-200']
                     const color = colors[Math.min(index, colors.length - 1)]
+                    // Handle both legacy (minScore/maxScore) and new (min/max) formats
+                    const minVal = 'min' in range ? range.min : (range as any).minScore
+                    const maxVal = 'max' in range ? range.max : (range as any).maxScore
+                    const labelVal = typeof range.label === 'object' && 'en' in range.label ? range.label[locale] : (typeof range.label === 'string' ? range.label : '')
+                    const descVal = 'description' in range && range.description ? (typeof range.description === 'object' && 'en' in range.description ? range.description[locale] : (typeof range.description === 'string' ? range.description : '')) : ''
 
                     return (
                       <div
@@ -588,13 +607,13 @@ export default function ResourceDetailPage() {
                         className={`p-4 rounded-xl border ${color}`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium">{typeof range.label === 'string' ? range.label : (range.label as Record<string, string>)?.[locale] || ''}</span>
+                          <span className="font-medium">{labelVal}</span>
                           <span className="text-sm">
-                            {range.minScore} - {range.maxScore} pts
+                            {minVal} - {maxVal} pts
                           </span>
                         </div>
-                        {range.description && (
-                          <p className="text-sm opacity-80">{typeof range.description === 'string' ? range.description : (range.description as Record<string, string>)?.[locale] || ''}</p>
+                        {descVal && (
+                          <p className="text-sm opacity-80">{descVal}</p>
                         )}
                       </div>
                     )
@@ -868,7 +887,7 @@ export default function ResourceDetailPage() {
         </div>
 
         {/* Submissions Section - Only show for owner */}
-        {isOwner && (resource.type === 'worksheet' || resource.type === 'assessment') && (
+        {isOwner && (resource.type === 'worksheet' || (resource.type as string) === 'assessment') && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -946,8 +965,8 @@ export default function ResourceDetailPage() {
 
                         {/* Score & Status */}
                         <div className="flex items-center gap-3">
-                          {/* Score for assessments */}
-                          {resource.type === 'assessment' && submission.score !== undefined && (
+                          {/* Score for scored worksheets/assessments */}
+                          {hasScoring && submission.score !== undefined && (
                             <div className="text-right">
                               <p className="text-lg font-bold text-emerald-600">
                                 {submission.score}/{submission.max_score}
@@ -1054,8 +1073,8 @@ export default function ResourceDetailPage() {
 
               {/* Modal Body */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {/* Score Section for Assessments */}
-                {resource?.type === 'assessment' && selectedSubmission.score !== undefined && (
+                {/* Score Section for Scored Worksheets/Assessments */}
+                {hasScoring && selectedSubmission.score !== undefined && (
                   <div className="p-4 bg-gradient-to-br from-emerald-50 to-mint-50 rounded-xl border border-emerald-100">
                     <div className="flex items-center justify-between">
                       <div>

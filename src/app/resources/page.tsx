@@ -170,7 +170,7 @@ const typeConfig: Record<ResourceType, {
 // Resource type icons for database resources
 const dbResourceTypeIcons: Record<string, React.ElementType> = {
   worksheet: FileText,
-  assessment: ClipboardCheck,
+  assessment: FileText, // Legacy: assessment now maps to worksheet
   exercise: Puzzle,
   psychoeducation: BookOpen,
 }
@@ -191,11 +191,12 @@ const dbResourceTypeConfig: Record<string, {
     glow: 'shadow-blue-200/50',
   },
   assessment: {
-    gradient: 'from-purple-400 to-purple-600',
-    bg: 'bg-purple-50',
-    text: 'text-purple-700',
-    iconBg: 'bg-purple-100/80',
-    glow: 'shadow-purple-200/50',
+    // Legacy: assessment now displays same as worksheet
+    gradient: 'from-blue-400 to-blue-600',
+    bg: 'bg-blue-50',
+    text: 'text-blue-700',
+    iconBg: 'bg-blue-100/80',
+    glow: 'shadow-blue-200/50',
   },
   exercise: {
     gradient: 'from-emerald-400 to-emerald-600',

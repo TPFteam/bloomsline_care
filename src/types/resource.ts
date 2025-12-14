@@ -1,5 +1,5 @@
 // Resource types
-export type ResourceType = 'worksheet' | 'assessment' | 'exercise' | 'psychoeducation'
+export type ResourceType = 'worksheet' | 'exercise' | 'psychoeducation'
 
 export type ResourceStatus = 'draft' | 'published' | 'archived'
 
@@ -120,11 +120,62 @@ export type ResourceBlock =
   | QuoteBlock
   | ImagePlaceholderBlock
 
+// Scoring range for worksheet scoring
+export interface ScoringRange {
+  min: number
+  max: number
+  label: { en: string; fr: string }
+  description?: { en: string; fr: string }
+}
+
 // Type-specific settings
 export interface WorksheetSettings {
   estimatedDuration?: number // minutes
+  // Scoring options (when enableScoring is true)
+  enableScoring?: boolean
+  showScoreToMember?: boolean
+  scoringRanges?: ScoringRange[]
+  maxScore?: number
+  // Questions array for scored worksheets (stores assessment-style questions)
+  questions?: WorksheetQuestion[]
+  instructions?: string
 }
 
+// Question types for scored worksheets
+export type WorksheetQuestionType = 'multiple_choice' | 'likert' | 'yes_no' | 'numeric' | 'scale' | 'checklist' | 'mood' | 'slider'
+
+export interface WorksheetQuestion {
+  id: string
+  type: WorksheetQuestionType
+  question: string // The question text
+  required: boolean
+  // Multiple choice options
+  options?: string[]
+  // Likert scale
+  scaleLabels?: string[]
+  scaleRange?: number
+  // Scale/rating
+  scaleMin?: number
+  scaleMax?: number
+  scaleMinLabel?: string
+  scaleMaxLabel?: string
+  // Checklist items
+  items?: string[]
+  // Mood options
+  moodOptions?: { emoji: string; label: string; value: number }[]
+  // Slider
+  sliderMin?: number
+  sliderMax?: number
+  sliderStep?: number
+  sliderUnit?: string
+  // Numeric input
+  minValue?: number
+  maxValue?: number
+  // Scoring (points for each option)
+  scoring?: { [key: string]: number }
+}
+
+// Legacy assessment settings (kept for backwards compatibility during migration)
 export interface AssessmentSettings {
   estimatedDuration?: number
   scoringType: 'sum' | 'average' | 'custom'
@@ -300,10 +351,10 @@ export interface CreateResponseDTO {
 }
 
 // Helper functions
-export function getResourceTypeLabel(type: ResourceType, locale: 'en' | 'fr' = 'en'): string {
-  const labels: Record<ResourceType, { en: string; fr: string }> = {
+export function getResourceTypeLabel(type: ResourceType | 'assessment', locale: 'en' | 'fr' = 'en'): string {
+  const labels: Record<ResourceType | 'assessment', { en: string; fr: string }> = {
     worksheet: { en: 'Worksheet', fr: 'Feuille de travail' },
-    assessment: { en: 'Assessment', fr: 'Évaluation' },
+    assessment: { en: 'Worksheet', fr: 'Feuille de travail' }, // Legacy - maps to worksheet
     exercise: { en: 'Exercise', fr: 'Exercice' },
     psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
   }
