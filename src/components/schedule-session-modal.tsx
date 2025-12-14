@@ -25,12 +25,13 @@ interface ScheduleSessionModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess?: () => void
+  preselectedMember?: Member | null
 }
 
 type Step = 'member' | 'session' | 'datetime' | 'confirm'
 
-export function ScheduleSessionModal({ isOpen, onClose, onSuccess }: ScheduleSessionModalProps) {
-  const [step, setStep] = useState<Step>('member')
+export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMember }: ScheduleSessionModalProps) {
+  const [step, setStep] = useState<Step>(preselectedMember ? 'session' : 'member')
   const [members, setMembers] = useState<Member[]>([])
   const [sessionTypes, setSessionTypes] = useState<SessionType[]>([])
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([])
@@ -39,7 +40,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess }: ScheduleSes
   const [userId, setUserId] = useState<string | null>(null)
 
   // Selected values
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null)
+  const [selectedMember, setSelectedMember] = useState<Member | null>(preselectedMember || null)
   const [selectedSessionType, setSelectedSessionType] = useState<SessionType | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()))
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
@@ -53,18 +54,26 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess }: ScheduleSes
   // Fetch members and session types on open
   useEffect(() => {
     if (isOpen) {
+      // Set preselected member and start at appropriate step
+      if (preselectedMember) {
+        setSelectedMember(preselectedMember)
+        setStep('session')
+      } else {
+        setStep('member')
+        setSelectedMember(null)
+      }
       fetchInitialData()
     } else {
       // Reset state when modal closes
-      setStep('member')
-      setSelectedMember(null)
+      setStep(preselectedMember ? 'session' : 'member')
+      setSelectedMember(preselectedMember || null)
       setSelectedSessionType(null)
       setSelectedDate(startOfDay(new Date()))
       setSelectedTime(null)
       setNotes('')
       setSearchQuery('')
     }
-  }, [isOpen])
+  }, [isOpen, preselectedMember])
 
   // Fetch available slots when date or session type changes
   useEffect(() => {
@@ -219,7 +228,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess }: ScheduleSes
   })
 
   const goBack = () => {
-    if (step === 'session') setStep('member')
+    if (step === 'session' && !preselectedMember) setStep('member')
     else if (step === 'datetime') setStep('session')
     else if (step === 'confirm') setStep('datetime')
   }
@@ -253,7 +262,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess }: ScheduleSes
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <div className="flex items-center gap-3">
-              {step !== 'member' && (
+              {step !== 'member' && !(step === 'session' && preselectedMember) && (
                 <button
                   onClick={goBack}
                   className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"

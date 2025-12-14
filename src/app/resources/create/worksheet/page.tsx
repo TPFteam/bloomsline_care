@@ -302,12 +302,12 @@ function CreateWorksheetContent() {
   // User state for file uploads
   const [userId, setUserId] = useState<string | null>(null)
 
-  // Step state
-  const [step, setStep] = useState<'template' | 'build' | 'details'>('template')
+  // Step state - start at 'build' if editing, otherwise 'template'
+  const [step, setStep] = useState<'template' | 'build' | 'details'>(editId ? 'build' : 'template')
 
   // Edit mode state
-  const [isEditMode, setIsEditMode] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(!!editId)
+  const [isLoading, setIsLoading] = useState(!!editId)
 
   // Worksheet state
   const [title, setTitle] = useState('')
@@ -2476,7 +2476,7 @@ function CreateWorksheetContent() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center justify-between mb-8"
               >
-                <Link href="/resources/create">
+                <Link href={isEditMode ? '/resources' : '/resources/create'}>
                   <motion.div whileHover={{ x: -4 }} className="inline-block">
                     <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
                       <ArrowLeft className="w-4 h-4 mr-2" />
@@ -2498,7 +2498,7 @@ function CreateWorksheetContent() {
                   </div>
                 </motion.div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                  {locale === 'fr' ? 'Créer une feuille de travail' : 'Create a Worksheet'}
+                  {isEditMode ? (locale === 'fr' ? 'Modifier la feuille de travail' : 'Edit Worksheet') : (locale === 'fr' ? 'Créer une feuille de travail' : 'Create a Worksheet')}
                 </h1>
                 <p className="text-gray-600 max-w-md mx-auto">
                   {locale === 'fr'

@@ -26,6 +26,7 @@ import {
   FolderPlus,
   Users,
 } from 'lucide-react'
+import { AnimatedIcon } from '@/components/ui/animated-icons'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -382,7 +383,7 @@ export default function LibraryPage() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
                 {t.library.title}
-                <Sparkles className="w-6 h-6 text-mint-400" />
+                <AnimatedIcon icon={Sparkles} animation="sparkle" size={24} animateOnHover animateOnRender={false} className="text-mint-400" />
               </h1>
               <p className="text-gray-600">{t.library.subtitle}</p>
             </div>
@@ -390,13 +391,13 @@ export default function LibraryPage() {
           <div className="flex items-center gap-2">
             <Link href="/resources">
               <Button variant="ghost" className="glass-subtle rounded-xl text-gray-600 hover:text-gray-900 hover:bg-white/60">
-                <Bookmark className="w-4 h-4 mr-2" />
+                <AnimatedIcon icon={Bookmark} animation="scale" size={16} animateOnHover animateOnRender={false} className="mr-2" />
                 {t.library.myResources.title}
               </Button>
             </Link>
             <Link href="/resources/create">
               <Button className="bg-gradient-to-r from-mint-500 via-mint-500 to-emerald-500 hover:from-mint-600 hover:via-mint-600 hover:to-emerald-600 text-white shadow-xl shadow-mint-300/30 border-0 rounded-xl px-6 py-3 text-base font-medium hover-lift">
-                <Plus className="w-5 h-5 mr-2" />
+                <AnimatedIcon icon={Plus} animation="scale" size={20} animateOnHover animateOnRender={false} className="mr-2" />
                 {t.library.create.title}
               </Button>
             </Link>
@@ -419,7 +420,7 @@ export default function LibraryPage() {
             >
               <div className={`w-12 h-12 rounded-2xl ${stat.iconBg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                 <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-md`}>
-                  <stat.icon className="w-4.5 h-4.5 text-white" />
+                  <AnimatedIcon icon={stat.icon} animation="scale" size={18} animateOnHover animateOnRender={false} className="text-white" />
                 </div>
               </div>
               <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
@@ -438,7 +439,7 @@ export default function LibraryPage() {
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <AnimatedIcon icon={Search} animation="scale" size={20} animateOnHover animateOnRender={false} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder={t.library.search.placeholder}

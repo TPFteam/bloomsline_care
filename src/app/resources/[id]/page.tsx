@@ -23,11 +23,17 @@ import {
   Loader2,
   BarChart2,
   Star,
+  Eye,
+  MessageSquare,
+  CheckCircle2,
+  X,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useLanguage } from '@/lib/i18n/context'
-import { getResourceById, deleteResource } from '@/lib/services/resources'
+import { getResourceById, deleteResource, getResourceSubmissions, updateSubmission, type ResourceSubmission } from '@/lib/services/resources'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { Resource, ResourceType } from '@/types/resource'
@@ -107,6 +113,11 @@ export default function ResourceDetailPage() {
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
+  const [submissions, setSubmissions] = useState<ResourceSubmission[]>([])
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false)
+  const [selectedSubmission, setSelectedSubmission] = useState<ResourceSubmission | null>(null)
+  const [reviewNotes, setReviewNotes] = useState('')
+  const [savingNotes, setSavingNotes] = useState(false)
 
   useEffect(() => {
     async function fetchResource() {
@@ -125,6 +136,8 @@ export default function ResourceDetailPage() {
         if (user && data && data.practitioner_id === user.id) {
           console.log('Setting isOwner to true')
           setIsOwner(true)
+          // Fetch submissions if owner
+          fetchSubmissions(params.id as string)
         }
       } catch (error) {
         console.error('Error fetching resource:', error)
@@ -138,6 +151,40 @@ export default function ResourceDetailPage() {
       fetchResource()
     }
   }, [params.id, locale])
+
+  const fetchSubmissions = async (resourceId: string) => {
+    setLoadingSubmissions(true)
+    try {
+      const data = await getResourceSubmissions(resourceId)
+      setSubmissions(data)
+    } catch (error) {
+      console.error('Error fetching submissions:', error)
+    } finally {
+      setLoadingSubmissions(false)
+    }
+  }
+
+  const handleSaveReviewNotes = async () => {
+    if (!selectedSubmission) return
+
+    setSavingNotes(true)
+    try {
+      await updateSubmission(selectedSubmission.id, {
+        status: 'reviewed',
+        reviewer_notes: reviewNotes
+      })
+      toast.success(locale === 'fr' ? 'Notes enregistrées' : 'Notes saved')
+      // Refresh submissions
+      fetchSubmissions(params.id as string)
+      setSelectedSubmission(null)
+      setReviewNotes('')
+    } catch (error) {
+      console.error('Error saving notes:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors de la sauvegarde' : 'Error saving notes')
+    } finally {
+      setSavingNotes(false)
+    }
+  }
 
   const handleDelete = async () => {
     if (!resource) return
@@ -819,6 +866,277 @@ export default function ResourceDetailPage() {
             </motion.div>
           </div>
         </div>
+
+        {/* Submissions Section - Only show for owner */}
+        {isOwner && (resource.type === 'worksheet' || resource.type === 'assessment') && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mt-8"
+          >
+            <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 overflow-hidden">
+              {/* Header */}
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-lavender-100 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-lavender-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">
+                        {locale === 'fr' ? 'Soumissions des membres' : 'Member Submissions'}
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        {submissions.length} {locale === 'fr' ? 'soumission(s)' : 'submission(s)'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Submissions List */}
+              <div className="divide-y divide-gray-100">
+                {loadingSubmissions ? (
+                  <div className="p-8 text-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-lavender-500 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</p>
+                  </div>
+                ) : submissions.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                      <FileText className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500">
+                      {locale === 'fr' ? 'Aucune soumission pour le moment' : 'No submissions yet'}
+                    </p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      {locale === 'fr'
+                        ? 'Les soumissions des membres apparaîtront ici'
+                        : 'Member submissions will appear here'}
+                    </p>
+                  </div>
+                ) : (
+                  submissions.map((submission) => (
+                    <div
+                      key={submission.id}
+                      className="p-4 hover:bg-gray-50/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        {/* Member Info */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-lavender-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                            {submission.member?.first_name?.charAt(0) || 'M'}{submission.member?.last_name?.charAt(0) || ''}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {submission.member?.first_name} {submission.member?.last_name}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {new Date(submission.submitted_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Score & Status */}
+                        <div className="flex items-center gap-3">
+                          {/* Score for assessments */}
+                          {resource.type === 'assessment' && submission.score !== undefined && (
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-emerald-600">
+                                {submission.score}/{submission.max_score}
+                              </p>
+                              {submission.score_interpretation && (
+                                <p className="text-xs text-gray-500">{submission.score_interpretation}</p>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Status Badge */}
+                          <Badge className={
+                            submission.status === 'reviewed'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 border'
+                              : 'bg-amber-50 text-amber-700 border-amber-200 border'
+                          }>
+                            {submission.status === 'reviewed' ? (
+                              <>
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                {locale === 'fr' ? 'Révisé' : 'Reviewed'}
+                              </>
+                            ) : (
+                              <>
+                                <Clock className="w-3 h-3 mr-1" />
+                                {locale === 'fr' ? 'En attente' : 'Pending'}
+                              </>
+                            )}
+                          </Badge>
+
+                          {/* View Button */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedSubmission(submission)
+                              setReviewNotes(submission.reviewer_notes || '')
+                            }}
+                            className="rounded-lg"
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            {locale === 'fr' ? 'Voir' : 'View'}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Reviewer Notes Preview */}
+                      {submission.reviewer_notes && (
+                        <div className="mt-3 ml-13 pl-3 border-l-2 border-lavender-200">
+                          <p className="text-sm text-gray-600 line-clamp-2">{submission.reviewer_notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Submission Detail Modal */}
+        {selectedSubmission && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedSubmission(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-lavender-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                    {selectedSubmission.member?.first_name?.charAt(0) || 'M'}{selectedSubmission.member?.last_name?.charAt(0) || ''}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      {selectedSubmission.member?.first_name} {selectedSubmission.member?.last_name}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {new Date(selectedSubmission.submitted_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedSubmission(null)}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Score Section for Assessments */}
+                {resource?.type === 'assessment' && selectedSubmission.score !== undefined && (
+                  <div className="p-4 bg-gradient-to-br from-emerald-50 to-mint-50 rounded-xl border border-emerald-100">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-emerald-800">
+                          {locale === 'fr' ? 'Score total' : 'Total Score'}
+                        </p>
+                        <p className="text-3xl font-bold text-emerald-600 mt-1">
+                          {selectedSubmission.score} / {selectedSubmission.max_score}
+                        </p>
+                      </div>
+                      {selectedSubmission.score_interpretation && (
+                        <Badge className="bg-emerald-100 text-emerald-700 border-0 text-base px-4 py-2">
+                          {selectedSubmission.score_interpretation}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Responses Section */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">
+                    {locale === 'fr' ? 'Réponses' : 'Responses'}
+                  </h4>
+                  <div className="space-y-3">
+                    {Object.entries(selectedSubmission.responses || {}).map(([key, value], idx) => (
+                      <div key={key} className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Question {idx + 1}</p>
+                        <p className="text-gray-900">
+                          {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                        </p>
+                      </div>
+                    ))}
+                    {Object.keys(selectedSubmission.responses || {}).length === 0 && (
+                      <p className="text-gray-500 text-sm italic">
+                        {locale === 'fr' ? 'Aucune réponse enregistrée' : 'No responses recorded'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Review Notes Section */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4" />
+                    {locale === 'fr' ? 'Notes du praticien' : 'Practitioner Notes'}
+                  </h4>
+                  <textarea
+                    value={reviewNotes}
+                    onChange={(e) => setReviewNotes(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Ajoutez vos notes ici...' : 'Add your notes here...'}
+                    className="w-full p-4 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none resize-none h-32"
+                  />
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100">
+                <Button
+                  variant="ghost"
+                  onClick={() => setSelectedSubmission(null)}
+                  className="rounded-xl"
+                >
+                  {locale === 'fr' ? 'Fermer' : 'Close'}
+                </Button>
+                <Button
+                  onClick={handleSaveReviewNotes}
+                  disabled={savingNotes}
+                  className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50"
+                >
+                  {savingNotes ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                  )}
+                  {locale === 'fr' ? 'Marquer comme révisé' : 'Mark as Reviewed'}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
 
         {/* Back Button */}
         <motion.div

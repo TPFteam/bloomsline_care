@@ -28,6 +28,7 @@ import {
   User as UserIcon,
   CalendarCheck,
 } from 'lucide-react'
+import { AnimatedIcon } from '@/components/ui/animated-icons'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n/context'
 import { LanguageSwitcher } from '@/components/language-switcher'
@@ -557,7 +558,14 @@ function DashboardContent() {
                   : 'hover:bg-gray-50/80'
                 }`}
               >
-                <Home className={`w-5 h-5 flex-shrink-0 ${activeSection === 'home' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                <AnimatedIcon
+                  icon={Home}
+                  animation="bounce"
+                  size={20}
+                  animateOnHover
+                  animateOnRender={false}
+                  className={`flex-shrink-0 ${activeSection === 'home' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}
+                />
                 <span className={`text-sm font-medium ${activeSection === 'home' ? 'text-white' : 'text-gray-600 group-hover:text-gray-900'}`}>
                   {t.dashboard.sidebar.home}
                 </span>
@@ -577,7 +585,14 @@ function DashboardContent() {
                       : 'hover:bg-gray-50/80'
                     }`}
                   >
-                    <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                    <AnimatedIcon
+                      icon={Icon}
+                      animation="scale"
+                      size={20}
+                      animateOnHover
+                      animateOnRender={false}
+                      className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}
+                    />
                     <span className={`text-sm font-medium ${isActive ? 'text-white' : 'text-gray-600 group-hover:text-gray-900'}`}>
                       {section.title}
                     </span>
@@ -596,7 +611,14 @@ function DashboardContent() {
                   : 'hover:bg-gray-50/80'
                 }`}
               >
-                <CalendarCheck className={`w-5 h-5 flex-shrink-0 ${activeSection === '/bookings' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                <AnimatedIcon
+                  icon={CalendarCheck}
+                  animation="scale"
+                  size={20}
+                  animateOnHover
+                  animateOnRender={false}
+                  className={`flex-shrink-0 ${activeSection === '/bookings' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}
+                />
                 <span className={`text-sm font-medium ${activeSection === '/bookings' ? 'text-white' : 'text-gray-600 group-hover:text-gray-900'}`}>
                   Bookings
                 </span>
@@ -615,7 +637,14 @@ function DashboardContent() {
                   : 'hover:bg-gray-50/80'
                 }`}
               >
-                <UserIcon className={`w-5 h-5 flex-shrink-0 ${activeSection === '/profile' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                <AnimatedIcon
+                  icon={UserIcon}
+                  animation="scale"
+                  size={20}
+                  animateOnHover
+                  animateOnRender={false}
+                  className={`flex-shrink-0 ${activeSection === '/profile' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}
+                />
                 <span className={`text-sm font-medium ${activeSection === '/profile' ? 'text-white' : 'text-gray-600 group-hover:text-gray-900'}`}>
                   {t.profile.title}
                 </span>
@@ -631,7 +660,14 @@ function DashboardContent() {
                   : 'hover:bg-gray-50/80'
                 }`}
               >
-                <Settings className={`w-5 h-5 flex-shrink-0 ${activeSection === '/settings' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                <AnimatedIcon
+                  icon={Settings}
+                  animation="spin"
+                  size={20}
+                  animateOnHover
+                  animateOnRender={false}
+                  className={`flex-shrink-0 ${activeSection === '/settings' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}
+                />
                 <span className={`text-sm font-medium ${activeSection === '/settings' ? 'text-white' : 'text-gray-600 group-hover:text-gray-900'}`}>
                   {t.dashboard.sections.settings.title}
                 </span>
@@ -643,7 +679,14 @@ function DashboardContent() {
               onClick={handleSignOut}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50/80 transition-all duration-300 group"
             >
-              <LogOut className="w-5 h-5 flex-shrink-0 text-gray-500 group-hover:text-red-500" />
+              <AnimatedIcon
+                icon={LogOut}
+                animation="arrow-right"
+                size={20}
+                animateOnHover
+                animateOnRender={false}
+                className="flex-shrink-0 text-gray-500 group-hover:text-red-500"
+              />
               <span className="text-sm font-medium text-gray-600 group-hover:text-red-500">
                 {t.dashboard.sidebar.signOut}
               </span>
@@ -749,7 +792,7 @@ function DashboardContent() {
                 >
                   <div className="w-12 h-12 rounded-xl bg-lavender-100/80 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                     <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-lavender-400 to-lavender-600 flex items-center justify-center shadow-md">
-                      <FileText className="w-4.5 h-4.5 text-white" />
+                      <AnimatedIcon icon={FileText} animation="scale" size={18} animateOnHover animateOnRender={false} className="text-white" />
                     </div>
                   </div>
                   <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{t.dashboard.quickActions.newSessionNote}</p>
@@ -765,7 +808,7 @@ function DashboardContent() {
               >
                 <div className="w-12 h-12 rounded-xl bg-emerald-100/80 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                   <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-md">
-                    <Calendar className="w-4.5 h-4.5 text-white" />
+                    <AnimatedIcon icon={Calendar} animation="scale" size={18} animateOnHover animateOnRender={false} className="text-white" />
                   </div>
                 </div>
                 <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{t.dashboard.quickActions.scheduleAppointment}</p>
@@ -780,7 +823,7 @@ function DashboardContent() {
                 >
                   <div className="w-12 h-12 rounded-xl bg-mint-100/80 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                     <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-mint-400 to-mint-600 flex items-center justify-center shadow-md">
-                      <Plus className="w-4.5 h-4.5 text-white" />
+                      <AnimatedIcon icon={Plus} animation="scale" size={18} animateOnHover animateOnRender={false} className="text-white" />
                     </div>
                   </div>
                   <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{t.dashboard.quickActions.addNewMember || 'Add New Member'}</p>
@@ -796,7 +839,7 @@ function DashboardContent() {
                 >
                   <div className="w-12 h-12 rounded-xl bg-peach-100/80 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                     <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-peach-400 to-peach-600 flex items-center justify-center shadow-md">
-                      <BarChart3 className="w-4.5 h-4.5 text-white" />
+                      <AnimatedIcon icon={BarChart3} animation="scale" size={18} animateOnHover animateOnRender={false} className="text-white" />
                     </div>
                   </div>
                   <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{t.dashboard.quickActions.viewAnalytics}</p>
@@ -816,7 +859,7 @@ function DashboardContent() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-100/80 flex items-center justify-center">
                   <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-md">
-                    <Clock className="w-3.5 h-3.5 text-white" />
+                    <AnimatedIcon icon={Clock} animation="pulse" size={14} animateOnHover animateOnRender={false} className="text-white" />
                   </div>
                 </div>
                 <h2 className="text-lg font-semibold text-gray-900">{t.dashboard.schedule.title}</h2>
@@ -828,7 +871,7 @@ function DashboardContent() {
             <div className="space-y-3">
               {todayBookings.length === 0 ? (
                 <div className="text-center py-6 text-gray-500">
-                  <Calendar className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                  <AnimatedIcon icon={Calendar} animation="scale" size={32} animateOnHover animateOnRender={false} className="mx-auto mb-2 text-gray-300" />
                   <p className="text-sm">No appointments today</p>
                 </div>
               ) : (
@@ -867,7 +910,7 @@ function DashboardContent() {
                           <p className="font-medium text-gray-900 text-sm">{booking.client_name}</p>
                           <span className={`text-xs px-2 py-0.5 rounded-full ${colorClasses}`}>{typeName}</span>
                         </div>
-                        <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-1 transition-all" />
+                        <AnimatedIcon icon={ArrowRight} animation="arrow-right" size={16} animateOnHover animateOnRender={false} className="text-gray-300 group-hover:text-gray-500" />
                       </motion.div>
                     </Link>
                   )
@@ -889,7 +932,7 @@ function DashboardContent() {
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-amber-100/80 flex items-center justify-center">
                 <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-md">
-                  <Sparkles className="w-3.5 h-3.5 text-white" />
+                  <AnimatedIcon icon={Sparkles} animation="sparkle" size={14} animateOnHover animateOnRender={false} className="text-white" />
                 </div>
               </div>
               <h2 className="text-lg font-semibold text-gray-900">{t.dashboard.activity.title}</h2>
@@ -897,7 +940,7 @@ function DashboardContent() {
             <div className="space-y-3">
               {recentActivity.length === 0 ? (
                 <div className="text-center py-6 text-gray-500">
-                  <Sparkles className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                  <AnimatedIcon icon={Sparkles} animation="sparkle" size={32} animateOnHover animateOnRender={false} className="mx-auto mb-2 text-gray-300" />
                   <p className="text-sm">No recent activity</p>
                 </div>
               ) : (
@@ -937,7 +980,7 @@ function DashboardContent() {
                       className="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50/80 transition-colors"
                     >
                       <div className={`w-8 h-8 rounded-lg ${activityConfig.color} flex items-center justify-center flex-shrink-0`}>
-                        <Icon className="w-4 h-4" />
+                        <AnimatedIcon icon={Icon} animation="scale" size={16} animateOnHover animateOnRender={false} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-gray-700 leading-relaxed">{activity.description}</p>
@@ -976,7 +1019,7 @@ function DashboardContent() {
                       <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-xl ${section.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
                           <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${section.gradient} flex items-center justify-center shadow-md ${section.shadow}`}>
-                            <Icon className="w-3.5 h-3.5 text-white" />
+                            <AnimatedIcon icon={Icon} animation="scale" size={14} animateOnHover animateOnRender={false} className="text-white" />
                           </div>
                         </div>
                         <div>
@@ -984,7 +1027,7 @@ function DashboardContent() {
                           <p className="text-xs text-gray-500">{section.stats[0].value} {section.stats[0].label}</p>
                         </div>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-1 transition-all" />
+                      <AnimatedIcon icon={ArrowRight} animation="arrow-right" size={16} animateOnHover animateOnRender={false} className="text-gray-300 group-hover:text-gray-500" />
                     </motion.div>
                   </Link>
                 )

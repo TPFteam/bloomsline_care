@@ -123,8 +123,8 @@ function CreatePsychoeducationContent() {
   const [step, setStep] = useState<'template' | 'build' | 'details'>('build')
 
   // Edit mode state
-  const [isEditMode, setIsEditMode] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(!!editId)
+  const [isLoading, setIsLoading] = useState(!!editId)
 
   // Document state
   const [title, setTitle] = useState('')
@@ -776,7 +776,7 @@ function CreatePsychoeducationContent() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center justify-between mb-6"
               >
-                <Link href="/resources/create">
+                <Link href={isEditMode ? '/resources' : '/resources/create'}>
                   <motion.div whileHover={{ x: -4 }} className="inline-block">
                     <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
                       <ArrowLeft className="w-4 h-4 mr-2" />

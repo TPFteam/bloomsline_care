@@ -380,6 +380,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
             {activeTab === 'sessions' && (
               <SessionsTab
                 memberId={member.id}
+                member={member}
                 sessions={sessions}
                 onSessionsUpdate={fetchRelatedData}
               />

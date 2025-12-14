@@ -248,12 +248,12 @@ function CreateAssessmentContent() {
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
 
-  // Step state
-  const [step, setStep] = useState<'template' | 'build' | 'scoring' | 'details'>('template')
+  // Step state - start at 'build' if editing, otherwise 'template'
+  const [step, setStep] = useState<'template' | 'build' | 'scoring' | 'details'>(editId ? 'build' : 'template')
 
   // Edit mode state
-  const [isEditMode, setIsEditMode] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(!!editId)
+  const [isLoading, setIsLoading] = useState(!!editId)
 
   // Assessment state
   const [title, setTitle] = useState('')
@@ -264,6 +264,7 @@ function CreateAssessmentContent() {
   const [isSaving, setIsSaving] = useState(false)
   const [visibility, setVisibility] = useState<'private' | 'public'>('private')
   const [saveAs, setSaveAs] = useState<'draft' | 'published'>('draft')
+  const [showScoreToMember, setShowScoreToMember] = useState(true)
 
   // Scoring state
   const [enableScoring, setEnableScoring] = useState(true)
@@ -330,7 +331,8 @@ function CreateAssessmentContent() {
               const loadedQuestions = settings.questions.map((q: any) => ({
                 id: q.id || Math.random().toString(36).substr(2, 9),
                 type: q.type,
-                question: typeof q.text === 'string' ? q.text : (q.text as Record<string, string>)?.[locale] || '',
+                // Support both 'text' and 'question' field names for backwards compatibility
+                question: typeof q.text === 'string' ? q.text : (typeof q.question === 'string' ? q.question : (q.text as Record<string, string>)?.[locale] || (q.question as Record<string, string>)?.[locale] || ''),
                 required: q.required ?? true,
                 // Multiple choice options
                 options: q.options?.map((opt: any) =>
@@ -373,6 +375,9 @@ function CreateAssessmentContent() {
             }
             if (settings.enableScoring !== undefined) {
               setEnableScoring(settings.enableScoring)
+            }
+            if (settings.showScoreToMember !== undefined) {
+              setShowScoreToMember(settings.showScoreToMember)
             }
             if (settings.scoringRanges) {
               // Map scoring ranges - extract locale-specific labels if needed
@@ -563,6 +568,8 @@ function CreateAssessmentContent() {
       }
       if (q.type === 'yes_no') return total + 1
       if (q.type === 'numeric') return total + (q.maxValue || 10)
+      if (q.type === 'scale') return total + (q.scaleMax || 10)
+      if (q.type === 'slider') return total + (q.sliderMax || 100)
       if (q.type === 'multiple_choice' && q.scoring) {
         return total + Math.max(...Object.values(q.scoring))
       }
@@ -585,11 +592,12 @@ function CreateAssessmentContent() {
         questions: questions.map(q => ({
           id: q.id,
           type: q.type,
-          question: q.question,
+          text: q.question, // Store as 'text' for consistency with loading
           required: q.required,
           options: q.options,
           scoring: q.scoring,
           scaleLabels: q.scaleLabels,
+          likertLabels: q.scaleLabels ? { start: q.scaleLabels[0], end: q.scaleLabels[q.scaleLabels.length - 1] } : undefined,
           minValue: q.minValue,
           maxValue: q.maxValue,
           scaleMin: q.scaleMin,
@@ -604,6 +612,7 @@ function CreateAssessmentContent() {
           sliderUnit: q.sliderUnit,
         })),
         enableScoring,
+        showScoreToMember,
         scoringRanges,
         instructions,
       }
@@ -663,13 +672,20 @@ function CreateAssessmentContent() {
     let score = 0
     questions.forEach(q => {
       const response = testResponses[q.id]
-      if (response !== undefined && q.scoring) {
-        if (q.type === 'likert' || q.type === 'multiple_choice') {
+      if (response !== undefined) {
+        if ((q.type === 'likert' || q.type === 'multiple_choice') && q.scoring) {
           score += q.scoring[response.toString()] || 0
         } else if (q.type === 'yes_no') {
-          score += q.scoring[response] || 0
-        } else if (q.type === 'numeric') {
-          score += parseInt(response) || 0
+          // yes_no: if scoring exists use it, otherwise yes=1, no=0
+          if (q.scoring) {
+            score += q.scoring[response] || 0
+          } else {
+            score += response === 'yes' ? 1 : 0
+          }
+        } else if (q.type === 'numeric' || q.type === 'scale' || q.type === 'slider') {
+          // numeric/scale/slider: the entered value IS the score
+          const numValue = typeof response === 'number' ? response : parseInt(response)
+          score += numValue || 0
         }
       }
     })
@@ -789,7 +805,7 @@ function CreateAssessmentContent() {
                 min={question.minValue || 0}
                 max={question.maxValue || 10}
                 value={testResponses[question.id] ?? question.minValue ?? 0}
-                onChange={(e) => isInteractive && setTestResponses({ ...testResponses, [question.id]: e.target.value })}
+                onChange={(e) => isInteractive && setTestResponses({ ...testResponses, [question.id]: parseInt(e.target.value) })}
                 disabled={!isInteractive || testSubmitted}
                 className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-500"
               />
@@ -1478,7 +1494,7 @@ function CreateAssessmentContent() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center justify-between mb-8"
               >
-                <Link href="/resources/create">
+                <Link href={isEditMode ? '/resources' : '/resources/create'}>
                   <motion.div whileHover={{ x: -4 }} className="inline-block">
                     <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
                       <ArrowLeft className="w-4 h-4 mr-2" />
@@ -1500,7 +1516,7 @@ function CreateAssessmentContent() {
                   </div>
                 </motion.div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                  {locale === 'fr' ? 'Créer une évaluation' : 'Create an Assessment'}
+                  {isEditMode ? (locale === 'fr' ? 'Modifier l\'évaluation' : 'Edit Assessment') : (locale === 'fr' ? 'Créer une évaluation' : 'Create an Assessment')}
                 </h1>
                 <p className="text-gray-600 max-w-md mx-auto">
                   {locale === 'fr'
@@ -1568,7 +1584,7 @@ function CreateAssessmentContent() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center justify-between mb-6"
               >
-                <Link href="/resources/create">
+                <Link href={isEditMode ? '/resources' : '/resources/create'}>
                   <motion.div whileHover={{ x: -4 }} className="inline-block">
                     <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
                       <ArrowLeft className="w-4 h-4 mr-2" />
@@ -2439,6 +2455,54 @@ function CreateAssessmentContent() {
                         </motion.div>
                       )}
                     </AnimatePresence>
+
+                    {/* Show Score to Member Toggle */}
+                    {enableScoring && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="mt-6 pt-6 border-t border-gray-100"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700">
+                              {locale === 'fr' ? 'Afficher le score au membre' : 'Show Score to Member'}
+                            </label>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {locale === 'fr'
+                                ? 'Le membre pourra voir son score et son interprétation après avoir soumis l\'évaluation'
+                                : 'Member will see their score and interpretation after submitting the assessment'}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => setShowScoreToMember(!showScoreToMember)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              showScoreToMember ? 'bg-emerald-500' : 'bg-gray-300'
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                                showScoreToMember ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                        {!showScoreToMember && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="mt-3 p-3 bg-amber-50 rounded-xl border border-amber-200"
+                          >
+                            <p className="text-xs text-amber-700">
+                              <Eye className="w-3.5 h-3.5 inline mr-1.5" />
+                              {locale === 'fr'
+                                ? 'Le score sera visible uniquement par vous dans la section des soumissions.'
+                                : 'Score will only be visible to you in the submissions section.'}
+                            </p>
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    )}
                   </motion.div>
 
                   {/* Content Summary */}

@@ -21,6 +21,7 @@ import {
   Activity,
   MoreHorizontal,
 } from 'lucide-react'
+import { AnimatedIcon } from '@/components/ui/animated-icons'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -158,7 +159,7 @@ export default function MembersPage() {
           className="text-center"
         >
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-lavender-400 to-lavender-600 flex items-center justify-center mx-auto mb-4 animate-pulse-glow">
-            <Users className="w-8 h-8 text-white" />
+            <AnimatedIcon icon={Users} animation="pulse" size={32} animateOnHover={false} animateOnRender className="text-white" />
           </div>
           <p className="text-gray-500 font-medium">{t.dashboard.loading}</p>
         </motion.div>
@@ -190,20 +191,20 @@ export default function MembersPage() {
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-lavender-100/80 flex items-center justify-center">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-lavender-400 to-lavender-600 flex items-center justify-center shadow-lg shadow-lavender-200/50">
-                <Users className="w-5 h-5 text-white" />
+                <AnimatedIcon icon={Users} animation="scale" size={20} animateOnHover animateOnRender={false} className="text-white" />
               </div>
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
                 {t.members.title}
-                <Sparkles className="w-6 h-6 text-lavender-400" />
+                <AnimatedIcon icon={Sparkles} animation="sparkle" size={24} animateOnHover animateOnRender={false} className="text-lavender-400" />
               </h1>
               <p className="text-gray-600">{t.members.subtitle}</p>
             </div>
           </div>
           <Link href="/members/new">
             <Button className="bg-gradient-to-r from-lavender-500 via-lavender-500 to-indigo-500 hover:from-lavender-600 hover:via-lavender-600 hover:to-indigo-600 text-white shadow-xl shadow-lavender-300/30 border-0 rounded-xl px-6 py-3 text-base font-medium hover-lift">
-              <Plus className="w-5 h-5 mr-2" />
+              <AnimatedIcon icon={Plus} animation="scale" size={20} animateOnHover animateOnRender={false} className="mr-2" />
               {t.members.actions.addMember}
             </Button>
           </Link>
@@ -226,7 +227,7 @@ export default function MembersPage() {
             >
               <div className={`w-12 h-12 rounded-2xl ${stat.iconBg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                 <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-md`}>
-                  <stat.icon className="w-4.5 h-4.5 text-white" />
+                  <AnimatedIcon icon={stat.icon} animation="scale" size={18} animateOnHover animateOnRender={false} className="text-white" />
                 </div>
               </div>
               <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
@@ -269,7 +270,7 @@ export default function MembersPage() {
 
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <AnimatedIcon icon={Search} animation="scale" size={20} animateOnHover animateOnRender={false} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder={t.members.filters.searchPlaceholder}

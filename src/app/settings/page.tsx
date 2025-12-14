@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { ArrowLeft, Calendar, Clock, Check, X, Plus, Trash2, Loader2, Link as LinkIcon, Copy, ExternalLink } from 'lucide-react'
+import { AnimatedIcon } from '@/components/ui/animated-icons'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'

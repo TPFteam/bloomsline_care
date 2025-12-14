@@ -18,20 +18,23 @@ import {
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
+import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import { toast } from 'sonner'
-import type { Session, SessionType, SessionFormat, SessionStatus } from '@/types/member'
+import type { Session, SessionType, SessionFormat, SessionStatus, Member } from '@/types/member'
 
 interface SessionsTabProps {
   memberId: string
+  member: Member
   sessions: Session[]
   onSessionsUpdate: () => void
 }
 
-export default function SessionsTab({ memberId, sessions, onSessionsUpdate }: SessionsTabProps) {
+export default function SessionsTab({ memberId, member, sessions, onSessionsUpdate }: SessionsTabProps) {
   const { t } = useLanguage()
   const supabase = createClient()
 
   const [showAddSession, setShowAddSession] = useState(false)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [sessionType, setSessionType] = useState<SessionType>('follow_up')
   const [sessionFormat, setSessionFormat] = useState<SessionFormat>('in_person')
   const [scheduledAt, setScheduledAt] = useState('')
@@ -204,7 +207,7 @@ export default function SessionsTab({ memberId, sessions, onSessionsUpdate }: Se
           {t.members.sessions.title}
         </h2>
         <Button
-          onClick={() => setShowAddSession(!showAddSession)}
+          onClick={() => setShowScheduleModal(true)}
           className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-smooth hover-lift"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -775,6 +778,16 @@ export default function SessionsTab({ memberId, sessions, onSessionsUpdate }: Se
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Schedule Session Modal */}
+      <ScheduleSessionModal
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        onSuccess={() => {
+          onSessionsUpdate()
+        }}
+        preselectedMember={member}
+      />
     </div>
   )
 }

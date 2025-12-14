@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -19,10 +18,12 @@ import {
   FileText,
   User,
   CalendarCheck,
+  type LucideIcon,
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
+import { AnimatedIcon } from '@/components/ui/animated-icons'
 
 interface AppSidebarProps {
   userType?: 'mentor' | 'member'
@@ -161,7 +162,14 @@ export function AppSidebar({ userType = 'mentor' }: AppSidebarProps) {
                 : 'hover:bg-gray-50/80'
               }`}
             >
-              <Home className={`w-5 h-5 flex-shrink-0 ${isActive('/dashboard') ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+              <AnimatedIcon
+                icon={Home}
+                animation="bounce"
+                size={20}
+                animateOnHover
+                animateOnRender={false}
+                className={`flex-shrink-0 ${isActive('/dashboard') ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}
+              />
               <span className={`text-sm font-medium ${isActive('/dashboard') ? 'text-white' : 'text-gray-600 group-hover:text-gray-900'}`}>
                 {t.dashboard.sidebar.home}
               </span>
@@ -181,7 +189,14 @@ export function AppSidebar({ userType = 'mentor' }: AppSidebarProps) {
                     : 'hover:bg-gray-50/80'
                   }`}
                 >
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                  <AnimatedIcon
+                    icon={Icon}
+                    animation="scale"
+                    size={20}
+                    animateOnHover
+                    animateOnRender={false}
+                    className={`flex-shrink-0 ${active ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}
+                  />
                   <span className={`text-sm font-medium ${active ? 'text-white' : 'text-gray-600 group-hover:text-gray-900'}`}>
                     {section.title}
                   </span>
@@ -202,7 +217,14 @@ export function AppSidebar({ userType = 'mentor' }: AppSidebarProps) {
                 : 'hover:bg-gray-50/80'
               }`}
             >
-              <Settings className={`w-5 h-5 flex-shrink-0 ${isActive('/settings') ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+              <AnimatedIcon
+                icon={Settings}
+                animation="spin"
+                size={20}
+                animateOnHover
+                animateOnRender={false}
+                className={`flex-shrink-0 ${isActive('/settings') ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}
+              />
               <span className={`text-sm font-medium ${isActive('/settings') ? 'text-white' : 'text-gray-600 group-hover:text-gray-900'}`}>
                 {t.dashboard.sections.settings.title}
               </span>
@@ -214,7 +236,14 @@ export function AppSidebar({ userType = 'mentor' }: AppSidebarProps) {
             onClick={handleSignOut}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50/80 transition-all duration-300 group"
           >
-            <LogOut className="w-5 h-5 flex-shrink-0 text-gray-500 group-hover:text-red-500" />
+            <AnimatedIcon
+              icon={LogOut}
+              animation="arrow-right"
+              size={20}
+              animateOnHover
+              animateOnRender={false}
+              className="flex-shrink-0 text-gray-500 group-hover:text-red-500"
+            />
             <span className="text-sm font-medium text-gray-600 group-hover:text-red-500">
               {t.dashboard.sidebar.signOut}
             </span>

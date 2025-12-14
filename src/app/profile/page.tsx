@@ -22,6 +22,7 @@ import {
   ExternalLink,
   AlertCircle,
 } from 'lucide-react'
+import { AnimatedIcon } from '@/components/ui/animated-icons'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'

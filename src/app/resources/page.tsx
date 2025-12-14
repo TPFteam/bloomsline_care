@@ -33,6 +33,7 @@ import {
   Lightbulb,
   Brain,
 } from 'lucide-react'
+import { AnimatedIcon } from '@/components/ui/animated-icons'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -497,7 +498,7 @@ export default function MyResourcesPage() {
           <Link href="/resources/create">
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button size="sm" className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 shadow-lg shadow-lavender-200/50 rounded-xl">
-                <Plus className="w-4 h-4 mr-2" />
+                <AnimatedIcon icon={Plus} animation="scale" size={16} animateOnHover animateOnRender={false} className="mr-2" />
                 {t.library.create.title}
               </Button>
             </motion.div>
@@ -515,7 +516,7 @@ export default function MyResourcesPage() {
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-lavender-100/80 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-lavender-400 to-lavender-600 flex items-center justify-center shadow-md">
-                  <Bookmark className="w-4.5 h-4.5 text-white" />
+                  <AnimatedIcon icon={Bookmark} animation="scale" size={18} animateOnHover animateOnRender={false} className="text-white" />
                 </div>
               </div>
               <div>
@@ -534,7 +535,7 @@ export default function MyResourcesPage() {
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-emerald-100/80 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-md">
-                  <FolderOpen className="w-4.5 h-4.5 text-white" />
+                  <AnimatedIcon icon={FolderOpen} animation="scale" size={18} animateOnHover animateOnRender={false} className="text-white" />
                 </div>
               </div>
               <div>
@@ -553,7 +554,7 @@ export default function MyResourcesPage() {
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-amber-100/80 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-md">
-                  <Sparkles className="w-4.5 h-4.5 text-white" />
+                  <AnimatedIcon icon={Sparkles} animation="sparkle" size={18} animateOnHover animateOnRender={false} className="text-white" />
                 </div>
               </div>
               <div>
@@ -589,7 +590,7 @@ export default function MyResourcesPage() {
                         : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <AnimatedIcon icon={Icon} animation="scale" size={16} animateOnHover animateOnRender={false} />
                     {tab.label}
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       isActive
@@ -605,7 +606,7 @@ export default function MyResourcesPage() {
 
             {/* Search */}
             <div className="relative w-full sm:w-72">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <AnimatedIcon icon={Search} animation="scale" size={16} animateOnHover animateOnRender={false} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder={t.library.search.placeholder}
@@ -666,7 +667,7 @@ export default function MyResourcesPage() {
                     <DbResourceCard
                       key={resource.id}
                       resource={resource}
-                      onEdit={() => router.push(`/resources/${resource.id}/edit`)}
+                      onEdit={() => router.push(`/resources/create/${resource.type}?edit=${resource.id}`)}
                       onPreview={() => router.push(`/resources/${resource.id}`)}
                       onDelete={() => handleDelete(resource.id)}
                       onShare={() => handleOpenShareModal(resource)}
@@ -1170,6 +1171,7 @@ function SavedResourceCard({
   return (
     <motion.div
       whileHover={{ scale: 1.02, y: -4 }}
+      onClick={onView}
       className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] shadow-lg shadow-gray-200/40 border border-white/60 overflow-hidden cursor-pointer hover:shadow-xl transition-all group"
     >
       <div className="p-5">
@@ -1179,28 +1181,30 @@ function SavedResourceCard({
               <TypeIcon className="w-4 h-4 text-white" />
             </div>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                <MoreHorizontal className="w-4 h-4 text-gray-400" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-xl">
-              <DropdownMenuItem onClick={onView} className="rounded-lg">
-                <Eye className="w-4 h-4 mr-2" />
-                {t.library.resource.viewDetails}
-              </DropdownMenuItem>
-              <DropdownMenuItem className="rounded-lg">
-                <ExternalLink className="w-4 h-4 mr-2" />
-                {t.library.resource.useWithClient}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600 rounded-lg">
-                <Trash2 className="w-4 h-4 mr-2" />
-                {t.library.resource.unsave}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div onClick={(e) => e.stopPropagation()}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                  <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="rounded-xl">
+                <DropdownMenuItem onClick={onView} className="rounded-lg">
+                  <Eye className="w-4 h-4 mr-2" />
+                  {t.library.resource.viewDetails}
+                </DropdownMenuItem>
+                <DropdownMenuItem className="rounded-lg">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  {t.library.resource.useWithClient}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-red-600 rounded-lg">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {t.library.resource.unsave}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">{resource.title}</h3>
@@ -1268,6 +1272,7 @@ function DbResourceCard({
   return (
     <motion.div
       whileHover={{ scale: 1.02, y: -4 }}
+      onClick={onPreview}
       className={`bg-white/90 backdrop-blur-xl rounded-[1.25rem] shadow-lg shadow-gray-200/40 border border-white/60 overflow-hidden cursor-pointer hover:shadow-xl transition-all group ${isDeleting ? 'opacity-50' : ''}`}
     >
       <div className="p-5">
@@ -1277,7 +1282,7 @@ function DbResourceCard({
               <TypeIcon className="w-4 h-4 text-white" />
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             {/* Visibility Badge */}
             {resource.visibility === 'public' ? (
               <Badge className="text-xs bg-blue-100 text-blue-700 border-0 shadow-sm">
@@ -1329,7 +1334,7 @@ function DbResourceCard({
           </div>
         </div>
 
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1 cursor-pointer" onClick={onPreview}>{resource.title}</h3>
+        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">{resource.title}</h3>
         <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">{resource.description || (locale === 'fr' ? 'Aucune description' : 'No description')}</p>
 
         <div className="flex items-center justify-between">

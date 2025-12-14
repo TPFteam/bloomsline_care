@@ -25,6 +25,7 @@ import {
   Brain,
   Award,
 } from 'lucide-react'
+import { AnimatedIcon } from '@/components/ui/animated-icons'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppSidebar } from '@/components/app-sidebar'

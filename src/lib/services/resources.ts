@@ -539,6 +539,188 @@ export async function addPractitionerNotes(
 }
 
 // ============================================
+// SUBMISSIONS
+// ============================================
+
+export interface ResourceSubmission {
+  id: string
+  resource_id: string
+  member_id: string
+  practitioner_id: string
+  responses: Record<string, unknown>
+  score?: number
+  max_score?: number
+  score_interpretation?: string
+  status: 'draft' | 'submitted' | 'reviewed'
+  submitted_at: string
+  reviewed_at?: string
+  reviewer_notes?: string
+  created_at: string
+  updated_at: string
+  // Joined data
+  member?: {
+    id: string
+    first_name: string
+    last_name: string
+    avatar_url?: string
+  }
+  resource?: Resource
+}
+
+export async function getResourceSubmissions(resourceId: string): Promise<ResourceSubmission[]> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('resource_submissions')
+    .select(`
+      *,
+      member:members(id, first_name, last_name, avatar_url)
+    `)
+    .eq('resource_id', resourceId)
+    .order('submitted_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching submissions:', error)
+    throw error
+  }
+
+  return data as ResourceSubmission[]
+}
+
+export async function getSubmissionById(id: string): Promise<ResourceSubmission | null> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('resource_submissions')
+    .select(`
+      *,
+      member:members(id, first_name, last_name, avatar_url),
+      resource:resources(*)
+    `)
+    .eq('id', id)
+    .single()
+
+  if (error) {
+    if (error.code === 'PGRST116') return null
+    console.error('Error fetching submission:', error)
+    throw error
+  }
+
+  return data as ResourceSubmission
+}
+
+export async function createSubmission(submission: {
+  resource_id: string
+  member_id: string
+  responses: Record<string, unknown>
+  score?: number
+  max_score?: number
+  score_interpretation?: string
+  status?: 'draft' | 'submitted' | 'reviewed'
+}): Promise<ResourceSubmission> {
+  const supabase = createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data, error } = await supabase
+    .from('resource_submissions')
+    .insert({
+      resource_id: submission.resource_id,
+      member_id: submission.member_id,
+      practitioner_id: user.id,
+      responses: submission.responses,
+      score: submission.score,
+      max_score: submission.max_score,
+      score_interpretation: submission.score_interpretation,
+      status: submission.status || 'submitted',
+      submitted_at: new Date().toISOString(),
+    })
+    .select(`
+      *,
+      member:members(id, first_name, last_name, avatar_url)
+    `)
+    .single()
+
+  if (error) {
+    console.error('Error creating submission:', error)
+    throw error
+  }
+
+  return data as ResourceSubmission
+}
+
+export async function updateSubmission(
+  id: string,
+  updates: {
+    status?: 'draft' | 'submitted' | 'reviewed'
+    reviewer_notes?: string
+  }
+): Promise<ResourceSubmission> {
+  const supabase = createClient()
+
+  const updateData: Record<string, unknown> = {
+    ...updates,
+    updated_at: new Date().toISOString(),
+  }
+
+  if (updates.status === 'reviewed') {
+    updateData.reviewed_at = new Date().toISOString()
+  }
+
+  const { data, error } = await supabase
+    .from('resource_submissions')
+    .update(updateData)
+    .eq('id', id)
+    .select(`
+      *,
+      member:members(id, first_name, last_name, avatar_url)
+    `)
+    .single()
+
+  if (error) {
+    console.error('Error updating submission:', error)
+    throw error
+  }
+
+  return data as ResourceSubmission
+}
+
+export async function deleteSubmission(id: string): Promise<void> {
+  const supabase = createClient()
+
+  const { error } = await supabase
+    .from('resource_submissions')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    console.error('Error deleting submission:', error)
+    throw error
+  }
+}
+
+export async function getMemberSubmissions(memberId: string): Promise<ResourceSubmission[]> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('resource_submissions')
+    .select(`
+      *,
+      resource:resources(id, title, type, category)
+    `)
+    .eq('member_id', memberId)
+    .order('submitted_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching member submissions:', error)
+    throw error
+  }
+
+  return data as ResourceSubmission[]
+}
+
+// ============================================
 // STATS
 // ============================================
 
