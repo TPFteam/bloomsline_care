@@ -420,6 +420,7 @@ function CreateWorksheetContent() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isAutoSavingRef = useRef(false)
+  const isInitialLoadRef = useRef(true)
 
   // Get user ID on mount
   useEffect(() => {
@@ -531,6 +532,9 @@ function CreateWorksheetContent() {
             }
           }
         }
+        // Set lastSavedAt to indicate the resource was loaded (already saved)
+        setLastSavedAt(new Date())
+        setHasUnsavedChanges(false)
       } catch (error) {
         console.error('Error loading resource:', error)
         toast.error('Failed to load resource')
@@ -1144,6 +1148,12 @@ function CreateWorksheetContent() {
   // Track changes and trigger auto-save
   useEffect(() => {
     if (!isEditMode || !editId) return
+
+    // Skip the initial load - don't mark as unsaved when data is first loaded
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false
+      return
+    }
 
     // Mark as having unsaved changes
     setHasUnsavedChanges(true)
