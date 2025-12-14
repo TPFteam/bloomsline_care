@@ -3672,50 +3672,56 @@ function CreateWorksheetContent() {
                 </motion.div>
                 <div className="flex items-center gap-2">
                   {/* Auto-save Status Indicator */}
-                  {isEditMode && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">
-                      {autoSaveStatus === 'saving' && (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
-                          <span className="text-xs text-blue-600 font-medium">
-                            {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
-                          </span>
-                        </>
-                      )}
-                      {autoSaveStatus === 'saved' && (
-                        <>
-                          <Cloud className="w-3.5 h-3.5 text-emerald-500" />
-                          <span className="text-xs text-emerald-600 font-medium">
-                            {locale === 'fr' ? 'Enregistré' : 'Saved'}
-                          </span>
-                        </>
-                      )}
-                      {autoSaveStatus === 'error' && (
-                        <>
-                          <CloudOff className="w-3.5 h-3.5 text-red-500" />
-                          <span className="text-xs text-red-600 font-medium">
-                            {locale === 'fr' ? 'Erreur' : 'Error'}
-                          </span>
-                        </>
-                      )}
-                      {autoSaveStatus === 'idle' && hasUnsavedChanges && (
-                        <>
-                          <div className="w-2 h-2 rounded-full bg-amber-400" />
-                          <span className="text-xs text-gray-500">
-                            {locale === 'fr' ? 'Non enregistré' : 'Unsaved'}
-                          </span>
-                        </>
-                      )}
-                      {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
-                        <>
-                          <Cloud className="w-3.5 h-3.5 text-gray-400" />
-                          <span className="text-xs text-gray-500">
-                            {locale === 'fr' ? 'Tout est enregistré' : 'All saved'}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">
+                    {autoSaveStatus === 'saving' && (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+                        <span className="text-xs text-blue-600 font-medium">
+                          {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'saved' && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-xs text-emerald-600 font-medium">
+                          {locale === 'fr' ? 'Enregistré' : 'Saved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'error' && (
+                      <>
+                        <CloudOff className="w-3.5 h-3.5 text-red-500" />
+                        <span className="text-xs text-red-600 font-medium">
+                          {locale === 'fr' ? 'Erreur' : 'Error'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && isEditMode && hasUnsavedChanges && (
+                      <>
+                        <div className="w-2 h-2 rounded-full bg-amber-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Non enregistré' : 'Unsaved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && isEditMode && !hasUnsavedChanges && lastSavedAt && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Tout est enregistré' : 'All saved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && !isEditMode && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Brouillon' : 'Draft'}
+                        </span>
+                      </>
+                    )}
+                  </div>
                   {/* View Mode Toggle */}
                   <div className="flex items-center bg-white/80 backdrop-blur-xl rounded-xl p-1 border border-white/60 shadow-sm">
                     <button
