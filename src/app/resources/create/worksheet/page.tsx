@@ -1042,11 +1042,17 @@ function CreateWorksheetContent() {
   // Check if can proceed to details
   const canProceedToDetails = title.trim() && blocks.length > 0
 
+  // State to track auto-created draft ID for new worksheets
+  const [autoSaveDraftId, setAutoSaveDraftId] = useState<string | null>(null)
+
   // Auto-save function (saves as draft without redirecting)
   const performAutoSave = useCallback(async () => {
-    // Only auto-save if we're in edit mode with an existing resource
-    if (!isEditMode || !editId || isAutoSavingRef.current || isSaving) return
+    // Don't auto-save if already saving or no content
+    if (isAutoSavingRef.current || isSaving) return
     if (!title || blocks.length === 0) return
+
+    // Get the ID to save to (either editId for existing, or autoSaveDraftId for auto-created draft)
+    const saveToId = editId || autoSaveDraftId
 
     isAutoSavingRef.current = true
     setAutoSaveStatus('saving')
@@ -1118,16 +1124,34 @@ function CreateWorksheetContent() {
           }))
       }
 
-      // Auto-save always saves as draft to preserve current status
-      await updateResource(editId, {
-        title,
-        description: description || undefined,
-        category: selectedCategory || undefined,
-        tags: tags.length > 0 ? tags : undefined,
-        blocks: resourceBlocks,
-        settings,
-        // Don't change status or visibility on auto-save
-      })
+      if (saveToId) {
+        // Update existing resource
+        await updateResource(saveToId, {
+          title,
+          description: description || undefined,
+          category: selectedCategory || undefined,
+          tags: tags.length > 0 ? tags : undefined,
+          blocks: resourceBlocks,
+          settings,
+        })
+      } else {
+        // Create new draft for auto-save
+        const newResource = await createResource({
+          type: 'worksheet',
+          title,
+          description: description || undefined,
+          category: selectedCategory || undefined,
+          tags: tags.length > 0 ? tags : undefined,
+          blocks: resourceBlocks,
+          settings,
+          status: 'draft',
+          visibility: 'private',
+        })
+        // Store the new draft ID for future auto-saves
+        if (newResource?.id) {
+          setAutoSaveDraftId(newResource.id)
+        }
+      }
 
       setAutoSaveStatus('saved')
       setLastSavedAt(new Date())
@@ -1140,20 +1164,32 @@ function CreateWorksheetContent() {
     } catch (error) {
       console.error('Auto-save error:', error)
       setAutoSaveStatus('error')
+      // Reset to idle after 3 seconds so user can try again
+      setTimeout(() => {
+        setAutoSaveStatus('idle')
+        setHasUnsavedChanges(true)
+      }, 3000)
     } finally {
       isAutoSavingRef.current = false
     }
-  }, [isEditMode, editId, isSaving, title, blocks, description, selectedCategory, tags, enableScoring, showScoreToMember, scoringRanges])
+  }, [editId, autoSaveDraftId, isSaving, title, blocks, description, selectedCategory, tags, enableScoring, showScoreToMember, scoringRanges])
 
   // Track changes and trigger auto-save
-  useEffect(() => {
-    if (!isEditMode || !editId) return
+  const performAutoSaveRef = useRef(performAutoSave)
+  performAutoSaveRef.current = performAutoSave
 
-    // Skip the initial load - don't mark as unsaved when data is first loaded
-    if (isInitialLoadRef.current) {
+  useEffect(() => {
+    // Skip if we're still loading
+    if (isLoading) return
+
+    // Skip the initial load for edit mode - don't mark as unsaved when data is first loaded
+    if (isEditMode && isInitialLoadRef.current) {
       isInitialLoadRef.current = false
       return
     }
+
+    // Only track changes if we have content
+    if (!title && blocks.length === 0) return
 
     // Mark as having unsaved changes
     setHasUnsavedChanges(true)
@@ -1164,17 +1200,18 @@ function CreateWorksheetContent() {
       clearTimeout(autoSaveTimeoutRef.current)
     }
 
-    // Set new auto-save timeout (30 seconds)
+    // Set new auto-save timeout (5 seconds after last change)
     autoSaveTimeoutRef.current = setTimeout(() => {
-      performAutoSave()
-    }, 30000)
+      performAutoSaveRef.current()
+    }, 5000)
 
     return () => {
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current)
       }
     }
-  }, [title, blocks, description, selectedCategory, tags, enableScoring, showScoreToMember, scoringRanges, isEditMode, editId, performAutoSave])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, blocks, description, selectedCategory, tags, enableScoring, showScoreToMember, scoringRanges, isEditMode, isLoading])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -3707,7 +3744,7 @@ function CreateWorksheetContent() {
                         </span>
                       </>
                     )}
-                    {autoSaveStatus === 'idle' && isEditMode && hasUnsavedChanges && (
+                    {autoSaveStatus === 'idle' && hasUnsavedChanges && (
                       <>
                         <div className="w-2 h-2 rounded-full bg-amber-400" />
                         <span className="text-xs text-gray-500">
@@ -3715,15 +3752,15 @@ function CreateWorksheetContent() {
                         </span>
                       </>
                     )}
-                    {autoSaveStatus === 'idle' && isEditMode && !hasUnsavedChanges && lastSavedAt && (
+                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
                       <>
-                        <Cloud className="w-3.5 h-3.5 text-gray-400" />
+                        <Cloud className="w-3.5 h-3.5 text-emerald-400" />
                         <span className="text-xs text-gray-500">
                           {locale === 'fr' ? 'Tout est enregistré' : 'All saved'}
                         </span>
                       </>
                     )}
-                    {autoSaveStatus === 'idle' && !isEditMode && (
+                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && !lastSavedAt && (
                       <>
                         <Cloud className="w-3.5 h-3.5 text-gray-400" />
                         <span className="text-xs text-gray-500">
