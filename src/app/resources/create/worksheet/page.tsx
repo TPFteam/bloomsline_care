@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence, Reorder } from 'framer-motion'
@@ -52,6 +52,9 @@ import {
   Calculator,
   Star,
   Gauge,
+  // Auto-save icons
+  Cloud,
+  CloudOff,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -410,6 +413,13 @@ function CreateWorksheetContent() {
   // Test mode responses (simulated member answers)
   const [testResponses, setTestResponses] = useState<Record<string, any>>({})
   const [testSubmitted, setTestSubmitted] = useState(false)
+
+  // Auto-save state
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isAutoSavingRef = useRef(false)
 
   // Get user ID on mount
   useEffect(() => {
@@ -1027,6 +1037,143 @@ function CreateWorksheetContent() {
 
   // Check if can proceed to details
   const canProceedToDetails = title.trim() && blocks.length > 0
+
+  // Auto-save function (saves as draft without redirecting)
+  const performAutoSave = useCallback(async () => {
+    // Only auto-save if we're in edit mode with an existing resource
+    if (!isEditMode || !editId || isAutoSavingRef.current || isSaving) return
+    if (!title || blocks.length === 0) return
+
+    isAutoSavingRef.current = true
+    setAutoSaveStatus('saving')
+
+    try {
+      // Convert local blocks to ResourceBlock format (same as handleSave)
+      const resourceBlocks: ResourceBlock[] = blocks.map(block => {
+        const baseBlock = {
+          id: block.id,
+          type: block.type,
+          content: block.content,
+        }
+
+        if (block.type === 'prompt') {
+          return { ...baseBlock, type: 'prompt' as const, placeholder: block.placeholder, lines: block.lines }
+        }
+        if (block.type === 'checklist') {
+          return { ...baseBlock, type: 'checklist' as const, items: block.items || [] }
+        }
+        if (block.type === 'scale') {
+          return { ...baseBlock, type: 'scale' as const, scaleMin: block.scaleMin || 1, scaleMax: block.scaleMax || 10, scaleMinLabel: block.scaleMinLabel, scaleMaxLabel: block.scaleMaxLabel }
+        }
+        if (block.type === 'image') {
+          return { ...baseBlock, type: 'image' as const, mediaFile: block.mediaFile ? { id: block.mediaFile.id, name: block.mediaFile.name, size: block.mediaFile.size, type: block.mediaFile.type, url: block.mediaFile.url || '' } : undefined, mediaCaption: block.mediaCaption, mediaAlt: block.mediaAlt }
+        }
+        if (block.type === 'video') {
+          return { ...baseBlock, type: 'video' as const, mediaFile: block.mediaFile ? { id: block.mediaFile.id, name: block.mediaFile.name, size: block.mediaFile.size, type: block.mediaFile.type, url: block.mediaFile.url || '' } : undefined, videoUrl: block.videoUrl, videoType: block.videoType }
+        }
+        if (block.type === 'file') {
+          return { ...baseBlock, type: 'file' as const, mediaFile: block.mediaFile ? { id: block.mediaFile.id, name: block.mediaFile.name, size: block.mediaFile.size, type: block.mediaFile.type, url: block.mediaFile.url || '' } : undefined, mediaCaption: block.mediaCaption }
+        }
+        return baseBlock as ResourceBlock
+      })
+
+      const settings: WorksheetSettings = {
+        enableScoring,
+        showScoreToMember: enableScoring ? showScoreToMember : undefined,
+        scoringRanges: enableScoring ? scoringRanges : undefined,
+        maxScore: enableScoring ? calculateMaxScore() : undefined,
+      }
+
+      if (enableScoring) {
+        settings.questions = blocks
+          .filter(b => ['likert', 'numeric', 'scale', 'slider', 'multiple_choice', 'yes_no', 'mood', 'checklist', 'matrix_rating'].includes(b.type))
+          .map(block => ({
+            id: block.id,
+            type: block.type as WorksheetQuestionType,
+            question: block.content,
+            required: block.required ?? true,
+            options: block.choices,
+            scaleLabels: block.scaleLabels,
+            scaleRange: block.scaleRange,
+            scaleMin: block.scaleMin,
+            scaleMax: block.scaleMax,
+            scaleMinLabel: block.scaleMinLabel,
+            scaleMaxLabel: block.scaleMaxLabel,
+            items: block.items,
+            moodOptions: block.moodOptions?.map(m => ({ emoji: m.emoji, label: m.label, value: m.value || 0 })),
+            sliderMin: block.sliderMin,
+            sliderMax: block.sliderMax,
+            sliderStep: block.sliderStep,
+            sliderUnit: block.sliderUnit,
+            minValue: block.minValue,
+            maxValue: block.maxValue,
+            scoring: block.scoring,
+            matrixItems: block.matrixItems,
+            matrixScaleMax: block.matrixScaleMax,
+            matrixScaleLabels: block.matrixScaleLabels,
+          }))
+      }
+
+      // Auto-save always saves as draft to preserve current status
+      await updateResource(editId, {
+        title,
+        description: description || undefined,
+        category: selectedCategory || undefined,
+        tags: tags.length > 0 ? tags : undefined,
+        blocks: resourceBlocks,
+        settings,
+        // Don't change status or visibility on auto-save
+      })
+
+      setAutoSaveStatus('saved')
+      setLastSavedAt(new Date())
+      setHasUnsavedChanges(false)
+
+      // Reset status to idle after 3 seconds
+      setTimeout(() => {
+        setAutoSaveStatus('idle')
+      }, 3000)
+    } catch (error) {
+      console.error('Auto-save error:', error)
+      setAutoSaveStatus('error')
+    } finally {
+      isAutoSavingRef.current = false
+    }
+  }, [isEditMode, editId, isSaving, title, blocks, description, selectedCategory, tags, enableScoring, showScoreToMember, scoringRanges])
+
+  // Track changes and trigger auto-save
+  useEffect(() => {
+    if (!isEditMode || !editId) return
+
+    // Mark as having unsaved changes
+    setHasUnsavedChanges(true)
+    setAutoSaveStatus('idle')
+
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+    }
+
+    // Set new auto-save timeout (30 seconds)
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      performAutoSave()
+    }, 30000)
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [title, blocks, description, selectedCategory, tags, enableScoring, showScoreToMember, scoringRanges, isEditMode, editId, performAutoSave])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // Reset test mode
   const resetTestMode = () => {
@@ -3524,6 +3671,51 @@ function CreateWorksheetContent() {
                   </Button>
                 </motion.div>
                 <div className="flex items-center gap-2">
+                  {/* Auto-save Status Indicator */}
+                  {isEditMode && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">
+                      {autoSaveStatus === 'saving' && (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+                          <span className="text-xs text-blue-600 font-medium">
+                            {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                          </span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'saved' && (
+                        <>
+                          <Cloud className="w-3.5 h-3.5 text-emerald-500" />
+                          <span className="text-xs text-emerald-600 font-medium">
+                            {locale === 'fr' ? 'Enregistré' : 'Saved'}
+                          </span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'error' && (
+                        <>
+                          <CloudOff className="w-3.5 h-3.5 text-red-500" />
+                          <span className="text-xs text-red-600 font-medium">
+                            {locale === 'fr' ? 'Erreur' : 'Error'}
+                          </span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'idle' && hasUnsavedChanges && (
+                        <>
+                          <div className="w-2 h-2 rounded-full bg-amber-400" />
+                          <span className="text-xs text-gray-500">
+                            {locale === 'fr' ? 'Non enregistré' : 'Unsaved'}
+                          </span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
+                        <>
+                          <Cloud className="w-3.5 h-3.5 text-gray-400" />
+                          <span className="text-xs text-gray-500">
+                            {locale === 'fr' ? 'Tout est enregistré' : 'All saved'}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
                   {/* View Mode Toggle */}
                   <div className="flex items-center bg-white/80 backdrop-blur-xl rounded-xl p-1 border border-white/60 shadow-sm">
                     <button
