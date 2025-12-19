@@ -27,15 +27,16 @@ import { useLanguage } from '@/lib/i18n/context'
 import { AppSidebar } from '@/components/app-sidebar'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
-import type { Member, MemberFilter, MemberHubStats } from '@/types/member'
-import { getMemberFullName, getMemberInitials, formatRelativeTime } from '@/types/member'
+import type { Member, MemberFilter, MemberHubStats, Session } from '@/types/member'
+import { getMemberFullName, getMemberInitials, formatDate, formatRelativeTime } from '@/types/member'
 
 export default function MembersPage() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const router = useRouter()
   const supabase = createClient()
 
   const [members, setMembers] = useState<Member[]>([])
+  const [nextSessions, setNextSessions] = useState<Record<string, Session | null>>({})
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<MemberFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -80,6 +81,32 @@ export default function MembersPage() {
 
       setMembers(data || [])
       calculateStats(data || [])
+
+      // Fetch next scheduled sessions for all members
+      if (data && data.length > 0) {
+        const memberIds = data.map(m => m.id)
+        const now = new Date().toISOString()
+
+        const { data: sessions } = await supabase
+          .from('sessions')
+          .select('*')
+          .in('member_id', memberIds)
+          .eq('status', 'scheduled')
+          .gte('scheduled_at', now)
+          .order('scheduled_at', { ascending: true })
+
+        // Group by member_id and get the earliest session for each
+        const sessionsMap: Record<string, Session | null> = {}
+        memberIds.forEach(id => { sessionsMap[id] = null })
+
+        sessions?.forEach(session => {
+          if (!sessionsMap[session.member_id]) {
+            sessionsMap[session.member_id] = session as Session
+          }
+        })
+
+        setNextSessions(sessionsMap)
+      }
     } catch (error) {
       console.error('Error fetching members:', error)
       toast.error(t.members.errors.loadFailed)
@@ -351,6 +378,8 @@ export default function MembersPage() {
                     index={index}
                     onDelete={handleDeleteMember}
                     t={t}
+                    locale={locale}
+                    nextSession={nextSessions[member.id] || null}
                   />
                 ))}
               </AnimatePresence>
@@ -368,11 +397,15 @@ function MemberCard({
   index,
   onDelete,
   t,
+  locale,
+  nextSession,
 }: {
   member: Member
   index: number
   onDelete: (id: string) => void
   t: ReturnType<typeof useLanguage>['t']
+  locale: 'en' | 'fr'
+  nextSession: Session | null
 }) {
   const router = useRouter()
   const [showActions, setShowActions] = useState(false)
@@ -513,20 +546,45 @@ function MemberCard({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-100/60 mt-auto">
-            <div className="flex items-center gap-2 text-xs text-gray-400">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>{t.members.list.lastSession}: {formatRelativeTime(member.last_session_at)}</span>
+          <div className="pt-4 border-t border-gray-100/60 mt-auto space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <Calendar className="w-3.5 h-3.5" />
+                <span>
+                  {locale === 'fr' ? 'Dernière' : 'Last'}: {formatDate(member.last_session_at, locale)}
+                  {member.last_session_at && (
+                    <span className="text-gray-400 ml-1">({formatRelativeTime(member.last_session_at)})</span>
+                  )}
+                </span>
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: showActions ? 1 : 0 }}
+                className="flex items-center gap-1.5 text-lavender-600 text-xs font-medium"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                {locale === 'fr' ? 'Voir profil' : 'View Profile'}
+              </motion.div>
             </div>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: showActions ? 1 : 0 }}
-              className="flex items-center gap-1.5 text-lavender-600 text-xs font-medium"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              View Profile
-            </motion.div>
+            {nextSession ? (
+              <div className="flex items-center gap-2 text-xs">
+                <div className="w-3.5 h-3.5 flex items-center justify-center">
+                  <Clock className="w-3.5 h-3.5 text-emerald-500" />
+                </div>
+                <span className="text-emerald-600 font-medium">
+                  {locale === 'fr' ? 'Prochaine' : 'Next'}: {formatDate(nextSession.scheduled_at, locale)}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <div className="w-3.5 h-3.5 flex items-center justify-center">
+                  <Clock className="w-3.5 h-3.5" />
+                </div>
+                <span>{locale === 'fr' ? 'Pas de séance planifiée' : 'No session scheduled'}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

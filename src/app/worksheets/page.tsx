@@ -13,6 +13,7 @@ import {
   BookOpen,
   Puzzle,
   Filter,
+  User,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -216,7 +217,7 @@ export default function ResourcesPage() {
                     }`}>
                       {typeof item.resource.title === 'string' ? item.resource.title : ''}
                     </p>
-                    <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-2">
+                    <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${
                         isCompleted
                           ? 'bg-emerald-50 text-emerald-600'
@@ -232,6 +233,22 @@ export default function ResourcesPage() {
                       </span>
                       <span className="text-gray-300">•</span>
                       <span className="capitalize">{item.resource.type}</span>
+                    </p>
+                    {/* Practitioner and shared date info */}
+                    <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      <span>{item.practitionerName || 'Unknown'}</span>
+                      {item.sharedAt && (
+                        <>
+                          <span className="text-gray-300 mx-1">•</span>
+                          <span>
+                            {new Date(item.sharedAt).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </span>
+                        </>
+                      )}
                     </p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-300 flex-shrink-0" />

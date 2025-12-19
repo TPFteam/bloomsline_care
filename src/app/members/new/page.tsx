@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft,
   User,
   Mail,
   Phone,
@@ -18,8 +17,11 @@ import {
   Heart,
   Sparkles,
   ChevronRight,
+  Users,
+  UserPlus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -182,19 +184,15 @@ export default function NewMemberPage() {
       <div className="absolute top-1/3 left-1/3 w-[300px] h-[300px] bg-coral-300/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-4xl relative">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8"
-        >
-          <Link href="/members">
-            <Button variant="ghost" className="text-gray-600 hover:text-gray-900 glass-subtle hover:bg-white/60 rounded-xl transition-smooth">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {t.members.form.cancel}
-            </Button>
-          </Link>
-        </motion.div>
+        {/* Breadcrumb Navigation */}
+        <div className="mb-6">
+          <Breadcrumb
+            items={[
+              { label: 'Members', labelFr: 'Membres', href: '/members', icon: <Users className="w-4 h-4" /> },
+              { label: 'New Member', labelFr: 'Nouveau membre', icon: <UserPlus className="w-4 h-4" /> },
+            ]}
+          />
+        </div>
 
         {/* Title */}
         <motion.div

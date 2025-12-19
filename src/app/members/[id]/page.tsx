@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft,
   User,
   Mail,
   Phone,
@@ -15,8 +14,10 @@ import {
   Clock,
   Share2,
   Sparkles,
+  Users,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -169,19 +170,15 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
       <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-coral-300/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
-        {/* Header - Back button only */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
-          <Link href="/members">
-            <Button variant="ghost" className="text-gray-600 hover:text-gray-900 glass-subtle hover:bg-white/60 rounded-xl transition-smooth">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {t.members.backToDashboard}
-            </Button>
-          </Link>
-        </motion.div>
+        {/* Breadcrumb Navigation */}
+        <div className="mb-6">
+          <Breadcrumb
+            items={[
+              { label: 'Members', labelFr: 'Membres', href: '/members', icon: <Users className="w-4 h-4" /> },
+              { label: getMemberFullName(member) },
+            ]}
+          />
+        </div>
 
         {/* Profile Header Card */}
         <motion.div

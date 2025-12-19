@@ -258,6 +258,7 @@ export interface PractitionerProfile {
   headline: string | null
   credentials: string[]
   specialties: string[]
+  slug: string | null
 }
 
 /**
@@ -269,7 +270,7 @@ export async function getMemberPractitioner(practitionerId: string): Promise<Pra
   // First try to get from practitioner_profiles table
   const { data: profile, error: profileError } = await supabase
     .from('practitioner_profiles')
-    .select('id, full_name, avatar_url, headline, credentials, specialties')
+    .select('id, full_name, avatar_url, headline, credentials, specialties, slug')
     .eq('id', practitionerId)
     .single()
 
@@ -289,6 +290,7 @@ export async function getMemberPractitioner(practitionerId: string): Promise<Pra
       headline: profile.headline,
       credentials: profile.credentials || [],
       specialties: profile.specialties || [],
+      slug: profile.slug || null,
     }
   }
 
@@ -311,6 +313,7 @@ export async function getMemberPractitioner(practitionerId: string): Promise<Pra
     headline: null,
     credentials: [],
     specialties: [],
+    slug: null,
   }
 }
 
@@ -617,6 +620,22 @@ export async function submitResponse(
     throw error
   }
 
+  // Also update the assignment status to 'completed' if this response is for an assignment
+  if (data && data.assignment_id) {
+    const { error: assignmentError } = await supabase
+      .from('resource_assignments')
+      .update({
+        status: 'completed',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', data.assignment_id)
+
+    if (assignmentError) {
+      console.error('Error updating assignment status:', assignmentError)
+      // Don't throw - the response was submitted successfully
+    }
+  }
+
   return data as ResourceResponse
 }
 
@@ -800,6 +819,7 @@ export interface MemberResourceItem {
   resource: Resource
   status: 'pending' | 'in_progress' | 'completed' | 'expired' | 'viewed' | 'unviewed'
   practitionerId: string
+  practitionerName?: string
   dueDate?: string
   priority?: 'low' | 'normal' | 'high'
   instructions?: string
@@ -816,10 +836,28 @@ export async function getAllMemberResources(
   memberId: string,
   practitionerId: string
 ): Promise<MemberResourceItem[]> {
+  const supabase = createClient()
+
   const [assignments, shared] = await Promise.all([
     getMemberAssignments(memberId),
     getMemberSharedResources(memberId),
   ])
+
+  // Get all unique practitioner IDs to fetch their names
+  const practitionerIds = new Set<string>()
+  practitionerIds.add(practitionerId)
+  shared.forEach(s => practitionerIds.add(s.practitioner_id))
+
+  // Fetch practitioner names
+  const { data: practitioners } = await supabase
+    .from('users')
+    .select('id, full_name')
+    .in('id', Array.from(practitionerIds))
+
+  const practitionerNames: Record<string, string> = {}
+  practitioners?.forEach(p => {
+    practitionerNames[p.id] = p.full_name || 'Unknown'
+  })
 
   const items: MemberResourceItem[] = []
 
@@ -828,12 +866,21 @@ export async function getAllMemberResources(
     // Get existing response
     const response = await getExistingResponse(assignment.id, memberId)
 
+    // Determine status: if response is submitted, consider it completed regardless of assignment status
+    let effectiveStatus = assignment.status as MemberResourceItem['status']
+    if (response && response.status === 'submitted') {
+      effectiveStatus = 'completed'
+    } else if (response && response.status === 'draft') {
+      effectiveStatus = 'in_progress'
+    }
+
     items.push({
       type: 'assignment',
       id: assignment.id,
       resource: assignment.resource,
-      status: assignment.status as MemberResourceItem['status'],
+      status: effectiveStatus,
       practitionerId,
+      practitionerName: practitionerNames[practitionerId],
       dueDate: assignment.due_date || undefined,
       priority: assignment.priority as 'low' | 'normal' | 'high',
       instructions: assignment.instructions || undefined,
@@ -847,12 +894,31 @@ export async function getAllMemberResources(
   for (const share of shared) {
     if (assignedResourceIds.has(share.resource_id)) continue
 
+    // Check if there's a submitted response for this shared resource
+    const { data: sharedResponse } = await supabase
+      .from('resource_responses')
+      .select('id, status')
+      .eq('resource_id', share.resource_id)
+      .eq('member_id', memberId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    // Determine status: if response submitted = completed, otherwise check viewed_at
+    let sharedStatus: 'completed' | 'viewed' | 'unviewed' = 'unviewed'
+    if (sharedResponse?.status === 'submitted') {
+      sharedStatus = 'completed'
+    } else if (share.viewed_at) {
+      sharedStatus = 'viewed'
+    }
+
     items.push({
       type: 'shared',
       id: share.id,
       resource: share.resource,
-      status: share.viewed_at ? 'viewed' : 'unviewed',
+      status: sharedStatus,
       practitionerId: share.practitioner_id,
+      practitionerName: practitionerNames[share.practitioner_id],
       message: share.message || undefined,
       sharedAt: share.shared_at,
     })

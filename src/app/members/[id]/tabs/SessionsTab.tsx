@@ -14,6 +14,10 @@ import {
   FileText,
   Pencil,
   Trash2,
+  RefreshCw,
+  AlertCircle,
+  CalendarCheck,
+  MessageSquare,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -53,6 +57,12 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
   // Delete state
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
+
+  // Reschedule proposal state
+  const [proposingSession, setProposingSession] = useState<Session | null>(null)
+  const [proposedDate, setProposedDate] = useState('')
+  const [proposedTime, setProposedTime] = useState('')
+  const [proposalSaving, setProposalSaving] = useState(false)
 
   const upcomingSessions = sessions.filter(s =>
     s.status === 'scheduled' && new Date(s.scheduled_at) >= new Date()
@@ -180,6 +190,99 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     } catch (error) {
       console.error('Error deleting session:', error)
       toast.error('Failed to delete session')
+    }
+  }
+
+  const handleOpenProposal = (session: Session) => {
+    setProposingSession(session)
+    // Pre-fill with member's suggested date if available
+    if (session.member_suggested_date) {
+      const suggestedDate = new Date(session.member_suggested_date)
+      setProposedDate(suggestedDate.toISOString().split('T')[0])
+      setProposedTime(suggestedDate.toTimeString().slice(0, 5))
+    } else {
+      setProposedDate('')
+      setProposedTime('')
+    }
+  }
+
+  const handleProposeNewDate = async () => {
+    if (!proposingSession || !proposedDate || !proposedTime) {
+      toast.error('Please select a date and time')
+      return
+    }
+
+    setProposalSaving(true)
+    try {
+      const proposedDateTime = new Date(`${proposedDate}T${proposedTime}`)
+
+      const { error } = await supabase
+        .from('sessions')
+        .update({
+          practitioner_proposed_date: proposedDateTime.toISOString(),
+          reschedule_status: 'proposed',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', proposingSession.id)
+
+      if (error) throw error
+
+      toast.success('New date proposed to member')
+      setProposingSession(null)
+      setProposedDate('')
+      setProposedTime('')
+      onSessionsUpdate()
+    } catch (error) {
+      console.error('Error proposing new date:', error)
+      toast.error('Failed to propose new date')
+    } finally {
+      setProposalSaving(false)
+    }
+  }
+
+  const handleAcceptReschedule = async (session: Session) => {
+    if (!session.member_suggested_date) return
+
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .update({
+          scheduled_at: session.member_suggested_date,
+          reschedule_requested: false,
+          reschedule_status: 'accepted',
+          member_confirmed: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', session.id)
+
+      if (error) throw error
+
+      toast.success('Reschedule accepted - session updated to member\'s suggested date')
+      onSessionsUpdate()
+    } catch (error) {
+      console.error('Error accepting reschedule:', error)
+      toast.error('Failed to accept reschedule')
+    }
+  }
+
+  const handleDeclineReschedule = async (sessionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .update({
+          reschedule_requested: false,
+          reschedule_status: 'declined',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId)
+
+      if (error) throw error
+
+      toast.success('Reschedule request declined')
+      onSessionsUpdate()
+    } catch (error) {
+      console.error('Error declining reschedule:', error)
+      toast.error('Failed to decline reschedule')
     }
   }
 
@@ -354,23 +457,135 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
           <div className="space-y-3">
             {upcomingSessions.map((session, index) => {
               const FormatIcon = formatIcon[session.session_format]
+              const hasRescheduleRequest = session.reschedule_requested && session.reschedule_status === 'pending'
+              const hasPendingProposal = session.reschedule_status === 'proposed'
               return (
                 <motion.div
                   key={session.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.05 * index }}
-                  className="p-5 rounded-2xl bg-gradient-to-r from-blue-50/80 to-blue-100/50 border border-blue-200/50 hover:shadow-lg transition-all group"
+                  className={`p-5 rounded-2xl bg-gradient-to-r ${
+                    hasRescheduleRequest
+                      ? 'from-amber-50/80 to-amber-100/50 border-amber-300/60'
+                      : hasPendingProposal
+                      ? 'from-purple-50/80 to-purple-100/50 border-purple-300/60'
+                      : 'from-blue-50/80 to-blue-100/50 border-blue-200/50'
+                  } border hover:shadow-lg transition-all group`}
                 >
+                  {/* Reschedule Request Banner */}
+                  {hasRescheduleRequest && (
+                    <div className="mb-4 p-3 rounded-xl bg-amber-100/80 border border-amber-200">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="font-semibold text-amber-800 text-sm">Reschedule Requested</p>
+                          {session.reschedule_reason && (
+                            <p className="text-sm text-amber-700 mt-1">
+                              <span className="font-medium">Reason:</span> {session.reschedule_reason}
+                            </p>
+                          )}
+                          {session.member_suggested_date && (
+                            <p className="text-sm text-amber-700 mt-1 flex items-center gap-1">
+                              <CalendarCheck className="w-4 h-4" />
+                              <span className="font-medium">Suggested:</span>{' '}
+                              {new Date(session.member_suggested_date).toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
+                              })}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-3">
+                            {session.member_suggested_date && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleAcceptReschedule(session)}
+                                className="bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs h-8"
+                              >
+                                <Check className="w-3.5 h-3.5 mr-1" />
+                                Accept Suggested Date
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenProposal(session)}
+                              className="border-amber-400 text-amber-700 hover:bg-amber-50 rounded-lg text-xs h-8"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                              Propose New Date
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeclineReschedule(session.id)}
+                              className="text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg text-xs h-8"
+                            >
+                              <X className="w-3.5 h-3.5 mr-1" />
+                              Decline
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pending Proposal Banner */}
+                  {hasPendingProposal && (
+                    <div className="mb-4 p-3 rounded-xl bg-purple-100/80 border border-purple-200">
+                      <div className="flex items-start gap-2">
+                        <MessageSquare className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="font-semibold text-purple-800 text-sm">Awaiting Member Response</p>
+                          {session.practitioner_proposed_date && (
+                            <p className="text-sm text-purple-700 mt-1">
+                              <span className="font-medium">Proposed:</span>{' '}
+                              {new Date(session.practitioner_proposed_date).toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
+                              })}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center shadow-sm">
-                        <FormatIcon className="w-6 h-6 text-blue-600" />
+                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${
+                        hasRescheduleRequest
+                          ? 'from-amber-100 to-amber-200'
+                          : hasPendingProposal
+                          ? 'from-purple-100 to-purple-200'
+                          : 'from-blue-100 to-blue-200'
+                      } flex items-center justify-center shadow-sm`}>
+                        <FormatIcon className={`w-6 h-6 ${
+                          hasRescheduleRequest
+                            ? 'text-amber-600'
+                            : hasPendingProposal
+                            ? 'text-purple-600'
+                            : 'text-blue-600'
+                        }`} />
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-gray-900">
-                          {t.members.sessionTypes[session.session_type]}
-                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-gray-900">
+                            {t.members.sessionTypes[session.session_type]}
+                          </p>
+                          {session.member_confirmed && (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium flex items-center gap-1">
+                              <Check className="w-3 h-3" />
+                              Confirmed
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-500 mt-1">
                           {new Date(session.scheduled_at).toLocaleDateString('en-US', {
                             weekday: 'long',
@@ -788,6 +1003,121 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         }}
         preselectedMember={member}
       />
+
+      {/* Propose New Date Modal */}
+      <AnimatePresence>
+        {proposingSession && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setProposingSession(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  <RefreshCw className="w-5 h-5 text-amber-500" />
+                  Propose New Date
+                </h2>
+                <button
+                  onClick={() => setProposingSession(null)}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-5">
+                {/* Current Session Info */}
+                <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                  <p className="text-sm text-gray-500">Current session scheduled for:</p>
+                  <p className="font-semibold text-gray-900 mt-1">
+                    {new Date(proposingSession.scheduled_at).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+
+                {/* Member's Suggested Date (if any) */}
+                {proposingSession.member_suggested_date && (
+                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
+                    <p className="text-sm text-amber-700 flex items-center gap-2">
+                      <CalendarCheck className="w-4 h-4" />
+                      Member suggested:
+                    </p>
+                    <p className="font-semibold text-amber-800 mt-1">
+                      {new Date(proposingSession.member_suggested_date).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                  </div>
+                )}
+
+                {/* Proposed Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Propose a new date
+                  </label>
+                  <input
+                    type="date"
+                    value={proposedDate}
+                    onChange={(e) => setProposedDate(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-100 outline-none bg-white"
+                  />
+                </div>
+
+                {/* Proposed Time */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Proposed time
+                  </label>
+                  <input
+                    type="time"
+                    value={proposedTime}
+                    onChange={(e) => setProposedTime(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-100 outline-none bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100">
+                <Button
+                  variant="ghost"
+                  onClick={() => setProposingSession(null)}
+                  className="rounded-xl"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleProposeNewDate}
+                  disabled={proposalSaving || !proposedDate || !proposedTime}
+                  className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl shadow-lg shadow-amber-300/50"
+                >
+                  {proposalSaving ? 'Sending...' : 'Send Proposal'}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

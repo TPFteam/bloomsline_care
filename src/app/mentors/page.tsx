@@ -12,6 +12,7 @@ import {
   Star,
   FileText,
   Crown,
+  ExternalLink,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import MemberLayout from '@/components/member/MemberLayout'
@@ -218,25 +219,38 @@ export default function MentorsPage() {
                   )}
 
                   {/* Action Buttons */}
-                  <div className="flex gap-3">
+                  <div className="flex flex-col gap-3">
+                    {/* View Profile Button */}
                     <Button
                       variant="outline"
-                      className="flex-1 rounded-xl"
-                      onClick={() => mentor.email && (window.location.href = `mailto:${mentor.email}`)}
+                      className="w-full rounded-xl border-gray-200 hover:bg-gray-50"
+                      onClick={() => router.push(`/p/${mentor.slug || mentor.id}`)}
                     >
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      {locale === 'fr' ? 'Message' : 'Message'}
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      {locale === 'fr' ? 'Voir le profil' : 'View Profile'}
                     </Button>
-                    <Button
-                      className={`flex-1 rounded-xl ${
-                        mentor.isPrimary
-                          ? 'bg-purple-600 hover:bg-purple-700'
-                          : 'bg-teal-600 hover:bg-teal-700'
-                      }`}
-                    >
-                      <Calendar className="w-4 h-4 mr-2" />
-                      {locale === 'fr' ? 'Réserver' : 'Book'}
-                    </Button>
+
+                    <div className="flex gap-3">
+                      <Button
+                        variant="outline"
+                        className="flex-1 rounded-xl"
+                        onClick={() => mentor.email && (window.location.href = `mailto:${mentor.email}`)}
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        {locale === 'fr' ? 'Message' : 'Message'}
+                      </Button>
+                      <Button
+                        className={`flex-1 rounded-xl ${
+                          mentor.isPrimary
+                            ? 'bg-purple-600 hover:bg-purple-700'
+                            : 'bg-teal-600 hover:bg-teal-700'
+                        }`}
+                        onClick={() => router.push(`/p/${mentor.slug || mentor.id}/book`)}
+                      >
+                        <Calendar className="w-4 h-4 mr-2" />
+                        {locale === 'fr' ? 'Réserver' : 'Book'}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </motion.div>

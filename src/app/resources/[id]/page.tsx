@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { useLanguage } from '@/lib/i18n/context'
 import { getResourceById, deleteResource, getResourceSubmissions, updateSubmission, type ResourceSubmission } from '@/lib/services/resources'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -370,22 +371,15 @@ export default function ResourceDetailPage() {
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        {/* Breadcrumb */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 text-sm text-gray-500 mb-6"
-        >
-          <button
-            onClick={() => router.back()}
-            className="hover:text-lavender-600 transition-colors flex items-center gap-1"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {locale === 'fr' ? 'Retour' : 'Back'}
-          </button>
-          <ChevronRight className="w-4 h-4" />
-          <span className="text-gray-900 font-medium truncate max-w-xs">{typeof resource.title === 'string' ? resource.title : ''}</span>
-        </motion.div>
+        {/* Breadcrumb Navigation */}
+        <div className="mb-6">
+          <Breadcrumb
+            items={[
+              { label: 'Resources', labelFr: 'Ressources', href: '/resources', icon: <FileText className="w-4 h-4" /> },
+              { label: typeof resource.title === 'string' ? resource.title : 'Resource' },
+            ]}
+          />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}

@@ -57,6 +57,7 @@ import {
   CloudOff,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { useLanguage } from '@/lib/i18n/context'
 import { createResource, getResourceById, updateResource } from '@/lib/services/resources'
 import { uploadResourceFile, validateFile } from '@/lib/services/resource-storage'
@@ -833,11 +834,21 @@ function CreateWorksheetContent() {
   const duplicateBlock = (id: string) => {
     const block = blocks.find(b => b.id === id)
     if (block) {
-      const newBlock = { ...block, id: generateId() }
+      const newBlockId = generateId()
+      const newBlock = { ...block, id: newBlockId }
       const index = blocks.findIndex(b => b.id === id)
       const newBlocks = [...blocks]
       newBlocks.splice(index + 1, 0, newBlock)
       setBlocks(newBlocks)
+
+      // Expand the duplicated block and scroll to it
+      setExpandedBlock(newBlockId)
+      setTimeout(() => {
+        const element = document.getElementById(`block-${newBlockId}`)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 100)
     }
   }
 
@@ -1985,6 +1996,7 @@ function CreateWorksheetContent() {
 
     return (
       <div
+        id={`block-${block.id}`}
         className={`group transition-all ${isExpanded ? 'bg-white rounded-xl shadow-lg border border-gray-200' : ''}`}
       >
         {/* Block Header */}
@@ -3748,21 +3760,16 @@ function CreateWorksheetContent() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              {/* Header */}
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between mb-8"
-              >
-                <Link href={isEditMode ? '/resources' : '/resources/create'}>
-                  <motion.div whileHover={{ x: -4 }} className="inline-block">
-                    <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      {locale === 'fr' ? 'Retour' : 'Back'}
-                    </Button>
-                  </motion.div>
-                </Link>
-              </motion.div>
+              {/* Breadcrumb Navigation */}
+              <div className="mb-8">
+                <Breadcrumb
+                  items={[
+                    { label: 'Resources', labelFr: 'Ressources', href: '/resources', icon: <FileText className="w-4 h-4" /> },
+                    { label: 'Create', labelFr: 'Créer', href: '/resources/create' },
+                    { label: isEditMode ? 'Edit Worksheet' : 'Worksheet', labelFr: isEditMode ? 'Modifier' : 'Feuille de travail' },
+                  ]}
+                />
+              </div>
 
               {/* Title */}
               <div className="text-center mb-10">

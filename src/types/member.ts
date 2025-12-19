@@ -81,6 +81,8 @@ export interface MemberWithStats extends Member {
   days_since_last_session: number | null
 }
 
+export type RescheduleStatus = 'pending' | 'proposed' | 'accepted' | 'declined'
+
 export interface Session {
   id: string
   member_id: string
@@ -104,6 +106,14 @@ export interface Session {
   goals: SessionGoal[]
   outcomes: SessionOutcome[]
   homework: SessionHomework[]
+
+  // Member confirmation & reschedule
+  member_confirmed: boolean
+  reschedule_requested: boolean
+  reschedule_reason: string | null
+  member_suggested_date: string | null
+  practitioner_proposed_date: string | null
+  reschedule_status: RescheduleStatus | null
 
   // Metadata
   created_at: string
@@ -385,4 +395,27 @@ export function formatRelativeTime(date: string | null): string {
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
   if (diffDays < 60) return '1 month ago'
   return `${Math.floor(diffDays / 30)} months ago`
+}
+
+export function formatDate(date: string | null, locale: 'en' | 'fr' = 'en'): string {
+  if (!date) return locale === 'fr' ? 'Jamais' : 'Never'
+
+  const d = new Date(date)
+  return d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+export function formatDateTime(date: string | null, locale: 'en' | 'fr' = 'en'): string {
+  if (!date) return locale === 'fr' ? 'Jamais' : 'Never'
+
+  const d = new Date(date)
+  return d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
