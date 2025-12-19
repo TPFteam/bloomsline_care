@@ -12,6 +12,7 @@ import {
   Scale,
   Camera,
   Sparkles,
+  Circle,
   X,
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
@@ -29,10 +30,10 @@ const primaryNavItems = [
     labelFr: 'Accueil',
   },
   {
-    href: '/stories',
-    icon: BookOpen,
-    labelEn: 'Stories',
-    labelFr: 'Histoires',
+    href: '/rituals',
+    icon: Circle,
+    labelEn: 'Rituals',
+    labelFr: 'Rituels',
   },
   {
     href: '/progress',
@@ -45,6 +46,13 @@ const primaryNavItems = [
 // Secondary nav items (in More menu)
 const moreNavItems = [
   {
+    href: '/stories',
+    icon: BookOpen,
+    labelEn: 'Stories',
+    labelFr: 'Histoires',
+    gradient: 'from-amber-400 to-orange-500',
+  },
+  {
     href: '/balance',
     icon: Scale,
     labelEn: 'Balance',
@@ -53,10 +61,10 @@ const moreNavItems = [
   },
   {
     href: '/reflection',
-    icon: Sparkles,
+    icon: Heart,
     labelEn: 'Reflect',
     labelFr: 'Réflexion',
-    gradient: 'from-amber-400 to-orange-500',
+    gradient: 'from-teal-400 to-emerald-500',
   },
 ]
 
