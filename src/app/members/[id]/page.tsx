@@ -29,8 +29,9 @@ import SessionsTab from './tabs/SessionsTab'
 import ProgressTab from './tabs/ProgressTab'
 import FilesTab from './tabs/FilesTab'
 import SharedTab from './tabs/SharedTab'
+import SubmissionsTab from './tabs/SubmissionsTab'
 
-type TabId = 'overview' | 'sessions' | 'progress' | 'files' | 'shared'
+type TabId = 'overview' | 'sessions' | 'progress' | 'files' | 'shared' | 'submissions'
 
 export default function MemberProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
@@ -124,6 +125,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
     { id: 'overview', label: t.members.profile.overview, icon: User },
     { id: 'sessions', label: t.members.profile.sessions, icon: Clock },
     { id: 'progress', label: t.members.profile.progress, icon: TrendingUp },
+    { id: 'submissions', label: t.members.profile.submissions || 'Submissions', icon: FileText },
     { id: 'files', label: t.members.profile.files, icon: FileText },
     { id: 'shared', label: t.members.profile.sharedResources, icon: Share2 },
   ]
@@ -387,6 +389,9 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
             )}
             {activeTab === 'progress' && (
               <ProgressTab memberId={member.id} />
+            )}
+            {activeTab === 'submissions' && (
+              <SubmissionsTab member={member} />
             )}
             {activeTab === 'files' && (
               <FilesTab memberId={member.id} />

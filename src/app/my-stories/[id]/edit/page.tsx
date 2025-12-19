@@ -80,7 +80,7 @@ export default function EditStoryPage() {
     } catch (error) {
       console.error('Error fetching story:', error)
       toast.error('Failed to load story')
-      router.push('/dashboard/stories')
+      router.push('/my-stories')
     } finally {
       setLoading(false)
     }
@@ -123,7 +123,7 @@ export default function EditStoryPage() {
 
       setShowPublishModal(false)
       toast.success(publish ? 'Story published!' : 'Story updated successfully')
-      router.push('/dashboard/stories')
+      router.push('/my-stories')
     } catch (error) {
       console.error('Error updating story:', error)
       toast.error('Failed to update story')
@@ -147,12 +147,10 @@ export default function EditStoryPage() {
     <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex items-center justify-between mb-8">
-          <Link href="/my-stories">
-            <Button variant="ghost">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Stories
-            </Button>
-          </Link>
+          <Button variant="ghost" onClick={() => router.back()}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Stories
+          </Button>
         </div>
 
         <div className="max-w-5xl mx-auto">

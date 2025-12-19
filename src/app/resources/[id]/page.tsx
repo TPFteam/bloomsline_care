@@ -36,7 +36,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import { getResourceById, deleteResource, getResourceSubmissions, updateSubmission, type ResourceSubmission } from '@/lib/services/resources'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
-import type { Resource, ResourceType } from '@/types/resource'
+import type { Resource, ResourceType, ResourceBlock } from '@/types/resource'
 
 // Include 'assessment' as legacy type for backwards compatibility
 const typeIcons: Record<ResourceType | 'assessment', React.ElementType> = {
@@ -105,6 +105,69 @@ const questionTypeLabels: Record<string, { en: string; fr: string }> = {
   scale: { en: 'Scale', fr: 'Échelle' },
   mood: { en: 'Mood', fr: 'Humeur' },
   slider: { en: 'Slider', fr: 'Curseur' },
+  matrix_rating: { en: 'Matrix Rating', fr: 'Évaluation matricielle' },
+}
+
+// Helper to render response values based on block type
+function renderResponseValue(block: ResourceBlock, value: unknown, locale: string): string {
+  if (value === undefined || value === null) return '-'
+
+  switch (block.type) {
+    case 'prompt':
+      return String(value)
+
+    case 'multiple_choice': {
+      const options: (string | { label?: string })[] =
+        ('options' in block && Array.isArray(block.options)) ? block.options :
+        ('choices' in block && Array.isArray(block.choices)) ? block.choices : []
+      const index = Number(value)
+      const option = options[index]
+      return typeof option === 'string' ? option : option?.label || `Option ${index + 1}`
+    }
+
+    case 'yes_no':
+      return value === 'yes'
+        ? (locale === 'fr' ? 'Oui' : 'Yes')
+        : (locale === 'fr' ? 'Non' : 'No')
+
+    case 'checklist': {
+      const items: (string | { text: string })[] = ('items' in block && Array.isArray(block.items)) ? block.items : []
+      const indices = Array.isArray(value) ? value : []
+      return indices
+        .map((i: number) => {
+          const item = items[i]
+          return typeof item === 'string' ? item : item?.text || String(i)
+        })
+        .join(', ') || '-'
+    }
+
+    case 'scale':
+    case 'likert':
+    case 'numeric':
+    case 'slider':
+    case 'mood':
+      return String(value)
+
+    case 'matrix_rating': {
+      const matrixItems = ('matrixItems' in block && Array.isArray(block.matrixItems)) ? block.matrixItems : []
+      const ratings = value as Record<string, number>
+      return Object.entries(ratings)
+        .map(([idx, rating]) => `${matrixItems[Number(idx)] || idx}: ${rating}`)
+        .join(', ')
+    }
+
+    case 'date_picker':
+      return value ? new Date(String(value)).toLocaleDateString() : '-'
+
+    case 'time_input':
+      return String(value)
+
+    case 'list_input':
+      return Array.isArray(value) ? value.filter(Boolean).join(', ') : '-'
+
+    default:
+      return typeof value === 'object' ? JSON.stringify(value) : String(value)
+  }
 }
 
 export default function ResourceDetailPage() {
@@ -173,7 +236,7 @@ export default function ResourceDetailPage() {
     try {
       await updateSubmission(selectedSubmission.id, {
         status: 'reviewed',
-        reviewer_notes: reviewNotes
+        practitioner_notes: reviewNotes
       })
       toast.success(locale === 'fr' ? 'Notes enregistrées' : 'Notes saved')
       // Refresh submissions
@@ -564,6 +627,43 @@ export default function ResourceDetailPage() {
                               <span>{question.maxValue || 100}</span>
                             </div>
                           )}
+
+                          {question.type === 'matrix_rating' && (
+                            <div className="mt-3">
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr>
+                                      <th className="text-left py-2 pr-4 text-gray-500 font-normal"></th>
+                                      {Array.from({ length: (question as any).matrixScaleMax || 5 }).map((_, i) => (
+                                        <th key={i} className="px-2 py-2 text-center text-gray-500 font-normal">
+                                          {i + 1}
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {((question as any).matrixItems || []).map((item: string, i: number) => (
+                                      <tr key={i} className="border-t border-gray-100">
+                                        <td className="py-2 pr-4 text-gray-700">{item}</td>
+                                        {Array.from({ length: (question as any).matrixScaleMax || 5 }).map((_, j) => (
+                                          <td key={j} className="px-2 py-2 text-center">
+                                            <Circle className="w-4 h-4 text-gray-300 mx-auto" />
+                                          </td>
+                                        ))}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                              {(question as any).matrixScaleLabels && (
+                                <div className="flex justify-between text-xs text-gray-400 mt-2 px-2">
+                                  <span>{(question as any).matrixScaleLabels.min}</span>
+                                  <span>{(question as any).matrixScaleLabels.max}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -689,6 +789,118 @@ export default function ResourceDetailPage() {
                             <span className="text-sm text-gray-500">{typeof block.scaleMinLabel === 'string' ? block.scaleMinLabel : block.scaleMin}</span>
                             <div className="flex-1 h-2 bg-gray-200 rounded-full" />
                             <span className="text-sm text-gray-500">{typeof block.scaleMaxLabel === 'string' ? block.scaleMaxLabel : block.scaleMax}</span>
+                          </div>
+                        </div>
+                      )}
+                      {block.type === 'matrix_rating' && 'matrixItems' in block && (
+                        <div>
+                          <p className="text-gray-700 mb-3">{typeof block.content === 'string' ? block.content : ''}</p>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr>
+                                  <th className="text-left py-2 pr-4 text-gray-500 font-normal"></th>
+                                  {Array.from({ length: (block as any).matrixScaleMax || 5 }).map((_, i) => (
+                                    <th key={i} className="px-2 py-2 text-center text-gray-500 font-normal">
+                                      {i + 1}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {((block as any).matrixItems || []).map((item: string, i: number) => (
+                                  <tr key={i} className="border-t border-gray-100">
+                                    <td className="py-2 pr-4 text-gray-700">{item}</td>
+                                    {Array.from({ length: (block as any).matrixScaleMax || 5 }).map((_, j) => (
+                                      <td key={j} className="px-2 py-2 text-center">
+                                        <Circle className="w-4 h-4 text-gray-300 mx-auto" />
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          {(block as any).matrixScaleLabels && (
+                            <div className="flex justify-between text-xs text-gray-400 mt-2 px-2">
+                              <span>{(block as any).matrixScaleLabels.min}</span>
+                              <span>{(block as any).matrixScaleLabels.max}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {block.type === 'likert' && (
+                        <div>
+                          <p className="text-gray-700 mb-3">{typeof block.content === 'string' ? block.content : ''}</p>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <span>{(block as any).likertLabels?.start || '1'}</span>
+                            <div className="flex gap-1">
+                              {Array.from({ length: (block as any).likertScale || 5 }).map((_, i) => (
+                                <div key={i} className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center text-xs">
+                                  {i + 1}
+                                </div>
+                              ))}
+                            </div>
+                            <span>{(block as any).likertLabels?.end || ((block as any).likertScale || 5).toString()}</span>
+                          </div>
+                        </div>
+                      )}
+                      {block.type === 'multiple_choice' && ('options' in block || 'choices' in block) && (
+                        <div>
+                          <p className="text-gray-700 mb-3">{typeof block.content === 'string' ? block.content : ''}</p>
+                          <div className="space-y-1">
+                            {((block as any).options || (block as any).choices || []).map((opt: any, i: number) => (
+                              <div key={i} className="flex items-center gap-2 text-sm text-gray-600">
+                                <Circle className="w-3 h-3" />
+                                <span>{typeof opt === 'string' ? opt : opt.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {block.type === 'yes_no' && (
+                        <div>
+                          <p className="text-gray-700 mb-3">{typeof block.content === 'string' ? block.content : ''}</p>
+                          <div className="flex items-center gap-4 text-sm">
+                            <span className="flex items-center gap-1 text-emerald-600">
+                              <CheckCircle className="w-4 h-4" />
+                              {locale === 'fr' ? 'Oui' : 'Yes'}
+                            </span>
+                            <span className="flex items-center gap-1 text-gray-500">
+                              <Circle className="w-4 h-4" />
+                              {locale === 'fr' ? 'Non' : 'No'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {block.type === 'mood' && 'moodOptions' in block && (
+                        <div>
+                          <p className="text-gray-700 mb-3">{typeof block.content === 'string' ? block.content : ''}</p>
+                          <div className="flex items-center gap-2">
+                            {((block as any).moodOptions || []).map((mood: any, i: number) => (
+                              <div key={i} className="text-center">
+                                <span className="text-xl">{mood.emoji}</span>
+                                <p className="text-xs text-gray-500">{mood.label}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {block.type === 'numeric' && (
+                        <div>
+                          <p className="text-gray-700 mb-3">{typeof block.content === 'string' ? block.content : ''}</p>
+                          <div className="w-24 h-10 border border-gray-200 rounded-lg flex items-center justify-center text-gray-400 text-sm">
+                            {locale === 'fr' ? 'Nombre' : 'Number'}
+                          </div>
+                        </div>
+                      )}
+                      {block.type === 'slider' && (
+                        <div>
+                          <p className="text-gray-700 mb-3">{typeof block.content === 'string' ? block.content : ''}</p>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <span>{(block as any).sliderMin || 0}</span>
+                            <div className="flex-1 h-2 bg-gradient-to-r from-blue-200 to-blue-500 rounded-full" />
+                            <span>{(block as any).sliderMax || 100}</span>
                           </div>
                         </div>
                       )}
@@ -952,13 +1164,13 @@ export default function ResourceDetailPage() {
                               {submission.member?.first_name} {submission.member?.last_name}
                             </p>
                             <p className="text-sm text-gray-500">
-                              {new Date(submission.submitted_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                              {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
                                 year: 'numeric',
                                 month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',
                                 minute: '2-digit'
-                              })}
+                              }) : '-'}
                             </p>
                           </div>
                         </div>
@@ -966,13 +1178,13 @@ export default function ResourceDetailPage() {
                         {/* Score & Status */}
                         <div className="flex items-center gap-3">
                           {/* Score for scored worksheets/assessments */}
-                          {hasScoring && submission.score !== undefined && (
+                          {hasScoring && submission.scores?.total !== undefined && (
                             <div className="text-right">
                               <p className="text-lg font-bold text-emerald-600">
-                                {submission.score}/{submission.max_score}
+                                {submission.scores.total}/{submission.scores.maxScore}
                               </p>
-                              {submission.score_interpretation && (
-                                <p className="text-xs text-gray-500">{submission.score_interpretation}</p>
+                              {submission.scores.percentage !== undefined && (
+                                <p className="text-xs text-gray-500">{submission.scores.percentage}%</p>
                               )}
                             </div>
                           )}
@@ -1002,7 +1214,7 @@ export default function ResourceDetailPage() {
                             size="sm"
                             onClick={() => {
                               setSelectedSubmission(submission)
-                              setReviewNotes(submission.reviewer_notes || '')
+                              setReviewNotes(submission.practitioner_notes || '')
                             }}
                             className="rounded-lg"
                           >
@@ -1013,9 +1225,9 @@ export default function ResourceDetailPage() {
                       </div>
 
                       {/* Reviewer Notes Preview */}
-                      {submission.reviewer_notes && (
+                      {submission.practitioner_notes && (
                         <div className="mt-3 ml-13 pl-3 border-l-2 border-lavender-200">
-                          <p className="text-sm text-gray-600 line-clamp-2">{submission.reviewer_notes}</p>
+                          <p className="text-sm text-gray-600 line-clamp-2">{submission.practitioner_notes}</p>
                         </div>
                       )}
                     </div>
@@ -1053,13 +1265,13 @@ export default function ResourceDetailPage() {
                       {selectedSubmission.member?.first_name} {selectedSubmission.member?.last_name}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      {new Date(selectedSubmission.submitted_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                      {selectedSubmission.submitted_at ? new Date(selectedSubmission.submitted_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
                         hour: '2-digit',
                         minute: '2-digit'
-                      })}
+                      }) : '-'}
                     </p>
                   </div>
                 </div>
@@ -1074,7 +1286,7 @@ export default function ResourceDetailPage() {
               {/* Modal Body */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {/* Score Section for Scored Worksheets/Assessments */}
-                {hasScoring && selectedSubmission.score !== undefined && (
+                {hasScoring && selectedSubmission.scores?.total !== undefined && (
                   <div className="p-4 bg-gradient-to-br from-emerald-50 to-mint-50 rounded-xl border border-emerald-100">
                     <div className="flex items-center justify-between">
                       <div>
@@ -1082,12 +1294,12 @@ export default function ResourceDetailPage() {
                           {locale === 'fr' ? 'Score total' : 'Total Score'}
                         </p>
                         <p className="text-3xl font-bold text-emerald-600 mt-1">
-                          {selectedSubmission.score} / {selectedSubmission.max_score}
+                          {selectedSubmission.scores.total} / {selectedSubmission.scores.maxScore}
                         </p>
                       </div>
-                      {selectedSubmission.score_interpretation && (
+                      {selectedSubmission.scores.percentage !== undefined && (
                         <Badge className="bg-emerald-100 text-emerald-700 border-0 text-base px-4 py-2">
-                          {selectedSubmission.score_interpretation}
+                          {selectedSubmission.scores.percentage}%
                         </Badge>
                       )}
                     </div>
@@ -1100,19 +1312,44 @@ export default function ResourceDetailPage() {
                     {locale === 'fr' ? 'Réponses' : 'Responses'}
                   </h4>
                   <div className="space-y-3">
-                    {Object.entries(selectedSubmission.responses || {}).map(([key, value], idx) => (
-                      <div key={key} className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500 mb-1">Question {idx + 1}</p>
-                        <p className="text-gray-900">
-                          {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                        </p>
-                      </div>
-                    ))}
-                    {Object.keys(selectedSubmission.responses || {}).length === 0 && (
-                      <p className="text-gray-500 text-sm italic">
-                        {locale === 'fr' ? 'Aucune réponse enregistrée' : 'No responses recorded'}
-                      </p>
-                    )}
+                    {(() => {
+                      // Get question blocks from resource
+                      const blocks = (resource?.blocks || []) as ResourceBlock[]
+                      const questionBlocks = blocks.filter(b =>
+                        ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert',
+                         'numeric', 'slider', 'matrix_rating', 'mood', 'date_picker', 'time_input', 'list_input'].includes(b.type)
+                      )
+                      const responses = (selectedSubmission.responses || {}) as Record<string, unknown>
+
+                      if (questionBlocks.length === 0) {
+                        return (
+                          <p className="text-gray-500 text-sm italic">
+                            {locale === 'fr' ? 'Aucune question dans cette ressource' : 'No questions in this resource'}
+                          </p>
+                        )
+                      }
+
+                      return questionBlocks.map((block, index) => {
+                        const response = responses[block.id]
+                        const hasResponse = response !== undefined && response !== null && response !== ''
+
+                        return (
+                          <div
+                            key={block.id}
+                            className={`p-4 rounded-xl ${hasResponse ? 'bg-gray-50' : 'bg-red-50/50'}`}
+                          >
+                            <p className="text-sm font-medium text-gray-700 mb-1">
+                              Q{index + 1}: {typeof block.content === 'string' ? block.content : ''}
+                            </p>
+                            <p className={`text-sm ${hasResponse ? 'text-gray-900' : 'text-red-500 italic'}`}>
+                              {hasResponse
+                                ? renderResponseValue(block, response, locale)
+                                : (locale === 'fr' ? 'Non répondu' : 'Not answered')}
+                            </p>
+                          </div>
+                        )
+                      })
+                    })()}
                   </div>
                 </div>
 

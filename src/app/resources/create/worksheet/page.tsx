@@ -961,7 +961,115 @@ function CreateWorksheetContent() {
           }
         }
 
-        // Default: heading or paragraph
+        if (block.type === 'multiple_choice') {
+          return {
+            ...baseBlock,
+            type: 'multiple_choice' as const,
+            choices: block.choices || [],
+            allowMultiple: block.allowMultiple,
+            required: block.required,
+            scoring: block.scoring,
+          }
+        }
+
+        if (block.type === 'yes_no') {
+          return {
+            ...baseBlock,
+            type: 'yes_no' as const,
+            required: block.required,
+            scoring: block.scoring,
+          }
+        }
+
+        if (block.type === 'likert') {
+          return {
+            ...baseBlock,
+            type: 'likert' as const,
+            scaleLabels: block.scaleLabels,
+            scaleRange: block.scaleRange,
+            likertScale: block.scaleRange || 5,
+            likertLabels: block.scaleLabels ? { start: block.scaleLabels[0], end: block.scaleLabels[block.scaleLabels.length - 1] } : undefined,
+            required: block.required,
+            scoring: block.scoring,
+          }
+        }
+
+        if (block.type === 'mood') {
+          return {
+            ...baseBlock,
+            type: 'mood' as const,
+            moodOptions: block.moodOptions,
+            required: block.required,
+            scoring: block.scoring,
+          }
+        }
+
+        if (block.type === 'slider') {
+          return {
+            ...baseBlock,
+            type: 'slider' as const,
+            sliderMin: block.sliderMin ?? 0,
+            sliderMax: block.sliderMax ?? 100,
+            sliderStep: block.sliderStep ?? 1,
+            sliderUnit: block.sliderUnit,
+            sliderMinLabel: block.sliderMinLabel,
+            sliderMaxLabel: block.sliderMaxLabel,
+            required: block.required,
+            scoring: block.scoring,
+          }
+        }
+
+        if (block.type === 'numeric') {
+          return {
+            ...baseBlock,
+            type: 'numeric' as const,
+            numericMin: block.minValue,
+            numericMax: block.maxValue,
+            required: block.required,
+            scoring: block.scoring,
+          }
+        }
+
+        if (block.type === 'matrix_rating') {
+          return {
+            ...baseBlock,
+            type: 'matrix_rating' as const,
+            matrixItems: block.matrixItems || [],
+            matrixScaleMax: block.matrixScaleMax ?? 5,
+            matrixScaleLabels: block.matrixScaleLabels,
+            required: block.required,
+            scoring: block.scoring,
+          }
+        }
+
+        if (block.type === 'list_input') {
+          return {
+            ...baseBlock,
+            type: 'list_input' as const,
+            listMinItems: block.listMinItems,
+            listMaxItems: block.listMaxItems,
+            listItemPlaceholder: block.listItemPlaceholder,
+            required: block.required,
+          }
+        }
+
+        if (block.type === 'date_picker') {
+          return {
+            ...baseBlock,
+            type: 'date_picker' as const,
+            required: block.required,
+          }
+        }
+
+        if (block.type === 'time_input') {
+          return {
+            ...baseBlock,
+            type: 'time_input' as const,
+            required: block.required,
+          }
+        }
+
+        // Default: heading, paragraph, quote, tip, divider
         return baseBlock as ResourceBlock
       })
 
@@ -1083,6 +1191,36 @@ function CreateWorksheetContent() {
         }
         if (block.type === 'file') {
           return { ...baseBlock, type: 'file' as const, mediaFile: block.mediaFile ? { id: block.mediaFile.id, name: block.mediaFile.name, size: block.mediaFile.size, type: block.mediaFile.type, url: block.mediaFile.url || '' } : undefined, mediaCaption: block.mediaCaption }
+        }
+        if (block.type === 'multiple_choice') {
+          return { ...baseBlock, type: 'multiple_choice' as const, choices: block.choices || [], allowMultiple: block.allowMultiple, required: block.required, scoring: block.scoring }
+        }
+        if (block.type === 'yes_no') {
+          return { ...baseBlock, type: 'yes_no' as const, required: block.required, scoring: block.scoring }
+        }
+        if (block.type === 'likert') {
+          return { ...baseBlock, type: 'likert' as const, scaleLabels: block.scaleLabels, scaleRange: block.scaleRange, likertScale: block.scaleRange || 5, likertLabels: block.scaleLabels ? { start: block.scaleLabels[0], end: block.scaleLabels[block.scaleLabels.length - 1] } : undefined, required: block.required, scoring: block.scoring }
+        }
+        if (block.type === 'mood') {
+          return { ...baseBlock, type: 'mood' as const, moodOptions: block.moodOptions, required: block.required, scoring: block.scoring }
+        }
+        if (block.type === 'slider') {
+          return { ...baseBlock, type: 'slider' as const, sliderMin: block.sliderMin ?? 0, sliderMax: block.sliderMax ?? 100, sliderStep: block.sliderStep ?? 1, sliderUnit: block.sliderUnit, sliderMinLabel: block.sliderMinLabel, sliderMaxLabel: block.sliderMaxLabel, required: block.required, scoring: block.scoring }
+        }
+        if (block.type === 'numeric') {
+          return { ...baseBlock, type: 'numeric' as const, numericMin: block.minValue, numericMax: block.maxValue, required: block.required, scoring: block.scoring }
+        }
+        if (block.type === 'matrix_rating') {
+          return { ...baseBlock, type: 'matrix_rating' as const, matrixItems: block.matrixItems || [], matrixScaleMax: block.matrixScaleMax ?? 5, matrixScaleLabels: block.matrixScaleLabels, required: block.required, scoring: block.scoring }
+        }
+        if (block.type === 'list_input') {
+          return { ...baseBlock, type: 'list_input' as const, listMinItems: block.listMinItems, listMaxItems: block.listMaxItems, listItemPlaceholder: block.listItemPlaceholder, required: block.required }
+        }
+        if (block.type === 'date_picker') {
+          return { ...baseBlock, type: 'date_picker' as const, required: block.required }
+        }
+        if (block.type === 'time_input') {
+          return { ...baseBlock, type: 'time_input' as const, required: block.required }
         }
         return baseBlock as ResourceBlock
       })

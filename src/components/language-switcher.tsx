@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useLanguage } from '@/lib/i18n/context'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,6 +13,11 @@ import { Globe, Check } from 'lucide-react'
 
 export function LanguageSwitcher() {
   const { locale, setLocale } = useLanguage()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const languages = [
     { code: 'en', label: 'English', flag: '🇬🇧' },
@@ -19,6 +25,20 @@ export function LanguageSwitcher() {
   ]
 
   const currentLanguage = languages.find(lang => lang.code === locale)
+
+  // Prevent hydration mismatch by showing consistent content until mounted
+  if (!mounted) {
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="flex items-center gap-2 text-sm font-medium rounded-full"
+      >
+        <Globe className="w-4 h-4" />
+        <span className="w-6">EN</span>
+      </Button>
+    )
+  }
 
   return (
     <DropdownMenu>

@@ -219,12 +219,10 @@ export default function StoryPreviewPage() {
           <div className="flex flex-col py-3 gap-3 lg:hidden">
             {/* Row 1: Back + Status badges */}
             <div className="flex items-center justify-between">
-              <Link href="/my-stories">
-                <Button variant="ghost" size="sm" className="px-2">
-                  <ArrowLeft className="w-4 h-4 mr-1" />
-                  <span className="hidden sm:inline">Back</span>
-                </Button>
-              </Link>
+              <Button variant="ghost" size="sm" className="px-2" onClick={() => router.back()}>
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                <span className="hidden sm:inline">Back</span>
+              </Button>
               <div className="flex items-center gap-1.5 flex-wrap justify-end">
                 <div className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
                   Preview
@@ -303,12 +301,10 @@ export default function StoryPreviewPage() {
           {/* Desktop: Single row */}
           <div className="hidden lg:flex items-center justify-between h-16">
             {/* Left side - Back button */}
-            <Link href="/my-stories">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Stories
-              </Button>
-            </Link>
+            <Button variant="ghost" size="sm" onClick={() => router.back()}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Stories
+            </Button>
 
             {/* Center - Status badges */}
             <div className="flex items-center gap-2">

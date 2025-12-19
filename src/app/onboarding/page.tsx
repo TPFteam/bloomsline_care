@@ -56,9 +56,13 @@ export default function OnboardingPage() {
         throw new Error(result.error || 'Failed to create profile')
       }
 
-      // Success! Redirect to dashboard
+      // Success! Redirect based on user type
       toast.success('Welcome to Bloomsline! 🎉')
-      router.push('/dashboard?welcome=true')
+      if (selectedType === 'member') {
+        router.push('/home')
+      } else {
+        router.push('/dashboard?welcome=true')
+      }
     } catch (error) {
       console.error('Error creating profile:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to create profile')

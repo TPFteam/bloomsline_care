@@ -110,17 +110,31 @@ function DashboardContent() {
           return
         }
         // Use auth user data as fallback
+        const userType = authUser.user_metadata?.user_type || 'mentor'
+
+        // Redirect members to their mobile home page
+        if (userType === 'member') {
+          router.replace('/home')
+          return
+        }
+
         setUser({
           id: authUser.id,
           email: authUser.email!,
           full_name: authUser.user_metadata?.full_name || null,
           avatar_url: authUser.user_metadata?.avatar_url || null,
-          user_type: 'mentor',
+          user_type: userType,
           preferred_language: 'en',
           created_at: authUser.created_at,
           updated_at: authUser.updated_at || authUser.created_at,
         })
       } else {
+        // Redirect members to their mobile home page
+        if (userProfile.user_type === 'member') {
+          router.replace('/home')
+          return
+        }
+
         setUser(userProfile)
         // Load user's preferred language from database
         if (userProfile.preferred_language) {
@@ -321,15 +335,16 @@ function DashboardContent() {
   }
 
   // Mentor sections (default for all users) - now with real data
+  // Using teal (primary) and lavender (secondary) color scheme
   const sections = [
     {
       title: t.dashboard.sections.library.title,
       description: t.dashboard.sections.library.description,
       detail: t.dashboard.sections.library.detail,
       icon: BookOpen,
-      gradient: 'from-mint-400 to-mint-600',
-      bg: 'bg-mint-100/80',
-      shadow: 'shadow-mint-200/50',
+      gradient: 'from-teal-400 to-teal-600',
+      bg: 'bg-teal-100/80',
+      shadow: 'shadow-teal-200/50',
       stats: [
         { label: t.dashboard.sections.library.stats.resources, value: '150+' },
         { label: t.dashboard.sections.library.stats.categories, value: '12' },
@@ -346,9 +361,9 @@ function DashboardContent() {
       description: t.dashboard.sections.resources.description,
       detail: t.dashboard.sections.resources.detail,
       icon: Heart,
-      gradient: 'from-coral-400 to-coral-600',
-      bg: 'bg-coral-100/80',
-      shadow: 'shadow-coral-200/50',
+      gradient: 'from-teal-400 to-teal-600',
+      bg: 'bg-teal-100/80',
+      shadow: 'shadow-teal-200/50',
       stats: [
         { label: t.dashboard.sections.resources.stats.savedItems, value: stats.resourcesSaved.toString() },
         { label: t.dashboard.sections.resources.stats.collections, value: stats.collectionsCount.toString() },
@@ -384,9 +399,9 @@ function DashboardContent() {
       description: t.dashboard.sections.analytics.description,
       detail: t.dashboard.sections.analytics.detail,
       icon: BarChart3,
-      gradient: 'from-peach-400 to-peach-600',
-      bg: 'bg-peach-100/80',
-      shadow: 'shadow-peach-200/50',
+      gradient: 'from-teal-400 to-teal-600',
+      bg: 'bg-teal-100/80',
+      shadow: 'shadow-teal-200/50',
       stats: [
         { label: t.dashboard.sections.analytics.stats.successRate, value: stats.completionRate > 0 ? `${stats.completionRate}%` : '-' },
         { label: t.dashboard.sections.analytics.stats.insights, value: stats.totalSessions.toString() },
@@ -401,15 +416,31 @@ function DashboardContent() {
   ]
 
   // Member-specific sections (only for members)
+  // Using teal (primary) and lavender (secondary) color scheme
   const memberSections = [
+    {
+      title: 'My Resources',
+      description: 'Assigned resources',
+      detail: 'View and complete worksheets and exercises assigned by your practitioner.',
+      icon: Heart,
+      gradient: 'from-teal-400 to-teal-600',
+      bg: 'bg-teal-100/80',
+      shadow: 'shadow-teal-200/50',
+      stats: [
+        { label: 'Pending', value: '0' },
+        { label: 'Completed', value: '0' },
+      ],
+      tags: ['Worksheets', 'Exercises', 'Assignments'],
+      href: '/home',
+    },
     {
       title: t.dashboard.sections.rituals.title,
       description: t.dashboard.sections.rituals.description,
       detail: t.dashboard.sections.rituals.detail,
       icon: Sparkles,
-      gradient: 'from-purple-400 to-purple-600',
-      bg: 'bg-purple-100/80',
-      shadow: 'shadow-purple-200/50',
+      gradient: 'from-lavender-400 to-lavender-600',
+      bg: 'bg-lavender-100/80',
+      shadow: 'shadow-lavender-200/50',
       stats: [
         { label: t.dashboard.sections.rituals.stats.activeRituals, value: '5' },
         { label: t.dashboard.sections.rituals.stats.streak, value: '12' },
@@ -426,9 +457,9 @@ function DashboardContent() {
       description: t.dashboard.sections.moments.description,
       detail: t.dashboard.sections.moments.detail,
       icon: Camera,
-      gradient: 'from-sky-400 to-sky-600',
-      bg: 'bg-sky-100/80',
-      shadow: 'shadow-sky-200/50',
+      gradient: 'from-teal-400 to-teal-600',
+      bg: 'bg-teal-100/80',
+      shadow: 'shadow-teal-200/50',
       stats: [
         { label: t.dashboard.sections.moments.stats.totalMoments, value: '48' },
         { label: t.dashboard.sections.moments.stats.thisWeek, value: '7' },
@@ -464,9 +495,9 @@ function DashboardContent() {
       description: t.dashboard.sections.reflection.description,
       detail: t.dashboard.sections.reflection.detail,
       icon: MessageSquare,
-      gradient: 'from-rose-400 to-rose-600',
-      bg: 'bg-rose-100/80',
-      shadow: 'shadow-rose-200/50',
+      gradient: 'from-lavender-400 to-lavender-600',
+      bg: 'bg-lavender-100/80',
+      shadow: 'shadow-lavender-200/50',
       stats: [
         { label: t.dashboard.sections.reflection.stats.reflections, value: '32' },
         { label: t.dashboard.sections.reflection.stats.growth, value: '85%' },
@@ -483,9 +514,9 @@ function DashboardContent() {
       description: t.dashboard.sections.stories.description,
       detail: t.dashboard.sections.stories.detail,
       icon: FileText,
-      gradient: 'from-amber-400 to-amber-600',
-      bg: 'bg-amber-100/80',
-      shadow: 'shadow-amber-200/50',
+      gradient: 'from-teal-400 to-teal-600',
+      bg: 'bg-teal-100/80',
+      shadow: 'shadow-teal-200/50',
       stats: [
         { label: t.dashboard.sections.stories.stats.published, value: '14' },
         { label: t.dashboard.sections.stories.stats.views, value: '326' },
@@ -525,10 +556,10 @@ function DashboardContent() {
     <div className="min-h-screen gradient-mesh relative overflow-hidden flex">
       {/* Decorative Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-mint-200/30 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-teal-200/30 rounded-full blur-3xl" />
         <div className="absolute top-1/3 -left-40 w-80 h-80 bg-lavender-200/30 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-coral-200/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 left-1/4 w-60 h-60 bg-peach-200/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-teal-200/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 left-1/4 w-60 h-60 bg-lavender-200/20 rounded-full blur-3xl" />
       </div>
 
       {/* Floating Pill Sidebar */}
@@ -541,7 +572,7 @@ function DashboardContent() {
         <div className="h-full bg-white/90 backdrop-blur-2xl rounded-[1.5rem] border border-white/60 shadow-xl shadow-gray-200/40 p-4 flex flex-col">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-8 px-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-mint-400 to-lavender-500 rounded-xl flex items-center justify-center shadow-lg shadow-mint-200/50 flex-shrink-0">
+            <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-lavender-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200/50 flex-shrink-0">
               <span className="text-white font-bold text-lg">B</span>
             </div>
             <span className="font-semibold text-lg text-gray-900">Bloomsline</span>
@@ -554,7 +585,7 @@ function DashboardContent() {
                 whileHover={{ x: 2 }}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer
                 ${activeSection === 'home'
-                  ? 'bg-gradient-to-r from-mint-500 to-mint-600 shadow-md shadow-mint-200/50'
+                  ? 'bg-gradient-to-r from-teal-500 to-teal-600 shadow-md shadow-teal-200/50'
                   : 'hover:bg-gray-50/80'
                 }`}
               >
@@ -607,7 +638,7 @@ function DashboardContent() {
                 whileHover={{ x: 2 }}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer
                 ${activeSection === '/bookings'
-                  ? 'bg-gradient-to-r from-sky-500 to-sky-600 shadow-md shadow-sky-200/50'
+                  ? 'bg-gradient-to-r from-teal-500 to-teal-600 shadow-md shadow-teal-200/50'
                   : 'hover:bg-gray-50/80'
                 }`}
               >
@@ -633,7 +664,7 @@ function DashboardContent() {
                 whileHover={{ x: 2 }}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer
                 ${activeSection === '/profile'
-                  ? 'bg-gradient-to-r from-purple-500 to-purple-600 shadow-md shadow-purple-200/50'
+                  ? 'bg-gradient-to-r from-lavender-500 to-lavender-600 shadow-md shadow-lavender-200/50'
                   : 'hover:bg-gray-50/80'
                 }`}
               >
@@ -707,7 +738,7 @@ function DashboardContent() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-1">
               {getGreeting()},
-              <span className="bg-gradient-to-r from-mint-500 to-lavender-500 bg-clip-text text-transparent"> {user?.full_name?.split(' ')[0] || 'there'}</span>
+              <span className="bg-gradient-to-r from-teal-500 to-lavender-500 bg-clip-text text-transparent"> {user?.full_name?.split(' ')[0] || 'there'}</span>
             </h1>
             <p className="text-gray-500">{t.dashboard.tagline}</p>
           </div>
@@ -719,7 +750,7 @@ function DashboardContent() {
               whileHover={{ scale: 1.02 }}
               className="flex items-center gap-3 bg-white/90 backdrop-blur-xl rounded-2xl px-4 py-3 border border-white/60 shadow-lg shadow-gray-200/40"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-mint-400 to-lavender-500 rounded-xl flex items-center justify-center text-white font-semibold shadow-md">
+              <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-lavender-500 rounded-xl flex items-center justify-center text-white font-semibold shadow-md">
                 {user?.full_name?.[0] || 'U'}
               </div>
               <div className="text-left">
@@ -779,7 +810,7 @@ function DashboardContent() {
             className="lg:col-span-2 bg-white/90 backdrop-blur-xl rounded-[1.5rem] p-6 shadow-lg shadow-gray-200/40 border border-white/60"
           >
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-mint-400 to-mint-600" />
+              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-600" />
               <h2 className="text-xl font-semibold text-gray-900">{t.dashboard.quickActions.title}</h2>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -1076,7 +1107,7 @@ export default function DashboardPage() {
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center gradient-mesh">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-mint-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>

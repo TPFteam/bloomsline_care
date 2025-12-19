@@ -46,6 +46,7 @@ export interface EmergencyContact {
 export interface Member {
   id: string
   practitioner_id: string
+  user_id: string | null // Links to auth.users for member login access
 
   // Basic Information
   first_name: string

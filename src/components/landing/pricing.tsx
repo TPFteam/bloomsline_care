@@ -13,7 +13,7 @@ const plans = [
     price: '$299',
     period: '/month',
     icon: Sparkles,
-    color: 'mint',
+    color: 'teal',
     features: [
       'Up to 50 service requests/month',
       '5 partner connections',
@@ -53,7 +53,7 @@ const plans = [
     price: 'Custom',
     period: '',
     icon: Building2,
-    color: 'peach',
+    color: 'teal',
     features: [
       'Unlimited service requests',
       'Unlimited partner connections',
@@ -73,12 +73,12 @@ const plans = [
 ]
 
 const colorClasses = {
-  mint: {
-    bg: 'bg-mint-100',
-    icon: 'text-mint-600',
-    border: 'border-mint-200',
-    button: 'from-mint-500 to-mint-600 hover:from-mint-600 hover:to-mint-700 shadow-mint-500/20',
-    badge: 'bg-mint-500',
+  teal: {
+    bg: 'bg-teal-100',
+    icon: 'text-teal-600',
+    border: 'border-teal-200',
+    button: 'from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-teal-500/20',
+    badge: 'bg-teal-500',
   },
   lavender: {
     bg: 'bg-lavender-100',
@@ -86,13 +86,6 @@ const colorClasses = {
     border: 'border-lavender-200',
     button: 'from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 shadow-lavender-500/20',
     badge: 'bg-lavender-500',
-  },
-  peach: {
-    bg: 'bg-peach-100',
-    icon: 'text-peach-600',
-    border: 'border-peach-200',
-    button: 'from-peach-500 to-peach-600 hover:from-peach-600 hover:to-peach-700 shadow-peach-500/20',
-    badge: 'bg-peach-500',
   },
 }
 
@@ -108,7 +101,7 @@ export function Pricing() {
           transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground via-mint-600 to-lavender-600 bg-clip-text text-transparent">
+          <h2 className="text-4xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground via-teal-600 to-lavender-600 bg-clip-text text-transparent">
             Simple, Transparent Pricing
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
@@ -207,7 +200,7 @@ export function Pricing() {
           </p>
           <p className="text-sm text-muted-foreground">
             Need a custom solution?{' '}
-            <a href="#" className="text-mint-600 hover:text-mint-700 font-medium underline">
+            <a href="#" className="text-teal-600 hover:text-teal-700 font-medium underline">
               Contact our sales team
             </a>
           </p>

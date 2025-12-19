@@ -20,7 +20,7 @@ const socialLinks = [
 export function Footer() {
   const { t } = useLanguage()
   return (
-    <footer className="bg-gradient-to-b from-background to-mint-50/20 border-t border-border">
+    <footer className="bg-gradient-to-b from-background to-teal-50/20 border-t border-border">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 mb-12">
           {/* Brand Section */}
@@ -32,10 +32,10 @@ export function Footer() {
             className="lg:col-span-2"
           >
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-mint-400 to-lavender-500 rounded-xl flex items-center justify-center shadow-lg shadow-mint-500/30">
+              <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-lavender-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/30">
                 <span className="text-white font-bold text-xl">B</span>
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-mint-600 to-lavender-600 bg-clip-text text-transparent">
+              <span className="text-xl font-bold bg-gradient-to-r from-teal-600 to-lavender-600 bg-clip-text text-transparent">
                 Bloomsline
               </span>
             </div>
@@ -176,9 +176,9 @@ export function Footer() {
                 key={social.key}
                 href={social.href}
                 aria-label={t.footer.socialLabels[social.key as keyof typeof t.footer.socialLabels]}
-                className="w-10 h-10 rounded-full bg-mint-100 hover:bg-mint-200 flex items-center justify-center transition-colors group"
+                className="w-10 h-10 rounded-full bg-teal-100 hover:bg-teal-200 flex items-center justify-center transition-colors group"
               >
-                <social.icon className="w-5 h-5 text-mint-600 group-hover:text-mint-700" />
+                <social.icon className="w-5 h-5 text-teal-600 group-hover:text-teal-700" />
               </a>
             ))}
           </div>

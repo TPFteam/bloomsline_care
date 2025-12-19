@@ -12,7 +12,32 @@ export type AssignmentPriority = 'low' | 'normal' | 'high'
 export type ResponseStatus = 'draft' | 'submitted' | 'reviewed'
 
 // Block types for content
-export type BlockType = 'heading' | 'paragraph' | 'prompt' | 'checklist' | 'scale' | 'image' | 'video' | 'file' | 'key_points' | 'callout' | 'quote' | 'image_placeholder'
+export type BlockType =
+  | 'heading'
+  | 'paragraph'
+  | 'prompt'
+  | 'checklist'
+  | 'scale'
+  | 'image'
+  | 'video'
+  | 'file'
+  | 'key_points'
+  | 'callout'
+  | 'quote'
+  | 'image_placeholder'
+  // Worksheet-specific block types
+  | 'tip'
+  | 'divider'
+  | 'multiple_choice'
+  | 'yes_no'
+  | 'likert'
+  | 'slider'
+  | 'numeric'
+  | 'matrix_rating'
+  | 'mood'
+  | 'date_picker'
+  | 'time_input'
+  | 'list_input'
 
 // Media file interface
 export interface MediaFile {
@@ -105,6 +130,98 @@ export interface ImagePlaceholderBlock extends BaseBlock {
   caption?: string
 }
 
+// Worksheet-specific block types
+export interface TipBlock extends BaseBlock {
+  type: 'tip'
+}
+
+export interface DividerBlock extends BaseBlock {
+  type: 'divider'
+}
+
+export interface MultipleChoiceBlock extends BaseBlock {
+  type: 'multiple_choice'
+  options?: string[]
+  choices?: string[]
+  allowMultiple?: boolean
+  required?: boolean
+  scoring?: { [key: string]: number }
+}
+
+export interface YesNoBlock extends BaseBlock {
+  type: 'yes_no'
+  required?: boolean
+  scoring?: { [key: string]: number }
+}
+
+export interface LikertBlock extends BaseBlock {
+  type: 'likert'
+  scaleRange?: number
+  scaleLabels?: string[]
+  likertScale?: number
+  likertLabels?: { start?: string; end?: string }
+  required?: boolean
+  scoring?: { [key: string]: number }
+}
+
+export interface SliderBlock extends BaseBlock {
+  type: 'slider'
+  sliderMin?: number
+  sliderMax?: number
+  sliderStep?: number
+  sliderUnit?: string
+  sliderMinLabel?: string
+  sliderMaxLabel?: string
+  required?: boolean
+  scoring?: { [key: string]: number }
+}
+
+export interface NumericBlock extends BaseBlock {
+  type: 'numeric'
+  minValue?: number
+  maxValue?: number
+  numericMin?: number
+  numericMax?: number
+  required?: boolean
+  scoring?: { [key: string]: number }
+}
+
+export interface MatrixRatingBlock extends BaseBlock {
+  type: 'matrix_rating'
+  matrixItems?: string[]
+  matrixScaleMax?: number
+  matrixScaleLabels?: { min?: string; max?: string }
+  required?: boolean
+  scoring?: { [key: string]: number }
+}
+
+export interface MoodBlock extends BaseBlock {
+  type: 'mood'
+  moodOptions?: { emoji: string; label: string; value?: number }[]
+  required?: boolean
+  scoring?: { [key: string]: number }
+}
+
+export interface DatePickerBlock extends BaseBlock {
+  type: 'date_picker'
+  required?: boolean
+}
+
+export interface TimeInputBlock extends BaseBlock {
+  type: 'time_input'
+  required?: boolean
+}
+
+export interface ListInputBlock extends BaseBlock {
+  type: 'list_input'
+  minItems?: number
+  maxItems?: number
+  listMinItems?: number
+  listMaxItems?: number
+  listItemPlaceholder?: string
+  required?: boolean
+}
+
 // Union type for all blocks
 export type ResourceBlock =
   | HeadingBlock
@@ -119,6 +236,19 @@ export type ResourceBlock =
   | CalloutBlock
   | QuoteBlock
   | ImagePlaceholderBlock
+  // Worksheet-specific blocks
+  | TipBlock
+  | DividerBlock
+  | MultipleChoiceBlock
+  | YesNoBlock
+  | LikertBlock
+  | SliderBlock
+  | NumericBlock
+  | MatrixRatingBlock
+  | MoodBlock
+  | DatePickerBlock
+  | TimeInputBlock
+  | ListInputBlock
 
 // Scoring range for worksheet scoring
 export interface ScoringRange {

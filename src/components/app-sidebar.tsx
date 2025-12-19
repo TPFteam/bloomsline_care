@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -29,11 +30,26 @@ interface AppSidebarProps {
   userType?: 'mentor' | 'member'
 }
 
-export function AppSidebar({ userType = 'mentor' }: AppSidebarProps) {
+export function AppSidebar({ userType: propUserType }: AppSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const { t } = useLanguage()
   const supabase = createClient()
+  const [detectedUserType, setDetectedUserType] = useState<'mentor' | 'member'>('mentor')
+
+  // Auto-detect user type from auth session
+  useEffect(() => {
+    async function detectUserType() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.user_metadata?.user_type === 'member') {
+        setDetectedUserType('member')
+      }
+    }
+    detectUserType()
+  }, [supabase.auth])
+
+  // Use prop if provided, otherwise use detected type
+  const userType = propUserType || detectedUserType
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -41,48 +57,54 @@ export function AppSidebar({ userType = 'mentor' }: AppSidebarProps) {
     router.push('/')
   }
 
+  // Primary: Teal, Secondary: Lavender
+  const primaryGradient = 'from-teal-400 to-teal-600'
+  const primaryShadow = 'shadow-teal-200/50'
+  const secondaryGradient = 'from-lavender-400 to-lavender-600'
+  const secondaryShadow = 'shadow-lavender-200/50'
+
   // Mentor sections (default for all users)
   const mentorSections = [
     {
       title: t.dashboard.sections.library.title,
       icon: BookOpen,
-      gradient: 'from-mint-400 to-mint-600',
-      shadow: 'shadow-mint-200/50',
+      gradient: primaryGradient,
+      shadow: primaryShadow,
       href: '/library',
     },
     {
       title: t.dashboard.sections.resources.title,
       icon: Heart,
-      gradient: 'from-coral-400 to-coral-600',
-      shadow: 'shadow-coral-200/50',
+      gradient: primaryGradient,
+      shadow: primaryShadow,
       href: '/resources',
     },
     {
       title: t.dashboard.sections.members.title,
       icon: Users,
-      gradient: 'from-lavender-400 to-lavender-600',
-      shadow: 'shadow-lavender-200/50',
+      gradient: secondaryGradient,
+      shadow: secondaryShadow,
       href: '/members',
     },
     {
       title: t.dashboard.sections.analytics.title,
       icon: BarChart3,
-      gradient: 'from-peach-400 to-peach-600',
-      shadow: 'shadow-peach-200/50',
+      gradient: primaryGradient,
+      shadow: primaryShadow,
       href: '/analytics',
     },
     {
       title: t.profile.title,
       icon: User,
-      gradient: 'from-purple-400 to-purple-600',
-      shadow: 'shadow-purple-200/50',
+      gradient: secondaryGradient,
+      shadow: secondaryShadow,
       href: '/profile',
     },
     {
       title: 'Bookings',
       icon: CalendarCheck,
-      gradient: 'from-sky-400 to-sky-600',
-      shadow: 'shadow-sky-200/50',
+      gradient: primaryGradient,
+      shadow: primaryShadow,
       href: '/bookings',
     },
   ]
@@ -90,38 +112,45 @@ export function AppSidebar({ userType = 'mentor' }: AppSidebarProps) {
   // Member-specific sections
   const memberSections = [
     {
+      title: 'My Resources',
+      icon: Heart,
+      gradient: primaryGradient,
+      shadow: primaryShadow,
+      href: '/home',
+    },
+    {
       title: t.dashboard.sections.rituals.title,
       icon: Sparkles,
-      gradient: 'from-purple-400 to-purple-600',
-      shadow: 'shadow-purple-200/50',
+      gradient: secondaryGradient,
+      shadow: secondaryShadow,
       href: '/rituals',
     },
     {
       title: t.dashboard.sections.moments.title,
       icon: Camera,
-      gradient: 'from-sky-400 to-sky-600',
-      shadow: 'shadow-sky-200/50',
+      gradient: primaryGradient,
+      shadow: primaryShadow,
       href: '/moments',
     },
     {
       title: t.dashboard.sections.balance.title,
       icon: Scale,
-      gradient: 'from-teal-400 to-teal-600',
-      shadow: 'shadow-teal-200/50',
+      gradient: primaryGradient,
+      shadow: primaryShadow,
       href: '/balance',
     },
     {
       title: t.dashboard.sections.reflection.title,
       icon: MessageSquare,
-      gradient: 'from-rose-400 to-rose-600',
-      shadow: 'shadow-rose-200/50',
+      gradient: secondaryGradient,
+      shadow: secondaryShadow,
       href: '/reflection',
     },
     {
       title: t.dashboard.sections.stories.title,
       icon: FileText,
-      gradient: 'from-amber-400 to-amber-600',
-      shadow: 'shadow-amber-200/50',
+      gradient: primaryGradient,
+      shadow: primaryShadow,
       href: '/my-stories',
     },
   ]
@@ -144,7 +173,7 @@ export function AppSidebar({ userType = 'mentor' }: AppSidebarProps) {
         {/* Logo */}
         <Link href="/dashboard">
           <div className="flex items-center gap-3 mb-8 px-2 cursor-pointer hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 bg-gradient-to-br from-mint-400 to-lavender-500 rounded-xl flex items-center justify-center shadow-lg shadow-mint-200/50 flex-shrink-0">
+            <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-lavender-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200/50 flex-shrink-0">
               <span className="text-white font-bold text-lg">B</span>
             </div>
             <span className="font-semibold text-lg text-gray-900">Bloomsline</span>
@@ -158,7 +187,7 @@ export function AppSidebar({ userType = 'mentor' }: AppSidebarProps) {
               whileHover={{ x: 2 }}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer
               ${isActive('/dashboard')
-                ? 'bg-gradient-to-r from-mint-500 to-mint-600 shadow-md shadow-mint-200/50'
+                ? 'bg-gradient-to-r from-teal-500 to-teal-600 shadow-md shadow-teal-200/50'
                 : 'hover:bg-gray-50/80'
               }`}
             >

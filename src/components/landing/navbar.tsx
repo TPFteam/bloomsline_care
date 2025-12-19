@@ -35,7 +35,7 @@ export function Navbar() {
             className="flex items-center"
           >
             <a href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-mint-400 to-lavender-500 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-lavender-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">B</span>
               </div>
               <span className="font-semibold text-foreground">Bloomsline</span>
@@ -60,7 +60,7 @@ export function Navbar() {
                 }`}
               >
                 {item.active && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-mint-500" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
                 )}
                 {item.label}
               </a>

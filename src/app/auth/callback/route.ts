@@ -55,8 +55,25 @@ export async function GET(request: NextRequest) {
       flow
     })
 
-    // Determine the redirect URL based on the flow
+    // Determine the redirect URL based on the flow and user type
     let redirectUrl = `${requestUrl.origin}/dashboard`
+
+    // Check user type to determine redirect for existing users
+    if (!isNewUser && data.user?.id) {
+      try {
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('user_type')
+          .eq('id', data.user.id)
+          .single()
+
+        if (userProfile?.user_type === 'member') {
+          redirectUrl = `${requestUrl.origin}/home`
+        }
+      } catch (e) {
+        console.error('Error checking user type:', e)
+      }
+    }
 
     if (flow === 'signup' && !isNewUser) {
       // If user came from sign-up page but already has an account

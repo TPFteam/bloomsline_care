@@ -55,6 +55,7 @@ export default function MembersPage() {
   const fetchMembers = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
+
       if (!user) {
         router.push('/sign-in')
         return

@@ -544,19 +544,29 @@ export async function addPractitionerNotes(
 
 export interface ResourceSubmission {
   id: string
-  resource_id: string
+  resource_id: string | null  // Can be null if resource was deleted
   member_id: string
   practitioner_id: string
   responses: Record<string, unknown>
-  score?: number
-  max_score?: number
-  score_interpretation?: string
+  scores?: {
+    total?: number
+    maxScore?: number
+    percentage?: number
+  }
   status: 'draft' | 'submitted' | 'reviewed'
-  submitted_at: string
+  submitted_at: string | null
   reviewed_at?: string
-  reviewer_notes?: string
+  practitioner_notes?: string
+  time_spent_seconds?: number
   created_at: string
   updated_at: string
+  // Resource snapshot for data preservation (stored at submission time)
+  resource_snapshot?: {
+    title: unknown
+    blocks: unknown
+    settings: unknown
+    type: string
+  }
   // Joined data
   member?: {
     id: string
@@ -570,13 +580,22 @@ export interface ResourceSubmission {
 export async function getResourceSubmissions(resourceId: string): Promise<ResourceSubmission[]> {
   const supabase = createClient()
 
+  // Get current user to filter by their members only
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    console.error('No authenticated user')
+    return []
+  }
+
   const { data, error } = await supabase
-    .from('resource_submissions')
+    .from('resource_responses')
     .select(`
       *,
       member:members(id, first_name, last_name, avatar_url)
     `)
     .eq('resource_id', resourceId)
+    .eq('practitioner_id', user.id) // Only show submissions from this practitioner's members
+    .in('status', ['submitted', 'reviewed'])
     .order('submitted_at', { ascending: false })
 
   if (error) {
@@ -591,7 +610,7 @@ export async function getSubmissionById(id: string): Promise<ResourceSubmission 
   const supabase = createClient()
 
   const { data, error } = await supabase
-    .from('resource_submissions')
+    .from('resource_responses')
     .select(`
       *,
       member:members(id, first_name, last_name, avatar_url),
@@ -624,7 +643,7 @@ export async function createSubmission(submission: {
   if (!user) throw new Error('Not authenticated')
 
   const { data, error } = await supabase
-    .from('resource_submissions')
+    .from('resource_responses')
     .insert({
       resource_id: submission.resource_id,
       member_id: submission.member_id,
@@ -655,13 +674,24 @@ export async function updateSubmission(
   updates: {
     status?: 'draft' | 'submitted' | 'reviewed'
     reviewer_notes?: string
+    practitioner_notes?: string
   }
 ): Promise<ResourceSubmission> {
   const supabase = createClient()
 
   const updateData: Record<string, unknown> = {
-    ...updates,
     updated_at: new Date().toISOString(),
+  }
+
+  if (updates.status) {
+    updateData.status = updates.status
+  }
+
+  // Support both field names for backwards compatibility
+  if (updates.practitioner_notes !== undefined) {
+    updateData.practitioner_notes = updates.practitioner_notes
+  } else if (updates.reviewer_notes !== undefined) {
+    updateData.practitioner_notes = updates.reviewer_notes
   }
 
   if (updates.status === 'reviewed') {
@@ -669,7 +699,7 @@ export async function updateSubmission(
   }
 
   const { data, error } = await supabase
-    .from('resource_submissions')
+    .from('resource_responses')
     .update(updateData)
     .eq('id', id)
     .select(`
@@ -690,7 +720,7 @@ export async function deleteSubmission(id: string): Promise<void> {
   const supabase = createClient()
 
   const { error } = await supabase
-    .from('resource_submissions')
+    .from('resource_responses')
     .delete()
     .eq('id', id)
 
@@ -704,7 +734,7 @@ export async function getMemberSubmissions(memberId: string): Promise<ResourceSu
   const supabase = createClient()
 
   const { data, error } = await supabase
-    .from('resource_submissions')
+    .from('resource_responses')
     .select(`
       *,
       resource:resources(id, title, type, category)

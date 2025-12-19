@@ -34,6 +34,18 @@ export default function StoriesPage() {
         return
       }
 
+      // Check if user is a member - redirect to mobile stories page
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('user_type')
+        .eq('id', user.id)
+        .single()
+
+      if (userProfile?.user_type === 'member') {
+        router.replace('/stories')
+        return
+      }
+
       const { data, error } = await supabase
         .from('stories')
         .select('*')

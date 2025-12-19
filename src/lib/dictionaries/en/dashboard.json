@@ -141,6 +141,20 @@
         "shareableLink": "Shareable link",
         "multimedia": "Multimedia"
       }
+    },
+    "myResources": {
+      "title": "My Resources",
+      "description": "Assigned resources",
+      "detail": "View and complete worksheets and exercises assigned by your practitioner.",
+      "stats": {
+        "pending": "Pending",
+        "completed": "Completed"
+      },
+      "tags": {
+        "worksheets": "Worksheets",
+        "exercises": "Exercises",
+        "assignments": "Assignments"
+      }
     }
   },
   "stats": {

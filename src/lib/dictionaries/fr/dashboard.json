@@ -141,6 +141,20 @@
         "shareableLink": "Lien partageable",
         "multimedia": "Multimédia"
       }
+    },
+    "myResources": {
+      "title": "Mes Ressources",
+      "description": "Ressources assignées",
+      "detail": "Consultez et complétez les feuilles de travail et exercices assignés par votre praticien.",
+      "stats": {
+        "pending": "En attente",
+        "completed": "Complétés"
+      },
+      "tags": {
+        "worksheets": "Feuilles de travail",
+        "exercises": "Exercices",
+        "assignments": "Assignations"
+      }
     }
   },
   "stats": {

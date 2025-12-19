@@ -22,20 +22,20 @@ const featureIcons = [
 ]
 
 const featureColors = [
-  'mint',
+  'teal',
   'lavender',
-  'peach',
-  'mint',
-  'coral',
-  'mint',
+  'teal',
+  'lavender',
+  'teal',
+  'lavender',
 ] as const
 
 const colorClasses = {
-  mint: {
-    bg: 'bg-mint-100',
-    icon: 'text-mint-600',
-    border: 'border-mint-200',
-    shadow: 'shadow-mint-500/10',
+  teal: {
+    bg: 'bg-teal-100',
+    icon: 'text-teal-600',
+    border: 'border-teal-200',
+    shadow: 'shadow-teal-500/10',
   },
   lavender: {
     bg: 'bg-lavender-100',
@@ -43,27 +43,15 @@ const colorClasses = {
     border: 'border-lavender-200',
     shadow: 'shadow-lavender-500/10',
   },
-  peach: {
-    bg: 'bg-peach-100',
-    icon: 'text-peach-600',
-    border: 'border-peach-200',
-    shadow: 'shadow-peach-500/10',
-  },
-  coral: {
-    bg: 'bg-coral-100',
-    icon: 'text-coral-600',
-    border: 'border-coral-200',
-    shadow: 'shadow-coral-500/10',
-  },
 }
 
 export function Features() {
   const { t } = useLanguage()
 
   return (
-    <section id="features" className="py-24 bg-gradient-to-b from-peach-50/30 via-white to-lavender-50/30 relative overflow-hidden">
+    <section id="features" className="py-24 bg-gradient-to-b from-teal-50/30 via-white to-lavender-50/30 relative overflow-hidden">
       {/* Background gradient orbs */}
-      <div className="absolute top-20 right-0 w-72 h-72 bg-gradient-to-br from-mint-200 to-mint-300 rounded-full mix-blend-multiply filter blur-3xl opacity-40"></div>
+      <div className="absolute top-20 right-0 w-72 h-72 bg-gradient-to-br from-teal-200 to-teal-300 rounded-full mix-blend-multiply filter blur-3xl opacity-40"></div>
       <div className="absolute bottom-20 left-0 w-72 h-72 bg-gradient-to-br from-lavender-200 to-lavender-300 rounded-full mix-blend-multiply filter blur-3xl opacity-40"></div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -75,7 +63,7 @@ export function Features() {
           transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground via-mint-600 to-lavender-600 bg-clip-text text-transparent" suppressHydrationWarning>
+          <h2 className="text-4xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground via-teal-600 to-lavender-600 bg-clip-text text-transparent" suppressHydrationWarning>
             {t.features.sectionTitle}
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed" suppressHydrationWarning>
