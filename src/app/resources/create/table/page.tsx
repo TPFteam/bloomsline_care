@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -42,7 +42,30 @@ const allCategories: ResourceCategory[] = [
 
 const generateId = () => Math.random().toString(36).substring(2, 9)
 
+// Loading fallback component
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
+        </div>
+        <span className="text-gray-500 text-sm">Loading...</span>
+      </div>
+    </div>
+  )
+}
+
+// Main page wrapper with Suspense
 export default function CreateTableExercisePage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <CreateTableExerciseContent />
+    </Suspense>
+  )
+}
+
+function CreateTableExerciseContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
