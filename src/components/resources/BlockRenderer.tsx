@@ -7,7 +7,11 @@ import {
   Circle,
   Plus,
   X,
+  ChevronLeft,
+  ChevronRight,
+  Trash2,
 } from 'lucide-react'
+import { AnimatePresence } from 'framer-motion'
 import type { ResourceBlock } from '@/types/resource'
 
 interface BlockRendererProps {
@@ -16,6 +20,11 @@ interface BlockRendererProps {
   onChange: (value: unknown) => void
   disabled?: boolean
   locale?: 'en' | 'fr'
+  settings?: {
+    rowMode?: 'unlimited' | 'limited'
+    minRows?: number
+    maxRows?: number
+  }
 }
 
 export function BlockRenderer({
@@ -24,6 +33,7 @@ export function BlockRenderer({
   onChange,
   disabled = false,
   locale = 'en',
+  settings,
 }: BlockRendererProps) {
   // Handle different block types
   switch (block.type) {
@@ -229,6 +239,18 @@ export function BlockRenderer({
           onChange={onChange}
           disabled={disabled}
           locale={locale}
+        />
+      )
+
+    case 'table_exercise':
+      return (
+        <TableExerciseBlock
+          block={block}
+          value={value as Record<string, string>[] | undefined}
+          onChange={onChange}
+          disabled={disabled}
+          locale={locale}
+          settings={settings}
         />
       )
 
@@ -912,6 +934,353 @@ function ListInputBlock({
           </button>
         )}
       </div>
+    </div>
+  )
+}
+
+// ===== Table Exercise Block =====
+interface TableColumn {
+  id: string
+  header: string
+  description?: string
+}
+
+function TableExerciseBlock({
+  block,
+  value,
+  onChange,
+  disabled,
+  locale,
+  settings,
+}: {
+  block: ResourceBlock
+  value: Record<string, string>[] | undefined
+  onChange: (value: Record<string, string>[]) => void
+  disabled: boolean
+  locale: string
+  settings?: {
+    rowMode?: 'unlimited' | 'limited'
+    minRows?: number
+    maxRows?: number
+  }
+}) {
+  // Get columns from block
+  const columns: TableColumn[] = ('columns' in block && Array.isArray(block.columns)) ? block.columns : []
+  const instructions = ('instructions' in block && typeof block.instructions === 'string') ? block.instructions : null
+
+  // Get row limits from settings
+  const minRows = settings?.minRows || 1
+  const maxRows = settings?.rowMode === 'limited' ? (settings?.maxRows || 999) : 999
+
+  // Initialize with minimum rows if no value
+  const rows = value && value.length > 0 ? value : Array(minRows).fill({})
+
+  // Current entry index - default to latest entry
+  const [currentIndex, setCurrentIndex] = useState(() => Math.max(0, rows.length - 1))
+
+  // Ensure currentIndex is valid
+  const safeCurrentIndex = Math.min(currentIndex, rows.length - 1)
+  const currentRow = rows[safeCurrentIndex] || {}
+
+  const updateCell = (rowIndex: number, columnId: string, cellValue: string) => {
+    const newRows = [...rows]
+    if (!newRows[rowIndex]) {
+      newRows[rowIndex] = {}
+    }
+    newRows[rowIndex] = { ...newRows[rowIndex], [columnId]: cellValue }
+    onChange(newRows)
+  }
+
+  const addRow = () => {
+    if (rows.length < maxRows) {
+      const newRows = [...rows, {}]
+      onChange(newRows)
+      setCurrentIndex(newRows.length - 1) // Navigate to new entry
+    }
+  }
+
+  const removeRow = (index: number) => {
+    if (rows.length > minRows) {
+      const newRows = rows.filter((_, i) => i !== index)
+      onChange(newRows)
+      // Adjust current index if needed
+      if (currentIndex >= newRows.length) {
+        setCurrentIndex(Math.max(0, newRows.length - 1))
+      }
+    }
+  }
+
+  const goToPrevious = () => {
+    if (safeCurrentIndex > 0) {
+      setCurrentIndex(safeCurrentIndex - 1)
+    }
+  }
+
+  const goToNext = () => {
+    if (safeCurrentIndex < rows.length - 1) {
+      setCurrentIndex(safeCurrentIndex + 1)
+    }
+  }
+
+  const canAddRow = rows.length < maxRows
+  const canRemoveRow = rows.length > minRows
+
+  if (columns.length === 0) {
+    return (
+      <div className="p-4 bg-gray-50 rounded-xl text-gray-500">
+        {locale === 'fr' ? 'Aucune colonne définie' : 'No columns defined'}
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {/* Instructions */}
+      {instructions && (
+        <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+          <p className="text-emerald-800 text-sm">{instructions}</p>
+        </div>
+      )}
+
+      {/* Mobile Single Entry View */}
+      <div className="md:hidden">
+        {/* Entry Navigation Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-semibold text-gray-900">
+              {locale === 'fr' ? 'Entrée' : 'Entry'} {safeCurrentIndex + 1}
+            </span>
+            <span className="text-sm text-gray-400">
+              / {rows.length}
+            </span>
+          </div>
+          {!disabled && canRemoveRow && (
+            <button
+              type="button"
+              onClick={() => removeRow(safeCurrentIndex)}
+              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+
+        {/* Entry Pills Navigation */}
+        {rows.length > 1 && (
+          <div className="flex items-center gap-1.5 mb-4 overflow-x-auto pb-2">
+            {rows.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => setCurrentIndex(index)}
+                className={`flex-shrink-0 w-8 h-8 rounded-full text-sm font-medium transition-all ${
+                  index === safeCurrentIndex
+                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200'
+                    : 'bg-gray-100 text-gray-500 hover:bg-emerald-100 hover:text-emerald-600'
+                }`}
+              >
+                {index + 1}
+              </button>
+            ))}
+            {!disabled && canAddRow && (
+              <button
+                type="button"
+                onClick={addRow}
+                className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 hover:bg-emerald-200 transition-all flex items-center justify-center"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Current Entry Card */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={safeCurrentIndex}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
+            className="bg-white border-2 border-emerald-200 rounded-2xl overflow-hidden shadow-sm"
+          >
+            {/* Card Fields */}
+            <div className="p-4 space-y-4">
+              {columns.map((col) => (
+                <div key={col.id}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {col.header}
+                  </label>
+                  {col.description && (
+                    <p className="text-xs text-gray-500 mb-2 italic">{col.description}</p>
+                  )}
+                  <textarea
+                    value={currentRow[col.id] || ''}
+                    onChange={(e) => updateCell(safeCurrentIndex, col.id, e.target.value)}
+                    disabled={disabled}
+                    placeholder={locale === 'fr' ? 'Tapez ici...' : 'Type here...'}
+                    rows={3}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 outline-none resize-none text-base disabled:bg-gray-50 disabled:text-gray-500 transition-all"
+                  />
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Navigation Buttons */}
+        <div className="flex items-center justify-between mt-4 gap-3">
+          <button
+            type="button"
+            onClick={goToPrevious}
+            disabled={safeCurrentIndex === 0}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all ${
+              safeCurrentIndex === 0
+                ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-98'
+            }`}
+          >
+            <ChevronLeft className="w-5 h-5" />
+            {locale === 'fr' ? 'Précédent' : 'Previous'}
+          </button>
+
+          {safeCurrentIndex < rows.length - 1 ? (
+            <button
+              type="button"
+              onClick={goToNext}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-600 active:scale-98 transition-all"
+            >
+              {locale === 'fr' ? 'Suivant' : 'Next'}
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          ) : !disabled && canAddRow ? (
+            <button
+              type="button"
+              onClick={addRow}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-600 active:scale-98 transition-all"
+            >
+              <Plus className="w-5 h-5" />
+              {locale === 'fr' ? 'Nouvelle entrée' : 'New Entry'}
+            </button>
+          ) : (
+            <div className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gray-100 text-gray-400">
+              {locale === 'fr' ? 'Dernière entrée' : 'Last Entry'}
+            </div>
+          )}
+        </div>
+
+        {/* Max reached message - Mobile */}
+        {!disabled && !canAddRow && settings?.rowMode === 'limited' && (
+          <div className="text-center py-3 mt-2 text-sm text-gray-500">
+            {locale === 'fr'
+              ? `Maximum de ${maxRows} entrées atteint`
+              : `Maximum of ${maxRows} entries reached`}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block">
+        <div className="overflow-x-auto border border-gray-200 rounded-xl">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-emerald-100">
+                {columns.map((col) => (
+                  <th
+                    key={col.id}
+                    className="px-4 py-3 text-left font-semibold text-emerald-900 border-b border-emerald-200"
+                  >
+                    {col.header}
+                  </th>
+                ))}
+                {!disabled && <th className="w-12 border-b border-emerald-200"></th>}
+              </tr>
+              {/* Description row */}
+              {columns.some(col => col.description) && (
+                <tr className="bg-emerald-50/50">
+                  {columns.map((col) => (
+                    <td
+                      key={col.id}
+                      className="px-4 py-2 text-xs text-emerald-700 italic border-b border-emerald-100"
+                    >
+                      {col.description || ''}
+                    </td>
+                  ))}
+                  {!disabled && <td className="border-b border-emerald-100"></td>}
+                </tr>
+              )}
+            </thead>
+            <tbody>
+              {rows.map((row, rowIndex) => (
+                <tr key={rowIndex} className="hover:bg-gray-50 transition-colors">
+                  {columns.map((col) => (
+                    <td key={col.id} className="px-2 py-2 border-b border-gray-100">
+                      <textarea
+                        value={row[col.id] || ''}
+                        onChange={(e) => updateCell(rowIndex, col.id, e.target.value)}
+                        disabled={disabled}
+                        placeholder={locale === 'fr' ? 'Tapez ici...' : 'Type here...'}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none resize-none text-sm disabled:bg-gray-50 disabled:text-gray-500"
+                      />
+                    </td>
+                  ))}
+                  {!disabled && (
+                    <td className="px-2 py-2 border-b border-gray-100 text-center">
+                      {canRemoveRow && (
+                        <button
+                          type="button"
+                          onClick={() => removeRow(rowIndex)}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Add Row Button - Desktop */}
+        {!disabled && canAddRow && (
+          <motion.button
+            type="button"
+            onClick={addRow}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="mt-4 flex items-center gap-2 px-4 py-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl text-sm font-medium transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            {locale === 'fr' ? 'Ajouter une ligne' : 'Add Row'}
+            {settings?.rowMode === 'limited' && (
+              <span className="text-emerald-500">({rows.length}/{maxRows})</span>
+            )}
+          </motion.button>
+        )}
+
+        {/* Max reached message - Desktop */}
+        {!disabled && !canAddRow && settings?.rowMode === 'limited' && (
+          <p className="mt-4 text-sm text-gray-500">
+            {locale === 'fr'
+              ? `Maximum de ${maxRows} entrées atteint`
+              : `Maximum of ${maxRows} entries reached`}
+          </p>
+        )}
+      </div>
+
+      {/* Entry count */}
+      {rows.length > 0 && (
+        <p className="mt-3 text-xs text-gray-400 text-center md:block hidden">
+          {rows.length} {locale === 'fr'
+            ? (rows.length === 1 ? 'entrée' : 'entrées')
+            : (rows.length === 1 ? 'entry' : 'entries')}
+          {settings?.rowMode === 'limited' && ` / ${maxRows} max`}
+          {minRows > 1 && ` (${locale === 'fr' ? 'min' : 'min'}: ${minRows})`}
+        </p>
+      )}
     </div>
   )
 }

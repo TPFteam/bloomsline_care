@@ -17,6 +17,10 @@ import {
   Calendar,
   Star,
   AlertCircle,
+  Table2,
+  X,
+  Eye,
+  Save,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -199,6 +203,10 @@ export default function FillSharedResourcePage() {
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [submissionScores, setSubmissionScores] = useState<ScoreResult | null>(null)
   const [highlightedUnanswered, setHighlightedUnanswered] = useState<Set<string>>(new Set())
+  const [showTableView, setShowTableView] = useState(false)
+
+  // Check if this is a table exercise
+  const isTableExercise = resource?.type === 'table'
 
   // Get blocks from resource
   const blocks: ResourceBlock[] = useMemo(() => {
@@ -210,7 +218,7 @@ export default function FillSharedResourcePage() {
   const questionBlocks = useMemo(() => {
     return blocks.filter(block =>
       ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert',
-       'numeric', 'slider', 'matrix_rating', 'mood', 'date_picker', 'time_input', 'list_input'].includes(block.type)
+       'numeric', 'slider', 'matrix_rating', 'mood', 'date_picker', 'time_input', 'list_input', 'table_exercise'].includes(block.type)
     )
   }, [blocks])
 
@@ -530,6 +538,30 @@ export default function FillSharedResourcePage() {
     return { total, maxScore, percentage, blockScores, interpretation }
   }
 
+  // Handle save for table exercises (saves without submitting)
+  const handleSaveTableExercise = async () => {
+    if (!response) return
+
+    setSubmitting(true)
+    try {
+      await saveNow()
+      toast.success(
+        locale === 'fr'
+          ? 'Entrées enregistrées'
+          : 'Entries saved'
+      )
+    } catch (error) {
+      console.error('Error saving:', error)
+      toast.error(
+        locale === 'fr'
+          ? 'Erreur lors de l\'enregistrement'
+          : 'Error saving entries'
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   // Handle submit
   const handleSubmit = async () => {
     if (!response || !resource) return
@@ -737,6 +769,14 @@ export default function FillSharedResourcePage() {
       case 'list_input':
         return Array.isArray(value) ? value.filter(Boolean).join(', ') : '-'
 
+      case 'table_exercise':
+        if (Array.isArray(value) && value.length > 0) {
+          return locale === 'fr'
+            ? `${value.length} entrée(s) ajoutée(s)`
+            : `${value.length} entr${value.length === 1 ? 'y' : 'ies'} added`
+        }
+        return locale === 'fr' ? 'Aucune entrée' : 'No entries'
+
       default:
         return JSON.stringify(value)
     }
@@ -748,7 +788,7 @@ export default function FillSharedResourcePage() {
     const blocks = (resource?.blocks || []) as ResourceBlock[]
     const questionBlocks = blocks.filter(b =>
       ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert',
-       'numeric', 'slider', 'matrix_rating', 'mood', 'date_picker', 'time_input', 'list_input'].includes(b.type)
+       'numeric', 'slider', 'matrix_rating', 'mood', 'date_picker', 'time_input', 'list_input', 'table_exercise'].includes(b.type)
     )
     const submittedResponses = (response.responses || {}) as Record<string, unknown>
     const scores = response.scores as { total?: number; maxScore?: number; percentage?: number } | null
@@ -986,6 +1026,11 @@ export default function FillSharedResourcePage() {
                   onChange={(value) => handleResponseChange(block.id, value)}
                   locale={locale}
                   disabled={submitting}
+                  settings={resource?.settings as {
+                    rowMode?: 'unlimited' | 'limited'
+                    minRows?: number
+                    maxRows?: number
+                  }}
                 />
               </motion.div>
             )
@@ -996,60 +1041,205 @@ export default function FillSharedResourcePage() {
         </div>
       </div>
 
-      {/* Fixed Bottom Submit Button */}
+      {/* Fixed Bottom Button - Different for table exercises */}
       <div className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100 px-4 py-3 safe-area-pb">
         <div className="max-w-lg mx-auto">
-          {progress < 100 && unansweredQuestions.length > 0 ? (
-            <div className="mb-3">
-              <p className="text-xs text-amber-700 font-medium mb-2">
-                {locale === 'fr'
-                  ? `${unansweredQuestions.length} question(s) restante(s)`
-                  : `${unansweredQuestions.length} question(s) remaining`}
-              </p>
-              <div className="flex gap-1.5 overflow-x-auto pb-1">
-                {unansweredQuestions.slice(0, 8).map(({ block, index }) => (
-                  <button
-                    key={block.id}
-                    onClick={() => scrollToUnanswered(block.id)}
-                    className="flex-shrink-0 w-8 h-8 text-xs bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-full font-medium transition-colors"
-                  >
-                    {index}
-                  </button>
-                ))}
-                {unansweredQuestions.length > 8 && (
-                  <span className="flex-shrink-0 w-8 h-8 text-xs text-amber-600 flex items-center justify-center">
-                    +{unansweredQuestions.length - 8}
-                  </span>
+          {isTableExercise ? (
+            // Table Exercise: Save & View buttons
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setShowTableView(true)}
+                variant="outline"
+                size="lg"
+                className="flex-1 h-12 rounded-xl border-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+              >
+                <Eye className="w-5 h-5 mr-2" />
+                {locale === 'fr' ? 'Voir tout' : 'View All'}
+              </Button>
+              <Button
+                onClick={handleSaveTableExercise}
+                disabled={submitting}
+                size="lg"
+                className="flex-1 h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-lg text-base font-semibold"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5 mr-2" />
+                    {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                  </>
                 )}
-              </div>
+              </Button>
             </div>
-          ) : null}
-          <Button
-            onClick={handleSubmit}
-            disabled={submitting || progress < 100}
-            size="lg"
-            className="w-full h-12 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 shadow-lg text-base font-semibold"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                {locale === 'fr' ? 'Soumission...' : 'Submitting...'}
-              </>
-            ) : progress < 100 ? (
-              <>
-                <span>{progress}%</span>
-                <span className="mx-2">•</span>
-                <span>{locale === 'fr' ? 'Incomplet' : 'Incomplete'}</span>
-              </>
-            ) : (
-              <>
-                <Send className="w-5 h-5 mr-2" />
-                {locale === 'fr' ? 'Soumettre' : 'Submit'}
-              </>
-            )}
-          </Button>
+          ) : (
+            // Regular worksheet: Submit button with unanswered questions helper
+            <>
+              {progress < 100 && unansweredQuestions.length > 0 ? (
+                <div className="mb-3">
+                  <p className="text-xs text-amber-700 font-medium mb-2">
+                    {locale === 'fr'
+                      ? `${unansweredQuestions.length} question(s) restante(s)`
+                      : `${unansweredQuestions.length} question(s) remaining`}
+                  </p>
+                  <div className="flex gap-1.5 overflow-x-auto pb-1">
+                    {unansweredQuestions.slice(0, 8).map(({ block, index }) => (
+                      <button
+                        key={block.id}
+                        onClick={() => scrollToUnanswered(block.id)}
+                        className="flex-shrink-0 w-8 h-8 text-xs bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-full font-medium transition-colors"
+                      >
+                        {index}
+                      </button>
+                    ))}
+                    {unansweredQuestions.length > 8 && (
+                      <span className="flex-shrink-0 w-8 h-8 text-xs text-amber-600 flex items-center justify-center">
+                        +{unansweredQuestions.length - 8}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+              <Button
+                onClick={handleSubmit}
+                disabled={submitting || progress < 100}
+                size="lg"
+                className="w-full h-12 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 shadow-lg text-base font-semibold"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    {locale === 'fr' ? 'Soumission...' : 'Submitting...'}
+                  </>
+                ) : progress < 100 ? (
+                  <>
+                    <span>{progress}%</span>
+                    <span className="mx-2">•</span>
+                    <span>{locale === 'fr' ? 'Incomplet' : 'Incomplete'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-5 h-5 mr-2" />
+                    {locale === 'fr' ? 'Soumettre' : 'Submit'}
+                  </>
+                )}
+              </Button>
+            </>
+          )}
         </div>
       </div>
+
+      {/* Table View Modal for table exercises */}
+      <AnimatePresence>
+        {showTableView && isTableExercise && (() => {
+          // Get table block and entries
+          const tableBlock = blocks.find(b => b.type === 'table_exercise')
+          const columns: { id: string; header: string; description?: string }[] =
+            (tableBlock && 'columns' in tableBlock && Array.isArray(tableBlock.columns))
+              ? tableBlock.columns
+              : []
+          const entries = (tableBlock && responses[tableBlock.id])
+            ? (responses[tableBlock.id] as Record<string, string>[])
+            : []
+
+          return (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center"
+              onClick={() => setShowTableView(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 100 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 100 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-4xl max-h-[85vh] overflow-hidden"
+              >
+                {/* Modal Header */}
+                <div className="bg-emerald-100 px-6 py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-200 flex items-center justify-center">
+                      <Table2 className="w-5 h-5 text-emerald-700" />
+                    </div>
+                    <div>
+                      <h2 className="font-semibold text-emerald-900">
+                        {locale === 'fr' ? 'Toutes les entrées' : 'All Entries'}
+                      </h2>
+                      <p className="text-sm text-emerald-700">
+                        {entries.length} {locale === 'fr'
+                          ? (entries.length === 1 ? 'entrée' : 'entrées')
+                          : (entries.length === 1 ? 'entry' : 'entries')}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowTableView(false)}
+                    className="p-2 hover:bg-emerald-200 rounded-xl transition-colors"
+                  >
+                    <X className="w-5 h-5 text-emerald-700" />
+                  </button>
+                </div>
+
+                {/* Table Content */}
+                <div className="p-4 overflow-auto max-h-[calc(85vh-80px)]">
+                  {entries.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500">
+                      <Table2 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <p>{locale === 'fr' ? 'Aucune entrée pour le moment' : 'No entries yet'}</p>
+                      <p className="text-sm mt-1">
+                        {locale === 'fr'
+                          ? 'Ajoutez des entrées ci-dessous'
+                          : 'Add entries below'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[600px] text-sm">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="px-4 py-3 text-left font-semibold text-gray-600 border-b border-gray-200 w-12">
+                              #
+                            </th>
+                            {columns.map((col) => (
+                              <th
+                                key={col.id}
+                                className="px-4 py-3 text-left font-semibold text-gray-900 border-b border-gray-200"
+                              >
+                                {col.header}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {entries.map((entry, index) => (
+                            <tr key={index} className="hover:bg-gray-50 border-b border-gray-100">
+                              <td className="px-4 py-3 text-gray-400 font-medium">
+                                {index + 1}
+                              </td>
+                              {columns.map((col) => (
+                                <td key={col.id} className="px-4 py-3 text-gray-700">
+                                  {entry[col.id] || (
+                                    <span className="text-gray-300 italic">-</span>
+                                  )}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )
+        })()}
+      </AnimatePresence>
 
       {/* Submission Confirmation Modal */}
       <SubmissionConfirmation

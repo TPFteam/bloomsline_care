@@ -1,5 +1,5 @@
 // Resource types
-export type ResourceType = 'worksheet' | 'exercise' | 'psychoeducation'
+export type ResourceType = 'worksheet' | 'exercise' | 'psychoeducation' | 'table'
 
 export type ResourceStatus = 'draft' | 'published' | 'archived'
 
@@ -38,6 +38,7 @@ export type BlockType =
   | 'date_picker'
   | 'time_input'
   | 'list_input'
+  | 'table_exercise'
 
 // Media file interface
 export interface MediaFile {
@@ -222,6 +223,19 @@ export interface ListInputBlock extends BaseBlock {
   required?: boolean
 }
 
+// Table Exercise block for table-based exercises
+export interface TableExerciseBlockColumn {
+  id: string
+  header: string
+  description?: string
+}
+
+export interface TableExerciseBlock extends BaseBlock {
+  type: 'table_exercise'
+  columns: TableExerciseBlockColumn[]
+  instructions?: string
+}
+
 // Union type for all blocks
 export type ResourceBlock =
   | HeadingBlock
@@ -249,6 +263,7 @@ export type ResourceBlock =
   | DatePickerBlock
   | TimeInputBlock
   | ListInputBlock
+  | TableExerciseBlock
 
 // Scoring range for worksheet scoring
 export interface ScoringRange {
@@ -487,6 +502,7 @@ export function getResourceTypeLabel(type: ResourceType | 'assessment', locale: 
     assessment: { en: 'Worksheet', fr: 'Feuille de travail' }, // Legacy - maps to worksheet
     exercise: { en: 'Exercise', fr: 'Exercice' },
     psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
+    table: { en: 'Table Exercise', fr: 'Exercice tableau' },
   }
   return labels[type][locale]
 }

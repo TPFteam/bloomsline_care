@@ -29,6 +29,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Table2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -45,6 +46,7 @@ const typeIcons: Record<ResourceType | 'assessment', React.ElementType> = {
   assessment: FileText, // Legacy - displays same as worksheet
   exercise: Puzzle,
   psychoeducation: BookOpen,
+  table: Table2,
 }
 
 const typeConfig: Record<ResourceType | 'assessment', {
@@ -92,6 +94,15 @@ const typeConfig: Record<ResourceType | 'assessment', {
     iconBg: 'bg-purple-100/80',
     glow: 'shadow-purple-200/50',
     lightBg: 'from-purple-50 to-purple-100/50',
+  },
+  table: {
+    gradient: 'from-emerald-400 to-emerald-600',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    border: 'border-emerald-200',
+    iconBg: 'bg-emerald-100/80',
+    glow: 'shadow-emerald-200/50',
+    lightBg: 'from-emerald-50 to-emerald-100/50',
   },
 }
 
@@ -475,6 +486,96 @@ export default function ResourceDetailPage() {
                 </div>
               </div>
             </motion.div>
+
+            {/* Table Exercise Preview */}
+            {resource.type === 'table' && resource.blocks && resource.blocks.length > 0 && (() => {
+              const tableBlock = resource.blocks.find((b: ResourceBlock) => b.type === 'table_exercise')
+              if (!tableBlock) return null
+              const columns = ('columns' in tableBlock && Array.isArray(tableBlock.columns)) ? tableBlock.columns : []
+              const tableInstructions = ('instructions' in tableBlock && typeof tableBlock.instructions === 'string') ? tableBlock.instructions : null
+
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+                >
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100/80 flex items-center justify-center">
+                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-md">
+                        <Table2 className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">
+                        {locale === 'fr' ? 'Structure du tableau' : 'Table Structure'}
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        {columns.length} {locale === 'fr' ? 'colonne(s)' : 'column(s)'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Instructions */}
+                  {tableInstructions && (
+                    <div className="mb-5 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                      <p className="text-sm text-emerald-700">{tableInstructions}</p>
+                    </div>
+                  )}
+
+                  {/* Table Preview */}
+                  <div className="overflow-x-auto rounded-xl border border-gray-200">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-emerald-100">
+                          {columns.map((col: { id: string; header: string; description?: string }) => (
+                            <th
+                              key={col.id}
+                              className="px-4 py-3 text-left font-semibold text-emerald-900 border-b border-emerald-200"
+                            >
+                              {col.header}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Description row */}
+                        {columns.some((col: { description?: string }) => col.description) && (
+                          <tr className="bg-emerald-50/50">
+                            {columns.map((col: { id: string; description?: string }) => (
+                              <td
+                                key={col.id}
+                                className="px-4 py-2 text-xs text-emerald-700 italic border-b border-emerald-100"
+                              >
+                                {col.description || '-'}
+                              </td>
+                            ))}
+                          </tr>
+                        )}
+                        {/* Sample entry row */}
+                        <tr>
+                          {columns.map((col: { id: string }) => (
+                            <td
+                              key={col.id}
+                              className="px-4 py-3 text-gray-400 border-b border-gray-100"
+                            >
+                              {locale === 'fr' ? 'Entrée...' : 'Entry...'}
+                            </td>
+                          ))}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <p className="text-xs text-gray-400 mt-3 text-center">
+                    {locale === 'fr'
+                      ? 'Les membres pourront ajouter plusieurs lignes'
+                      : 'Members will be able to add multiple rows'}
+                  </p>
+                </motion.div>
+              )
+            })()}
 
             {/* Assessment/Scored Worksheet Questions Preview */}
             {hasScoring && worksheetSettings?.questions && worksheetSettings.questions.length > 0 && (

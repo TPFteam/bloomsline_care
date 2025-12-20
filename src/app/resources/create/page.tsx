@@ -20,6 +20,7 @@ import {
   Trash2,
   Sparkles,
   CheckCircle,
+  Table2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -27,7 +28,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import type { ResourceCategory } from '@/types/library'
 
 // Simplified resource types for practitioners based on research
-type PractitionerResourceType = 'worksheet' | 'psychoeducation' | 'exercise'
+type PractitionerResourceType = 'worksheet' | 'psychoeducation' | 'exercise' | 'table'
 
 interface ResourceTypeOption {
   id: PractitionerResourceType
@@ -39,7 +40,7 @@ interface ResourceTypeOption {
   comingSoon?: boolean
 }
 
-// 3 main resource types practitioners commonly create
+// 4 main resource types practitioners commonly create
 const resourceTypes: ResourceTypeOption[] = [
   {
     id: 'worksheet',
@@ -48,6 +49,14 @@ const resourceTypes: ResourceTypeOption[] = [
     iconBg: 'bg-blue-100/80',
     glow: 'shadow-blue-200/50',
     examples: ['CBT thought records', 'Mood diaries', 'Assessments with scoring', 'Symptom checklists'],
+  },
+  {
+    id: 'table',
+    icon: Table2,
+    gradient: 'from-emerald-400 to-emerald-600',
+    iconBg: 'bg-emerald-100/80',
+    glow: 'shadow-emerald-200/50',
+    examples: ['Thought records', 'Emotion logs', 'Behavior tracking', 'Situation analysis'],
   },
   {
     id: 'psychoeducation',
@@ -70,6 +79,7 @@ const resourceTypes: ResourceTypeOption[] = [
 
 const typeLabels: Record<PractitionerResourceType, { en: string; fr: string }> = {
   worksheet: { en: 'Worksheet', fr: 'Feuille de travail' },
+  table: { en: 'Table Exercise', fr: 'Exercice tableau' },
   psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
   exercise: { en: 'Exercise / Activity', fr: 'Exercice / Activité' },
 }
@@ -78,6 +88,10 @@ const typeDescriptions: Record<PractitionerResourceType, { en: string; fr: strin
   worksheet: {
     en: 'Structured forms and questionnaires with optional scoring for assessments',
     fr: 'Formulaires structurés et questionnaires avec notation optionnelle pour les évaluations',
+  },
+  table: {
+    en: 'Table-based exercises where members can add multiple entries (thought records, logs)',
+    fr: 'Exercices sous forme de tableau où les membres peuvent ajouter plusieurs entrées',
   },
   psychoeducation: {
     en: 'Educational materials explaining conditions, treatments, or strategies',

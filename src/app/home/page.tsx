@@ -191,7 +191,7 @@ export default function MyResourcesPage() {
   return (
     <MemberLayout>
       {/* Header */}
-      <div className="px-5 pt-14 pb-2 safe-area-pt">
+      <div className="px-5 pt-6 pb-2 safe-area-pt">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-[28px] font-bold text-gray-900 leading-tight">

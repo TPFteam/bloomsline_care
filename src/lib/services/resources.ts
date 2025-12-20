@@ -776,6 +776,7 @@ export async function getResourceStats(): Promise<{
     assessment: 0, // Legacy type - counts separately but displays as worksheet
     exercise: 0,
     psychoeducation: 0,
+    table: 0,
   }
 
   const byStatus: Record<ResourceStatus, number> = {
