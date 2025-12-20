@@ -31,8 +31,15 @@ export async function sendMessage(request: ChatRequest): Promise<ChatResponse> {
   })
 
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to send message')
+    let errorMessage = 'Failed to send message'
+    try {
+      const errorData = await response.json()
+      errorMessage = errorData.error || errorMessage
+    } catch {
+      // Response might not be JSON
+      errorMessage = `Server error: ${response.status}`
+    }
+    throw new Error(errorMessage)
   }
 
   return response.json()
