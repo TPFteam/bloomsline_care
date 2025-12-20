@@ -27,6 +27,7 @@ type CaptureType = 'photo' | 'video' | 'voice' | 'write'
 type Step = 'select' | 'capture' | 'preview' | 'details'
 
 const moodTags = [
+  // Positive emotions
   { id: 'grateful', emoji: '🙏', labelEn: 'Grateful', labelFr: 'Reconnaissant' },
   { id: 'peaceful', emoji: '🌿', labelEn: 'Peaceful', labelFr: 'Paisible' },
   { id: 'joyful', emoji: '✨', labelEn: 'Joyful', labelFr: 'Joyeux' },
@@ -35,6 +36,13 @@ const moodTags = [
   { id: 'calm', emoji: '🧘', labelEn: 'Calm', labelFr: 'Calme' },
   { id: 'hopeful', emoji: '🌟', labelEn: 'Hopeful', labelFr: 'Plein d\'espoir' },
   { id: 'proud', emoji: '🏆', labelEn: 'Proud', labelFr: 'Fier' },
+  // Softer/processing emotions
+  { id: 'overwhelmed', emoji: '🌊', labelEn: 'Overwhelmed', labelFr: 'Submergé' },
+  { id: 'tired', emoji: '🌙', labelEn: 'Tired', labelFr: 'Fatigué' },
+  { id: 'uncertain', emoji: '🌫️', labelEn: 'Uncertain', labelFr: 'Incertain' },
+  { id: 'tender', emoji: '🥀', labelEn: 'Tender', labelFr: 'Sensible' },
+  { id: 'restless', emoji: '💭', labelEn: 'Restless', labelFr: 'Agité' },
+  { id: 'heavy', emoji: '🌧️', labelEn: 'Heavy', labelFr: 'Lourd' },
 ]
 
 const captureTypes = [

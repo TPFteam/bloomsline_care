@@ -21,6 +21,7 @@ import {
   Check,
   ChevronLeft,
   MessageCircle,
+  Sparkles,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/i18n/context'
@@ -84,16 +85,16 @@ function BloomPill({ isDark, locale, onClick }: { isDark: boolean; locale: strin
       {/* Ambient glow behind pill */}
       <motion.div
         animate={{
-          opacity: [0.3, 0.5, 0.3],
-          scale: [1, 1.1, 1],
+          opacity: isDark ? [0.4, 0.6, 0.4] : [0.6, 0.8, 0.6],
+          scale: [1, 1.15, 1],
         }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-        className={`absolute inset-0 -z-10 rounded-full blur-2xl ${
+        className={`absolute inset-0 -z-10 rounded-full ${
           isDark
-            ? 'bg-gradient-to-r from-emerald-500/30 via-teal-500/30 to-cyan-500/30'
-            : 'bg-gradient-to-r from-emerald-400/20 via-teal-400/20 to-cyan-400/20'
+            ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 blur-2xl'
+            : 'bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 blur-3xl'
         }`}
-        style={{ transform: 'scale(1.5)' }}
+        style={{ transform: 'scale(2.2)' }}
       />
 
       <motion.button
@@ -186,6 +187,14 @@ export default function MomentsPage() {
   const [selectedMoods, setSelectedMoods] = useState<string[]>([])
   const [dateFilter, setDateFilter] = useState<DateFilter>('all')
   const [prefsLoaded, setPrefsLoaded] = useState(false)
+  const [reflectMoment, setReflectMoment] = useState<Moment | null>(null)
+
+  // Pick a random moment for reflection
+  const openReflection = () => {
+    if (moments.length === 0) return
+    const randomIndex = Math.floor(Math.random() * moments.length)
+    setReflectMoment(moments[randomIndex])
+  }
 
   // Load preferences from database
   useEffect(() => {
@@ -461,6 +470,19 @@ export default function MomentsPage() {
                 </span>
               </button>
             </Link>
+
+            {/* Reflect button */}
+            {moments.length > 0 && (
+              <button
+                onClick={openReflection}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl ${theme.cardBg} border ${theme.cardBorder} ${theme.textMuted} hover:${isDark ? 'bg-white/10' : 'bg-black/5'} transition-colors`}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span className="text-sm">
+                  {locale === 'fr' ? 'Revivre' : 'Revisit'}
+                </span>
+              </button>
+            )}
           </motion.div>
 
           {/* Filter Panel */}
@@ -732,6 +754,164 @@ export default function MomentsPage() {
         onClose={() => setIsBloomOpen(false)}
         isDark={isDark}
       />
+
+      {/* Reflection Modal - Peaceful full-screen experience */}
+      <AnimatePresence>
+        {reflectMoment && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+            onClick={() => setReflectMoment(null)}
+          >
+            {/* Gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900" />
+
+            {/* Ambient orbs */}
+            <motion.div
+              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+              transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute top-20 left-10 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl"
+            />
+            <motion.div
+              animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.4, 0.2] }}
+              transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+              className="absolute bottom-32 right-10 w-48 h-48 bg-teal-500/20 rounded-full blur-3xl"
+            />
+
+            {/* Content */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -30 }}
+              transition={{ delay: 0.3, duration: 0.6 }}
+              className="relative z-10 w-full max-w-md px-6 text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="text-white/40 text-sm mb-8 tracking-wide"
+              >
+                {locale === 'fr' ? 'Un moment pour vous' : 'A moment for you'}
+              </motion.p>
+
+              {/* Media */}
+              {reflectMoment.media_url && reflectMoment.type === 'photo' && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.4, duration: 0.6 }}
+                  className="mb-8 rounded-2xl overflow-hidden shadow-2xl"
+                >
+                  <img src={reflectMoment.media_url} alt="" className="w-full" />
+                </motion.div>
+              )}
+
+              {reflectMoment.media_url && reflectMoment.type === 'video' && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.4, duration: 0.6 }}
+                  className="mb-8 rounded-2xl overflow-hidden shadow-2xl"
+                >
+                  <video src={reflectMoment.media_url} controls playsInline className="w-full" />
+                </motion.div>
+              )}
+
+              {reflectMoment.media_url && reflectMoment.type === 'voice' && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="mb-8"
+                >
+                  <audio src={reflectMoment.media_url} controls className="w-full" />
+                </motion.div>
+              )}
+
+              {/* Text content */}
+              {(reflectMoment.text_content || reflectMoment.caption) && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6, duration: 0.6 }}
+                  className="text-white/90 text-lg leading-relaxed mb-6 italic"
+                >
+                  "{reflectMoment.text_content || reflectMoment.caption}"
+                </motion.p>
+              )}
+
+              {/* Date */}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+                className="text-white/30 text-sm mb-8"
+              >
+                {formatDate(reflectMoment.created_at)}
+              </motion.p>
+
+              {/* Moods */}
+              {reflectMoment.moods && reflectMoment.moods.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1 }}
+                  className="flex flex-wrap justify-center gap-2 mb-10"
+                >
+                  {reflectMoment.moods.map(mood => (
+                    <span
+                      key={mood}
+                      className="px-3 py-1.5 bg-white/10 rounded-full text-white/60 text-sm capitalize"
+                    >
+                      {mood}
+                    </span>
+                  ))}
+                </motion.div>
+              )}
+
+              {/* Action buttons */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.2 }}
+                className="flex justify-center gap-4"
+              >
+                <button
+                  onClick={() => setReflectMoment(null)}
+                  className="px-6 py-2.5 rounded-full bg-white/10 text-white/70 text-sm hover:bg-white/20 transition-colors"
+                >
+                  {locale === 'fr' ? 'Fermer' : 'Close'}
+                </button>
+                <button
+                  onClick={() => {
+                    setReflectMoment(null)
+                    openReflection()
+                  }}
+                  className="px-6 py-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm hover:opacity-90 transition-opacity"
+                >
+                  {locale === 'fr' ? 'Un autre' : 'Another'}
+                </button>
+              </motion.div>
+            </motion.div>
+
+            {/* Close hint */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.5 }}
+              className="absolute bottom-8 text-white/20 text-xs"
+            >
+              {locale === 'fr' ? 'Tapez n\'importe où pour fermer' : 'Tap anywhere to close'}
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Moment Detail Modal */}
       <AnimatePresence>

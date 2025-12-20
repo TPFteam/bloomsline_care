@@ -668,15 +668,69 @@ function MatrixRatingBlock({
   disabled: boolean
   locale: string
 }) {
-  const items = ('matrixItems' in block && Array.isArray(block.matrixItems)) ? block.matrixItems : []
+  // Get matrix items - if empty, treat the content as the single item
+  const items = ('matrixItems' in block && Array.isArray(block.matrixItems) && block.matrixItems.length > 0)
+    ? block.matrixItems
+    : []
+
+  // If no matrixItems but has content, use single item mode (common case for individual rating questions)
+  const isSingleItemMode = items.length === 0 && typeof block.content === 'string'
+
   const scaleMax = ('matrixScaleMax' in block ? block.matrixScaleMax : 5) as number
   const labels = 'matrixScaleLabels' in block ? block.matrixScaleLabels as { min?: string; max?: string } : {}
   const ratings = value || {}
 
-  const setRating = (itemIndex: string, rating: number) => {
-    onChange({ ...ratings, [itemIndex]: rating })
+  const setRating = (itemKey: string, rating: number) => {
+    onChange({ ...ratings, [itemKey]: rating })
   }
 
+  // Single item mode - simpler UI with larger clickable buttons
+  if (isSingleItemMode) {
+    const currentRating = ratings['0'] || 0
+
+    return (
+      <div>
+        <label className="block text-gray-900 font-medium mb-4">
+          {block.content as string}
+          {'required' in block && block.required && (
+            <span className="text-red-500 ml-1">*</span>
+          )}
+        </label>
+        <div className="flex items-center justify-center gap-3 py-2">
+          {Array.from({ length: scaleMax }).map((_, i) => {
+            const ratingValue = i + 1
+            const isSelected = currentRating === ratingValue
+
+            return (
+              <motion.button
+                key={i}
+                type="button"
+                disabled={disabled}
+                onClick={() => setRating('0', ratingValue)}
+                whileHover={!disabled ? { scale: 1.1 } : {}}
+                whileTap={!disabled ? { scale: 0.95 } : {}}
+                className={`w-12 h-12 rounded-xl font-semibold text-lg transition-all ${
+                  isSelected
+                    ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/30'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                {ratingValue}
+              </motion.button>
+            )
+          })}
+        </div>
+        {(labels.min || labels.max) && (
+          <div className="flex justify-between text-xs text-gray-400 mt-2 px-4">
+            <span>{labels.min || (locale === 'fr' ? 'Pas du tout' : 'Not at all')}</span>
+            <span>{labels.max || (locale === 'fr' ? 'Tout à fait' : 'Completely')}</span>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Multi-item mode - table UI
   return (
     <div>
       <label className="block text-gray-900 font-medium mb-3">

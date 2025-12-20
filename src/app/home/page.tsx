@@ -7,16 +7,10 @@ import {
   FileText,
   Clock,
   CheckCircle,
-  AlertCircle,
   Loader2,
-  Calendar,
   ChevronRight,
   BookOpen,
   Puzzle,
-  Flag,
-  Eye,
-  Share2,
-  User,
   Check,
   X,
   UserPlus,
@@ -25,6 +19,16 @@ import {
   Leaf,
   Heart,
   Sparkles,
+  Smile,
+  Sun,
+  Zap,
+  CloudRain,
+  Flame,
+  Star,
+  Trophy,
+  Wind,
+  Moon,
+  LogOut,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -44,6 +48,108 @@ import {
 import { toast } from 'sonner'
 import MemberLayout from '@/components/member/MemberLayout'
 import type { Member } from '@/types/member'
+import { getMemberMoments, type Moment } from '@/lib/services/moments'
+
+// Emotion scores: positive = higher, negative = lower
+const EMOTION_SCORES: Record<string, number> = {
+  // Positive (high scores)
+  grateful: 90,
+  joyful: 95,
+  inspired: 85,
+  loved: 92,
+  peaceful: 80,
+  calm: 75,
+  hopeful: 78,
+  proud: 88,
+  // Softer/processing (mid-low scores)
+  overwhelmed: 35,
+  tired: 40,
+  uncertain: 45,
+  tender: 50,
+  restless: 42,
+  heavy: 32,
+  // Legacy (for old data)
+  anxious: 35,
+  sad: 25,
+  frustrated: 30,
+}
+
+// Emotion colors - vibrant gradients
+const EMOTION_COLORS: Record<string, { from: string; to: string; glow: string }> = {
+  // Positive emotions - warm/bright colors
+  grateful: { from: '#34d399', to: '#10b981', glow: 'rgba(52, 211, 153, 0.5)' },
+  joyful: { from: '#fbbf24', to: '#f59e0b', glow: 'rgba(251, 191, 36, 0.5)' },
+  inspired: { from: '#a78bfa', to: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.5)' },
+  loved: { from: '#fb7185', to: '#f43f5e', glow: 'rgba(244, 63, 94, 0.5)' },
+  peaceful: { from: '#22d3ee', to: '#06b6d4', glow: 'rgba(6, 182, 212, 0.5)' },
+  calm: { from: '#60a5fa', to: '#3b82f6', glow: 'rgba(59, 130, 246, 0.5)' },
+  hopeful: { from: '#facc15', to: '#eab308', glow: 'rgba(234, 179, 8, 0.5)' },
+  proud: { from: '#fb923c', to: '#f97316', glow: 'rgba(249, 115, 22, 0.5)' },
+  // Softer/processing emotions - muted/soft colors
+  overwhelmed: { from: '#94a3b8', to: '#64748b', glow: 'rgba(100, 116, 139, 0.5)' },
+  tired: { from: '#a5b4fc', to: '#818cf8', glow: 'rgba(165, 180, 252, 0.5)' },
+  uncertain: { from: '#cbd5e1', to: '#94a3b8', glow: 'rgba(148, 163, 184, 0.5)' },
+  tender: { from: '#fda4af', to: '#fb7185', glow: 'rgba(253, 164, 175, 0.5)' },
+  restless: { from: '#c4b5fd', to: '#a78bfa', glow: 'rgba(196, 181, 253, 0.5)' },
+  heavy: { from: '#9ca3af', to: '#6b7280', glow: 'rgba(107, 114, 128, 0.5)' },
+  // Legacy
+  anxious: { from: '#fbbf24', to: '#d97706', glow: 'rgba(217, 119, 6, 0.5)' },
+  sad: { from: '#818cf8', to: '#6366f1', glow: 'rgba(99, 102, 241, 0.5)' },
+  frustrated: { from: '#f87171', to: '#ef4444', glow: 'rgba(239, 68, 68, 0.5)' },
+}
+
+// Emotion icons
+const EMOTION_ICONS: Record<string, React.ElementType> = {
+  // Positive
+  grateful: Heart,
+  joyful: Smile,
+  inspired: Zap,
+  loved: Heart,
+  peaceful: Moon,
+  calm: Wind,
+  hopeful: Star,
+  proud: Trophy,
+  // Softer/processing
+  overwhelmed: CloudRain,
+  tired: Moon,
+  uncertain: CloudRain,
+  tender: Heart,
+  restless: Wind,
+  heavy: CloudRain,
+  // Legacy
+  anxious: CloudRain,
+  sad: CloudRain,
+  frustrated: Flame,
+}
+
+// Get color for moment's primary emotion
+function getMomentColor(moment: Moment): { from: string; to: string; glow: string } {
+  if (!moment.moods || moment.moods.length === 0) {
+    return { from: '#e5e7eb', to: '#d1d5db', glow: 'rgba(209, 213, 219, 0.4)' }
+  }
+  return EMOTION_COLORS[moment.moods[0]] || { from: '#e5e7eb', to: '#d1d5db', glow: 'rgba(209, 213, 219, 0.4)' }
+}
+
+// Get icon for moment's primary emotion
+function getMomentIcon(moment: Moment): React.ElementType {
+  if (!moment.moods || moment.moods.length === 0) return Sun
+  return EMOTION_ICONS[moment.moods[0]] || Sun
+}
+
+// Get average emotion score for a moment
+function getMomentScore(moment: Moment): number {
+  if (!moment.moods || moment.moods.length === 0) return 60 // neutral
+  const scores = moment.moods.map(m => EMOTION_SCORES[m] || 60)
+  return scores.reduce((a, b) => a + b, 0) / scores.length
+}
+
+// Get time period from date
+function getTimePeriod(date: Date): 'morning' | 'afternoon' | 'evening' {
+  const hour = date.getHours()
+  if (hour < 12) return 'morning'
+  if (hour < 18) return 'afternoon'
+  return 'evening'
+}
 
 // Resource type icons
 const typeIcons: Record<string, React.ElementType> = {
@@ -75,8 +181,12 @@ export default function MyResourcesPage() {
   const [practitioners, setPractitioners] = useState<PractitionerProfile[]>([])
   const [resources, setResources] = useState<MemberResourceItem[]>([])
   const [invitations, setInvitations] = useState<PendingInvitation[]>([])
+  const [todaysMoments, setTodaysMoments] = useState<Moment[]>([])
   const [loading, setLoading] = useState(true)
   const [processingInvitation, setProcessingInvitation] = useState<string | null>(null)
+  const [previewMoment, setPreviewMoment] = useState<Moment | null>(null)
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -94,6 +204,19 @@ export default function MyResourcesPage() {
 
       const pendingInvitations = await getPendingInvitations()
       setInvitations(pendingInvitations)
+
+      // Load today's moments
+      const allMoments = await getMemberMoments()
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const todaysOnly = allMoments.filter(m => {
+        const momentDate = new Date(m.created_at)
+        momentDate.setHours(0, 0, 0, 0)
+        return momentDate.getTime() === today.getTime()
+      })
+      setTodaysMoments(todaysOnly.sort((a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      ))
 
       const memberRecords = await getAllMemberRecords()
       setMembers(memberRecords)
@@ -165,6 +288,19 @@ export default function MyResourcesPage() {
     }
   }
 
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      router.push('/login')
+    } catch (error) {
+      console.error('Error logging out:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors de la déconnexion' : 'Error logging out')
+      setIsLoggingOut(false)
+    }
+  }
+
   if (loading) {
     return (
       <MemberLayout>
@@ -214,9 +350,59 @@ export default function MyResourcesPage() {
                 <span className="absolute top-0 right-0 w-2 h-2 bg-emerald-500 rounded-full" />
               )}
             </button>
-            <button className="p-1.5">
-              <Settings className="w-5 h-5 text-gray-600" />
-            </button>
+            <div className="relative">
+              <button
+                className="p-1.5"
+                onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+              >
+                <Settings className="w-5 h-5 text-gray-600" />
+              </button>
+
+              {/* Settings Dropdown */}
+              <AnimatePresence>
+                {showSettingsMenu && (
+                  <>
+                    {/* Backdrop */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowSettingsMenu(false)}
+                    />
+                    {/* Menu */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 min-w-[160px] z-50"
+                    >
+                      <button
+                        onClick={() => {
+                          setShowSettingsMenu(false)
+                          router.push('/settings')
+                        }}
+                        className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+                      >
+                        <Settings className="w-4 h-4 text-gray-500" />
+                        {locale === 'fr' ? 'Paramètres' : 'Settings'}
+                      </button>
+                      <div className="border-t border-gray-100 my-1" />
+                      <button
+                        onClick={handleLogout}
+                        disabled={isLoggingOut}
+                        className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                      >
+                        {isLoggingOut ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <LogOut className="w-4 h-4" />
+                        )}
+                        {locale === 'fr' ? 'Déconnexion' : 'Logout'}
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </div>
@@ -276,6 +462,183 @@ export default function MyResourcesPage() {
             </motion.div>
           ))}
         </AnimatePresence>
+
+        {/* Today's Journey - Emotional Flow Visualization */}
+        {todaysMoments.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-3xl p-5 border border-gray-100 overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">
+                {locale === 'fr' ? 'Parcours du jour' : "Today's Journey"}
+              </h3>
+              <span className="text-xs text-gray-400">
+                6 AM • 10 PM
+              </span>
+            </div>
+
+            {/* Journey Visualization */}
+            <div className="relative h-40">
+              {/* Background grid lines */}
+              <div className="absolute inset-0">
+                <div className="absolute inset-x-0 top-1/4 border-t border-gray-100/50" />
+                <div className="absolute inset-x-0 top-1/2 border-t border-gray-200/50" />
+                <div className="absolute inset-x-0 top-3/4 border-t border-gray-100/50" />
+              </div>
+
+              {/* Future time fade overlay */}
+              {(() => {
+                const currentHour = new Date().getHours() + new Date().getMinutes() / 60
+                const currentPosition = Math.max(0, Math.min(100, ((currentHour - 6) / 16) * 100))
+                return (
+                  <div
+                    className="absolute top-0 bottom-0 bg-gradient-to-r from-transparent to-gray-50/90 pointer-events-none z-10"
+                    style={{
+                      left: `${currentPosition}%`,
+                      right: 0,
+                    }}
+                  />
+                )
+              })()}
+
+              {/* Connecting line between moments */}
+              {todaysMoments.length > 1 && (
+                <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                  <defs>
+                    <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#10b981" />
+                      <stop offset="100%" stopColor="#14b8a6" />
+                    </linearGradient>
+                  </defs>
+                  {todaysMoments
+                    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                    .map((moment, i, arr) => {
+                      if (i === 0) return null
+                      const prev = arr[i - 1]
+                      const prevTime = new Date(prev.created_at)
+                      const currTime = new Date(moment.created_at)
+
+                      const prevHours = prevTime.getHours() + prevTime.getMinutes() / 60
+                      const currHours = currTime.getHours() + currTime.getMinutes() / 60
+
+                      const prevX = ((prevHours - 6) / 16) * 100
+                      const currX = ((currHours - 6) / 16) * 100
+
+                      const prevScore = getMomentScore(prev)
+                      const currScore = getMomentScore(moment)
+
+                      // Y: high score = top (low %), low score = bottom (high %)
+                      const prevY = 100 - ((prevScore / 100) * 70 + 15)
+                      const currY = 100 - ((currScore / 100) * 70 + 15)
+
+                      return (
+                        <motion.line
+                          key={`line-${moment.id}`}
+                          initial={{ pathLength: 0, opacity: 0 }}
+                          animate={{ pathLength: 1, opacity: 1 }}
+                          transition={{ delay: 0.3 + i * 0.1, duration: 0.5 }}
+                          x1={`${prevX}%`}
+                          y1={`${prevY}%`}
+                          x2={`${currX}%`}
+                          y2={`${currY}%`}
+                          stroke="url(#flowGradient)"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          opacity="0.6"
+                        />
+                      )
+                    })}
+                </svg>
+              )}
+
+              {/* Moment orbs - positioned by time and emotion score */}
+              <div className="absolute inset-0">
+                {todaysMoments
+                  .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                  .map((moment, i) => {
+                    const score = getMomentScore(moment)
+                    const momentTime = new Date(moment.created_at)
+                    const hours = momentTime.getHours() + momentTime.getMinutes() / 60
+
+                    // X: Time position (6 AM = 0%, 10 PM = 100%)
+                    const timePosition = Math.max(0, Math.min(100, ((hours - 6) / 16) * 100))
+                    // Y: Score position (high score = top, low score = bottom)
+                    const topPosition = 100 - ((score / 100) * 70 + 15)
+
+                    const colors = getMomentColor(moment)
+                    const Icon = getMomentIcon(moment)
+
+                    return (
+                      <motion.div
+                        key={moment.id}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.2 + i * 0.15, type: 'spring', stiffness: 300, damping: 20 }}
+                        className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20"
+                        style={{ left: `${timePosition}%`, top: `${topPosition}%` }}
+                        onClick={() => setPreviewMoment(moment)}
+                      >
+                        <motion.div
+                          animate={{ scale: [1, 1.05, 1] }}
+                          transition={{ duration: 3, repeat: Infinity, delay: i * 0.3 }}
+                          whileHover={{ scale: 1.15 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="relative w-11 h-11 rounded-full flex items-center justify-center"
+                          style={{
+                            background: `linear-gradient(135deg, ${colors.from} 0%, ${colors.to} 100%)`,
+                            boxShadow: `0 0 24px ${colors.glow}, 0 4px 12px rgba(0,0,0,0.15)`,
+                          }}
+                        >
+                          <Icon className="w-5 h-5 text-white drop-shadow-sm" strokeWidth={2.5} />
+                        </motion.div>
+                      </motion.div>
+                    )
+                  })}
+              </div>
+
+              {/* Current time indicator */}
+              <motion.div
+                initial={{ scaleY: 0, opacity: 0 }}
+                animate={{ scaleY: 1, opacity: 1 }}
+                transition={{ delay: 0.8 }}
+                className="absolute top-0 bottom-0 w-px bg-emerald-400/60 z-10"
+                style={{
+                  left: `${Math.max(0, Math.min(((new Date().getHours() + new Date().getMinutes() / 60 - 6) / 16) * 100, 100))}%`,
+                  originY: 0,
+                }}
+              >
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+              </motion.div>
+            </div>
+
+            {/* Time labels */}
+            <div className="flex justify-between mt-2 text-xs text-gray-400">
+              <span>{locale === 'fr' ? 'Matin' : 'Morning'}</span>
+              <span>{locale === 'fr' ? 'Après-midi' : 'Afternoon'}</span>
+              <span>{locale === 'fr' ? 'Soir' : 'Evening'}</span>
+            </div>
+
+            {/* Summary */}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-sm text-gray-600">
+                {todaysMoments.length} {locale === 'fr' ? 'moment(s) capturé(s) aujourd\'hui' : 'moment(s) captured today'}
+                {' • '}
+                <span className="text-emerald-600 font-medium">
+                  {(() => {
+                    const avgScore = todaysMoments.reduce((acc, m) => acc + getMomentScore(m), 0) / todaysMoments.length
+                    if (avgScore >= 80) return locale === 'fr' ? 'Très positif' : 'Very positive'
+                    if (avgScore >= 60) return locale === 'fr' ? 'Positif' : 'Positive'
+                    if (avgScore >= 40) return locale === 'fr' ? 'Neutre' : 'Neutral'
+                    return locale === 'fr' ? 'Difficile' : 'Challenging'
+                  })()}
+                </span>
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         {/* Your Flow Today Card */}
         <motion.div
@@ -501,6 +864,91 @@ export default function MyResourcesPage() {
         {/* Bottom spacing */}
         <div className="h-8" />
       </div>
+
+      {/* Preview Modal */}
+      <AnimatePresence>
+        {previewMoment && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+            onClick={() => setPreviewMoment(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl w-full max-w-xs overflow-hidden shadow-2xl"
+            >
+              {/* Preview Media */}
+              {previewMoment.media_url && previewMoment.type === 'photo' && (
+                <div className="w-full aspect-square">
+                  <img
+                    src={previewMoment.media_url}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              {previewMoment.media_url && previewMoment.type === 'video' && (
+                <div className="w-full aspect-square bg-gray-900 flex items-center justify-center">
+                  <video
+                    src={previewMoment.media_url}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              {/* Content */}
+              <div className="p-4">
+                {/* Mood tags */}
+                {previewMoment.moods && previewMoment.moods.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {previewMoment.moods.map(mood => {
+                      const moodColors = getMomentColor({ ...previewMoment, moods: [mood] })
+                      return (
+                        <span
+                          key={mood}
+                          className="px-2.5 py-1 rounded-full text-xs font-medium text-white capitalize"
+                          style={{ background: `linear-gradient(135deg, ${moodColors.from}, ${moodColors.to})` }}
+                        >
+                          {mood}
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Text */}
+                {(previewMoment.text_content || previewMoment.caption) && (
+                  <p className="text-gray-700 text-sm line-clamp-3 mb-3">
+                    {previewMoment.text_content || previewMoment.caption}
+                  </p>
+                )}
+
+                {/* Time */}
+                <p className="text-gray-400 text-xs mb-4">
+                  {new Date(previewMoment.created_at).toLocaleTimeString(locale, {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+
+                {/* Close button */}
+                <button
+                  onClick={() => setPreviewMoment(null)}
+                  className="w-full py-2.5 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium"
+                >
+                  {locale === 'fr' ? 'Fermer' : 'Close'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </MemberLayout>
   )
 }
