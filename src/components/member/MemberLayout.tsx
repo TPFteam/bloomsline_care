@@ -11,14 +11,40 @@ import {
   MoreHorizontal,
   Scale,
   Camera,
-  Sparkles,
   Circle,
   X,
+  Sun,
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 
 interface MemberLayoutProps {
   children: React.ReactNode
+}
+
+// Animated icon wrapper component
+function AnimatedIcon({
+  Icon,
+  isActive,
+  className
+}: {
+  Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
+  isActive: boolean
+  className?: string
+}) {
+  return (
+    <motion.div
+      animate={isActive ? {
+        scale: [1, 1.15, 1],
+        rotate: [0, -5, 5, 0],
+      } : {}}
+      transition={{ duration: 0.4, ease: "easeInOut" }}
+    >
+      <Icon
+        className={className}
+        strokeWidth={isActive ? 2.5 : 2}
+      />
+    </motion.div>
+  )
 }
 
 // Primary nav items (always visible)
@@ -30,10 +56,10 @@ const primaryNavItems = [
     labelFr: 'Accueil',
   },
   {
-    href: '/rituals',
-    icon: Circle,
-    labelEn: 'Rituals',
-    labelFr: 'Rituels',
+    href: '/moments',
+    icon: Sun,
+    labelEn: 'Moments',
+    labelFr: 'Moments',
   },
   {
     href: '/progress',
@@ -45,6 +71,13 @@ const primaryNavItems = [
 
 // Secondary nav items (in More menu)
 const moreNavItems = [
+  {
+    href: '/rituals',
+    icon: Circle,
+    labelEn: 'Rituals',
+    labelFr: 'Rituels',
+    gradient: 'from-sky-400 to-blue-500',
+  },
   {
     href: '/stories',
     icon: BookOpen,
@@ -86,6 +119,9 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
   // Don't show bottom nav on fill pages
   const isFillingResource = pathname?.includes('/fill')
 
+  // Don't show floating camera on moments pages (they have their own add button)
+  const isMomentsPage = pathname?.startsWith('/moments')
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50/80 via-white to-teal-50/50">
       {/* Main Content */}
@@ -93,14 +129,25 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
         {children}
       </main>
 
-      {/* Floating Camera Button */}
-      {!isFillingResource && (
-        <Link
-          href="/moments/capture"
-          className="fixed bottom-24 right-4 z-50 w-14 h-14 bg-gradient-to-br from-rose-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg shadow-pink-300/50 active:scale-95 transition-transform"
+      {/* Floating Camera Button - Hide on moments pages and fill pages */}
+      {!isFillingResource && !isMomentsPage && (
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.2 }}
         >
-          <Camera className="w-6 h-6 text-white" />
-        </Link>
+          <Link
+            href="/moments/capture"
+            className="fixed bottom-24 right-4 z-50 w-14 h-14 bg-gradient-to-br from-rose-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg shadow-pink-300/50 active:scale-95 transition-transform"
+          >
+            <motion.div
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+            >
+              <Camera className="w-6 h-6 text-white" />
+            </motion.div>
+          </Link>
+        </motion.div>
       )}
 
       {/* More Menu Overlay */}
@@ -125,26 +172,36 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
               className="fixed bottom-24 left-4 z-50"
             >
               <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-2 min-w-[160px]">
-                {moreNavItems.map((item) => {
+                {moreNavItems.map((item, index) => {
                   const Icon = item.icon
                   const active = isActive(item.href)
 
                   return (
-                    <Link
+                    <motion.div
                       key={item.href}
-                      href={item.href}
-                      onClick={() => setShowMore(false)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
-                        active ? 'bg-gray-100' : 'hover:bg-gray-50 active:bg-gray-100'
-                      }`}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
                     >
-                      <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center`}>
-                        <Icon className="w-5 h-5 text-white" />
-                      </div>
-                      <span className={`font-medium ${active ? 'text-gray-900' : 'text-gray-600'}`}>
-                        {locale === 'fr' ? item.labelFr : item.labelEn}
-                      </span>
-                    </Link>
+                      <Link
+                        href={item.href}
+                        onClick={() => setShowMore(false)}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                          active ? 'bg-gray-100' : 'hover:bg-gray-50 active:bg-gray-100'
+                        }`}
+                      >
+                        <motion.div
+                          className={`w-9 h-9 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center`}
+                          whileHover={{ scale: 1.1, rotate: 5 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Icon className="w-5 h-5 text-white" />
+                        </motion.div>
+                        <span className={`font-medium ${active ? 'text-gray-900' : 'text-gray-600'}`}>
+                          {locale === 'fr' ? item.labelFr : item.labelEn}
+                        </span>
+                      </Link>
+                    </motion.div>
                   )
                 })}
               </div>
@@ -159,19 +216,24 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
           <div className="mx-4 mb-4">
             <div className="bg-white/95 backdrop-blur-xl rounded-[28px] shadow-lg shadow-gray-200/50 border border-gray-100/50 px-4 py-2 flex items-center justify-around">
               {/* More Button - Left side */}
-              <button
+              <motion.button
                 onClick={() => setShowMore(!showMore)}
                 className="flex flex-col items-center justify-center py-2 px-3 relative"
+                whileTap={{ scale: 0.9 }}
               >
-                <div className={`transition-colors ${
-                  showMore || isMoreActive ? 'text-emerald-600' : 'text-gray-400'
-                }`}>
+                <motion.div
+                  className={`transition-colors ${
+                    showMore || isMoreActive ? 'text-emerald-600' : 'text-gray-400'
+                  }`}
+                  animate={showMore ? { rotate: 90 } : { rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                >
                   {showMore ? (
                     <X className="w-6 h-6" strokeWidth={2} />
                   ) : (
                     <MoreHorizontal className="w-6 h-6" strokeWidth={isMoreActive ? 2.5 : 2} />
                   )}
-                </div>
+                </motion.div>
                 <span
                   className={`text-[11px] mt-1 font-medium transition-colors ${
                     showMore || isMoreActive ? 'text-emerald-600' : 'text-gray-400'
@@ -186,7 +248,7 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   />
                 )}
-              </button>
+              </motion.button>
 
               {/* Primary Nav Items */}
               {primaryNavItems.map((item) => {
@@ -199,19 +261,22 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
                     href={item.href}
                     className="flex flex-col items-center justify-center py-2 px-3 relative"
                   >
-                    <Icon
+                    <AnimatedIcon
+                      Icon={Icon}
+                      isActive={active}
                       className={`w-6 h-6 transition-colors ${
                         active ? 'text-emerald-600' : 'text-gray-400'
                       }`}
-                      strokeWidth={active ? 2.5 : 2}
                     />
-                    <span
+                    <motion.span
                       className={`text-[11px] mt-1 font-medium transition-colors ${
                         active ? 'text-emerald-600' : 'text-gray-400'
                       }`}
+                      animate={active ? { scale: [1, 1.05, 1] } : {}}
+                      transition={{ duration: 0.3 }}
                     >
                       {locale === 'fr' ? item.labelFr : item.labelEn}
-                    </span>
+                    </motion.span>
                     {active && (
                       <motion.div
                         layoutId="navIndicator"
