@@ -14,8 +14,13 @@ import {
   Circle,
   X,
   Sun,
+  Settings,
+  LogOut,
+  Loader2,
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
+import { createClient } from '@/lib/supabase/browser-client'
+import { useRouter } from 'next/navigation'
 
 interface MemberLayoutProps {
   children: React.ReactNode
@@ -103,8 +108,17 @@ const moreNavItems = [
 
 export default function MemberLayout({ children }: MemberLayoutProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const { locale } = useLanguage()
   const [showMore, setShowMore] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   const isActive = (href: string) => {
     if (href === '/home') {
@@ -204,6 +218,63 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
                     </motion.div>
                   )
                 })}
+
+                {/* Divider */}
+                <div className="my-2 border-t border-gray-100" />
+
+                {/* Settings */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: moreNavItems.length * 0.05 }}
+                >
+                  <Link
+                    href="/settings"
+                    onClick={() => setShowMore(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-gray-50 active:bg-gray-100"
+                  >
+                    <motion.div
+                      className="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center"
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Settings className="w-5 h-5 text-white" />
+                    </motion.div>
+                    <span className="font-medium text-gray-600">
+                      {locale === 'fr' ? 'Paramètres' : 'Settings'}
+                    </span>
+                  </Link>
+                </motion.div>
+
+                {/* Logout */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: (moreNavItems.length + 1) * 0.05 }}
+                >
+                  <button
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-red-50 active:bg-red-100"
+                  >
+                    <motion.div
+                      className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-400 to-red-500 flex items-center justify-center"
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {isLoggingOut ? (
+                        <Loader2 className="w-5 h-5 text-white animate-spin" />
+                      ) : (
+                        <LogOut className="w-5 h-5 text-white" />
+                      )}
+                    </motion.div>
+                    <span className="font-medium text-red-600">
+                      {isLoggingOut
+                        ? (locale === 'fr' ? 'Déconnexion...' : 'Logging out...')
+                        : (locale === 'fr' ? 'Déconnexion' : 'Logout')}
+                    </span>
+                  </button>
+                </motion.div>
               </div>
             </motion.div>
           </>
