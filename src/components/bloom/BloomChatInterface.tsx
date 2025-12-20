@@ -77,9 +77,28 @@ const QUICK_REPLIES_FR = [
   "Reconnaissant(e)",
 ]
 
+const TAGLINES_EN = [
+  "Listening to you",
+  "Here for you",
+  "Always by your side",
+  "You matter",
+  "Take your time",
+  "I'm here",
+]
+
+const TAGLINES_FR = [
+  "À votre écoute",
+  "Là pour vous",
+  "Toujours à vos côtés",
+  "Vous comptez",
+  "Prenez votre temps",
+  "Je suis là",
+]
+
 export default function BloomChatInterface({ isOpen, onClose, isDark = true }: BloomChatInterfaceProps) {
   const { locale } = useLanguage()
   const [inputValue, setInputValue] = useState('')
+  const [taglineIndex, setTaglineIndex] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -91,7 +110,16 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true }: B
   } = useBloomChat({ locale: locale as 'en' | 'fr' })
 
   const quickReplies = locale === 'fr' ? QUICK_REPLIES_FR : QUICK_REPLIES_EN
+  const taglines = locale === 'fr' ? TAGLINES_FR : TAGLINES_EN
   const showQuickReplies = messages.length <= 2 && !isLoading
+
+  // Rotate taglines
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTaglineIndex((prev) => (prev + 1) % taglines.length)
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [taglines.length])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -168,9 +196,20 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true }: B
                     <h2 className={`font-semibold text-[15px] ${isDark ? 'text-white' : 'text-gray-900'}`}>
                       Bloom
                     </h2>
-                    <p className={`text-[11px] ${isDark ? 'text-white/40' : 'text-gray-400'}`}>
-                      {locale === 'fr' ? 'Votre compagnon bien-être' : 'Your wellness companion'}
-                    </p>
+                    <div className="h-4 overflow-hidden">
+                      <AnimatePresence mode="wait">
+                        <motion.p
+                          key={taglineIndex}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.4, ease: 'easeInOut' }}
+                          className={`text-[11px] ${isDark ? 'text-white/40' : 'text-gray-400'}`}
+                        >
+                          {taglines[taglineIndex]}
+                        </motion.p>
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </div>
                 <button
