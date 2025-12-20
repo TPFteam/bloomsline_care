@@ -19,8 +19,10 @@ import {
   RefreshCw,
   X,
   CheckCircle,
+  ChevronLeft,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import MemberLayout from '@/components/member/MemberLayout'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -49,6 +51,7 @@ interface UpcomingSession {
 
 export default function CarePage() {
   const { locale } = useLanguage()
+  const router = useRouter()
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [upcomingSessions, setUpcomingSessions] = useState<UpcomingSession[]>([])
@@ -357,21 +360,37 @@ export default function CarePage() {
 
   return (
     <MemberLayout>
-      <div className="px-5 pt-6 pb-8">
+      {/* Ambient background effects */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-32 -right-32 w-72 h-72 bg-rose-200/40 rounded-full blur-[100px]" />
+        <div className="absolute top-1/4 -left-20 w-56 h-56 bg-violet-200/30 rounded-full blur-[80px]" />
+        <div className="absolute bottom-40 right-1/4 w-48 h-48 bg-sky-200/30 rounded-full blur-[70px]" />
+        <div className="absolute bottom-20 -left-10 w-32 h-32 bg-amber-200/20 rounded-full blur-[50px]" />
+      </div>
+
+      <div className="relative z-10 px-5 pt-6 pb-8">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex items-center gap-3 mb-6"
         >
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            {locale === 'fr' ? 'Vos Soins' : 'Your Care'}
-          </h1>
-          <p className="text-gray-500">
-            {locale === 'fr'
-              ? 'Gérez vos séances et ressources'
-              : 'Manage your sessions and resources'}
-          </p>
+          <button
+            onClick={() => router.back()}
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-gray-200 text-gray-400"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900 tracking-tight">
+              {locale === 'fr' ? 'Mes Soins' : 'My Care'}
+            </h1>
+            <p className="text-xs text-gray-500">
+              {locale === 'fr'
+                ? 'Gérez vos séances et ressources'
+                : 'Manage your sessions and resources'}
+            </p>
+          </div>
         </motion.div>
 
         {/* Quick Access */}

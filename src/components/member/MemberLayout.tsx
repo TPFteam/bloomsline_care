@@ -9,7 +9,7 @@ import {
   Heart,
   BookOpen,
   MoreHorizontal,
-  Scale,
+  PieChart,
   Camera,
   Circle,
   X,
@@ -94,7 +94,7 @@ const moreNavItems = [
   },
   {
     href: '/balance',
-    icon: Scale,
+    icon: PieChart,
     labelEn: 'Balance',
     labelFr: 'Équilibre',
     gradient: 'from-violet-500 to-purple-600',
