@@ -29,6 +29,24 @@ import {
   Wind,
   Moon,
   LogOut,
+  Circle,
+  Eye,
+  Coffee,
+  Sprout,
+  StretchHorizontal,
+  MapPin,
+  Music,
+  Cloud,
+  RefreshCw,
+  List,
+  Gift,
+  Hand,
+  Stars,
+  CalendarHeart,
+  Sofa,
+  Mail,
+  Shield,
+  Play,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -49,6 +67,74 @@ import { toast } from 'sonner'
 import MemberLayout from '@/components/member/MemberLayout'
 import type { Member } from '@/types/member'
 import { getMemberMoments, type Moment } from '@/lib/services/moments'
+
+// Ritual types
+interface Ritual {
+  id: string
+  name: string
+  name_fr: string
+  description: string | null
+  description_fr: string | null
+  benefit: string | null
+  benefit_fr: string | null
+  category: 'morning' | 'midday' | 'evening' | 'selfcare'
+  icon: string | null
+  duration_suggestion: number | null
+  is_predefined: boolean
+}
+
+interface MemberRitual {
+  id: string
+  member_id: string
+  ritual_id: string
+  tracking_type: 'checkbox' | 'duration' | 'streak'
+  is_active: boolean
+  sort_order: number
+  planned_time: string | null
+  ritual: Ritual
+}
+
+interface RitualCompletion {
+  id: string
+  member_id: string
+  ritual_id: string
+  completion_date: string
+  completed: boolean
+  duration_minutes: number | null
+  notes: string | null
+}
+
+// Ritual icon mapping
+const RITUAL_ICONS: Record<string, React.ElementType> = {
+  eye: Eye,
+  coffee: Coffee,
+  sprout: Sprout,
+  'stretch-horizontal': StretchHorizontal,
+  sun: Sun,
+  'map-pin': MapPin,
+  music: Music,
+  cloud: Cloud,
+  'refresh-cw': RefreshCw,
+  heart: Heart,
+  list: List,
+  gift: Gift,
+  moon: Moon,
+  hand: Hand,
+  stars: Stars,
+  'calendar-heart': CalendarHeart,
+  sofa: Sofa,
+  mail: Mail,
+  smile: Smile,
+  shield: Shield,
+}
+
+// Category gradients
+const CATEGORY_GRADIENTS: Record<string, { from: string; to: string }> = {
+  morning: { from: '#fbbf24', to: '#f59e0b' },
+  midday: { from: '#22d3ee', to: '#06b6d4' },
+  evening: { from: '#a78bfa', to: '#8b5cf6' },
+  selfcare: { from: '#fb7185', to: '#f43f5e' },
+}
 
 // Emotion scores: positive = higher, negative = lower
 const EMOTION_SCORES: Record<string, number> = {
@@ -151,6 +237,25 @@ function getTimePeriod(date: Date): 'morning' | 'afternoon' | 'evening' {
   return 'evening'
 }
 
+// Get current ritual category based on time of day
+function getCurrentRitualCategory(): 'morning' | 'midday' | 'evening' {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'morning'
+  if (hour < 18) return 'midday'
+  return 'evening'
+}
+
+// Get category label for display
+function getCategoryLabel(category: string, locale: string): string {
+  const labels: Record<string, { en: string; fr: string }> = {
+    morning: { en: 'Morning', fr: 'Matin' },
+    midday: { en: 'Midday', fr: 'Midi' },
+    evening: { en: 'Evening', fr: 'Soir' },
+    selfcare: { en: 'Self-Care', fr: 'Bien-être' },
+  }
+  return locale === 'fr' ? labels[category]?.fr : labels[category]?.en
+}
+
 // Resource type icons
 const typeIcons: Record<string, React.ElementType> = {
   worksheet: FileText,
@@ -182,6 +287,8 @@ export default function MyResourcesPage() {
   const [resources, setResources] = useState<MemberResourceItem[]>([])
   const [invitations, setInvitations] = useState<PendingInvitation[]>([])
   const [todaysMoments, setTodaysMoments] = useState<Moment[]>([])
+  const [memberRituals, setMemberRituals] = useState<MemberRitual[]>([])
+  const [todayCompletions, setTodayCompletions] = useState<RitualCompletion[]>([])
   const [loading, setLoading] = useState(true)
   const [processingInvitation, setProcessingInvitation] = useState<string | null>(null)
   const [previewMoment, setPreviewMoment] = useState<Moment | null>(null)
@@ -233,6 +340,42 @@ export default function MyResourcesPage() {
         )
         const resourceResults = await Promise.all(resourcePromises)
         setResources(resourceResults.flat())
+
+        // Load member rituals and today's completions
+        const memberId = memberRecords[0].id
+        const today = new Date().toISOString().split('T')[0]
+
+        // Fetch member's active rituals sorted by planned time
+        const { data: ritualsData } = await supabase
+          .from('member_rituals')
+          .select(`
+            *,
+            ritual:rituals(*)
+          `)
+          .eq('member_id', memberId)
+          .eq('is_active', true)
+          .order('planned_time', { ascending: true, nullsFirst: false })
+
+        if (ritualsData) {
+          // Sort by planned_time
+          const sorted = [...ritualsData].sort((a, b) => {
+            if (!a.planned_time) return 1
+            if (!b.planned_time) return -1
+            return a.planned_time.localeCompare(b.planned_time)
+          })
+          setMemberRituals(sorted as MemberRitual[])
+        }
+
+        // Fetch today's completions
+        const { data: completionsData } = await supabase
+          .from('ritual_completions')
+          .select('*')
+          .eq('member_id', memberId)
+          .eq('completion_date', today)
+
+        if (completionsData) {
+          setTodayCompletions(completionsData as RitualCompletion[])
+        }
       }
     } catch (error) {
       console.error('Error loading resources:', error)
@@ -464,97 +607,109 @@ export default function MyResourcesPage() {
         </AnimatePresence>
 
         {/* Today's Journey - Emotional Flow Visualization */}
-        {todaysMoments.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-3xl p-5 border border-gray-100 overflow-hidden"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900">
-                {locale === 'fr' ? 'Parcours du jour' : "Today's Journey"}
-              </h3>
-              <span className="text-xs text-gray-400">
-                6 AM • 10 PM
-              </span>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-3xl p-5 border border-gray-100 overflow-hidden"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-900">
+              {locale === 'fr' ? 'Flux du jour' : "Today's Flow"}
+            </h3>
+          </div>
+
+          {/* Journey Visualization */}
+          <div className="relative h-40">
+            {/* Background grid lines */}
+            <div className="absolute inset-0">
+              <div className="absolute inset-x-0 top-1/4 border-t border-gray-100/50" />
+              <div className="absolute inset-x-0 top-1/2 border-t border-gray-200/50" />
+              <div className="absolute inset-x-0 top-3/4 border-t border-gray-100/50" />
             </div>
 
-            {/* Journey Visualization */}
-            <div className="relative h-40">
-              {/* Background grid lines */}
-              <div className="absolute inset-0">
-                <div className="absolute inset-x-0 top-1/4 border-t border-gray-100/50" />
-                <div className="absolute inset-x-0 top-1/2 border-t border-gray-200/50" />
-                <div className="absolute inset-x-0 top-3/4 border-t border-gray-100/50" />
+            {/* Future time fade overlay */}
+            {(() => {
+              const currentHour = new Date().getHours() + new Date().getMinutes() / 60
+              const currentPosition = Math.max(0, Math.min(100, (currentHour / 24) * 100))
+              return (
+                <div
+                  className="absolute top-0 bottom-0 bg-gradient-to-r from-transparent to-gray-50/90 pointer-events-none z-10"
+                  style={{
+                    left: `${currentPosition}%`,
+                    right: 0,
+                  }}
+                />
+              )
+            })()}
+
+            {/* Empty state - show when no moments */}
+            {todaysMoments.length === 0 && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
+                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-2">
+                  <Sun className="w-6 h-6 text-gray-300" />
+                </div>
+                <p className="text-sm text-gray-400 text-center">
+                  {locale === 'fr' ? 'Aucun moment capturé' : 'No moments yet'}
+                </p>
+                <p className="text-xs text-gray-300 mt-1">
+                  {locale === 'fr' ? 'Capturez votre premier moment' : 'Capture your first moment'}
+                </p>
               </div>
+            )}
 
-              {/* Future time fade overlay */}
-              {(() => {
-                const currentHour = new Date().getHours() + new Date().getMinutes() / 60
-                const currentPosition = Math.max(0, Math.min(100, ((currentHour - 6) / 16) * 100))
-                return (
-                  <div
-                    className="absolute top-0 bottom-0 bg-gradient-to-r from-transparent to-gray-50/90 pointer-events-none z-10"
-                    style={{
-                      left: `${currentPosition}%`,
-                      right: 0,
-                    }}
-                  />
-                )
-              })()}
+            {/* Connecting line between moments */}
+            {todaysMoments.length > 1 && (
+              <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                <defs>
+                  <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#10b981" />
+                    <stop offset="100%" stopColor="#14b8a6" />
+                  </linearGradient>
+                </defs>
+                {todaysMoments
+                  .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                  .map((moment, i, arr) => {
+                    if (i === 0) return null
+                    const prev = arr[i - 1]
+                    const prevTime = new Date(prev.created_at)
+                    const currTime = new Date(moment.created_at)
 
-              {/* Connecting line between moments */}
-              {todaysMoments.length > 1 && (
-                <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                  <defs>
-                    <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#10b981" />
-                      <stop offset="100%" stopColor="#14b8a6" />
-                    </linearGradient>
-                  </defs>
-                  {todaysMoments
-                    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-                    .map((moment, i, arr) => {
-                      if (i === 0) return null
-                      const prev = arr[i - 1]
-                      const prevTime = new Date(prev.created_at)
-                      const currTime = new Date(moment.created_at)
+                    const prevHours = prevTime.getHours() + prevTime.getMinutes() / 60
+                    const currHours = currTime.getHours() + currTime.getMinutes() / 60
 
-                      const prevHours = prevTime.getHours() + prevTime.getMinutes() / 60
-                      const currHours = currTime.getHours() + currTime.getMinutes() / 60
+                    const prevX = (prevHours / 24) * 100
+                    const currX = (currHours / 24) * 100
 
-                      const prevX = ((prevHours - 6) / 16) * 100
-                      const currX = ((currHours - 6) / 16) * 100
+                    const prevScore = getMomentScore(prev)
+                    const currScore = getMomentScore(moment)
 
-                      const prevScore = getMomentScore(prev)
-                      const currScore = getMomentScore(moment)
+                    // Y: high score = top (low %), low score = bottom (high %)
+                    const prevY = 100 - ((prevScore / 100) * 70 + 15)
+                    const currY = 100 - ((currScore / 100) * 70 + 15)
 
-                      // Y: high score = top (low %), low score = bottom (high %)
-                      const prevY = 100 - ((prevScore / 100) * 70 + 15)
-                      const currY = 100 - ((currScore / 100) * 70 + 15)
+                    return (
+                      <motion.line
+                        key={`line-${moment.id}`}
+                        initial={{ pathLength: 0, opacity: 0 }}
+                        animate={{ pathLength: 1, opacity: 1 }}
+                        transition={{ delay: 0.3 + i * 0.1, duration: 0.5 }}
+                        x1={`${prevX}%`}
+                        y1={`${prevY}%`}
+                        x2={`${currX}%`}
+                        y2={`${currY}%`}
+                        stroke="url(#flowGradient)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.6"
+                      />
+                    )
+                  })}
+              </svg>
+            )}
 
-                      return (
-                        <motion.line
-                          key={`line-${moment.id}`}
-                          initial={{ pathLength: 0, opacity: 0 }}
-                          animate={{ pathLength: 1, opacity: 1 }}
-                          transition={{ delay: 0.3 + i * 0.1, duration: 0.5 }}
-                          x1={`${prevX}%`}
-                          y1={`${prevY}%`}
-                          x2={`${currX}%`}
-                          y2={`${currY}%`}
-                          stroke="url(#flowGradient)"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          opacity="0.6"
-                        />
-                      )
-                    })}
-                </svg>
-              )}
-
-              {/* Moment orbs - positioned by time and emotion score */}
+            {/* Moment orbs - positioned by time and emotion score */}
+            {todaysMoments.length > 0 && (
               <div className="absolute inset-0">
                 {todaysMoments
                   .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
@@ -563,8 +718,8 @@ export default function MyResourcesPage() {
                     const momentTime = new Date(moment.created_at)
                     const hours = momentTime.getHours() + momentTime.getMinutes() / 60
 
-                    // X: Time position (6 AM = 0%, 10 PM = 100%)
-                    const timePosition = Math.max(0, Math.min(100, ((hours - 6) / 16) * 100))
+                    // X: Time position (12 AM = 0%, 12 AM = 100%)
+                    const timePosition = (hours / 24) * 100
                     // Y: Score position (high score = top, low score = bottom)
                     const topPosition = 100 - ((score / 100) * 70 + 15)
 
@@ -598,31 +753,33 @@ export default function MyResourcesPage() {
                     )
                   })}
               </div>
+            )}
 
-              {/* Current time indicator */}
-              <motion.div
-                initial={{ scaleY: 0, opacity: 0 }}
-                animate={{ scaleY: 1, opacity: 1 }}
-                transition={{ delay: 0.8 }}
-                className="absolute top-0 bottom-0 w-px bg-emerald-400/60 z-10"
-                style={{
-                  left: `${Math.max(0, Math.min(((new Date().getHours() + new Date().getMinutes() / 60 - 6) / 16) * 100, 100))}%`,
-                  originY: 0,
-                }}
-              >
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-              </motion.div>
-            </div>
+            {/* Current time indicator */}
+            <motion.div
+              initial={{ scaleY: 0, opacity: 0 }}
+              animate={{ scaleY: 1, opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="absolute top-0 bottom-0 w-px bg-emerald-400/60 z-10"
+              style={{
+                left: `${((new Date().getHours() + new Date().getMinutes() / 60) / 24) * 100}%`,
+                originY: 0,
+              }}
+            >
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+            </motion.div>
+          </div>
 
-            {/* Time labels */}
-            <div className="flex justify-between mt-2 text-xs text-gray-400">
-              <span>{locale === 'fr' ? 'Matin' : 'Morning'}</span>
-              <span>{locale === 'fr' ? 'Après-midi' : 'Afternoon'}</span>
-              <span>{locale === 'fr' ? 'Soir' : 'Evening'}</span>
-            </div>
+          {/* Time labels */}
+          <div className="flex justify-between mt-2 text-xs text-gray-400">
+            <span>{locale === 'fr' ? 'Matin' : 'Morning'}</span>
+            <span>{locale === 'fr' ? 'Après-midi' : 'Afternoon'}</span>
+            <span>{locale === 'fr' ? 'Soir' : 'Evening'}</span>
+          </div>
 
-            {/* Summary */}
-            <div className="mt-4 pt-4 border-t border-gray-100">
+          {/* Summary */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            {todaysMoments.length > 0 ? (
               <p className="text-sm text-gray-600">
                 {todaysMoments.length} {locale === 'fr' ? 'moment(s) capturé(s) aujourd\'hui' : 'moment(s) captured today'}
                 {' • '}
@@ -636,9 +793,131 @@ export default function MyResourcesPage() {
                   })()}
                 </span>
               </p>
-            </div>
-          </motion.div>
-        )}
+            ) : (
+              <p className="text-sm text-gray-400">
+                {locale === 'fr' ? 'Commencez à capturer vos moments' : 'Start capturing your moments'}
+              </p>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Upcoming Rituals Section */}
+        {(() => {
+          const currentCategory = getCurrentRitualCategory()
+          const incompleteRituals = memberRituals.filter(mr => {
+            // Only show rituals for current time of day
+            if (mr.ritual.category !== currentCategory) return false
+            // Check if not completed today
+            const isCompleted = todayCompletions.some(
+              c => c.ritual_id === mr.ritual_id && c.completed
+            )
+            return !isCompleted
+          })
+
+          if (incompleteRituals.length === 0 && memberRituals.length === 0) return null
+
+          const gradient = CATEGORY_GRADIENTS[currentCategory]
+
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-white rounded-3xl p-5 border border-gray-100"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{
+                      background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`
+                    }}
+                  >
+                    <Circle className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    {locale === 'fr' ? 'Rituels à venir' : 'Upcoming Rituals'}
+                  </h3>
+                </div>
+                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                  {getCategoryLabel(currentCategory, locale)}
+                </span>
+              </div>
+
+              {/* Rituals List */}
+              {incompleteRituals.length > 0 ? (
+                <div className="space-y-2">
+                  {incompleteRituals.slice(0, 3).map((mr, index) => {
+                    const RitualIcon = RITUAL_ICONS[mr.ritual.icon || ''] || Circle
+                    const catGradient = CATEGORY_GRADIENTS[mr.ritual.category]
+
+                    return (
+                      <motion.div
+                        key={mr.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 + index * 0.05 }}
+                        onClick={() => router.push('/rituals')}
+                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl cursor-pointer hover:bg-gray-100 transition-colors active:scale-[0.98]"
+                      >
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                          style={{
+                            background: `linear-gradient(135deg, ${catGradient.from}, ${catGradient.to})`,
+                          }}
+                        >
+                          <RitualIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 text-sm">
+                            {locale === 'fr' ? mr.ritual.name_fr : mr.ritual.name}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {mr.planned_time && (
+                              <span className="font-medium">{mr.planned_time.slice(0, 5)} • </span>
+                            )}
+                            {mr.ritual.duration_suggestion && `${mr.ritual.duration_suggestion} min`}
+                          </p>
+                        </div>
+                        <Play className="w-4 h-4 text-gray-300" />
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <motion.div
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-2"
+                  >
+                    <Check className="w-6 h-6 text-emerald-600" />
+                  </motion.div>
+                  <p className="text-sm text-gray-600 font-medium">
+                    {locale === 'fr' ? 'Tous les rituels complétés!' : 'All rituals completed!'}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {locale === 'fr'
+                      ? `${getCategoryLabel(currentCategory, locale)} est fait`
+                      : `${getCategoryLabel(currentCategory, locale)} is done`}
+                  </p>
+                </div>
+              )}
+
+              {/* View All Link */}
+              {memberRituals.length > 0 && (
+                <motion.button
+                  onClick={() => router.push('/rituals')}
+                  className="w-full mt-3 py-2.5 text-center text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {locale === 'fr' ? 'Voir tous les rituels' : 'View all rituals'} →
+                </motion.button>
+              )}
+            </motion.div>
+          )
+        })()}
 
         {/* Your Flow Today Card */}
         <motion.div

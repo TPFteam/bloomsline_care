@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Home,
   Heart,
-  BookOpen,
   MoreHorizontal,
   PieChart,
   Camera,
@@ -84,13 +83,6 @@ const moreNavItems = [
     labelEn: 'Rituals',
     labelFr: 'Rituels',
     gradient: 'from-sky-400 to-blue-500',
-  },
-  {
-    href: '/stories',
-    icon: BookOpen,
-    labelEn: 'Stories',
-    labelFr: 'Histoires',
-    gradient: 'from-amber-400 to-orange-500',
   },
   {
     href: '/balance',
