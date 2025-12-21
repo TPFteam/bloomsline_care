@@ -651,14 +651,12 @@ function DashboardContent() {
                   className={`flex-shrink-0 ${activeSection === '/bookings' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}
                 />
                 <span className={`text-sm font-medium ${activeSection === '/bookings' ? 'text-white' : 'text-gray-600 group-hover:text-gray-900'}`}>
-                  Bookings
+                  {t.dashboard.sections.bookings?.title || 'Bookings'}
                 </span>
               </motion.div>
             </Link>
-          </nav>
 
-          {/* Bottom Actions */}
-          <div className="pt-4 border-t border-gray-100 space-y-1.5">
+            {/* Profile */}
             <Link href="/profile" onClick={() => setActiveSection('/profile')}>
               <motion.div
                 whileHover={{ x: 2 }}
@@ -681,7 +679,10 @@ function DashboardContent() {
                 </span>
               </motion.div>
             </Link>
+          </nav>
 
+          {/* Bottom Actions */}
+          <div className="pt-4 border-t border-gray-100 space-y-1.5">
             <Link href="/settings" onClick={() => setActiveSection('/settings')}>
               <motion.div
                 whileHover={{ x: 2 }}

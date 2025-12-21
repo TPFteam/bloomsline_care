@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { motion, AnimatePresence, Reorder } from 'framer-motion'
+import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion'
 import {
   ArrowLeft,
   Save,
@@ -139,6 +139,7 @@ interface WorksheetBlock {
   // For likert scale
   scaleLabels?: string[]
   scaleRange?: number
+  scaleType?: 'likert' | 'rating' | 'mood' // Scale variant type
   // For numeric input
   minValue?: number
   maxValue?: number
@@ -230,8 +231,8 @@ const blockTypes: BlockTypeOption[] = [
   {
     type: 'likert',
     icon: SlidersHorizontal,
-    label: { en: 'Likert Scale', fr: 'Échelle de Likert' },
-    description: { en: 'Agreement or frequency scale', fr: 'Échelle d\'accord ou de fréquence' },
+    label: { en: 'Scale Question', fr: 'Question à échelle' },
+    description: { en: 'Likert, rating, or mood scale', fr: 'Échelle Likert, notation ou humeur' },
   },
   {
     type: 'numeric',
@@ -320,11 +321,11 @@ const likertPresets = {
 
 // Default mood options with scoring values
 const defaultScoredMoodOptions = [
-  { emoji: '😢', label: 'Very Bad', value: 1 },
-  { emoji: '😔', label: 'Bad', value: 2 },
-  { emoji: '😐', label: 'Neutral', value: 3 },
-  { emoji: '🙂', label: 'Good', value: 4 },
-  { emoji: '😊', label: 'Very Good', value: 5 },
+  { emoji: '🌧️', label: 'Struggling', value: 1 },
+  { emoji: '🍂', label: 'Low', value: 2 },
+  { emoji: '🌱', label: 'Okay', value: 3 },
+  { emoji: '🌿', label: 'Good', value: 4 },
+  { emoji: '🌸', label: 'Thriving', value: 5 },
 ]
 
 // Worksheet templates for quick start
@@ -366,6 +367,25 @@ const worksheetTemplates = [
   },
 ]
 
+// Sortable Block Item Component - defined outside main component to prevent re-creation
+interface SortableBlockItemProps {
+  block: WorksheetBlock
+  children: (dragControls: ReturnType<typeof useDragControls>) => React.ReactNode
+}
+
+function SortableBlockItem({ block, children }: SortableBlockItemProps) {
+  const dragControls = useDragControls()
+  return (
+    <Reorder.Item
+      value={block}
+      dragListener={false}
+      dragControls={dragControls}
+    >
+      {children(dragControls)}
+    </Reorder.Item>
+  )
+}
+
 function CreateWorksheetContent() {
   const { t, locale } = useLanguage()
   const router = useRouter()
@@ -390,6 +410,7 @@ function CreateWorksheetContent() {
   const [tags, setTags] = useState<string[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [visibility, setVisibility] = useState<'private' | 'public'>('private')
+  const [resourceLanguage, setResourceLanguage] = useState<'en' | 'fr'>('en')
   const [saveAs, setSaveAs] = useState<'draft' | 'published'>('draft')
 
   // Scoring state (for assessments/scored worksheets)
@@ -405,6 +426,8 @@ function CreateWorksheetContent() {
 
   // UI state
   const [showBlockPicker, setShowBlockPicker] = useState(false)
+  const [showMoreContentBlocks, setShowMoreContentBlocks] = useState(false)
+  const [showMoreQuestionBlocks, setShowMoreQuestionBlocks] = useState(false)
   const [expandedBlock, setExpandedBlock] = useState<string | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
 
@@ -426,7 +449,8 @@ function CreateWorksheetContent() {
   // Get user ID on mount
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const browserSupabase = createClient()
+      const { data: { user } } = await browserSupabase.auth.getUser()
       if (user) {
         setUserId(user.id)
       }
@@ -464,6 +488,7 @@ function CreateWorksheetContent() {
           setDescription(resource.description ? (typeof resource.description === 'string' ? resource.description : (resource.description as unknown as Record<string, string>)?.[locale] || '') : '')
           setSelectedCategory(resource.category as ResourceCategory)
           setVisibility(resource.visibility || 'private')
+          setResourceLanguage(resource.language || 'en')
           setSaveAs(resource.status === 'published' ? 'published' : 'draft')
           if (resource.tags) {
             const loadedTags = Array.isArray(resource.tags)
@@ -511,6 +536,7 @@ function CreateWorksheetContent() {
               // Scoring fields
               scaleLabels: block.scaleLabels,
               scaleRange: block.scaleRange,
+              scaleType: block.scaleType,
               minValue: block.minValue,
               maxValue: block.maxValue,
               scoring: block.scoring,
@@ -566,13 +592,13 @@ function CreateWorksheetContent() {
     }
   }
 
-  // Default mood options
+  // Default mood options - nature/wellness themed
   const defaultMoodOptions = [
-    { emoji: '😢', label: locale === 'fr' ? 'Très mal' : 'Very bad' },
-    { emoji: '😔', label: locale === 'fr' ? 'Mal' : 'Bad' },
-    { emoji: '😐', label: locale === 'fr' ? 'Neutre' : 'Neutral' },
-    { emoji: '🙂', label: locale === 'fr' ? 'Bien' : 'Good' },
-    { emoji: '😄', label: locale === 'fr' ? 'Très bien' : 'Great' },
+    { emoji: '🌧️', label: locale === 'fr' ? 'Difficile' : 'Struggling' },
+    { emoji: '🍂', label: locale === 'fr' ? 'Fragile' : 'Low' },
+    { emoji: '🌱', label: locale === 'fr' ? 'Neutre' : 'Okay' },
+    { emoji: '🌿', label: locale === 'fr' ? 'Bien' : 'Good' },
+    { emoji: '🌸', label: locale === 'fr' ? 'Épanoui' : 'Thriving' },
   ]
 
   // Add new block
@@ -622,7 +648,7 @@ function CreateWorksheetContent() {
         sliderUnit: '%',
       }),
       ...(type === 'matrix_rating' && {
-        matrixItems: [locale === 'fr' ? 'Élément 1' : 'Item 1', locale === 'fr' ? 'Élément 2' : 'Item 2'],
+        matrixItems: ['', ''],
         matrixScaleMax: 5,
         matrixScaleLabels: {
           min: locale === 'fr' ? 'Pas du tout' : 'Not at all',
@@ -998,6 +1024,7 @@ function CreateWorksheetContent() {
             type: 'likert' as const,
             scaleLabels: block.scaleLabels,
             scaleRange: block.scaleRange,
+            scaleType: block.scaleType,
             likertScale: block.scaleRange || 5,
             likertLabels: block.scaleLabels ? { start: block.scaleLabels[0], end: block.scaleLabels[block.scaleLabels.length - 1] } : undefined,
             required: block.required,
@@ -1131,6 +1158,7 @@ function CreateWorksheetContent() {
           settings,
           status: saveAs,
           visibility,
+          language: resourceLanguage,
         })
         toast.success(locale === 'fr' ? 'Feuille de travail mise à jour avec succès!' : 'Worksheet updated successfully!')
       } else {
@@ -1145,6 +1173,7 @@ function CreateWorksheetContent() {
           settings,
           status: saveAs,
           visibility,
+          language: resourceLanguage,
         })
         toast.success(locale === 'fr' ? 'Feuille de travail créée avec succès!' : 'Worksheet created successfully!')
       }
@@ -1210,7 +1239,7 @@ function CreateWorksheetContent() {
           return { ...baseBlock, type: 'yes_no' as const, required: block.required, scoring: block.scoring }
         }
         if (block.type === 'likert') {
-          return { ...baseBlock, type: 'likert' as const, scaleLabels: block.scaleLabels, scaleRange: block.scaleRange, likertScale: block.scaleRange || 5, likertLabels: block.scaleLabels ? { start: block.scaleLabels[0], end: block.scaleLabels[block.scaleLabels.length - 1] } : undefined, required: block.required, scoring: block.scoring }
+          return { ...baseBlock, type: 'likert' as const, scaleLabels: block.scaleLabels, scaleRange: block.scaleRange, scaleType: block.scaleType, likertScale: block.scaleRange || 5, likertLabels: block.scaleLabels ? { start: block.scaleLabels[0], end: block.scaleLabels[block.scaleLabels.length - 1] } : undefined, required: block.required, scoring: block.scoring }
         }
         if (block.type === 'mood') {
           return { ...baseBlock, type: 'mood' as const, moodOptions: block.moodOptions, required: block.required, scoring: block.scoring }
@@ -1282,6 +1311,7 @@ function CreateWorksheetContent() {
           tags: tags.length > 0 ? tags : undefined,
           blocks: resourceBlocks,
           settings,
+          language: resourceLanguage,
         })
       } else {
         // Create new draft for auto-save
@@ -1295,6 +1325,7 @@ function CreateWorksheetContent() {
           settings,
           status: 'draft',
           visibility: 'private',
+          language: resourceLanguage,
         })
         // Store the new draft ID for future auto-saves
         if (newResource?.id) {
@@ -1620,13 +1651,13 @@ function CreateWorksheetContent() {
         {block.type === 'mood' && (
           <div className="space-y-2">
             <label className="block text-gray-900 font-medium mb-3">{block.content}</label>
-            <div className="flex justify-center gap-2 sm:gap-4">
+            <div className="flex justify-center gap-4 sm:gap-6">
               {(block.moodOptions || [
-                { emoji: '😢', label: locale === 'fr' ? 'Très mal' : 'Very Bad', value: 1 },
-                { emoji: '😕', label: locale === 'fr' ? 'Mal' : 'Bad', value: 2 },
-                { emoji: '😐', label: locale === 'fr' ? 'Neutre' : 'Neutral', value: 3 },
-                { emoji: '🙂', label: locale === 'fr' ? 'Bien' : 'Good', value: 4 },
-                { emoji: '😄', label: locale === 'fr' ? 'Très bien' : 'Very Good', value: 5 },
+                { emoji: '🌧️', label: locale === 'fr' ? 'Difficile' : 'Struggling', value: 1 },
+                { emoji: '🍂', label: locale === 'fr' ? 'Fragile' : 'Low', value: 2 },
+                { emoji: '🌱', label: locale === 'fr' ? 'Neutre' : 'Okay', value: 3 },
+                { emoji: '🌿', label: locale === 'fr' ? 'Bien' : 'Good', value: 4 },
+                { emoji: '🌸', label: locale === 'fr' ? 'Épanoui' : 'Thriving', value: 5 },
               ]).map((mood, index) => {
                 const moodValue = mood.value ?? index
                 const isSelected = isTestMode && testResponses[block.id] === moodValue
@@ -1831,7 +1862,9 @@ function CreateWorksheetContent() {
         {/* List Input */}
         {block.type === 'list_input' && (
           <div className="space-y-2">
-            <label className="block text-gray-900 font-medium">{block.content}</label>
+            <label className="block text-gray-900 font-medium">
+              {block.content || (locale === 'fr' ? 'Liste à remplir' : 'List Input')}
+            </label>
             {isTestMode ? (
               <div className="space-y-2">
                 {(testResponses[block.id] || ['']).map((item: string, index: number) => (
@@ -1922,7 +1955,9 @@ function CreateWorksheetContent() {
         {/* Video Response */}
         {block.type === 'video_response' && (
           <div className="space-y-2">
-            <label className="block text-gray-900 font-medium">{block.content}</label>
+            <label className="block text-gray-900 font-medium">
+              {block.content || (locale === 'fr' ? 'Réponse vidéo' : 'Video Response')}
+            </label>
             <div className="p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl text-center">
               <Video className="w-10 h-10 text-gray-400 mx-auto mb-2" />
               <p className="text-gray-500">{locale === 'fr' ? 'Enregistrer une vidéo' : 'Record a video response'}</p>
@@ -1933,7 +1968,9 @@ function CreateWorksheetContent() {
         {/* Audio Response */}
         {block.type === 'audio_response' && (
           <div className="space-y-2">
-            <label className="block text-gray-900 font-medium">{block.content}</label>
+            <label className="block text-gray-900 font-medium">
+              {block.content || (locale === 'fr' ? 'Réponse audio' : 'Audio Response')}
+            </label>
             <div className="p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl text-center">
               <Mic className="w-10 h-10 text-gray-400 mx-auto mb-2" />
               <p className="text-gray-500">{locale === 'fr' ? 'Enregistrer un audio' : 'Record an audio response'}</p>
@@ -1944,7 +1981,9 @@ function CreateWorksheetContent() {
         {/* File Upload Response */}
         {block.type === 'file_response' && (
           <div className="space-y-2">
-            <label className="block text-gray-900 font-medium">{block.content}</label>
+            <label className="block text-gray-900 font-medium">
+              {block.content || (locale === 'fr' ? 'Télécharger un fichier' : 'File Upload')}
+            </label>
             <div className="p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl text-center">
               <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
               <p className="text-gray-500">{locale === 'fr' ? 'Télécharger un fichier' : 'Upload a file'}</p>
@@ -1988,7 +2027,7 @@ function CreateWorksheetContent() {
     return colors[type] || { bg: 'bg-gray-100', text: 'text-gray-600', accent: 'bg-gray-400' }
   }
 
-  const renderBlockEditor = (block: WorksheetBlock) => {
+  const renderBlockEditor = (block: WorksheetBlock, dragControls: ReturnType<typeof useDragControls>) => {
     const isExpanded = expandedBlock === block.id
     const blockType = blockTypes.find(bt => bt.type === block.type)
     const Icon = blockType?.icon || FileText
@@ -2004,7 +2043,13 @@ function CreateWorksheetContent() {
           className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer rounded-lg transition-colors ${isExpanded ? 'bg-gray-50/80' : 'hover:bg-gray-100/60'}`}
           onClick={() => setExpandedBlock(isExpanded ? null : block.id)}
         >
-          <div className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400">
+          <div
+            className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400 touch-none select-none"
+            onPointerDown={(e) => {
+              e.stopPropagation()
+              dragControls.start(e)
+            }}
+          >
             <GripVertical className="w-4 h-4" />
           </div>
 
@@ -2077,10 +2122,20 @@ function CreateWorksheetContent() {
                     </label>
                     <textarea
                       value={block.content}
-                      onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                      onChange={(e) => {
+                        updateBlock(block.id, { content: e.target.value })
+                        // Auto-resize textarea
+                        e.target.style.height = 'auto'
+                        e.target.style.height = `${e.target.scrollHeight}px`
+                      }}
+                      onFocus={(e) => {
+                        // Adjust height on focus in case content was loaded
+                        e.target.style.height = 'auto'
+                        e.target.style.height = `${e.target.scrollHeight}px`
+                      }}
                       placeholder={locale === 'fr' ? 'Écrivez les instructions pour le client...' : 'Write instructions for the client...'}
-                      rows={3}
-                      className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
+                      rows={2}
+                      className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
                     />
                   </div>
                 )}
@@ -2094,10 +2149,18 @@ function CreateWorksheetContent() {
                       </label>
                       <textarea
                         value={block.content}
-                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        onChange={(e) => {
+                          updateBlock(block.id, { content: e.target.value })
+                          e.target.style.height = 'auto'
+                          e.target.style.height = `${e.target.scrollHeight}px`
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.height = 'auto'
+                          e.target.style.height = `${e.target.scrollHeight}px`
+                        }}
                         placeholder={locale === 'fr' ? 'Ex: Décrivez vos émotions...' : 'e.g., Describe your emotions...'}
                         rows={2}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
                       />
                     </div>
                     <div>
@@ -2577,10 +2640,18 @@ function CreateWorksheetContent() {
                       </label>
                       <textarea
                         value={block.mediaCaption || ''}
-                        onChange={(e) => updateBlock(block.id, { mediaCaption: e.target.value })}
+                        onChange={(e) => {
+                          updateBlock(block.id, { mediaCaption: e.target.value })
+                          e.target.style.height = 'auto'
+                          e.target.style.height = `${e.target.scrollHeight}px`
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.height = 'auto'
+                          e.target.style.height = `${e.target.scrollHeight}px`
+                        }}
                         placeholder={locale === 'fr' ? 'Expliquez ce que contient ce fichier...' : 'Explain what this file contains...'}
                         rows={2}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
                       />
                     </div>
                   </>
@@ -2596,10 +2667,18 @@ function CreateWorksheetContent() {
                       </label>
                       <textarea
                         value={block.content}
-                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        onChange={(e) => {
+                          updateBlock(block.id, { content: e.target.value })
+                          e.target.style.height = 'auto'
+                          e.target.style.height = `${e.target.scrollHeight}px`
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.height = 'auto'
+                          e.target.style.height = `${e.target.scrollHeight}px`
+                        }}
                         placeholder={locale === 'fr' ? 'Ex: Enregistrez une vidéo où vous décrivez votre journée...' : 'e.g., Record a video describing your day...'}
                         rows={2}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
                       />
                     </div>
 
@@ -2678,10 +2757,18 @@ function CreateWorksheetContent() {
                       </label>
                       <textarea
                         value={block.content}
-                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        onChange={(e) => {
+                          updateBlock(block.id, { content: e.target.value })
+                          e.target.style.height = 'auto'
+                          e.target.style.height = `${e.target.scrollHeight}px`
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.height = 'auto'
+                          e.target.style.height = `${e.target.scrollHeight}px`
+                        }}
                         placeholder={locale === 'fr' ? 'Ex: Enregistrez vos pensées sur cette semaine...' : 'e.g., Record your thoughts about this week...'}
                         rows={2}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
                       />
                     </div>
 
@@ -2760,10 +2847,18 @@ function CreateWorksheetContent() {
                       </label>
                       <textarea
                         value={block.content}
-                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        onChange={(e) => {
+                          updateBlock(block.id, { content: e.target.value })
+                          e.target.style.height = 'auto'
+                          e.target.style.height = `${e.target.scrollHeight}px`
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.height = 'auto'
+                          e.target.style.height = `${e.target.scrollHeight}px`
+                        }}
                         placeholder={locale === 'fr' ? 'Ex: Téléchargez une photo de votre espace de détente...' : 'e.g., Upload a photo of your relaxation space...'}
                         rows={2}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
                       />
                     </div>
 
@@ -2840,10 +2935,18 @@ function CreateWorksheetContent() {
                       </label>
                       <textarea
                         value={block.content}
-                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        onChange={(e) => {
+                          updateBlock(block.id, { content: e.target.value })
+                          e.target.style.height = 'auto'
+                          e.target.style.height = `${e.target.scrollHeight}px`
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.height = 'auto'
+                          e.target.style.height = `${e.target.scrollHeight}px`
+                        }}
                         placeholder={locale === 'fr' ? 'Ex: "Vous êtes plus fort que vous ne le pensez"' : 'e.g., "You are stronger than you think"'}
                         rows={3}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[80px]"
                       />
                     </div>
                     {/* Preview */}
@@ -2865,10 +2968,18 @@ function CreateWorksheetContent() {
                       </label>
                       <textarea
                         value={block.content}
-                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        onChange={(e) => {
+                          updateBlock(block.id, { content: e.target.value })
+                          e.target.style.height = 'auto'
+                          e.target.style.height = `${e.target.scrollHeight}px`
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.height = 'auto'
+                          e.target.style.height = `${e.target.scrollHeight}px`
+                        }}
                         placeholder={locale === 'fr' ? 'Ex: N\'oubliez pas de respirer profondément...' : 'e.g., Remember to breathe deeply...'}
                         rows={3}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[80px]"
                       />
                     </div>
                     {/* Preview */}
@@ -3015,7 +3126,7 @@ function CreateWorksheetContent() {
                         <Smile className="w-3.5 h-3.5" />
                         {locale === 'fr' ? 'Aperçu pour le membre' : 'Member will see'}
                       </p>
-                      <div className="flex justify-center gap-2 sm:gap-4">
+                      <div className="flex justify-center gap-4 sm:gap-6">
                         {(block.moodOptions || defaultMoodOptions).map((mood, index) => (
                           <button
                             key={index}
@@ -3122,8 +3233,13 @@ function CreateWorksheetContent() {
                           type="number"
                           min={1}
                           max={block.listMaxItems || 10}
-                          value={block.listMinItems || 1}
-                          onChange={(e) => updateBlock(block.id, { listMinItems: parseInt(e.target.value) || 1 })}
+                          value={block.listMinItems ?? ''}
+                          onChange={(e) => updateBlock(block.id, { listMinItems: e.target.value === '' ? undefined : parseInt(e.target.value) })}
+                          onBlur={(e) => {
+                            if (!e.target.value || parseInt(e.target.value) < 1) {
+                              updateBlock(block.id, { listMinItems: 1 })
+                            }
+                          }}
                           className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                         />
                       </div>
@@ -3135,8 +3251,13 @@ function CreateWorksheetContent() {
                           type="number"
                           min={block.listMinItems || 1}
                           max={20}
-                          value={block.listMaxItems || 10}
-                          onChange={(e) => updateBlock(block.id, { listMaxItems: parseInt(e.target.value) || 10 })}
+                          value={block.listMaxItems ?? ''}
+                          onChange={(e) => updateBlock(block.id, { listMaxItems: e.target.value === '' ? undefined : parseInt(e.target.value) })}
+                          onBlur={(e) => {
+                            if (!e.target.value || parseInt(e.target.value) < 1) {
+                              updateBlock(block.id, { listMaxItems: 10 })
+                            }
+                          }}
                           className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                         />
                       </div>
@@ -3167,6 +3288,48 @@ function CreateWorksheetContent() {
                 {/* Likert Scale Block */}
                 {block.type === 'likert' && (
                   <>
+                    {/* Scale Type Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Type de question' : 'Question Type'}
+                      </label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => updateBlock(block.id, { scaleType: 'likert' })}
+                          className={`flex-1 px-3 py-2.5 text-sm font-medium rounded-xl border transition-colors flex items-center justify-center gap-2 ${
+                            (!block.scaleType || block.scaleType === 'likert')
+                              ? 'border-amber-400 bg-amber-50 text-amber-700'
+                              : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          <SlidersHorizontal className="w-4 h-4" />
+                          {locale === 'fr' ? 'Likert' : 'Likert'}
+                        </button>
+                        <button
+                          onClick={() => updateBlock(block.id, { scaleType: 'rating' })}
+                          className={`flex-1 px-3 py-2.5 text-sm font-medium rounded-xl border transition-colors flex items-center justify-center gap-2 ${
+                            block.scaleType === 'rating'
+                              ? 'border-amber-400 bg-amber-50 text-amber-700'
+                              : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          <Star className="w-4 h-4" />
+                          {locale === 'fr' ? 'Notation' : 'Rating'}
+                        </button>
+                        <button
+                          onClick={() => updateBlock(block.id, { scaleType: 'mood' })}
+                          className={`flex-1 px-3 py-2.5 text-sm font-medium rounded-xl border transition-colors flex items-center justify-center gap-2 ${
+                            block.scaleType === 'mood'
+                              ? 'border-amber-400 bg-amber-50 text-amber-700'
+                              : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          <Smile className="w-4 h-4" />
+                          {locale === 'fr' ? 'Humeur' : 'Mood'}
+                        </button>
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
                         {locale === 'fr' ? 'Question' : 'Question'}
@@ -3175,52 +3338,137 @@ function CreateWorksheetContent() {
                         type="text"
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
-                        placeholder={locale === 'fr' ? 'Ex: Je me sens anxieux(se) la plupart du temps' : 'e.g., I feel anxious most of the time'}
+                        placeholder={
+                          block.scaleType === 'mood'
+                            ? (locale === 'fr' ? 'Ex: Comment vous sentez-vous aujourd\'hui?' : 'e.g., How are you feeling today?')
+                            : block.scaleType === 'rating'
+                            ? (locale === 'fr' ? 'Ex: Évaluez votre niveau de stress' : 'e.g., Rate your stress level')
+                            : (locale === 'fr' ? 'Ex: Je me sens anxieux(se) la plupart du temps' : 'e.g., I feel anxious most of the time')
+                        }
                         className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                       />
                     </div>
 
-                    {/* Likert Preset Selection */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        {locale === 'fr' ? 'Type d\'échelle' : 'Scale Type'}
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {Object.entries(likertPresets).map(([key, preset]) => (
-                          <button
-                            key={key}
-                            onClick={() => applyLikertPreset(block.id, key)}
-                            className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                              block.scaleLabels?.join(',') === preset[locale].join(',')
-                                ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
-                                : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
-                            }`}
-                          >
-                            {key === 'agreement' ? (locale === 'fr' ? 'Accord' : 'Agreement') :
-                             key === 'frequency' ? (locale === 'fr' ? 'Fréquence' : 'Frequency') :
-                             locale === 'fr' ? 'Sévérité' : 'Severity'}
-                          </button>
-                        ))}
+                    {/* Mood Scale Options */}
+                    {block.scaleType === 'mood' && (
+                      <div className="p-4 bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl border border-pink-200/50">
+                        <p className="text-xs font-medium text-pink-600 mb-3 flex items-center gap-1.5">
+                          <Smile className="w-3.5 h-3.5" />
+                          {locale === 'fr' ? 'Aperçu pour le membre' : 'Member will see'}
+                        </p>
+                        <div className="flex flex-wrap gap-4 justify-center">
+                          {[
+                            { emoji: '🌸', label: locale === 'fr' ? 'Épanoui' : 'Thriving', color: 'text-pink-500' },
+                            { emoji: '🌿', label: locale === 'fr' ? 'Bien' : 'Good', color: 'text-emerald-500' },
+                            { emoji: '🌱', label: locale === 'fr' ? 'Neutre' : 'Okay', color: 'text-teal-500' },
+                            { emoji: '🍂', label: locale === 'fr' ? 'Fragile' : 'Low', color: 'text-amber-500' },
+                            { emoji: '🌧️', label: locale === 'fr' ? 'Difficile' : 'Struggling', color: 'text-slate-400' },
+                          ].map((mood, i) => (
+                            <div key={i} className="flex flex-col items-center gap-1.5">
+                              <span className="text-2xl">{mood.emoji}</span>
+                              <span className={`text-[10px] font-medium ${mood.color}`}>{mood.label}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Scale Labels Preview */}
-                    <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border border-emerald-200/50">
-                      <p className="text-xs font-medium text-emerald-600 mb-3 flex items-center gap-1.5">
-                        <SlidersHorizontal className="w-3.5 h-3.5" />
-                        {locale === 'fr' ? 'Aperçu pour le membre' : 'Member will see'}
-                      </p>
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        {(block.scaleLabels || likertPresets.frequency[locale]).map((label, i) => (
-                          <button
-                            key={i}
-                            className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg text-gray-600"
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                    {/* Rating Scale Options */}
+                    {block.scaleType === 'rating' && (
+                      <>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">
+                              {locale === 'fr' ? 'Valeur min' : 'Min value'}
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="10"
+                              value={block.scaleMin ?? 1}
+                              onChange={(e) => updateBlock(block.id, { scaleMin: parseInt(e.target.value) || 1 })}
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">
+                              {locale === 'fr' ? 'Valeur max' : 'Max value'}
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="10"
+                              value={block.scaleMax ?? 10}
+                              onChange={(e) => updateBlock(block.id, { scaleMax: parseInt(e.target.value) || 10 })}
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                            />
+                          </div>
+                        </div>
+                        <div className="p-4 bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl border border-amber-200/50">
+                          <p className="text-xs font-medium text-amber-600 mb-3 flex items-center gap-1.5">
+                            <Star className="w-3.5 h-3.5" />
+                            {locale === 'fr' ? 'Aperçu pour le membre' : 'Member will see'}
+                          </p>
+                          <div className="flex flex-wrap gap-2 justify-center">
+                            {Array.from({ length: (block.scaleMax ?? 10) - (block.scaleMin ?? 1) + 1 }, (_, i) => (block.scaleMin ?? 1) + i).map((num) => (
+                              <button
+                                key={num}
+                                className="w-9 h-9 text-sm bg-white border border-gray-200 rounded-lg text-gray-600 font-medium"
+                              >
+                                {num}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Likert Scale Options */}
+                    {(!block.scaleType || block.scaleType === 'likert') && (
+                      <>
+                        {/* Likert Preset Selection */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            {locale === 'fr' ? 'Préréglage' : 'Preset'}
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {Object.entries(likertPresets).map(([key, preset]) => (
+                              <button
+                                key={key}
+                                onClick={() => applyLikertPreset(block.id, key)}
+                                className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                                  block.scaleLabels?.join(',') === preset[locale].join(',')
+                                    ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                                    : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                                }`}
+                              >
+                                {key === 'agreement' ? (locale === 'fr' ? 'Accord' : 'Agreement') :
+                                 key === 'frequency' ? (locale === 'fr' ? 'Fréquence' : 'Frequency') :
+                                 locale === 'fr' ? 'Sévérité' : 'Severity'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Scale Labels Preview */}
+                        <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border border-emerald-200/50">
+                          <p className="text-xs font-medium text-emerald-600 mb-3 flex items-center gap-1.5">
+                            <SlidersHorizontal className="w-3.5 h-3.5" />
+                            {locale === 'fr' ? 'Aperçu pour le membre' : 'Member will see'}
+                          </p>
+                          <div className="flex flex-wrap gap-2 justify-center">
+                            {(block.scaleLabels || likertPresets.frequency[locale]).map((label, i) => (
+                              <button
+                                key={i}
+                                className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg text-gray-600"
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                     {/* Scoring Config for Likert */}
                     {enableScoring && (
@@ -3594,7 +3842,7 @@ function CreateWorksheetContent() {
                       </div>
                       <button
                         onClick={() => {
-                          const newItems = [...(block.matrixItems || []), locale === 'fr' ? `Élément ${(block.matrixItems?.length || 0) + 1}` : `Item ${(block.matrixItems?.length || 0) + 1}`]
+                          const newItems = [...(block.matrixItems || []), '']
                           updateBlock(block.id, { matrixItems: newItems })
                         }}
                         className="mt-2 flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
@@ -3987,9 +4235,9 @@ function CreateWorksheetContent() {
                       <div className="space-y-1">
                         <Reorder.Group axis="y" values={blocks} onReorder={setBlocks} className="space-y-1">
                           {blocks.map((block) => (
-                            <Reorder.Item key={block.id} value={block}>
-                              {renderBlockEditor(block)}
-                            </Reorder.Item>
+                            <SortableBlockItem key={block.id} block={block}>
+                              {(dragControls) => renderBlockEditor(block, dragControls)}
+                            </SortableBlockItem>
                           ))}
                         </Reorder.Group>
                       </div>
@@ -4015,106 +4263,141 @@ function CreateWorksheetContent() {
                               initial={{ opacity: 0, y: -10 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -10 }}
-                              className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 z-10 max-h-[70vh] overflow-y-auto"
+                              className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 p-4 z-10"
                             >
-                              {/* Content Blocks Section */}
-                              <div className="mb-4">
-                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
-                                  {locale === 'fr' ? 'Contenu' : 'Content'}
-                                </p>
-                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                  {blockTypes.filter(bt => ['heading', 'paragraph', 'image', 'divider', 'quote', 'tip'].includes(bt.type)).map((bt) => {
-                                    const Icon = bt.icon
-                                    return (
-                                      <button
-                                        key={bt.type}
-                                        onClick={() => addBlock(bt.type)}
-                                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-gray-50 transition-colors text-center group"
-                                      >
-                                        <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
-                                          <Icon className="w-5 h-5 text-gray-500 group-hover:text-blue-600 transition-colors" />
-                                        </div>
-                                        <p className="text-xs font-medium text-gray-700 group-hover:text-gray-900">{bt.label[locale]}</p>
-                                      </button>
-                                    )
-                                  })}
+                              {/* Content Row */}
+                              <div className="flex items-start gap-6 pb-3 border-b border-gray-100">
+                                <div className="flex-1">
+                                  <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
+                                    {locale === 'fr' ? 'Contenu' : 'Content'}
+                                  </p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {blockTypes.filter(bt => ['heading', 'paragraph', 'image', 'tip'].includes(bt.type)).map((bt) => {
+                                      const Icon = bt.icon
+                                      return (
+                                        <button
+                                          key={bt.type}
+                                          onClick={() => addBlock(bt.type)}
+                                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors group"
+                                        >
+                                          <Icon className="w-3.5 h-3.5 text-gray-500 group-hover:text-gray-700" />
+                                          <span className="text-xs text-gray-600 group-hover:text-gray-800">{bt.label[locale]}</span>
+                                        </button>
+                                      )
+                                    })}
+                                    {showMoreContentBlocks && blockTypes.filter(bt => ['divider', 'quote'].includes(bt.type)).map((bt) => {
+                                      const Icon = bt.icon
+                                      return (
+                                        <button
+                                          key={bt.type}
+                                          onClick={() => addBlock(bt.type)}
+                                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors group"
+                                        >
+                                          <Icon className="w-3.5 h-3.5 text-gray-500 group-hover:text-gray-700" />
+                                          <span className="text-xs text-gray-600 group-hover:text-gray-800">{bt.label[locale]}</span>
+                                        </button>
+                                      )
+                                    })}
+                                    <button
+                                      onClick={() => setShowMoreContentBlocks(!showMoreContentBlocks)}
+                                      className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-400 hover:text-gray-600"
+                                    >
+                                      {showMoreContentBlocks ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                      {showMoreContentBlocks ? (locale === 'fr' ? 'Moins' : 'Less') : (locale === 'fr' ? 'Plus' : 'More')}
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
 
-                              {/* Questions Section */}
-                              <div className="mb-4">
-                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
-                                  {locale === 'fr' ? 'Questions' : 'Questions'}
-                                </p>
-                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                  {blockTypes.filter(bt => ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'mood', 'date_picker', 'time_input', 'list_input'].includes(bt.type)).map((bt) => {
-                                    const Icon = bt.icon
-                                    return (
-                                      <button
-                                        key={bt.type}
-                                        onClick={() => addBlock(bt.type)}
-                                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-gray-50 transition-colors text-center group"
-                                      >
-                                        <div className="w-10 h-10 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
-                                          <Icon className="w-5 h-5 text-blue-500 group-hover:text-blue-600 transition-colors" />
-                                        </div>
-                                        <p className="text-xs font-medium text-gray-700 group-hover:text-gray-900">{bt.label[locale]}</p>
-                                      </button>
-                                    )
-                                  })}
+                              {/* Questions Row */}
+                              <div className="flex items-start gap-6 py-3 border-b border-gray-100">
+                                <div className="flex-1">
+                                  <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
+                                    {locale === 'fr' ? 'Questions' : 'Questions'}
+                                  </p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {blockTypes.filter(bt => ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'list_input'].includes(bt.type)).map((bt) => {
+                                      const Icon = bt.icon
+                                      return (
+                                        <button
+                                          key={bt.type}
+                                          onClick={() => addBlock(bt.type)}
+                                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors group"
+                                        >
+                                          <Icon className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-600" />
+                                          <span className="text-xs text-blue-600 group-hover:text-blue-700">{bt.label[locale]}</span>
+                                        </button>
+                                      )
+                                    })}
+                                    {showMoreQuestionBlocks && blockTypes.filter(bt => ['date_picker', 'time_input'].includes(bt.type)).map((bt) => {
+                                      const Icon = bt.icon
+                                      return (
+                                        <button
+                                          key={bt.type}
+                                          onClick={() => addBlock(bt.type)}
+                                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors group"
+                                        >
+                                          <Icon className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-600" />
+                                          <span className="text-xs text-blue-600 group-hover:text-blue-700">{bt.label[locale]}</span>
+                                        </button>
+                                      )
+                                    })}
+                                    <button
+                                      onClick={() => setShowMoreQuestionBlocks(!showMoreQuestionBlocks)}
+                                      className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-400 hover:text-gray-600"
+                                    >
+                                      {showMoreQuestionBlocks ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                      {showMoreQuestionBlocks ? (locale === 'fr' ? 'Moins' : 'Less') : (locale === 'fr' ? 'Plus' : 'More')}
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
 
-                              {/* Scoring Questions Section (for assessments) */}
-                              <div className="mb-4">
-                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
-                                  {locale === 'fr' ? 'Questions avec score' : 'Scoring Questions'}
-                                </p>
-                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                  {blockTypes.filter(bt => ['likert', 'numeric', 'slider', 'matrix_rating'].includes(bt.type)).map((bt) => {
-                                    const Icon = bt.icon
-                                    return (
-                                      <button
-                                        key={bt.type}
-                                        onClick={() => addBlock(bt.type)}
-                                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-gray-50 transition-colors text-center group"
-                                      >
-                                        <div className="w-10 h-10 rounded-xl bg-amber-50 group-hover:bg-amber-100 flex items-center justify-center transition-colors">
-                                          <Icon className="w-5 h-5 text-amber-500 group-hover:text-amber-600 transition-colors" />
-                                        </div>
-                                        <p className="text-xs font-medium text-gray-700 group-hover:text-gray-900">{bt.label[locale]}</p>
-                                      </button>
-                                    )
-                                  })}
+                              {/* Scales Row */}
+                              <div className="flex items-start gap-6 py-3 border-b border-gray-100">
+                                <div className="flex-1">
+                                  <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
+                                    {locale === 'fr' ? 'Échelles' : 'Scales'}
+                                  </p>
+                                  <div className="flex gap-1">
+                                    {blockTypes.filter(bt => ['likert', 'matrix_rating'].includes(bt.type)).map((bt) => {
+                                      const Icon = bt.icon
+                                      return (
+                                        <button
+                                          key={bt.type}
+                                          onClick={() => addBlock(bt.type)}
+                                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors group"
+                                        >
+                                          <Icon className="w-3.5 h-3.5 text-amber-500 group-hover:text-amber-600" />
+                                          <span className="text-xs text-amber-600 group-hover:text-amber-700">{bt.label[locale]}</span>
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
                                 </div>
                               </div>
 
-                              {/* Media Responses Section */}
-                              <div>
-                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
-                                  {locale === 'fr' ? 'Réponses média' : 'Media Responses'}
-                                </p>
-                                <div className="grid grid-cols-3 gap-2">
-                                  {blockTypes.filter(bt => ['video_response', 'audio_response', 'file_response'].includes(bt.type)).map((bt) => {
-                                    const Icon = bt.icon
-                                    const colorMap: Record<string, string> = {
-                                      video_response: 'bg-purple-50 group-hover:bg-purple-100 text-purple-500 group-hover:text-purple-600',
-                                      audio_response: 'bg-orange-50 group-hover:bg-orange-100 text-orange-500 group-hover:text-orange-600',
-                                      file_response: 'bg-green-50 group-hover:bg-green-100 text-green-500 group-hover:text-green-600',
-                                    }
-                                    return (
-                                      <button
-                                        key={bt.type}
-                                        onClick={() => addBlock(bt.type)}
-                                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-gray-50 transition-colors text-center group"
-                                      >
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${colorMap[bt.type]?.split(' ').slice(0, 2).join(' ')}`}>
-                                          <Icon className={`w-5 h-5 transition-colors ${colorMap[bt.type]?.split(' ').slice(2).join(' ')}`} />
-                                        </div>
-                                        <p className="text-xs font-medium text-gray-700 group-hover:text-gray-900">{bt.label[locale]}</p>
-                                      </button>
-                                    )
-                                  })}
+                              {/* Media Row */}
+                              <div className="flex items-start gap-6 pt-3">
+                                <div className="flex-1">
+                                  <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
+                                    {locale === 'fr' ? 'Média' : 'Media'}
+                                  </p>
+                                  <div className="flex gap-1">
+                                    {blockTypes.filter(bt => ['file_response', 'audio_response'].includes(bt.type)).map((bt) => {
+                                      const Icon = bt.icon
+                                      return (
+                                        <button
+                                          key={bt.type}
+                                          onClick={() => addBlock(bt.type)}
+                                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 transition-colors group"
+                                        >
+                                          <Icon className="w-3.5 h-3.5 text-green-500 group-hover:text-green-600" />
+                                          <span className="text-xs text-green-600 group-hover:text-green-700">{bt.label[locale]}</span>
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
                                 </div>
                               </div>
                             </motion.div>
@@ -4453,10 +4736,18 @@ function CreateWorksheetContent() {
                   </h2>
                   <textarea
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={(e) => {
+                      setDescription(e.target.value)
+                      e.target.style.height = 'auto'
+                      e.target.style.height = `${e.target.scrollHeight}px`
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.height = 'auto'
+                      e.target.style.height = `${e.target.scrollHeight}px`
+                    }}
                     placeholder={locale === 'fr' ? 'Décrivez brièvement cette feuille de travail...' : 'Briefly describe this worksheet...'}
                     rows={4}
-                    className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none mb-4"
+                    className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[100px] mb-4"
                   />
 
                   <h2 className="text-lg font-semibold text-gray-900 mb-3">
@@ -4478,6 +4769,39 @@ function CreateWorksheetContent() {
                         {t.library.categories[category]}
                       </motion.button>
                     ))}
+                  </div>
+
+                  {/* Language Section */}
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3 mt-6">
+                    {locale === 'fr' ? 'Langue' : 'Language'}
+                  </h2>
+                  <div className="flex flex-wrap gap-2">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setResourceLanguage('en')}
+                      className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                        resourceLanguage === 'en'
+                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md shadow-blue-200/50'
+                          : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
+                      }`}
+                    >
+                      <span className="text-base">🇬🇧</span>
+                      English
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setResourceLanguage('fr')}
+                      className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                        resourceLanguage === 'fr'
+                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md shadow-blue-200/50'
+                          : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
+                      }`}
+                    >
+                      <span className="text-base">🇫🇷</span>
+                      Français
+                    </motion.button>
                   </div>
                 </motion.div>
 

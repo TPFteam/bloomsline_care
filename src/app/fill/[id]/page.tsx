@@ -472,7 +472,7 @@ export default function FillResourcePage() {
     : ''
 
   return (
-    <div className="min-h-screen bg-gray-50 relative pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50/80 relative pb-24">
       {/* Sticky Header - Mobile Optimized */}
       <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-xl border-b border-gray-100 safe-area-pt">
         <div className="px-4 py-3">
@@ -537,29 +537,51 @@ export default function FillResourcePage() {
             </motion.div>
           )}
 
-          {/* Blocks - Mobile Cards */}
-          {blocks.map((block, index) => (
-            <motion.div
-              key={block.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
-              className="bg-white rounded-2xl p-4 shadow-sm"
-            >
-              <BlockRenderer
-                block={block}
-                value={responses[block.id]}
-                onChange={(value) => handleResponseChange(block.id, value)}
-                locale={locale}
-                disabled={submitting}
-                settings={assignment?.resource?.settings as {
-                  rowMode?: 'unlimited' | 'limited'
-                  minRows?: number
-                  maxRows?: number
-                }}
-              />
-            </motion.div>
-          ))}
+          {/* Blocks - Mobile Cards with question numbering */}
+          {(() => {
+            // Track question numbers only
+            let questionNumber = 0
+            const questionTypes = ['prompt', 'checklist', 'scale', 'matrix_rating', 'likert', 'multiple_choice', 'yes_no', 'mood', 'numeric', 'slider', 'date_picker', 'time_input', 'list_input', 'table_exercise', 'audio_response', 'file_response', 'video_response']
+
+            return blocks.map((block, index) => {
+              const isQuestion = questionTypes.includes(block.type)
+              if (isQuestion) questionNumber++
+
+              return (
+                <motion.div
+                  key={block.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.04, type: 'spring', stiffness: 300, damping: 25 }}
+                >
+                  {/* Block content */}
+                  <div className={`transition-all duration-300 ${isQuestion ? 'bg-white/80 backdrop-blur-sm rounded-3xl p-5 shadow-sm border-2 border-gray-100/80 hover:shadow-md hover:border-gray-200/80' : ''}`}>
+                    {/* Question number badge - inline for mobile */}
+                    {isQuestion && (
+                      <div className="flex items-center gap-2.5 mb-4">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white text-sm font-bold shadow-md flex-shrink-0">
+                          {questionNumber}
+                        </div>
+                        <div className="h-px flex-1 bg-gradient-to-r from-gray-200 to-transparent" />
+                      </div>
+                    )}
+                    <BlockRenderer
+                      block={block}
+                      value={responses[block.id]}
+                      onChange={(value) => handleResponseChange(block.id, value)}
+                      locale={locale}
+                      disabled={submitting}
+                      settings={assignment?.resource?.settings as {
+                        rowMode?: 'unlimited' | 'limited'
+                        minRows?: number
+                        maxRows?: number
+                      }}
+                    />
+                  </div>
+                </motion.div>
+              )
+            })
+          })()}
 
           {/* Spacer for fixed button */}
           <div className="h-4" />

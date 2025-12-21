@@ -5,6 +5,8 @@ export type ResourceStatus = 'draft' | 'published' | 'archived'
 
 export type ResourceVisibility = 'private' | 'public'
 
+export type ResourceLanguage = 'en' | 'fr'
+
 export type AssignmentStatus = 'pending' | 'in_progress' | 'completed' | 'expired'
 
 export type AssignmentPriority = 'low' | 'normal' | 'high'
@@ -383,6 +385,7 @@ export interface Resource {
   settings: ResourceSettings
   status: ResourceStatus
   visibility: ResourceVisibility
+  language: ResourceLanguage
   published_to_library_at?: string
   times_assigned: number
   times_completed: number
@@ -464,6 +467,7 @@ export interface CreateResourceDTO {
   settings?: ResourceSettings
   status?: ResourceStatus
   visibility?: ResourceVisibility
+  language?: ResourceLanguage
 }
 
 export interface UpdateResourceDTO {
@@ -475,6 +479,7 @@ export interface UpdateResourceDTO {
   settings?: ResourceSettings
   status?: ResourceStatus
   visibility?: ResourceVisibility
+  language?: ResourceLanguage
 }
 
 export interface CreateAssignmentDTO {

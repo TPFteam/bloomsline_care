@@ -933,7 +933,7 @@ export default function FillSharedResourcePage() {
   const resourceTitle = typeof resource?.title === 'string' ? resource.title : ''
 
   return (
-    <div className="min-h-screen bg-gray-50 relative pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50/80 relative pb-24">
       {/* Sticky Header - Mobile Optimized */}
       <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-xl border-b border-gray-100 safe-area-pt">
         <div className="px-4 py-3">
@@ -1000,41 +1000,69 @@ export default function FillSharedResourcePage() {
             </motion.div>
           )}
 
-          {/* Blocks - Mobile Cards */}
-          {blocks.map((block, index) => {
-            const isUnanswered = unansweredQuestions.some(q => q.block.id === block.id)
-            const isHighlighted = highlightedUnanswered.has(block.id)
+          {/* Blocks - Mobile Cards with question numbering */}
+          {(() => {
+            // Track question numbers only
+            let questionNumber = 0
+            const questionTypes = ['prompt', 'checklist', 'scale', 'matrix_rating', 'likert', 'multiple_choice', 'yes_no', 'mood', 'numeric', 'slider', 'date_picker', 'time_input', 'list_input', 'table_exercise', 'audio_response', 'file_response', 'video_response']
 
-            return (
-              <motion.div
-                key={block.id}
-                id={`block-${block.id}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-                className={`bg-white rounded-2xl p-4 shadow-sm transition-all duration-300 ${
-                  isHighlighted
-                    ? 'ring-2 ring-amber-400 bg-amber-50'
-                    : isUnanswered
-                      ? 'border-l-4 border-l-amber-400'
+            return blocks.map((block, index) => {
+              const isQuestion = questionTypes.includes(block.type)
+              if (isQuestion) questionNumber++
+
+              const isUnanswered = unansweredQuestions.some(q => q.block.id === block.id)
+              const isHighlighted = highlightedUnanswered.has(block.id)
+
+              return (
+                <motion.div
+                  key={block.id}
+                  id={`block-${block.id}`}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.04, type: 'spring', stiffness: 300, damping: 25 }}
+                >
+                  {/* Block content */}
+                  <div className={`transition-all duration-300 ${
+                    isQuestion
+                      ? `bg-white/80 backdrop-blur-sm rounded-3xl p-5 shadow-sm border-2 ${
+                          isHighlighted
+                            ? 'ring-2 ring-amber-400 bg-amber-50/80 border-amber-200'
+                            : isUnanswered
+                              ? 'border-l-4 border-l-amber-400 border-gray-100/80'
+                              : 'border-gray-100/80 hover:shadow-md hover:border-gray-200/80'
+                        }`
                       : ''
-                }`}
-              >
-                <BlockRenderer
-                  block={block}
-                  value={responses[block.id]}
-                  onChange={(value) => handleResponseChange(block.id, value)}
-                  locale={locale}
-                  disabled={submitting}
-                  settings={resource?.settings as {
-                    rowMode?: 'unlimited' | 'limited'
-                    minRows?: number
-                    maxRows?: number
-                  }}
-                />
-              </motion.div>
-            )
-          })}
+                  }`}>
+                    {/* Question number badge - inline for mobile */}
+                    {isQuestion && (
+                      <div className="flex items-center gap-2.5 mb-4">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-md flex-shrink-0 ${
+                          isHighlighted
+                            ? 'bg-gradient-to-br from-amber-400 to-orange-500'
+                            : 'bg-gradient-to-br from-teal-400 to-emerald-500'
+                        }`}>
+                          {questionNumber}
+                        </div>
+                        <div className="h-px flex-1 bg-gradient-to-r from-gray-200 to-transparent" />
+                      </div>
+                    )}
+                    <BlockRenderer
+                      block={block}
+                      value={responses[block.id]}
+                      onChange={(value) => handleResponseChange(block.id, value)}
+                      locale={locale}
+                      disabled={submitting}
+                      settings={resource?.settings as {
+                        rowMode?: 'unlimited' | 'limited'
+                        minRows?: number
+                        maxRows?: number
+                      }}
+                    />
+                  </div>
+                </motion.div>
+              )
+            })
+          })()}
 
           {/* Spacer for fixed button */}
           <div className="h-4" />

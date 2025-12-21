@@ -16,8 +16,8 @@ import {
   UserPlus,
   Bell,
   Settings,
-  Leaf,
   Heart,
+  Leaf,
   Sparkles,
   Smile,
   Sun,
@@ -192,13 +192,13 @@ const EMOTION_ICONS: Record<string, React.ElementType> = {
   inspired: Zap,
   loved: Heart,
   peaceful: Moon,
-  calm: Wind,
+  calm: Leaf,
   hopeful: Star,
   proud: Trophy,
   // Softer/processing
   overwhelmed: CloudRain,
   tired: Moon,
-  uncertain: CloudRain,
+  uncertain: Cloud,
   tender: Heart,
   restless: Wind,
   heavy: CloudRain,
@@ -447,18 +447,30 @@ export default function MyResourcesPage() {
   if (loading) {
     return (
       <MemberLayout>
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-50/80 via-white to-teal-50/50">
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center gap-3"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center gap-4"
           >
-            <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center">
-              <Leaf className="w-7 h-7 text-emerald-600 animate-pulse" />
+            {/* Animated circle loader */}
+            <div className="relative w-12 h-12">
+              <motion.div
+                className="absolute inset-0 rounded-full border-[3px] border-emerald-100"
+              />
+              <motion.div
+                className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-emerald-500 border-r-emerald-500"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              />
             </div>
-            <span className="text-gray-500 text-sm">
+            <motion.span
+              className="text-gray-500 text-sm font-medium"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+            >
               {locale === 'fr' ? 'Chargement...' : 'Loading...'}
-            </span>
+            </motion.span>
           </motion.div>
         </div>
       </MemberLayout>

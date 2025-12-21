@@ -155,6 +155,10 @@
         "exercises": "Exercises",
         "assignments": "Assignments"
       }
+    },
+    "bookings": {
+      "title": "Bookings",
+      "description": "Appointments and calendar"
     }
   },
   "stats": {

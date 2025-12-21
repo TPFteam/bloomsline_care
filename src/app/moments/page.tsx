@@ -339,13 +339,14 @@ export default function MomentsPage() {
   if (loading) {
     return (
       <div className={`min-h-screen ${theme.bg} flex items-center justify-center`}>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col items-center gap-4"
-        >
-          <Loader2 className={`w-6 h-6 ${theme.textMuted} animate-spin`} />
-        </motion.div>
+        <div className="relative w-10 h-10">
+          <div className={`absolute inset-0 rounded-full border-[3px] ${isDark ? 'border-gray-700' : 'border-emerald-100'}`} />
+          <motion.div
+            className={`absolute inset-0 rounded-full border-[3px] border-transparent ${isDark ? 'border-t-emerald-400 border-r-emerald-400' : 'border-t-emerald-500 border-r-emerald-500'}`}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          />
+        </div>
       </div>
     )
   }
@@ -616,7 +617,10 @@ export default function MomentsPage() {
           <div className="grid grid-cols-2 gap-3">
             {filteredMoments.map((moment, index) => {
               const Icon = typeIcons[moment.type]
-              const hasMedia = moment.media_url && (moment.type === 'photo' || moment.type === 'video')
+              const hasPhotoMedia = moment.media_url && moment.type === 'photo'
+              const hasVideoMedia = moment.media_url && moment.type === 'video'
+              const hasVoiceMedia = moment.media_url && moment.type === 'voice'
+              const isTextOnly = moment.type === 'write' || (!moment.media_url && !hasPhotoMedia && !hasVideoMedia && !hasVoiceMedia)
 
               return (
                 <motion.div
@@ -627,21 +631,69 @@ export default function MomentsPage() {
                   onClick={() => setSelectedMoment(moment)}
                   className={`relative rounded-2xl overflow-hidden cursor-pointer group ${theme.cardBg} border ${theme.cardBorder} p-3 flex flex-col min-h-[140px]`}
                 >
-                  {/* Media thumbnail */}
-                  {hasMedia && (
+                  {/* Photo thumbnail */}
+                  {hasPhotoMedia && (
                     <div className="relative w-full aspect-video rounded-xl overflow-hidden mb-3">
                       <img
                         src={moment.media_url!}
                         alt=""
                         className="w-full h-full object-cover"
                       />
-                      {moment.type === 'video' && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                          <div className="w-8 h-8 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
-                            <Play className="w-4 h-4 text-white ml-0.5" />
-                          </div>
+                    </div>
+                  )}
+
+                  {/* Video thumbnail */}
+                  {hasVideoMedia && (
+                    <div className="relative w-full aspect-video rounded-xl overflow-hidden mb-3 bg-gray-900">
+                      <video
+                        src={moment.media_url!}
+                        className="w-full h-full object-cover"
+                        muted
+                        playsInline
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                        <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                          <Play className="w-5 h-5 text-white ml-0.5" />
                         </div>
-                      )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Voice recording fallback */}
+                  {hasVoiceMedia && (
+                    <div className={`relative w-full aspect-video rounded-xl overflow-hidden mb-3 ${isDark ? 'bg-gradient-to-br from-violet-500/20 to-purple-600/20' : 'bg-gradient-to-br from-violet-100 to-purple-100'} flex items-center justify-center`}>
+                      {/* Waveform visualization */}
+                      <div className="flex items-center gap-1">
+                        {[...Array(12)].map((_, i) => (
+                          <motion.div
+                            key={i}
+                            animate={{
+                              height: [8, 20 + Math.random() * 16, 8],
+                            }}
+                            transition={{
+                              duration: 0.8 + Math.random() * 0.4,
+                              repeat: Infinity,
+                              delay: i * 0.1,
+                              ease: 'easeInOut'
+                            }}
+                            className={`w-1 rounded-full ${isDark ? 'bg-violet-400/60' : 'bg-violet-500/50'}`}
+                            style={{ height: 12 + Math.random() * 12 }}
+                          />
+                        ))}
+                      </div>
+                      {/* Play button overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className={`w-10 h-10 rounded-full ${isDark ? 'bg-white/10' : 'bg-white/60'} backdrop-blur-sm flex items-center justify-center`}>
+                          <Play className={`w-5 h-5 ${isDark ? 'text-white' : 'text-violet-600'} ml-0.5`} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Text-only fallback */}
+                  {isTextOnly && !moment.text_content && !moment.caption && (
+                    <div className={`relative w-full aspect-video rounded-xl overflow-hidden mb-3 ${isDark ? 'bg-gradient-to-br from-amber-500/20 to-orange-600/20' : 'bg-gradient-to-br from-amber-100 to-orange-100'} flex items-center justify-center`}>
+                      <PenLine className={`w-8 h-8 ${isDark ? 'text-amber-400/60' : 'text-amber-600/50'}`} />
                     </div>
                   )}
 
@@ -699,12 +751,30 @@ export default function MomentsPage() {
                     {moment.media_url && moment.type === 'photo' ? (
                       <img src={moment.media_url} alt="" className="w-full h-full object-cover" />
                     ) : moment.media_url && moment.type === 'video' ? (
-                      <div className="w-full h-full bg-gray-900 flex items-center justify-center">
-                        <Play className="w-4 h-4 text-white" />
+                      <div className="w-full h-full bg-gray-900 flex items-center justify-center relative">
+                        <video src={moment.media_url} className="w-full h-full object-cover" muted />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <Play className="w-4 h-4 text-white ml-0.5" />
+                        </div>
+                      </div>
+                    ) : moment.media_url && moment.type === 'voice' ? (
+                      <div className={`w-full h-full ${isDark ? 'bg-gradient-to-br from-violet-500/30 to-purple-600/30' : 'bg-gradient-to-br from-violet-100 to-purple-100'} flex items-center justify-center relative`}>
+                        <div className="flex items-center gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <div
+                              key={i}
+                              className={`w-0.5 rounded-full ${isDark ? 'bg-violet-400/70' : 'bg-violet-500/60'}`}
+                              style={{ height: 6 + Math.random() * 10 }}
+                            />
+                          ))}
+                        </div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Play className={`w-4 h-4 ${isDark ? 'text-white/70' : 'text-violet-600/70'} ml-0.5`} />
+                        </div>
                       </div>
                     ) : (
-                      <div className={`w-full h-full ${isDark ? 'bg-white/10' : 'bg-black/5'} flex items-center justify-center`}>
-                        <Icon className={`w-5 h-5 ${theme.textMuted}`} />
+                      <div className={`w-full h-full ${isDark ? 'bg-gradient-to-br from-amber-500/20 to-orange-600/20' : 'bg-gradient-to-br from-amber-100 to-orange-100'} flex items-center justify-center`}>
+                        <Icon className={`w-5 h-5 ${isDark ? 'text-amber-400/70' : 'text-amber-600/60'}`} />
                       </div>
                     )}
                   </div>

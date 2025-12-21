@@ -94,18 +94,18 @@ export function AppSidebar({ userType: propUserType }: AppSidebarProps) {
       href: '/analytics',
     },
     {
+      title: t.dashboard.sections.bookings?.title || 'Bookings',
+      icon: CalendarCheck,
+      gradient: primaryGradient,
+      shadow: primaryShadow,
+      href: '/bookings',
+    },
+    {
       title: t.profile.title,
       icon: User,
       gradient: secondaryGradient,
       shadow: secondaryShadow,
       href: '/profile',
-    },
-    {
-      title: 'Bookings',
-      icon: CalendarCheck,
-      gradient: primaryGradient,
-      shadow: primaryShadow,
-      href: '/bookings',
     },
   ]
 

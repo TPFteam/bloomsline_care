@@ -1,6 +1,9 @@
-import { supabase } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/browser-client'
 
 const BUCKET_NAME = 'resource-media'
+
+// Get browser supabase client for storage operations
+const getSupabase = () => createClient()
 
 export interface UploadResult {
   url: string
@@ -34,6 +37,7 @@ export async function uploadResourceFile(
     : `${userId}/temp/${timestamp}-${sanitizedName}`
 
   // Upload to Supabase Storage
+  const supabase = getSupabase()
   const { data, error } = await supabase.storage
     .from(BUCKET_NAME)
     .upload(filePath, file, {
@@ -82,6 +86,7 @@ export async function uploadMultipleFiles(
  * Delete a file from storage
  */
 export async function deleteResourceFile(filePath: string): Promise<void> {
+  const supabase = getSupabase()
   const { error } = await supabase.storage
     .from(BUCKET_NAME)
     .remove([filePath])
@@ -98,6 +103,7 @@ export async function deleteResourceFile(filePath: string): Promise<void> {
 export async function deleteMultipleFiles(filePaths: string[]): Promise<void> {
   if (filePaths.length === 0) return
 
+  const supabase = getSupabase()
   const { error } = await supabase.storage
     .from(BUCKET_NAME)
     .remove(filePaths)
@@ -116,6 +122,7 @@ export async function moveFilesToResource(
   resourceId: string,
   tempPaths: string[]
 ): Promise<string[]> {
+  const supabase = getSupabase()
   const newPaths: string[] = []
 
   for (const tempPath of tempPaths) {

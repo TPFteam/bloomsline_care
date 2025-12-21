@@ -21,13 +21,30 @@ export async function getResources(filters?: {
   category?: string
   visibility?: 'private' | 'public'
   publicOnly?: boolean
+  myResourcesOnly?: boolean // Only fetch resources created by the current user
 }): Promise<Resource[]> {
   const supabase = createClient()
+
+  // If myResourcesOnly, get current user and filter by their ID
+  let practitionerId: string | null = null
+  if (filters?.myResourcesOnly) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      console.error('No authenticated user for myResourcesOnly filter')
+      return []
+    }
+    practitionerId = user.id
+  }
 
   let query = supabase
     .from('resources')
     .select('*')
     .order('created_at', { ascending: false })
+
+  // Filter by current user's resources
+  if (practitionerId) {
+    query = query.eq('practitioner_id', practitionerId)
+  }
 
   if (filters?.type) {
     query = query.eq('type', filters.type)
@@ -151,6 +168,7 @@ export async function createResource(resource: CreateResourceDTO): Promise<Resou
       settings: resource.settings || {},
       status: resource.status || 'draft',
       visibility: resource.visibility || 'private',
+      language: resource.language || 'en',
       published_to_library_at: resource.visibility === 'public' && resource.status === 'published'
         ? new Date().toISOString()
         : null,

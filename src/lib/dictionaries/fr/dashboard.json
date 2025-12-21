@@ -6,12 +6,12 @@
   },
   "tagline": "Voici ce qui se passe avec votre pratique aujourd'hui",
   "sidebar": {
-    "home": "Accueil",
+    "home": "Activité",
     "signOut": "Se déconnecter"
   },
   "sections": {
     "library": {
-      "title": "Bibliothèque Numérique",
+      "title": "Supports publiques",
       "description": "Ressources organisées",
       "detail": "Formulaires et activités thérapeutiques prêts à l'emploi, organisés par des experts. Dupliquez, modifiez et personnalisez.",
       "stats": {
@@ -25,7 +25,7 @@
       }
     },
     "resources": {
-      "title": "Mes Ressources",
+      "title": "Mes supports",
       "description": "Collection personnelle",
       "detail": "Vos ressources enregistrées, contenu créé et collections organisées. Accès facile à votre boîte à outils thérapeutique.",
       "stats": {
@@ -39,7 +39,7 @@
       }
     },
     "members": {
-      "title": "Hub des Membres",
+      "title": "Personnes suivies",
       "description": "Espace clients",
       "detail": "Gérez patients et étudiants dans un espace de travail unifié. Enregistrez les résumés de session et suivez les progrès.",
       "stats": {
@@ -53,7 +53,7 @@
       }
     },
     "analytics": {
-      "title": "Analyses de Pratique",
+      "title": "Engagement",
       "description": "Statistiques et métriques",
       "detail": "Comprenez vos modèles de pratique, l'engagement des clients et les résultats thérapeutiques avec des données significatives.",
       "stats": {
@@ -155,6 +155,10 @@
         "exercises": "Exercices",
         "assignments": "Assignations"
       }
+    },
+    "bookings": {
+      "title": "Agenda",
+      "description": "Rendez-vous et calendrier"
     }
   },
   "stats": {

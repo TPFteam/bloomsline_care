@@ -612,7 +612,14 @@ export default function RitualsPage() {
     return (
       <MemberLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+          <div className="relative w-10 h-10">
+            <div className="absolute inset-0 rounded-full border-[3px] border-emerald-100" />
+            <motion.div
+              className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-emerald-500 border-r-emerald-500"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            />
+          </div>
         </div>
       </MemberLayout>
     )
@@ -1273,8 +1280,16 @@ export default function RitualsPage() {
                 const isOvertime = timerSeconds <= 0 && activeRitual.ritual.duration_suggestion
                 const hasMinTime = timerSeconds <= 0
 
+                // Category-specific background colors (fully opaque)
+                const bgColors: Record<RitualCategory, string> = {
+                  morning: 'from-amber-50 via-orange-50 to-yellow-50',
+                  midday: 'from-emerald-50 via-teal-50 to-cyan-50',
+                  evening: 'from-indigo-50 via-purple-50 to-violet-50',
+                  selfcare: 'from-rose-50 via-pink-50 to-fuchsia-50',
+                }
+
                 return (
-                  <div className="relative w-full h-full bg-gradient-to-b from-gray-50 to-white">
+                  <div className={`relative w-full h-full bg-gradient-to-br ${bgColors[activeRitual.ritual.category]}`}>
                     {/* Subtle background decoration */}
                     <div className="absolute inset-0 overflow-hidden">
                       <motion.div
@@ -1284,7 +1299,7 @@ export default function RitualsPage() {
                           scale: [1, 1.1, 1],
                         }}
                         transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                        className={`absolute -top-20 -left-20 w-64 h-64 ${category.bg} rounded-full opacity-50 blur-3xl`}
+                        className={`absolute -top-20 -left-20 w-64 h-64 ${category.iconBg} rounded-full opacity-60 blur-3xl`}
                       />
                       <motion.div
                         animate={{
@@ -1293,7 +1308,7 @@ export default function RitualsPage() {
                           scale: [1, 1.2, 1],
                         }}
                         transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-                        className={`absolute -bottom-32 -right-32 w-96 h-96 ${category.bg} rounded-full opacity-50 blur-3xl`}
+                        className={`absolute -bottom-32 -right-32 w-96 h-96 ${category.iconBg} rounded-full opacity-60 blur-3xl`}
                       />
                       <motion.div
                         animate={{
@@ -1301,7 +1316,7 @@ export default function RitualsPage() {
                           y: [0, 15, 0],
                         }}
                         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                        className="absolute top-1/3 right-10 w-32 h-32 bg-white rounded-full opacity-50 blur-2xl"
+                        className="absolute top-1/3 right-10 w-32 h-32 bg-white rounded-full opacity-70 blur-2xl"
                       />
                     </div>
 

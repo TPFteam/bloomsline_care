@@ -305,3 +305,39 @@ export async function getCollectionsForResource(
 
   return data.map(r => r.collection_id)
 }
+
+// Remove a resource from ALL collections (for "remove from my resources")
+export async function removeResourceFromAllCollections(
+  resourceId: string
+): Promise<void> {
+  const supabase = createClient()
+
+  const { error } = await supabase
+    .from('collection_resources')
+    .delete()
+    .eq('resource_id', resourceId)
+
+  if (error) {
+    console.error('Error removing resource from all collections:', error)
+    throw error
+  }
+}
+
+// Check if a resource is saved in any of the user's collections
+export async function isResourceSaved(resourceId: string): Promise<boolean> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('collection_resources')
+    .select('id')
+    .eq('resource_id', resourceId)
+    .limit(1)
+    .maybeSingle()
+
+  if (error) {
+    console.error('Error checking if resource is saved:', error)
+    return false
+  }
+
+  return !!data
+}

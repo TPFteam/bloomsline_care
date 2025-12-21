@@ -49,7 +49,7 @@ import { sampleLibraryResources } from '@/lib/data/sampleLibraryResources'
 import { formatDuration } from '@/types/library'
 import type { LibraryResource, ResourceType, UserResource } from '@/types/library'
 import { getResources, deleteResource } from '@/lib/services/resources'
-import { getCollections, createCollection, deleteCollection } from '@/lib/services/collections'
+import { getCollections, createCollection, deleteCollection, removeResourceFromAllCollections } from '@/lib/services/collections'
 import type { Resource } from '@/types/resource'
 import type { Collection, CollectionColor, CollectionIcon, collectionColorConfig } from '@/types/collection'
 import type { Member } from '@/types/member'
@@ -222,9 +222,12 @@ export default function MyResourcesPage() {
   const supabase = createClient()
   const [activeTab, setActiveTab] = useState<TabType>('created')
   const [searchQuery, setSearchQuery] = useState('')
+  const [languageFilter, setLanguageFilter] = useState<'all' | 'en' | 'fr'>('all')
   const [dbResources, setDbResources] = useState<Resource[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [isRemoving, setIsRemoving] = useState<string | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   // Collections state
   const [collections, setCollections] = useState<Collection[]>([])
@@ -246,11 +249,18 @@ export default function MyResourcesPage() {
   const [isSharing, setIsSharing] = useState(false)
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
 
-  // Fetch resources from database
+  // Fetch resources from database and current user
   useEffect(() => {
     const fetchResources = async () => {
       try {
-        const resources = await getResources()
+        // Get current user ID
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          setCurrentUserId(user.id)
+        }
+
+        // Only fetch resources created by the current user
+        const resources = await getResources({ myResourcesOnly: true })
         setDbResources(resources)
       } catch (error) {
         console.error('Error fetching resources:', error)
@@ -260,7 +270,7 @@ export default function MyResourcesPage() {
       }
     }
     fetchResources()
-  }, [locale])
+  }, [locale, supabase])
 
   // Fetch collections from database
   useEffect(() => {
@@ -338,6 +348,24 @@ export default function MyResourcesPage() {
       toast.error(locale === 'fr' ? 'Erreur lors de la suppression' : 'Error deleting resource')
     } finally {
       setIsDeleting(null)
+    }
+  }
+
+  // Handle remove from library (for resources not owned by user)
+  const handleRemoveFromLibrary = async (id: string) => {
+    if (!confirm(locale === 'fr' ? 'Êtes-vous sûr de vouloir retirer cette ressource de votre bibliothèque?' : 'Are you sure you want to remove this resource from your library?')) {
+      return
+    }
+    setIsRemoving(id)
+    try {
+      await removeResourceFromAllCollections(id)
+      setDbResources(prev => prev.filter(r => r.id !== id))
+      toast.success(locale === 'fr' ? 'Ressource retirée de votre bibliothèque' : 'Resource removed from your library')
+    } catch (error) {
+      console.error('Error removing resource:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors du retrait' : 'Error removing resource')
+    } finally {
+      setIsRemoving(null)
     }
   }
 
@@ -440,13 +468,24 @@ export default function MyResourcesPage() {
 
   // User-created resources from database
   const createdResources = useMemo(() => {
-    if (!searchQuery) return dbResources
-    const query = searchQuery.toLowerCase()
-    return dbResources.filter(r =>
-      r.title.toLowerCase().includes(query) ||
-      (r.description || '').toLowerCase().includes(query)
-    )
-  }, [searchQuery, dbResources])
+    let filtered = dbResources
+
+    // Filter by language
+    if (languageFilter !== 'all') {
+      filtered = filtered.filter(r => r.language === languageFilter)
+    }
+
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(r =>
+        r.title.toLowerCase().includes(query) ||
+        (r.description || '').toLowerCase().includes(query)
+      )
+    }
+
+    return filtered
+  }, [searchQuery, dbResources, languageFilter])
 
   // Shared resources (empty for demo)
   const sharedResources: LibraryResource[] = []
@@ -616,6 +655,42 @@ export default function MyResourcesPage() {
                 className="w-full pl-11 pr-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all"
               />
             </div>
+
+            {/* Language Filter */}
+            <div className="flex items-center gap-1 bg-gray-100/80 rounded-xl p-1">
+              <button
+                onClick={() => setLanguageFilter('all')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  languageFilter === 'all'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {locale === 'fr' ? 'Tous' : 'All'}
+              </button>
+              <button
+                onClick={() => setLanguageFilter('en')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                  languageFilter === 'en'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <span>🇬🇧</span>
+                EN
+              </button>
+              <button
+                onClick={() => setLanguageFilter('fr')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                  languageFilter === 'fr'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <span>🇫🇷</span>
+                FR
+              </button>
+            </div>
           </div>
         </motion.div>
 
@@ -664,19 +739,25 @@ export default function MyResourcesPage() {
                 </div>
               ) : createdResources.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {createdResources.map((resource) => (
-                    <DbResourceCard
-                      key={resource.id}
-                      resource={resource}
-                      onEdit={() => router.push(`/resources/create/${resource.type}?edit=${resource.id}`)}
-                      onPreview={() => router.push(`/resources/${resource.id}`)}
-                      onDelete={() => handleDelete(resource.id)}
-                      onShare={() => handleOpenShareModal(resource)}
-                      isDeleting={isDeleting === resource.id}
-                      locale={locale}
-                      t={t}
-                    />
-                  ))}
+                  {createdResources.map((resource) => {
+                    const resourceIsOwner = currentUserId === resource.practitioner_id
+                    return (
+                      <DbResourceCard
+                        key={resource.id}
+                        resource={resource}
+                        onEdit={() => router.push(`/resources/create/${resource.type}?edit=${resource.id}`)}
+                        onPreview={() => router.push(`/resources/${resource.id}`)}
+                        onDelete={() => handleDelete(resource.id)}
+                        onRemove={() => handleRemoveFromLibrary(resource.id)}
+                        onShare={() => handleOpenShareModal(resource)}
+                        isDeleting={isDeleting === resource.id}
+                        isRemoving={isRemoving === resource.id}
+                        isOwner={resourceIsOwner}
+                        locale={locale}
+                        t={t}
+                      />
+                    )
+                  })}
                 </div>
               ) : (
                 <EmptyState
@@ -1208,7 +1289,7 @@ function SavedResourceCard({
           </div>
         </div>
 
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">{resource.title}</h3>
+        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 leading-snug">{resource.title}</h3>
         <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">{resource.description}</p>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -1240,8 +1321,11 @@ function DbResourceCard({
   onEdit,
   onPreview,
   onDelete,
+  onRemove,
   onShare,
   isDeleting,
+  isRemoving,
+  isOwner,
   locale,
   t,
 }: {
@@ -1249,8 +1333,11 @@ function DbResourceCard({
   onEdit: () => void
   onPreview: () => void
   onDelete: () => void
+  onRemove: () => void
   onShare: () => void
   isDeleting: boolean
+  isRemoving: boolean
+  isOwner: boolean
   locale: 'en' | 'fr'
   t: any
 }) {
@@ -1274,7 +1361,7 @@ function DbResourceCard({
     <motion.div
       whileHover={{ scale: 1.02, y: -4 }}
       onClick={onPreview}
-      className={`bg-white/90 backdrop-blur-xl rounded-[1.25rem] shadow-lg shadow-gray-200/40 border border-white/60 overflow-hidden cursor-pointer hover:shadow-xl transition-all group ${isDeleting ? 'opacity-50' : ''}`}
+      className={`bg-white/90 backdrop-blur-xl rounded-[1.25rem] shadow-lg shadow-gray-200/40 border border-white/60 overflow-hidden cursor-pointer hover:shadow-xl transition-all group ${isDeleting || isRemoving ? 'opacity-50' : ''}`}
     >
       <div className="p-5">
         <div className="flex items-start justify-between mb-4">
@@ -1284,6 +1371,10 @@ function DbResourceCard({
             </div>
           </div>
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            {/* Language Badge */}
+            <Badge className="text-xs bg-gray-50 text-gray-600 border-0 shadow-sm">
+              {resource.language === 'fr' ? '🇫🇷' : '🇬🇧'}
+            </Badge>
             {/* Visibility Badge */}
             {resource.visibility === 'public' ? (
               <Badge className="text-xs bg-blue-100 text-blue-700 border-0 shadow-sm">
@@ -1317,25 +1408,34 @@ function DbResourceCard({
                   <Eye className="w-4 h-4 mr-2" />
                   {t.library.create.preview}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={onEdit} className="rounded-lg">
-                  <Pencil className="w-4 h-4 mr-2" />
-                  {t.library.create.editTitle}
-                </DropdownMenuItem>
+                {isOwner && (
+                  <DropdownMenuItem onClick={onEdit} className="rounded-lg">
+                    <Pencil className="w-4 h-4 mr-2" />
+                    {t.library.create.editTitle}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={onShare} className="rounded-lg text-lavender-600">
                   <Users className="w-4 h-4 mr-2" />
                   {locale === 'fr' ? 'Partager avec un membre' : 'Share with Member'}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onDelete} className="text-red-600 rounded-lg">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {locale === 'fr' ? 'Supprimer' : 'Delete'}
-                </DropdownMenuItem>
+                {isOwner ? (
+                  <DropdownMenuItem onClick={onDelete} className="text-red-600 rounded-lg">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={onRemove} className="text-amber-600 rounded-lg">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {locale === 'fr' ? 'Retirer de ma bibliothèque' : 'Remove from my library'}
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
 
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">{resource.title}</h3>
+        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 leading-snug">{resource.title}</h3>
         <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">{resource.description || (locale === 'fr' ? 'Aucune description' : 'No description')}</p>
 
         <div className="flex items-center justify-between">
@@ -1420,7 +1520,7 @@ function CreatedResourceCard({
           </div>
         </div>
 
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">{resource.title}</h3>
+        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 leading-snug">{resource.title}</h3>
         <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">{resource.description}</p>
 
         <div className="flex flex-wrap gap-2">

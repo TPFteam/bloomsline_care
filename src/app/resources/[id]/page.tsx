@@ -36,6 +36,7 @@ import { Badge } from '@/components/ui/badge'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { useLanguage } from '@/lib/i18n/context'
 import { getResourceById, deleteResource, getResourceSubmissions, updateSubmission, type ResourceSubmission } from '@/lib/services/resources'
+import { removeResourceFromAllCollections, isResourceSaved } from '@/lib/services/collections'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { Resource, ResourceType, ResourceBlock } from '@/types/resource'
@@ -189,7 +190,9 @@ export default function ResourceDetailPage() {
   const [resource, setResource] = useState<Resource | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
+  const [removing, setRemoving] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
   const [submissions, setSubmissions] = useState<ResourceSubmission[]>([])
   const [loadingSubmissions, setLoadingSubmissions] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState<ResourceSubmission | null>(null)
@@ -215,6 +218,10 @@ export default function ResourceDetailPage() {
           setIsOwner(true)
           // Fetch submissions if owner
           fetchSubmissions(params.id as string)
+        } else if (data) {
+          // If not owner, check if the resource is saved in their collections
+          const saved = await isResourceSaved(data.id)
+          setIsSaved(saved)
         }
       } catch (error) {
         console.error('Error fetching resource:', error)
@@ -284,6 +291,30 @@ export default function ResourceDetailPage() {
       toast.error(locale === 'fr' ? 'Erreur lors de la suppression' : 'Error deleting resource')
     } finally {
       setDeleting(false)
+    }
+  }
+
+  const handleRemoveFromLibrary = async () => {
+    if (!resource) return
+
+    const confirmed = window.confirm(
+      locale === 'fr'
+        ? 'Êtes-vous sûr de vouloir retirer cette ressource de votre bibliothèque?'
+        : 'Are you sure you want to remove this resource from your library?'
+    )
+
+    if (!confirmed) return
+
+    setRemoving(true)
+    try {
+      await removeResourceFromAllCollections(resource.id)
+      toast.success(locale === 'fr' ? 'Ressource retirée de votre bibliothèque' : 'Resource removed from your library')
+      router.push('/resources')
+    } catch (error) {
+      console.error('Error removing resource:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors du retrait' : 'Error removing resource')
+    } finally {
+      setRemoving(false)
     }
   }
 
@@ -825,182 +856,499 @@ export default function ResourceDetailPage() {
                 transition={{ delay: 0.1 }}
                 className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
               >
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100/80 flex items-center justify-center">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-md">
-                      <FileText className="w-4 h-4 text-white" />
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100/80 flex items-center justify-center">
+                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-md">
+                        <Eye className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">
+                        {locale === 'fr' ? 'Aperçu du contenu' : 'Content Preview'}
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        {locale === 'fr' ? 'Tel que vu par les membres' : 'As seen by members'}
+                      </p>
                     </div>
                   </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      {locale === 'fr' ? 'Contenu' : 'Content'}
-                    </h2>
-                    <p className="text-sm text-gray-500">
-                      {resource.blocks.length} {locale === 'fr' ? 'bloc(s)' : 'block(s)'}
-                    </p>
-                  </div>
+                  <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100">
+                    {resource.blocks.length} {locale === 'fr' ? 'éléments' : 'items'}
+                  </Badge>
                 </div>
 
-                <div className="space-y-4">
-                  {resource.blocks.map((block, index) => (
-                    <div
-                      key={block.id || index}
-                      className="p-4 bg-gray-50/80 rounded-xl border border-gray-100"
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline" className="text-xs capitalize">
-                          {block.type}
-                        </Badge>
-                      </div>
-                      {block.type === 'heading' && (
-                        <h3 className="text-lg font-semibold text-gray-900">{typeof block.content === 'string' ? block.content : ''}</h3>
-                      )}
-                      {block.type === 'paragraph' && (
-                        <p className="text-gray-700">{typeof block.content === 'string' ? block.content : ''}</p>
-                      )}
-                      {block.type === 'prompt' && (
-                        <div className="p-3 bg-white rounded-lg border border-gray-200">
-                          <p className="text-gray-700 mb-2">{typeof block.content === 'string' ? block.content : ''}</p>
-                          <div className="h-20 bg-gray-50 rounded border border-dashed border-gray-300 flex items-center justify-center text-sm text-gray-400">
-                            {locale === 'fr' ? 'Zone de réponse' : 'Response area'}
-                          </div>
-                        </div>
-                      )}
-                      {block.type === 'checklist' && 'items' in block && (
-                        <div className="space-y-2">
-                          <p className="text-gray-700 mb-2">{typeof block.content === 'string' ? block.content : ''}</p>
-                          {block.items?.map((item, i) => (
-                            <div key={i} className="flex items-center gap-2 text-sm text-gray-600">
-                              <div className="w-4 h-4 rounded border border-gray-300" />
-                              <span>{typeof item === 'string' ? item : ''}</span>
+                {/* Clean preview mimicking actual worksheet experience */}
+                <div className="space-y-6">
+                  {(() => {
+                    // Track question and info numbers separately
+                    let questionNumber = 0
+                    let infoNumber = 0
+                    const questionTypes = ['prompt', 'checklist', 'scale', 'matrix_rating', 'likert', 'multiple_choice', 'yes_no', 'mood', 'numeric', 'slider', 'date_picker', 'time_input', 'list_input', 'audio_response', 'file_response', 'video_response']
+                    const infoTypes = ['heading', 'paragraph', 'quote', 'tip', 'affirmation', 'image', 'divider']
+
+                    // Question type labels for display
+                    const typeLabels: Record<string, { en: string; fr: string }> = {
+                      prompt: { en: 'Text', fr: 'Texte' },
+                      checklist: { en: 'Checklist', fr: 'Liste' },
+                      scale: { en: 'Scale', fr: 'Échelle' },
+                      matrix_rating: { en: 'Matrix', fr: 'Matrice' },
+                      likert: { en: 'Scale', fr: 'Échelle' },
+                      multiple_choice: { en: 'Choice', fr: 'Choix' },
+                      yes_no: { en: 'Yes/No', fr: 'Oui/Non' },
+                      mood: { en: 'Mood', fr: 'Humeur' },
+                      numeric: { en: 'Number', fr: 'Nombre' },
+                      slider: { en: 'Slider', fr: 'Curseur' },
+                      date_picker: { en: 'Date', fr: 'Date' },
+                      time_input: { en: 'Time', fr: 'Heure' },
+                      list_input: { en: 'List', fr: 'Liste' },
+                      audio_response: { en: 'Audio', fr: 'Audio' },
+                      file_response: { en: 'File', fr: 'Fichier' },
+                      video_response: { en: 'Video', fr: 'Vidéo' },
+                    }
+
+                    // Info type labels for display
+                    const infoTypeLabels: Record<string, { en: string; fr: string }> = {
+                      heading: { en: 'Title', fr: 'Titre' },
+                      paragraph: { en: 'Text', fr: 'Texte' },
+                      quote: { en: 'Quote', fr: 'Citation' },
+                      tip: { en: 'Tip', fr: 'Conseil' },
+                      affirmation: { en: 'Affirm', fr: 'Affirm.' },
+                      image: { en: 'Image', fr: 'Image' },
+                      divider: { en: 'Line', fr: 'Ligne' },
+                    }
+
+                    return resource.blocks.map((block, index) => {
+                    const blockType = (block as any).type as string
+                    const blockContent = typeof (block as any).content === 'string' ? (block as any).content : ''
+                    const blockId = (block as any).id || index
+                    const isQuestion = questionTypes.includes(blockType)
+                    const isInfo = infoTypes.includes(blockType)
+                    if (isQuestion) questionNumber++
+                    if (isInfo) infoNumber++
+
+                    // Content/Info blocks with inline indicator
+                    if (blockType === 'heading') {
+                      return (
+                        <div key={blockId}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                              {infoNumber}
                             </div>
-                          ))}
+                            <span className="text-[9px] text-gray-400 uppercase">{infoTypeLabels.heading[locale]}</span>
+                          </div>
+                          <h3 className="text-xl font-semibold text-gray-900">{blockContent}</h3>
                         </div>
-                      )}
-                      {block.type === 'scale' && 'scaleMin' in block && (
-                        <div>
-                          <p className="text-gray-700 mb-3">{typeof block.content === 'string' ? block.content : ''}</p>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-500">{typeof block.scaleMinLabel === 'string' ? block.scaleMinLabel : block.scaleMin}</span>
-                            <div className="flex-1 h-2 bg-gray-200 rounded-full" />
-                            <span className="text-sm text-gray-500">{typeof block.scaleMaxLabel === 'string' ? block.scaleMaxLabel : block.scaleMax}</span>
+                      )
+                    }
+
+                    if (blockType === 'paragraph') {
+                      return (
+                        <div key={blockId}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                              {infoNumber}
+                            </div>
+                            <span className="text-[9px] text-gray-400 uppercase">{infoTypeLabels.paragraph[locale]}</span>
+                          </div>
+                          <p className="text-gray-700 leading-relaxed">{blockContent}</p>
+                        </div>
+                      )
+                    }
+
+                    if (blockType === 'divider') {
+                      return (
+                        <div key={blockId}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                              {infoNumber}
+                            </div>
+                            <span className="text-[9px] text-gray-400 uppercase">{infoTypeLabels.divider[locale]}</span>
+                          </div>
+                          <hr className="border-gray-200" />
+                        </div>
+                      )
+                    }
+
+                    if (blockType === 'quote') {
+                      return (
+                        <div key={blockId}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                              {infoNumber}
+                            </div>
+                            <span className="text-[9px] text-gray-400 uppercase">{infoTypeLabels.quote[locale]}</span>
+                          </div>
+                          <blockquote className="border-l-4 border-lavender-300 pl-4 py-2 italic text-gray-700 bg-lavender-50/30 rounded-r-lg">
+                            {blockContent}
+                            {(block as any).quoteAuthor && (
+                              <footer className="text-sm text-gray-500 mt-2 not-italic">— {(block as any).quoteAuthor}</footer>
+                            )}
+                          </blockquote>
+                        </div>
+                      )
+                    }
+
+                    if (blockType === 'tip') {
+                      const tipStyles = {
+                        success: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+                        warning: 'bg-amber-50 border-amber-200 text-amber-800',
+                        info: 'bg-blue-50 border-blue-200 text-blue-800',
+                        default: 'bg-gray-50 border-gray-200 text-gray-700'
+                      }
+                      const style = (block as any).style || 'default'
+                      return (
+                        <div key={blockId}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                              {infoNumber}
+                            </div>
+                            <span className="text-[9px] text-gray-400 uppercase">{infoTypeLabels.tip[locale]}</span>
+                          </div>
+                          <div className={`p-4 rounded-xl border ${tipStyles[style as keyof typeof tipStyles] || tipStyles.default}`}>
+                            <p className="text-sm">{blockContent}</p>
                           </div>
                         </div>
-                      )}
-                      {block.type === 'matrix_rating' && 'matrixItems' in block && (
-                        <div>
-                          <p className="text-gray-700 mb-3">{typeof block.content === 'string' ? block.content : ''}</p>
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                              <thead>
-                                <tr>
-                                  <th className="text-left py-2 pr-4 text-gray-500 font-normal"></th>
-                                  {Array.from({ length: (block as any).matrixScaleMax || 5 }).map((_, i) => (
-                                    <th key={i} className="px-2 py-2 text-center text-gray-500 font-normal">
-                                      {i + 1}
-                                    </th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {((block as any).matrixItems || []).map((item: string, i: number) => (
-                                  <tr key={i} className="border-t border-gray-100">
-                                    <td className="py-2 pr-4 text-gray-700">{item}</td>
-                                    {Array.from({ length: (block as any).matrixScaleMax || 5 }).map((_, j) => (
-                                      <td key={j} className="px-2 py-2 text-center">
-                                        <Circle className="w-4 h-4 text-gray-300 mx-auto" />
-                                      </td>
+                      )
+                    }
+
+                    if (blockType === 'affirmation') {
+                      return (
+                        <div key={blockId}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                              {infoNumber}
+                            </div>
+                            <span className="text-[9px] text-gray-400 uppercase">{infoTypeLabels.affirmation[locale]}</span>
+                          </div>
+                          <div className="p-5 bg-gradient-to-br from-lavender-50 to-purple-50 rounded-xl border border-lavender-100 text-center">
+                            <p className="text-lavender-700 font-medium text-lg">{blockContent}</p>
+                          </div>
+                        </div>
+                      )
+                    }
+
+                    if (blockType === 'image') {
+                      return (
+                        <div key={blockId}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                              {infoNumber}
+                            </div>
+                            <span className="text-[9px] text-gray-400 uppercase">{infoTypeLabels.image[locale]}</span>
+                          </div>
+                          <div className="flex flex-col items-start">
+                            {(block as any).mediaFile?.url ? (
+                              <div className="group relative">
+                                <img
+                                  src={(block as any).mediaFile.url}
+                                  alt={(block as any).mediaAlt || (block as any).mediaCaption || ''}
+                                  className="max-h-64 w-auto rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                                  onClick={() => window.open((block as any).mediaFile.url, '_blank')}
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                  <div className="bg-black/60 text-white text-xs px-3 py-1.5 rounded-full">
+                                    {locale === 'fr' ? 'Cliquez pour agrandir' : 'Click to enlarge'}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="h-40 w-64 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                                {locale === 'fr' ? 'Image' : 'Image'}
+                              </div>
+                            )}
+                            {(block as any).mediaCaption && (
+                              <p className="text-sm text-gray-600 mt-3 max-w-md">{(block as any).mediaCaption}</p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    }
+
+                    // Interactive blocks get a subtle card treatment with question number
+                    const typeLabel = typeLabels[blockType]?.[locale] || blockType
+
+                    return (
+                      <div
+                        key={blockId}
+                        className="p-5 bg-white rounded-xl border border-gray-100 shadow-sm"
+                      >
+                        {/* Question number indicator - inline */}
+                        <div className="flex items-center gap-2.5 mb-4">
+                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center text-white text-sm font-semibold shadow-sm flex-shrink-0">
+                            {questionNumber}
+                          </div>
+                          <span className="text-[10px] text-gray-400 font-medium tracking-wide uppercase">{typeLabel}</span>
+                          <div className="h-px flex-1 bg-gray-100" />
+                        </div>
+
+                        {blockType === 'prompt' && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-3">{blockContent}</p>
+                            <div className="min-h-[100px] bg-gray-50 rounded-lg border border-dashed border-gray-200 flex items-center justify-center">
+                              <span className="text-sm text-gray-400">{locale === 'fr' ? 'Zone de réponse texte' : 'Text response area'}</span>
+                            </div>
+                          </>
+                        )}
+
+                        {blockType === 'checklist' && 'items' in block && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-4">{blockContent}</p>
+                            <div className="space-y-3">
+                              {(block as any).items?.map((item: any, i: number) => (
+                                <label key={i} className="flex items-center gap-3 cursor-pointer group">
+                                  <div className="w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center group-hover:border-emerald-400 transition-colors">
+                                  </div>
+                                  <span className="text-gray-700">{typeof item === 'string' ? item : ''}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </>
+                        )}
+
+                        {blockType === 'scale' && 'scaleMin' in block && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-4">{blockContent}</p>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm text-gray-500 min-w-[60px] text-right">{typeof (block as any).scaleMinLabel === 'string' ? (block as any).scaleMinLabel : (block as any).scaleMin}</span>
+                              <div className="flex-1 h-3 bg-gradient-to-r from-gray-200 via-emerald-200 to-emerald-400 rounded-full" />
+                              <span className="text-sm text-gray-500 min-w-[60px]">{typeof (block as any).scaleMaxLabel === 'string' ? (block as any).scaleMaxLabel : (block as any).scaleMax}</span>
+                            </div>
+                          </>
+                        )}
+
+                        {blockType === 'matrix_rating' && 'matrixItems' in block && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-4">{blockContent}</p>
+                            <div className="overflow-x-auto">
+                              <table className="w-full">
+                                <thead>
+                                  <tr>
+                                    <th className="text-left py-3 pr-4 text-sm text-gray-500 font-normal"></th>
+                                    {Array.from({ length: (block as any).matrixScaleMax || 5 }).map((_, i) => (
+                                      <th key={i} className="px-3 py-3 text-center text-sm text-gray-500 font-medium">
+                                        {i + 1}
+                                      </th>
                                     ))}
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                          {(block as any).matrixScaleLabels && (
-                            <div className="flex justify-between text-xs text-gray-400 mt-2 px-2">
-                              <span>{(block as any).matrixScaleLabels.min}</span>
-                              <span>{(block as any).matrixScaleLabels.max}</span>
+                                </thead>
+                                <tbody>
+                                  {((block as any).matrixItems || []).map((item: string, i: number) => (
+                                    <tr key={i} className="border-t border-gray-100">
+                                      <td className="py-3 pr-4 text-gray-700">{item}</td>
+                                      {Array.from({ length: (block as any).matrixScaleMax || 5 }).map((_, j) => (
+                                        <td key={j} className="px-3 py-3 text-center">
+                                          <div className="w-5 h-5 rounded-full border-2 border-gray-300 mx-auto hover:border-emerald-400 transition-colors cursor-pointer" />
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
                             </div>
-                          )}
-                        </div>
-                      )}
-                      {block.type === 'likert' && (
-                        <div>
-                          <p className="text-gray-700 mb-3">{typeof block.content === 'string' ? block.content : ''}</p>
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <span>{(block as any).likertLabels?.start || '1'}</span>
-                            <div className="flex gap-1">
-                              {Array.from({ length: (block as any).likertScale || 5 }).map((_, i) => (
-                                <div key={i} className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center text-xs">
-                                  {i + 1}
+                            {(block as any).matrixScaleLabels && (
+                              <div className="flex justify-between text-xs text-gray-400 mt-3 px-2">
+                                <span>{(block as any).matrixScaleLabels.min}</span>
+                                <span>{(block as any).matrixScaleLabels.max}</span>
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {blockType === 'likert' && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-4">{blockContent}</p>
+                            {/* Mood Scale */}
+                            {(block as any).scaleType === 'mood' && (
+                              <div className="flex items-center justify-center gap-6 py-2">
+                                {[
+                                  { emoji: '🌧️', label: locale === 'fr' ? 'Difficile' : 'Struggling' },
+                                  { emoji: '🍂', label: locale === 'fr' ? 'Fragile' : 'Low' },
+                                  { emoji: '🌱', label: locale === 'fr' ? 'Neutre' : 'Okay' },
+                                  { emoji: '🌿', label: locale === 'fr' ? 'Bien' : 'Good' },
+                                  { emoji: '🌸', label: locale === 'fr' ? 'Épanoui' : 'Thriving' },
+                                ].map((mood, i) => (
+                                  <div key={i} className="flex flex-col items-center gap-1 cursor-pointer hover:scale-110 transition-transform">
+                                    <span className="text-3xl">{mood.emoji}</span>
+                                    <p className="text-xs text-gray-500">{mood.label}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {/* Rating Scale */}
+                            {(block as any).scaleType === 'rating' && (
+                              <div className="flex items-center justify-center gap-2">
+                                {Array.from({ length: (block as any).scaleRange || 5 }).map((_, i) => (
+                                  <span key={i} className="text-3xl text-gray-300 hover:text-amber-400 cursor-pointer transition-colors">★</span>
+                                ))}
+                              </div>
+                            )}
+                            {/* Likert Scale (default) */}
+                            {(!(block as any).scaleType || (block as any).scaleType === 'likert') && (
+                              <div className="flex items-center justify-center gap-3">
+                                <span className="text-sm text-gray-500 min-w-[60px] text-right">{(block as any).scaleLabels?.[0] || (block as any).likertLabels?.start || '1'}</span>
+                                <div className="flex gap-2">
+                                  {Array.from({ length: (block as any).scaleRange || (block as any).likertScale || 5 }).map((_, i) => (
+                                    <div key={i} className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center text-sm text-gray-500 hover:border-emerald-400 hover:bg-emerald-50 cursor-pointer transition-all">
+                                      {i + 1}
+                                    </div>
+                                  ))}
+                                </div>
+                                <span className="text-sm text-gray-500 min-w-[60px]">{(block as any).scaleLabels?.[(block as any).scaleLabels?.length - 1] || (block as any).likertLabels?.end || ((block as any).scaleRange || (block as any).likertScale || 5).toString()}</span>
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {blockType === 'multiple_choice' && ('options' in block || 'choices' in block) && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-4">{blockContent}</p>
+                            <div className="space-y-2">
+                              {((block as any).options || (block as any).choices || []).map((opt: any, i: number) => (
+                                <label key={i} className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/30 cursor-pointer transition-all">
+                                  <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
+                                  <span className="text-gray-700">{typeof opt === 'string' ? opt : opt.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </>
+                        )}
+
+                        {blockType === 'yes_no' && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-4">{blockContent}</p>
+                            <div className="flex items-center gap-3">
+                              <button className="flex-1 py-3 px-4 rounded-lg border-2 border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all flex items-center justify-center gap-2">
+                                <CheckCircle className="w-5 h-5 text-emerald-500" />
+                                <span className="font-medium text-gray-700">{locale === 'fr' ? 'Oui' : 'Yes'}</span>
+                              </button>
+                              <button className="flex-1 py-3 px-4 rounded-lg border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all flex items-center justify-center gap-2">
+                                <X className="w-5 h-5 text-gray-400" />
+                                <span className="font-medium text-gray-700">{locale === 'fr' ? 'Non' : 'No'}</span>
+                              </button>
+                            </div>
+                          </>
+                        )}
+
+                        {blockType === 'mood' && 'moodOptions' in block && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-4">{blockContent}</p>
+                            <div className="flex items-center justify-center gap-6">
+                              {((block as any).moodOptions || []).map((mood: any, i: number) => (
+                                <div key={i} className="flex flex-col items-center gap-1 cursor-pointer hover:scale-110 transition-transform">
+                                  <span className="text-2xl">{mood.emoji}</span>
+                                  <p className="text-xs text-gray-500">{mood.label}</p>
                                 </div>
                               ))}
                             </div>
-                            <span>{(block as any).likertLabels?.end || ((block as any).likertScale || 5).toString()}</span>
-                          </div>
-                        </div>
-                      )}
-                      {block.type === 'multiple_choice' && ('options' in block || 'choices' in block) && (
-                        <div>
-                          <p className="text-gray-700 mb-3">{typeof block.content === 'string' ? block.content : ''}</p>
-                          <div className="space-y-1">
-                            {((block as any).options || (block as any).choices || []).map((opt: any, i: number) => (
-                              <div key={i} className="flex items-center gap-2 text-sm text-gray-600">
-                                <Circle className="w-3 h-3" />
-                                <span>{typeof opt === 'string' ? opt : opt.label}</span>
+                          </>
+                        )}
+
+                        {blockType === 'numeric' && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-3">{blockContent}</p>
+                            <input
+                              type="number"
+                              disabled
+                              placeholder="0"
+                              className="w-32 h-11 px-4 border border-gray-200 rounded-lg text-gray-400 bg-gray-50"
+                            />
+                          </>
+                        )}
+
+                        {blockType === 'slider' && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-4">{blockContent}</p>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm text-gray-500 min-w-[40px] text-right">{(block as any).sliderMin || 0}</span>
+                              <div className="flex-1 h-2 bg-gradient-to-r from-gray-200 to-emerald-400 rounded-full relative">
+                                <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 bg-white border-2 border-emerald-400 rounded-full shadow-sm" />
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {block.type === 'yes_no' && (
-                        <div>
-                          <p className="text-gray-700 mb-3">{typeof block.content === 'string' ? block.content : ''}</p>
-                          <div className="flex items-center gap-4 text-sm">
-                            <span className="flex items-center gap-1 text-emerald-600">
-                              <CheckCircle className="w-4 h-4" />
-                              {locale === 'fr' ? 'Oui' : 'Yes'}
-                            </span>
-                            <span className="flex items-center gap-1 text-gray-500">
-                              <Circle className="w-4 h-4" />
-                              {locale === 'fr' ? 'Non' : 'No'}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      {block.type === 'mood' && 'moodOptions' in block && (
-                        <div>
-                          <p className="text-gray-700 mb-3">{typeof block.content === 'string' ? block.content : ''}</p>
-                          <div className="flex items-center gap-2">
-                            {((block as any).moodOptions || []).map((mood: any, i: number) => (
-                              <div key={i} className="text-center">
-                                <span className="text-xl">{mood.emoji}</span>
-                                <p className="text-xs text-gray-500">{mood.label}</p>
+                              <span className="text-sm text-gray-500 min-w-[40px]">{(block as any).sliderMax || 100}</span>
+                            </div>
+                          </>
+                        )}
+
+                        {blockType === 'date_picker' && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-3">{blockContent}</p>
+                            <div className="inline-flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-gray-500 bg-gray-50">
+                              <span>📅</span>
+                              <span className="text-sm">{locale === 'fr' ? 'Sélectionner une date' : 'Select date'}</span>
+                            </div>
+                          </>
+                        )}
+
+                        {blockType === 'time_input' && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-3">{blockContent}</p>
+                            <div className="inline-flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-gray-500 bg-gray-50">
+                              <span>🕐</span>
+                              <span className="text-sm">{locale === 'fr' ? 'Sélectionner l\'heure' : 'Select time'}</span>
+                            </div>
+                          </>
+                        )}
+
+                        {blockType === 'list_input' && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-4">{blockContent}</p>
+                            <div className="space-y-2">
+                              {Array.from({ length: Math.min((block as any).listMinItems || 1, 3) }).map((_, i) => (
+                                <div key={i} className="flex items-center gap-3">
+                                  <span className="text-gray-400 text-sm font-medium w-6">{i + 1}.</span>
+                                  <div className="flex-1 h-11 border border-gray-200 rounded-lg bg-gray-50 flex items-center px-4 text-gray-400 text-sm">
+                                    {(block as any).listItemPlaceholder || (locale === 'fr' ? 'Entrez un élément...' : 'Enter an item...')}
+                                  </div>
+                                </div>
+                              ))}
+                              {((block as any).listMinItems || 1) > 3 && (
+                                <p className="text-xs text-gray-400 text-center pt-1">+ {(block as any).listMinItems - 3} {locale === 'fr' ? 'autres champs' : 'more fields'}</p>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-400 mt-3">
+                              {locale === 'fr' ? `${(block as any).listMinItems || 1} à ${(block as any).listMaxItems || 10} éléments` : `${(block as any).listMinItems || 1} to ${(block as any).listMaxItems || 10} items`}
+                            </p>
+                          </>
+                        )}
+
+                        {blockType === 'audio_response' && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-3">{blockContent || (locale === 'fr' ? 'Enregistrement audio' : 'Audio Recording')}</p>
+                            <div className="p-6 bg-gray-50 border border-dashed border-gray-200 rounded-xl text-center">
+                              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-rose-100 flex items-center justify-center">
+                                <span className="text-2xl">🎤</span>
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {block.type === 'numeric' && (
-                        <div>
-                          <p className="text-gray-700 mb-3">{typeof block.content === 'string' ? block.content : ''}</p>
-                          <div className="w-24 h-10 border border-gray-200 rounded-lg flex items-center justify-center text-gray-400 text-sm">
-                            {locale === 'fr' ? 'Nombre' : 'Number'}
-                          </div>
-                        </div>
-                      )}
-                      {block.type === 'slider' && (
-                        <div>
-                          <p className="text-gray-700 mb-3">{typeof block.content === 'string' ? block.content : ''}</p>
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <span>{(block as any).sliderMin || 0}</span>
-                            <div className="flex-1 h-2 bg-gradient-to-r from-blue-200 to-blue-500 rounded-full" />
-                            <span>{(block as any).sliderMax || 100}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                              <p className="text-sm text-gray-500">{locale === 'fr' ? 'Cliquez pour enregistrer' : 'Click to record'}</p>
+                            </div>
+                          </>
+                        )}
+
+                        {blockType === 'file_response' && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-3">{blockContent || (locale === 'fr' ? 'Téléverser un fichier' : 'File Upload')}</p>
+                            <div className="p-6 bg-gray-50 border border-dashed border-gray-200 rounded-xl text-center">
+                              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-blue-100 flex items-center justify-center">
+                                <span className="text-2xl">📎</span>
+                              </div>
+                              <p className="text-sm text-gray-500">{locale === 'fr' ? 'Glissez un fichier ou cliquez pour parcourir' : 'Drag a file or click to browse'}</p>
+                            </div>
+                          </>
+                        )}
+
+                        {blockType === 'video_response' && (
+                          <>
+                            <p className="text-gray-800 font-medium mb-3">{blockContent || (locale === 'fr' ? 'Enregistrement vidéo' : 'Video Recording')}</p>
+                            <div className="p-6 bg-gray-50 border border-dashed border-gray-200 rounded-xl text-center">
+                              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-purple-100 flex items-center justify-center">
+                                <span className="text-2xl">🎥</span>
+                              </div>
+                              <p className="text-sm text-gray-500">{locale === 'fr' ? 'Cliquez pour enregistrer' : 'Click to record'}</p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )
+                  })
+                  })()}
                 </div>
               </motion.div>
             )}
@@ -1040,6 +1388,27 @@ export default function ResourceDetailPage() {
                         <Trash2 className="w-4 h-4 mr-2" />
                       )}
                       {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                    </Button>
+                  </motion.div>
+                </div>
+              )}
+
+              {/* Remove from library button for non-owners who have saved the resource */}
+              {!isOwner && isSaved && (
+                <div className="mb-6 pb-6 border-b border-gray-100">
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      variant="outline"
+                      className="w-full h-11 rounded-xl border-2 border-amber-200 hover:border-amber-300 hover:bg-amber-50 text-amber-600 transition-all"
+                      onClick={handleRemoveFromLibrary}
+                      disabled={removing}
+                    >
+                      {removing ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 mr-2" />
+                      )}
+                      {locale === 'fr' ? 'Retirer de ma bibliothèque' : 'Remove from my library'}
                     </Button>
                   </motion.div>
                 </div>
