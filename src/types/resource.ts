@@ -41,6 +41,10 @@ export type BlockType =
   | 'time_input'
   | 'list_input'
   | 'table_exercise'
+  // Response block types (member uploads as answer)
+  | 'video_response'
+  | 'audio_response'
+  | 'file_response'
 
 // Media file interface
 export interface MediaFile {
