@@ -4782,12 +4782,12 @@ function CreateWorksheetContent() {
                       onClick={() => setResourceLanguage('en')}
                       className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
                         resourceLanguage === 'en'
-                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md shadow-blue-200/50'
+                          ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md shadow-red-200/50'
                           : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
                       }`}
                     >
                       <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                        resourceLanguage === 'en' ? 'bg-white/20' : 'bg-slate-200 text-slate-600'
+                        resourceLanguage === 'en' ? 'bg-white/20' : 'bg-red-100 text-red-600'
                       }`}>EN</span>
                       English
                     </motion.button>
