@@ -4786,7 +4786,9 @@ function CreateWorksheetContent() {
                           : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
                       }`}
                     >
-                      <span className="text-base">🇬🇧</span>
+                      <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+                        resourceLanguage === 'en' ? 'bg-white/20' : 'bg-slate-200 text-slate-600'
+                      }`}>EN</span>
                       English
                     </motion.button>
                     <motion.button
@@ -4799,7 +4801,9 @@ function CreateWorksheetContent() {
                           : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
                       }`}
                     >
-                      <span className="text-base">🇫🇷</span>
+                      <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+                        resourceLanguage === 'fr' ? 'bg-white/20' : 'bg-blue-100 text-blue-600'
+                      }`}>FR</span>
                       Français
                     </motion.button>
                   </div>

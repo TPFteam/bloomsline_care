@@ -670,24 +670,22 @@ export default function MyResourcesPage() {
               </button>
               <button
                 onClick={() => setLanguageFilter('en')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   languageFilter === 'en'
-                    ? 'bg-white text-gray-900 shadow-sm'
+                    ? 'bg-white text-slate-700 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <span>🇬🇧</span>
                 EN
               </button>
               <button
                 onClick={() => setLanguageFilter('fr')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   languageFilter === 'fr'
-                    ? 'bg-white text-gray-900 shadow-sm'
+                    ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <span>🇫🇷</span>
                 FR
               </button>
             </div>
@@ -1372,8 +1370,12 @@ function DbResourceCard({
           </div>
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             {/* Language Badge */}
-            <Badge className="text-xs bg-gray-50 text-gray-600 border-0 shadow-sm">
-              {resource.language === 'fr' ? '🇫🇷' : '🇬🇧'}
+            <Badge className={`text-xs border-0 shadow-sm font-medium ${
+              resource.language === 'fr'
+                ? 'bg-blue-50 text-blue-600'
+                : 'bg-slate-50 text-slate-600'
+            }`}>
+              {resource.language === 'fr' ? 'FR' : 'EN'}
             </Badge>
             {/* Visibility Badge */}
             {resource.visibility === 'public' ? (
