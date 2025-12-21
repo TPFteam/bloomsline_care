@@ -214,7 +214,7 @@ const dbResourceTypeConfig: Record<string, {
   },
 }
 
-type TabType = 'saved' | 'created' | 'shared'
+type TabType = 'saved' | 'created'
 
 export default function MyResourcesPage() {
   const { t, locale } = useLanguage()
@@ -487,13 +487,9 @@ export default function MyResourcesPage() {
     return filtered
   }, [searchQuery, dbResources, languageFilter])
 
-  // Shared resources (empty for demo)
-  const sharedResources: LibraryResource[] = []
-
   const tabs = [
     { id: 'created' as TabType, label: t.library.myResources.tabs.created, count: createdResources.length, icon: FolderOpen },
     { id: 'saved' as TabType, label: t.library.myResources.tabs.saved, count: savedResources.length, icon: Bookmark },
-    { id: 'shared' as TabType, label: t.library.myResources.tabs.shared, count: sharedResources.length, icon: Share2 },
   ]
 
   // Stats
@@ -644,50 +640,53 @@ export default function MyResourcesPage() {
               })}
             </div>
 
-            {/* Search */}
-            <div className="relative w-full sm:w-72">
-              <AnimatedIcon icon={Search} animation="scale" size={16} animateOnHover animateOnRender={false} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder={t.library.search.placeholder}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all"
-              />
-            </div>
+            {/* Right side controls */}
+            <div className="ml-auto flex items-center gap-3">
+              {/* Language Filter */}
+              <div className="flex items-center gap-1 bg-gray-100/50 rounded-xl p-1">
+                <button
+                  onClick={() => setLanguageFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    languageFilter === 'all'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {locale === 'fr' ? 'Tous' : 'All'}
+                </button>
+                <button
+                  onClick={() => setLanguageFilter('en')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    languageFilter === 'en'
+                      ? 'bg-red-50 text-red-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  EN
+                </button>
+                <button
+                  onClick={() => setLanguageFilter('fr')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    languageFilter === 'fr'
+                      ? 'bg-blue-50 text-blue-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  FR
+                </button>
+              </div>
 
-            {/* Language Filter */}
-            <div className="flex items-center gap-1 bg-gray-100/80 rounded-xl p-1">
-              <button
-                onClick={() => setLanguageFilter('all')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  languageFilter === 'all'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {locale === 'fr' ? 'Tous' : 'All'}
-              </button>
-              <button
-                onClick={() => setLanguageFilter('en')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  languageFilter === 'en'
-                    ? 'bg-white text-red-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                EN
-              </button>
-              <button
-                onClick={() => setLanguageFilter('fr')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  languageFilter === 'fr'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                FR
-              </button>
+              {/* Search */}
+              <div className="relative w-72">
+                <AnimatedIcon icon={Search} animation="scale" size={16} animateOnHover animateOnRender={false} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder={t.library.search.placeholder}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all"
+                />
+              </div>
             </div>
           </div>
         </motion.div>
@@ -766,21 +765,6 @@ export default function MyResourcesPage() {
                   onAction={() => router.push('/resources/create')}
                 />
               )}
-            </motion.div>
-          )}
-
-          {activeTab === 'shared' && (
-            <motion.div
-              key="shared"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              <EmptyState
-                icon={Share2}
-                title={t.library.myResources.noShared}
-                description={t.library.myResources.noSharedDescription}
-              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -1343,10 +1327,10 @@ function DbResourceCard({
   const config = dbResourceTypeConfig[resource.type] || dbResourceTypeConfig.worksheet
 
   const typeLabels: Record<string, { en: string; fr: string }> = {
-    worksheet: { en: 'Worksheet', fr: 'Feuille de travail' },
+    worksheet: { en: 'Worksheet', fr: 'Exercice' },
     assessment: { en: 'Assessment', fr: 'Évaluation' },
     exercise: { en: 'Exercise', fr: 'Exercice' },
-    psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
+    psychoeducation: { en: 'Education', fr: 'Éducation' },
   }
 
   const statusLabels: Record<string, { en: string; fr: string }> = {
@@ -1452,7 +1436,7 @@ function DbResourceCard({
             )}
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span>{resource.blocks.length} {locale === 'fr' ? 'blocs' : 'blocks'}</span>
+            <span>{resource.blocks.length} {locale === 'fr' ? (resource.blocks.length === 1 ? 'étape' : 'étapes') : 'blocks'}</span>
           </div>
         </div>
       </div>

@@ -5,7 +5,7 @@
   "backToLibrary": "Retour à la Bibliothèque",
 
   "search": {
-    "placeholder": "Rechercher des ressources par titre, description ou tags...",
+    "placeholder": "Rechercher par titre, description",
     "noResults": "Aucune ressource trouvée",
     "noResultsDescription": "Essayez d'ajuster votre recherche ou vos filtres",
     "resultsCount": "Affichage de {count} sur {total} ressources"
@@ -50,14 +50,14 @@
   "categories": {
     "anxiety": "Anxiété",
     "depression": "Dépression",
-    "stress": "Gestion du Stress",
+    "stress": "Gestion du stress",
     "relationships": "Relations",
-    "self_esteem": "Estime de Soi",
-    "mindfulness": "Pleine Conscience",
-    "coping_skills": "Stratégies d'Adaptation",
+    "self_esteem": "Estime de soi",
+    "mindfulness": "Pleine conscience",
+    "coping_skills": "Stratégies d'adaptation",
     "communication": "Communication",
-    "grief": "Deuil et Perte",
-    "trauma": "Trauma",
+    "grief": "Deuil & perte",
+    "trauma": "Traumatisme",
     "children": "Enfants",
     "teens": "Adolescents",
     "adults": "Adultes",
@@ -114,28 +114,28 @@
   },
 
   "collections": {
-    "title": "Mes Collections",
+    "title": "Mes dossiers",
     "favorites": "Favoris",
-    "createCollection": "Créer une Collection",
-    "editCollection": "Modifier la Collection",
-    "deleteCollection": "Supprimer la Collection",
-    "collectionName": "Nom de la Collection",
+    "createCollection": "Créer un dossier",
+    "editCollection": "Modifier le dossier",
+    "deleteCollection": "Supprimer le dossier",
+    "collectionName": "Nom du dossier",
     "collectionDescription": "Description (optionnel)",
     "selectColor": "Choisir une Couleur",
-    "noCollections": "Aucune collection",
-    "noCollectionsDescription": "Créez une collection pour organiser vos ressources sauvegardées",
-    "addToCollection": "Ajouter à la Collection",
-    "removeFromCollection": "Retirer de la Collection",
-    "moveToCollection": "Déplacer vers la Collection",
-    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette collection ? Les ressources ne seront pas supprimées."
+    "noCollections": "Aucun dossier",
+    "noCollectionsDescription": "Créez un dossier pour organiser vos supports",
+    "addToCollection": "Ajouter au dossier",
+    "removeFromCollection": "Retirer du dossier",
+    "moveToCollection": "Déplacer vers le dossier",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce dossier ? Les supports ne seront pas supprimés."
   },
 
   "myResources": {
-    "title": "Mes Ressources",
-    "subtitle": "Votre collection personnelle de ressources",
+    "title": "Mes supports",
+    "subtitle": "Votre collection personnelle de supports",
     "tabs": {
-      "saved": "Ressources Sauvegardées",
-      "created": "Mes Créations",
+      "saved": "Enregistrées",
+      "created": "Mes créations",
       "shared": "Partagées avec Moi"
     },
     "noSaved": "Aucune ressource sauvegardée",
@@ -147,7 +147,7 @@
   },
 
   "create": {
-    "title": "Créer une Ressource",
+    "title": "Créer un support",
     "editTitle": "Modifier la Ressource",
     "subtitle": "Créez quelque chose de significatif pour votre pratique",
     "basicInfo": "Informations de Base",
@@ -184,9 +184,9 @@
   "stats": {
     "totalResources": "Total des Ressources",
     "categories": "Catégories",
-    "savedItems": "Éléments Sauvegardés",
-    "myCreations": "Mes Créations",
-    "collections": "Collections"
+    "savedItems": "Enregistrées",
+    "myCreations": "Mes créations",
+    "collections": "Mes dossiers"
   },
 
   "empty": {

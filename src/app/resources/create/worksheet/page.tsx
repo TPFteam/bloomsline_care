@@ -194,14 +194,14 @@ const blockTypes: BlockTypeOption[] = [
   {
     type: 'tip',
     icon: Info,
-    label: { en: 'Tip Box', fr: 'Conseil' },
+    label: { en: 'Tip Box', fr: 'Encadré explicatif' },
     description: { en: 'Important tips or notes', fr: 'Conseils ou notes importantes' },
   },
   // === RESPONSE BLOCKS (Member provides answers) ===
   {
     type: 'prompt',
     icon: HelpCircle,
-    label: { en: 'Long Text', fr: 'Texte long' },
+    label: { en: 'Long Text', fr: 'Texte' },
     description: { en: 'Paragraph or long text response', fr: 'Réponse en paragraphe ou texte long' },
   },
   {
@@ -213,25 +213,25 @@ const blockTypes: BlockTypeOption[] = [
   {
     type: 'yes_no',
     icon: ToggleLeft,
-    label: { en: 'Yes/No Question', fr: 'Question Oui/Non' },
+    label: { en: 'Yes/No Question', fr: 'Question fermée' },
     description: { en: 'Simple yes or no answer', fr: 'Réponse simple oui ou non' },
   },
   {
     type: 'checklist',
     icon: CheckSquare,
-    label: { en: 'Checklist', fr: 'Liste à cocher' },
+    label: { en: 'Checklist', fr: 'Cases à cocher' },
     description: { en: 'List of items to check off', fr: 'Liste d\'éléments à cocher' },
   },
   {
     type: 'scale',
     icon: Star,
-    label: { en: 'Rating Scale', fr: 'Échelle de notation' },
+    label: { en: 'Rating Scale', fr: 'Échelle' },
     description: { en: 'Numeric scale (e.g., 1-10)', fr: 'Échelle numérique (ex: 1-10)' },
   },
   {
     type: 'likert',
     icon: SlidersHorizontal,
-    label: { en: 'Scale Question', fr: 'Question à échelle' },
+    label: { en: 'Scale Question', fr: 'Échelle de réponse' },
     description: { en: 'Likert, rating, or mood scale', fr: 'Échelle Likert, notation ou humeur' },
   },
   {
@@ -249,7 +249,7 @@ const blockTypes: BlockTypeOption[] = [
   {
     type: 'matrix_rating',
     icon: List,
-    label: { en: 'Matrix Rating', fr: 'Évaluation matricielle' },
+    label: { en: 'Matrix Rating', fr: 'Grille d\'évaluation' },
     description: { en: 'Rate multiple items on a scale', fr: 'Noter plusieurs éléments sur une échelle' },
   },
   {
@@ -278,12 +278,6 @@ const blockTypes: BlockTypeOption[] = [
   },
   // === MEDIA RESPONSE BLOCKS ===
   {
-    type: 'video_response',
-    icon: VideoIcon,
-    label: { en: 'Video Response', fr: 'Réponse vidéo' },
-    description: { en: 'Ask member to record/upload a video', fr: 'Demander au membre d\'enregistrer/télécharger une vidéo' },
-  },
-  {
     type: 'audio_response',
     icon: Mic,
     label: { en: 'Audio Response', fr: 'Réponse audio' },
@@ -294,6 +288,12 @@ const blockTypes: BlockTypeOption[] = [
     icon: FileUp,
     label: { en: 'File Upload Response', fr: 'Réponse par fichier' },
     description: { en: 'Ask member to upload a file', fr: 'Demander au membre de télécharger un fichier' },
+  },
+  {
+    type: 'video_response',
+    icon: VideoIcon,
+    label: { en: 'Video Response', fr: 'Réponse vidéo' },
+    description: { en: 'Ask member to record/upload a video', fr: 'Demander au membre d\'enregistrer/télécharger une vidéo' },
   },
 ]
 
@@ -361,8 +361,8 @@ const worksheetTemplates = [
   },
   {
     id: 'blank',
-    name: { en: 'Blank Worksheet', fr: 'Feuille vierge' },
-    description: { en: 'Start from scratch', fr: 'Commencer de zéro' },
+    name: { en: 'Blank Worksheet', fr: 'Nouvel exercice' },
+    description: { en: 'Start from scratch', fr: 'Créez sans modèle' },
     blocks: [],
   },
 ]
@@ -427,6 +427,7 @@ function CreateWorksheetContent() {
   // UI state
   const [showBlockPicker, setShowBlockPicker] = useState(false)
   const [showMoreContentBlocks, setShowMoreContentBlocks] = useState(false)
+  const [showMoreMediaBlocks, setShowMoreMediaBlocks] = useState(false)
   const [showMoreQuestionBlocks, setShowMoreQuestionBlocks] = useState(false)
   const [expandedBlock, setExpandedBlock] = useState<string | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
@@ -1160,7 +1161,7 @@ function CreateWorksheetContent() {
           visibility,
           language: resourceLanguage,
         })
-        toast.success(locale === 'fr' ? 'Feuille de travail mise à jour avec succès!' : 'Worksheet updated successfully!')
+        toast.success(locale === 'fr' ? 'Exercice mis à jour avec succès!' : 'Worksheet updated successfully!')
       } else {
         // Create new resource
         await createResource({
@@ -1175,7 +1176,7 @@ function CreateWorksheetContent() {
           visibility,
           language: resourceLanguage,
         })
-        toast.success(locale === 'fr' ? 'Feuille de travail créée avec succès!' : 'Worksheet created successfully!')
+        toast.success(locale === 'fr' ? 'Exercice créé avec succès!' : 'Worksheet created successfully!')
       }
 
       router.push('/resources')
@@ -3303,7 +3304,7 @@ function CreateWorksheetContent() {
                           }`}
                         >
                           <SlidersHorizontal className="w-4 h-4" />
-                          {locale === 'fr' ? 'Likert' : 'Likert'}
+                          {locale === 'fr' ? 'Échelle' : 'Likert'}
                         </button>
                         <button
                           onClick={() => updateBlock(block.id, { scaleType: 'rating' })}
@@ -3314,7 +3315,7 @@ function CreateWorksheetContent() {
                           }`}
                         >
                           <Star className="w-4 h-4" />
-                          {locale === 'fr' ? 'Notation' : 'Rating'}
+                          {locale === 'fr' ? 'Échelle de 0 à 10' : 'Rating'}
                         </button>
                         <button
                           onClick={() => updateBlock(block.id, { scaleType: 'mood' })}
@@ -3325,7 +3326,7 @@ function CreateWorksheetContent() {
                           }`}
                         >
                           <Smile className="w-4 h-4" />
-                          {locale === 'fr' ? 'Humeur' : 'Mood'}
+                          {locale === 'fr' ? 'Sélecteur d\'humeur' : 'Mood'}
                         </button>
                       </div>
                     </div>
@@ -3444,7 +3445,7 @@ function CreateWorksheetContent() {
                               >
                                 {key === 'agreement' ? (locale === 'fr' ? 'Accord' : 'Agreement') :
                                  key === 'frequency' ? (locale === 'fr' ? 'Fréquence' : 'Frequency') :
-                                 locale === 'fr' ? 'Sévérité' : 'Severity'}
+                                 locale === 'fr' ? 'Intensité' : 'Severity'}
                               </button>
                             ))}
                           </div>
@@ -4014,7 +4015,7 @@ function CreateWorksheetContent() {
                   items={[
                     { label: 'Resources', labelFr: 'Ressources', href: '/resources', icon: <FileText className="w-4 h-4" /> },
                     { label: 'Create', labelFr: 'Créer', href: '/resources/create' },
-                    { label: isEditMode ? 'Edit Worksheet' : 'Worksheet', labelFr: isEditMode ? 'Modifier' : 'Feuille de travail' },
+                    { label: isEditMode ? 'Edit Worksheet' : 'Worksheet', labelFr: isEditMode ? 'Modifier' : 'Exercice' },
                   ]}
                 />
               </div>
@@ -4031,11 +4032,11 @@ function CreateWorksheetContent() {
                   </div>
                 </motion.div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                  {isEditMode ? (locale === 'fr' ? 'Modifier la feuille de travail' : 'Edit Worksheet') : (locale === 'fr' ? 'Créer une feuille de travail' : 'Create a Worksheet')}
+                  {isEditMode ? (locale === 'fr' ? 'Modifier l\'exercice' : 'Edit Worksheet') : (locale === 'fr' ? 'Créer un exercice' : 'Create a Worksheet')}
                 </h1>
                 <p className="text-gray-600 max-w-md mx-auto">
                   {locale === 'fr'
-                    ? 'Commencez avec un modèle ou créez de zéro'
+                    ? 'Personnalisez un modèle existant ou créez votre exercice à partir de zéro'
                     : 'Start with a template or create from scratch'}
                 </p>
               </div>
@@ -4054,15 +4055,15 @@ function CreateWorksheetContent() {
                       onClick={() => handleSelectTemplate(template.id)}
                       className={`bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-5 cursor-pointer transition-all duration-300 border-2 shadow-lg shadow-gray-200/40 hover:shadow-xl ${
                         template.id === 'blank'
-                          ? 'border-dashed border-gray-300 hover:border-blue-400'
+                          ? 'border-dashed border-lavender-300 hover:border-lavender-500 bg-lavender-50/50'
                           : 'border-white/60 hover:border-blue-200'
                       }`}
                     >
                       <div className={`w-10 h-10 rounded-xl mb-4 flex items-center justify-center ${
-                        template.id === 'blank' ? 'bg-gray-100' : 'bg-blue-100'
+                        template.id === 'blank' ? 'bg-lavender-100' : 'bg-blue-100'
                       }`}>
                         {template.id === 'blank' ? (
-                          <Plus className="w-5 h-5 text-gray-500" />
+                          <Plus className="w-5 h-5 text-lavender-600" />
                         ) : (
                           <FileText className="w-5 h-5 text-blue-600" />
                         )}
@@ -4172,7 +4173,7 @@ function CreateWorksheetContent() {
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
-                      {locale === 'fr' ? 'Éditer' : 'Edit'}
+                      {locale === 'fr' ? 'Modifier' : 'Edit'}
                     </button>
                     <button
                       onClick={() => { setViewMode('preview'); resetTestMode() }}
@@ -4226,7 +4227,7 @@ function CreateWorksheetContent() {
                           type="text"
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
-                          placeholder={locale === 'fr' ? 'Titre de la feuille de travail...' : 'Worksheet title...'}
+                          placeholder={locale === 'fr' ? 'Titre de l\'exercice...' : 'Worksheet title...'}
                           className="w-full text-2xl font-bold text-gray-900 bg-transparent border-none focus:outline-none placeholder-gray-400"
                         />
                       </motion.div>
@@ -4253,7 +4254,7 @@ function CreateWorksheetContent() {
                           className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50 transition-all flex items-center justify-center gap-2"
                         >
                           <Plus className="w-5 h-5" />
-                          {locale === 'fr' ? 'Ajouter un bloc' : 'Add a block'}
+                          {locale === 'fr' ? 'Ajouter une étape' : 'Add a block'}
                         </button>
 
                         {/* Block Picker */}
@@ -4313,7 +4314,7 @@ function CreateWorksheetContent() {
                               <div className="flex items-start gap-6 py-3 border-b border-gray-100">
                                 <div className="flex-1">
                                   <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
-                                    {locale === 'fr' ? 'Questions' : 'Questions'}
+                                    {locale === 'fr' ? 'Questions avec score' : 'Questions'}
                                   </p>
                                   <div className="flex flex-wrap gap-1">
                                     {blockTypes.filter(bt => ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'list_input'].includes(bt.type)).map((bt) => {
@@ -4381,9 +4382,9 @@ function CreateWorksheetContent() {
                               <div className="flex items-start gap-6 pt-3">
                                 <div className="flex-1">
                                   <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
-                                    {locale === 'fr' ? 'Média' : 'Media'}
+                                    {locale === 'fr' ? 'Format de réponse' : 'Media'}
                                   </p>
-                                  <div className="flex gap-1">
+                                  <div className="flex flex-wrap gap-1">
                                     {blockTypes.filter(bt => ['file_response', 'audio_response'].includes(bt.type)).map((bt) => {
                                       const Icon = bt.icon
                                       return (
@@ -4397,6 +4398,26 @@ function CreateWorksheetContent() {
                                         </button>
                                       )
                                     })}
+                                    {showMoreMediaBlocks && blockTypes.filter(bt => ['video_response'].includes(bt.type)).map((bt) => {
+                                      const Icon = bt.icon
+                                      return (
+                                        <button
+                                          key={bt.type}
+                                          onClick={() => addBlock(bt.type)}
+                                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 transition-colors group"
+                                        >
+                                          <Icon className="w-3.5 h-3.5 text-green-500 group-hover:text-green-600" />
+                                          <span className="text-xs text-green-600 group-hover:text-green-700">{bt.label[locale]}</span>
+                                        </button>
+                                      )
+                                    })}
+                                    <button
+                                      onClick={() => setShowMoreMediaBlocks(!showMoreMediaBlocks)}
+                                      className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-400 hover:text-gray-600"
+                                    >
+                                      {showMoreMediaBlocks ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                      {showMoreMediaBlocks ? (locale === 'fr' ? 'Moins' : 'Less') : (locale === 'fr' ? 'Plus' : 'More')}
+                                    </button>
                                   </div>
                                 </div>
                               </div>
@@ -4429,7 +4450,7 @@ function CreateWorksheetContent() {
                       ) : (
                         <div className="text-center py-12 text-gray-400">
                           <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                          <p>{locale === 'fr' ? 'Aucun bloc ajouté' : 'No blocks added yet'}</p>
+                          <p>{locale === 'fr' ? 'Aucune étape ajoutée' : 'No blocks added yet'}</p>
                         </div>
                       )}
                     </motion.div>
@@ -4590,7 +4611,7 @@ function CreateWorksheetContent() {
                         ) : (
                           <div className="text-center py-12 text-gray-400">
                             <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                            <p>{locale === 'fr' ? 'Aucun bloc ajouté' : 'No blocks added yet'}</p>
+                            <p>{locale === 'fr' ? 'Aucune étape ajoutée' : 'No blocks added yet'}</p>
                           </div>
                         )}
                       </div>
@@ -4619,15 +4640,7 @@ function CreateWorksheetContent() {
                     <ul className="space-y-2 text-sm text-gray-700">
                       <li className="flex items-start gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 flex-shrink-0" />
-                        {locale === 'fr' ? 'Glissez les blocs pour les réorganiser' : 'Drag blocks to reorder them'}
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 flex-shrink-0" />
-                        {locale === 'fr' ? 'Utilisez des instructions claires' : 'Use clear instructions'}
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 flex-shrink-0" />
-                        {locale === 'fr' ? 'Limitez à 5-7 questions par feuille' : 'Limit to 5-7 prompts per worksheet'}
+                        {locale === 'fr' ? 'Glissez les étapes pour les réorganiser' : 'Drag blocks to reorder them'}
                       </li>
                     </ul>
                   </motion.div>
@@ -4642,7 +4655,7 @@ function CreateWorksheetContent() {
                     <div className="text-center">
                       <p className="text-3xl font-bold text-gray-900">{blocks.length}</p>
                       <p className="text-sm text-gray-500">
-                        {locale === 'fr' ? 'blocs ajoutés' : 'blocks added'}
+                        {locale === 'fr' ? 'étape(s) ajoutée(s)' : 'blocks added'}
                       </p>
                     </div>
                   </motion.div>
@@ -4673,7 +4686,7 @@ function CreateWorksheetContent() {
                     className="rounded-xl hover:bg-white/80"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    {locale === 'fr' ? 'Retour au contenu' : 'Back to content'}
+                    {locale === 'fr' ? 'Revenir au contenu' : 'Back to content'}
                   </Button>
                 </motion.div>
                 <div className="flex items-center gap-2">
@@ -4698,7 +4711,7 @@ function CreateWorksheetContent() {
                           <Save className="w-4 h-4 mr-2" />
                           {isEditMode
                             ? (locale === 'fr' ? 'Mettre à jour' : 'Update Worksheet')
-                            : (locale === 'fr' ? 'Enregistrer' : 'Save Worksheet')
+                            : (locale === 'fr' ? 'Enregistrer l\'exercice' : 'Save Worksheet')
                           }
                         </>
                       )}
@@ -4718,7 +4731,7 @@ function CreateWorksheetContent() {
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
                     <p className="text-gray-600">
-                      {blocks.length} {locale === 'fr' ? 'blocs' : 'blocks'} • {locale === 'fr' ? 'Dernière étape' : 'Final step'}
+                      {blocks.length} {locale === 'fr' ? 'étapes' : 'blocks'} • {locale === 'fr' ? 'Étape finale' : 'Final step'}
                     </p>
                   </div>
                 </div>
@@ -4745,7 +4758,7 @@ function CreateWorksheetContent() {
                       e.target.style.height = 'auto'
                       e.target.style.height = `${e.target.scrollHeight}px`
                     }}
-                    placeholder={locale === 'fr' ? 'Décrivez brièvement cette feuille de travail...' : 'Briefly describe this worksheet...'}
+                    placeholder={locale === 'fr' ? 'Décrivez brièvement cet exercice...' : 'Briefly describe this worksheet...'}
                     rows={4}
                     className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[100px] mb-4"
                   />
@@ -4782,12 +4795,12 @@ function CreateWorksheetContent() {
                       onClick={() => setResourceLanguage('en')}
                       className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
                         resourceLanguage === 'en'
-                          ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md shadow-red-200/50'
+                          ? 'bg-red-50 text-red-600 border border-red-200 shadow-sm'
                           : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
                       }`}
                     >
                       <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                        resourceLanguage === 'en' ? 'bg-white/20' : 'bg-red-100 text-red-600'
+                        resourceLanguage === 'en' ? 'bg-red-100 text-red-600' : 'bg-red-100 text-red-600'
                       }`}>EN</span>
                       English
                     </motion.button>
@@ -4797,12 +4810,12 @@ function CreateWorksheetContent() {
                       onClick={() => setResourceLanguage('fr')}
                       className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
                         resourceLanguage === 'fr'
-                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md shadow-blue-200/50'
+                          ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-sm'
                           : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
                       }`}
                     >
                       <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                        resourceLanguage === 'fr' ? 'bg-white/20' : 'bg-blue-100 text-blue-600'
+                        resourceLanguage === 'fr' ? 'bg-blue-100 text-blue-600' : 'bg-blue-100 text-blue-600'
                       }`}>FR</span>
                       Français
                     </motion.button>
@@ -4820,7 +4833,7 @@ function CreateWorksheetContent() {
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h2 className="text-lg font-semibold text-gray-900">
-                          {locale === 'fr' ? 'Notation et scores' : 'Scoring & Assessment'}
+                          {locale === 'fr' ? 'Calcul des scores' : 'Scoring & Assessment'}
                         </h2>
                         <p className="text-sm text-gray-500">
                           {locale === 'fr' ? 'Activer le calcul automatique des scores' : 'Enable automatic score calculation'}
@@ -4925,11 +4938,11 @@ function CreateWorksheetContent() {
                           <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                             <div>
                               <label className="block text-sm font-medium text-gray-700">
-                                {locale === 'fr' ? 'Afficher le score au membre' : 'Show Score to Member'}
+                                {locale === 'fr' ? 'Afficher le score au patient' : 'Show Score to Member'}
                               </label>
                               <p className="text-xs text-gray-500">
                                 {locale === 'fr'
-                                  ? 'Le membre verra son score après soumission'
+                                  ? 'Le patient verra son score après avoir complété l\'exercice'
                                   : 'Member will see their score after submission'}
                               </p>
                             </div>
@@ -4961,13 +4974,13 @@ function CreateWorksheetContent() {
                     className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
                   >
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                      {locale === 'fr' ? 'Options de publication' : 'Publish Options'}
+                      {locale === 'fr' ? 'Options de publications' : 'Publish Options'}
                     </h2>
 
                     {/* Save As */}
                     <div className="mb-6">
                       <label className="block text-sm font-medium text-gray-700 mb-3">
-                        {locale === 'fr' ? 'Enregistrer comme' : 'Save as'}
+                        {locale === 'fr' ? 'Enregistré comme' : 'Save as'}
                       </label>
                       <div className="grid grid-cols-2 gap-3">
                         <motion.button
@@ -4991,7 +5004,7 @@ function CreateWorksheetContent() {
                             </span>
                           </div>
                           <p className="text-xs text-gray-500">
-                            {locale === 'fr' ? 'Enregistrer pour modifier plus tard' : 'Save to edit later'}
+                            {locale === 'fr' ? 'Enregistrer et modifier plus tard' : 'Save to edit later'}
                           </p>
                         </motion.button>
 
@@ -5016,7 +5029,7 @@ function CreateWorksheetContent() {
                             </span>
                           </div>
                           <p className="text-xs text-gray-500">
-                            {locale === 'fr' ? 'Prêt à être assigné aux membres' : 'Ready to assign to members'}
+                            {locale === 'fr' ? 'Prêt à être attribué aux patients' : 'Ready to assign to members'}
                           </p>
                         </motion.button>
                       </div>
@@ -5054,7 +5067,7 @@ function CreateWorksheetContent() {
                               </span>
                             </div>
                             <p className="text-xs text-gray-500">
-                              {locale === 'fr' ? 'Visible uniquement dans Mes ressources' : 'Only visible in My Resources'}
+                              {locale === 'fr' ? 'Visible uniquement pour vous' : 'Only visible in My Resources'}
                             </p>
                           </motion.button>
 
@@ -5079,7 +5092,7 @@ function CreateWorksheetContent() {
                               </span>
                             </div>
                             <p className="text-xs text-gray-500">
-                              {locale === 'fr' ? 'Partagé dans la Bibliothèque numérique' : 'Shared in the Digital Library'}
+                              {locale === 'fr' ? 'Accessible à la communauté' : 'Shared in the Digital Library'}
                             </p>
                           </motion.button>
                         </div>
@@ -5110,7 +5123,7 @@ function CreateWorksheetContent() {
                     className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
                   >
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                      {locale === 'fr' ? 'Résumé du contenu' : 'Content Summary'}
+                      {locale === 'fr' ? 'Récapitulatif des étapes' : 'Content Summary'}
                     </h2>
                     <div className="space-y-3 max-h-60 overflow-y-auto">
                       {blocks.map((block, index) => {

@@ -190,7 +190,9 @@
   "schedule": {
     "title": "Today's Schedule",
     "session": "Session",
-    "checkIn": "Check-in"
+    "checkIn": "Check-in",
+    "viewAll": "View all",
+    "noAppointments": "No appointments today"
   },
   "activity": {
     "title": "Recent Activity",

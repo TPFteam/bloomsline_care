@@ -793,10 +793,10 @@ function LibraryResourceCard({
   }
 
   const typeLabels: Record<string, { en: string; fr: string }> = {
-    worksheet: { en: 'Worksheet', fr: 'Feuille de travail' },
+    worksheet: { en: 'Worksheet', fr: 'Exercice' },
     assessment: { en: 'Assessment', fr: 'Évaluation' },
     exercise: { en: 'Exercise', fr: 'Exercice' },
-    psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
+    psychoeducation: { en: 'Education', fr: 'Éducation' },
   }
 
   if (viewMode === 'list') {

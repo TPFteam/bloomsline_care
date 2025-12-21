@@ -763,11 +763,10 @@ function DashboardContent() {
         </motion.div>
 
         {/* Overview Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {[
             { label: t.dashboard.stats.activeClients.label, value: stats.activeMembers.toString(), icon: Users, color: 'lavender' },
             { label: t.dashboard.stats.sessionsThisWeek.label, value: stats.sessionsThisWeek.toString(), icon: Calendar, color: 'emerald' },
-            { label: t.dashboard.stats.resourcesSaved.label, value: stats.resourcesSaved.toString(), icon: Heart, color: 'coral' },
             { label: t.dashboard.stats.completionRate.label, value: stats.completionRate > 0 ? `${stats.completionRate}%` : '-', icon: TrendingUp, color: 'peach' },
           ].map((stat, index) => {
             const Icon = stat.icon
@@ -897,14 +896,14 @@ function DashboardContent() {
                 <h2 className="text-lg font-semibold text-gray-900">{t.dashboard.schedule.title}</h2>
               </div>
               <Link href="/bookings">
-                <span className="text-xs text-gray-500 hover:text-gray-700 cursor-pointer">View all</span>
+                <span className="text-xs text-gray-500 hover:text-gray-700 cursor-pointer">{t.dashboard.schedule.viewAll}</span>
               </Link>
             </div>
             <div className="space-y-3">
               {todayBookings.length === 0 ? (
                 <div className="text-center py-6 text-gray-500">
                   <AnimatedIcon icon={Calendar} animation="scale" size={32} animateOnHover animateOnRender={false} className="mx-auto mb-2 text-gray-300" />
-                  <p className="text-sm">No appointments today</p>
+                  <p className="text-sm">{t.dashboard.schedule.noAppointments}</p>
                 </div>
               ) : (
                 todayBookings.map((booking, index) => {
@@ -952,8 +951,8 @@ function DashboardContent() {
           </motion.div>
         </div>
 
-        {/* Bottom Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Activity */}
+        <div className="grid grid-cols-1 gap-6">
           {/* Recent Activity */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1022,48 +1021,6 @@ function DashboardContent() {
                   )
                 })
               )}
-            </div>
-          </motion.div>
-
-          {/* Your Practice Sections */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] p-6 shadow-lg shadow-gray-200/40 border border-white/60"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-lavender-400 to-lavender-600" />
-              <h2 className="text-lg font-semibold text-gray-900">{t.dashboard.practice.title}</h2>
-            </div>
-            <div className="space-y-2">
-              {displaySections.map((section, index) => {
-                const Icon = section.icon
-                return (
-                  <Link key={section.title} href={section.href}>
-                    <motion.div
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.65 + index * 0.05 }}
-                      whileHover={{ x: 4 }}
-                      className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50/80 transition-all group cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl ${section.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                          <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${section.gradient} flex items-center justify-center shadow-md ${section.shadow}`}>
-                            <AnimatedIcon icon={Icon} animation="scale" size={14} animateOnHover animateOnRender={false} className="text-white" />
-                          </div>
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900 text-sm">{section.title}</p>
-                          <p className="text-xs text-gray-500">{section.stats[0].value} {section.stats[0].label}</p>
-                        </div>
-                      </div>
-                      <AnimatedIcon icon={ArrowRight} animation="arrow-right" size={16} animateOnHover animateOnRender={false} className="text-gray-300 group-hover:text-gray-500" />
-                    </motion.div>
-                  </Link>
-                )
-              })}
             </div>
           </motion.div>
         </div>

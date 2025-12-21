@@ -53,7 +53,7 @@ const resourceUsage = [
   { name: 'Mindfulness Exercises', count: 38, percentage: 24 },
   { name: 'CBT Activities', count: 32, percentage: 20 },
   { name: 'Assessment Tools', count: 28, percentage: 17 },
-  { name: 'Psychoeducation', count: 18, percentage: 11 },
+  { name: 'Education', count: 18, percentage: 11 },
 ]
 
 const weeklySessionData = [

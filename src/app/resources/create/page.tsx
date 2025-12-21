@@ -48,7 +48,7 @@ const resourceTypes: ResourceTypeOption[] = [
     gradient: 'from-blue-400 to-blue-600',
     iconBg: 'bg-blue-100/80',
     glow: 'shadow-blue-200/50',
-    examples: ['CBT thought records', 'Mood diaries', 'Assessments with scoring', 'Symptom checklists'],
+    examples: ['Journal de pensées', 'Journal d\'humeur', 'Évaluations', 'Liste de symptômes'],
   },
   {
     id: 'table',
@@ -56,7 +56,7 @@ const resourceTypes: ResourceTypeOption[] = [
     gradient: 'from-emerald-400 to-emerald-600',
     iconBg: 'bg-emerald-100/80',
     glow: 'shadow-emerald-200/50',
-    examples: ['Thought records', 'Emotion logs', 'Behavior tracking', 'Situation analysis'],
+    examples: ['TCC', 'Tableau des émotions', 'Journal de gratitude'],
   },
   {
     id: 'psychoeducation',
@@ -64,7 +64,7 @@ const resourceTypes: ResourceTypeOption[] = [
     gradient: 'from-purple-400 to-purple-600',
     iconBg: 'bg-purple-100/80',
     glow: 'shadow-purple-200/50',
-    examples: ['Condition overviews', 'Treatment explanations', 'Coping strategy guides', 'Self-help handouts'],
+    examples: ['Fiches explicatives', 'Guides de traitement', 'Stratégies d\'adaptation'],
   },
   {
     id: 'exercise',
@@ -72,26 +72,26 @@ const resourceTypes: ResourceTypeOption[] = [
     gradient: 'from-amber-400 to-amber-600',
     iconBg: 'bg-amber-100/80',
     glow: 'shadow-amber-200/50',
-    examples: ['Grounding techniques', 'Breathing exercises', 'Mindfulness activities'],
+    examples: ['Techniques d\'ancrage', 'Exercices de respiration', 'Pleine conscience'],
     comingSoon: true,
   },
 ]
 
 const typeLabels: Record<PractitionerResourceType, { en: string; fr: string }> = {
-  worksheet: { en: 'Worksheet', fr: 'Feuille de travail' },
-  table: { en: 'Table Exercise', fr: 'Exercice tableau' },
-  psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
+  worksheet: { en: 'Worksheet', fr: 'Exercice' },
+  table: { en: 'Table Exercise', fr: 'Tableau' },
+  psychoeducation: { en: 'Education', fr: 'Éducation' },
   exercise: { en: 'Exercise / Activity', fr: 'Exercice / Activité' },
 }
 
 const typeDescriptions: Record<PractitionerResourceType, { en: string; fr: string }> = {
   worksheet: {
     en: 'Structured forms and questionnaires with optional scoring for assessments',
-    fr: 'Formulaires structurés et questionnaires avec notation optionnelle pour les évaluations',
+    fr: 'Créez, personnalisez et partagez vos propres exercices à vos patients',
   },
   table: {
     en: 'Table-based exercises where members can add multiple entries (thought records, logs)',
-    fr: 'Exercices sous forme de tableau où les membres peuvent ajouter plusieurs entrées',
+    fr: 'TCC - Tableau des émotions - Journal de gratitude',
   },
   psychoeducation: {
     en: 'Educational materials explaining conditions, treatments, or strategies',
@@ -262,11 +262,11 @@ export default function CreateResourcePage() {
                   </div>
                 </motion.div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                  {locale === 'fr' ? 'Créer une ressource' : 'Create a Resource'}
+                  {locale === 'fr' ? 'Créer un support' : 'Create a Resource'}
                 </h1>
                 <p className="text-gray-600 max-w-md mx-auto">
                   {locale === 'fr'
-                    ? 'Quel type de ressource souhaitez-vous créer ?'
+                    ? 'Quel type de support souhaitez-vous créer ?'
                     : 'What type of resource would you like to create?'}
                 </p>
               </div>

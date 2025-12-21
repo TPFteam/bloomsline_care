@@ -1,30 +1,18 @@
 {
-  "sectionTitle": "Parce que certaines évolutions méritent d’être vues à temps",
-  "sectionSubtitle": "Conçu avec soin pour les professionnels qui ont à cœur d’aider profondément tout en gagnant du temps.",
+  "sectionTitle": "Parce que certains signaux doivent être vus à temps",
+  "sectionSubtitle": "Conçu avec soin pour les professionnels qui ont à cœur d'aider profondément tout en gagnant du temps.",
   "features": [
     {
-      "title": "Votre sanctuaire de ressources",
-      "description": "Tout ce dont vous avez besoin dans un espace paisible - évaluations, activités, rituels et matériaux qui soutiennent votre approche thérapeutique unique."
+      "title": "Partagez vos supports en un instant",
+      "description": "Créez et regroupez vos questionnaires, exercices et ressources thérapeutiques."
     },
     {
-      "title": "Composez des outils adaptés à chaque personne",
-      "description": "Un éditeur conçu pour créer des supports personnalisés en quelques instants sans aucune compétence techniques."
+      "title": "Préparez vos séances sans effort",
+      "description": "Les éléments cliniques abordés au fil des séances sont accessibles sans parcourir vos notes."
     },
     {
-      "title": "Trouvez l'essentiel en un instant sans parcourir vos notes",
-      "description": "Fini les recherches interminables : un seul mot clé suffit pour accéder instantanément à ce dont vous avez besoin."
-    },
-    {
-      "title": "Visualisez en temps réel les progrès de vos clients",
-      "description": "Une console qui analyse vos échanges et qui met en lumière les profils qui ont le plus besoin de votre attention."
-    },
-    {
-      "title": "Partagez vos supports simplement et en toute sécurité",
-      "description": "Envoyez à vos clients ce dont ils ont besoin, quand ils en ont besoin et suivez leurs engagement en temps réel."
-    },
-    {
-      "title": "Voyez ce qui résonne",
-      "description": "Des informations douces sur ce qui fonctionne. Comprenez quelles ressources soutiennent vraiment la croissance de vos clients - sans données écrasantes."
+      "title": "Accédez à la dynamique du suivi",
+      "description": "L’engagement, les variations de rythme et la continuité des parcours deviennent lisibles, pour orienter votre attention là où elle est nécessaire."
     }
   ]
 }

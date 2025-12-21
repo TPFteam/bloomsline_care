@@ -4,7 +4,7 @@
     "afternoon": "Bon après-midi",
     "evening": "Bonsoir"
   },
-  "tagline": "Voici ce qui se passe avec votre pratique aujourd'hui",
+  "tagline": "Voici un aperçu de votre pratique aujourd'hui",
   "sidebar": {
     "home": "Activité",
     "signOut": "Se déconnecter"
@@ -163,11 +163,11 @@
   },
   "stats": {
     "activeClients": {
-      "label": "Clients actifs",
+      "label": "Patients actifs",
       "change": "ce mois-ci"
     },
     "sessionsThisWeek": {
-      "label": "Sessions cette semaine",
+      "label": "Séances cette semaine",
       "change": "restantes"
     },
     "resourcesSaved": {
@@ -175,22 +175,24 @@
       "change": "cette semaine"
     },
     "completionRate": {
-      "label": "Taux de réalisation",
+      "label": "Taux d'engagement",
       "change": "ce mois-ci"
     }
   },
   "quickActions": {
-    "title": "Actions rapides",
-    "newSessionNote": "Nouvelle note de session",
-    "scheduleAppointment": "Planifier un rendez-vous",
+    "title": "Raccourcis",
+    "newSessionNote": "Ajouter une note",
+    "scheduleAppointment": "Planifier une séance",
     "browseResources": "Parcourir les ressources",
-    "viewAnalytics": "Voir les analyses",
-    "addNewMember": "Ajouter un membre"
+    "viewAnalytics": "Consulter l'engagement",
+    "addNewMember": "Créer un suivi"
   },
   "schedule": {
-    "title": "Programme d'aujourd'hui",
-    "session": "Session",
-    "checkIn": "Vérification"
+    "title": "Programme du jour",
+    "session": "Séance",
+    "checkIn": "Vérification",
+    "viewAll": "Voir plus",
+    "noAppointments": "Aucune séance prévue aujourd'hui"
   },
   "activity": {
     "title": "Activité récente",

@@ -14,6 +14,7 @@ import enDashboard from '@/lib/dictionaries/en/dashboard.json'
 import enMembers from '@/lib/dictionaries/en/members.json'
 import enLibrary from '@/lib/dictionaries/en/library.json'
 import enProfile from '@/lib/dictionaries/en/profile.json'
+import enPersonas from '@/lib/dictionaries/en/personas.json'
 
 // Import French translations
 import frCommon from '@/lib/dictionaries/fr/common.json'
@@ -27,6 +28,7 @@ import frDashboard from '@/lib/dictionaries/fr/dashboard.json'
 import frMembers from '@/lib/dictionaries/fr/members.json'
 import frLibrary from '@/lib/dictionaries/fr/library.json'
 import frProfile from '@/lib/dictionaries/fr/profile.json'
+import frPersonas from '@/lib/dictionaries/fr/personas.json'
 
 type Locale = 'en' | 'fr'
 
@@ -43,6 +45,7 @@ const enDict = {
   members: enMembers,
   library: enLibrary,
   profile: enProfile,
+  personas: enPersonas,
 }
 
 const frDict = {
@@ -57,6 +60,7 @@ const frDict = {
   members: frMembers,
   library: frLibrary,
   profile: frProfile,
+  personas: frPersonas,
 }
 
 type Dictionary = typeof enDict

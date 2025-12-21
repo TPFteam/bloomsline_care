@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n/context'
 
 export function Hero() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   return (
     <section className="relative flex items-center justify-center overflow-hidden min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-teal-50/50">
       {/* Cinematic gradient background - More subtle */}
@@ -44,10 +44,10 @@ export function Hero() {
             suppressHydrationWarning
           >
             <span className="block text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold text-foreground/90 mb-2 tracking-tight" suppressHydrationWarning>
-              {t.hero.yourCare} <span className="italic text-lavender-600">{t.hero.matters}</span>.
+              {t.hero.yourCare} <span className="italic text-lavender-600">{t.hero.matters}</span>
             </span>
             <span className="block text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold text-foreground/90 tracking-tight" suppressHydrationWarning>
-              {t.hero.weMakeIt} <span className="italic text-teal-600">{t.hero.easier}</span>.
+              {t.hero.weMakeIt} <span className="italic text-teal-600">{t.hero.easier}</span>
             </span>
           </motion.h1>
 

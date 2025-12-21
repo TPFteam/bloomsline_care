@@ -396,10 +396,10 @@ export default function ResourceDetailPage() {
   const hasScoring = isLegacyAssessment || worksheetSettings?.enableScoring
 
   const typeLabels: Record<string, string> = {
-    worksheet: locale === 'fr' ? 'Feuille de travail' : 'Worksheet',
-    assessment: locale === 'fr' ? 'Feuille de travail' : 'Worksheet', // Legacy - shows as worksheet
+    worksheet: locale === 'fr' ? 'Exercice' : 'Worksheet',
+    assessment: locale === 'fr' ? 'Exercice' : 'Worksheet', // Legacy - shows as worksheet
     exercise: locale === 'fr' ? 'Exercice' : 'Exercise',
-    psychoeducation: locale === 'fr' ? 'Psychoéducation' : 'Psychoeducation',
+    psychoeducation: locale === 'fr' ? 'Éducation' : 'Education',
   }
   const typeLabel = typeLabels[resource.type as string] || typeLabels.worksheet
 
@@ -865,15 +865,15 @@ export default function ResourceDetailPage() {
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900">
-                        {locale === 'fr' ? 'Aperçu du contenu' : 'Content Preview'}
+                        {locale === 'fr' ? 'Contenu' : 'Content'}
                       </h2>
                       <p className="text-sm text-gray-500">
-                        {locale === 'fr' ? 'Tel que vu par les membres' : 'As seen by members'}
+                        {locale === 'fr' ? 'Ce que les patients verront' : 'As seen by members'}
                       </p>
                     </div>
                   </div>
                   <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100">
-                    {resource.blocks.length} {locale === 'fr' ? 'éléments' : 'items'}
+                    {resource.blocks.length} {locale === 'fr' ? (resource.blocks.length === 1 ? 'étape' : 'étapes') : 'steps'}
                   </Badge>
                 </div>
 
@@ -1371,7 +1371,7 @@ export default function ResourceDetailPage() {
                       onClick={() => router.push(`/resources/create/${resource.type}?edit=${resource.id}`)}
                     >
                       <Edit className="w-5 h-5 mr-2" />
-                      {locale === 'fr' ? 'Modifier' : 'Edit'}
+                      {locale === 'fr' ? 'Éditer' : 'Edit'}
                     </Button>
                   </motion.div>
 
@@ -1580,10 +1580,10 @@ export default function ResourceDetailPage() {
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900">
-                        {locale === 'fr' ? 'Soumissions des membres' : 'Member Submissions'}
+                        {locale === 'fr' ? 'Réponses des patients' : 'Member Submissions'}
                       </h2>
                       <p className="text-sm text-gray-500">
-                        {submissions.length} {locale === 'fr' ? 'soumission(s)' : 'submission(s)'}
+                        {submissions.length} {locale === 'fr' ? (submissions.length === 1 ? 'réponse' : 'réponses') : 'submission(s)'}
                       </p>
                     </div>
                   </div>
@@ -1603,11 +1603,11 @@ export default function ResourceDetailPage() {
                       <FileText className="w-6 h-6 text-gray-400" />
                     </div>
                     <p className="text-gray-500">
-                      {locale === 'fr' ? 'Aucune soumission pour le moment' : 'No submissions yet'}
+                      {locale === 'fr' ? 'Aucune réponse pour le moment' : 'No submissions yet'}
                     </p>
                     <p className="text-sm text-gray-400 mt-1">
                       {locale === 'fr'
-                        ? 'Les soumissions des membres apparaîtront ici'
+                        ? 'Les réponses des patients apparaîtront ici'
                         : 'Member submissions will appear here'}
                     </p>
                   </div>

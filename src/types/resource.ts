@@ -528,11 +528,11 @@ export interface CreateResponseDTO {
 // Helper functions
 export function getResourceTypeLabel(type: ResourceType | 'assessment', locale: 'en' | 'fr' = 'en'): string {
   const labels: Record<ResourceType | 'assessment', { en: string; fr: string }> = {
-    worksheet: { en: 'Worksheet', fr: 'Feuille de travail' },
-    assessment: { en: 'Worksheet', fr: 'Feuille de travail' }, // Legacy - maps to worksheet
+    worksheet: { en: 'Worksheet', fr: 'Exercice' },
+    assessment: { en: 'Worksheet', fr: 'Exercice' }, // Legacy - maps to worksheet
     exercise: { en: 'Exercise', fr: 'Exercice' },
-    psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
-    table: { en: 'Table Exercise', fr: 'Exercice tableau' },
+    psychoeducation: { en: 'Education', fr: 'Éducation' },
+    table: { en: 'Table Exercise', fr: 'Tableau' },
   }
   return labels[type][locale]
 }
