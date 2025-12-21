@@ -242,6 +242,23 @@ export interface TableExerciseBlock extends BaseBlock {
   instructions?: string
 }
 
+// Response block types (member uploads as answer)
+export interface VideoResponseBlock extends BaseBlock {
+  type: 'video_response'
+  required?: boolean
+}
+
+export interface AudioResponseBlock extends BaseBlock {
+  type: 'audio_response'
+  required?: boolean
+}
+
+export interface FileResponseBlock extends BaseBlock {
+  type: 'file_response'
+  required?: boolean
+  acceptedFileTypes?: string[]
+}
+
 // Union type for all blocks
 export type ResourceBlock =
   | HeadingBlock
@@ -270,6 +287,10 @@ export type ResourceBlock =
   | TimeInputBlock
   | ListInputBlock
   | TableExerciseBlock
+  // Response blocks (member uploads as answer)
+  | VideoResponseBlock
+  | AudioResponseBlock
+  | FileResponseBlock
 
 // Scoring range for worksheet scoring
 export interface ScoringRange {
