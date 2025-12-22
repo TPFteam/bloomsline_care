@@ -1,0 +1,313 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
+import {
+  ChevronLeft,
+  ChevronRight,
+  User,
+  Globe,
+  LogOut,
+  Loader2,
+  Check,
+  Sparkles,
+} from 'lucide-react'
+import MemberLayout from '@/components/member/MemberLayout'
+import { useLanguage } from '@/lib/i18n/context'
+import { createClient } from '@/lib/supabase/browser-client'
+import { toast } from 'sonner'
+
+interface MemberProfile {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  phone?: string
+  created_at: string
+}
+
+export default function MemberSettingsPage() {
+  const router = useRouter()
+  const { locale, setLocale } = useLanguage()
+  const supabase = createClient()
+
+  const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<MemberProfile | null>(null)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  // Translations
+  const t = {
+    en: {
+      title: 'Settings',
+      profile: 'Your Profile',
+      viewProfile: 'View full profile',
+      memberSince: 'Member since',
+      language: 'Language',
+      languageDescription: 'Choose your preferred language',
+      english: 'English',
+      french: 'Français',
+      logout: 'Log out',
+      logoutDescription: 'Sign out of your account',
+      loggingOut: 'Logging out...',
+      version: 'Version 1.0.0',
+      madeWith: 'Made with care',
+    },
+    fr: {
+      title: 'Paramètres',
+      profile: 'Votre Profil',
+      viewProfile: 'Voir le profil complet',
+      memberSince: 'Membre depuis',
+      language: 'Langue',
+      languageDescription: 'Choisissez votre langue préférée',
+      english: 'English',
+      french: 'Français',
+      logout: 'Déconnexion',
+      logoutDescription: 'Se déconnecter de votre compte',
+      loggingOut: 'Déconnexion...',
+      version: 'Version 1.0.0',
+      madeWith: 'Fait avec soin',
+    },
+  }
+
+  const text = locale === 'fr' ? t.fr : t.en
+
+  useEffect(() => {
+    fetchProfile()
+  }, [])
+
+  const fetchProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/')
+        return
+      }
+
+      const { data: member } = await supabase
+        .from('members')
+        .select('id, first_name, last_name, phone, created_at')
+        .eq('user_id', user.id)
+        .single()
+
+      if (member) {
+        setProfile({
+          ...member,
+          email: user.email || '',
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleLanguageChange = (newLocale: 'en' | 'fr') => {
+    setLocale(newLocale)
+    toast.success(newLocale === 'fr' ? 'Langue changée' : 'Language changed')
+  }
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      await supabase.auth.signOut()
+      router.push('/')
+    } catch (error) {
+      console.error('Error logging out:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors de la déconnexion' : 'Error logging out')
+      setIsLoggingOut(false)
+    }
+  }
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+      year: 'numeric',
+      month: 'long',
+    })
+  }
+
+  const getInitials = () => {
+    if (!profile) return '?'
+    return `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`.toUpperCase()
+  }
+
+  if (loading) {
+    return (
+      <MemberLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+        </div>
+      </MemberLayout>
+    )
+  }
+
+  return (
+    <MemberLayout>
+      <div className="px-5 pt-6 pb-8 min-h-screen">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6"
+        >
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-xl font-bold text-gray-900">{text.title}</h1>
+          </div>
+        </motion.div>
+
+        <div className="space-y-5">
+          {/* Profile Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-3xl p-6 text-white relative overflow-hidden"
+          >
+            {/* Decorative circles */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+
+            <div className="relative flex items-center gap-4">
+              {/* Avatar */}
+              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl font-bold">
+                {getInitials()}
+              </div>
+
+              <div className="flex-1">
+                <h2 className="text-xl font-bold">
+                  {profile?.first_name} {profile?.last_name}
+                </h2>
+                <p className="text-white/80 text-sm">{profile?.email}</p>
+                <p className="text-white/60 text-xs mt-1">
+                  {text.memberSince} {profile?.created_at ? formatDate(profile.created_at) : '-'}
+                </p>
+              </div>
+            </div>
+
+            {/* View Profile Button */}
+            <button
+              onClick={() => router.push('/profile/member')}
+              className="mt-4 w-full py-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-2xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              <User className="w-4 h-4" />
+              {text.viewProfile}
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </motion.div>
+
+          {/* Language Selection */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl flex items-center justify-center">
+                <Globe className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">{text.language}</h3>
+                <p className="text-sm text-gray-500">{text.languageDescription}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleLanguageChange('en')}
+                className={`relative py-4 px-4 rounded-2xl border-2 transition-all ${
+                  locale === 'en'
+                    ? 'border-emerald-500 bg-emerald-50'
+                    : 'border-gray-200 hover:border-gray-300 bg-gray-50'
+                }`}
+              >
+                {locale === 'en' && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute top-2 right-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center"
+                  >
+                    <Check className="w-3 h-3 text-white" />
+                  </motion.div>
+                )}
+                <span className="text-2xl mb-1 block">🇬🇧</span>
+                <span className={`font-medium ${locale === 'en' ? 'text-emerald-700' : 'text-gray-700'}`}>
+                  {text.english}
+                </span>
+              </button>
+
+              <button
+                onClick={() => handleLanguageChange('fr')}
+                className={`relative py-4 px-4 rounded-2xl border-2 transition-all ${
+                  locale === 'fr'
+                    ? 'border-emerald-500 bg-emerald-50'
+                    : 'border-gray-200 hover:border-gray-300 bg-gray-50'
+                }`}
+              >
+                {locale === 'fr' && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute top-2 right-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center"
+                  >
+                    <Check className="w-3 h-3 text-white" />
+                  </motion.div>
+                )}
+                <span className="text-2xl mb-1 block">🇫🇷</span>
+                <span className={`font-medium ${locale === 'fr' ? 'text-emerald-700' : 'text-gray-700'}`}>
+                  {text.french}
+                </span>
+              </button>
+            </div>
+          </motion.div>
+
+          {/* Logout */}
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="w-full bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center gap-4 hover:bg-red-50 hover:border-red-100 transition-all group disabled:opacity-50"
+          >
+            <div className="w-10 h-10 bg-red-100 group-hover:bg-red-200 rounded-xl flex items-center justify-center transition-colors">
+              {isLoggingOut ? (
+                <Loader2 className="w-5 h-5 text-red-600 animate-spin" />
+              ) : (
+                <LogOut className="w-5 h-5 text-red-600" />
+              )}
+            </div>
+            <div className="text-left flex-1">
+              <h3 className="font-semibold text-red-600">
+                {isLoggingOut ? text.loggingOut : text.logout}
+              </h3>
+              <p className="text-sm text-gray-500">{text.logoutDescription}</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-red-400 transition-colors" />
+          </motion.button>
+
+          {/* Footer */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-center pt-6"
+          >
+            <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
+              <Sparkles className="w-4 h-4" />
+              <span>{text.madeWith}</span>
+            </div>
+            <p className="text-gray-300 text-xs mt-1">{text.version}</p>
+          </motion.div>
+        </div>
+      </div>
+    </MemberLayout>
+  )
+}

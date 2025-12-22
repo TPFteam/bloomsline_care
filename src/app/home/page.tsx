@@ -9,26 +9,19 @@ import {
   CheckCircle,
   Loader2,
   ChevronRight,
+  ChevronLeft,
   BookOpen,
   Puzzle,
   Check,
   X,
   UserPlus,
   Bell,
-  Settings,
   Heart,
   Leaf,
   Sparkles,
   Smile,
   Sun,
-  Zap,
-  CloudRain,
-  Flame,
-  Star,
-  Trophy,
-  Wind,
   Moon,
-  LogOut,
   Circle,
   Eye,
   Coffee,
@@ -47,9 +40,10 @@ import {
   Mail,
   Shield,
   Play,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import {
@@ -64,6 +58,7 @@ import {
   type PendingInvitation
 } from '@/lib/services/member-resources'
 import { toast } from 'sonner'
+import BloomChatInterface from '@/components/bloom/BloomChatInterface'
 import MemberLayout from '@/components/member/MemberLayout'
 import type { Member } from '@/types/member'
 import { getMemberMoments, type Moment } from '@/lib/services/moments'
@@ -104,7 +99,7 @@ interface RitualCompletion {
   notes: string | null
 }
 
-// Ritual icon mapping
+// Ritual icon mapping (Lucide - fallback)
 const RITUAL_ICONS: Record<string, React.ElementType> = {
   eye: Eye,
   coffee: Coffee,
@@ -127,6 +122,7 @@ const RITUAL_ICONS: Record<string, React.ElementType> = {
   smile: Smile,
   shield: Shield,
 }
+
 
 // Category gradients
 const CATEGORY_GRADIENTS: Record<string, { from: string; to: string }> = {
@@ -184,28 +180,28 @@ const EMOTION_COLORS: Record<string, { from: string; to: string; glow: string }>
   frustrated: { from: '#f87171', to: '#ef4444', glow: 'rgba(239, 68, 68, 0.5)' },
 }
 
-// Emotion icons
+// Emotion icons (Lucide)
 const EMOTION_ICONS: Record<string, React.ElementType> = {
   // Positive
   grateful: Heart,
-  joyful: Smile,
-  inspired: Zap,
+  joyful: Sun,
+  inspired: Stars,
   loved: Heart,
   peaceful: Moon,
   calm: Leaf,
-  hopeful: Star,
-  proud: Trophy,
+  hopeful: Stars,
+  proud: Shield,
   // Softer/processing
-  overwhelmed: CloudRain,
+  overwhelmed: Cloud,
   tired: Moon,
   uncertain: Cloud,
   tender: Heart,
-  restless: Wind,
-  heavy: CloudRain,
+  restless: RefreshCw,
+  heavy: Cloud,
   // Legacy
-  anxious: CloudRain,
-  sad: CloudRain,
-  frustrated: Flame,
+  anxious: Cloud,
+  sad: Cloud,
+  frustrated: RefreshCw,
 }
 
 // Get color for moment's primary emotion
@@ -227,14 +223,6 @@ function getMomentScore(moment: Moment): number {
   if (!moment.moods || moment.moods.length === 0) return 60 // neutral
   const scores = moment.moods.map(m => EMOTION_SCORES[m] || 60)
   return scores.reduce((a, b) => a + b, 0) / scores.length
-}
-
-// Get time period from date
-function getTimePeriod(date: Date): 'morning' | 'afternoon' | 'evening' {
-  const hour = date.getHours()
-  if (hour < 12) return 'morning'
-  if (hour < 18) return 'afternoon'
-  return 'evening'
 }
 
 // Get current ritual category based on time of day
@@ -283,7 +271,7 @@ export default function MyResourcesPage() {
   const router = useRouter()
   const { locale } = useLanguage()
   const [members, setMembers] = useState<Member[]>([])
-  const [practitioners, setPractitioners] = useState<PractitionerProfile[]>([])
+  const [_practitioners, setPractitioners] = useState<PractitionerProfile[]>([])
   const [resources, setResources] = useState<MemberResourceItem[]>([])
   const [invitations, setInvitations] = useState<PendingInvitation[]>([])
   const [todaysMoments, setTodaysMoments] = useState<Moment[]>([])
@@ -292,12 +280,151 @@ export default function MyResourcesPage() {
   const [loading, setLoading] = useState(true)
   const [processingInvitation, setProcessingInvitation] = useState<string | null>(null)
   const [previewMoment, setPreviewMoment] = useState<Moment | null>(null)
-  const [showSettingsMenu, setShowSettingsMenu] = useState(false)
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [allMoments, setAllMoments] = useState<Moment[]>([])
+  const [currentTime, setCurrentTime] = useState(new Date())
+  // Zoom state: visibleHours is how many hours are shown, centerHour is the center of the view
+  const [zoomLevel, setZoomLevel] = useState(1) // 1 = 24h, 2 = 12h, 3 = 8h, 4 = 6h
+  const [centerHour, setCenterHour] = useState(12) // Center of visible range
+  const [showBloomChat, setShowBloomChat] = useState(false)
 
   useEffect(() => {
     loadData()
   }, [locale, router])
+
+  // Update current time every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 60000) // Update every minute
+
+    return () => clearInterval(interval)
+  }, [])
+
+  // Filter moments when selectedDate changes
+  useEffect(() => {
+    const targetDate = new Date(selectedDate)
+    targetDate.setHours(0, 0, 0, 0)
+    const filteredMoments = allMoments.filter(m => {
+      const momentDate = new Date(m.created_at)
+      momentDate.setHours(0, 0, 0, 0)
+      return momentDate.getTime() === targetDate.getTime()
+    })
+    setTodaysMoments(filteredMoments.sort((a, b) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    ))
+  }, [selectedDate, allMoments])
+
+  // Date navigation functions
+  const goToPreviousDay = () => {
+    setSelectedDate(prev => {
+      const newDate = new Date(prev)
+      newDate.setDate(newDate.getDate() - 1)
+      return newDate
+    })
+  }
+
+  const goToNextDay = () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const currentSelected = new Date(selectedDate)
+    currentSelected.setHours(0, 0, 0, 0)
+
+    // Don't allow going past today
+    if (currentSelected.getTime() >= today.getTime()) return
+
+    setSelectedDate(prev => {
+      const newDate = new Date(prev)
+      newDate.setDate(newDate.getDate() + 1)
+      return newDate
+    })
+  }
+
+  // Check if selected date is today
+  const isToday = () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const selected = new Date(selectedDate)
+    selected.setHours(0, 0, 0, 0)
+    return today.getTime() === selected.getTime()
+  }
+
+  // Format date for display
+  const formatSelectedDate = () => {
+    if (isToday()) {
+      return locale === 'fr' ? "Aujourd'hui" : 'Today'
+    }
+    return selectedDate.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  // Zoom helper functions
+  const getVisibleHours = () => {
+    const hoursMap: Record<number, number> = { 1: 24, 2: 12, 3: 8, 4: 6 }
+    return hoursMap[zoomLevel] || 24
+  }
+
+  const getVisibleRange = () => {
+    const visibleHours = getVisibleHours()
+    const halfRange = visibleHours / 2
+    let startHour = centerHour - halfRange
+    let endHour = centerHour + halfRange
+
+    // Clamp to 0-24
+    if (startHour < 0) {
+      startHour = 0
+      endHour = visibleHours
+    }
+    if (endHour > 24) {
+      endHour = 24
+      startHour = 24 - visibleHours
+    }
+
+    return { startHour, endHour }
+  }
+
+  const handleZoomIn = () => {
+    if (zoomLevel < 4) {
+      setZoomLevel(prev => prev + 1)
+      // Center on current time if viewing today
+      if (isToday()) {
+        setCenterHour(currentTime.getHours() + currentTime.getMinutes() / 60)
+      }
+    }
+  }
+
+  const handleZoomOut = () => {
+    if (zoomLevel > 1) {
+      setZoomLevel(prev => prev - 1)
+    }
+  }
+
+  const handlePanLeft = () => {
+    const visibleHours = getVisibleHours()
+    setCenterHour(prev => Math.max(visibleHours / 2, prev - visibleHours / 4))
+  }
+
+  const handlePanRight = () => {
+    const visibleHours = getVisibleHours()
+    setCenterHour(prev => Math.min(24 - visibleHours / 2, prev + visibleHours / 4))
+  }
+
+  // Convert hour to percentage position based on zoom
+  const hourToPosition = (hour: number) => {
+    const { startHour, endHour } = getVisibleRange()
+    return ((hour - startHour) / (endHour - startHour)) * 100
+  }
+
+  // Format hour for time labels
+  const formatHour = (hour: number) => {
+    const h = Math.floor(hour)
+    const period = h >= 12 ? 'PM' : 'AM'
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
+    return `${h12}${period}`
+  }
 
   async function loadData() {
     try {
@@ -312,16 +439,19 @@ export default function MyResourcesPage() {
       const pendingInvitations = await getPendingInvitations()
       setInvitations(pendingInvitations)
 
-      // Load today's moments
-      const allMoments = await getMemberMoments()
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const todaysOnly = allMoments.filter(m => {
+      // Load all moments
+      const fetchedMoments = await getMemberMoments()
+      setAllMoments(fetchedMoments)
+
+      // Filter for selected date (initially today)
+      const targetDate = new Date()
+      targetDate.setHours(0, 0, 0, 0)
+      const filteredMoments = fetchedMoments.filter(m => {
         const momentDate = new Date(m.created_at)
         momentDate.setHours(0, 0, 0, 0)
-        return momentDate.getTime() === today.getTime()
+        return momentDate.getTime() === targetDate.getTime()
       })
-      setTodaysMoments(todaysOnly.sort((a, b) =>
+      setTodaysMoments(filteredMoments.sort((a, b) =>
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       ))
 
@@ -431,19 +561,6 @@ export default function MyResourcesPage() {
     }
   }
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true)
-    try {
-      const supabase = createClient()
-      await supabase.auth.signOut()
-      router.push('/login')
-    } catch (error) {
-      console.error('Error logging out:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors de la déconnexion' : 'Error logging out')
-      setIsLoggingOut(false)
-    }
-  }
-
   if (loading) {
     return (
       <MemberLayout>
@@ -498,67 +615,12 @@ export default function MyResourcesPage() {
           </div>
 
           {/* Header Icons */}
-          <div className="flex items-center gap-1 bg-white rounded-full px-3 py-2 shadow-sm">
-            <button className="p-1.5 relative">
-              <Bell className="w-5 h-5 text-gray-600" />
-              {invitations.length > 0 && (
-                <span className="absolute top-0 right-0 w-2 h-2 bg-emerald-500 rounded-full" />
-              )}
-            </button>
-            <div className="relative">
-              <button
-                className="p-1.5"
-                onClick={() => setShowSettingsMenu(!showSettingsMenu)}
-              >
-                <Settings className="w-5 h-5 text-gray-600" />
-              </button>
-
-              {/* Settings Dropdown */}
-              <AnimatePresence>
-                {showSettingsMenu && (
-                  <>
-                    {/* Backdrop */}
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setShowSettingsMenu(false)}
-                    />
-                    {/* Menu */}
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 min-w-[160px] z-50"
-                    >
-                      <button
-                        onClick={() => {
-                          setShowSettingsMenu(false)
-                          router.push('/settings')
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
-                      >
-                        <Settings className="w-4 h-4 text-gray-500" />
-                        {locale === 'fr' ? 'Paramètres' : 'Settings'}
-                      </button>
-                      <div className="border-t border-gray-100 my-1" />
-                      <button
-                        onClick={handleLogout}
-                        disabled={isLoggingOut}
-                        className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
-                      >
-                        {isLoggingOut ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <LogOut className="w-4 h-4" />
-                        )}
-                        {locale === 'fr' ? 'Déconnexion' : 'Logout'}
-                      </button>
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
+          <button className="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-sm relative">
+            <Bell className="w-5 h-5 text-gray-600" />
+            {invitations.length > 0 && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full" />
+            )}
+          </button>
         </div>
       </div>
 
@@ -624,32 +686,58 @@ export default function MyResourcesPage() {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-3xl p-5 border border-gray-100 overflow-hidden"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-gray-900">
+          {/* Header with date navigation and zoom controls */}
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-base font-bold text-gray-900 whitespace-nowrap">
               {locale === 'fr' ? 'Flux du jour' : "Today's Flow"}
             </h3>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={goToPreviousDay}
+                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4 text-gray-500" />
+              </button>
+              <span className="text-xs font-medium text-gray-600 min-w-[70px] text-center">
+                {formatSelectedDate()}
+              </span>
+              <button
+                onClick={goToNextDay}
+                disabled={isToday()}
+                className={`p-1 rounded-full transition-colors ${
+                  isToday()
+                    ? 'text-gray-300 cursor-not-allowed'
+                    : 'hover:bg-gray-100 text-gray-500'
+                }`}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
+
           {/* Journey Visualization */}
-          <div className="relative h-40">
+          <div className="relative h-40 bg-emerald-50/50 rounded-2xl overflow-hidden">
             {/* Background grid lines */}
             <div className="absolute inset-0">
-              <div className="absolute inset-x-0 top-1/4 border-t border-gray-100/50" />
-              <div className="absolute inset-x-0 top-1/2 border-t border-gray-200/50" />
-              <div className="absolute inset-x-0 top-3/4 border-t border-gray-100/50" />
+              <div className="absolute inset-x-0 top-1/4 border-t border-emerald-100/50" />
+              <div className="absolute inset-x-0 top-1/2 border-t border-emerald-200/50" />
+              <div className="absolute inset-x-0 top-3/4 border-t border-emerald-100/50" />
             </div>
 
-            {/* Future time fade overlay */}
-            {(() => {
-              const currentHour = new Date().getHours() + new Date().getMinutes() / 60
-              const currentPosition = Math.max(0, Math.min(100, (currentHour / 24) * 100))
+            {/* Future time fade overlay - only show when viewing today */}
+            {isToday() && (() => {
+              const currentHour = currentTime.getHours() + currentTime.getMinutes() / 60
+              const currentPosition = hourToPosition(currentHour)
+              // Only show if current time is within visible range
+              if (currentPosition < 0 || currentPosition > 100) return null
               return (
                 <div
-                  className="absolute top-0 bottom-0 bg-gradient-to-r from-transparent to-gray-50/90 pointer-events-none z-10"
+                  className="absolute top-0 bottom-0 pointer-events-none z-10"
                   style={{
-                    left: `${currentPosition}%`,
+                    left: `${Math.max(0, Math.min(100, currentPosition))}%`,
                     right: 0,
+                    background: 'linear-gradient(to right, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.85) 30%, rgba(255,255,255,0.95) 100%)',
                   }}
                 />
               )
@@ -662,78 +750,133 @@ export default function MyResourcesPage() {
                   <Sun className="w-6 h-6 text-gray-300" />
                 </div>
                 <p className="text-sm text-gray-400 text-center">
-                  {locale === 'fr' ? 'Aucun moment capturé' : 'No moments yet'}
+                  {isToday()
+                    ? (locale === 'fr' ? 'Aucun moment capturé' : 'No moments yet')
+                    : (locale === 'fr' ? 'Aucun moment ce jour' : 'No moments on this day')}
                 </p>
-                <p className="text-xs text-gray-300 mt-1">
-                  {locale === 'fr' ? 'Capturez votre premier moment' : 'Capture your first moment'}
-                </p>
+                {isToday() && (
+                  <p className="text-xs text-gray-300 mt-1">
+                    {locale === 'fr' ? 'Capturez votre premier moment' : 'Capture your first moment'}
+                  </p>
+                )}
               </div>
             )}
 
-            {/* Connecting line between moments */}
+            {/* Connecting flowing curve between moments */}
             {todaysMoments.length > 1 && (
-              <svg className="absolute inset-0 w-full h-full pointer-events-none">
+              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#10b981" />
                     <stop offset="100%" stopColor="#14b8a6" />
                   </linearGradient>
                 </defs>
-                {todaysMoments
-                  .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-                  .map((moment, i, arr) => {
-                    if (i === 0) return null
-                    const prev = arr[i - 1]
-                    const prevTime = new Date(prev.created_at)
-                    const currTime = new Date(moment.created_at)
+                {(() => {
+                  const sortedMoments = [...todaysMoments].sort(
+                    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                  )
 
-                    const prevHours = prevTime.getHours() + prevTime.getMinutes() / 60
-                    const currHours = currTime.getHours() + currTime.getMinutes() / 60
+                  // Calculate all points (with zoom-aware positioning)
+                  // Keep points slightly outside range so curve extends to edge
+                  const allPoints = sortedMoments.map(moment => {
+                    const momentTime = new Date(moment.created_at)
+                    const hours = momentTime.getHours() + momentTime.getMinutes() / 60
+                    const score = getMomentScore(moment)
+                    const x = hourToPosition(hours)
+                    return {
+                      x,
+                      y: 100 - ((score / 100) * 70 + 15),
+                    }
+                  })
 
-                    const prevX = (prevHours / 24) * 100
-                    const currX = (currHours / 24) * 100
+                  // Filter to points that are in or near visible range
+                  const points = allPoints.filter(p => p.x >= -50 && p.x <= 150)
 
-                    const prevScore = getMomentScore(prev)
-                    const currScore = getMomentScore(moment)
+                  // Build smooth curve path using cubic bezier
+                  if (points.length < 2) return null
 
-                    // Y: high score = top (low %), low score = bottom (high %)
-                    const prevY = 100 - ((prevScore / 100) * 70 + 15)
-                    const currY = 100 - ((currScore / 100) * 70 + 15)
+                  // Clamp first and last point x to visible bounds for clean edges
+                  const clampedPoints = points.map((p, i) => ({
+                    x: Math.max(0, Math.min(100, p.x)),
+                    y: p.y
+                  }))
 
-                    return (
-                      <motion.line
-                        key={`line-${moment.id}`}
-                        initial={{ pathLength: 0, opacity: 0 }}
-                        animate={{ pathLength: 1, opacity: 1 }}
-                        transition={{ delay: 0.3 + i * 0.1, duration: 0.5 }}
-                        x1={`${prevX}%`}
-                        y1={`${prevY}%`}
-                        x2={`${currX}%`}
-                        y2={`${currY}%`}
-                        stroke="url(#flowGradient)"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        opacity="0.6"
-                      />
-                    )
-                  })}
+                  let pathD = `M ${clampedPoints[0].x} ${clampedPoints[0].y}`
+
+                  for (let i = 1; i < clampedPoints.length; i++) {
+                    const prev = clampedPoints[i - 1]
+                    const curr = clampedPoints[i]
+
+                    // Control points for smooth curve
+                    const midX = (prev.x + curr.x) / 2
+                    const cp1x = midX
+                    const cp1y = prev.y
+                    const cp2x = midX
+                    const cp2y = curr.y
+
+                    pathD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${curr.x} ${curr.y}`
+                  }
+
+                  return (
+                    <motion.path
+                      key={`flow-curve-${zoomLevel}-${centerHour}`}
+                      initial={{ pathLength: 0, opacity: 0 }}
+                      animate={{ pathLength: 1, opacity: 1 }}
+                      transition={{ delay: 0.3, duration: 0.8, ease: "easeInOut" }}
+                      d={pathD}
+                      fill="none"
+                      stroke="url(#flowGradient)"
+                      strokeWidth="0.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      opacity="0.5"
+                    />
+                  )
+                })()}
               </svg>
             )}
 
             {/* Moment orbs - positioned by time and emotion score */}
             {todaysMoments.length > 0 && (
               <div className="absolute inset-0">
-                {todaysMoments
-                  .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-                  .map((moment, i) => {
+                {(() => {
+                  const sortedMoments = [...todaysMoments].sort(
+                    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                  )
+
+                  // Calculate positions with collision avoidance
+                  const positions: { id: string; x: number; y: number }[] = []
+
+                  return sortedMoments.map((moment, i) => {
                     const score = getMomentScore(moment)
                     const momentTime = new Date(moment.created_at)
                     const hours = momentTime.getHours() + momentTime.getMinutes() / 60
 
-                    // X: Time position (12 AM = 0%, 12 AM = 100%)
-                    const timePosition = (hours / 24) * 100
+                    // X: Time position with zoom-aware calculation
+                    let timePosition = hourToPosition(hours)
+
+                    // Skip if outside visible range
+                    if (timePosition < -10 || timePosition > 110) return null
+
                     // Y: Score position (high score = top, low score = bottom)
-                    const topPosition = 100 - ((score / 100) * 70 + 15)
+                    let topPosition = 100 - ((score / 100) * 70 + 15)
+
+                    // Check for overlaps with previous moments and adjust
+                    // Collision detection is more sensitive when zoomed in
+                    const orbSize = zoomLevel > 1 ? 12 : 8
+                    for (const pos of positions) {
+                      const dx = Math.abs(timePosition - pos.x)
+                      const dy = Math.abs(topPosition - pos.y)
+
+                      // If too close, spread vertically
+                      if (dx < orbSize && dy < orbSize * 1.5) {
+                        // Alternate up/down offset based on index
+                        const offset = (i % 2 === 0 ? -1 : 1) * (orbSize * 1.2)
+                        topPosition = Math.max(10, Math.min(90, topPosition + offset))
+                      }
+                    }
+
+                    positions.push({ id: moment.id, x: timePosition, y: topPosition })
 
                     const colors = getMomentColor(moment)
                     const Icon = getMomentIcon(moment)
@@ -743,7 +886,7 @@ export default function MyResourcesPage() {
                         key={moment.id}
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.2 + i * 0.15, type: 'spring', stiffness: 300, damping: 20 }}
+                        transition={{ delay: 0.2 + i * 0.1, type: 'spring', stiffness: 300, damping: 20 }}
                         className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20"
                         style={{ left: `${timePosition}%`, top: `${topPosition}%` }}
                         onClick={() => setPreviewMoment(moment)}
@@ -753,63 +896,196 @@ export default function MyResourcesPage() {
                           transition={{ duration: 3, repeat: Infinity, delay: i * 0.3 }}
                           whileHover={{ scale: 1.15 }}
                           whileTap={{ scale: 0.95 }}
-                          className="relative w-11 h-11 rounded-full flex items-center justify-center"
+                          className="relative w-8 h-8 rounded-full flex items-center justify-center border-2 border-white"
                           style={{
                             background: `linear-gradient(135deg, ${colors.from} 0%, ${colors.to} 100%)`,
-                            boxShadow: `0 0 24px ${colors.glow}, 0 4px 12px rgba(0,0,0,0.15)`,
+                            boxShadow: `0 2px 8px rgba(0,0,0,0.15)`,
                           }}
                         >
-                          <Icon className="w-5 h-5 text-white drop-shadow-sm" strokeWidth={2.5} />
+                          <Icon className="w-4 h-4 text-white" strokeWidth={2.5} />
                         </motion.div>
                       </motion.div>
                     )
-                  })}
+                  })
+                })()}
               </div>
             )}
 
-            {/* Current time indicator */}
-            <motion.div
-              initial={{ scaleY: 0, opacity: 0 }}
-              animate={{ scaleY: 1, opacity: 1 }}
-              transition={{ delay: 0.8 }}
-              className="absolute top-0 bottom-0 w-px bg-emerald-400/60 z-10"
-              style={{
-                left: `${((new Date().getHours() + new Date().getMinutes() / 60) / 24) * 100}%`,
-                originY: 0,
-              }}
-            >
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-            </motion.div>
-          </div>
+            {/* Planned rituals on timeline */}
+            {memberRituals.length > 0 && (
+              <div className="absolute inset-0 pointer-events-none">
+                {memberRituals.map((mr, i) => {
+                  if (!mr.planned_time) return null
 
-          {/* Time labels */}
-          <div className="flex justify-between mt-2 text-xs text-gray-400">
-            <span>{locale === 'fr' ? 'Matin' : 'Morning'}</span>
-            <span>{locale === 'fr' ? 'Après-midi' : 'Afternoon'}</span>
-            <span>{locale === 'fr' ? 'Soir' : 'Evening'}</span>
-          </div>
+                  // Parse planned time (format: "HH:MM:SS")
+                  const [hours, minutes] = mr.planned_time.split(':').map(Number)
+                  const plannedHour = hours + minutes / 60
+                  const position = hourToPosition(plannedHour)
 
-          {/* Summary */}
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            {todaysMoments.length > 0 ? (
-              <p className="text-sm text-gray-600">
-                {todaysMoments.length} {locale === 'fr' ? 'moment(s) capturé(s) aujourd\'hui' : 'moment(s) captured today'}
-                {' • '}
-                <span className="text-emerald-600 font-medium">
-                  {(() => {
-                    const avgScore = todaysMoments.reduce((acc, m) => acc + getMomentScore(m), 0) / todaysMoments.length
-                    if (avgScore >= 80) return locale === 'fr' ? 'Très positif' : 'Very positive'
-                    if (avgScore >= 60) return locale === 'fr' ? 'Positif' : 'Positive'
-                    if (avgScore >= 40) return locale === 'fr' ? 'Neutre' : 'Neutral'
-                    return locale === 'fr' ? 'Difficile' : 'Challenging'
-                  })()}
-                </span>
-              </p>
-            ) : (
-              <p className="text-sm text-gray-400">
-                {locale === 'fr' ? 'Commencez à capturer vos moments' : 'Start capturing your moments'}
-              </p>
+                  // Skip if outside visible range
+                  if (position < -5 || position > 105) return null
+
+                  // Check if completed
+                  const isCompleted = todayCompletions.some(
+                    c => c.ritual_id === mr.ritual_id && c.completed
+                  )
+
+                  // Check if in the past
+                  const currentHour = currentTime.getHours() + currentTime.getMinutes() / 60
+                  const isPast = plannedHour < currentHour
+                  const isFuture = plannedHour > currentHour
+
+                  // Get ritual icon and colors
+                  const RitualIcon = RITUAL_ICONS[mr.ritual.icon || ''] || Circle
+                  const gradient = CATEGORY_GRADIENTS[mr.ritual.category]
+
+                  return (
+                    <motion.div
+                      key={mr.id}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.3 + i * 0.05 }}
+                      className="absolute -translate-x-1/2 top-1/2 -translate-y-1/2 z-5"
+                      style={{ left: `${position}%` }}
+                    >
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center border-2 border-white ${
+                          isFuture ? 'blur-[1px] opacity-50' : ''
+                        }`}
+                        style={{
+                          background: isCompleted
+                            ? `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`
+                            : isPast && !isCompleted
+                              ? '#d1d5db'
+                              : `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`,
+                          boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                        }}
+                      >
+                        <RitualIcon className={`w-3 h-3 ${isCompleted || isFuture ? 'text-white' : 'text-gray-500'}`} />
+                      </div>
+                      {isCompleted && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full flex items-center justify-center">
+                          <Check className="w-2 h-2 text-white" />
+                        </div>
+                      )}
+                    </motion.div>
+                  )
+                })}
+              </div>
             )}
+
+            {/* Current time indicator - only show when viewing today and time is visible */}
+            {isToday() && (() => {
+              const currentHour = currentTime.getHours() + currentTime.getMinutes() / 60
+              const position = hourToPosition(currentHour)
+              // Only show if within visible range
+              if (position < 0 || position > 100) return null
+              return (
+                <motion.div
+                  initial={{ scaleY: 0, opacity: 0 }}
+                  animate={{ scaleY: 1, opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                  className="absolute top-0 bottom-0 w-px bg-emerald-400/60 z-10"
+                  style={{
+                    left: `${position}%`,
+                    originY: 0,
+                  }}
+                >
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                </motion.div>
+              )
+            })()}
+          </div>
+
+          {/* Time labels - dynamic based on zoom */}
+          <div className="flex justify-between mt-2 text-xs text-gray-400">
+            {(() => {
+              const { startHour, endHour } = getVisibleRange()
+              const range = endHour - startHour
+
+              if (zoomLevel === 1) {
+                // Full day view - show Morning, Afternoon, Evening
+                return (
+                  <>
+                    <span>{locale === 'fr' ? 'Matin' : 'Morning'}</span>
+                    <span>{locale === 'fr' ? 'Après-midi' : 'Afternoon'}</span>
+                    <span>{locale === 'fr' ? 'Soir' : 'Evening'}</span>
+                  </>
+                )
+              }
+
+              // Zoomed view - show specific hours
+              const numLabels = Math.min(5, Math.ceil(range / 2))
+              const step = range / (numLabels - 1)
+              return Array.from({ length: numLabels }).map((_, i) => (
+                <span key={i}>{formatHour(startHour + i * step)}</span>
+              ))
+            })()}
+          </div>
+
+          {/* Summary and controls row */}
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+            {/* Talk to Bloom prompt */}
+            <button
+              onClick={() => setShowBloomChat(true)}
+              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-emerald-500 transition-colors"
+            >
+              <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+              <span>{locale === 'fr' ? 'On parle ?' : 'Wanna talk?'}</span>
+            </button>
+
+            {/* Zoom and pan controls */}
+            <div className="flex items-center gap-2">
+              {/* Pan controls - only show when zoomed in */}
+              {zoomLevel > 1 && (
+                <div className="flex items-center gap-0.5 mr-1">
+                  <button
+                    onClick={handlePanLeft}
+                    className="p-0.5 rounded hover:bg-gray-100 transition-colors"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5 text-gray-400" />
+                  </button>
+                  <span className="text-[10px] text-gray-400">
+                    {formatHour(getVisibleRange().startHour)}-{formatHour(getVisibleRange().endHour)}
+                  </span>
+                  <button
+                    onClick={handlePanRight}
+                    className="p-0.5 rounded hover:bg-gray-100 transition-colors"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                  </button>
+                </div>
+              )}
+
+              {/* Zoom controls */}
+              <div className="flex items-center gap-0.5 bg-gray-50 rounded-full px-1.5 py-0.5">
+                <button
+                  onClick={handleZoomOut}
+                  disabled={zoomLevel <= 1}
+                  className={`p-0.5 rounded-full transition-colors ${
+                    zoomLevel <= 1
+                      ? 'text-gray-300 cursor-not-allowed'
+                      : 'hover:bg-gray-200 text-gray-500'
+                  }`}
+                >
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-[10px] text-gray-500 min-w-[24px] text-center font-medium">
+                  {getVisibleHours()}h
+                </span>
+                <button
+                  onClick={handleZoomIn}
+                  disabled={zoomLevel >= 4}
+                  className={`p-0.5 rounded-full transition-colors ${
+                    zoomLevel >= 4
+                      ? 'text-gray-300 cursor-not-allowed'
+                      : 'hover:bg-gray-200 text-gray-500'
+                  }`}
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
         </motion.div>
 
@@ -1240,6 +1516,13 @@ export default function MyResourcesPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Bloom Chat */}
+      <BloomChatInterface
+        isOpen={showBloomChat}
+        onClose={() => setShowBloomChat(false)}
+        isDark={false}
+      />
     </MemberLayout>
   )
 }

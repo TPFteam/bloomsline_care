@@ -13,6 +13,7 @@ import {
   Circle,
   X,
   Sun,
+  Settings,
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 
@@ -98,6 +99,13 @@ const moreNavItems = [
     labelFr: 'Réflexion',
     gradient: 'from-teal-400 to-emerald-500',
   },
+  {
+    href: '/settings/member',
+    icon: Settings,
+    labelEn: 'Settings',
+    labelFr: 'Paramètres',
+    gradient: 'from-gray-400 to-gray-600',
+  },
 ]
 
 export default function MemberLayout({ children }: MemberLayoutProps) {
@@ -115,21 +123,26 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
   // Check if any "more" item is active
   const isMoreActive = moreNavItems.some(item => isActive(item.href))
 
-  // Don't show bottom nav on fill pages
+  // Don't show bottom nav on fill pages, reflection page, or settings page
   const isFillingResource = pathname?.includes('/fill')
+  const isReflectionPage = pathname === '/reflection'
+  const isSettingsPage = pathname?.startsWith('/settings')
 
   // Don't show floating camera on moments pages (they have their own add button)
   const isMomentsPage = pathname?.startsWith('/moments')
 
+  // Hide all navigation on focus pages (reflection, settings)
+  const hideNavigation = isFillingResource || isReflectionPage || isSettingsPage
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50/80 via-white to-teal-50/50">
       {/* Main Content */}
-      <main className="relative pb-24">
+      <main className={`relative ${hideNavigation ? 'pb-8' : 'pb-24'}`}>
         {children}
       </main>
 
-      {/* Floating Camera Button - Hide on moments pages and fill pages */}
-      {!isFillingResource && !isMomentsPage && (
+      {/* Floating Camera Button - Hide on moments pages and focus pages */}
+      {!hideNavigation && !isMomentsPage && (
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -209,8 +222,8 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
         )}
       </AnimatePresence>
 
-      {/* Bottom Navigation - Only show when not filling */}
-      {!isFillingResource && (
+      {/* Bottom Navigation - Hide on focus pages */}
+      {!hideNavigation && (
         <nav className="fixed bottom-0 left-0 right-0 z-50 safe-area-pb">
           <div className="mx-4 mb-4">
             <div className="bg-white/95 backdrop-blur-xl rounded-[28px] shadow-lg shadow-gray-200/50 border border-gray-100/50 px-4 py-2 flex items-center justify-around">
