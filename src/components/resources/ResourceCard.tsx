@@ -18,6 +18,8 @@ import {
   Sparkles,
   Lock,
   Globe,
+  Bookmark,
+  Check,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -103,6 +105,7 @@ interface ResourceCardProps {
   onDelete?: () => void
   onRemove?: () => void
   onShare?: () => void
+  onBookmark?: (resourceId: string) => void
   collections?: Collection[]
   members?: SimpleMember[]
   onAddToCollection?: (resourceId: string, collectionId: string) => void
@@ -111,6 +114,7 @@ interface ResourceCardProps {
   isRemoving?: boolean
   isOwner?: boolean
   showCuratedBadge?: boolean
+  isBookmarked?: boolean
 }
 
 export function ResourceCard({
@@ -123,6 +127,7 @@ export function ResourceCard({
   onDelete,
   onRemove,
   onShare,
+  onBookmark,
   collections = [],
   members = [],
   onAddToCollection,
@@ -131,6 +136,7 @@ export function ResourceCard({
   isRemoving = false,
   isOwner = true,
   showCuratedBadge = false,
+  isBookmarked = false,
 }: ResourceCardProps) {
   const router = useRouter()
 
@@ -183,8 +189,27 @@ export function ResourceCard({
           </div>
         </div>
 
-        {/* Menu */}
-        <div onClick={handleMenuClick}>
+        {/* Actions */}
+        <div className="flex items-center gap-1" onClick={handleMenuClick}>
+          {/* Bookmark Button - for library variant */}
+          {variant === 'library' && onBookmark && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onBookmark(resource.id)
+              }}
+              className={`p-1.5 rounded-lg transition-all duration-200 ${
+                isBookmarked
+                  ? 'bg-amber-100 text-amber-600'
+                  : 'hover:bg-white text-gray-400 hover:text-amber-500 opacity-0 group-hover:opacity-100'
+              }`}
+              title={locale === 'fr' ? (isBookmarked ? 'Retirer des favoris' : 'Ajouter aux favoris') : (isBookmarked ? 'Remove bookmark' : 'Bookmark')}
+            >
+              <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-amber-500' : ''}`} />
+            </button>
+          )}
+
+          {/* Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="p-1.5 rounded-lg hover:bg-white transition-colors opacity-0 group-hover:opacity-100">
@@ -340,6 +365,7 @@ export function ResourceCardList({
   onEdit,
   onDelete,
   onShare,
+  onBookmark,
   collections = [],
   members = [],
   onAddToCollection,
@@ -347,6 +373,7 @@ export function ResourceCardList({
   isDeleting = false,
   isOwner = true,
   showCuratedBadge = false,
+  isBookmarked = false,
 }: ResourceCardProps) {
   const router = useRouter()
 
@@ -429,6 +456,24 @@ export function ResourceCardList({
 
         {showCuratedBadge && (
           <Sparkles className="w-4 h-4 text-emerald-500" />
+        )}
+
+        {/* Bookmark Button - for library variant */}
+        {variant === 'library' && onBookmark && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onBookmark(resource.id)
+            }}
+            className={`p-1.5 rounded-lg transition-all duration-200 ${
+              isBookmarked
+                ? 'bg-amber-100 text-amber-600'
+                : 'hover:bg-white text-gray-400 hover:text-amber-500 opacity-0 group-hover:opacity-100'
+            }`}
+            title={locale === 'fr' ? (isBookmarked ? 'Retirer des favoris' : 'Ajouter aux favoris') : (isBookmarked ? 'Remove bookmark' : 'Bookmark')}
+          >
+            <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-amber-500' : ''}`} />
+          </button>
         )}
 
         {/* Menu */}

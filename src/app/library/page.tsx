@@ -42,7 +42,7 @@ import {
   DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
-import { getCollections, addResourceToCollection } from '@/lib/services/collections'
+import { getCollections, addResourceToCollection, createCollection, isResourceSaved } from '@/lib/services/collections'
 import type { Collection } from '@/types/collection'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -202,6 +202,10 @@ export default function LibraryPage() {
 
   // Members for "Share with Members" dropdown
   const [members, setMembers] = useState<SimpleMember[]>([])
+
+  // Bookmarked resources tracking
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
+  const [isBookmarking, setIsBookmarking] = useState<string | null>(null)
 
   // Fetch public resources and collections
   useEffect(() => {
@@ -373,6 +377,46 @@ export default function LibraryPage() {
     } catch (error) {
       console.error('Error sharing resource:', error)
       toast.error(locale === 'fr' ? 'Erreur lors du partage' : 'Error sharing resource')
+    }
+  }
+
+  // Handle quick bookmark (add to first collection or create "Saved" collection)
+  const handleBookmark = async (resourceId: string) => {
+    if (isBookmarking) return
+
+    setIsBookmarking(resourceId)
+    try {
+      // Check if already bookmarked
+      if (bookmarkedIds.has(resourceId)) {
+        toast.info(locale === 'fr' ? 'Déjà enregistré' : 'Already saved')
+        return
+      }
+
+      let targetCollectionId: string
+
+      if (collections.length > 0) {
+        // Use the first collection (most recent) for quick bookmark
+        targetCollectionId = collections[0].id
+      } else {
+        // Create a default "Saved" collection
+        const newCollection = await createCollection({
+          name: locale === 'fr' ? 'Mes favoris' : 'My Favorites',
+          description: locale === 'fr' ? 'Ressources enregistrées de la bibliothèque' : 'Saved resources from the library',
+          color: 'amber',
+          icon: 'bookmark',
+        })
+        setCollections([newCollection])
+        targetCollectionId = newCollection.id
+      }
+
+      await addResourceToCollection(targetCollectionId, resourceId)
+      setBookmarkedIds(prev => new Set([...prev, resourceId]))
+      toast.success(locale === 'fr' ? 'Ressource enregistrée!' : 'Resource saved!')
+    } catch (error) {
+      console.error('Error bookmarking resource:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors de l\'enregistrement' : 'Error saving resource')
+    } finally {
+      setIsBookmarking(null)
     }
   }
 
@@ -711,6 +755,8 @@ export default function LibraryPage() {
                       members={members}
                       onAddToCollection={handleAddToCollection}
                       onShareWithMember={handleShareWithMember}
+                      onBookmark={handleBookmark}
+                      isBookmarked={bookmarkedIds.has(resource.id)}
                       showCuratedBadge
                     />
                   ) : (
@@ -724,6 +770,8 @@ export default function LibraryPage() {
                       members={members}
                       onAddToCollection={handleAddToCollection}
                       onShareWithMember={handleShareWithMember}
+                      onBookmark={handleBookmark}
+                      isBookmarked={bookmarkedIds.has(resource.id)}
                       showCuratedBadge
                     />
                   )
