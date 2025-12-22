@@ -201,7 +201,10 @@ export async function addResourceToCollection(
     throw new Error('Either resourceId or externalResourceId is required')
   }
 
-  const { data, error } = await supabase
+  // First try to insert
+  console.log('Attempting to add resource to collection:', { collectionId, resourceId })
+
+  const { data, error: insertError } = await supabase
     .from('collection_resources')
     .insert({
       collection_id: collectionId,
@@ -209,14 +212,30 @@ export async function addResourceToCollection(
       external_resource_id: externalResourceId || null,
     })
     .select()
-    .single()
 
-  if (error) {
-    console.error('Error adding resource to collection:', error)
-    throw error
+  console.log('Insert result:', { data, error: insertError, errorStr: JSON.stringify(insertError) })
+
+  if (insertError) {
+    console.error('Error adding resource to collection:', {
+      code: insertError.code,
+      message: insertError.message,
+      details: insertError.details,
+      hint: insertError.hint,
+      fullError: JSON.stringify(insertError),
+      collectionId,
+      resourceId,
+    })
+    throw insertError
   }
 
-  return data as CollectionResource
+  // Return a simple response (we don't need the full object)
+  return {
+    id: '', // ID will be auto-generated
+    collection_id: collectionId,
+    resource_id: resourceId || null,
+    external_resource_id: externalResourceId || null,
+    added_at: new Date().toISOString(),
+  } as CollectionResource
 }
 
 export async function removeResourceFromCollection(

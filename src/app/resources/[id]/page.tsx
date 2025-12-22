@@ -1352,6 +1352,328 @@ export default function ResourceDetailPage() {
                 </div>
               </motion.div>
             )}
+
+            {/* Psychoeducation Blocks Preview */}
+            {resource.type === 'psychoeducation' && resource.blocks && resource.blocks.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100/80 flex items-center justify-center">
+                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-md">
+                        <Eye className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">
+                        {locale === 'fr' ? 'Contenu' : 'Content'}
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        {locale === 'fr' ? 'Ce que les patients verront' : 'As seen by members'}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge className="bg-amber-50 text-amber-600 border-amber-100">
+                    {resource.blocks.length} {locale === 'fr' ? (resource.blocks.length === 1 ? 'section' : 'sections') : 'sections'}
+                  </Badge>
+                </div>
+
+                {/* Clean reading preview for psychoeducation */}
+                <div className="space-y-6">
+                  {(() => {
+                    const typeLabels: Record<string, { en: string; fr: string }> = {
+                      heading: { en: 'Title', fr: 'Titre' },
+                      paragraph: { en: 'Text', fr: 'Texte' },
+                      key_points: { en: 'Key Points', fr: 'Points clés' },
+                      callout: { en: 'Callout', fr: 'Encadré' },
+                      quote: { en: 'Quote', fr: 'Citation' },
+                      image: { en: 'Image', fr: 'Image' },
+                      audio: { en: 'Audio', fr: 'Audio' },
+                      video: { en: 'Video', fr: 'Vidéo' },
+                      link: { en: 'Link', fr: 'Lien' },
+                    }
+
+                    return resource.blocks.map((block, index) => {
+                      const blockType = (block as any).type as string
+                      const blockContent = typeof (block as any).content === 'string' ? (block as any).content : ''
+                      const blockId = (block as any).id || index
+                      const sectionNumber = index + 1
+                      const typeLabel = typeLabels[blockType]?.[locale] || blockType
+
+                      // Heading
+                      if (blockType === 'heading') {
+                        return (
+                          <div key={blockId}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                                {sectionNumber}
+                              </div>
+                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            </div>
+                            <h3 className="text-xl font-semibold text-gray-900">{blockContent}</h3>
+                          </div>
+                        )
+                      }
+
+                      // Paragraph
+                      if (blockType === 'paragraph') {
+                        return (
+                          <div key={blockId}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                                {sectionNumber}
+                              </div>
+                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            </div>
+                            <p className="text-gray-700 leading-relaxed">{blockContent}</p>
+                          </div>
+                        )
+                      }
+
+                      // Key Points
+                      if (blockType === 'key_points') {
+                        const points = (block as any).points || []
+                        return (
+                          <div key={blockId}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                                {sectionNumber}
+                              </div>
+                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            </div>
+                            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
+                              {blockContent && <p className="text-emerald-800 font-medium mb-3">{blockContent}</p>}
+                              <ul className="space-y-2">
+                                {points.map((point: string, i: number) => (
+                                  <li key={i} className="flex items-start gap-2 text-emerald-700">
+                                    <span className="text-emerald-500 mt-1">✓</span>
+                                    <span>{point}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )
+                      }
+
+                      // Callout
+                      if (blockType === 'callout') {
+                        const calloutStyles = {
+                          info: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: 'ℹ️' },
+                          warning: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800', icon: '⚠️' },
+                          tip: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-800', icon: '💡' },
+                          example: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-800', icon: '📝' },
+                        }
+                        const calloutType = (block as any).calloutType || 'info'
+                        const style = calloutStyles[calloutType as keyof typeof calloutStyles] || calloutStyles.info
+                        return (
+                          <div key={blockId}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                                {sectionNumber}
+                              </div>
+                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            </div>
+                            <div className={`p-4 rounded-xl border ${style.bg} ${style.border}`}>
+                              <div className="flex items-start gap-3">
+                                <span className="text-lg">{style.icon}</span>
+                                <p className={`text-sm ${style.text}`}>{blockContent}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      }
+
+                      // Quote
+                      if (blockType === 'quote') {
+                        return (
+                          <div key={blockId}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                                {sectionNumber}
+                              </div>
+                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            </div>
+                            <blockquote className="border-l-4 border-amber-300 pl-4 py-2 italic text-gray-700 bg-amber-50/30 rounded-r-lg">
+                              "{blockContent}"
+                              {(block as any).attribution && (
+                                <footer className="text-sm text-gray-500 mt-2 not-italic">— {(block as any).attribution}</footer>
+                              )}
+                            </blockquote>
+                          </div>
+                        )
+                      }
+
+                      // Image
+                      if (blockType === 'image') {
+                        return (
+                          <div key={blockId}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                                {sectionNumber}
+                              </div>
+                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            </div>
+                            {(block as any).mediaFile?.url ? (
+                              <div
+                                className="group relative w-48 h-32 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-amber-400 transition-all"
+                                onClick={() => window.open((block as any).mediaFile.url, '_blank')}
+                              >
+                                <img
+                                  src={(block as any).mediaFile.url}
+                                  alt={(block as any).caption || ''}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                                  <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-medium bg-black/50 px-2 py-1 rounded">
+                                    {locale === 'fr' ? 'Agrandir' : 'View'}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="w-48 h-32 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
+                                <span className="text-2xl">🖼️</span>
+                              </div>
+                            )}
+                            {(block as any).caption && (
+                              <p className="text-xs text-gray-500 mt-1 italic">{(block as any).caption}</p>
+                            )}
+                          </div>
+                        )
+                      }
+
+                      // Audio
+                      if (blockType === 'audio') {
+                        return (
+                          <div key={blockId}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                                {sectionNumber}
+                              </div>
+                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              {(block as any).caption && (
+                                <span className="text-sm text-gray-700">{(block as any).caption}</span>
+                              )}
+                              {(block as any).mediaFile?.url ? (
+                                <audio
+                                  controls
+                                  className="h-10 w-64"
+                                  src={(block as any).mediaFile.url}
+                                >
+                                  Your browser does not support audio.
+                                </audio>
+                              ) : (
+                                <div className="inline-flex items-center gap-3 px-3 py-2 bg-gray-100 rounded-lg text-gray-400">
+                                  <span className="text-sm">🎵</span>
+                                  <span className="text-sm">{locale === 'fr' ? 'Aucun audio' : 'No audio'}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      }
+
+                      // Video
+                      if (blockType === 'video') {
+                        return (
+                          <div key={blockId}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                                {sectionNumber}
+                              </div>
+                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            </div>
+                            {(block as any).mediaFile?.url ? (
+                              <div
+                                className="group relative w-56 h-36 bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-amber-400 transition-all"
+                                onClick={() => window.open((block as any).mediaFile.url, '_blank')}
+                              >
+                                <video
+                                  src={(block as any).mediaFile.url}
+                                  className="w-full h-full object-cover"
+                                  muted
+                                />
+                                <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors flex items-center justify-center">
+                                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                                    <span className="text-gray-900 ml-0.5">▶</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="w-56 h-36 bg-gray-900 rounded-lg flex items-center justify-center">
+                                <div className="text-center text-white">
+                                  <span className="text-2xl">▶️</span>
+                                </div>
+                              </div>
+                            )}
+                            {(block as any).caption && (
+                              <p className="text-xs text-gray-500 mt-1 italic">{(block as any).caption}</p>
+                            )}
+                          </div>
+                        )
+                      }
+
+                      // Link
+                      if (blockType === 'link') {
+                        const platformIcons: Record<string, string> = {
+                          youtube: '📺',
+                          vimeo: '🎬',
+                          spotify: '🎧',
+                          soundcloud: '🔊',
+                          other: '🔗',
+                        }
+                        const platform = (block as any).linkPlatform || 'other'
+                        return (
+                          <div key={blockId}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                                {sectionNumber}
+                              </div>
+                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            </div>
+                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
+                              <a
+                                href={(block as any).linkUrl || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+                              >
+                                <span className="text-2xl">{platformIcons[platform]}</span>
+                                <div>
+                                  <p className="font-medium">{(block as any).linkTitle || (block as any).linkUrl || 'Link'}</p>
+                                  {(block as any).linkUrl && (
+                                    <p className="text-sm text-gray-500 truncate max-w-md">{(block as any).linkUrl}</p>
+                                  )}
+                                </div>
+                              </a>
+                            </div>
+                          </div>
+                        )
+                      }
+
+                      // Default fallback
+                      return blockContent ? (
+                        <div key={blockId}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
+                              {sectionNumber}
+                            </div>
+                            <span className="text-[9px] text-gray-400 uppercase tracking-wide">{blockType}</span>
+                          </div>
+                          <p className="text-gray-700">{blockContent}</p>
+                        </div>
+                      ) : null
+                    })
+                  })()}
+                </div>
+              </motion.div>
+            )}
           </div>
 
           {/* Sidebar */}

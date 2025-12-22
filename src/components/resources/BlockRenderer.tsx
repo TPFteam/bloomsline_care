@@ -112,6 +112,135 @@ export function BlockRenderer({
       }
       return null
 
+    case 'audio':
+      const audioUrl = ('mediaFile' in block && block.mediaFile?.url)
+      const audioCaption = ('caption' in block && typeof block.caption === 'string') ? block.caption : ''
+      return (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="space-y-2"
+        >
+          {audioCaption && (
+            <p className="text-gray-700 text-sm font-medium">{audioCaption}</p>
+          )}
+          {audioUrl ? (
+            <audio controls className="w-full h-12">
+              <source src={audioUrl} />
+              {locale === 'fr' ? 'Votre navigateur ne supporte pas l\'audio.' : 'Your browser does not support audio.'}
+            </audio>
+          ) : (
+            <div className="p-3 bg-gray-100 rounded-xl text-gray-500 text-sm">
+              {locale === 'fr' ? 'Aucun audio disponible' : 'No audio available'}
+            </div>
+          )}
+        </motion.div>
+      )
+
+    case 'video':
+      const videoUrl = ('mediaFile' in block && block.mediaFile?.url)
+      const videoCaption = ('caption' in block && typeof block.caption === 'string') ? block.caption : ''
+      return (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="space-y-2"
+        >
+          {videoUrl ? (
+            <div className="rounded-xl overflow-hidden bg-black">
+              <video controls className="w-full">
+                <source src={videoUrl} />
+                {locale === 'fr' ? 'Votre navigateur ne supporte pas la vidéo.' : 'Your browser does not support video.'}
+              </video>
+            </div>
+          ) : (
+            <div className="p-4 bg-gray-100 rounded-xl text-gray-500 text-sm text-center">
+              {locale === 'fr' ? 'Aucune vidéo disponible' : 'No video available'}
+            </div>
+          )}
+          {videoCaption && (
+            <p className="text-gray-500 text-sm text-center italic">{videoCaption}</p>
+          )}
+        </motion.div>
+      )
+
+    case 'link':
+      const linkUrl = ('linkUrl' in block && typeof block.linkUrl === 'string') ? block.linkUrl : ''
+      const linkTitle = ('linkTitle' in block && typeof block.linkTitle === 'string') ? block.linkTitle : ''
+      const linkPlatform = ('linkPlatform' in block && typeof block.linkPlatform === 'string') ? block.linkPlatform : 'other'
+      const platformIcons: Record<string, string> = {
+        youtube: '📺',
+        vimeo: '🎬',
+        spotify: '🎧',
+        soundcloud: '🔊',
+        other: '🔗',
+      }
+      return (
+        <motion.a
+          href={linkUrl || '#'}
+          target="_blank"
+          rel="noopener noreferrer"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl hover:border-teal-300 hover:shadow-sm transition-all"
+        >
+          <span className="text-2xl">{platformIcons[linkPlatform] || '🔗'}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-gray-800 font-medium truncate">
+              {linkTitle || (typeof block.content === 'string' ? block.content : (locale === 'fr' ? 'Lien externe' : 'External link'))}
+            </p>
+            {linkUrl && (
+              <p className="text-xs text-gray-400 truncate">{linkUrl}</p>
+            )}
+          </div>
+          <span className="text-teal-500">→</span>
+        </motion.a>
+      )
+
+    case 'key_points':
+      const keyPoints = ('points' in block && Array.isArray(block.points)) ? block.points : []
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50/50 border border-blue-100 rounded-2xl"
+        >
+          <p className="font-medium text-blue-800 mb-3">
+            {locale === 'fr' ? '📌 Points clés' : '📌 Key Points'}
+          </p>
+          <ul className="space-y-2">
+            {keyPoints.map((point, idx) => (
+              <li key={idx} className="flex items-start gap-2 text-blue-700 text-[15px]">
+                <span className="text-blue-400 mt-1">•</span>
+                <span>{typeof point === 'string' ? point : ''}</span>
+              </li>
+            ))}
+          </ul>
+        </motion.div>
+      )
+
+    case 'callout':
+      const calloutType = ('calloutType' in block && typeof block.calloutType === 'string') ? block.calloutType : 'info'
+      const calloutStyles: Record<string, { bg: string; border: string; text: string; icon: string }> = {
+        info: { bg: 'from-blue-50 to-sky-50', border: 'border-blue-200', text: 'text-blue-700', icon: 'ℹ️' },
+        warning: { bg: 'from-amber-50 to-yellow-50', border: 'border-amber-200', text: 'text-amber-700', icon: '⚠️' },
+        success: { bg: 'from-emerald-50 to-green-50', border: 'border-emerald-200', text: 'text-emerald-700', icon: '✅' },
+        tip: { bg: 'from-purple-50 to-violet-50', border: 'border-purple-200', text: 'text-purple-700', icon: '💡' },
+      }
+      const style = calloutStyles[calloutType] || calloutStyles.info
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`p-4 bg-gradient-to-br ${style.bg} border ${style.border} rounded-2xl`}
+        >
+          <p className={`${style.text} text-[15px]`}>
+            <span className="mr-2">{style.icon}</span>
+            {typeof block.content === 'string' ? block.content : ''}
+          </p>
+        </motion.div>
+      )
+
     // Response blocks
     case 'prompt':
       return (

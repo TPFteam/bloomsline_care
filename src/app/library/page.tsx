@@ -42,7 +42,7 @@ import {
   DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
-import { getCollections, addResourceToCollection, createCollection, isResourceSaved } from '@/lib/services/collections'
+import { getCollections, addResourceToCollection, createCollection, getSavedResources } from '@/lib/services/collections'
 import type { Collection } from '@/types/collection'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -235,6 +235,20 @@ export default function LibraryPage() {
     fetchCollections()
   }, [])
 
+  // Fetch saved resources to highlight bookmarked items
+  useEffect(() => {
+    const fetchSavedResourceIds = async () => {
+      try {
+        const savedResources = await getSavedResources()
+        const savedIds = new Set(savedResources.map(r => r.id))
+        setBookmarkedIds(savedIds)
+      } catch (error) {
+        console.error('Error fetching saved resources:', error)
+      }
+    }
+    fetchSavedResourceIds()
+  }, [])
+
   // Fetch members
   useEffect(() => {
     const fetchMembers = async () => {
@@ -409,9 +423,19 @@ export default function LibraryPage() {
         targetCollectionId = newCollection.id
       }
 
-      await addResourceToCollection(targetCollectionId, resourceId)
-      setBookmarkedIds(prev => new Set([...prev, resourceId]))
-      toast.success(locale === 'fr' ? 'Ressource enregistrée!' : 'Resource saved!')
+      try {
+        await addResourceToCollection(targetCollectionId, resourceId)
+        setBookmarkedIds(prev => new Set([...prev, resourceId]))
+        toast.success(locale === 'fr' ? 'Ressource enregistrée!' : 'Resource saved!')
+      } catch (addError: any) {
+        // Check if it's a duplicate error (resource already in collection)
+        if (addError?.code === '23505') {
+          setBookmarkedIds(prev => new Set([...prev, resourceId]))
+          toast.info(locale === 'fr' ? 'Déjà dans vos favoris' : 'Already in your favorites')
+        } else {
+          throw addError
+        }
+      }
     } catch (error) {
       console.error('Error bookmarking resource:', error)
       toast.error(locale === 'fr' ? 'Erreur lors de l\'enregistrement' : 'Error saving resource')

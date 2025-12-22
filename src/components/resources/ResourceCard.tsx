@@ -233,7 +233,7 @@ export function ResourceCard({
                   {locale === 'fr' ? 'Partager' : 'Share'}
                 </DropdownMenuItem>
               )}
-              {variant === 'library' && collections.length > 0 && onAddToCollection && (
+              {(variant === 'library' || variant === 'saved') && collections.length > 0 && onAddToCollection && (
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <FolderPlus className="w-4 h-4 mr-2 text-gray-400" />

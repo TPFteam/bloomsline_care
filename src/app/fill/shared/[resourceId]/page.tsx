@@ -21,6 +21,7 @@ import {
   X,
   Eye,
   Save,
+  BookOpen,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -207,6 +208,9 @@ export default function FillSharedResourcePage() {
 
   // Check if this is a table exercise
   const isTableExercise = resource?.type === 'table'
+
+  // Check if this is psychoeducation (read-only content)
+  const isPsychoeducation = resource?.type === 'psychoeducation'
 
   // Get blocks from resource
   const blocks: ResourceBlock[] = useMemo(() => {
@@ -562,6 +566,53 @@ export default function FillSharedResourcePage() {
     }
   }
 
+  // Handle mark as read for psychoeducation
+  const handleMarkAsRead = async () => {
+    if (!response || !resource) return
+
+    setSubmitting(true)
+    try {
+      // Create resource snapshot
+      const resourceSnapshot = {
+        title: resource.title,
+        blocks: resource.blocks,
+        settings: resource.settings,
+        type: resource.type,
+      }
+
+      // Submit with empty responses (no questions to answer)
+      const { error } = await supabase
+        .from('resource_responses')
+        .update({
+          responses: {},
+          scores: {},
+          status: 'submitted',
+          submitted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          resource_snapshot: resourceSnapshot,
+        })
+        .eq('id', response.id)
+
+      if (error) throw error
+
+      setShowConfirmation(true)
+      toast.success(
+        locale === 'fr'
+          ? 'Marqué comme lu'
+          : 'Marked as read'
+      )
+    } catch (error) {
+      console.error('Error marking as read:', error)
+      toast.error(
+        locale === 'fr'
+          ? 'Erreur lors du marquage'
+          : 'Error marking as read'
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   // Handle submit
   const handleSubmit = async () => {
     if (!response || !resource) return
@@ -782,8 +833,11 @@ export default function FillSharedResourcePage() {
     }
   }
 
-  // Already submitted state - show detailed submission view
-  if (response?.status === 'submitted') {
+  // Track if psychoeducation is already completed
+  const isPsychoeducationCompleted = isPsychoeducation && response?.status === 'submitted'
+
+  // Already submitted state - show detailed submission view (but not for psychoeducation)
+  if (response?.status === 'submitted' && !isPsychoeducation) {
     const resourceTitle = typeof resource?.title === 'string' ? resource.title : ''
     const blocks = (resource?.blocks || []) as ResourceBlock[]
     const questionBlocks = blocks.filter(b =>
@@ -964,23 +1018,25 @@ export default function FillSharedResourcePage() {
             </div>
           </div>
 
-          {/* Progress Bar */}
-          <div className="mt-3">
-            <div className="flex items-center justify-between text-xs mb-1.5">
-              <span className="text-gray-500">
-                {locale === 'fr' ? 'Progression' : 'Progress'}
-              </span>
-              <span className="font-semibold text-teal-600">{progress}%</span>
+          {/* Progress Bar - Hide for psychoeducation */}
+          {!isPsychoeducation && (
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="text-gray-500">
+                  {locale === 'fr' ? 'Progression' : 'Progress'}
+                </span>
+                <span className="font-semibold text-teal-600">{progress}%</span>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-teal-400 to-teal-500 rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-gradient-to-r from-teal-400 to-teal-500 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -1069,10 +1125,41 @@ export default function FillSharedResourcePage() {
         </div>
       </div>
 
-      {/* Fixed Bottom Button - Different for table exercises */}
+      {/* Fixed Bottom Button - Different for table exercises and psychoeducation */}
       <div className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100 px-4 py-3 safe-area-pb">
         <div className="max-w-lg mx-auto">
-          {isTableExercise ? (
+          {isPsychoeducation ? (
+            // Psychoeducation: Mark as Read or Completed button
+            isPsychoeducationCompleted ? (
+              <Button
+                onClick={() => router.push('/home')}
+                size="lg"
+                className="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-lg text-base font-semibold"
+              >
+                <CheckCircle className="w-5 h-5 mr-2" />
+                {locale === 'fr' ? 'Terminé - Retour' : 'Completed - Back'}
+              </Button>
+            ) : (
+              <Button
+                onClick={handleMarkAsRead}
+                disabled={submitting}
+                size="lg"
+                className="w-full h-12 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 shadow-lg text-base font-semibold"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    {locale === 'fr' ? 'Marquage...' : 'Marking...'}
+                  </>
+                ) : (
+                  <>
+                    <BookOpen className="w-5 h-5 mr-2" />
+                    {locale === 'fr' ? 'Marquer comme lu' : 'Mark as Read'}
+                  </>
+                )}
+              </Button>
+            )
+          ) : isTableExercise ? (
             // Table Exercise: Save & View buttons
             <div className="flex gap-3">
               <Button

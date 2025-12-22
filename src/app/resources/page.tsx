@@ -46,7 +46,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import { AppSidebar } from '@/components/app-sidebar'
 import type { ResourceType, UserResource } from '@/types/library'
 import { getResources, deleteResource } from '@/lib/services/resources'
-import { getCollections, createCollection, deleteCollection, removeResourceFromAllCollections, getSavedResources } from '@/lib/services/collections'
+import { getCollections, createCollection, deleteCollection, removeResourceFromAllCollections, getSavedResources, addResourceToCollection } from '@/lib/services/collections'
 import type { Resource } from '@/types/resource'
 import type { Collection, CollectionColor, CollectionIcon, collectionColorConfig } from '@/types/collection'
 import type { Member } from '@/types/member'
@@ -384,6 +384,8 @@ export default function MyResourcesPage() {
     setIsRemoving(id)
     try {
       await removeResourceFromAllCollections(id)
+      // Update both states - savedDbResources for saved tab, dbResources for created tab
+      setSavedDbResources(prev => prev.filter(r => r.id !== id))
       setDbResources(prev => prev.filter(r => r.id !== id))
       toast.success(locale === 'fr' ? 'Ressource retirée de votre bibliothèque' : 'Resource removed from your library')
     } catch (error) {
@@ -391,6 +393,21 @@ export default function MyResourcesPage() {
       toast.error(locale === 'fr' ? 'Erreur lors du retrait' : 'Error removing resource')
     } finally {
       setIsRemoving(null)
+    }
+  }
+
+  // Handle adding resource to a collection
+  const handleAddToCollection = async (resourceId: string, collectionId: string) => {
+    try {
+      await addResourceToCollection(collectionId, resourceId)
+      toast.success(locale === 'fr' ? 'Ressource ajoutée à la collection' : 'Resource added to collection')
+    } catch (error: any) {
+      if (error?.code === '23505') {
+        toast.info(locale === 'fr' ? 'Déjà dans cette collection' : 'Already in this collection')
+      } else {
+        console.error('Error adding to collection:', error)
+        toast.error(locale === 'fr' ? 'Erreur lors de l\'ajout' : 'Error adding to collection')
+      }
     }
   }
 
@@ -873,6 +890,8 @@ export default function MyResourcesPage() {
                       onPreview={() => router.push(`/resources/${resource.id}`)}
                       onRemove={() => handleRemoveFromLibrary(resource.id)}
                       onShare={() => handleOpenShareModal(resource)}
+                      collections={collections}
+                      onAddToCollection={handleAddToCollection}
                       isRemoving={isRemoving === resource.id}
                       isOwner={false}
                     />
