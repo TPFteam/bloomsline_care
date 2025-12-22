@@ -341,3 +341,48 @@ export async function isResourceSaved(resourceId: string): Promise<boolean> {
 
   return !!data
 }
+
+// Get all resources saved in any collection by the current user
+// This returns resources that were NOT created by the user (saved from library)
+export async function getSavedResources() {
+  const supabase = createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  // Get all unique resource IDs from the user's collections
+  const { data: collectionResources, error: crError } = await supabase
+    .from('collection_resources')
+    .select(`
+      resource_id,
+      resource_collections!inner(practitioner_id)
+    `)
+    .eq('resource_collections.practitioner_id', user.id)
+    .not('resource_id', 'is', null)
+
+  if (crError) {
+    console.error('Error fetching saved resource IDs:', crError)
+    throw crError
+  }
+
+  if (!collectionResources || collectionResources.length === 0) {
+    return []
+  }
+
+  // Get unique resource IDs
+  const resourceIds = [...new Set(collectionResources.map(cr => cr.resource_id))]
+
+  // Fetch the actual resources (excluding ones created by the current user)
+  const { data: resources, error: rError } = await supabase
+    .from('resources')
+    .select('*')
+    .in('id', resourceIds)
+    .neq('practitioner_id', user.id) // Exclude user's own resources
+
+  if (rError) {
+    console.error('Error fetching saved resources:', rError)
+    throw rError
+  }
+
+  return resources || []
+}

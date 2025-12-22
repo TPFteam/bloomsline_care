@@ -9,25 +9,18 @@ import {
   Plus,
   FolderOpen,
   Heart,
-  Share2,
   Search,
   MoreHorizontal,
   Pencil,
   Trash2,
   Eye,
-  ExternalLink,
   ClipboardCheck,
   Puzzle,
   Sun,
   BookOpen,
   FileText,
-  Clock,
-  Users,
-  Star,
   Sparkles,
   Loader2,
-  Lock,
-  Globe,
   X,
   Briefcase,
   Lightbulb,
@@ -35,6 +28,9 @@ import {
   Table2,
   SlidersHorizontal,
   Check,
+  Star,
+  Users,
+  Share2,
 } from 'lucide-react'
 import { AnimatedIcon } from '@/components/ui/animated-icons'
 import { Button } from '@/components/ui/button'
@@ -48,11 +44,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppSidebar } from '@/components/app-sidebar'
-import { sampleLibraryResources } from '@/lib/data/sampleLibraryResources'
-import { formatDuration } from '@/types/library'
-import type { LibraryResource, ResourceType, UserResource } from '@/types/library'
+import type { ResourceType, UserResource } from '@/types/library'
 import { getResources, deleteResource } from '@/lib/services/resources'
-import { getCollections, createCollection, deleteCollection, removeResourceFromAllCollections } from '@/lib/services/collections'
+import { getCollections, createCollection, deleteCollection, removeResourceFromAllCollections, getSavedResources } from '@/lib/services/collections'
 import type { Resource } from '@/types/resource'
 import type { Collection, CollectionColor, CollectionIcon, collectionColorConfig } from '@/types/collection'
 import type { Member } from '@/types/member'
@@ -238,7 +232,9 @@ export default function MyResourcesPage() {
   const [typeFilter, setTypeFilter] = useState<'all' | 'worksheet' | 'psychoeducation' | 'exercise' | 'table'>('all')
   const [showFilters, setShowFilters] = useState(false)
   const [dbResources, setDbResources] = useState<Resource[]>([])
+  const [savedDbResources, setSavedDbResources] = useState<Resource[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingSaved, setIsLoadingSaved] = useState(true)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const [isRemoving, setIsRemoving] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -285,6 +281,21 @@ export default function MyResourcesPage() {
     }
     fetchResources()
   }, [locale, supabase])
+
+  // Fetch saved resources (resources in collections, not created by user)
+  useEffect(() => {
+    const fetchSavedResources = async () => {
+      try {
+        const saved = await getSavedResources()
+        setSavedDbResources(saved)
+      } catch (error) {
+        console.error('Error fetching saved resources:', error)
+      } finally {
+        setIsLoadingSaved(false)
+      }
+    }
+    fetchSavedResources()
+  }, [])
 
   // Fetch collections from database
   useEffect(() => {
@@ -469,16 +480,31 @@ export default function MyResourcesPage() {
     )
   }, [members, memberSearchQuery])
 
-  // Demo: first 5 resources are "saved"
+  // Saved resources (from collections, not created by user)
   const savedResources = useMemo(() => {
-    const saved = sampleLibraryResources.slice(0, 5)
-    if (!searchQuery) return saved
-    const query = searchQuery.toLowerCase()
-    return saved.filter(r =>
-      r.title.toLowerCase().includes(query) ||
-      r.description.toLowerCase().includes(query)
-    )
-  }, [searchQuery])
+    let filtered = savedDbResources
+
+    // Filter by language
+    if (languageFilter !== 'all') {
+      filtered = filtered.filter(r => r.language === languageFilter)
+    }
+
+    // Filter by type
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(r => r.type === typeFilter)
+    }
+
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(r =>
+        r.title.toLowerCase().includes(query) ||
+        (r.description || '').toLowerCase().includes(query)
+      )
+    }
+
+    return filtered
+  }, [savedDbResources, searchQuery, languageFilter, typeFilter])
 
   // User-created resources from database
   const createdResources = useMemo(() => {
@@ -514,7 +540,7 @@ export default function MyResourcesPage() {
 
   // Stats
   const stats = {
-    saved: sampleLibraryResources.slice(0, 5).length,
+    saved: savedDbResources.length,
     created: dbResources.length,
     collections: collections.length,
   }
@@ -831,14 +857,24 @@ export default function MyResourcesPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              {savedResources.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {savedResources.map((resource) => (
-                    <SavedResourceCard
+              {isLoadingSaved ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="w-8 h-8 animate-spin text-lavender-500" />
+                </div>
+              ) : savedResources.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {savedResources.map((resource, index) => (
+                    <ResourceCard
                       key={resource.id}
                       resource={resource}
-                      onView={() => router.push(`/library/${resource.id}`)}
-                      t={t}
+                      locale={locale}
+                      variant="saved"
+                      index={index}
+                      onPreview={() => router.push(`/resources/${resource.id}`)}
+                      onRemove={() => handleRemoveFromLibrary(resource.id)}
+                      onShare={() => handleOpenShareModal(resource)}
+                      isRemoving={isRemoving === resource.id}
+                      isOwner={false}
                     />
                   ))}
                 </div>
@@ -1350,162 +1386,6 @@ export default function MyResourcesPage() {
         </AnimatePresence>
       </main>
     </div>
-  )
-}
-
-// Saved Resource Card Component
-function SavedResourceCard({
-  resource,
-  onView,
-  t,
-}: {
-  resource: LibraryResource
-  onView: () => void
-  t: any
-}) {
-  const TypeIcon = typeIcons[resource.type] || FileText
-  const config = typeConfig[resource.type] || typeConfig.template
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02, y: -4 }}
-      onClick={onView}
-      className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] shadow-lg shadow-gray-200/40 border border-white/60 overflow-hidden cursor-pointer hover:shadow-xl transition-all group"
-    >
-      <div className="p-5">
-        <div className="flex items-start justify-between mb-4">
-          <div className={`w-11 h-11 rounded-xl ${config.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-            <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-md`}>
-              <TypeIcon className="w-4 h-4 text-white" />
-            </div>
-          </div>
-          <div onClick={(e) => e.stopPropagation()}>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                  <MoreHorizontal className="w-4 h-4 text-gray-400" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="rounded-xl">
-                <DropdownMenuItem onClick={onView} className="rounded-lg">
-                  <Eye className="w-4 h-4 mr-2" />
-                  {t.library.resource.viewDetails}
-                </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-lg">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  {t.library.resource.useWithClient}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600 rounded-lg">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {t.library.resource.unsave}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 leading-snug">{resource.title}</h3>
-        <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">{resource.description}</p>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          {resource.duration_minutes && (
-            <span className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-lg text-xs text-gray-600">
-              <Clock className="w-3 h-3 text-gray-400" />
-              {formatDuration(resource.duration_minutes)}
-            </span>
-          )}
-          <span className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-lg text-xs text-gray-600">
-            <Users className="w-3 h-3 text-gray-400" />
-            {t.library.ageGroups[resource.age_group]}
-          </span>
-          {resource.rating && (
-            <span className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded-lg text-xs text-amber-700">
-              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-              {resource.rating.toFixed(1)}
-            </span>
-          )}
-        </div>
-      </div>
-    </motion.div>
-  )
-}
-
-
-// Created Resource Card Component (for UserResource type - library resources)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function CreatedResourceCard({
-  resource,
-  onEdit,
-  t,
-}: {
-  resource: UserResource
-  onEdit: () => void
-  t: any
-}) {
-  const TypeIcon = typeIcons[resource.type] || FileText
-  const config = typeConfig[resource.type] || typeConfig.template
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02, y: -4 }}
-      className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] shadow-lg shadow-gray-200/40 border border-white/60 overflow-hidden cursor-pointer hover:shadow-xl transition-all group"
-    >
-      <div className="p-5">
-        <div className="flex items-start justify-between mb-4">
-          <div className={`w-11 h-11 rounded-xl ${config.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-            <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-md`}>
-              <TypeIcon className="w-4 h-4 text-white" />
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {resource.is_shared && (
-              <Badge className="text-xs bg-gradient-to-r from-emerald-400 to-emerald-600 text-white border-0 shadow-sm">
-                <Share2 className="w-3 h-3 mr-1" />
-                {t.library.share.shared}
-              </Badge>
-            )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                  <MoreHorizontal className="w-4 h-4 text-gray-400" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="rounded-xl">
-                <DropdownMenuItem onClick={onEdit} className="rounded-lg">
-                  <Pencil className="w-4 h-4 mr-2" />
-                  {t.library.create.editTitle}
-                </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-lg">
-                  <Eye className="w-4 h-4 mr-2" />
-                  {t.library.create.preview}
-                </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-lg">
-                  <Share2 className="w-4 h-4 mr-2" />
-                  {resource.is_shared ? t.library.share.unshareButton : t.library.share.shareButton}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600 rounded-lg">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 leading-snug">{resource.title}</h3>
-        <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">{resource.description}</p>
-
-        <div className="flex flex-wrap gap-2">
-          {resource.tags.slice(0, 3).map((tag) => (
-            <span key={tag} className="text-xs px-2.5 py-1 bg-lavender-50 text-lavender-700 rounded-lg">
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-    </motion.div>
   )
 }
 

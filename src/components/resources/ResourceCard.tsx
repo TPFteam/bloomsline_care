@@ -96,7 +96,7 @@ interface SimpleMember {
 interface ResourceCardProps {
   resource: Resource
   locale: 'en' | 'fr'
-  variant?: 'owned' | 'library'
+  variant?: 'owned' | 'library' | 'saved'
   index?: number
   onPreview?: () => void
   onEdit?: () => void
@@ -202,7 +202,7 @@ export function ResourceCard({
                   {locale === 'fr' ? 'Modifier' : 'Edit'}
                 </DropdownMenuItem>
               )}
-              {variant === 'owned' && onShare && (
+              {(variant === 'owned' || variant === 'saved') && onShare && (
                 <DropdownMenuItem onClick={onShare} className="text-purple-600">
                   <Users className="w-4 h-4 mr-2" />
                   {locale === 'fr' ? 'Partager' : 'Share'}
