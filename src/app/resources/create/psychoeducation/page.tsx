@@ -170,6 +170,7 @@ function CreatePsychoeducationContent() {
 
   // Step state - start directly with build (skip template)
   const [step, setStep] = useState<'template' | 'build' | 'details'>('build')
+  const [detailsStep, setDetailsStep] = useState<1 | 2 | 3>(1)
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(!!editId)
@@ -179,6 +180,7 @@ function CreatePsychoeducationContent() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<ResourceCategory | null>(null)
+  const [resourceLanguage, setResourceLanguage] = useState<'en' | 'fr'>(locale as 'en' | 'fr')
   const [blocks, setBlocks] = useState<ContentBlock[]>([])
   const [learningObjectives, setLearningObjectives] = useState<string[]>([''])
   const [isSaving, setIsSaving] = useState(false)
@@ -823,6 +825,7 @@ function CreatePsychoeducationContent() {
           title,
           description: description || undefined,
           category: selectedCategory || undefined,
+          language: resourceLanguage,
           blocks: resourceBlocks,
           settings,
           status: saveAs,
@@ -836,6 +839,7 @@ function CreatePsychoeducationContent() {
           title,
           description: description || undefined,
           category: selectedCategory || undefined,
+          language: resourceLanguage,
           blocks: resourceBlocks,
           settings,
           status: saveAs,
@@ -2080,6 +2084,57 @@ function CreatePsychoeducationContent() {
                 </div>
               </motion.div>
 
+              {/* Step Indicator for Build */}
+              <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-4 mb-6">
+                <div className="flex items-center justify-center gap-3">
+                  {/* Step 1: Build */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-purple-500 text-white">
+                      1
+                    </div>
+                    <span className="text-sm font-medium text-gray-900 hidden sm:inline">
+                      {locale === 'fr' ? 'Contenu' : 'Build'}
+                    </span>
+                  </div>
+
+                  <div className="w-6 h-0.5 bg-gray-200" />
+
+                  {/* Step 2: Details */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-200 text-gray-500">
+                      2
+                    </div>
+                    <span className="text-sm font-medium text-gray-400 hidden sm:inline">
+                      {locale === 'fr' ? 'Détails' : 'Details'}
+                    </span>
+                  </div>
+
+                  <div className="w-6 h-0.5 bg-gray-200" />
+
+                  {/* Step 3: Settings */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-200 text-gray-500">
+                      3
+                    </div>
+                    <span className="text-sm font-medium text-gray-400 hidden sm:inline">
+                      {locale === 'fr' ? 'Paramètres' : 'Settings'}
+                    </span>
+                  </div>
+
+                  <div className="w-6 h-0.5 bg-gray-200" />
+
+                  {/* Step 4: Publish */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-200 text-gray-500">
+                      4
+                    </div>
+                    <span className="text-sm font-medium text-gray-400 hidden sm:inline">
+                      {locale === 'fr' ? 'Publier' : 'Publish'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-4">
@@ -2283,280 +2338,487 @@ function CreatePsychoeducationContent() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setStep('build')}
+                    onClick={() => {
+                      if (detailsStep === 1) {
+                        setStep('build')
+                      } else {
+                        setDetailsStep((detailsStep - 1) as 1 | 2 | 3)
+                      }
+                    }}
                     className="rounded-xl hover:bg-white/80"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    {locale === 'fr' ? 'Retour au contenu' : 'Back to content'}
+                    {detailsStep === 1
+                      ? (locale === 'fr' ? 'Revenir au contenu' : 'Back to content')
+                      : (locale === 'fr' ? 'Précédent' : 'Previous')
+                    }
                   </Button>
                 </motion.div>
-                <div className="flex items-center gap-2">
-                  {/* Auto-save Status Indicator */}
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">
-                    {autoSaveStatus === 'saving' && (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
-                        <span className="text-xs text-blue-600 font-medium">
-                          {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
-                        </span>
-                      </>
-                    )}
-                    {autoSaveStatus === 'saved' && (
-                      <>
-                        <Cloud className="w-3.5 h-3.5 text-emerald-500" />
-                        <span className="text-xs text-emerald-600 font-medium">
-                          {locale === 'fr' ? 'Enregistré' : 'Saved'}
-                        </span>
-                      </>
-                    )}
-                    {autoSaveStatus === 'error' && (
-                      <>
-                        <CloudOff className="w-3.5 h-3.5 text-red-500" />
-                        <span className="text-xs text-red-600 font-medium">
-                          {locale === 'fr' ? 'Erreur' : 'Error'}
-                        </span>
-                      </>
-                    )}
-                    {autoSaveStatus === 'idle' && hasUnsavedChanges && (
-                      <>
-                        <div className="w-2 h-2 rounded-full bg-amber-400" />
-                        <span className="text-xs text-gray-500">
-                          {locale === 'fr' ? 'Non enregistré' : 'Unsaved'}
-                        </span>
-                      </>
-                    )}
-                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
-                      <>
-                        <Cloud className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-xs text-gray-500">
-                          {locale === 'fr' ? 'Tout est enregistré' : 'All saved'}
-                        </span>
-                      </>
-                    )}
-                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && !lastSavedAt && (
-                      <>
-                        <Cloud className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="text-xs text-gray-500">
-                          {locale === 'fr' ? 'Brouillon' : 'Draft'}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      size="sm"
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-lg shadow-purple-200/50 rounded-xl"
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4 mr-2" />
-                          {isEditMode
-                            ? (locale === 'fr' ? 'Mettre à jour' : 'Update Resource')
-                            : (locale === 'fr' ? 'Enregistrer' : 'Save Resource')
-                          }
-                        </>
-                      )}
-                    </Button>
-                  </motion.div>
-                </div>
+                <Button variant="outline" size="sm" className="rounded-xl">
+                  <Eye className="w-4 h-4 mr-2" />
+                  {locale === 'fr' ? 'Aperçu' : 'Preview'}
+                </Button>
               </motion.div>
 
-              {/* Title */}
-              <div className="mb-8">
+              {/* Title Card */}
+              <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-5 mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-purple-100/80 flex items-center justify-center">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-lg">
-                      <BookOpen className="w-5 h-5 text-white" />
-                    </div>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-200/50">
+                    <BookOpen className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-                    <p className="text-gray-600">
+                    <h1 className="text-xl font-bold text-gray-900">{title}</h1>
+                    <p className="text-sm text-gray-500">
                       {blocks.length} {locale === 'fr' ? 'sections' : 'sections'} • {estimateReadingTime()} {locale === 'fr' ? 'min lecture' : 'min read'}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Description & Category */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
-                >
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                    {locale === 'fr' ? 'Description' : 'Description'}
-                  </h2>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder={locale === 'fr' ? 'Décrivez brièvement ce document...' : 'Briefly describe this resource...'}
-                    rows={4}
-                    className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none mb-4"
-                  />
+              {/* Step Indicator */}
+              <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-4 mb-6">
+                <div className="flex items-center justify-center gap-3">
+                  {/* Step 1: Build (completed) */}
+                  <button
+                    onClick={() => setStep('build')}
+                    className="flex items-center gap-2"
+                  >
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-purple-500 text-white">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-900 hidden sm:inline">
+                      {locale === 'fr' ? 'Contenu' : 'Build'}
+                    </span>
+                  </button>
 
-                  <h2 className="text-lg font-semibold text-gray-900 mb-3">
-                    {locale === 'fr' ? 'Catégorie' : 'Category'}
-                  </h2>
-                  <div className="flex flex-wrap gap-2">
-                    {allCategories.map((category) => (
+                  <div className="w-6 h-0.5 bg-purple-500" />
+
+                  {/* Step 2: Details */}
+                  <button
+                    onClick={() => setDetailsStep(1)}
+                    className="flex items-center gap-2"
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                      detailsStep >= 1 ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {detailsStep > 1 ? <CheckCircle2 className="w-4 h-4" /> : '2'}
+                    </div>
+                    <span className={`text-sm font-medium hidden sm:inline ${detailsStep >= 1 ? 'text-gray-900' : 'text-gray-400'}`}>
+                      {locale === 'fr' ? 'Détails' : 'Details'}
+                    </span>
+                  </button>
+
+                  <div className={`w-6 h-0.5 ${detailsStep > 1 ? 'bg-purple-500' : 'bg-gray-200'}`} />
+
+                  {/* Step 3: Settings */}
+                  <button
+                    onClick={() => {
+                      if (description.trim() && selectedCategory) {
+                        setDetailsStep(2)
+                      }
+                    }}
+                    className={`flex items-center gap-2 ${!(description.trim() && selectedCategory) && detailsStep < 2 ? 'cursor-not-allowed opacity-50' : ''}`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                      detailsStep >= 2 ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {detailsStep > 2 ? <CheckCircle2 className="w-4 h-4" /> : '3'}
+                    </div>
+                    <span className={`text-sm font-medium hidden sm:inline ${detailsStep >= 2 ? 'text-gray-900' : 'text-gray-400'}`}>
+                      {locale === 'fr' ? 'Paramètres' : 'Settings'}
+                    </span>
+                  </button>
+
+                  <div className={`w-6 h-0.5 ${detailsStep > 2 ? 'bg-purple-500' : 'bg-gray-200'}`} />
+
+                  {/* Step 4: Publish */}
+                  <button
+                    onClick={() => {
+                      if (description.trim() && selectedCategory && detailsStep >= 2) {
+                        setDetailsStep(3)
+                      }
+                    }}
+                    className={`flex items-center gap-2 ${detailsStep < 2 ? 'cursor-not-allowed opacity-50' : ''}`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                      detailsStep >= 3 ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      4
+                    </div>
+                    <span className={`text-sm font-medium hidden sm:inline ${detailsStep >= 3 ? 'text-gray-900' : 'text-gray-400'}`}>
+                      {locale === 'fr' ? 'Publier' : 'Publish'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Step 1: Details */}
+              {detailsStep === 1 && (
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="max-w-2xl mx-auto"
+                >
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+                  >
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                      {locale === 'fr' ? 'Description' : 'Description'}
+                      <span className="text-red-500 ml-1">*</span>
+                    </h2>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder={locale === 'fr' ? 'Décrivez brièvement ce document...' : 'Briefly describe this resource...'}
+                      rows={4}
+                      className={`w-full px-4 py-3 bg-gray-50/80 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none mb-4 ${
+                        !description.trim() ? 'border-gray-200/60' : 'border-purple-300'
+                      }`}
+                    />
+
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">
+                      {locale === 'fr' ? 'Catégorie' : 'Category'}
+                      <span className="text-red-500 ml-1">*</span>
+                    </h2>
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {allCategories.map((category) => (
+                        <motion.button
+                          key={category}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setSelectedCategory(category)}
+                          className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                            selectedCategory === category
+                              ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md shadow-purple-200/50'
+                              : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
+                          }`}
+                        >
+                          {t.library.categories[category]}
+                        </motion.button>
+                      ))}
+                    </div>
+
+                    {/* Language Section */}
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">
+                      {locale === 'fr' ? 'Langue' : 'Language'}
+                    </h2>
+                    <div className="flex flex-wrap gap-2">
                       <motion.button
-                        key={category}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => setSelectedCategory(category)}
-                        className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-                          selectedCategory === category
-                            ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md shadow-purple-200/50'
+                        onClick={() => setResourceLanguage('en')}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                          resourceLanguage === 'en'
+                            ? 'bg-red-50 text-red-600 border border-red-200 shadow-sm'
                             : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
                         }`}
                       >
-                        {t.library.categories[category]}
+                        <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600">EN</span>
+                        English
                       </motion.button>
-                    ))}
-                  </div>
-                </motion.div>
-
-                {/* Learning Objectives */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <Target className="w-5 h-5 text-purple-600" />
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      {locale === 'fr' ? 'Objectifs d\'apprentissage' : 'Learning Objectives'}
-                    </h2>
-                  </div>
-                  <p className="text-sm text-gray-500 mb-4">
-                    {locale === 'fr' ? 'Ce que le client apprendra de ce document' : 'What the client will learn from this resource'}
-                  </p>
-                  <div className="space-y-2">
-                    {learningObjectives.map((objective, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-medium flex-shrink-0">
-                          {index + 1}
-                        </span>
-                        <input
-                          type="text"
-                          value={objective}
-                          onChange={(e) => updateLearningObjective(index, e.target.value)}
-                          placeholder={locale === 'fr' ? 'Ex: Comprendre les symptômes de l\'anxiété' : 'e.g., Understand anxiety symptoms'}
-                          className="flex-1 px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                        />
-                        {learningObjectives.length > 1 && (
-                          <button
-                            onClick={() => deleteLearningObjective(index)}
-                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    onClick={addLearningObjective}
-                    className="mt-3 flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700"
-                  >
-                    <Plus className="w-4 h-4" />
-                    {locale === 'fr' ? 'Ajouter un objectif' : 'Add objective'}
-                  </button>
-                </motion.div>
-
-                {/* Visibility & Save Options */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6 lg:col-span-2"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Visibility */}
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        {visibility === 'private' ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
-                        {locale === 'fr' ? 'Visibilité' : 'Visibility'}
-                      </h3>
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => setVisibility('private')}
-                          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 transition-all ${
-                            visibility === 'private'
-                              ? 'border-purple-400 bg-purple-50 text-purple-700'
-                              : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                          }`}
-                        >
-                          <Lock className="w-4 h-4" />
-                          <span className="font-medium">{locale === 'fr' ? 'Privé' : 'Private'}</span>
-                        </button>
-                        <button
-                          onClick={() => setVisibility('public')}
-                          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 transition-all ${
-                            visibility === 'public'
-                              ? 'border-purple-400 bg-purple-50 text-purple-700'
-                              : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                          }`}
-                        >
-                          <Globe className="w-4 h-4" />
-                          <span className="font-medium">{locale === 'fr' ? 'Public' : 'Public'}</span>
-                        </button>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">
-                        {visibility === 'private'
-                          ? (locale === 'fr' ? 'Visible uniquement pour vous' : 'Only visible to you')
-                          : (locale === 'fr' ? 'Visible dans la bibliothèque publique' : 'Visible in the public library')
-                        }
-                      </p>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setResourceLanguage('fr')}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                          resourceLanguage === 'fr'
+                            ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-sm'
+                            : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
+                        }`}
+                      >
+                        <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-600">FR</span>
+                        Français
+                      </motion.button>
                     </div>
+                  </motion.div>
+
+                  {/* Continue Button */}
+                  <div className="flex items-center justify-between mt-6">
+                    {(!description.trim() || !selectedCategory) && (
+                      <p className="text-sm text-amber-600">
+                        {locale === 'fr' ? '* Veuillez remplir tous les champs' : '* Please fill in all fields'}
+                      </p>
+                    )}
+                    {description.trim() && selectedCategory && <div />}
+                    <motion.div whileHover={description.trim() && selectedCategory ? { scale: 1.02 } : {}} whileTap={description.trim() && selectedCategory ? { scale: 0.98 } : {}}>
+                      <Button
+                        onClick={() => setDetailsStep(2)}
+                        disabled={!description.trim() || !selectedCategory}
+                        className={`rounded-xl px-8 ${
+                          description.trim() && selectedCategory
+                            ? 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-lg shadow-purple-200/50'
+                            : 'bg-gray-300 cursor-not-allowed'
+                        }`}
+                      >
+                        {locale === 'fr' ? 'Continuer' : 'Continue'}
+                        <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                      </Button>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 2: Settings (Learning Objectives) */}
+              {detailsStep === 2 && (
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="max-w-2xl mx-auto"
+                >
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <Target className="w-5 h-5 text-purple-600" />
+                      <h2 className="text-lg font-semibold text-gray-900">
+                        {locale === 'fr' ? 'Objectifs d\'apprentissage' : 'Learning Objectives'}
+                      </h2>
+                    </div>
+                    <p className="text-sm text-gray-500 mb-4">
+                      {locale === 'fr' ? 'Ce que le client apprendra de ce document (optionnel)' : 'What the client will learn from this resource (optional)'}
+                    </p>
+                    <div className="space-y-2">
+                      {learningObjectives.map((objective, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-medium flex-shrink-0">
+                            {index + 1}
+                          </span>
+                          <input
+                            type="text"
+                            value={objective}
+                            onChange={(e) => updateLearningObjective(index, e.target.value)}
+                            placeholder={locale === 'fr' ? 'Ex: Comprendre les symptômes de l\'anxiété' : 'e.g., Understand anxiety symptoms'}
+                            className="flex-1 px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                          />
+                          {learningObjectives.length > 1 && (
+                            <button
+                              onClick={() => deleteLearningObjective(index)}
+                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={addLearningObjective}
+                      className="mt-3 flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700"
+                    >
+                      <Plus className="w-4 h-4" />
+                      {locale === 'fr' ? 'Ajouter un objectif' : 'Add objective'}
+                    </button>
+                  </motion.div>
+
+                  {/* Continue Button */}
+                  <div className="flex justify-end mt-6">
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        onClick={() => setDetailsStep(3)}
+                        className="rounded-xl px-8 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-lg shadow-purple-200/50"
+                      >
+                        {locale === 'fr' ? 'Continuer' : 'Continue'}
+                        <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                      </Button>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 3: Publish */}
+              {detailsStep === 3 && (
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="max-w-2xl mx-auto"
+                >
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+                  >
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                      {locale === 'fr' ? 'Publier votre document' : 'Publish Your Resource'}
+                    </h2>
+                    <p className="text-gray-500 mb-6">
+                      {locale === 'fr' ? 'Choisissez comment enregistrer et partager votre document' : 'Choose how to save and share your resource'}
+                    </p>
 
                     {/* Save As */}
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
                         {locale === 'fr' ? 'Enregistrer comme' : 'Save as'}
-                      </h3>
-                      <div className="flex gap-3">
-                        <button
+                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                           onClick={() => setSaveAs('draft')}
-                          className={`flex-1 px-4 py-3 rounded-xl border-2 transition-all ${
+                          className={`p-4 rounded-xl border-2 text-left transition-all ${
                             saveAs === 'draft'
-                              ? 'border-amber-400 bg-amber-50 text-amber-700'
-                              : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                              ? 'border-amber-400 bg-amber-50'
+                              : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
-                          <span className="font-medium">{locale === 'fr' ? 'Brouillon' : 'Draft'}</span>
-                          <p className="text-xs mt-1 opacity-70">
-                            {locale === 'fr' ? 'Enregistrer pour modifier plus tard' : 'Save to edit later'}
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                              saveAs === 'draft' ? 'bg-amber-200' : 'bg-gray-100'
+                            }`}>
+                              <BookOpen className={`w-4 h-4 ${saveAs === 'draft' ? 'text-amber-700' : 'text-gray-500'}`} />
+                            </div>
+                            <span className={`font-medium ${saveAs === 'draft' ? 'text-amber-900' : 'text-gray-700'}`}>
+                              {locale === 'fr' ? 'Brouillon' : 'Draft'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {locale === 'fr' ? 'Enregistrer et modifier plus tard' : 'Save to edit later'}
                           </p>
-                        </button>
-                        <button
+                        </motion.button>
+
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                           onClick={() => setSaveAs('published')}
-                          className={`flex-1 px-4 py-3 rounded-xl border-2 transition-all ${
+                          className={`p-4 rounded-xl border-2 text-left transition-all ${
                             saveAs === 'published'
-                              ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
-                              : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                              ? 'border-purple-400 bg-purple-50'
+                              : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
-                          <span className="font-medium">{locale === 'fr' ? 'Publié' : 'Published'}</span>
-                          <p className="text-xs mt-1 opacity-70">
-                            {locale === 'fr' ? 'Prêt à être assigné' : 'Ready to be assigned'}
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                              saveAs === 'published' ? 'bg-purple-200' : 'bg-gray-100'
+                            }`}>
+                              <CheckCircle2 className={`w-4 h-4 ${saveAs === 'published' ? 'text-purple-700' : 'text-gray-500'}`} />
+                            </div>
+                            <span className={`font-medium ${saveAs === 'published' ? 'text-purple-900' : 'text-gray-700'}`}>
+                              {locale === 'fr' ? 'Publier' : 'Publish'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {locale === 'fr' ? 'Prêt à être attribué aux membres' : 'Ready to assign to members'}
                           </p>
-                        </button>
+                        </motion.button>
                       </div>
                     </div>
+
+                    {/* Visibility - only show when publishing */}
+                    {saveAs === 'published' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                      >
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                          {locale === 'fr' ? 'Visibilité' : 'Visibility'}
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setVisibility('private')}
+                            className={`p-4 rounded-xl border-2 text-left transition-all ${
+                              visibility === 'private'
+                                ? 'border-purple-400 bg-purple-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                visibility === 'private' ? 'bg-purple-200' : 'bg-gray-100'
+                              }`}>
+                                <Lock className={`w-4 h-4 ${visibility === 'private' ? 'text-purple-700' : 'text-gray-500'}`} />
+                              </div>
+                              <span className={`font-medium ${visibility === 'private' ? 'text-purple-900' : 'text-gray-700'}`}>
+                                {locale === 'fr' ? 'Privé' : 'Private'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {locale === 'fr' ? 'Visible uniquement pour vous' : 'Only visible in My Resources'}
+                            </p>
+                          </motion.button>
+
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setVisibility('public')}
+                            className={`p-4 rounded-xl border-2 text-left transition-all ${
+                              visibility === 'public'
+                                ? 'border-blue-400 bg-blue-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                visibility === 'public' ? 'bg-blue-200' : 'bg-gray-100'
+                              }`}>
+                                <Globe className={`w-4 h-4 ${visibility === 'public' ? 'text-blue-700' : 'text-gray-500'}`} />
+                              </div>
+                              <span className={`font-medium ${visibility === 'public' ? 'text-blue-900' : 'text-gray-700'}`}>
+                                {locale === 'fr' ? 'Public' : 'Public'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {locale === 'fr' ? 'Accessible à la communauté' : 'Shared in the Digital Library'}
+                            </p>
+                          </motion.button>
+                        </div>
+
+                        {visibility === 'public' && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200"
+                          >
+                            <p className="text-xs text-blue-700">
+                              <Globe className="w-3.5 h-3.5 inline mr-1.5" />
+                              {locale === 'fr'
+                                ? 'Votre ressource sera partagée avec la communauté des praticiens'
+                                : 'Your resource will be shared with the practitioner community'}
+                            </p>
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    )}
+                  </motion.div>
+
+                  {/* Save Button */}
+                  <div className="flex justify-end mt-6">
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="rounded-xl px-8 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-lg shadow-purple-200/50"
+                      >
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            {isEditMode
+                              ? (locale === 'fr' ? 'Mettre à jour' : 'Update Resource')
+                              : (locale === 'fr' ? 'Enregistrer' : 'Save Resource')
+                            }
+                          </>
+                        )}
+                      </Button>
+                    </motion.div>
                   </div>
                 </motion.div>
-              </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

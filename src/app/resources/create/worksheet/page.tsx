@@ -397,6 +397,8 @@ function CreateWorksheetContent() {
 
   // Step state - start at 'build' if editing, otherwise 'template'
   const [step, setStep] = useState<'template' | 'build' | 'details'>(editId ? 'build' : 'template')
+  // Sub-steps for the details wizard: 1=Details, 2=Scoring, 3=Publish
+  const [detailsStep, setDetailsStep] = useState<1 | 2 | 3>(1)
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(!!editId)
@@ -4221,6 +4223,57 @@ function CreateWorksheetContent() {
                 </div>
               </motion.div>
 
+              {/* Step Indicator for Build */}
+              <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-4 mb-6">
+                <div className="flex items-center justify-center gap-3">
+                  {/* Step 1: Build */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-blue-500 text-white">
+                      1
+                    </div>
+                    <span className="text-sm font-medium text-gray-900 hidden sm:inline">
+                      {locale === 'fr' ? 'Contenu' : 'Build'}
+                    </span>
+                  </div>
+
+                  <div className="w-6 h-0.5 bg-gray-200" />
+
+                  {/* Step 2: Details */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-200 text-gray-500">
+                      2
+                    </div>
+                    <span className="text-sm font-medium text-gray-400 hidden sm:inline">
+                      {locale === 'fr' ? 'Détails' : 'Details'}
+                    </span>
+                  </div>
+
+                  <div className="w-6 h-0.5 bg-gray-200" />
+
+                  {/* Step 3: Scoring */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-200 text-gray-500">
+                      3
+                    </div>
+                    <span className="text-sm font-medium text-gray-400 hidden sm:inline">
+                      {locale === 'fr' ? 'Notation' : 'Scoring'}
+                    </span>
+                  </div>
+
+                  <div className="w-6 h-0.5 bg-gray-200" />
+
+                  {/* Step 4: Publish */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-200 text-gray-500">
+                      4
+                    </div>
+                    <span className="text-sm font-medium text-gray-400 hidden sm:inline">
+                      {locale === 'fr' ? 'Publier' : 'Publish'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-4">
@@ -4692,62 +4745,131 @@ function CreateWorksheetContent() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setStep('build')}
+                    onClick={() => {
+                      if (detailsStep === 1) {
+                        setStep('build')
+                      } else {
+                        setDetailsStep((detailsStep - 1) as 1 | 2 | 3)
+                      }
+                    }}
                     className="rounded-xl hover:bg-white/80"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    {locale === 'fr' ? 'Revenir au contenu' : 'Back to content'}
+                    {detailsStep === 1
+                      ? (locale === 'fr' ? 'Revenir au contenu' : 'Back to content')
+                      : (locale === 'fr' ? 'Précédent' : 'Previous')
+                    }
                   </Button>
                 </motion.div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="rounded-xl">
-                    <Eye className="w-4 h-4 mr-2" />
-                    {locale === 'fr' ? 'Aperçu' : 'Preview'}
-                  </Button>
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      size="sm"
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-200/50 rounded-xl"
-                    >
-                      {isSaving ? (
-                        <>
-                          <span className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4 mr-2" />
-                          {isEditMode
-                            ? (locale === 'fr' ? 'Mettre à jour' : 'Update Worksheet')
-                            : (locale === 'fr' ? 'Enregistrer l\'exercice' : 'Save Worksheet')
-                          }
-                        </>
-                      )}
-                    </Button>
-                  </motion.div>
-                </div>
+                <Button variant="outline" size="sm" className="rounded-xl">
+                  <Eye className="w-4 h-4 mr-2" />
+                  {locale === 'fr' ? 'Aperçu' : 'Preview'}
+                </Button>
               </motion.div>
 
-              {/* Title */}
-              <div className="mb-8">
+              {/* Title Card */}
+              <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-5 mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-100/80 flex items-center justify-center">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg">
-                      <FileText className="w-5 h-5 text-white" />
-                    </div>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-200/50">
+                    <FileText className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-                    <p className="text-gray-600">
-                      {blocks.length} {locale === 'fr' ? 'étapes' : 'blocks'} • {locale === 'fr' ? 'Étape finale' : 'Final step'}
+                    <h1 className="text-xl font-bold text-gray-900">{title}</h1>
+                    <p className="text-sm text-gray-500">
+                      {blocks.length} {locale === 'fr' ? 'blocs' : 'blocks'}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Step Indicator */}
+              <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-4 mb-6">
+                <div className="flex items-center justify-center gap-3">
+                  {/* Step 1: Build (completed) */}
+                  <button
+                    onClick={() => setStep('build')}
+                    className="flex items-center gap-2"
+                  >
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-blue-500 text-white">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-900 hidden sm:inline">
+                      {locale === 'fr' ? 'Contenu' : 'Build'}
+                    </span>
+                  </button>
+
+                  <div className="w-6 h-0.5 bg-blue-500" />
+
+                  {/* Step 2: Details */}
+                  <button
+                    onClick={() => setDetailsStep(1)}
+                    className="flex items-center gap-2"
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                      detailsStep >= 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {detailsStep > 1 ? <CheckCircle2 className="w-4 h-4" /> : '2'}
+                    </div>
+                    <span className={`text-sm font-medium hidden sm:inline ${detailsStep >= 1 ? 'text-gray-900' : 'text-gray-400'}`}>
+                      {locale === 'fr' ? 'Détails' : 'Details'}
+                    </span>
+                  </button>
+
+                  <div className={`w-6 h-0.5 ${detailsStep > 1 ? 'bg-blue-500' : 'bg-gray-200'}`} />
+
+                  {/* Step 3: Scoring */}
+                  <button
+                    onClick={() => {
+                      // Only allow if Step 2 (Details) is complete
+                      if (description.trim() && selectedCategory) {
+                        setDetailsStep(2)
+                      }
+                    }}
+                    className={`flex items-center gap-2 ${!(description.trim() && selectedCategory) && detailsStep < 2 ? 'cursor-not-allowed opacity-50' : ''}`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                      detailsStep >= 2 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {detailsStep > 2 ? <CheckCircle2 className="w-4 h-4" /> : '3'}
+                    </div>
+                    <span className={`text-sm font-medium hidden sm:inline ${detailsStep >= 2 ? 'text-gray-900' : 'text-gray-400'}`}>
+                      {locale === 'fr' ? 'Notation' : 'Scoring'}
+                    </span>
+                  </button>
+
+                  <div className={`w-6 h-0.5 ${detailsStep > 2 ? 'bg-blue-500' : 'bg-gray-200'}`} />
+
+                  {/* Step 4: Publish */}
+                  <button
+                    onClick={() => {
+                      // Only allow if Step 2 (Details) is complete
+                      if (description.trim() && selectedCategory && detailsStep >= 2) {
+                        setDetailsStep(3)
+                      }
+                    }}
+                    className={`flex items-center gap-2 ${detailsStep < 2 ? 'cursor-not-allowed opacity-50' : ''}`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                      detailsStep >= 3 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      4
+                    </div>
+                    <span className={`text-sm font-medium hidden sm:inline ${detailsStep >= 3 ? 'text-gray-900' : 'text-gray-400'}`}>
+                      {locale === 'fr' ? 'Publier' : 'Publish'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Step 1: Details */}
+              {detailsStep === 1 && (
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="max-w-2xl mx-auto"
+                >
                 {/* Description & Category */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -4756,6 +4878,7 @@ function CreateWorksheetContent() {
                 >
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">
                     {locale === 'fr' ? 'Description' : 'Description'}
+                    <span className="text-red-500 ml-1">*</span>
                   </h2>
                   <textarea
                     value={description}
@@ -4770,11 +4893,14 @@ function CreateWorksheetContent() {
                     }}
                     placeholder={locale === 'fr' ? 'Décrivez brièvement cet exercice...' : 'Briefly describe this worksheet...'}
                     rows={4}
-                    className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[100px] mb-4"
+                    className={`w-full px-4 py-3 bg-gray-50/80 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[100px] mb-4 ${
+                      !description.trim() ? 'border-gray-200/60' : 'border-emerald-300'
+                    }`}
                   />
 
                   <h2 className="text-lg font-semibold text-gray-900 mb-3">
                     {locale === 'fr' ? 'Catégorie' : 'Category'}
+                    <span className="text-red-500 ml-1">*</span>
                   </h2>
                   <div className="flex flex-wrap gap-2">
                     {allCategories.map((category) => (
@@ -4831,6 +4957,56 @@ function CreateWorksheetContent() {
                     </motion.button>
                   </div>
                 </motion.div>
+
+                {/* Continue Button for Step 1 */}
+                <div className="flex items-center justify-between mt-6">
+                  {/* Validation message */}
+                  {(!description.trim() || !selectedCategory) && (
+                    <p className="text-sm text-amber-600">
+                      {locale === 'fr' ? '* Veuillez remplir tous les champs' : '* Please fill in all fields'}
+                    </p>
+                  )}
+                  {description.trim() && selectedCategory && <div />}
+
+                  <motion.div whileHover={description.trim() && selectedCategory ? { scale: 1.02 } : {}} whileTap={description.trim() && selectedCategory ? { scale: 0.98 } : {}}>
+                    <Button
+                      onClick={() => setDetailsStep(2)}
+                      disabled={!description.trim() || !selectedCategory}
+                      className={`rounded-xl px-8 ${
+                        description.trim() && selectedCategory
+                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-200/50'
+                          : 'bg-gray-300 cursor-not-allowed'
+                      }`}
+                    >
+                      {locale === 'fr' ? 'Continuer' : 'Continue'}
+                      <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                    </Button>
+                  </motion.div>
+                </div>
+                </motion.div>
+              )}
+
+              {/* Step 2: Scoring */}
+              {detailsStep === 2 && (
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="max-w-2xl mx-auto"
+                >
+                  <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6 mb-6">
+                    <div className="mb-4">
+                      <h2 className="text-xl font-semibold text-gray-900">
+                        {locale === 'fr' ? 'Configuration de la notation' : 'Scoring Configuration'}
+                      </h2>
+                      <p className="text-gray-500">
+                        {getScorableBlocksCount() > 0
+                          ? (locale === 'fr' ? 'Configurez le calcul automatique des scores pour vos questions' : 'Configure automatic score calculation for your questions')
+                          : (locale === 'fr' ? 'Aucune question notable dans cet exercice' : 'No scorable questions in this worksheet')
+                        }
+                      </p>
+                    </div>
 
                 {/* Scoring Section - Only show if there are scorable blocks */}
                 {getScorableBlocksCount() > 0 && (
@@ -4974,18 +5150,44 @@ function CreateWorksheetContent() {
                     </AnimatePresence>
                   </motion.div>
                 )}
+                  </div>
 
-                {/* Publish Options */}
+                  {/* Continue Button for Step 2 */}
+                  <div className="flex justify-end mt-6">
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        onClick={() => setDetailsStep(3)}
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-200/50 rounded-xl px-8"
+                      >
+                        {locale === 'fr' ? 'Continuer' : 'Continue'}
+                        <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                      </Button>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 3: Publish */}
+              {detailsStep === 3 && (
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="max-w-2xl mx-auto"
+                >
                 <div className="space-y-6">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
                     className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
                   >
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                      {locale === 'fr' ? 'Options de publications' : 'Publish Options'}
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                      {locale === 'fr' ? 'Publier votre exercice' : 'Publish Your Worksheet'}
                     </h2>
+                    <p className="text-gray-500 mb-6">
+                      {locale === 'fr' ? 'Choisissez comment enregistrer et partager votre exercice' : 'Choose how to save and share your worksheet'}
+                    </p>
 
                     {/* Save As */}
                     <div className="mb-6">
@@ -5153,8 +5355,36 @@ function CreateWorksheetContent() {
                       })}
                     </div>
                   </motion.div>
+
+                  {/* Save Button */}
+                  <div className="flex justify-end">
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        size="lg"
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-200/50 rounded-xl px-10"
+                      >
+                        {isSaving ? (
+                          <>
+                            <span className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            {saveAs === 'published'
+                              ? (locale === 'fr' ? 'Publier l\'exercice' : 'Publish Worksheet')
+                              : (locale === 'fr' ? 'Enregistrer le brouillon' : 'Save Draft')
+                            }
+                          </>
+                        )}
+                      </Button>
+                    </motion.div>
+                  </div>
                 </div>
-              </div>
+                </motion.div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

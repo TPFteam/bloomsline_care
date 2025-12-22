@@ -23,6 +23,7 @@ import {
   Send,
   Cloud,
   CloudOff,
+  CheckCircle2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -73,10 +74,15 @@ function CreateTableExerciseContent() {
   const editId = searchParams.get('edit')
   const { t, locale } = useLanguage()
 
+  // Step state for guided wizard
+  const [step, setStep] = useState<'build' | 'details'>('build')
+  const [detailsStep, setDetailsStep] = useState<1 | 2 | 3>(1)
+
   // Form state
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<ResourceCategory | null>(null)
+  const [resourceLanguage, setResourceLanguage] = useState<'en' | 'fr'>(locale as 'en' | 'fr')
   const [columns, setColumns] = useState<TableColumn[]>([
     { id: generateId(), header: '', description: '' },
     { id: generateId(), header: '', description: '' },
@@ -242,6 +248,7 @@ function CreateTableExerciseContent() {
         category: selectedCategory,
         status: saveAs,
         visibility: visibility,
+        language: resourceLanguage,
         blocks: [
           {
             id: editId ? columns[0]?.id || generateId() : generateId(),
@@ -297,6 +304,7 @@ function CreateTableExerciseContent() {
   }
 
   const isValid = title.trim() && selectedCategory && columns.every(col => col.header.trim())
+  const canProceedToDetails = title.trim() && columns.every(col => col.header.trim())
 
   // Auto-save function
   const performAutoSave = useCallback(async () => {
@@ -323,6 +331,7 @@ function CreateTableExerciseContent() {
         category: selectedCategory,
         status: 'draft' as const,
         visibility: 'private' as const,
+        language: resourceLanguage,
         blocks: [
           {
             id: saveToId ? columns[0]?.id || generateId() : generateId(),
@@ -453,195 +462,196 @@ function CreateTableExerciseContent() {
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8"
-        >
-          <Link href={editId ? `/resources/${editId}` : "/resources/create"}>
-            <motion.div whileHover={{ x: -4 }} className="inline-block">
-              <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                {locale === 'fr' ? 'Retour' : 'Back'}
-              </Button>
-            </motion.div>
-          </Link>
-          <div className="flex items-center gap-2">
-            {/* Auto-save Status Indicator */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">
-              {autoSaveStatus === 'saving' && (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
-                  <span className="text-xs text-blue-600 font-medium">
-                    {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
-                  </span>
-                </>
-              )}
-              {autoSaveStatus === 'saved' && (
-                <>
-                  <Cloud className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className="text-xs text-emerald-600 font-medium">
-                    {locale === 'fr' ? 'Enregistré' : 'Saved'}
-                  </span>
-                </>
-              )}
-              {autoSaveStatus === 'error' && (
-                <>
-                  <CloudOff className="w-3.5 h-3.5 text-red-500" />
-                  <span className="text-xs text-red-600 font-medium">
-                    {locale === 'fr' ? 'Erreur' : 'Error'}
-                  </span>
-                </>
-              )}
-              {autoSaveStatus === 'idle' && hasUnsavedChanges && (
-                <>
-                  <div className="w-2 h-2 rounded-full bg-amber-400" />
-                  <span className="text-xs text-gray-500">
-                    {locale === 'fr' ? 'Non enregistré' : 'Unsaved'}
-                  </span>
-                </>
-              )}
-              {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
-                <>
-                  <Cloud className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-xs text-gray-500">
-                    {locale === 'fr' ? 'Tout est enregistré' : 'All saved'}
-                  </span>
-                </>
-              )}
-              {autoSaveStatus === 'idle' && !hasUnsavedChanges && !lastSavedAt && (
-                <>
-                  <Cloud className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-500">
-                    {locale === 'fr' ? 'Brouillon' : 'Draft'}
-                  </span>
-                </>
-              )}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPreview(true)}
-              disabled={!isValid}
-              className="rounded-xl"
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              {locale === 'fr' ? 'Aperçu' : 'Preview'}
-            </Button>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={!isValid || saving}
-                className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-200/50 rounded-xl"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    {locale === 'fr' ? 'Enregistrer' : 'Save'}
-                  </>
-                )}
-              </Button>
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* Title Section */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-100/80 flex items-center justify-center">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg">
-                <Table2 className="w-5 h-5 text-white" />
-              </div>
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                {editId
-                  ? (locale === 'fr' ? 'Modifier l\'exercice tableau' : 'Edit Table Exercise')
-                  : (locale === 'fr' ? 'Nouvel exercice tableau' : 'New Table Exercise')
-                }
-              </h1>
-              <p className="text-gray-600">
-                {editId
-                  ? (locale === 'fr' ? 'Modifiez les colonnes et paramètres du tableau' : 'Edit the table columns and settings')
-                  : (locale === 'fr' ? 'Créez un tableau avec des colonnes que les membres peuvent remplir' : 'Create a table with columns that members can fill in')
-                }
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Form */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Basic Info */}
+        <AnimatePresence mode="wait">
+          {/* BUILD STEP */}
+          {step === 'build' && (
             <motion.div
+              key="build"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+              exit={{ opacity: 0, y: -20 }}
             >
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                {locale === 'fr' ? 'Informations de base' : 'Basic Information'}
-              </h2>
-
-              {/* Title */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {locale === 'fr' ? 'Titre' : 'Title'} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder={locale === 'fr' ? 'ex: Registre de pensées' : 'e.g., Thought Record'}
-                  className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all"
-                />
-              </div>
-
-              {/* Description */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {locale === 'fr' ? 'Description' : 'Description'}
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder={locale === 'fr' ? 'Décrivez cet exercice...' : 'Describe this exercise...'}
-                  rows={2}
-                  className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all resize-none"
-                />
-              </div>
-
-              {/* Category */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {locale === 'fr' ? 'Catégorie' : 'Category'} <span className="text-red-500">*</span>
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {allCategories.map((category) => (
-                    <motion.button
-                      key={category}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setSelectedCategory(category)}
-                      className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-                        selectedCategory === category
-                          ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-200/50'
-                          : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
-                      }`}
+              {/* Header */}
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between mb-6"
+              >
+                <Link href={editId ? `/resources/${editId}` : "/resources/create"}>
+                  <motion.div whileHover={{ x: -4 }} className="inline-block">
+                    <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      {locale === 'fr' ? 'Retour' : 'Back'}
+                    </Button>
+                  </motion.div>
+                </Link>
+                <div className="flex items-center gap-2">
+                  {/* Auto-save Status Indicator */}
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">
+                    {autoSaveStatus === 'saving' && (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+                        <span className="text-xs text-blue-600 font-medium">
+                          {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'saved' && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-xs text-emerald-600 font-medium">
+                          {locale === 'fr' ? 'Enregistré' : 'Saved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'error' && (
+                      <>
+                        <CloudOff className="w-3.5 h-3.5 text-red-500" />
+                        <span className="text-xs text-red-600 font-medium">
+                          {locale === 'fr' ? 'Erreur' : 'Error'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && hasUnsavedChanges && (
+                      <>
+                        <div className="w-2 h-2 rounded-full bg-amber-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Non enregistré' : 'Unsaved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Tout est enregistré' : 'All saved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && !lastSavedAt && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Brouillon' : 'Draft'}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPreview(true)}
+                    className="rounded-xl"
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    {locale === 'fr' ? 'Aperçu' : 'Preview'}
+                  </Button>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      size="sm"
+                      onClick={() => setStep('details')}
+                      disabled={!canProceedToDetails}
+                      className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-200/50 rounded-xl"
                     >
-                      {t.library.categories[category]}
-                    </motion.button>
-                  ))}
+                      {locale === 'fr' ? 'Continuer' : 'Continue'}
+                    </Button>
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              {/* Step Indicator for Build */}
+              <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-4 mb-6">
+                <div className="flex items-center justify-center gap-3">
+                  {/* Step 1: Build */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-emerald-500 text-white">
+                      1
+                    </div>
+                    <span className="text-sm font-medium text-gray-900 hidden sm:inline">
+                      {locale === 'fr' ? 'Contenu' : 'Build'}
+                    </span>
+                  </div>
+
+                  <div className="w-6 h-0.5 bg-gray-200" />
+
+                  {/* Step 2: Details */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-200 text-gray-500">
+                      2
+                    </div>
+                    <span className="text-sm font-medium text-gray-400 hidden sm:inline">
+                      {locale === 'fr' ? 'Détails' : 'Details'}
+                    </span>
+                  </div>
+
+                  <div className="w-6 h-0.5 bg-gray-200" />
+
+                  {/* Step 3: Settings */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-200 text-gray-500">
+                      3
+                    </div>
+                    <span className="text-sm font-medium text-gray-400 hidden sm:inline">
+                      {locale === 'fr' ? 'Paramètres' : 'Settings'}
+                    </span>
+                  </div>
+
+                  <div className="w-6 h-0.5 bg-gray-200" />
+
+                  {/* Step 4: Publish */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-200 text-gray-500">
+                      4
+                    </div>
+                    <span className="text-sm font-medium text-gray-400 hidden sm:inline">
+                      {locale === 'fr' ? 'Publier' : 'Publish'}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </motion.div>
+
+              {/* Title Section */}
+              <div className="mb-6">
+                <div className="flex items-center gap-4 mb-2">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-100/80 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg">
+                      <Table2 className="w-5 h-5 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">
+                      {editId
+                        ? (locale === 'fr' ? 'Modifier l\'exercice tableau' : 'Edit Table Exercise')
+                        : (locale === 'fr' ? 'Nouvel exercice tableau' : 'New Table Exercise')
+                      }
+                    </h1>
+                    <p className="text-gray-600 text-sm">
+                      {locale === 'fr' ? 'Créez un tableau avec des colonnes que les membres peuvent remplir' : 'Create a table with columns that members can fill in'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Main Form */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Title Input */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+                  >
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                      {locale === 'fr' ? 'Titre' : 'Title'} <span className="text-red-500">*</span>
+                    </h2>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder={locale === 'fr' ? 'ex: Registre de pensées' : 'e.g., Thought Record'}
+                      className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all text-lg"
+                    />
+                  </motion.div>
 
             {/* Columns */}
             <motion.div
@@ -764,127 +774,10 @@ function CreateTableExerciseContent() {
                 className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all resize-none"
               />
             </motion.div>
-
-            {/* Row Settings */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
-            >
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                {locale === 'fr' ? 'Nombre d\'entrées' : 'Number of Entries'}
-              </h2>
-
-              <div className="space-y-4">
-                {/* Unlimited option */}
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={() => setRowMode('unlimited')}
-                  className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                    rowMode === 'unlimited'
-                      ? 'border-emerald-400 bg-emerald-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      rowMode === 'unlimited' ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300'
-                    }`}>
-                      {rowMode === 'unlimited' && (
-                        <div className="w-2 h-2 rounded-full bg-white" />
-                      )}
-                    </div>
-                    <div>
-                      <span className={`font-medium ${rowMode === 'unlimited' ? 'text-emerald-900' : 'text-gray-700'}`}>
-                        {locale === 'fr' ? 'Illimité' : 'Unlimited'}
-                      </span>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {locale === 'fr'
-                          ? 'Les membres peuvent ajouter autant d\'entrées qu\'ils veulent'
-                          : 'Members can add as many entries as they want'}
-                      </p>
-                    </div>
                   </div>
-                </motion.button>
 
-                {/* Limited option */}
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={() => setRowMode('limited')}
-                  className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                    rowMode === 'limited'
-                      ? 'border-emerald-400 bg-emerald-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      rowMode === 'limited' ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300'
-                    }`}>
-                      {rowMode === 'limited' && (
-                        <div className="w-2 h-2 rounded-full bg-white" />
-                      )}
-                    </div>
-                    <div>
-                      <span className={`font-medium ${rowMode === 'limited' ? 'text-emerald-900' : 'text-gray-700'}`}>
-                        {locale === 'fr' ? 'Limité' : 'Limited'}
-                      </span>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {locale === 'fr'
-                          ? 'Définir un minimum et/ou maximum d\'entrées'
-                          : 'Set a minimum and/or maximum number of entries'}
-                      </p>
-                    </div>
-                  </div>
-                </motion.button>
-
-                {/* Min/Max inputs when limited */}
-                {rowMode === 'limited' && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="grid grid-cols-2 gap-4 pt-2"
-                  >
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                        {locale === 'fr' ? 'Minimum' : 'Minimum'}
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={maxRows}
-                        value={minRows}
-                        onChange={(e) => setMinRows(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent text-center"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                        {locale === 'fr' ? 'Maximum' : 'Maximum'}
-                      </label>
-                      <input
-                        type="number"
-                        min={minRows}
-                        max={100}
-                        value={maxRows}
-                        onChange={(e) => setMaxRows(Math.max(minRows, parseInt(e.target.value) || minRows))}
-                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent text-center"
-                      />
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Sidebar - Preview (Sticky) */}
-          <div className="space-y-6 lg:sticky lg:top-8 lg:self-start">
+                  {/* Sidebar - Preview (Sticky) */}
+                  <div className="space-y-6 lg:sticky lg:top-8 lg:self-start">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -978,138 +871,578 @@ function CreateTableExerciseContent() {
                 </li>
               </ul>
             </motion.div>
-
-            {/* Visibility & Status */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
-            >
-              <h3 className="font-semibold text-gray-900 mb-4">
-                {locale === 'fr' ? 'Visibilité' : 'Visibility'}
-              </h3>
-              <div className="space-y-3">
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={() => setVisibility('private')}
-                  className={`w-full p-3 rounded-xl border-2 text-left transition-all ${
-                    visibility === 'private'
-                      ? 'border-emerald-400 bg-emerald-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      visibility === 'private' ? 'bg-emerald-200' : 'bg-gray-100'
-                    }`}>
-                      <Lock className={`w-4 h-4 ${visibility === 'private' ? 'text-emerald-700' : 'text-gray-500'}`} />
-                    </div>
-                    <div>
-                      <span className={`font-medium ${visibility === 'private' ? 'text-emerald-900' : 'text-gray-700'}`}>
-                        {locale === 'fr' ? 'Privé' : 'Private'}
-                      </span>
-                      <p className="text-xs text-gray-500">
-                        {locale === 'fr' ? 'Uniquement pour vos membres' : 'Only for your members'}
-                      </p>
-                    </div>
                   </div>
-                </motion.button>
-
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={() => setVisibility('public')}
-                  className={`w-full p-3 rounded-xl border-2 text-left transition-all ${
-                    visibility === 'public'
-                      ? 'border-blue-400 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      visibility === 'public' ? 'bg-blue-200' : 'bg-gray-100'
-                    }`}>
-                      <Globe className={`w-4 h-4 ${visibility === 'public' ? 'text-blue-700' : 'text-gray-500'}`} />
-                    </div>
-                    <div>
-                      <span className={`font-medium ${visibility === 'public' ? 'text-blue-900' : 'text-gray-700'}`}>
-                        {locale === 'fr' ? 'Public' : 'Public'}
-                      </span>
-                      <p className="text-xs text-gray-500">
-                        {locale === 'fr' ? 'Visible dans la bibliothèque' : 'Visible in the library'}
-                      </p>
-                    </div>
-                  </div>
-                </motion.button>
-              </div>
-
-              <h3 className="font-semibold text-gray-900 mb-4 mt-6">
-                {locale === 'fr' ? 'Statut' : 'Status'}
-              </h3>
-              <div className="space-y-3">
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={() => setSaveAs('draft')}
-                  className={`w-full p-3 rounded-xl border-2 text-left transition-all ${
-                    saveAs === 'draft'
-                      ? 'border-amber-400 bg-amber-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      saveAs === 'draft' ? 'bg-amber-200' : 'bg-gray-100'
-                    }`}>
-                      <FileText className={`w-4 h-4 ${saveAs === 'draft' ? 'text-amber-700' : 'text-gray-500'}`} />
-                    </div>
-                    <div>
-                      <span className={`font-medium ${saveAs === 'draft' ? 'text-amber-900' : 'text-gray-700'}`}>
-                        {locale === 'fr' ? 'Brouillon' : 'Draft'}
-                      </span>
-                      <p className="text-xs text-gray-500">
-                        {locale === 'fr' ? 'Continuer à travailler dessus' : 'Continue working on it'}
-                      </p>
-                    </div>
-                  </div>
-                </motion.button>
-
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={() => setSaveAs('published')}
-                  className={`w-full p-3 rounded-xl border-2 text-left transition-all ${
-                    saveAs === 'published'
-                      ? 'border-emerald-400 bg-emerald-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      saveAs === 'published' ? 'bg-emerald-200' : 'bg-gray-100'
-                    }`}>
-                      <Send className={`w-4 h-4 ${saveAs === 'published' ? 'text-emerald-700' : 'text-gray-500'}`} />
-                    </div>
-                    <div>
-                      <span className={`font-medium ${saveAs === 'published' ? 'text-emerald-900' : 'text-gray-700'}`}>
-                        {locale === 'fr' ? 'Publié' : 'Published'}
-                      </span>
-                      <p className="text-xs text-gray-500">
-                        {locale === 'fr' ? 'Prêt à être assigné' : 'Ready to be assigned'}
-                      </p>
-                    </div>
-                  </div>
-                </motion.button>
-              </div>
+                </div>
             </motion.div>
-          </div>
-        </div>
+          )}
+
+          {/* DETAILS STEP */}
+          {step === 'details' && (
+            <motion.div
+              key="details"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              {/* Header */}
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between mb-6"
+              >
+                <motion.div whileHover={{ x: -4 }} className="inline-block">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (detailsStep === 1) {
+                        setStep('build')
+                      } else {
+                        setDetailsStep((detailsStep - 1) as 1 | 2 | 3)
+                      }
+                    }}
+                    className="rounded-xl hover:bg-white/80"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    {detailsStep === 1
+                      ? (locale === 'fr' ? 'Revenir au contenu' : 'Back to content')
+                      : (locale === 'fr' ? 'Précédent' : 'Previous')
+                    }
+                  </Button>
+                </motion.div>
+                <Button variant="outline" size="sm" onClick={() => setShowPreview(true)} className="rounded-xl">
+                  <Eye className="w-4 h-4 mr-2" />
+                  {locale === 'fr' ? 'Aperçu' : 'Preview'}
+                </Button>
+              </motion.div>
+
+              {/* Title Card */}
+              <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-5 mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-200/50">
+                    <Table2 className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold text-gray-900">{title}</h1>
+                    <p className="text-sm text-gray-500">
+                      {columns.length} {locale === 'fr' ? 'colonnes' : 'columns'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step Indicator */}
+              <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-4 mb-6">
+                <div className="flex items-center justify-center gap-3">
+                  {/* Step 1: Build (completed) */}
+                  <button
+                    onClick={() => setStep('build')}
+                    className="flex items-center gap-2"
+                  >
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-emerald-500 text-white">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-900 hidden sm:inline">
+                      {locale === 'fr' ? 'Contenu' : 'Build'}
+                    </span>
+                  </button>
+
+                  <div className="w-6 h-0.5 bg-emerald-500" />
+
+                  {/* Step 2: Details */}
+                  <button
+                    onClick={() => setDetailsStep(1)}
+                    className="flex items-center gap-2"
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                      detailsStep >= 1 ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {detailsStep > 1 ? <CheckCircle2 className="w-4 h-4" /> : '2'}
+                    </div>
+                    <span className={`text-sm font-medium hidden sm:inline ${detailsStep >= 1 ? 'text-gray-900' : 'text-gray-400'}`}>
+                      {locale === 'fr' ? 'Détails' : 'Details'}
+                    </span>
+                  </button>
+
+                  <div className={`w-6 h-0.5 ${detailsStep > 1 ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+
+                  {/* Step 3: Settings */}
+                  <button
+                    onClick={() => {
+                      if (description.trim() && selectedCategory) {
+                        setDetailsStep(2)
+                      }
+                    }}
+                    className={`flex items-center gap-2 ${!(description.trim() && selectedCategory) && detailsStep < 2 ? 'cursor-not-allowed opacity-50' : ''}`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                      detailsStep >= 2 ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {detailsStep > 2 ? <CheckCircle2 className="w-4 h-4" /> : '3'}
+                    </div>
+                    <span className={`text-sm font-medium hidden sm:inline ${detailsStep >= 2 ? 'text-gray-900' : 'text-gray-400'}`}>
+                      {locale === 'fr' ? 'Paramètres' : 'Settings'}
+                    </span>
+                  </button>
+
+                  <div className={`w-6 h-0.5 ${detailsStep > 2 ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+
+                  {/* Step 4: Publish */}
+                  <button
+                    onClick={() => {
+                      if (description.trim() && selectedCategory && detailsStep >= 2) {
+                        setDetailsStep(3)
+                      }
+                    }}
+                    className={`flex items-center gap-2 ${detailsStep < 2 ? 'cursor-not-allowed opacity-50' : ''}`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                      detailsStep >= 3 ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      4
+                    </div>
+                    <span className={`text-sm font-medium hidden sm:inline ${detailsStep >= 3 ? 'text-gray-900' : 'text-gray-400'}`}>
+                      {locale === 'fr' ? 'Publier' : 'Publish'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Step 1: Details */}
+              {detailsStep === 1 && (
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="max-w-2xl mx-auto"
+                >
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+                  >
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                      {locale === 'fr' ? 'Description' : 'Description'}
+                      <span className="text-red-500 ml-1">*</span>
+                    </h2>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder={locale === 'fr' ? 'Décrivez brièvement cet exercice...' : 'Briefly describe this exercise...'}
+                      rows={4}
+                      className={`w-full px-4 py-3 bg-gray-50/80 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent resize-none mb-4 ${
+                        !description.trim() ? 'border-gray-200/60' : 'border-emerald-300'
+                      }`}
+                    />
+
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">
+                      {locale === 'fr' ? 'Catégorie' : 'Category'}
+                      <span className="text-red-500 ml-1">*</span>
+                    </h2>
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {allCategories.map((category) => (
+                        <motion.button
+                          key={category}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setSelectedCategory(category)}
+                          className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                            selectedCategory === category
+                              ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-200/50'
+                              : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
+                          }`}
+                        >
+                          {t.library.categories[category]}
+                        </motion.button>
+                      ))}
+                    </div>
+
+                    {/* Language Section */}
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">
+                      {locale === 'fr' ? 'Langue' : 'Language'}
+                    </h2>
+                    <div className="flex flex-wrap gap-2">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setResourceLanguage('en')}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                          resourceLanguage === 'en'
+                            ? 'bg-red-50 text-red-600 border border-red-200 shadow-sm'
+                            : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
+                        }`}
+                      >
+                        <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600">EN</span>
+                        English
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setResourceLanguage('fr')}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                          resourceLanguage === 'fr'
+                            ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-sm'
+                            : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
+                        }`}
+                      >
+                        <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-600">FR</span>
+                        Français
+                      </motion.button>
+                    </div>
+                  </motion.div>
+
+                  {/* Continue Button */}
+                  <div className="flex items-center justify-between mt-6">
+                    {(!description.trim() || !selectedCategory) && (
+                      <p className="text-sm text-amber-600">
+                        {locale === 'fr' ? '* Veuillez remplir tous les champs' : '* Please fill in all fields'}
+                      </p>
+                    )}
+                    {description.trim() && selectedCategory && <div />}
+                    <motion.div whileHover={description.trim() && selectedCategory ? { scale: 1.02 } : {}} whileTap={description.trim() && selectedCategory ? { scale: 0.98 } : {}}>
+                      <Button
+                        onClick={() => setDetailsStep(2)}
+                        disabled={!description.trim() || !selectedCategory}
+                        className={`rounded-xl px-8 ${
+                          description.trim() && selectedCategory
+                            ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-200/50'
+                            : 'bg-gray-300 cursor-not-allowed'
+                        }`}
+                      >
+                        {locale === 'fr' ? 'Continuer' : 'Continue'}
+                        <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                      </Button>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 2: Settings */}
+              {detailsStep === 2 && (
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="max-w-2xl mx-auto"
+                >
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+                  >
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                      {locale === 'fr' ? 'Nombre d\'entrées' : 'Number of Entries'}
+                    </h2>
+
+                    <div className="space-y-4">
+                      {/* Unlimited option */}
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        onClick={() => setRowMode('unlimited')}
+                        className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                          rowMode === 'unlimited'
+                            ? 'border-emerald-400 bg-emerald-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            rowMode === 'unlimited' ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300'
+                          }`}>
+                            {rowMode === 'unlimited' && (
+                              <div className="w-2 h-2 rounded-full bg-white" />
+                            )}
+                          </div>
+                          <div>
+                            <span className={`font-medium ${rowMode === 'unlimited' ? 'text-emerald-900' : 'text-gray-700'}`}>
+                              {locale === 'fr' ? 'Illimité' : 'Unlimited'}
+                            </span>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {locale === 'fr'
+                                ? 'Les membres peuvent ajouter autant d\'entrées qu\'ils veulent'
+                                : 'Members can add as many entries as they want'}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.button>
+
+                      {/* Limited option */}
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        onClick={() => setRowMode('limited')}
+                        className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                          rowMode === 'limited'
+                            ? 'border-emerald-400 bg-emerald-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            rowMode === 'limited' ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300'
+                          }`}>
+                            {rowMode === 'limited' && (
+                              <div className="w-2 h-2 rounded-full bg-white" />
+                            )}
+                          </div>
+                          <div>
+                            <span className={`font-medium ${rowMode === 'limited' ? 'text-emerald-900' : 'text-gray-700'}`}>
+                              {locale === 'fr' ? 'Limité' : 'Limited'}
+                            </span>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {locale === 'fr'
+                                ? 'Définir un minimum et/ou maximum d\'entrées'
+                                : 'Set a minimum and/or maximum number of entries'}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.button>
+
+                      {/* Min/Max inputs when limited */}
+                      {rowMode === 'limited' && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="grid grid-cols-2 gap-4 pt-2"
+                        >
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                              {locale === 'fr' ? 'Minimum' : 'Minimum'}
+                            </label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={maxRows}
+                              value={minRows}
+                              onChange={(e) => setMinRows(Math.max(1, parseInt(e.target.value) || 1))}
+                              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent text-center"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                              {locale === 'fr' ? 'Maximum' : 'Maximum'}
+                            </label>
+                            <input
+                              type="number"
+                              min={minRows}
+                              max={100}
+                              value={maxRows}
+                              onChange={(e) => setMaxRows(Math.max(minRows, parseInt(e.target.value) || minRows))}
+                              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent text-center"
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+
+                  {/* Continue Button */}
+                  <div className="flex justify-end mt-6">
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        onClick={() => setDetailsStep(3)}
+                        className="rounded-xl px-8 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-200/50"
+                      >
+                        {locale === 'fr' ? 'Continuer' : 'Continue'}
+                        <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                      </Button>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 3: Publish */}
+              {detailsStep === 3 && (
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="max-w-2xl mx-auto"
+                >
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+                  >
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                      {locale === 'fr' ? 'Publier votre exercice' : 'Publish Your Table'}
+                    </h2>
+                    <p className="text-gray-500 mb-6">
+                      {locale === 'fr' ? 'Choisissez comment enregistrer et partager votre exercice' : 'Choose how to save and share your exercise'}
+                    </p>
+
+                    {/* Save As */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        {locale === 'fr' ? 'Enregistrer comme' : 'Save as'}
+                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setSaveAs('draft')}
+                          className={`p-4 rounded-xl border-2 text-left transition-all ${
+                            saveAs === 'draft'
+                              ? 'border-amber-400 bg-amber-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                              saveAs === 'draft' ? 'bg-amber-200' : 'bg-gray-100'
+                            }`}>
+                              <FileText className={`w-4 h-4 ${saveAs === 'draft' ? 'text-amber-700' : 'text-gray-500'}`} />
+                            </div>
+                            <span className={`font-medium ${saveAs === 'draft' ? 'text-amber-900' : 'text-gray-700'}`}>
+                              {locale === 'fr' ? 'Brouillon' : 'Draft'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {locale === 'fr' ? 'Enregistrer et modifier plus tard' : 'Save to edit later'}
+                          </p>
+                        </motion.button>
+
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setSaveAs('published')}
+                          className={`p-4 rounded-xl border-2 text-left transition-all ${
+                            saveAs === 'published'
+                              ? 'border-emerald-400 bg-emerald-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                              saveAs === 'published' ? 'bg-emerald-200' : 'bg-gray-100'
+                            }`}>
+                              <CheckCircle2 className={`w-4 h-4 ${saveAs === 'published' ? 'text-emerald-700' : 'text-gray-500'}`} />
+                            </div>
+                            <span className={`font-medium ${saveAs === 'published' ? 'text-emerald-900' : 'text-gray-700'}`}>
+                              {locale === 'fr' ? 'Publier' : 'Publish'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {locale === 'fr' ? 'Prêt à être attribué aux membres' : 'Ready to assign to members'}
+                          </p>
+                        </motion.button>
+                      </div>
+                    </div>
+
+                    {/* Visibility - only show when publishing */}
+                    {saveAs === 'published' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                      >
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                          {locale === 'fr' ? 'Visibilité' : 'Visibility'}
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setVisibility('private')}
+                            className={`p-4 rounded-xl border-2 text-left transition-all ${
+                              visibility === 'private'
+                                ? 'border-emerald-400 bg-emerald-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                visibility === 'private' ? 'bg-emerald-200' : 'bg-gray-100'
+                              }`}>
+                                <Lock className={`w-4 h-4 ${visibility === 'private' ? 'text-emerald-700' : 'text-gray-500'}`} />
+                              </div>
+                              <span className={`font-medium ${visibility === 'private' ? 'text-emerald-900' : 'text-gray-700'}`}>
+                                {locale === 'fr' ? 'Privé' : 'Private'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {locale === 'fr' ? 'Visible uniquement pour vous' : 'Only visible in My Resources'}
+                            </p>
+                          </motion.button>
+
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setVisibility('public')}
+                            className={`p-4 rounded-xl border-2 text-left transition-all ${
+                              visibility === 'public'
+                                ? 'border-blue-400 bg-blue-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                visibility === 'public' ? 'bg-blue-200' : 'bg-gray-100'
+                              }`}>
+                                <Globe className={`w-4 h-4 ${visibility === 'public' ? 'text-blue-700' : 'text-gray-500'}`} />
+                              </div>
+                              <span className={`font-medium ${visibility === 'public' ? 'text-blue-900' : 'text-gray-700'}`}>
+                                {locale === 'fr' ? 'Public' : 'Public'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {locale === 'fr' ? 'Accessible à la communauté' : 'Shared in the Digital Library'}
+                            </p>
+                          </motion.button>
+                        </div>
+
+                        {visibility === 'public' && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200"
+                          >
+                            <p className="text-xs text-blue-700">
+                              <Globe className="w-3.5 h-3.5 inline mr-1.5" />
+                              {locale === 'fr'
+                                ? 'Votre ressource sera partagée avec la communauté des praticiens'
+                                : 'Your resource will be shared with the practitioner community'}
+                            </p>
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    )}
+                  </motion.div>
+
+                  {/* Save Button */}
+                  <div className="flex justify-end mt-6">
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        onClick={handleSave}
+                        disabled={!isValid || saving}
+                        className="rounded-xl px-8 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-200/50"
+                      >
+                        {saving ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                          </>
+                        )}
+                      </Button>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Preview Modal */}
