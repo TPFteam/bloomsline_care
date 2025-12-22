@@ -43,6 +43,14 @@ export default function BalancePage() {
   const [memberId, setMemberId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>('today')
   const [showConfig, setShowConfig] = useState(false)
+  const [settingsHistory, setSettingsHistory] = useState<{
+    id: string
+    sleep_target: number
+    work_target: number
+    life_target: number
+    effective_from: string
+    created_at: string
+  }[]>([])
   // Temporary state for config modal (only saved on confirm)
   const [tempTargetHours, setTempTargetHours] = useState({
     sleep: 8,
@@ -71,6 +79,12 @@ export default function BalancePage() {
     work: 8,
     life: 8,
   })
+  // Historical targets for the selected date (may differ from current targets)
+  const [historicalTargets, setHistoricalTargets] = useState<{
+    sleep: number
+    work: number
+    life: number
+  } | null>(null)
   // Daily minutes = actual time for today in MINUTES (can be edited)
   const [dailyMinutes, setDailyMinutes] = useState({
     sleep: 480, // 8 hours in minutes
@@ -189,6 +203,37 @@ export default function BalancePage() {
           sleep: Math.round(settings.sleep_target / 60),
           work: Math.round(settings.work_target / 60),
           life: Math.round(settings.life_target / 60),
+        })
+      }
+
+      // Fetch historical settings for the selected date
+      // This finds the most recent settings that were effective on or before the target date
+      const { data: historicalSettings } = await supabase
+        .from('balance_settings_history')
+        .select('*')
+        .eq('member_id', member.id)
+        .lte('effective_from', targetDate)
+        .order('effective_from', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (historicalSettings) {
+        // Use historical settings for this date
+        setHistoricalTargets({
+          sleep: Math.round(historicalSettings.sleep_target / 60),
+          work: Math.round(historicalSettings.work_target / 60),
+          life: Math.round(historicalSettings.life_target / 60),
+        })
+      } else {
+        // No history found - use current settings or defaults
+        setHistoricalTargets(settings ? {
+          sleep: Math.round(settings.sleep_target / 60),
+          work: Math.round(settings.work_target / 60),
+          life: Math.round(settings.life_target / 60),
+        } : {
+          sleep: 8,
+          work: 8,
+          life: 8,
         })
       }
 
@@ -345,6 +390,28 @@ export default function BalancePage() {
         console.error('Error saving target hours:', saveError)
         alert(`Failed to save: ${saveError.message}`)
         return
+      }
+
+      // Log to settings history for historical tracking
+      const today = new Date()
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+
+      const { error: historyError } = await supabase
+        .from('balance_settings_history')
+        .insert({
+          member_id: memberId,
+          sleep_target: tempTargetHours.sleep * 60,
+          work_target: tempTargetHours.work * 60,
+          life_target: tempTargetHours.life * 60,
+          effective_from: todayStr,
+        })
+
+      if (historyError) {
+        console.error('Error logging settings history:', historyError)
+        // Don't fail the whole operation, just log the error
+      } else {
+        // Refresh the history list to show the new entry
+        await fetchSettingsHistory()
       }
 
       console.log('Settings saved successfully!')
@@ -585,6 +652,8 @@ export default function BalancePage() {
     if (prevDate < minDate) return
 
     setSelectedDate(prevDate)
+    setHistoricalTargets(null) // Reset to prevent stale data
+    setDailyMinutes({ sleep: 0, work: 0, life: 0 }) // Reset while loading
     setLoadingDate(true)
     await fetchData(prevDate)
     setLoadingDate(false)
@@ -604,6 +673,8 @@ export default function BalancePage() {
     if (nextDate > todayStr) return
 
     setSelectedDate(nextDate)
+    setHistoricalTargets(null) // Reset to prevent stale data
+    setDailyMinutes({ sleep: 0, work: 0, life: 0 }) // Reset while loading
     setLoadingDate(true)
     await fetchData(nextDate)
     setLoadingDate(false)
@@ -762,10 +833,27 @@ export default function BalancePage() {
 
   const totalTempTargetHours = tempTargetHours.sleep + tempTargetHours.work + tempTargetHours.life
 
+  // Fetch settings history
+  const fetchSettingsHistory = async () => {
+    if (!memberId) return
+
+    const { data, error } = await supabase
+      .from('balance_settings_history')
+      .select('*')
+      .eq('member_id', memberId)
+      .order('effective_from', { ascending: false })
+      .limit(10)
+
+    if (!error && data) {
+      setSettingsHistory(data)
+    }
+  }
+
   // Open config modal and initialize temp state
-  const openConfig = () => {
+  const openConfig = async () => {
     setTempTargetHours({ ...targetHours })
     setShowConfig(true)
+    await fetchSettingsHistory()
   }
 
   // Adjust temp target hours (only in modal, not saved yet)
@@ -811,10 +899,13 @@ export default function BalancePage() {
   const sleepStart = lifeEnd + gapAngle
   const sleepEnd = sleepStart + sleepAngle
 
-  // Check if any category exceeds its target
-  const isWorkExceeded = displayMinutes.work > targetHours.work * 60
-  const isLifeExceeded = displayMinutes.life > targetHours.life * 60
-  const isSleepExceeded = displayMinutes.sleep > targetHours.sleep * 60
+  // Use historical targets for the selected date, or fall back to current targets
+  const effectiveTargets = historicalTargets || targetHours
+
+  // Check if any category exceeds its target (using effective targets for the date)
+  const isWorkExceeded = displayMinutes.work > effectiveTargets.work * 60
+  const isLifeExceeded = displayMinutes.life > effectiveTargets.life * 60
+  const isSleepExceeded = displayMinutes.sleep > effectiveTargets.sleep * 60
 
   // Grey colors for untracked days
   const greyColor = '#e5e7eb'
@@ -1113,8 +1204,8 @@ export default function BalancePage() {
                   </div>
                 </div>
 
-                {/* Save Button with extra padding for nav bar */}
-                <div className="pt-4 pb-24">
+                {/* Save Button */}
+                <div className="pt-4">
                   <button
                     onClick={saveTargetHours}
                     disabled={saving}
@@ -1124,6 +1215,44 @@ export default function BalancePage() {
                     {locale === 'fr' ? 'Enregistrer' : 'Save'}
                   </button>
                 </div>
+
+                {/* Settings History Log */}
+                {settingsHistory.length > 0 && (
+                  <div className="mt-6 pb-24">
+                    <h4 className="text-sm font-medium text-gray-500 mb-3">
+                      {locale === 'fr' ? 'Historique des modifications' : 'Change History'}
+                    </h4>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {settingsHistory.map((entry) => {
+                        const date = new Date(entry.effective_from)
+                        const dateStr = date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })
+                        return (
+                          <div
+                            key={entry.id}
+                            className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-sm"
+                          >
+                            <span className="text-gray-600">{dateStr}</span>
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="px-2 py-0.5 bg-violet-100 text-violet-700 rounded">
+                                {Math.round(entry.sleep_target / 60)}h
+                              </span>
+                              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded">
+                                {Math.round(entry.work_target / 60)}h
+                              </span>
+                              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded">
+                                {Math.round(entry.life_target / 60)}h
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </motion.div>
             </>
           )}
@@ -1374,7 +1503,7 @@ export default function BalancePage() {
                   {/* Arcs */}
                   {arcs.map((arc, idx) => (
                     <motion.path
-                      key={arc.id}
+                      key={`${arc.id}-${selectedDate}`}
                       d={arc.path}
                       fill="none"
                       stroke={arc.color}
@@ -1388,6 +1517,7 @@ export default function BalancePage() {
                   ))}
                   {/* End dot for Life (mint) arc - changes color if exceeded or grey if untracked */}
                   <motion.circle
+                    key={`dot-${selectedDate}`}
                     cx={arcs[1].endX}
                     cy={arcs[1].endY}
                     r="12"
@@ -1510,7 +1640,7 @@ export default function BalancePage() {
                           {locale === 'fr' ? 'Sommeil' : 'Sleep'}
                         </span>
                         <p className="text-xs text-gray-400">
-                          {locale === 'fr' ? `Cible: ${targetHours.sleep}h` : `Target: ${targetHours.sleep}h`}
+                          {locale === 'fr' ? `Cible: ${effectiveTargets.sleep}h` : `Target: ${effectiveTargets.sleep}h`}
                         </p>
                       </div>
                     </div>
@@ -1657,7 +1787,7 @@ export default function BalancePage() {
                           {locale === 'fr' ? 'Travail' : 'Work'}
                         </span>
                         <p className="text-xs text-gray-400">
-                          {locale === 'fr' ? `Cible: ${targetHours.work}h` : `Target: ${targetHours.work}h`}
+                          {locale === 'fr' ? `Cible: ${effectiveTargets.work}h` : `Target: ${effectiveTargets.work}h`}
                         </p>
                       </div>
                     </div>
@@ -1804,7 +1934,7 @@ export default function BalancePage() {
                           {locale === 'fr' ? 'Vie' : 'Life'}
                         </span>
                         <p className="text-xs text-gray-400">
-                          {locale === 'fr' ? `Cible: ${targetHours.life}h` : `Target: ${targetHours.life}h`}
+                          {locale === 'fr' ? `Cible: ${effectiveTargets.life}h` : `Target: ${effectiveTargets.life}h`}
                         </p>
                       </div>
                     </div>
