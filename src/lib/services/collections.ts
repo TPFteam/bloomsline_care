@@ -343,25 +343,38 @@ export async function isResourceSaved(resourceId: string): Promise<boolean> {
 }
 
 // Get all resources saved in any collection by the current user
-// This returns resources that were NOT created by the user (saved from library)
 export async function getSavedResources() {
   const supabase = createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  // Get all unique resource IDs from the user's collections
+  // First, get the user's collection IDs
+  const { data: userCollections, error: colError } = await supabase
+    .from('resource_collections')
+    .select('id')
+    .eq('practitioner_id', user.id)
+
+  if (colError) {
+    console.error('Error fetching user collections:', colError)
+    throw colError
+  }
+
+  if (!userCollections || userCollections.length === 0) {
+    return []
+  }
+
+  const collectionIds = userCollections.map(c => c.id)
+
+  // Get all resource IDs from those collections
   const { data: collectionResources, error: crError } = await supabase
     .from('collection_resources')
-    .select(`
-      resource_id,
-      resource_collections!inner(practitioner_id)
-    `)
-    .eq('resource_collections.practitioner_id', user.id)
+    .select('resource_id')
+    .in('collection_id', collectionIds)
     .not('resource_id', 'is', null)
 
   if (crError) {
-    console.error('Error fetching saved resource IDs:', crError)
+    console.error('Error fetching collection resources:', crError)
     throw crError
   }
 
@@ -370,14 +383,17 @@ export async function getSavedResources() {
   }
 
   // Get unique resource IDs
-  const resourceIds = [...new Set(collectionResources.map(cr => cr.resource_id))]
+  const resourceIds = [...new Set(collectionResources.map(cr => cr.resource_id).filter(Boolean))]
 
-  // Fetch the actual resources (excluding ones created by the current user)
+  if (resourceIds.length === 0) {
+    return []
+  }
+
+  // Fetch all the saved resources (including user's own if they saved them)
   const { data: resources, error: rError } = await supabase
     .from('resources')
     .select('*')
     .in('id', resourceIds)
-    .neq('practitioner_id', user.id) // Exclude user's own resources
 
   if (rError) {
     console.error('Error fetching saved resources:', rError)
