@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence, Reorder } from 'framer-motion'
@@ -25,9 +25,14 @@ import {
   Volume2,
   Repeat,
   Target,
+  Loader2,
+  Cloud,
+  CloudOff,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
+import { createClient } from '@/lib/supabase/browser-client'
+import { toast } from 'sonner'
 import type { ResourceCategory } from '@/types/library'
 
 // Step types for exercises
@@ -197,6 +202,14 @@ export default function CreateExercisePage() {
   const [expandedStep, setExpandedStep] = useState<string | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
 
+  // Auto-save state
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [autoSaveDraftId, setAutoSaveDraftId] = useState<string | null>(null)
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isAutoSavingRef = useRef(false)
+
   // Generate unique ID
   const generateId = () => Math.random().toString(36).substr(2, 9)
 
@@ -290,15 +303,205 @@ export default function CreateExercisePage() {
   // Handle save
   const handleSave = async () => {
     if (!title || steps.length === 0) {
-      alert(locale === 'fr' ? 'Veuillez ajouter un titre et au moins une étape' : 'Please add a title and at least one step')
+      toast.error(locale === 'fr' ? 'Veuillez ajouter un titre et au moins une étape' : 'Please add a title and at least one step')
       return
     }
+    if (!selectedCategory) {
+      toast.error(locale === 'fr' ? 'La catégorie est requise' : 'Category is required')
+      return
+    }
+
     setIsSaving(true)
-    setTimeout(() => {
-      setIsSaving(false)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        toast.error(locale === 'fr' ? 'Non authentifié' : 'Not authenticated')
+        router.push('/sign-in')
+        return
+      }
+
+      const resourceData = {
+        title,
+        description: description || null,
+        category: selectedCategory,
+        status: 'published',
+        visibility: 'private',
+        type: 'exercise',
+        blocks: steps.map(s => ({
+          id: s.id,
+          type: s.type,
+          content: s.content,
+          title: s.title,
+          duration: s.duration,
+          inhale: s.inhale,
+          hold: s.hold,
+          exhale: s.exhale,
+          cycles: s.cycles,
+          imagePrompt: s.imagePrompt,
+          bodyPart: s.bodyPart,
+        })),
+        settings: {
+          enableAudio,
+          repeatCount,
+          totalDuration: calculateTotalDuration(),
+        },
+      }
+
+      const saveToId = autoSaveDraftId
+
+      if (saveToId) {
+        const { error } = await supabase
+          .from('resources')
+          .update({ ...resourceData, status: 'published' })
+          .eq('id', saveToId)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('resources')
+          .insert({
+            ...resourceData,
+            practitioner_id: user.id,
+          })
+
+        if (error) throw error
+      }
+
+      toast.success(locale === 'fr' ? 'Exercice créé!' : 'Exercise created!')
       router.push('/resources')
-    }, 1500)
+    } catch (error) {
+      console.error('Error saving:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors de la sauvegarde' : 'Error saving')
+    } finally {
+      setIsSaving(false)
+    }
   }
+
+  // Auto-save function
+  const performAutoSave = useCallback(async () => {
+    if (isAutoSavingRef.current || isSaving) return
+    if (!title.trim() || steps.length === 0) return
+
+    const saveToId = autoSaveDraftId
+
+    isAutoSavingRef.current = true
+    setAutoSaveStatus('saving')
+
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        setAutoSaveStatus('error')
+        return
+      }
+
+      const resourceData = {
+        title,
+        description: description || null,
+        category: selectedCategory,
+        status: 'draft' as const,
+        visibility: 'private' as const,
+        blocks: steps.map(s => ({
+          id: s.id,
+          type: s.type,
+          content: s.content,
+          title: s.title,
+          duration: s.duration,
+          inhale: s.inhale,
+          hold: s.hold,
+          exhale: s.exhale,
+          cycles: s.cycles,
+          imagePrompt: s.imagePrompt,
+          bodyPart: s.bodyPart,
+        })),
+        settings: {
+          enableAudio,
+          repeatCount,
+          totalDuration: calculateTotalDuration(),
+        },
+      }
+
+      if (saveToId) {
+        const { error } = await supabase
+          .from('resources')
+          .update(resourceData)
+          .eq('id', saveToId)
+
+        if (error) throw error
+      } else {
+        const { data, error } = await supabase
+          .from('resources')
+          .insert({
+            ...resourceData,
+            practitioner_id: user.id,
+            type: 'exercise',
+          })
+          .select('id')
+          .single()
+
+        if (error) throw error
+        if (data?.id) {
+          setAutoSaveDraftId(data.id)
+          // Update URL with the new draft ID so refresh works
+          router.replace(`/resources/create/exercise?edit=${data.id}`, { scroll: false })
+        }
+      }
+
+      setAutoSaveStatus('saved')
+      setLastSavedAt(new Date())
+      setHasUnsavedChanges(false)
+
+      setTimeout(() => {
+        setAutoSaveStatus('idle')
+      }, 3000)
+    } catch (error) {
+      console.error('Auto-save error:', error)
+      setAutoSaveStatus('error')
+      setTimeout(() => {
+        setAutoSaveStatus('idle')
+        setHasUnsavedChanges(true)
+      }, 3000)
+    } finally {
+      isAutoSavingRef.current = false
+    }
+  }, [autoSaveDraftId, isSaving, title, steps, description, selectedCategory, enableAudio, repeatCount])
+
+  // Track changes and trigger auto-save
+  const performAutoSaveRef = useRef(performAutoSave)
+  performAutoSaveRef.current = performAutoSave
+
+  useEffect(() => {
+    if (!title && steps.length === 0) return
+
+    setHasUnsavedChanges(true)
+    setAutoSaveStatus('idle')
+
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+    }
+
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      performAutoSaveRef.current()
+    }, 5000)
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [title, steps, description, selectedCategory, enableAudio, repeatCount])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // Check if can proceed to details
   const canProceedToDetails = title.trim() && steps.length > 0
@@ -705,6 +908,57 @@ export default function CreateExercisePage() {
                   </Button>
                 </motion.div>
                 <div className="flex items-center gap-2">
+                  {/* Auto-save Status Indicator */}
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">
+                    {autoSaveStatus === 'saving' && (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+                        <span className="text-xs text-blue-600 font-medium">
+                          {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'saved' && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-xs text-emerald-600 font-medium">
+                          {locale === 'fr' ? 'Enregistré' : 'Saved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'error' && (
+                      <>
+                        <CloudOff className="w-3.5 h-3.5 text-red-500" />
+                        <span className="text-xs text-red-600 font-medium">
+                          {locale === 'fr' ? 'Erreur' : 'Error'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && hasUnsavedChanges && (
+                      <>
+                        <div className="w-2 h-2 rounded-full bg-amber-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Non enregistré' : 'Unsaved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Tout est enregistré' : 'All saved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && !lastSavedAt && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Brouillon' : 'Draft'}
+                        </span>
+                      </>
+                    )}
+                  </div>
                   <Button variant="outline" size="sm" className="rounded-xl">
                     <Eye className="w-4 h-4 mr-2" />
                     {locale === 'fr' ? 'Aperçu' : 'Preview'}
@@ -940,6 +1194,57 @@ export default function CreateExercisePage() {
                   </Button>
                 </motion.div>
                 <div className="flex items-center gap-2">
+                  {/* Auto-save Status Indicator */}
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">
+                    {autoSaveStatus === 'saving' && (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+                        <span className="text-xs text-blue-600 font-medium">
+                          {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'saved' && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-xs text-emerald-600 font-medium">
+                          {locale === 'fr' ? 'Enregistré' : 'Saved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'error' && (
+                      <>
+                        <CloudOff className="w-3.5 h-3.5 text-red-500" />
+                        <span className="text-xs text-red-600 font-medium">
+                          {locale === 'fr' ? 'Erreur' : 'Error'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && hasUnsavedChanges && (
+                      <>
+                        <div className="w-2 h-2 rounded-full bg-amber-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Non enregistré' : 'Unsaved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Tout est enregistré' : 'All saved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && !lastSavedAt && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Brouillon' : 'Draft'}
+                        </span>
+                      </>
+                    )}
+                  </div>
                   <Button variant="outline" size="sm" className="rounded-xl">
                     <Eye className="w-4 h-4 mr-2" />
                     {locale === 'fr' ? 'Aperçu' : 'Preview'}
@@ -953,7 +1258,7 @@ export default function CreateExercisePage() {
                     >
                       {isSaving ? (
                         <>
-                          <span className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                           {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
                         </>
                       ) : (

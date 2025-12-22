@@ -21,6 +21,11 @@ import {
   Play,
   Pause,
   Trash2,
+  Frown,
+  Meh,
+  Smile,
+  Laugh,
+  Annoyed,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import MemberLayout from '@/components/member/MemberLayout'
@@ -28,6 +33,7 @@ import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import BloomChatInterface from '@/components/bloom/BloomChatInterface'
+import { toast } from 'sonner'
 
 interface Reflection {
   id: string
@@ -47,38 +53,44 @@ const intents = [
   {
     id: 'discovery',
     icon: Lightbulb,
-    emoji: '💡',
     color: 'from-amber-400 to-orange-500',
     bgLight: 'bg-amber-50',
     textColor: 'text-amber-600',
+    iconColor: 'text-amber-500',
   },
   {
     id: 'vent',
     icon: Wind,
-    emoji: '💨',
     color: 'from-purple-400 to-indigo-500',
     bgLight: 'bg-purple-50',
     textColor: 'text-purple-600',
+    iconColor: 'text-purple-500',
   },
   {
     id: 'reflect',
     icon: Feather,
-    emoji: '🌿',
     color: 'from-emerald-400 to-teal-500',
     bgLight: 'bg-emerald-50',
     textColor: 'text-emerald-600',
+    iconColor: 'text-emerald-500',
   },
   {
     id: 'gratitude',
     icon: Heart,
-    emoji: '🙏',
     color: 'from-pink-400 to-rose-500',
     bgLight: 'bg-pink-50',
     textColor: 'text-pink-600',
+    iconColor: 'text-pink-500',
   },
 ]
 
-const moodEmojis = ['😢', '😕', '😐', '🙂', '😊']
+const moodIcons = [
+  { icon: Frown, color: 'text-blue-500', bg: 'bg-blue-100' },
+  { icon: Annoyed, color: 'text-purple-500', bg: 'bg-purple-100' },
+  { icon: Meh, color: 'text-gray-500', bg: 'bg-gray-100' },
+  { icon: Smile, color: 'text-amber-500', bg: 'bg-amber-100' },
+  { icon: Laugh, color: 'text-emerald-500', bg: 'bg-emerald-100' },
+]
 
 const BLOOM_PROMPTS_EN = [
   'How are you feeling?',
@@ -235,6 +247,12 @@ export default function ReflectionPage() {
         reflect: 'Just reflecting',
         gratitude: 'Feeling grateful',
       },
+      intentTags: {
+        discovery: 'Insight',
+        vent: 'Vent',
+        reflect: 'Reflection',
+        gratitude: 'Grateful',
+      },
       intentDescriptions: {
         discovery: 'An insight about yourself',
         vent: 'Release what weighs on you',
@@ -260,6 +278,8 @@ export default function ReflectionPage() {
       pastReflections: 'Looking Back',
       emptyState: 'Your reflections will appear here',
       emptyStateDescription: 'This is your private space to process, discover, and grow',
+      saved: 'Saved',
+      errorSaving: 'Could not save. Please try again.',
     },
     fr: {
       greeting: {
@@ -274,6 +294,12 @@ export default function ReflectionPage() {
         vent: "J'ai besoin d'évacuer",
         reflect: 'Je réfléchis',
         gratitude: 'Reconnaissant',
+      },
+      intentTags: {
+        discovery: 'Insight',
+        vent: 'Vent',
+        reflect: 'Réflexion',
+        gratitude: 'Gratitude',
       },
       intentDescriptions: {
         discovery: 'Une prise de conscience',
@@ -300,6 +326,8 @@ export default function ReflectionPage() {
       pastReflections: 'Retour en arrière',
       emptyState: 'Vos réflexions apparaîtront ici',
       emptyStateDescription: 'Ceci est votre espace privé pour traiter, découvrir et grandir',
+      saved: 'Enregistré',
+      errorSaving: 'Impossible de sauvegarder. Réessayez.',
     },
   }
 
@@ -504,11 +532,15 @@ export default function ReflectionPage() {
         })
 
       if (!error) {
+        toast.success(text.saved)
         resetForm()
         fetchReflections()
+      } else {
+        toast.error(text.errorSaving)
       }
     } catch (error) {
       console.error('Error saving reflection:', error)
+      toast.error(text.errorSaving)
     } finally {
       setSaving(false)
     }
@@ -668,61 +700,74 @@ export default function ReflectionPage() {
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: idx * 0.05 }}
-                          className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm"
+                          className="bg-white rounded-2xl p-4 border border-black/[0.06] hover:bg-black/[0.01] transition-colors cursor-pointer"
                         >
-                          <div className="flex items-start gap-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${intentInfo.bgLight}`}>
-                              {intentInfo.emoji}
+                          {/* Image at top if exists */}
+                          {reflection.image_url && (
+                            <div className="w-full aspect-video rounded-xl overflow-hidden mb-3">
+                              <img
+                                src={reflection.image_url}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className={`text-sm font-medium ${intentInfo.textColor}`}>
-                                  {text.intents[intentInfo.id as keyof typeof text.intents]}
-                                </span>
-                                <span className="text-xs text-gray-400">
-                                  {formatDate(reflection.created_at)}
-                                </span>
+                          )}
+
+                          {/* Audio player if exists */}
+                          {reflection.audio_url && (
+                            <div className="w-full aspect-video rounded-xl overflow-hidden mb-3 bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center relative">
+                              <div className="flex items-center gap-1">
+                                {[...Array(12)].map((_, i) => (
+                                  <motion.div
+                                    key={i}
+                                    animate={{
+                                      height: [8, 20 + Math.random() * 16, 8],
+                                    }}
+                                    transition={{
+                                      duration: 0.8 + Math.random() * 0.4,
+                                      repeat: Infinity,
+                                      delay: i * 0.1,
+                                      ease: 'easeInOut'
+                                    }}
+                                    className="w-1 rounded-full bg-purple-400/60"
+                                    style={{ height: 12 + Math.random() * 12 }}
+                                  />
+                                ))}
                               </div>
-                              {reflection.content && (
-                                <p className="text-sm text-gray-600 line-clamp-3">
-                                  {reflection.content}
-                                </p>
-                              )}
-                              {/* Show legacy data */}
-                              {!reflection.content && reflection.gratitude && (
-                                <p className="text-sm text-gray-600 line-clamp-2">
-                                  <span className="text-emerald-600">✨</span> {reflection.gratitude}
-                                </p>
-                              )}
-                              {!reflection.content && reflection.thoughts && (
-                                <p className="text-sm text-gray-500 line-clamp-1 mt-1">
-                                  {reflection.thoughts}
-                                </p>
-                              )}
-                              {reflection.image_url && (
-                                <div className="mt-2 rounded-xl overflow-hidden">
-                                  <img
-                                    src={reflection.image_url}
-                                    alt=""
-                                    className="w-full h-32 object-cover"
-                                  />
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-full bg-white/60 backdrop-blur-sm flex items-center justify-center">
+                                  <Play className="w-5 h-5 text-purple-600 ml-0.5" />
                                 </div>
-                              )}
-                              {reflection.audio_url && (
-                                <div className="mt-2">
-                                  <audio
-                                    src={reflection.audio_url}
-                                    controls
-                                    className="w-full h-10"
-                                  />
-                                </div>
-                              )}
-                              {reflection.mood !== undefined && reflection.mood !== null && (
-                                <div className="mt-2 text-lg">
-                                  {moodEmojis[reflection.mood]}
-                                </div>
-                              )}
+                              </div>
                             </div>
+                          )}
+
+                          {/* Content */}
+                          {(reflection.content || reflection.gratitude || reflection.thoughts) && (
+                            <p className="text-gray-900 text-sm leading-relaxed line-clamp-3">
+                              {reflection.content || reflection.gratitude || reflection.thoughts}
+                            </p>
+                          )}
+
+                          {/* Bottom row: Intent tag, mood, and time */}
+                          <div className="flex items-center justify-between mt-3 pt-2">
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${intentInfo.bgLight} ${intentInfo.textColor}`}>
+                                <intentInfo.icon className="w-3 h-3" />
+                                {text.intentTags[intentInfo.id as keyof typeof text.intentTags]}
+                              </span>
+                              {reflection.mood !== undefined && reflection.mood !== null && (() => {
+                                const MoodIcon = moodIcons[reflection.mood].icon
+                                return (
+                                  <div className={`w-6 h-6 rounded-full ${moodIcons[reflection.mood].bg} flex items-center justify-center`}>
+                                    <MoodIcon className={`w-3.5 h-3.5 ${moodIcons[reflection.mood].color}`} />
+                                  </div>
+                                )
+                              })()}
+                            </div>
+                            <span className="text-xs text-gray-400">
+                              {formatDate(reflection.created_at)}
+                            </span>
                           </div>
                         </motion.div>
                       )
@@ -749,7 +794,7 @@ export default function ReflectionPage() {
                   <ChevronLeft className="w-5 h-5 text-gray-600" />
                 </button>
                 <div className={`px-4 py-2 rounded-full ${currentIntent?.bgLight} flex items-center gap-2`}>
-                  <span>{currentIntent?.emoji}</span>
+                  {currentIntent && <currentIntent.icon className={`w-4 h-4 ${currentIntent.textColor}`} />}
                   <span className={`text-sm font-medium ${currentIntent?.textColor}`}>
                     {text.intents[selectedIntent as keyof typeof text.intents]}
                   </span>
@@ -846,19 +891,22 @@ export default function ReflectionPage() {
               <div className="mb-4">
                 <p className="text-sm text-gray-500 mb-2">{text.howDoYouFeel}</p>
                 <div className="flex gap-2">
-                  {moodEmojis.map((emoji, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedMood(selectedMood === idx ? null : idx)}
-                      className={`w-10 h-10 rounded-full text-xl transition-all ${
-                        selectedMood === idx
-                          ? 'bg-emerald-100 ring-2 ring-emerald-500 scale-110'
-                          : 'bg-gray-100 hover:bg-gray-200'
-                      }`}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
+                  {moodIcons.map((mood, idx) => {
+                    const MoodIcon = mood.icon
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedMood(selectedMood === idx ? null : idx)}
+                        className={`w-11 h-11 rounded-full transition-all flex items-center justify-center ${
+                          selectedMood === idx
+                            ? `${mood.bg} ring-2 ring-offset-2 ring-emerald-400 scale-110`
+                            : 'bg-gray-100 hover:bg-gray-200'
+                        }`}
+                      >
+                        <MoodIcon className={`w-5 h-5 ${selectedMood === idx ? mood.color : 'text-gray-400'}`} />
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 

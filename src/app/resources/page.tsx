@@ -32,6 +32,9 @@ import {
   Briefcase,
   Lightbulb,
   Brain,
+  Table2,
+  SlidersHorizontal,
+  Check,
 } from 'lucide-react'
 import { AnimatedIcon } from '@/components/ui/animated-icons'
 import { Button } from '@/components/ui/button'
@@ -55,6 +58,7 @@ import type { Collection, CollectionColor, CollectionIcon, collectionColorConfig
 import type { Member } from '@/types/member'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/browser-client'
+import { ResourceCard } from '@/components/resources/ResourceCard'
 
 // Collection icon mapping
 const collectionIcons: Record<CollectionIcon, React.ElementType> = {
@@ -173,6 +177,7 @@ const dbResourceTypeIcons: Record<string, React.ElementType> = {
   assessment: FileText, // Legacy: assessment now maps to worksheet
   exercise: Puzzle,
   psychoeducation: BookOpen,
+  table: Table2,
 }
 
 // Resource type config for database resources
@@ -212,9 +217,16 @@ const dbResourceTypeConfig: Record<string, {
     iconBg: 'bg-amber-100/80',
     glow: 'shadow-amber-200/50',
   },
+  table: {
+    gradient: 'from-emerald-400 to-emerald-600',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    iconBg: 'bg-emerald-100/80',
+    glow: 'shadow-emerald-200/50',
+  },
 }
 
-type TabType = 'saved' | 'created'
+type TabType = 'saved' | 'created' | 'collections'
 
 export default function MyResourcesPage() {
   const { t, locale } = useLanguage()
@@ -223,6 +235,8 @@ export default function MyResourcesPage() {
   const [activeTab, setActiveTab] = useState<TabType>('created')
   const [searchQuery, setSearchQuery] = useState('')
   const [languageFilter, setLanguageFilter] = useState<'all' | 'en' | 'fr'>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'worksheet' | 'psychoeducation' | 'exercise' | 'table'>('all')
+  const [showFilters, setShowFilters] = useState(false)
   const [dbResources, setDbResources] = useState<Resource[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
@@ -475,6 +489,11 @@ export default function MyResourcesPage() {
       filtered = filtered.filter(r => r.language === languageFilter)
     }
 
+    // Filter by type
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(r => r.type === typeFilter)
+    }
+
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
@@ -485,11 +504,12 @@ export default function MyResourcesPage() {
     }
 
     return filtered
-  }, [searchQuery, dbResources, languageFilter])
+  }, [searchQuery, dbResources, languageFilter, typeFilter])
 
   const tabs = [
     { id: 'created' as TabType, label: t.library.myResources.tabs.created, count: createdResources.length, icon: FolderOpen },
     { id: 'saved' as TabType, label: t.library.myResources.tabs.saved, count: savedResources.length, icon: Bookmark },
+    { id: 'collections' as TabType, label: locale === 'fr' ? 'Collections' : 'Collections', count: collections.length, icon: Heart },
   ]
 
   // Stats
@@ -606,9 +626,9 @@ export default function MyResourcesPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-5 mb-6"
+          className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-5 mb-6 relative z-[50] overflow-visible"
         >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-visible">
             {/* Tabs */}
             <div className="flex items-center gap-2 bg-gray-100/80 rounded-xl p-1.5">
               {tabs.map((tab) => {
@@ -641,39 +661,150 @@ export default function MyResourcesPage() {
             </div>
 
             {/* Right side controls */}
-            <div className="ml-auto flex items-center gap-3">
-              {/* Language Filter */}
-              <div className="flex items-center gap-1 bg-gray-100/50 rounded-xl p-1">
+            <div className="ml-auto flex items-center gap-3 relative z-[60]">
+              {/* Filters Button */}
+              <div className="relative z-[60]">
                 <button
-                  onClick={() => setLanguageFilter('all')}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    languageFilter === 'all'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    (typeFilter !== 'all' || languageFilter !== 'all')
+                      ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                      : 'bg-gray-100/50 text-gray-600 hover:bg-gray-100 border border-transparent'
                   }`}
                 >
-                  {locale === 'fr' ? 'Tous' : 'All'}
+                  <SlidersHorizontal className="w-4 h-4" />
+                  {locale === 'fr' ? 'Filtres' : 'Filters'}
+                  {(typeFilter !== 'all' || languageFilter !== 'all') && (
+                    <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center">
+                      {(typeFilter !== 'all' ? 1 : 0) + (languageFilter !== 'all' ? 1 : 0)}
+                    </span>
+                  )}
                 </button>
-                <button
-                  onClick={() => setLanguageFilter('en')}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    languageFilter === 'en'
-                      ? 'bg-red-50 text-red-600 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  EN
-                </button>
-                <button
-                  onClick={() => setLanguageFilter('fr')}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    languageFilter === 'fr'
-                      ? 'bg-blue-50 text-blue-600 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  FR
-                </button>
+
+                {/* Filter Dropdown */}
+                <AnimatePresence>
+                  {showFilters && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-200/60 p-4 z-[100]"
+                    >
+                      {/* Type Filter */}
+                      <div className="mb-4">
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                          {locale === 'fr' ? 'Type de ressource' : 'Resource Type'}
+                        </label>
+                        <div className="space-y-1">
+                          <button
+                            onClick={() => setTypeFilter('all')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                              typeFilter === 'all'
+                                ? 'bg-gray-100 text-gray-700'
+                                : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <div className="w-4 h-4" />
+                            <span className="flex-1 text-left">{locale === 'fr' ? 'Tous les types' : 'All Types'}</span>
+                            {typeFilter === 'all' && <Check className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => setTypeFilter('worksheet')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                              typeFilter === 'worksheet'
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <FileText className="w-4 h-4" />
+                            <span className="flex-1 text-left">{locale === 'fr' ? 'Feuilles de travail' : 'Worksheets'}</span>
+                            {typeFilter === 'worksheet' && <Check className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => setTypeFilter('table')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                              typeFilter === 'table'
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <Table2 className="w-4 h-4" />
+                            <span className="flex-1 text-left">{locale === 'fr' ? 'Exercices tableau' : 'Table Exercises'}</span>
+                            {typeFilter === 'table' && <Check className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => setTypeFilter('psychoeducation')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                              typeFilter === 'psychoeducation'
+                                ? 'bg-amber-50 text-amber-700'
+                                : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <BookOpen className="w-4 h-4" />
+                            <span className="flex-1 text-left">{locale === 'fr' ? 'Éducation' : 'Education'}</span>
+                            {typeFilter === 'psychoeducation' && <Check className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Language Filter */}
+                      <div className="mb-4">
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                          {locale === 'fr' ? 'Langue' : 'Language'}
+                        </label>
+                        <div className="space-y-1">
+                          <button
+                            onClick={() => setLanguageFilter('all')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                              languageFilter === 'all'
+                                ? 'bg-purple-50 text-purple-700'
+                                : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span className="flex-1 text-left">{locale === 'fr' ? 'Toutes les langues' : 'All Languages'}</span>
+                            {languageFilter === 'all' && <Check className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => setLanguageFilter('en')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                              languageFilter === 'en'
+                                ? 'bg-red-50 text-red-700'
+                                : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span className="flex-1 text-left">English</span>
+                            {languageFilter === 'en' && <Check className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => setLanguageFilter('fr')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                              languageFilter === 'fr'
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span className="flex-1 text-left">Français</span>
+                            {languageFilter === 'fr' && <Check className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Clear Filters */}
+                      {(typeFilter !== 'all' || languageFilter !== 'all') && (
+                        <button
+                          onClick={() => {
+                            setTypeFilter('all')
+                            setLanguageFilter('all')
+                          }}
+                          className="w-full px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-all"
+                        >
+                          {locale === 'fr' ? 'Effacer les filtres' : 'Clear filters'}
+                        </button>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Search */}
@@ -735,13 +866,16 @@ export default function MyResourcesPage() {
                   <Loader2 className="w-8 h-8 animate-spin text-lavender-500" />
                 </div>
               ) : createdResources.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {createdResources.map((resource) => {
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {createdResources.map((resource, index) => {
                     const resourceIsOwner = currentUserId === resource.practitioner_id
                     return (
-                      <DbResourceCard
+                      <ResourceCard
                         key={resource.id}
                         resource={resource}
+                        locale={locale}
+                        variant="owned"
+                        index={index}
                         onEdit={() => router.push(`/resources/create/${resource.type}?edit=${resource.id}`)}
                         onPreview={() => router.push(`/resources/${resource.id}`)}
                         onDelete={() => handleDelete(resource.id)}
@@ -750,8 +884,6 @@ export default function MyResourcesPage() {
                         isDeleting={isDeleting === resource.id}
                         isRemoving={isRemoving === resource.id}
                         isOwner={resourceIsOwner}
-                        locale={locale}
-                        t={t}
                       />
                     )
                   })}
@@ -767,133 +899,135 @@ export default function MyResourcesPage() {
               )}
             </motion.div>
           )}
-        </AnimatePresence>
 
-        {/* Collections Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mt-12"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-lavender-400 to-lavender-600" />
-              <h2 className="text-xl font-semibold text-gray-900">{t.library.collections.title}</h2>
-            </div>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCreateCollectionModal(true)}
-                className="rounded-xl border-2 border-lavender-200 hover:border-lavender-300 hover:bg-lavender-50"
-              >
-                <Plus className="w-4 h-4 mr-2 text-lavender-600" />
-                <span className="text-lavender-700">{t.library.collections.createCollection}</span>
-              </Button>
-            </motion.div>
-          </div>
-
-          {isLoadingCollections ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-lavender-500" />
-            </div>
-          ) : collections.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {collections.map((collection) => {
-                const IconComponent = collectionIcons[collection.icon as CollectionIcon] || FolderOpen
-                const config = colorConfig[collection.color as CollectionColor] || colorConfig.blue
-                return (
-                  <motion.div
-                    key={collection.id}
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    onClick={() => router.push(`/resources/collections/${collection.id}`)}
-                    className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] shadow-lg shadow-gray-200/40 border border-white/60 p-5 cursor-pointer hover:shadow-xl transition-all group relative"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-2xl ${config.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-md`}>
-                          <IconComponent className="w-4 h-4 text-white" />
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate">{collection.name}</h3>
-                        <p className="text-sm text-gray-500">
-                          {collection.resource_count || 0} {locale === 'fr' ? 'ressources' : 'resources'}
-                        </p>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            onClick={(e) => e.stopPropagation()}
-                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
-                          >
-                            <MoreHorizontal className="w-4 h-4 text-gray-400" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="rounded-xl">
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              router.push(`/resources/collections/${collection.id}`)
-                            }}
-                            className="rounded-lg"
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            {locale === 'fr' ? 'Voir' : 'View'}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="rounded-lg">
-                            <Pencil className="w-4 h-4 mr-2" />
-                            {locale === 'fr' ? 'Modifier' : 'Edit'}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeleteCollection(collection.id)
-                            }}
-                            className="text-red-600 rounded-lg"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            {locale === 'fr' ? 'Supprimer' : 'Delete'}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    {collection.description && (
-                      <p className="text-xs text-gray-400 mt-2 line-clamp-1">{collection.description}</p>
-                    )}
-                  </motion.div>
-                )
-              })}
-            </div>
-          ) : (
+          {activeTab === 'collections' && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center py-12 bg-white/60 backdrop-blur-sm rounded-2xl border border-gray-100"
+              key="collections"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
             >
-              <div className="w-16 h-16 rounded-2xl bg-gray-100/80 flex items-center justify-center mx-auto mb-4">
-                <FolderOpen className="w-8 h-8 text-gray-400" />
+              {/* Create Collection Button */}
+              <div className="flex justify-end mb-6">
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowCreateCollectionModal(true)}
+                    className="rounded-xl border-2 border-lavender-200 hover:border-lavender-300 hover:bg-lavender-50"
+                  >
+                    <Plus className="w-4 h-4 mr-2 text-lavender-600" />
+                    <span className="text-lavender-700">{t.library.collections.createCollection}</span>
+                  </Button>
+                </motion.div>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {locale === 'fr' ? 'Aucune collection' : 'No collections yet'}
-              </h3>
-              <p className="text-gray-500 mb-4 text-sm max-w-sm mx-auto">
-                {locale === 'fr'
-                  ? 'Créez des collections pour organiser vos ressources'
-                  : 'Create collections to organize your resources'}
-              </p>
-              <Button
-                onClick={() => setShowCreateCollectionModal(true)}
-                className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 rounded-xl"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {t.library.collections.createCollection}
-              </Button>
+
+              {isLoadingCollections ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="w-8 h-8 animate-spin text-lavender-500" />
+                </div>
+              ) : collections.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {collections.map((collection) => {
+                    const IconComponent = collectionIcons[collection.icon as CollectionIcon] || FolderOpen
+                    const config = colorConfig[collection.color as CollectionColor] || colorConfig.blue
+                    return (
+                      <motion.div
+                        key={collection.id}
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        onClick={() => router.push(`/resources/collections/${collection.id}`)}
+                        className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] shadow-lg shadow-gray-200/40 border border-white/60 p-5 cursor-pointer hover:shadow-xl transition-all group relative"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`w-12 h-12 rounded-2xl ${config.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-md`}>
+                              <IconComponent className="w-4 h-4 text-white" />
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 truncate">{collection.name}</h3>
+                            <p className="text-sm text-gray-500">
+                              {collection.resource_count || 0} {locale === 'fr' ? 'ressources' : 'resources'}
+                            </p>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-2 rounded-lg hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
+                              >
+                                <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-xl">
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  router.push(`/resources/collections/${collection.id}`)
+                                }}
+                                className="rounded-lg"
+                              >
+                                <Eye className="w-4 h-4 mr-2" />
+                                {locale === 'fr' ? 'Voir' : 'View'}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="rounded-lg">
+                                <Pencil className="w-4 h-4 mr-2" />
+                                {locale === 'fr' ? 'Modifier' : 'Edit'}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeleteCollection(collection.id)
+                                }}
+                                className="text-red-600 rounded-lg"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        {collection.description && (
+                          <p className="text-xs text-gray-400 mt-3 line-clamp-2">{collection.description}</p>
+                        )}
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-16"
+                >
+                  <div className="w-20 h-20 rounded-2xl bg-gray-100/80 flex items-center justify-center mx-auto mb-5">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center shadow-inner">
+                      <FolderOpen className="w-7 h-7 text-gray-500" />
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                    {locale === 'fr' ? 'Aucune collection' : 'No collections yet'}
+                  </h3>
+                  <p className="text-gray-500 mb-8 max-w-md mx-auto leading-relaxed">
+                    {locale === 'fr'
+                      ? 'Créez des collections pour organiser vos ressources'
+                      : 'Create collections to organize your resources'}
+                  </p>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      onClick={() => setShowCreateCollectionModal(true)}
+                      className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 shadow-lg shadow-lavender-200/50 rounded-xl px-6 py-2.5"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      {t.library.collections.createCollection}
+                    </Button>
+                  </motion.div>
+                </motion.div>
+              )}
             </motion.div>
           )}
-        </motion.div>
+        </AnimatePresence>
 
         {/* Create Collection Modal */}
         <AnimatePresence>
@@ -1079,7 +1213,7 @@ export default function MyResourcesPage() {
                 <div className="flex items-center justify-between p-6 border-b border-gray-100">
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900">
-                      {locale === 'fr' ? 'Partager avec un membre' : 'Share with Member'}
+                      {locale === 'fr' ? 'Partager à un patient' : 'Share with Member'}
                     </h2>
                     <p className="text-sm text-gray-500 mt-1">
                       {selectedResourceToShare.title}
@@ -1297,152 +1431,6 @@ function SavedResourceCard({
   )
 }
 
-// Database Resource Card Component
-function DbResourceCard({
-  resource,
-  onEdit,
-  onPreview,
-  onDelete,
-  onRemove,
-  onShare,
-  isDeleting,
-  isRemoving,
-  isOwner,
-  locale,
-  t,
-}: {
-  resource: Resource
-  onEdit: () => void
-  onPreview: () => void
-  onDelete: () => void
-  onRemove: () => void
-  onShare: () => void
-  isDeleting: boolean
-  isRemoving: boolean
-  isOwner: boolean
-  locale: 'en' | 'fr'
-  t: any
-}) {
-  const TypeIcon = dbResourceTypeIcons[resource.type] || FileText
-  const config = dbResourceTypeConfig[resource.type] || dbResourceTypeConfig.worksheet
-
-  const typeLabels: Record<string, { en: string; fr: string }> = {
-    worksheet: { en: 'Worksheet', fr: 'Exercice' },
-    assessment: { en: 'Assessment', fr: 'Évaluation' },
-    exercise: { en: 'Exercise', fr: 'Exercice' },
-    psychoeducation: { en: 'Education', fr: 'Éducation' },
-  }
-
-  const statusLabels: Record<string, { en: string; fr: string }> = {
-    draft: { en: 'Draft', fr: 'Brouillon' },
-    published: { en: 'Published', fr: 'Publié' },
-    archived: { en: 'Archived', fr: 'Archivé' },
-  }
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02, y: -4 }}
-      onClick={onPreview}
-      className={`bg-white/90 backdrop-blur-xl rounded-[1.25rem] shadow-lg shadow-gray-200/40 border border-white/60 overflow-hidden cursor-pointer hover:shadow-xl transition-all group ${isDeleting || isRemoving ? 'opacity-50' : ''}`}
-    >
-      <div className="p-5">
-        <div className="flex items-start justify-between mb-4">
-          <div className={`w-11 h-11 rounded-xl ${config.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-            <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-md`}>
-              <TypeIcon className="w-4 h-4 text-white" />
-            </div>
-          </div>
-          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            {/* Language Badge */}
-            <Badge className={`text-xs border-0 shadow-sm font-medium ${
-              resource.language === 'fr'
-                ? 'bg-blue-50 text-blue-600'
-                : 'bg-red-50 text-red-600'
-            }`}>
-              {resource.language === 'fr' ? 'FR' : 'EN'}
-            </Badge>
-            {/* Visibility Badge */}
-            {resource.visibility === 'public' ? (
-              <Badge className="text-xs bg-blue-100 text-blue-700 border-0 shadow-sm">
-                <Globe className="w-3 h-3 mr-1" />
-                {locale === 'fr' ? 'Public' : 'Public'}
-              </Badge>
-            ) : (
-              <Badge className="text-xs bg-gray-100 text-gray-600 border-0 shadow-sm">
-                <Lock className="w-3 h-3 mr-1" />
-                {locale === 'fr' ? 'Privé' : 'Private'}
-              </Badge>
-            )}
-            {/* Status Badge */}
-            <Badge className={`text-xs border-0 shadow-sm ${
-              resource.status === 'published'
-                ? 'bg-gradient-to-r from-emerald-400 to-emerald-600 text-white'
-                : resource.status === 'archived'
-                ? 'bg-gray-200 text-gray-600'
-                : 'bg-amber-100 text-amber-700'
-            }`}>
-              {statusLabels[resource.status]?.[locale] || resource.status}
-            </Badge>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                  <MoreHorizontal className="w-4 h-4 text-gray-400" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="rounded-xl">
-                <DropdownMenuItem onClick={onPreview} className="rounded-lg">
-                  <Eye className="w-4 h-4 mr-2" />
-                  {t.library.create.preview}
-                </DropdownMenuItem>
-                {isOwner && (
-                  <DropdownMenuItem onClick={onEdit} className="rounded-lg">
-                    <Pencil className="w-4 h-4 mr-2" />
-                    {t.library.create.editTitle}
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={onShare} className="rounded-lg text-lavender-600">
-                  <Users className="w-4 h-4 mr-2" />
-                  {locale === 'fr' ? 'Partager avec un membre' : 'Share with Member'}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {isOwner ? (
-                  <DropdownMenuItem onClick={onDelete} className="text-red-600 rounded-lg">
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    {locale === 'fr' ? 'Supprimer' : 'Delete'}
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem onClick={onRemove} className="text-amber-600 rounded-lg">
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    {locale === 'fr' ? 'Retirer de ma bibliothèque' : 'Remove from my library'}
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 leading-snug">{resource.title}</h3>
-        <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">{resource.description || (locale === 'fr' ? 'Aucune description' : 'No description')}</p>
-
-        <div className="flex items-center justify-between">
-          <div className="flex flex-wrap gap-2">
-            <span className={`text-xs px-2.5 py-1 ${config.bg} ${config.text} rounded-lg`}>
-              {typeLabels[resource.type]?.[locale] || resource.type}
-            </span>
-            {resource.category && (
-              <span className="text-xs px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg">
-                {resource.category}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span>{resource.blocks.length} {locale === 'fr' ? (resource.blocks.length === 1 ? 'étape' : 'étapes') : 'blocks'}</span>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  )
-}
 
 // Created Resource Card Component (for UserResource type - library resources)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -17,6 +17,7 @@ import {
   ClipboardCheck,
   Puzzle,
   BookOpen,
+  Table2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -58,6 +59,7 @@ const resourceTypeIcons: Record<string, React.ElementType> = {
   assessment: ClipboardCheck,
   exercise: Puzzle,
   psychoeducation: BookOpen,
+  table: Table2,
 }
 
 // Resource type config
@@ -66,6 +68,7 @@ const resourceTypeConfig: Record<string, { bg: string; text: string; iconBg: str
   assessment: { bg: 'bg-purple-50', text: 'text-purple-700', iconBg: 'bg-purple-100' },
   exercise: { bg: 'bg-emerald-50', text: 'text-emerald-700', iconBg: 'bg-emerald-100' },
   psychoeducation: { bg: 'bg-amber-50', text: 'text-amber-700', iconBg: 'bg-amber-100' },
+  table: { bg: 'bg-emerald-50', text: 'text-emerald-700', iconBg: 'bg-emerald-100' },
 }
 
 export default function SharedTab({ memberId }: SharedTabProps) {

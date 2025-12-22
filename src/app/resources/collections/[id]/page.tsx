@@ -24,6 +24,7 @@ import {
   Loader2,
   Plus,
   X,
+  Table2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -121,6 +122,7 @@ const resourceTypeIcons: Record<string, React.ElementType> = {
   assessment: ClipboardCheck,
   exercise: Puzzle,
   psychoeducation: BookOpen,
+  table: Table2,
 }
 
 // Resource type config
@@ -153,6 +155,12 @@ const resourceTypeConfig: Record<string, {
     bg: 'bg-amber-50',
     text: 'text-amber-700',
     iconBg: 'bg-amber-100/80',
+  },
+  table: {
+    gradient: 'from-emerald-400 to-emerald-600',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    iconBg: 'bg-emerald-100/80',
   },
 }
 

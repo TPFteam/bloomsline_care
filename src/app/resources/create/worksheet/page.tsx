@@ -446,6 +446,7 @@ function CreateWorksheetContent() {
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isAutoSavingRef = useRef(false)
   const isInitialLoadRef = useRef(true)
+  const justAutoSavedRef = useRef(false)
 
   // Get user ID on mount
   useEffect(() => {
@@ -463,6 +464,12 @@ function CreateWorksheetContent() {
   useEffect(() => {
     async function loadResource() {
       if (!editId) return
+
+      // Skip reload if we just auto-saved and updated the URL
+      if (justAutoSavedRef.current) {
+        justAutoSavedRef.current = false
+        return
+      }
 
       setIsLoading(true)
       try {
@@ -1331,6 +1338,9 @@ function CreateWorksheetContent() {
         // Store the new draft ID for future auto-saves
         if (newResource?.id) {
           setAutoSaveDraftId(newResource.id)
+          // Update URL to include the draft ID so refresh loads the saved draft
+          justAutoSavedRef.current = true
+          router.replace(`/resources/create/worksheet?edit=${newResource.id}`, { scroll: false })
         }
       }
 

@@ -22,7 +22,9 @@ export type BlockType =
   | 'scale'
   | 'image'
   | 'video'
+  | 'audio'
   | 'file'
+  | 'link'
   | 'key_points'
   | 'callout'
   | 'quote'
@@ -108,6 +110,19 @@ export interface VideoBlock extends BaseBlock {
   mediaFile?: MediaFile
   videoUrl?: string
   videoType?: 'upload' | 'youtube' | 'vimeo'
+}
+
+export interface AudioBlock extends BaseBlock {
+  type: 'audio'
+  mediaFile?: MediaFile
+  caption?: string
+}
+
+export interface LinkBlock extends BaseBlock {
+  type: 'link'
+  linkUrl?: string
+  linkPlatform?: 'youtube' | 'vimeo' | 'spotify' | 'soundcloud' | 'other'
+  linkTitle?: string
 }
 
 export interface FileBlock extends BaseBlock {
@@ -268,6 +283,8 @@ export type ResourceBlock =
   | ScaleBlock
   | ImageBlock
   | VideoBlock
+  | AudioBlock
+  | LinkBlock
   | FileBlock
   | KeyPointsBlock
   | CalloutBlock

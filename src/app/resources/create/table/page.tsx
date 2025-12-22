@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -21,6 +21,8 @@ import {
   Globe,
   FileText,
   Send,
+  Cloud,
+  CloudOff,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -92,10 +94,26 @@ function CreateTableExerciseContent() {
   const [minRows, setMinRows] = useState<number>(1)
   const [maxRows, setMaxRows] = useState<number>(10)
 
+  // Auto-save state
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [autoSaveDraftId, setAutoSaveDraftId] = useState<string | null>(null)
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isAutoSavingRef = useRef(false)
+  const isInitialLoadRef = useRef(true)
+  const justAutoSavedRef = useRef(false)
+
   // Load existing resource when editing
   useEffect(() => {
     async function loadResource() {
       if (!editId) return
+
+      // Skip reload if we just auto-saved and updated the URL
+      if (justAutoSavedRef.current) {
+        justAutoSavedRef.current = false
+        return
+      }
 
       try {
         const supabase = createClient()
@@ -280,6 +298,136 @@ function CreateTableExerciseContent() {
 
   const isValid = title.trim() && selectedCategory && columns.every(col => col.header.trim())
 
+  // Auto-save function
+  const performAutoSave = useCallback(async () => {
+    if (isAutoSavingRef.current || saving) return
+    if (!title.trim() || columns.length === 0) return
+
+    const saveToId = editId || autoSaveDraftId
+
+    isAutoSavingRef.current = true
+    setAutoSaveStatus('saving')
+
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        setAutoSaveStatus('error')
+        return
+      }
+
+      const resourceData = {
+        title: title,
+        description: description || null,
+        category: selectedCategory,
+        status: 'draft' as const,
+        visibility: 'private' as const,
+        blocks: [
+          {
+            id: saveToId ? columns[0]?.id || generateId() : generateId(),
+            type: 'table_exercise',
+            content: title,
+            columns: columns.map(col => ({
+              id: col.id,
+              header: col.header,
+              description: col.description,
+            })),
+            instructions: instructions || null,
+          }
+        ],
+        settings: {
+          rowMode: rowMode,
+          minRows: rowMode === 'limited' ? minRows : 1,
+          maxRows: rowMode === 'limited' ? maxRows : 999,
+        },
+      }
+
+      if (saveToId) {
+        const { error } = await supabase
+          .from('resources')
+          .update(resourceData)
+          .eq('id', saveToId)
+
+        if (error) throw error
+      } else {
+        const { data, error } = await supabase
+          .from('resources')
+          .insert({
+            ...resourceData,
+            practitioner_id: user.id,
+            type: 'table',
+          })
+          .select('id')
+          .single()
+
+        if (error) throw error
+        if (data?.id) {
+          setAutoSaveDraftId(data.id)
+          // Update URL with the new draft ID so refresh works
+          justAutoSavedRef.current = true
+          router.replace(`/resources/create/table?edit=${data.id}`, { scroll: false })
+        }
+      }
+
+      setAutoSaveStatus('saved')
+      setLastSavedAt(new Date())
+      setHasUnsavedChanges(false)
+
+      setTimeout(() => {
+        setAutoSaveStatus('idle')
+      }, 3000)
+    } catch (error) {
+      console.error('Auto-save error:', error)
+      setAutoSaveStatus('error')
+      setTimeout(() => {
+        setAutoSaveStatus('idle')
+        setHasUnsavedChanges(true)
+      }, 3000)
+    } finally {
+      isAutoSavingRef.current = false
+    }
+  }, [editId, autoSaveDraftId, saving, title, columns, description, selectedCategory, instructions, rowMode, minRows, maxRows])
+
+  // Track changes and trigger auto-save
+  const performAutoSaveRef = useRef(performAutoSave)
+  performAutoSaveRef.current = performAutoSave
+
+  useEffect(() => {
+    if (loading) return
+    if (editId && isInitialLoadRef.current) {
+      isInitialLoadRef.current = false
+      return
+    }
+    if (!title && columns.length === 0) return
+
+    setHasUnsavedChanges(true)
+    setAutoSaveStatus('idle')
+
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+    }
+
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      performAutoSaveRef.current()
+    }, 5000)
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [title, columns, description, selectedCategory, instructions, rowMode, minRows, maxRows, editId, loading])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [])
+
   // Loading state
   if (loading) {
     return (
@@ -320,6 +468,57 @@ function CreateTableExerciseContent() {
             </motion.div>
           </Link>
           <div className="flex items-center gap-2">
+            {/* Auto-save Status Indicator */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">
+              {autoSaveStatus === 'saving' && (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+                  <span className="text-xs text-blue-600 font-medium">
+                    {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                  </span>
+                </>
+              )}
+              {autoSaveStatus === 'saved' && (
+                <>
+                  <Cloud className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="text-xs text-emerald-600 font-medium">
+                    {locale === 'fr' ? 'Enregistré' : 'Saved'}
+                  </span>
+                </>
+              )}
+              {autoSaveStatus === 'error' && (
+                <>
+                  <CloudOff className="w-3.5 h-3.5 text-red-500" />
+                  <span className="text-xs text-red-600 font-medium">
+                    {locale === 'fr' ? 'Erreur' : 'Error'}
+                  </span>
+                </>
+              )}
+              {autoSaveStatus === 'idle' && hasUnsavedChanges && (
+                <>
+                  <div className="w-2 h-2 rounded-full bg-amber-400" />
+                  <span className="text-xs text-gray-500">
+                    {locale === 'fr' ? 'Non enregistré' : 'Unsaved'}
+                  </span>
+                </>
+              )}
+              {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
+                <>
+                  <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-xs text-gray-500">
+                    {locale === 'fr' ? 'Tout est enregistré' : 'All saved'}
+                  </span>
+                </>
+              )}
+              {autoSaveStatus === 'idle' && !hasUnsavedChanges && !lastSavedAt && (
+                <>
+                  <Cloud className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="text-xs text-gray-500">
+                    {locale === 'fr' ? 'Brouillon' : 'Draft'}
+                  </span>
+                </>
+              )}
+            </div>
             <Button
               variant="outline"
               size="sm"

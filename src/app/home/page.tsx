@@ -42,6 +42,7 @@ import {
   Play,
   ZoomIn,
   ZoomOut,
+  Table2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -249,6 +250,7 @@ const typeIcons: Record<string, React.ElementType> = {
   worksheet: FileText,
   exercise: Puzzle,
   psychoeducation: BookOpen,
+  table: Table2,
 }
 
 // Get greeting based on time

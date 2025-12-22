@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence, Reorder } from 'framer-motion'
@@ -28,17 +28,43 @@ import {
   Lock,
   Globe,
   RotateCcw,
+  Loader2,
+  Cloud,
+  CloudOff,
+  Mic,
+  Upload,
+  X,
+  CheckCircle2,
+  Square,
+  Circle,
+  Video,
+  Link2,
+  Youtube,
+  ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createResource, getResourceById, updateResource } from '@/lib/services/resources'
+import { uploadResourceFile, validateFile, formatFileSize } from '@/lib/services/resource-storage'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { ResourceCategory } from '@/types/library'
 import type { ResourceBlock, PsychoeducationSettings } from '@/types/resource'
 
 // Content block types for psychoeducation
-type ContentBlockType = 'heading' | 'paragraph' | 'key_points' | 'callout' | 'quote' | 'image_placeholder'
+type ContentBlockType = 'heading' | 'paragraph' | 'key_points' | 'callout' | 'quote' | 'image' | 'audio' | 'video' | 'link'
+
+// Media file interface for uploads
+interface MediaFile {
+  id: string
+  name: string
+  size: number
+  type: string
+  url?: string
+  path?: string
+  isUploading?: boolean
+  uploadError?: string
+}
 
 interface ContentBlock {
   id: string
@@ -50,8 +76,13 @@ interface ContentBlock {
   calloutType?: 'info' | 'warning' | 'tip' | 'example'
   // For quote
   attribution?: string
-  // For image placeholder
+  // For image/audio
   caption?: string
+  mediaFile?: MediaFile
+  // For links
+  linkUrl?: string
+  linkPlatform?: 'youtube' | 'vimeo' | 'spotify' | 'soundcloud' | 'other'
+  linkTitle?: string
 }
 
 interface ContentBlockOption {
@@ -93,10 +124,28 @@ const contentBlockTypes: ContentBlockOption[] = [
     description: { en: 'Inspirational or expert quote', fr: 'Citation inspirante ou d\'expert' },
   },
   {
-    type: 'image_placeholder',
+    type: 'image',
     icon: ImageIcon,
-    label: { en: 'Image Placeholder', fr: 'Emplacement image' },
-    description: { en: 'Space for diagram or illustration', fr: 'Espace pour diagramme ou illustration' },
+    label: { en: 'Image', fr: 'Image' },
+    description: { en: 'Upload an image or diagram', fr: 'Télécharger une image ou diagramme' },
+  },
+  {
+    type: 'audio',
+    icon: Mic,
+    label: { en: 'Audio', fr: 'Audio' },
+    description: { en: 'Upload an audio file', fr: 'Télécharger un fichier audio' },
+  },
+  {
+    type: 'video',
+    icon: Video,
+    label: { en: 'Video', fr: 'Vidéo' },
+    description: { en: 'Upload or record a video', fr: 'Télécharger ou enregistrer une vidéo' },
+  },
+  {
+    type: 'link',
+    icon: Link2,
+    label: { en: 'External Link', fr: 'Lien externe' },
+    description: { en: 'Add YouTube, Vimeo, or other links', fr: 'Ajouter des liens YouTube, Vimeo ou autres' },
   },
 ]
 
@@ -143,6 +192,40 @@ function CreatePsychoeducationContent() {
   // View mode: 'edit' | 'preview'
   const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit')
 
+  // Auto-save state
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [autoSaveDraftId, setAutoSaveDraftId] = useState<string | null>(null)
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isAutoSavingRef = useRef(false)
+  const isInitialLoadRef = useRef(true)
+  const justAutoSavedRef = useRef(false)
+
+  // User ID for file uploads
+  const [userId, setUserId] = useState<string | null>(null)
+
+  // Audio/Video recording state
+  const [recordingBlockId, setRecordingBlockId] = useState<string | null>(null)
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingTime, setRecordingTime] = useState(0)
+  const [recordingType, setRecordingType] = useState<'audio' | 'video'>('audio')
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const videoPreviewRef = useRef<HTMLVideoElement | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+
+  // Get user ID on mount
+  useEffect(() => {
+    const getUser = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setUserId(user.id)
+    }
+    getUser()
+  }, [])
+
   // Generate unique ID
   const generateId = () => Math.random().toString(36).substring(2, 11)
 
@@ -150,6 +233,12 @@ function CreatePsychoeducationContent() {
   useEffect(() => {
     async function loadResource() {
       if (!editId) return
+
+      // Skip reload if we just auto-saved and updated the URL
+      if (justAutoSavedRef.current) {
+        justAutoSavedRef.current = false
+        return
+      }
 
       setIsLoading(true)
       try {
@@ -188,6 +277,19 @@ function CreatePsychoeducationContent() {
               calloutType: block.calloutType,
               attribution: block.attribution,
               caption: block.caption,
+              // Load link properties
+              linkUrl: block.linkUrl,
+              linkPlatform: block.linkPlatform,
+              linkTitle: block.linkTitle,
+              // Load media file for image/audio blocks
+              mediaFile: block.mediaFile ? {
+                id: block.mediaFile.id,
+                name: block.mediaFile.name,
+                size: block.mediaFile.size,
+                type: block.mediaFile.type,
+                url: block.mediaFile.url,
+                path: block.mediaFile.path,
+              } : undefined,
             }))
             setBlocks(loadedBlocks)
           }
@@ -209,6 +311,27 @@ function CreatePsychoeducationContent() {
     loadResource()
   }, [editId, locale, router])
 
+  // Connect video stream to preview element after state changes
+  useEffect(() => {
+    if (recordingType === 'video' && recordingBlockId && streamRef.current && videoPreviewRef.current) {
+      videoPreviewRef.current.srcObject = streamRef.current
+      videoPreviewRef.current.play().catch(console.error)
+    }
+  }, [recordingType, recordingBlockId])
+
+  // Cleanup recording when component unmounts or when navigating away
+  useEffect(() => {
+    return () => {
+      // Stop any active recording on unmount
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop())
+      }
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current)
+      }
+    }
+  }, [])
+
   // Add new block
   const addBlock = (type: ContentBlockType) => {
     const newBlock: ContentBlock = {
@@ -218,7 +341,9 @@ function CreatePsychoeducationContent() {
       ...(type === 'key_points' && { points: [''] }),
       ...(type === 'callout' && { calloutType: 'info' }),
       ...(type === 'quote' && { attribution: '' }),
-      ...(type === 'image_placeholder' && { caption: '' }),
+      ...(type === 'image' && { caption: '' }),
+      ...(type === 'audio' && { caption: '' }),
+      ...(type === 'video' && { caption: '' }),
     }
     setBlocks([...blocks, newBlock])
     setExpandedBlock(newBlock.id)
@@ -233,6 +358,320 @@ function CreatePsychoeducationContent() {
   // Delete block
   const deleteBlock = (id: string) => {
     setBlocks(blocks.filter(b => b.id !== id))
+  }
+
+  // Handle file upload for media blocks
+  const handleMediaUpload = async (blockId: string, file: File, acceptedTypes: string[]) => {
+    // Validate file
+    const validation = validateFile(file, {
+      maxSize: 50 * 1024 * 1024, // 50MB
+      allowedTypes: acceptedTypes,
+    })
+
+    if (!validation.valid) {
+      toast.error(validation.error)
+      return
+    }
+
+    // Create temporary media file with local preview
+    const tempMediaFile: MediaFile = {
+      id: generateId(),
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      url: URL.createObjectURL(file),
+      isUploading: true,
+    }
+    updateBlock(blockId, { mediaFile: tempMediaFile })
+
+    // Upload to Supabase Storage
+    if (!userId) {
+      toast.error(locale === 'fr' ? 'Veuillez vous connecter pour télécharger des fichiers' : 'Please sign in to upload files')
+      updateBlock(blockId, {
+        mediaFile: { ...tempMediaFile, isUploading: false, uploadError: 'Not authenticated' }
+      })
+      return
+    }
+
+    try {
+      const result = await uploadResourceFile(file, userId)
+
+      // Revoke the temporary blob URL
+      URL.revokeObjectURL(tempMediaFile.url!)
+
+      // Update with the real Supabase URL
+      const uploadedMediaFile: MediaFile = {
+        id: tempMediaFile.id,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: result.url,
+        path: result.path,
+        isUploading: false,
+      }
+      updateBlock(blockId, { mediaFile: uploadedMediaFile })
+      toast.success(locale === 'fr' ? 'Fichier téléchargé avec succès' : 'File uploaded successfully')
+    } catch (error) {
+      console.error('Upload failed:', error)
+      toast.error(locale === 'fr' ? 'Échec du téléchargement du fichier' : 'Failed to upload file')
+      updateBlock(blockId, {
+        mediaFile: {
+          ...tempMediaFile,
+          isUploading: false,
+          uploadError: error instanceof Error ? error.message : 'Upload failed'
+        }
+      })
+    }
+  }
+
+  // Remove media from block
+  const removeMedia = (blockId: string) => {
+    const block = blocks.find(b => b.id === blockId)
+    if (block?.mediaFile?.url && !block.mediaFile.path) {
+      // Only revoke if it's a local blob URL
+      URL.revokeObjectURL(block.mediaFile.url)
+    }
+    updateBlock(blockId, { mediaFile: undefined })
+  }
+
+  // Start audio recording
+  const startRecording = async (blockId: string) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+
+      // Try to find a supported MIME type (prefer mp4/ogg over webm for better compatibility)
+      const mimeTypes = ['audio/mp4', 'audio/ogg', 'audio/mpeg', 'audio/webm']
+      let selectedMimeType = 'audio/webm'
+      let fileExtension = 'webm'
+
+      for (const mimeType of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+          selectedMimeType = mimeType
+          fileExtension = mimeType.split('/')[1]
+          break
+        }
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: selectedMimeType })
+      mediaRecorderRef.current = mediaRecorder
+      audioChunksRef.current = []
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data)
+        }
+      }
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: selectedMimeType })
+
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop())
+
+        try {
+          // Convert to WAV format for better storage compatibility
+          const wavBlob = await convertToWav(audioBlob)
+          const file = new File([wavBlob], `recording-${Date.now()}.wav`, { type: 'audio/wav' })
+
+          // Upload the recorded audio
+          await handleMediaUpload(blockId, file, ['audio/*'])
+        } catch (conversionError) {
+          console.error('Audio conversion failed:', conversionError)
+          toast.error(locale === 'fr' ? 'Erreur de conversion audio' : 'Audio conversion failed')
+        }
+
+        // Reset recording state
+        setRecordingBlockId(null)
+        setIsRecording(false)
+        setRecordingTime(0)
+      }
+
+      mediaRecorder.start()
+      setRecordingBlockId(blockId)
+      setIsRecording(true)
+      setRecordingTime(0)
+
+      // Start timer
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1)
+      }, 1000)
+
+    } catch (error) {
+      console.error('Failed to start recording:', error)
+      toast.error(locale === 'fr' ? 'Impossible d\'accéder au microphone' : 'Could not access microphone')
+    }
+  }
+
+  // Stop audio recording
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current)
+        recordingIntervalRef.current = null
+      }
+    }
+  }
+
+  // Start video recording
+  const startVideoRecording = async (blockId: string) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      streamRef.current = stream
+
+      // Note: Video preview is connected via useEffect after state changes trigger re-render
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' })
+      mediaRecorderRef.current = mediaRecorder
+      audioChunksRef.current = []
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data)
+        }
+      }
+
+      mediaRecorder.onstop = async () => {
+        const videoBlob = new Blob(audioChunksRef.current, { type: 'video/webm' })
+        // Convert to mp4 naming for better compatibility (content is still webm but mp4 is allowed in bucket)
+        const file = new File([videoBlob], `recording-${Date.now()}.mp4`, { type: 'video/mp4' })
+
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop())
+        streamRef.current = null
+
+        // Upload the recorded video
+        await handleMediaUpload(blockId, file, ['video/*'])
+
+        // Reset recording state
+        setRecordingBlockId(null)
+        setIsRecording(false)
+        setRecordingTime(0)
+        setRecordingType('audio')
+      }
+
+      mediaRecorder.start()
+      setRecordingBlockId(blockId)
+      setIsRecording(true)
+      setRecordingTime(0)
+      setRecordingType('video')
+
+      // Start timer
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1)
+      }, 1000)
+
+    } catch (error) {
+      console.error('Failed to start video recording:', error)
+      toast.error(locale === 'fr' ? 'Impossible d\'accéder à la caméra' : 'Could not access camera')
+    }
+  }
+
+  // Stop video recording
+  const stopVideoRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current)
+        recordingIntervalRef.current = null
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop())
+        streamRef.current = null
+      }
+    }
+  }
+
+  // Cancel recording without saving (cleanup)
+  const cancelRecording = useCallback(() => {
+    // Stop media recorder if active
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop()
+    }
+    // Clear timer
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current)
+      recordingIntervalRef.current = null
+    }
+    // Stop all tracks to release camera/mic
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current = null
+    }
+    // Reset state
+    setRecordingBlockId(null)
+    setIsRecording(false)
+    setRecordingTime(0)
+    setRecordingType('audio')
+    audioChunksRef.current = []
+  }, [])
+
+  // Format recording time
+  const formatRecordingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  // Convert audio blob to WAV format
+  const convertToWav = async (audioBlob: Blob): Promise<Blob> => {
+    const audioContext = new AudioContext()
+    const arrayBuffer = await audioBlob.arrayBuffer()
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+
+    // WAV encoding
+    const numChannels = audioBuffer.numberOfChannels
+    const sampleRate = audioBuffer.sampleRate
+    const format = 1 // PCM
+    const bitDepth = 16
+
+    const bytesPerSample = bitDepth / 8
+    const blockAlign = numChannels * bytesPerSample
+
+    // Interleave channels
+    const length = audioBuffer.length * numChannels
+    const samples = new Int16Array(length)
+
+    for (let channel = 0; channel < numChannels; channel++) {
+      const channelData = audioBuffer.getChannelData(channel)
+      for (let i = 0; i < audioBuffer.length; i++) {
+        const sample = Math.max(-1, Math.min(1, channelData[i]))
+        samples[i * numChannels + channel] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF
+      }
+    }
+
+    // Create WAV file
+    const dataSize = samples.length * bytesPerSample
+    const buffer = new ArrayBuffer(44 + dataSize)
+    const view = new DataView(buffer)
+
+    // WAV header
+    const writeString = (offset: number, str: string) => {
+      for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset + i, str.charCodeAt(i))
+      }
+    }
+
+    writeString(0, 'RIFF')
+    view.setUint32(4, 36 + dataSize, true)
+    writeString(8, 'WAVE')
+    writeString(12, 'fmt ')
+    view.setUint32(16, 16, true) // fmt chunk size
+    view.setUint16(20, format, true)
+    view.setUint16(22, numChannels, true)
+    view.setUint32(24, sampleRate, true)
+    view.setUint32(28, sampleRate * blockAlign, true)
+    view.setUint16(32, blockAlign, true)
+    view.setUint16(34, bitDepth, true)
+    writeString(36, 'data')
+    view.setUint32(40, dataSize, true)
+
+    // Write audio data
+    const dataView = new Int16Array(buffer, 44)
+    dataView.set(samples)
+
+    await audioContext.close()
+    return new Blob([buffer], { type: 'audio/wav' })
   }
 
   // Duplicate block
@@ -315,8 +754,56 @@ function CreatePsychoeducationContent() {
           return { ...baseBlock, type: 'callout' as const, calloutType: block.calloutType }
         } else if (block.type === 'quote') {
           return { ...baseBlock, type: 'quote' as const, attribution: block.attribution }
-        } else if (block.type === 'image_placeholder') {
-          return { ...baseBlock, type: 'image_placeholder' as const, caption: block.caption }
+        } else if (block.type === 'image') {
+          return {
+            ...baseBlock,
+            type: 'image' as const,
+            caption: block.caption,
+            mediaFile: block.mediaFile ? {
+              id: block.mediaFile.id,
+              name: block.mediaFile.name,
+              size: block.mediaFile.size,
+              type: block.mediaFile.type,
+              url: block.mediaFile.url || '',
+              path: block.mediaFile.path,
+            } : undefined,
+          }
+        } else if (block.type === 'audio') {
+          return {
+            ...baseBlock,
+            type: 'audio' as const,
+            caption: block.caption,
+            mediaFile: block.mediaFile ? {
+              id: block.mediaFile.id,
+              name: block.mediaFile.name,
+              size: block.mediaFile.size,
+              type: block.mediaFile.type,
+              url: block.mediaFile.url || '',
+              path: block.mediaFile.path,
+            } : undefined,
+          }
+        } else if (block.type === 'video') {
+          return {
+            ...baseBlock,
+            type: 'video' as const,
+            caption: block.caption,
+            mediaFile: block.mediaFile ? {
+              id: block.mediaFile.id,
+              name: block.mediaFile.name,
+              size: block.mediaFile.size,
+              type: block.mediaFile.type,
+              url: block.mediaFile.url || '',
+              path: block.mediaFile.path,
+            } : undefined,
+          }
+        } else if (block.type === 'link') {
+          return {
+            ...baseBlock,
+            type: 'link' as const,
+            linkUrl: block.linkUrl,
+            linkPlatform: block.linkPlatform,
+            linkTitle: block.linkTitle,
+          }
         } else if (block.type === 'heading') {
           return { ...baseBlock, type: 'heading' as const }
         } else {
@@ -368,6 +855,183 @@ function CreatePsychoeducationContent() {
 
   // Check if can proceed to details
   const canProceedToDetails = title.trim() && blocks.length > 0
+
+  // Auto-save function
+  const performAutoSave = useCallback(async () => {
+    if (isAutoSavingRef.current || isSaving) return
+    if (!title.trim() || blocks.length === 0) return
+
+    const saveToId = editId || autoSaveDraftId
+
+    isAutoSavingRef.current = true
+    setAutoSaveStatus('saving')
+
+    try {
+      const resourceBlocks: ResourceBlock[] = blocks.map(block => {
+        const baseBlock = {
+          id: block.id,
+          type: block.type,
+          content: block.content,
+        }
+
+        if (block.type === 'key_points') {
+          return { ...baseBlock, type: 'key_points' as const, points: block.points }
+        } else if (block.type === 'callout') {
+          return { ...baseBlock, type: 'callout' as const, calloutType: block.calloutType }
+        } else if (block.type === 'quote') {
+          return { ...baseBlock, type: 'quote' as const, attribution: block.attribution }
+        } else if (block.type === 'image') {
+          return {
+            ...baseBlock,
+            type: 'image' as const,
+            caption: block.caption,
+            mediaFile: block.mediaFile ? {
+              id: block.mediaFile.id,
+              name: block.mediaFile.name,
+              size: block.mediaFile.size,
+              type: block.mediaFile.type,
+              url: block.mediaFile.url || '',
+              path: block.mediaFile.path,
+            } : undefined,
+          }
+        } else if (block.type === 'audio') {
+          return {
+            ...baseBlock,
+            type: 'audio' as const,
+            caption: block.caption,
+            mediaFile: block.mediaFile ? {
+              id: block.mediaFile.id,
+              name: block.mediaFile.name,
+              size: block.mediaFile.size,
+              type: block.mediaFile.type,
+              url: block.mediaFile.url || '',
+              path: block.mediaFile.path,
+            } : undefined,
+          }
+        } else if (block.type === 'video') {
+          return {
+            ...baseBlock,
+            type: 'video' as const,
+            caption: block.caption,
+            mediaFile: block.mediaFile ? {
+              id: block.mediaFile.id,
+              name: block.mediaFile.name,
+              size: block.mediaFile.size,
+              type: block.mediaFile.type,
+              url: block.mediaFile.url || '',
+              path: block.mediaFile.path,
+            } : undefined,
+          }
+        } else if (block.type === 'link') {
+          return {
+            ...baseBlock,
+            type: 'link' as const,
+            linkUrl: block.linkUrl,
+            linkPlatform: block.linkPlatform,
+            linkTitle: block.linkTitle,
+          }
+        } else if (block.type === 'heading') {
+          return { ...baseBlock, type: 'heading' as const }
+        } else {
+          return { ...baseBlock, type: 'paragraph' as const }
+        }
+      })
+
+      const settings: PsychoeducationSettings = {
+        learningObjectives: learningObjectives.filter(o => o.trim() !== ''),
+        estimatedReadingTime: Math.max(1, Math.ceil(blocks.reduce((total, block) => {
+          let words = block.content.split(/\s+/).length
+          if (block.points) words += block.points.join(' ').split(/\s+/).length
+          return total + words
+        }, 0) / 200)),
+      }
+
+      if (saveToId) {
+        await updateResource(saveToId, {
+          title,
+          description: description || undefined,
+          category: selectedCategory || undefined,
+          blocks: resourceBlocks,
+          settings,
+          status: 'draft',
+          visibility: 'private',
+        })
+      } else {
+        const newResource = await createResource({
+          type: 'psychoeducation',
+          title,
+          description: description || undefined,
+          category: selectedCategory || undefined,
+          blocks: resourceBlocks,
+          settings,
+          status: 'draft',
+          visibility: 'private',
+        })
+        if (newResource?.id) {
+          setAutoSaveDraftId(newResource.id)
+          // Update URL with the new draft ID so refresh works
+          justAutoSavedRef.current = true
+          router.replace(`/resources/create/psychoeducation?edit=${newResource.id}`, { scroll: false })
+        }
+      }
+
+      setAutoSaveStatus('saved')
+      setLastSavedAt(new Date())
+      setHasUnsavedChanges(false)
+
+      setTimeout(() => {
+        setAutoSaveStatus('idle')
+      }, 3000)
+    } catch (error) {
+      console.error('Auto-save error:', error)
+      setAutoSaveStatus('error')
+      setTimeout(() => {
+        setAutoSaveStatus('idle')
+        setHasUnsavedChanges(true)
+      }, 3000)
+    } finally {
+      isAutoSavingRef.current = false
+    }
+  }, [editId, autoSaveDraftId, isSaving, title, blocks, description, selectedCategory, learningObjectives])
+
+  // Track changes and trigger auto-save
+  const performAutoSaveRef = useRef(performAutoSave)
+  performAutoSaveRef.current = performAutoSave
+
+  useEffect(() => {
+    if (isLoading) return
+    if (isEditMode && isInitialLoadRef.current) {
+      isInitialLoadRef.current = false
+      return
+    }
+    if (!title && blocks.length === 0) return
+
+    setHasUnsavedChanges(true)
+    setAutoSaveStatus('idle')
+
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+    }
+
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      performAutoSaveRef.current()
+    }, 5000)
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [title, blocks, description, selectedCategory, learningObjectives, isEditMode, isLoading])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // Estimate reading time
   const estimateReadingTime = () => {
@@ -453,16 +1117,92 @@ function CreatePsychoeducationContent() {
           </blockquote>
         )}
 
-        {/* Image Placeholder Block */}
-        {block.type === 'image_placeholder' && (
-          <div className="p-8 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center">
-            <ImageIcon className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-500">{block.content || 'Image placeholder'}</p>
-            {block.caption && <p className="text-xs text-gray-400 mt-1">{block.caption}</p>}
+        {/* Image Block */}
+        {block.type === 'image' && (
+          <div className="space-y-2">
+            {block.mediaFile?.url ? (
+              <div className="rounded-xl overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={block.mediaFile.url}
+                  alt={block.content || 'Image'}
+                  className="w-full max-h-96 object-contain bg-gray-100"
+                />
+              </div>
+            ) : (
+              <div className="p-8 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center">
+                <ImageIcon className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">{locale === 'fr' ? 'Aucune image' : 'No image uploaded'}</p>
+              </div>
+            )}
+            {block.caption && <p className="text-sm text-gray-500 text-center">{block.caption}</p>}
+          </div>
+        )}
+
+        {/* Audio Block */}
+        {block.type === 'audio' && (
+          <div className="space-y-2">
+            {block.mediaFile?.url ? (
+              <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+                    <Mic className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{block.content || block.mediaFile.name}</p>
+                    <p className="text-sm text-gray-500">{formatFileSize(block.mediaFile.size)}</p>
+                  </div>
+                </div>
+                <audio src={block.mediaFile.url} controls className="w-full" />
+              </div>
+            ) : (
+              <div className="p-8 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center">
+                <Mic className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">{locale === 'fr' ? 'Aucun audio' : 'No audio uploaded'}</p>
+              </div>
+            )}
+            {block.caption && <p className="text-sm text-gray-500 text-center">{block.caption}</p>}
+          </div>
+        )}
+
+        {/* Video Block */}
+        {block.type === 'video' && (
+          <div className="space-y-2">
+            {block.mediaFile?.url ? (
+              <div className="rounded-xl overflow-hidden bg-black">
+                <video
+                  src={block.mediaFile.url}
+                  controls
+                  className="w-full max-h-96"
+                />
+              </div>
+            ) : (
+              <div className="p-8 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center">
+                <Video className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">{locale === 'fr' ? 'Aucune vidéo' : 'No video uploaded'}</p>
+              </div>
+            )}
+            {block.caption && <p className="text-sm text-gray-500 text-center">{block.caption}</p>}
           </div>
         )}
       </motion.div>
     )
+  }
+
+  // Get block colors based on type
+  const getBlockColors = (type: ContentBlockType) => {
+    const colors: Record<string, { text: string; accent: string }> = {
+      heading: { text: 'text-slate-600', accent: 'bg-slate-400' },
+      paragraph: { text: 'text-slate-600', accent: 'bg-slate-400' },
+      key_points: { text: 'text-blue-600', accent: 'bg-blue-400' },
+      callout: { text: 'text-amber-600', accent: 'bg-amber-400' },
+      quote: { text: 'text-purple-600', accent: 'bg-purple-400' },
+      image: { text: 'text-emerald-600', accent: 'bg-emerald-400' },
+      audio: { text: 'text-orange-600', accent: 'bg-orange-400' },
+      video: { text: 'text-purple-600', accent: 'bg-purple-400' },
+      link: { text: 'text-cyan-600', accent: 'bg-cyan-400' },
+    }
+    return colors[type] || { text: 'text-gray-600', accent: 'bg-gray-400' }
   }
 
   // Render block editor
@@ -470,54 +1210,51 @@ function CreatePsychoeducationContent() {
     const isExpanded = expandedBlock === block.id
     const blockType = contentBlockTypes.find(bt => bt.type === block.type)
     const Icon = blockType?.icon || BookOpen
+    const colors = getBlockColors(block.type)
 
     return (
-      <motion.div
-        layout
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        className="bg-white/90 backdrop-blur-xl rounded-xl border border-white/60 shadow-md overflow-hidden"
+      <div
+        className={`group transition-all ${isExpanded ? 'bg-white rounded-xl shadow-lg border border-gray-200' : ''}`}
       >
         {/* Block Header */}
         <div
-          className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50/50 transition-colors"
+          className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer rounded-lg transition-colors ${isExpanded ? 'bg-gray-50/80' : 'hover:bg-gray-100/60'}`}
           onClick={() => setExpandedBlock(isExpanded ? null : block.id)}
         >
-          <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600">
-            <GripVertical className="w-5 h-5" />
+          <div className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400 touch-none select-none">
+            <GripVertical className="w-4 h-4" />
           </div>
 
-          <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-            <Icon className="w-4 h-4 text-purple-600" />
-          </div>
+          <div className={`w-1.5 h-5 rounded-full flex-shrink-0 ${colors.accent}`} />
+
+          <Icon className={`w-4 h-4 flex-shrink-0 ${colors.text}`} />
 
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              {block.content || blockType?.label[locale] || 'Untitled'}
+            <p className="text-sm text-gray-700 truncate">
+              {block.content || <span className="text-gray-400">{blockType?.label[locale]}</span>}
             </p>
-            <p className="text-xs text-gray-500">{blockType?.label[locale]}</p>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={(e) => { e.stopPropagation(); duplicateBlock(block.id) }}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-white rounded transition-colors"
             >
-              <Copy className="w-4 h-4" />
+              <Copy className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); deleteBlock(block.id) }}
-              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
-            {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            )}
           </div>
+
+          {isExpanded ? (
+            <ChevronUp className="w-4 h-4 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-gray-400" />
+          )}
         </div>
 
         {/* Block Content */}
@@ -691,18 +1428,70 @@ function CreatePsychoeducationContent() {
                   </>
                 )}
 
-                {/* Image Placeholder Block */}
-                {block.type === 'image_placeholder' && (
+                {/* Image Block */}
+                {block.type === 'image' && (
                   <>
-                    <div className="p-8 border-2 border-dashed border-purple-200 rounded-xl bg-purple-50/50 text-center">
-                      <ImageIcon className="w-12 h-12 text-purple-300 mx-auto mb-3" />
-                      <p className="text-sm text-purple-600 font-medium">
-                        {locale === 'fr' ? 'Emplacement pour image' : 'Image Placeholder'}
-                      </p>
-                      <p className="text-xs text-purple-400 mt-1">
-                        {locale === 'fr' ? 'Ajoutez une image après l\'enregistrement' : 'Add an image after saving'}
-                      </p>
-                    </div>
+                    {/* Image Upload/Preview */}
+                    {block.mediaFile ? (
+                      <div className="space-y-3">
+                        <div className="relative rounded-xl overflow-hidden bg-gray-100">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={block.mediaFile.url}
+                            alt={block.content || 'Uploaded image'}
+                            className={`w-full h-48 object-cover ${block.mediaFile.isUploading ? 'opacity-50' : ''}`}
+                          />
+                          {block.mediaFile.isUploading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                              <div className="flex items-center gap-2 bg-white/90 px-4 py-2 rounded-lg">
+                                <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+                                <span className="text-sm font-medium">
+                                  {locale === 'fr' ? 'Téléchargement...' : 'Uploading...'}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          {!block.mediaFile.isUploading && (
+                            <button
+                              onClick={() => removeMedia(block.id)}
+                              className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors shadow-lg"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <ImageIcon className="w-4 h-4" />
+                          <span className="truncate">{block.mediaFile.name}</span>
+                          <span className="text-gray-400">({formatFileSize(block.mediaFile.size)})</span>
+                          {block.mediaFile.path && (
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          )}
+                          {block.mediaFile.uploadError && (
+                            <span className="text-red-500 text-xs">{block.mediaFile.uploadError}</span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <label className="block cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) handleMediaUpload(block.id, file, ['image/*'])
+                          }}
+                          className="hidden"
+                        />
+                        <div className="p-8 border-2 border-dashed border-purple-200 rounded-xl bg-purple-50/50 text-center hover:bg-purple-100/50 transition-colors">
+                          <Upload className="w-10 h-10 text-purple-400 mx-auto mb-3" />
+                          <p className="text-sm text-purple-600 font-medium">
+                            {locale === 'fr' ? 'Cliquez pour télécharger une image' : 'Click to upload an image'}
+                          </p>
+                          <p className="text-xs text-purple-400 mt-1">PNG, JPG, GIF (max 50MB)</p>
+                        </div>
+                      </label>
+                    )}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
                         {locale === 'fr' ? 'Description / Alt text' : 'Description / Alt text'}
@@ -729,11 +1518,429 @@ function CreatePsychoeducationContent() {
                     </div>
                   </>
                 )}
+
+                {/* Audio Block */}
+                {block.type === 'audio' && (
+                  <>
+                    {/* Audio Upload/Preview */}
+                    {block.mediaFile ? (
+                      <div className="space-y-3">
+                        <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-12 h-12 rounded-xl ${block.mediaFile.isUploading ? 'bg-purple-50' : 'bg-purple-100'} flex items-center justify-center`}>
+                                {block.mediaFile.isUploading ? (
+                                  <Loader2 className="w-6 h-6 text-purple-600 animate-spin" />
+                                ) : (
+                                  <Mic className="w-6 h-6 text-purple-600" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900 flex items-center gap-2">
+                                  {block.mediaFile.name}
+                                  {block.mediaFile.path && (
+                                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                  )}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  {formatFileSize(block.mediaFile.size)}
+                                  {block.mediaFile.isUploading && (
+                                    <span className="ml-2 text-purple-600">
+                                      {locale === 'fr' ? 'Téléchargement...' : 'Uploading...'}
+                                    </span>
+                                  )}
+                                  {block.mediaFile.uploadError && (
+                                    <span className="ml-2 text-red-500">{block.mediaFile.uploadError}</span>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                            {!block.mediaFile.isUploading && (
+                              <button
+                                onClick={() => removeMedia(block.id)}
+                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                          {!block.mediaFile.isUploading && block.mediaFile.url && (
+                            <audio src={block.mediaFile.url} controls className="w-full" />
+                          )}
+                        </div>
+                      </div>
+                    ) : recordingBlockId === block.id ? (
+                      /* Recording in progress */
+                      <div className="p-6 border-2 border-red-200 rounded-xl bg-red-50/50 text-center">
+                        <div className="flex items-center justify-center gap-3 mb-4">
+                          <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
+                          <span className="text-2xl font-mono font-bold text-red-600">
+                            {formatRecordingTime(recordingTime)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-red-600 mb-4">
+                          {locale === 'fr' ? 'Enregistrement en cours...' : 'Recording...'}
+                        </p>
+                        <div className="flex justify-center gap-3">
+                          <button
+                            onClick={cancelRecording}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors font-medium"
+                          >
+                            <X className="w-5 h-5" />
+                            {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                          </button>
+                          <button
+                            onClick={stopRecording}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium"
+                          >
+                            <Square className="w-5 h-5 fill-current" />
+                            {locale === 'fr' ? 'Arrêter et sauvegarder' : 'Stop & Save'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Upload or Record options */
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Upload option */}
+                        <label className="block cursor-pointer">
+                          <input
+                            type="file"
+                            accept="audio/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) handleMediaUpload(block.id, file, ['audio/*'])
+                            }}
+                            className="hidden"
+                          />
+                          <div className="p-6 border-2 border-dashed border-purple-200 rounded-xl bg-purple-50/50 text-center hover:bg-purple-100/50 transition-colors h-full flex flex-col items-center justify-center">
+                            <Upload className="w-8 h-8 text-purple-400 mb-2" />
+                            <p className="text-sm text-purple-600 font-medium">
+                              {locale === 'fr' ? 'Télécharger' : 'Upload'}
+                            </p>
+                            <p className="text-xs text-purple-400 mt-1">MP3, WAV, OGG</p>
+                          </div>
+                        </label>
+
+                        {/* Record option */}
+                        <button
+                          onClick={() => startRecording(block.id)}
+                          className="p-6 border-2 border-dashed border-red-200 rounded-xl bg-red-50/50 text-center hover:bg-red-100/50 transition-colors h-full flex flex-col items-center justify-center"
+                        >
+                          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-2">
+                            <Circle className="w-6 h-6 text-red-500 fill-red-500" />
+                          </div>
+                          <p className="text-sm text-red-600 font-medium">
+                            {locale === 'fr' ? 'Enregistrer' : 'Record'}
+                          </p>
+                          <p className="text-xs text-red-400 mt-1">
+                            {locale === 'fr' ? 'Utiliser le micro' : 'Use microphone'}
+                          </p>
+                        </button>
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Titre' : 'Title'}
+                      </label>
+                      <input
+                        type="text"
+                        value={block.content}
+                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        placeholder={locale === 'fr' ? 'Titre de l\'audio...' : 'Audio title...'}
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Description (optionnel)' : 'Description (optional)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={block.caption || ''}
+                        onChange={(e) => updateBlock(block.id, { caption: e.target.value })}
+                        placeholder={locale === 'fr' ? 'Description de l\'audio' : 'Audio description'}
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Video Block */}
+                {block.type === 'video' && (
+                  <>
+                    {/* Video Upload/Preview */}
+                    {block.mediaFile ? (
+                      <div className="space-y-3">
+                        <div className="relative rounded-xl overflow-hidden bg-black">
+                          <video
+                            src={block.mediaFile.url}
+                            controls
+                            className={`w-full max-h-64 ${block.mediaFile.isUploading ? 'opacity-50' : ''}`}
+                          />
+                          {block.mediaFile.isUploading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                              <div className="flex items-center gap-2 bg-white/90 px-4 py-2 rounded-lg">
+                                <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+                                <span className="text-sm font-medium">
+                                  {locale === 'fr' ? 'Téléchargement...' : 'Uploading...'}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          {!block.mediaFile.isUploading && (
+                            <button
+                              onClick={() => removeMedia(block.id)}
+                              className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors shadow-lg"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Video className="w-4 h-4" />
+                          <span className="truncate">{block.mediaFile.name}</span>
+                          <span className="text-gray-400">({formatFileSize(block.mediaFile.size)})</span>
+                          {block.mediaFile.path && (
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          )}
+                        </div>
+                      </div>
+                    ) : recordingBlockId === block.id && recordingType === 'video' ? (
+                      /* Video Recording in progress */
+                      <div className="space-y-4">
+                        <div className="relative rounded-xl overflow-hidden bg-black aspect-video">
+                          <video
+                            ref={videoPreviewRef}
+                            autoPlay
+                            muted
+                            playsInline
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute top-3 left-3 flex items-center gap-2 bg-red-500 text-white px-3 py-1.5 rounded-full">
+                            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                            <span className="text-sm font-medium">{formatRecordingTime(recordingTime)}</span>
+                          </div>
+                        </div>
+                        <div className="flex justify-center gap-3">
+                          <button
+                            onClick={cancelRecording}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors font-medium"
+                          >
+                            <X className="w-5 h-5" />
+                            {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                          </button>
+                          <button
+                            onClick={stopVideoRecording}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium"
+                          >
+                            <Square className="w-5 h-5 fill-current" />
+                            {locale === 'fr' ? 'Arrêter et sauvegarder' : 'Stop & Save'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Upload or Record options */
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Upload option */}
+                        <label className="block cursor-pointer">
+                          <input
+                            type="file"
+                            accept="video/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) handleMediaUpload(block.id, file, ['video/*'])
+                            }}
+                            className="hidden"
+                          />
+                          <div className="p-6 border-2 border-dashed border-purple-200 rounded-xl bg-purple-50/50 text-center hover:bg-purple-100/50 transition-colors h-full flex flex-col items-center justify-center">
+                            <Upload className="w-8 h-8 text-purple-400 mb-2" />
+                            <p className="text-sm text-purple-600 font-medium">
+                              {locale === 'fr' ? 'Télécharger' : 'Upload'}
+                            </p>
+                            <p className="text-xs text-purple-400 mt-1">MP4, WebM</p>
+                          </div>
+                        </label>
+
+                        {/* Record option */}
+                        <button
+                          onClick={() => startVideoRecording(block.id)}
+                          className="p-6 border-2 border-dashed border-red-200 rounded-xl bg-red-50/50 text-center hover:bg-red-100/50 transition-colors h-full flex flex-col items-center justify-center"
+                        >
+                          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-2">
+                            <Video className="w-6 h-6 text-red-500" />
+                          </div>
+                          <p className="text-sm text-red-600 font-medium">
+                            {locale === 'fr' ? 'Enregistrer' : 'Record'}
+                          </p>
+                          <p className="text-xs text-red-400 mt-1">
+                            {locale === 'fr' ? 'Utiliser la caméra' : 'Use camera'}
+                          </p>
+                        </button>
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Titre' : 'Title'}
+                      </label>
+                      <input
+                        type="text"
+                        value={block.content}
+                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        placeholder={locale === 'fr' ? 'Titre de la vidéo...' : 'Video title...'}
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Description (optionnel)' : 'Description (optional)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={block.caption || ''}
+                        onChange={(e) => updateBlock(block.id, { caption: e.target.value })}
+                        placeholder={locale === 'fr' ? 'Description de la vidéo' : 'Video description'}
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Link Block */}
+                {block.type === 'link' && (
+                  <>
+                    {/* Platform Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {locale === 'fr' ? 'Plateforme' : 'Platform'}
+                      </label>
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                        {[
+                          { id: 'youtube', label: 'YouTube', icon: Youtube, color: 'red' },
+                          { id: 'vimeo', label: 'Vimeo', icon: Video, color: 'blue' },
+                          { id: 'spotify', label: 'Spotify', icon: Circle, color: 'green' },
+                          { id: 'soundcloud', label: 'SoundCloud', icon: Cloud, color: 'orange' },
+                          { id: 'other', label: locale === 'fr' ? 'Autre' : 'Other', icon: ExternalLink, color: 'gray' },
+                        ].map((platform) => {
+                          const isSelected = block.linkPlatform === platform.id
+                          const PlatformIcon = platform.icon
+                          return (
+                            <button
+                              key={platform.id}
+                              onClick={() => updateBlock(block.id, { linkPlatform: platform.id as ContentBlock['linkPlatform'] })}
+                              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
+                                isSelected
+                                  ? platform.color === 'red' ? 'border-red-400 bg-red-50 text-red-600'
+                                    : platform.color === 'blue' ? 'border-blue-400 bg-blue-50 text-blue-600'
+                                    : platform.color === 'green' ? 'border-green-400 bg-green-50 text-green-600'
+                                    : platform.color === 'orange' ? 'border-orange-400 bg-orange-50 text-orange-600'
+                                    : 'border-gray-400 bg-gray-50 text-gray-600'
+                                  : 'border-gray-200 hover:border-gray-300 text-gray-500 hover:text-gray-700'
+                              }`}
+                            >
+                              <PlatformIcon className="w-5 h-5" />
+                              <span className="text-xs font-medium">{platform.label}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* URL Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'URL du lien' : 'Link URL'}
+                      </label>
+                      <div className="relative">
+                        <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="url"
+                          value={block.linkUrl || ''}
+                          onChange={(e) => updateBlock(block.id, { linkUrl: e.target.value })}
+                          placeholder={
+                            block.linkPlatform === 'youtube' ? 'https://www.youtube.com/watch?v=...'
+                              : block.linkPlatform === 'vimeo' ? 'https://vimeo.com/...'
+                              : block.linkPlatform === 'spotify' ? 'https://open.spotify.com/...'
+                              : block.linkPlatform === 'soundcloud' ? 'https://soundcloud.com/...'
+                              : 'https://...'
+                          }
+                          className="w-full pl-10 pr-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Link Title */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Titre du lien' : 'Link Title'}
+                      </label>
+                      <input
+                        type="text"
+                        value={block.linkTitle || ''}
+                        onChange={(e) => updateBlock(block.id, { linkTitle: e.target.value })}
+                        placeholder={locale === 'fr' ? 'Ex: Vidéo explicative sur la méditation' : 'E.g., Explanatory video about meditation'}
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Description (optionnel)' : 'Description (optional)'}
+                      </label>
+                      <textarea
+                        value={block.content || ''}
+                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        placeholder={locale === 'fr' ? 'Brève description du contenu...' : 'Brief description of the content...'}
+                        rows={2}
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent resize-none"
+                      />
+                    </div>
+
+                    {/* Preview */}
+                    {block.linkUrl && (
+                      <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <div className="flex items-start gap-3">
+                          <div className={`p-2 rounded-lg ${
+                            block.linkPlatform === 'youtube' ? 'bg-red-100 text-red-600'
+                              : block.linkPlatform === 'vimeo' ? 'bg-blue-100 text-blue-600'
+                              : block.linkPlatform === 'spotify' ? 'bg-green-100 text-green-600'
+                              : block.linkPlatform === 'soundcloud' ? 'bg-orange-100 text-orange-600'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {block.linkPlatform === 'youtube' ? <Youtube className="w-5 h-5" />
+                              : block.linkPlatform === 'vimeo' ? <Video className="w-5 h-5" />
+                              : block.linkPlatform === 'spotify' ? <Circle className="w-5 h-5" />
+                              : block.linkPlatform === 'soundcloud' ? <Cloud className="w-5 h-5" />
+                              : <ExternalLink className="w-5 h-5" />
+                            }
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 truncate">
+                              {block.linkTitle || (locale === 'fr' ? 'Lien externe' : 'External Link')}
+                            </p>
+                            <p className="text-sm text-gray-500 truncate">{block.linkUrl}</p>
+                            {block.content && (
+                              <p className="text-sm text-gray-600 mt-1 line-clamp-2">{block.content}</p>
+                            )}
+                          </div>
+                          <a
+                            href={block.linkUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
     )
   }
 
@@ -785,6 +1992,57 @@ function CreatePsychoeducationContent() {
                   </motion.div>
                 </Link>
                 <div className="flex items-center gap-2">
+                  {/* Auto-save Status Indicator */}
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">
+                    {autoSaveStatus === 'saving' && (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+                        <span className="text-xs text-blue-600 font-medium">
+                          {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'saved' && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-xs text-emerald-600 font-medium">
+                          {locale === 'fr' ? 'Enregistré' : 'Saved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'error' && (
+                      <>
+                        <CloudOff className="w-3.5 h-3.5 text-red-500" />
+                        <span className="text-xs text-red-600 font-medium">
+                          {locale === 'fr' ? 'Erreur' : 'Error'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && hasUnsavedChanges && (
+                      <>
+                        <div className="w-2 h-2 rounded-full bg-amber-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Non enregistré' : 'Unsaved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Tout est enregistré' : 'All saved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && !lastSavedAt && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Brouillon' : 'Draft'}
+                        </span>
+                      </>
+                    )}
+                  </div>
                   {/* View Mode Toggle */}
                   <div className="flex items-center bg-white/80 backdrop-blur-xl rounded-xl p-1 border border-white/60 shadow-sm">
                     <button
@@ -865,7 +2123,7 @@ function CreatePsychoeducationContent() {
                           className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50/50 transition-all flex items-center justify-center gap-2"
                         >
                           <Plus className="w-5 h-5" />
-                          {locale === 'fr' ? 'Ajouter une section' : 'Add a section'}
+                          {locale === 'fr' ? 'Ajouter un bloc' : 'Add a block'}
                         </button>
 
                         {/* Block Picker */}
@@ -1033,6 +2291,57 @@ function CreatePsychoeducationContent() {
                   </Button>
                 </motion.div>
                 <div className="flex items-center gap-2">
+                  {/* Auto-save Status Indicator */}
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">
+                    {autoSaveStatus === 'saving' && (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+                        <span className="text-xs text-blue-600 font-medium">
+                          {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'saved' && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-xs text-emerald-600 font-medium">
+                          {locale === 'fr' ? 'Enregistré' : 'Saved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'error' && (
+                      <>
+                        <CloudOff className="w-3.5 h-3.5 text-red-500" />
+                        <span className="text-xs text-red-600 font-medium">
+                          {locale === 'fr' ? 'Erreur' : 'Error'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && hasUnsavedChanges && (
+                      <>
+                        <div className="w-2 h-2 rounded-full bg-amber-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Non enregistré' : 'Unsaved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Tout est enregistré' : 'All saved'}
+                        </span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && !lastSavedAt && (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Brouillon' : 'Draft'}
+                        </span>
+                      </>
+                    )}
+                  </div>
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button
                       size="sm"
@@ -1042,7 +2351,7 @@ function CreatePsychoeducationContent() {
                     >
                       {isSaving ? (
                         <>
-                          <span className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                           {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
                         </>
                       ) : (

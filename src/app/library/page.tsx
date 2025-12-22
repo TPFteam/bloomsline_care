@@ -25,6 +25,8 @@ import {
   MoreHorizontal,
   FolderPlus,
   Users,
+  Table2,
+  Check,
 } from 'lucide-react'
 import { AnimatedIcon } from '@/components/ui/animated-icons'
 import { Button } from '@/components/ui/button'
@@ -49,6 +51,7 @@ import { getResources } from '@/lib/services/resources'
 import type { Resource } from '@/types/resource'
 import { getMemberFullName, getMemberInitials } from '@/types/member'
 import { createClient } from '@/lib/supabase/browser-client'
+import { ResourceCard, ResourceCardList } from '@/components/resources/ResourceCard'
 
 // Simple member type for sharing
 interface SimpleMember {
@@ -125,6 +128,7 @@ const dbResourceTypeIcons: Record<string, React.ElementType> = {
   assessment: ClipboardCheck,
   exercise: Puzzle,
   psychoeducation: BookOpen,
+  table: Table2,
 }
 
 // Resource type config for database resources
@@ -163,6 +167,13 @@ const dbResourceTypeConfig: Record<string, {
     iconBg: 'bg-amber-100/80',
     glow: 'shadow-amber-200/50',
   },
+  table: {
+    gradient: 'from-emerald-400 to-emerald-600',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    iconBg: 'bg-emerald-100/80',
+    glow: 'shadow-emerald-200/50',
+  },
 }
 
 export default function LibraryPage() {
@@ -176,6 +187,11 @@ export default function LibraryPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+
+  // Database resource filters
+  const [typeFilter, setTypeFilter] = useState<'all' | 'worksheet' | 'psychoeducation' | 'exercise' | 'table'>('all')
+  const [languageFilter, setLanguageFilter] = useState<'all' | 'en' | 'fr'>('all')
+  const [showDbFilters, setShowDbFilters] = useState(false)
 
   // Public resources from database
   const [publicResources, setPublicResources] = useState<Resource[]>([])
@@ -258,11 +274,18 @@ export default function LibraryPage() {
       )
     }
 
-    // Note: database resources use different type names
-    // We can add more filtering logic here as needed
+    // Filter by type
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(r => r.type === typeFilter)
+    }
+
+    // Filter by language
+    if (languageFilter !== 'all') {
+      filtered = filtered.filter(r => r.language === languageFilter)
+    }
 
     return filtered
-  }, [publicResources, searchQuery])
+  }, [publicResources, searchQuery, typeFilter, languageFilter])
 
   // Get stats
   const stats = useMemo(() => ({
@@ -434,9 +457,9 @@ export default function LibraryPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-4 mb-6 shadow-lg shadow-gray-200/30 border border-white/60"
+          className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-4 mb-6 shadow-lg shadow-gray-200/30 border border-white/60 relative z-[50] overflow-visible"
         >
-          <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex flex-col lg:flex-row gap-4 overflow-visible">
             {/* Search */}
             <div className="flex-1 relative">
               <AnimatedIcon icon={Search} animation="scale" size={20} animateOnHover animateOnRender={false} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -457,28 +480,153 @@ export default function LibraryPage() {
               )}
             </div>
 
-            {/* Filter Toggle & View Mode */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                onClick={() => setShowFilters(!showFilters)}
-                className={`rounded-full px-5 py-2.5 transition-all duration-300 ${
-                  showFilters
-                    ? 'bg-gradient-to-r from-mint-500 to-emerald-500 text-white shadow-lg shadow-mint-200/50'
-                    : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
+            {/* Database Filters Button */}
+            <div className="relative z-[60]">
+              <button
+                onClick={() => setShowDbFilters(!showDbFilters)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  (typeFilter !== 'all' || languageFilter !== 'all')
+                    ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                    : 'bg-gray-100/50 text-gray-600 hover:bg-gray-100 border border-transparent'
                 }`}
               >
-                <SlidersHorizontal className="w-4 h-4 mr-2" />
-                {t.library.filters.title}
-                {hasActiveFilters && (
-                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                    showFilters ? 'bg-white/20 text-white' : 'bg-mint-100 text-mint-700'
-                  }`}>
-                    {selectedTypes.length + selectedCategories.length + (selectedAgeGroup ? 1 : 0) + (selectedDifficulty ? 1 : 0)}
+                <SlidersHorizontal className="w-4 h-4" />
+                {locale === 'fr' ? 'Filtres' : 'Filters'}
+                {(typeFilter !== 'all' || languageFilter !== 'all') && (
+                  <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center">
+                    {(typeFilter !== 'all' ? 1 : 0) + (languageFilter !== 'all' ? 1 : 0)}
                   </span>
                 )}
-              </Button>
+              </button>
 
+              {/* Filter Dropdown */}
+              <AnimatePresence>
+                {showDbFilters && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-200/60 p-4 z-[100]"
+                  >
+                    {/* Type Filter */}
+                    <div className="mb-4">
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                        {locale === 'fr' ? 'Type de ressource' : 'Resource Type'}
+                      </label>
+                      <div className="space-y-1">
+                        <button
+                          onClick={() => setTypeFilter('all')}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                            typeFilter === 'all'
+                              ? 'bg-gray-100 text-gray-700'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="w-4 h-4" />
+                          <span className="flex-1 text-left">{locale === 'fr' ? 'Tous les types' : 'All Types'}</span>
+                          {typeFilter === 'all' && <Check className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => setTypeFilter('worksheet')}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                            typeFilter === 'worksheet'
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span className="flex-1 text-left">{locale === 'fr' ? 'Feuilles de travail' : 'Worksheets'}</span>
+                          {typeFilter === 'worksheet' && <Check className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => setTypeFilter('table')}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                            typeFilter === 'table'
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <Table2 className="w-4 h-4" />
+                          <span className="flex-1 text-left">{locale === 'fr' ? 'Exercices tableau' : 'Table Exercises'}</span>
+                          {typeFilter === 'table' && <Check className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => setTypeFilter('psychoeducation')}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                            typeFilter === 'psychoeducation'
+                              ? 'bg-amber-50 text-amber-700'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <BookOpen className="w-4 h-4" />
+                          <span className="flex-1 text-left">{locale === 'fr' ? 'Éducation' : 'Education'}</span>
+                          {typeFilter === 'psychoeducation' && <Check className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Language Filter */}
+                    <div className="mb-4">
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                        {locale === 'fr' ? 'Langue' : 'Language'}
+                      </label>
+                      <div className="space-y-1">
+                        <button
+                          onClick={() => setLanguageFilter('all')}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                            languageFilter === 'all'
+                              ? 'bg-purple-50 text-purple-700'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className="flex-1 text-left">{locale === 'fr' ? 'Toutes les langues' : 'All Languages'}</span>
+                          {languageFilter === 'all' && <Check className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => setLanguageFilter('en')}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                            languageFilter === 'en'
+                              ? 'bg-red-50 text-red-700'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className="flex-1 text-left">English</span>
+                          {languageFilter === 'en' && <Check className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => setLanguageFilter('fr')}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                            languageFilter === 'fr'
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className="flex-1 text-left">Français</span>
+                          {languageFilter === 'fr' && <Check className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Clear Filters */}
+                    {(typeFilter !== 'all' || languageFilter !== 'all') && (
+                      <button
+                        onClick={() => {
+                          setTypeFilter('all')
+                          setLanguageFilter('all')
+                        }}
+                        className="w-full px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-all"
+                      >
+                        {locale === 'fr' ? 'Effacer les filtres' : 'Clear filters'}
+                      </button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* View Mode */}
+            <div className="flex items-center gap-2">
               <div className="flex items-center bg-gray-50/80 rounded-full p-1">
                 <button
                   onClick={() => setViewMode('grid')}
@@ -503,127 +651,6 @@ export default function LibraryPage() {
               </div>
             </div>
           </div>
-
-          {/* Type Filter Pills */}
-          <div className="flex flex-wrap gap-2 mt-4">
-            {allTypes.map((type) => {
-              const Icon = typeIcons[type]
-              const config = typeConfig[type]
-              const isSelected = selectedTypes.includes(type)
-              return (
-                <motion.button
-                  key={type}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => toggleType(type)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
-                    isSelected
-                      ? `bg-gradient-to-r ${config.gradient} text-white shadow-lg ${config.glow}`
-                      : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80 hover:shadow-sm'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {t.library.types[type]}
-                </motion.button>
-              )
-            })}
-          </div>
-
-          {/* Expanded Filters */}
-          <AnimatePresence>
-            {showFilters && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="overflow-hidden"
-              >
-                <div className="pt-4 mt-4 border-t border-gray-100/60 grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Categories */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">
-                      {t.library.filters.category}
-                    </label>
-                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
-                      {allCategories.map((category) => (
-                        <button
-                          key={category}
-                          onClick={() => toggleCategory(category)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                            selectedCategories.includes(category)
-                              ? 'bg-gradient-to-r from-mint-500 to-emerald-500 text-white shadow-md'
-                              : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/80'
-                          }`}
-                        >
-                          {t.library.categories[category]}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Age Group */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">
-                      {t.library.filters.ageGroup}
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {allAgeGroups.map((age) => (
-                        <button
-                          key={age}
-                          onClick={() => setSelectedAgeGroup(selectedAgeGroup === age ? null : age)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                            selectedAgeGroup === age
-                              ? 'bg-gradient-to-r from-lavender-500 to-indigo-500 text-white shadow-md'
-                              : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/80'
-                          }`}
-                        >
-                          {t.library.ageGroups[age]}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Difficulty */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">
-                      {t.library.filters.difficulty}
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {allDifficulties.map((diff) => (
-                        <button
-                          key={diff}
-                          onClick={() => setSelectedDifficulty(selectedDifficulty === diff ? null : diff)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                            selectedDifficulty === diff
-                              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md'
-                              : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/80'
-                          }`}
-                        >
-                          {t.library.difficulty[diff]}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Clear Filters */}
-                {hasActiveFilters && (
-                  <div className="mt-4 pt-4 border-t border-gray-100/60 flex justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearFilters}
-                      className="text-gray-500 hover:text-gray-700 rounded-full"
-                    >
-                      <X className="w-4 h-4 mr-1" />
-                      {t.library.filters.clearAll}
-                    </Button>
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </motion.div>
 
         {/* Results Count */}
@@ -673,17 +700,33 @@ export default function LibraryPage() {
             }>
               <AnimatePresence mode="popLayout">
                 {filteredPublicResources.map((resource, index) => (
-                  <LibraryResourceCard
-                    key={resource.id}
-                    resource={resource}
-                    index={index}
-                    viewMode={viewMode}
-                    locale={locale}
-                    collections={collections}
-                    members={members}
-                    onAddToCollection={handleAddToCollection}
-                    onShareWithMember={handleShareWithMember}
-                  />
+                  viewMode === 'grid' ? (
+                    <ResourceCard
+                      key={resource.id}
+                      resource={resource}
+                      locale={locale}
+                      variant="library"
+                      index={index}
+                      collections={collections}
+                      members={members}
+                      onAddToCollection={handleAddToCollection}
+                      onShareWithMember={handleShareWithMember}
+                      showCuratedBadge
+                    />
+                  ) : (
+                    <ResourceCardList
+                      key={resource.id}
+                      resource={resource}
+                      locale={locale}
+                      variant="library"
+                      index={index}
+                      collections={collections}
+                      members={members}
+                      onAddToCollection={handleAddToCollection}
+                      onShareWithMember={handleShareWithMember}
+                      showCuratedBadge
+                    />
+                  )
                 ))}
               </AnimatePresence>
             </div>
@@ -759,333 +802,3 @@ export default function LibraryPage() {
   )
 }
 
-// Library Resource Card Component (for database resources)
-function LibraryResourceCard({
-  resource,
-  index,
-  viewMode,
-  locale,
-  collections,
-  members,
-  onAddToCollection,
-  onShareWithMember,
-}: {
-  resource: Resource
-  index: number
-  viewMode: 'grid' | 'list'
-  locale: 'en' | 'fr'
-  collections: Collection[]
-  members: SimpleMember[]
-  onAddToCollection: (resourceId: string, collectionId: string) => void
-  onShareWithMember: (resourceId: string, memberId: string, memberName: string) => void
-}) {
-  const router = useRouter()
-  const [showActions, setShowActions] = useState(false)
-  const TypeIcon = dbResourceTypeIcons[resource.type] || FileText
-  const config = dbResourceTypeConfig[resource.type] || dbResourceTypeConfig.worksheet
-
-  const handleClick = () => {
-    router.push(`/resources/${resource.id}`)
-  }
-
-  const handleMenuClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-  }
-
-  const typeLabels: Record<string, { en: string; fr: string }> = {
-    worksheet: { en: 'Worksheet', fr: 'Exercice' },
-    assessment: { en: 'Assessment', fr: 'Évaluation' },
-    exercise: { en: 'Exercise', fr: 'Exercice' },
-    psychoeducation: { en: 'Education', fr: 'Éducation' },
-  }
-
-  if (viewMode === 'list') {
-    return (
-      <motion.div
-        layout
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.3, delay: index * 0.03 }}
-        whileHover={{ y: -2 }}
-        className="group"
-        onMouseEnter={() => setShowActions(true)}
-        onMouseLeave={() => setShowActions(false)}
-        onClick={handleClick}
-      >
-        <div className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-5 cursor-pointer transition-all duration-300 shadow-lg shadow-gray-200/40 hover:shadow-xl hover:shadow-gray-200/60 border border-white/60 flex items-center gap-5">
-          {/* Icon */}
-          <div className={`w-14 h-14 rounded-2xl ${config.iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform duration-300`}>
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-md`}>
-              <TypeIcon className="w-5 h-5 text-white" />
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-gray-900 truncate group-hover:text-mint-700 transition-colors">
-                {resource.title}
-              </h3>
-              <Badge className="bg-mint-100 text-mint-700 text-xs border-0">
-                <Sparkles className="w-3 h-3 mr-1" />
-                {locale === 'fr' ? 'Curé' : 'Curated'}
-              </Badge>
-            </div>
-            <p className="text-sm text-gray-500 line-clamp-1">{resource.description || (locale === 'fr' ? 'Aucune description' : 'No description')}</p>
-          </div>
-
-          {/* Meta */}
-          <div className="flex items-center gap-4 text-sm text-gray-400 flex-shrink-0">
-            <span className={`px-2 py-1 rounded-full text-xs ${config.bg} ${config.text}`}>
-              {typeLabels[resource.type]?.[locale] || resource.type}
-            </span>
-
-            {/* Actions Menu */}
-            <div onClick={handleMenuClick}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
-                    <MoreHorizontal className="w-4 h-4 text-gray-500" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="flex items-center gap-2">
-                      <FolderPlus className="w-4 h-4" />
-                      {locale === 'fr' ? 'Ajouter à collection' : 'Add to Collection'}
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="w-48">
-                      {collections.length === 0 ? (
-                        <DropdownMenuItem disabled className="text-gray-400 text-sm">
-                          {locale === 'fr' ? 'Aucune collection' : 'No collections yet'}
-                        </DropdownMenuItem>
-                      ) : (
-                        collections.map((collection) => (
-                          <DropdownMenuItem
-                            key={collection.id}
-                            onClick={() => onAddToCollection(resource.id, collection.id)}
-                            className="flex items-center gap-2"
-                          >
-                            <div className={`w-3 h-3 rounded-full bg-${collection.color}-400`} />
-                            {collection.name}
-                          </DropdownMenuItem>
-                        ))
-                      )}
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      {locale === 'fr' ? 'Partager avec membre' : 'Share with Member'}
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="w-48 max-h-60 overflow-y-auto">
-                      {members.length === 0 ? (
-                        <DropdownMenuItem disabled className="text-gray-400 text-sm">
-                          {locale === 'fr' ? 'Aucun membre' : 'No members yet'}
-                        </DropdownMenuItem>
-                      ) : (
-                        members.map((member) => (
-                          <DropdownMenuItem
-                            key={member.id}
-                            onClick={() => onShareWithMember(resource.id, member.id, getMemberFullName(member))}
-                            className="flex items-center gap-2"
-                          >
-                            {member.avatar_url ? (
-                              <img src={member.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
-                            ) : (
-                              <div className="w-5 h-5 rounded-full bg-mint-100 flex items-center justify-center text-[10px] font-medium text-mint-700">
-                                {getMemberInitials(member)}
-                              </div>
-                            )}
-                            <span className="truncate">{getMemberFullName(member)}</span>
-                          </DropdownMenuItem>
-                        ))
-                      )}
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.3, delay: index * 0.05 }}
-      whileHover={{ y: -4 }}
-      className="group"
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
-      onClick={handleClick}
-    >
-      <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] overflow-hidden cursor-pointer transition-all duration-300 shadow-lg shadow-gray-200/40 hover:shadow-xl hover:shadow-gray-200/60 border border-white/60">
-        {/* Header with icon */}
-        <div className={`h-24 ${config.bg} relative flex items-center justify-center`}>
-          <div className={`w-16 h-16 rounded-2xl ${config.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg`}>
-              <TypeIcon className="w-6 h-6 text-white" />
-            </div>
-          </div>
-
-          {/* Type Badge */}
-          <div className="absolute top-3 left-3">
-            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${config.bg} ${config.text} border border-white/40`}>
-              {typeLabels[resource.type]?.[locale] || resource.type}
-            </span>
-          </div>
-
-          {/* Curated Badge */}
-          <div className="absolute top-3 right-3">
-            <Badge className="bg-mint-100 text-mint-700 text-xs border-0 shadow-md">
-              <Sparkles className="w-3 h-3 mr-1" />
-              {locale === 'fr' ? 'Curé' : 'Curated'}
-            </Badge>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-5">
-          <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-mint-700 transition-colors">
-            {resource.title}
-          </h3>
-
-          <p className="text-sm text-gray-500 line-clamp-2 mb-4">
-            {resource.description || (locale === 'fr' ? 'Aucune description' : 'No description')}
-          </p>
-
-          {/* Tags */}
-          {resource.tags && resource.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {resource.tags.slice(0, 3).map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs px-2.5 py-1 bg-gray-100/80 text-gray-500 rounded-full"
-                >
-                  {tag}
-                </span>
-              ))}
-              {resource.tags.length > 3 && (
-                <span className="text-xs px-2.5 py-1 bg-gray-100/80 text-gray-400 rounded-full">
-                  +{resource.tags.length - 3}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Meta Info */}
-          <div className="flex items-center gap-4 text-xs text-gray-400 mb-4">
-            <span className="flex items-center gap-1">
-              <FileText className="w-3.5 h-3.5" />
-              {resource.blocks.length} {locale === 'fr' ? 'blocs' : 'blocks'}
-            </span>
-            {resource.category && (
-              <span className="px-2 py-0.5 bg-gray-100 rounded-full">
-                {resource.category}
-              </span>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-100/60">
-            <div className="flex items-center gap-3 text-xs text-gray-400">
-              <span>{resource.times_assigned} {locale === 'fr' ? 'assigné(s)' : 'assigned'}</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <AnimatePresence>
-                {showActions && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center gap-1.5 text-mint-600 text-xs font-medium"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    {locale === 'fr' ? 'Voir détails' : 'View Details'}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Actions Menu */}
-              <div onClick={handleMenuClick}>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="p-1.5 rounded-full hover:bg-gray-100 transition-colors">
-                      <MoreHorizontal className="w-4 h-4 text-gray-500" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="flex items-center gap-2">
-                        <FolderPlus className="w-4 h-4" />
-                        {locale === 'fr' ? 'Ajouter à collection' : 'Add to Collection'}
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="w-48">
-                        {collections.length === 0 ? (
-                          <DropdownMenuItem disabled className="text-gray-400 text-sm">
-                            {locale === 'fr' ? 'Aucune collection' : 'No collections yet'}
-                          </DropdownMenuItem>
-                        ) : (
-                          collections.map((collection) => (
-                            <DropdownMenuItem
-                              key={collection.id}
-                              onClick={() => onAddToCollection(resource.id, collection.id)}
-                              className="flex items-center gap-2"
-                            >
-                              <div className={`w-3 h-3 rounded-full bg-${collection.color}-400`} />
-                              {collection.name}
-                            </DropdownMenuItem>
-                          ))
-                        )}
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        {locale === 'fr' ? 'Partager avec membre' : 'Share with Member'}
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="w-48 max-h-60 overflow-y-auto">
-                        {members.length === 0 ? (
-                          <DropdownMenuItem disabled className="text-gray-400 text-sm">
-                            {locale === 'fr' ? 'Aucun membre' : 'No members yet'}
-                          </DropdownMenuItem>
-                        ) : (
-                          members.map((member) => (
-                            <DropdownMenuItem
-                              key={member.id}
-                              onClick={() => onShareWithMember(resource.id, member.id, getMemberFullName(member))}
-                              className="flex items-center gap-2"
-                            >
-                              {member.avatar_url ? (
-                                <img src={member.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
-                              ) : (
-                                <div className="w-5 h-5 rounded-full bg-mint-100 flex items-center justify-center text-[10px] font-medium text-mint-700">
-                                  {getMemberInitials(member)}
-                                </div>
-                              )}
-                              <span className="truncate">{getMemberFullName(member)}</span>
-                            </DropdownMenuItem>
-                          ))
-                        )}
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  )
-}
