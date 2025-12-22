@@ -1422,7 +1422,7 @@ export default function BalancePage() {
                   ) : (
                     <>
                       <span className="text-sm text-gray-400">
-                        {locale === 'fr' ? "Aujourd'hui" : "Today's"}
+                        {formatDateDisplay(selectedDate)}
                       </span>
                       <span className="text-xl font-semibold text-gray-800">
                         {locale === 'fr' ? 'Équilibre' : 'Balance'}
