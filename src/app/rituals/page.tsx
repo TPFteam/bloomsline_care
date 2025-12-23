@@ -221,6 +221,7 @@ export default function RitualsPage() {
   const [ritualNotes, setRitualNotes] = useState('')
   const [ritualMood, setRitualMood] = useState<string | null>(null)
   const [showCompletionFlow, setShowCompletionFlow] = useState(false)
+  const [showExitConfirm, setShowExitConfirm] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Mood options with Lucide icons
@@ -359,7 +360,17 @@ export default function RitualsPage() {
   const closeRitualModal = () => {
     setActiveRitual(null)
     setTimerRunning(false)
+    setShowExitConfirm(false)
     if (timerRef.current) clearTimeout(timerRef.current)
+  }
+
+  // Handle exit button click - show confirmation only if timer is running
+  const handleExitClick = () => {
+    if (timerRunning) {
+      setShowExitConfirm(true)
+    } else {
+      closeRitualModal()
+    }
   }
 
   // Format timer display - handles overtime (negative seconds)
@@ -879,7 +890,7 @@ export default function RitualsPage() {
             </h1>
             {/* History Button */}
             <button
-              onClick={() => router.push('/rituals/journal')}
+              onClick={() => router.push('/rituals/history')}
               className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-xl text-gray-600 hover:bg-gray-200 transition-colors"
             >
               <Calendar className="w-4 h-4" />
@@ -1947,11 +1958,45 @@ export default function RitualsPage() {
 
                     {/* Close button */}
                     <button
-                      onClick={closeRitualModal}
+                      onClick={handleExitClick}
                       className="absolute top-6 right-6 p-3 bg-white/50 backdrop-blur-sm rounded-full text-gray-600 hover:bg-white/70 transition-colors z-10"
                     >
                       <X className="w-5 h-5" />
                     </button>
+
+                    {/* Exit Confirmation Modal */}
+                    {showExitConfirm && (
+                      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-20 px-6">
+                        <motion.div
+                          initial={{ scale: 0.9, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl"
+                        >
+                          <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+                            {locale === 'fr' ? 'Quitter le rituel ?' : 'Exit ritual?'}
+                          </h3>
+                          <p className="text-gray-500 text-sm text-center mb-6">
+                            {locale === 'fr'
+                              ? 'Votre progression sera perdue et le temps sera réinitialisé.'
+                              : 'Your progress will be lost and the timer will reset.'}
+                          </p>
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => setShowExitConfirm(false)}
+                              className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                            >
+                              {locale === 'fr' ? 'Continuer' : 'Continue'}
+                            </button>
+                            <button
+                              onClick={closeRitualModal}
+                              className="flex-1 py-3 px-4 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors"
+                            >
+                              {locale === 'fr' ? 'Quitter' : 'Exit'}
+                            </button>
+                          </div>
+                        </motion.div>
+                      </div>
+                    )}
 
                     {/* Main content */}
                     <div className="relative h-full flex flex-col items-center px-8 py-8 overflow-y-auto">
@@ -2243,7 +2288,7 @@ export default function RitualsPage() {
                       {/* Skip option - only show before timer complete and not in completion flow */}
                       {!isOvertime && activeRitual.ritual.duration_suggestion && !showCompletionFlow && (
                         <button
-                          onClick={closeRitualModal}
+                          onClick={handleExitClick}
                           className="mt-4 text-gray-500 text-sm hover:text-gray-700 transition-colors"
                         >
                           {locale === 'fr' ? 'Faire plus tard' : 'Do later'}

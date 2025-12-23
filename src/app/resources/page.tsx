@@ -265,9 +265,12 @@ export default function MyResourcesPage() {
       try {
         // Get current user ID
         const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          setCurrentUserId(user.id)
+        if (!user) {
+          // Not authenticated yet, skip fetching
+          setIsLoading(false)
+          return
         }
+        setCurrentUserId(user.id)
 
         // Only fetch resources created by the current user
         const resources = await getResources({ myResourcesOnly: true })

@@ -88,7 +88,8 @@ function getStartOfWeek(date: Date): Date {
 }
 
 function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0]
+  // Use local date format (YYYY-MM-DD) to avoid timezone shifts
+  return date.toLocaleDateString('en-CA')
 }
 
 // ============================================
@@ -520,4 +521,489 @@ export async function getProgressSummary(): Promise<ProgressSummary | null> {
     rituals,
     balance
   }
+}
+
+// ============================================
+// NARRATIVE & INSIGHTS GENERATION
+// ============================================
+
+export interface DailyNarrative {
+  greeting: string
+  mainMessage: string
+  encouragement: string
+  streaks: Array<{ label: string; value: number; icon: string }>
+}
+
+export interface ThreeThings {
+  daysActive: { value: number; total: number }
+  moodTrend: 'improving' | 'stable' | 'declining' | 'unknown'
+  momentsCount: number
+}
+
+export interface WeeklyInsight {
+  type: 'pattern' | 'achievement' | 'suggestion' | 'celebration'
+  message: string
+  icon: string
+}
+
+export interface CalendarDay {
+  date: string
+  activityLevel: 0 | 1 | 2 | 3 // 0=none, 1=low, 2=medium, 3=high
+  hasRitual: boolean
+  hasBalance: boolean
+  hasReflection: boolean
+  hasMoment: boolean
+  mood?: string
+}
+
+/**
+ * Generate daily narrative from progress data
+ */
+export function generateDailyNarrative(
+  summary: ProgressSummary,
+  locale: string = 'en'
+): DailyNarrative {
+  const { rituals, moments, reflections, feelings } = summary
+  const isEn = locale !== 'fr'
+
+  // Time-based greeting
+  const hour = new Date().getHours()
+  let greeting = ''
+  if (hour < 12) {
+    greeting = isEn ? 'Good morning' : 'Bonjour'
+  } else if (hour < 18) {
+    greeting = isEn ? 'Good afternoon' : 'Bon après-midi'
+  } else {
+    greeting = isEn ? 'Good evening' : 'Bonsoir'
+  }
+
+  // Build main message based on activity
+  const parts: string[] = []
+
+  if (rituals.completedThisWeek > 0) {
+    parts.push(
+      isEn
+        ? `You completed ${rituals.completedThisWeek} ritual${rituals.completedThisWeek > 1 ? 's' : ''} this week`
+        : `Vous avez complété ${rituals.completedThisWeek} rituel${rituals.completedThisWeek > 1 ? 's' : ''} cette semaine`
+    )
+  }
+
+  if (moments.thisWeek > 0) {
+    parts.push(
+      isEn
+        ? `captured ${moments.thisWeek} moment${moments.thisWeek > 1 ? 's' : ''}`
+        : `capturé ${moments.thisWeek} moment${moments.thisWeek > 1 ? 's' : ''}`
+    )
+  }
+
+  if (reflections.thisWeek > 0) {
+    parts.push(
+      isEn
+        ? `reflected ${reflections.thisWeek} time${reflections.thisWeek > 1 ? 's' : ''}`
+        : `réfléchi ${reflections.thisWeek} fois`
+    )
+  }
+
+  let mainMessage = ''
+  if (parts.length === 0) {
+    mainMessage = isEn
+      ? "Start your journey today - every small step counts."
+      : "Commencez votre parcours aujourd'hui - chaque petit pas compte."
+  } else if (parts.length === 1) {
+    mainMessage = parts[0] + '.'
+  } else {
+    const lastPart = parts.pop()
+    mainMessage = parts.join(', ') + (isEn ? ' and ' : ' et ') + lastPart + '.'
+  }
+
+  // Encouragement based on feeling trend
+  let encouragement = ''
+  if (feelings.trend === 'better') {
+    encouragement = isEn
+      ? "Your mood has been improving - keep it up! 🌟"
+      : "Votre humeur s'améliore - continuez! 🌟"
+  } else if (feelings.trend === 'same') {
+    encouragement = isEn
+      ? "You're staying consistent - that's powerful. 💪"
+      : "Vous restez constant - c'est puissant. 💪"
+  } else {
+    encouragement = isEn
+      ? "Every moment of self-care matters. ✨"
+      : "Chaque moment de bien-être compte. ✨"
+  }
+
+  // Build activity badges - all showing "this week" data for consistency
+  const streaks: Array<{ label: string; value: number; icon: string }> = []
+
+  if (rituals.completedThisWeek > 0) {
+    streaks.push({
+      label: isEn ? 'Rituals' : 'Rituels',
+      value: rituals.completedThisWeek,
+      icon: 'sparkles'
+    })
+  }
+
+  if (moments.thisWeek > 0) {
+    streaks.push({
+      label: isEn ? 'Moments' : 'Moments',
+      value: moments.thisWeek,
+      icon: 'camera'
+    })
+  }
+
+  if (reflections.thisWeek > 0) {
+    streaks.push({
+      label: isEn ? 'Reflections' : 'Réflexions',
+      value: reflections.thisWeek,
+      icon: 'pen-line'
+    })
+  }
+
+  return {
+    greeting,
+    mainMessage,
+    encouragement,
+    streaks
+  }
+}
+
+/**
+ * Generate three things summary
+ */
+export function generateThreeThings(summary: ProgressSummary): ThreeThings {
+  const { rituals, feelings, moments } = summary
+
+  // Calculate days active (days with at least one activity this week)
+  // For now, estimate based on completions
+  const estimatedDaysActive = Math.min(7, Math.ceil(rituals.completedThisWeek / Math.max(1, rituals.activeRituals)))
+
+  // Mood trend
+  let moodTrend: 'improving' | 'stable' | 'declining' | 'unknown' = 'unknown'
+  if (feelings.trend === 'better') moodTrend = 'improving'
+  else if (feelings.trend === 'same') moodTrend = 'stable'
+  else if (feelings.trend === 'lower') moodTrend = 'declining'
+
+  return {
+    daysActive: { value: estimatedDaysActive, total: 7 },
+    moodTrend,
+    momentsCount: moments.total
+  }
+}
+
+/**
+ * Generate weekly insights
+ */
+export function generateWeeklyInsights(
+  summary: ProgressSummary,
+  locale: string = 'en'
+): WeeklyInsight[] {
+  const { rituals, moments, reflections, feelings, balance } = summary
+  const isEn = locale !== 'fr'
+  const insights: WeeklyInsight[] = []
+
+  // Streak achievement
+  if (rituals.currentStreak >= 7) {
+    insights.push({
+      type: 'celebration',
+      message: isEn
+        ? `Amazing! You've maintained a ${rituals.currentStreak}-day streak!`
+        : `Incroyable! Vous avez maintenu une série de ${rituals.currentStreak} jours!`,
+      icon: '🎉'
+    })
+  } else if (rituals.currentStreak >= 3) {
+    insights.push({
+      type: 'achievement',
+      message: isEn
+        ? `${rituals.currentStreak} days in a row - you're building momentum!`
+        : `${rituals.currentStreak} jours de suite - vous prenez de l'élan!`,
+      icon: '🔥'
+    })
+  }
+
+  // Mood improvement
+  if (feelings.trend === 'better') {
+    insights.push({
+      type: 'pattern',
+      message: isEn
+        ? 'Your mood has been improving compared to last week.'
+        : 'Votre humeur s\'améliore par rapport à la semaine dernière.',
+      icon: '📈'
+    })
+  }
+
+  // Top ritual
+  if (rituals.topRituals.length > 0 && rituals.topRituals[0].completions >= 3) {
+    insights.push({
+      type: 'pattern',
+      message: isEn
+        ? `"${rituals.topRituals[0].name}" is your most consistent ritual.`
+        : `"${rituals.topRituals[0].name}" est votre rituel le plus constant.`,
+      icon: '⭐'
+    })
+  }
+
+  // Moments captured
+  if (moments.thisWeek >= 5) {
+    insights.push({
+      type: 'celebration',
+      message: isEn
+        ? `You captured ${moments.thisWeek} moments this week - wonderful!`
+        : `Vous avez capturé ${moments.thisWeek} moments cette semaine - magnifique!`,
+      icon: '📸'
+    })
+  } else if (moments.thisWeek >= 1) {
+    insights.push({
+      type: 'pattern',
+      message: isEn
+        ? `You've captured ${moments.thisWeek} moment${moments.thisWeek > 1 ? 's' : ''} - keep noticing the good!`
+        : `Vous avez capturé ${moments.thisWeek} moment${moments.thisWeek > 1 ? 's' : ''} - continuez!`,
+      icon: '📸'
+    })
+  }
+
+  // Reflection consistency
+  if (reflections.thisWeek >= 3) {
+    insights.push({
+      type: 'achievement',
+      message: isEn
+        ? 'Great reflection practice - you journaled multiple times!'
+        : 'Excellente pratique de réflexion - vous avez écrit plusieurs fois!',
+      icon: '✍️'
+    })
+  } else if (reflections.thisWeek >= 1) {
+    insights.push({
+      type: 'pattern',
+      message: isEn
+        ? 'You took time to reflect - that takes courage.'
+        : 'Vous avez pris le temps de réfléchir - cela demande du courage.',
+      icon: '✍️'
+    })
+  }
+
+  // Rituals completed (any amount)
+  if (rituals.completedThisWeek >= 1 && insights.length < 3) {
+    insights.push({
+      type: 'achievement',
+      message: isEn
+        ? `${rituals.completedThisWeek} ritual${rituals.completedThisWeek > 1 ? 's' : ''} completed - you're showing up for yourself!`
+        : `${rituals.completedThisWeek} rituel${rituals.completedThisWeek > 1 ? 's' : ''} complété${rituals.completedThisWeek > 1 ? 's' : ''} - vous prenez soin de vous!`,
+      icon: '✨'
+    })
+  }
+
+  // Balance insight
+  const avgBalance = (balance.sleepPercentage + balance.workPercentage + balance.lifePercentage) / 3
+  if (avgBalance >= 70) {
+    insights.push({
+      type: 'achievement',
+      message: isEn
+        ? 'Your life balance is looking healthy this week.'
+        : 'Votre équilibre de vie est sain cette semaine.',
+      icon: '⚖️'
+    })
+  }
+
+  // Suggestion if not much activity
+  if (insights.length === 0) {
+    insights.push({
+      type: 'suggestion',
+      message: isEn
+        ? 'Try completing just one ritual today to start building momentum.'
+        : 'Essayez de compléter un seul rituel aujourd\'hui pour commencer.',
+      icon: '💡'
+    })
+  }
+
+  return insights.slice(0, 3) // Max 3 insights
+}
+
+/**
+ * Get calendar data for the past N days
+ */
+export async function getCalendarData(days: number = 30): Promise<CalendarDay[]> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const memberId = await getMemberId()
+  if (!memberId) return []
+
+  const today = new Date()
+  const startDate = new Date(today)
+  startDate.setDate(startDate.getDate() - days + 1)
+
+  // Fetch all data in parallel
+  const [ritualsData, balanceData, reflectionsData, momentsData] = await Promise.all([
+    supabase
+      .from('ritual_completions')
+      .select('completion_date, mood')
+      .eq('member_id', memberId)
+      .eq('completed', true)
+      .gte('completion_date', formatDate(startDate))
+      .then(r => r.data || []),
+    supabase
+      .from('balance_entries')
+      .select('entry_date')
+      .eq('member_id', memberId)
+      .gte('entry_date', formatDate(startDate))
+      .then(r => r.data || []),
+    supabase
+      .from('member_reflections')
+      .select('created_at')
+      .eq('member_id', memberId)
+      .gte('created_at', startDate.toISOString())
+      .then(r => r.data || []),
+    supabase
+      .from('moments')
+      .select('created_at')
+      .eq('user_id', user.id)
+      .gte('created_at', startDate.toISOString())
+      .then(r => r.data || [])
+  ])
+
+  // Group by date
+  const ritualsByDate = new Map<string, { count: number; mood?: string }>()
+  ritualsData.forEach(r => {
+    const existing = ritualsByDate.get(r.completion_date) || { count: 0 }
+    existing.count++
+    if (r.mood) existing.mood = r.mood
+    ritualsByDate.set(r.completion_date, existing)
+  })
+
+  const balanceDates = new Set(balanceData.map(b => b.entry_date))
+  const reflectionDates = new Set(reflectionsData.map(r => r.created_at.split('T')[0]))
+  const momentDates = new Set(momentsData.map(m => m.created_at.split('T')[0]))
+
+  // Build calendar
+  const calendar: CalendarDay[] = []
+  for (let i = 0; i < days; i++) {
+    const date = new Date(startDate)
+    date.setDate(date.getDate() + i)
+    const dateStr = formatDate(date)
+
+    const hasRitual = ritualsByDate.has(dateStr)
+    const hasBalance = balanceDates.has(dateStr)
+    const hasReflection = reflectionDates.has(dateStr)
+    const hasMoment = momentDates.has(dateStr)
+
+    // Calculate activity level
+    const activityCount = [hasRitual, hasBalance, hasReflection, hasMoment].filter(Boolean).length
+    let activityLevel: 0 | 1 | 2 | 3 = 0
+    if (activityCount >= 3) activityLevel = 3
+    else if (activityCount === 2) activityLevel = 2
+    else if (activityCount === 1) activityLevel = 1
+
+    calendar.push({
+      date: dateStr,
+      activityLevel,
+      hasRitual,
+      hasBalance,
+      hasReflection,
+      hasMoment,
+      mood: ritualsByDate.get(dateStr)?.mood
+    })
+  }
+
+  return calendar
+}
+
+/**
+ * Get current week data (Monday to Sunday)
+ */
+export async function getCurrentWeekData(): Promise<CalendarDay[]> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const memberId = await getMemberId()
+  if (!memberId) return []
+
+  // Calculate Monday of current week
+  const today = new Date()
+  const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, etc.
+  const monday = new Date(today)
+  monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
+  monday.setHours(0, 0, 0, 0)
+
+  // Calculate Sunday of current week
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+
+  // Fetch all data in parallel
+  const [ritualsData, balanceData, reflectionsData, momentsData] = await Promise.all([
+    supabase
+      .from('ritual_completions')
+      .select('completion_date, mood')
+      .eq('member_id', memberId)
+      .eq('completed', true)
+      .gte('completion_date', formatDate(monday))
+      .lte('completion_date', formatDate(sunday))
+      .then(r => r.data || []),
+    supabase
+      .from('balance_entries')
+      .select('entry_date')
+      .eq('member_id', memberId)
+      .gte('entry_date', formatDate(monday))
+      .lte('entry_date', formatDate(sunday))
+      .then(r => r.data || []),
+    supabase
+      .from('member_reflections')
+      .select('created_at')
+      .eq('member_id', memberId)
+      .gte('created_at', monday.toISOString())
+      .lte('created_at', sunday.toISOString())
+      .then(r => r.data || []),
+    supabase
+      .from('moments')
+      .select('created_at')
+      .eq('user_id', user.id)
+      .gte('created_at', monday.toISOString())
+      .lte('created_at', sunday.toISOString())
+      .then(r => r.data || [])
+  ])
+
+  // Group by date
+  const ritualsByDate = new Map<string, { count: number; mood?: string }>()
+  ritualsData.forEach(r => {
+    const existing = ritualsByDate.get(r.completion_date) || { count: 0 }
+    existing.count++
+    if (r.mood) existing.mood = r.mood
+    ritualsByDate.set(r.completion_date, existing)
+  })
+
+  const balanceDates = new Set(balanceData.map(b => b.entry_date))
+  const reflectionDates = new Set(reflectionsData.map(r => r.created_at.split('T')[0]))
+  const momentDates = new Set(momentsData.map(m => m.created_at.split('T')[0]))
+
+  // Build calendar for Monday-Sunday
+  const calendar: CalendarDay[] = []
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(monday)
+    date.setDate(date.getDate() + i)
+    const dateStr = formatDate(date)
+
+    const hasRitual = ritualsByDate.has(dateStr)
+    const hasBalance = balanceDates.has(dateStr)
+    const hasReflection = reflectionDates.has(dateStr)
+    const hasMoment = momentDates.has(dateStr)
+
+    // Calculate activity level
+    const activityCount = [hasRitual, hasBalance, hasReflection, hasMoment].filter(Boolean).length
+    let activityLevel: 0 | 1 | 2 | 3 = 0
+    if (activityCount >= 3) activityLevel = 3
+    else if (activityCount === 2) activityLevel = 2
+    else if (activityCount === 1) activityLevel = 1
+
+    calendar.push({
+      date: dateStr,
+      activityLevel,
+      hasRitual,
+      hasBalance,
+      hasReflection,
+      hasMoment,
+      mood: ritualsByDate.get(dateStr)?.mood
+    })
+  }
+
+  return calendar
 }

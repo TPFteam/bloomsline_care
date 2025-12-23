@@ -406,7 +406,7 @@ export default function CarePage() {
             {locale === 'fr' ? 'Accès rapide' : 'Quick Access'}
           </h3>
           <div className="space-y-3">
-            {/* My Mentors */}
+            {/* My Practitioners */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -421,17 +421,17 @@ export default function CarePage() {
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Mes Mentors' : 'My Mentors'}
+                    {locale === 'fr' ? 'Mes Praticiens' : 'My Practitioners'}
                   </h4>
                   <p className="text-sm text-gray-500">
-                    {locale === 'fr' ? 'Voir vos accompagnants' : 'View your practitioners'}
+                    {locale === 'fr' ? 'Voir vos praticiens' : 'View your practitioners'}
                   </p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
               </Link>
             </motion.div>
 
-            {/* My Worksheets */}
+            {/* My Assessments */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -446,10 +446,10 @@ export default function CarePage() {
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Mes Ressources' : 'My Worksheets'}
+                    {locale === 'fr' ? 'Mes Évaluations' : 'My Assessments'}
                   </h4>
                   <p className="text-sm text-gray-500">
-                    {locale === 'fr' ? 'Worksheets et exercices' : 'Worksheets and exercises'}
+                    {locale === 'fr' ? 'Évaluations et exercices' : 'Assessments and exercises'}
                   </p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-400" />

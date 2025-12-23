@@ -267,53 +267,34 @@ export interface PractitionerProfile {
 export async function getMemberPractitioner(practitionerId: string): Promise<PractitionerProfile | null> {
   const supabase = createClient()
 
-  // First try to get from practitioner_profiles table
-  const { data: profile, error: profileError } = await supabase
-    .from('practitioner_profiles')
-    .select('id, full_name, avatar_url, headline, credentials, specialties, slug')
-    .eq('id', practitionerId)
-    .single()
-
-  if (!profileError && profile) {
-    // Get email from users table
-    const { data: userData } = await supabase
-      .from('users')
-      .select('email')
-      .eq('id', practitionerId)
-      .single()
-
-    return {
-      id: profile.id,
-      full_name: profile.full_name,
-      email: userData?.email || null,
-      avatar_url: profile.avatar_url,
-      headline: profile.headline,
-      credentials: profile.credentials || [],
-      specialties: profile.specialties || [],
-      slug: profile.slug || null,
-    }
-  }
-
-  // Fallback to users table
-  const { data: user, error: userError } = await supabase
+  // First get user data (full_name, avatar_url, email are in users table)
+  const { data: userData, error: userError } = await supabase
     .from('users')
     .select('id, email, full_name, avatar_url')
     .eq('id', practitionerId)
     .single()
 
-  if (userError || !user) {
+  if (userError || !userData) {
     return null
   }
 
+  // Then try to get extended profile from practitioner_profiles table
+  const { data: profile } = await supabase
+    .from('practitioner_profiles')
+    .select('id, headline, credentials, specialties, slug')
+    .eq('user_id', practitionerId)
+    .maybeSingle()
+
+  // Return profile with extended info if available, otherwise just user data
   return {
-    id: user.id,
-    full_name: user.full_name,
-    email: user.email,
-    avatar_url: user.avatar_url,
-    headline: null,
-    credentials: [],
-    specialties: [],
-    slug: null,
+    id: userData.id,
+    full_name: userData.full_name,
+    email: userData.email,
+    avatar_url: userData.avatar_url,
+    headline: profile?.headline || null,
+    credentials: profile?.credentials || [],
+    specialties: profile?.specialties || [],
+    slug: profile?.slug || null,
   }
 }
 

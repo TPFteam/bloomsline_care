@@ -251,9 +251,8 @@ export default function RitualHistoryPage() {
     return grouped
   }
 
-  // Calculate how many rituals the user had on a specific date
-  // A ritual was active on a date if: added_at <= date AND (removed_at IS NULL OR removed_at > date)
-  const getRitualCountForDate = (dateStr: string) => {
+  // Get all rituals that were active on a specific date
+  const getActiveRitualsForDate = (dateStr: string) => {
     const targetDate = new Date(dateStr + 'T23:59:59') // End of day for comparison
 
     return ritualHistory.filter(mr => {
@@ -271,7 +270,25 @@ export default function RitualHistoryPage() {
       const removedAt = new Date(mr.removed_at)
       const removedDate = new Date(removedAt.toISOString().split('T')[0] + 'T00:00:00')
       return removedDate > targetDate
-    }).length
+    })
+  }
+
+  // Calculate how many rituals the user had on a specific date
+  const getRitualCountForDate = (dateStr: string) => {
+    return getActiveRitualsForDate(dateStr).length
+  }
+
+  // Get rituals with completion status for a date
+  const getRitualsWithStatusForDate = (dateStr: string) => {
+    const activeRituals = getActiveRitualsForDate(dateStr)
+    const completionsForDate = history.filter(h => h.completion_date === dateStr)
+    const completedRitualIds = new Set(completionsForDate.map(c => c.ritual_id))
+
+    return activeRituals.map(mr => ({
+      memberRitual: mr,
+      completed: completedRitualIds.has(mr.ritual_id),
+      completion: completionsForDate.find(c => c.ritual_id === mr.ritual_id) || null
+    }))
   }
 
   // Get changes timeline (additions and removals)
@@ -633,24 +650,119 @@ export default function RitualHistoryPage() {
                 </div>
               ))}
             </div>
+          ) : historyFilter === 'day' ? (
+            // Day view - show all rituals with completion status
+            (() => {
+              const ritualsWithStatus = getRitualsWithStatusForDate(selectedDate)
+              if (ritualsWithStatus.length === 0) {
+                return (
+                  <div className="text-center py-12">
+                    <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Calendar className="w-7 h-7 text-gray-400" />
+                    </div>
+                    <p className="text-gray-600 font-medium mb-1">
+                      {locale === 'fr' ? 'Aucun rituel ce jour' : 'No rituals this day'}
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      {locale === 'fr' ? 'Naviguez vers une autre date' : 'Navigate to another date'}
+                    </p>
+                  </div>
+                )
+              }
+              return (
+                <div className="space-y-2">
+                  {ritualsWithStatus.map((item, index) => {
+                    const ritual = item.memberRitual.ritual
+                    const category = ritualCategories.find(c => c.id === ritual?.category)
+                    const RitualIcon = ritual?.icon ? iconMap[ritual.icon] || Circle : Circle
+                    const moodConfig = item.completion?.mood ? moodOptions.find(m => m.value === item.completion?.mood) : null
+
+                    return (
+                      <motion.div
+                        key={item.memberRitual.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.02 }}
+                        className={`bg-white rounded-xl p-4 border ${item.completed ? 'border-gray-100' : 'border-gray-200 border-dashed'}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                            item.completed ? (category?.bg || 'bg-gray-100') : 'bg-gray-50'
+                          }`}>
+                            <RitualIcon className={`w-5 h-5 ${item.completed ? (category?.color || 'text-gray-500') : 'text-gray-300'}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-medium ${item.completed ? 'text-gray-900' : 'text-gray-400'}`}>
+                              {locale === 'fr'
+                                ? ritual?.name_fr || 'Rituel inconnu'
+                                : ritual?.name || 'Unknown ritual'}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {item.completed ? (
+                                <>
+                                  {moodConfig && (() => {
+                                    const MoodIcon = moodConfig.icon
+                                    return (
+                                      <span className={`text-xs ${moodConfig.bg} ${moodConfig.color} px-2 py-0.5 rounded-full flex items-center gap-1`}>
+                                        <MoodIcon className="w-3 h-3" />
+                                        {locale === 'fr' ? moodConfig.labelFr : moodConfig.label}
+                                      </span>
+                                    )
+                                  })()}
+                                  {item.completion?.duration_minutes && (
+                                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      {item.completion.duration_minutes}m
+                                    </span>
+                                  )}
+                                  {category && (
+                                    <span className={`text-xs ${category.color}`}>
+                                      {locale === 'fr' ? category.titleFr : category.titleEn}
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-xs text-gray-400">
+                                  {locale === 'fr' ? 'Non complété' : 'Not completed'}
+                                </span>
+                              )}
+                            </div>
+                            {item.completion?.notes && (
+                              <p className="text-sm text-gray-600 mt-2 bg-gray-50 rounded-lg p-2.5 italic">
+                                "{item.completion.notes}"
+                              </p>
+                            )}
+                          </div>
+                          {item.completed ? (
+                            <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                              <Check className="w-3 h-3 text-emerald-600" />
+                            </div>
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                              <Circle className="w-3 h-3 text-gray-300" />
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              )
+            })()
           ) : getFilteredHistory().length === 0 ? (
             <div className="text-center py-12">
               <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
                 <Calendar className="w-7 h-7 text-gray-400" />
               </div>
               <p className="text-gray-600 font-medium mb-1">
-                {historyFilter === 'day'
-                  ? (locale === 'fr' ? 'Rien ce jour-là' : 'Nothing on this day')
-                  : (locale === 'fr' ? 'Aucun rituel' : 'No rituals')}
+                {locale === 'fr' ? 'Aucun rituel' : 'No rituals'}
               </p>
               <p className="text-gray-400 text-sm">
-                {historyFilter === 'day'
-                  ? (locale === 'fr' ? 'Naviguez vers une autre date' : 'Navigate to another date')
-                  : (locale === 'fr' ? 'Essayez un autre thème' : 'Try another theme')}
+                {locale === 'fr' ? 'Essayez un autre thème' : 'Try another theme'}
               </p>
             </div>
           ) : (
-            // Filtered view
+            // Category filtered view
             <div className="space-y-2">
               {getFilteredHistory().map((completion, index) => (
                 <CompletionCard
@@ -658,7 +770,7 @@ export default function RitualHistoryPage() {
                   completion={completion}
                   locale={locale}
                   delay={index * 0.02}
-                  showDate={historyFilter === 'category'}
+                  showDate={true}
                 />
               ))}
             </div>
