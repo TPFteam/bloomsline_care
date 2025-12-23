@@ -45,6 +45,57 @@ const allCategories: ResourceCategory[] = [
 
 const generateId = () => Math.random().toString(36).substring(2, 9)
 
+// Table exercise templates for quick start
+const tableTemplates = [
+  {
+    id: 'thought-log',
+    name: { en: 'Thought Log', fr: 'Journal de pensées' },
+    description: { en: 'Track thoughts and emotions over time', fr: 'Suivre les pensées et émotions au fil du temps' },
+    columns: [
+      { id: '1', header: 'Date/Time', description: 'When did this happen?' },
+      { id: '2', header: 'Situation', description: 'What was happening?' },
+      { id: '3', header: 'Thought', description: 'What went through your mind?' },
+      { id: '4', header: 'Emotion', description: 'How did you feel? (0-100%)' },
+    ],
+    instructions: 'Use this log to track your thoughts throughout the day. Notice patterns in your thinking.',
+  },
+  {
+    id: 'emotion-tracker',
+    name: { en: 'Emotion Tracker', fr: 'Suivi des émotions' },
+    description: { en: 'Monitor emotions and coping strategies', fr: 'Surveiller les émotions et stratégies d\'adaptation' },
+    columns: [
+      { id: '1', header: 'Time', description: 'What time was it?' },
+      { id: '2', header: 'Emotion', description: 'What emotion did you feel?' },
+      { id: '3', header: 'Intensity (1-10)', description: 'How strong was it?' },
+      { id: '4', header: 'Trigger', description: 'What triggered this feeling?' },
+      { id: '5', header: 'Coping Strategy', description: 'What helped?' },
+    ],
+    instructions: 'Track your emotions throughout the day to identify patterns and effective coping strategies.',
+  },
+  {
+    id: 'gratitude-log',
+    name: { en: 'Gratitude Log', fr: 'Journal de gratitude' },
+    description: { en: 'Daily gratitude tracking table', fr: 'Tableau de suivi de gratitude quotidien' },
+    columns: [
+      { id: '1', header: 'Date', description: 'Today\'s date' },
+      { id: '2', header: 'I\'m grateful for...', description: 'Something you appreciate' },
+      { id: '3', header: 'Why it matters', description: 'Why is this meaningful?' },
+    ],
+    instructions: 'Each day, add at least one thing you\'re grateful for. Reflect on why it matters to you.',
+  },
+  {
+    id: 'blank',
+    name: { en: 'Blank Table', fr: 'Tableau vierge' },
+    description: { en: 'Start from scratch', fr: 'Créez sans modèle' },
+    columns: [
+      { id: '1', header: '', description: '' },
+      { id: '2', header: '', description: '' },
+      { id: '3', header: '', description: '' },
+    ],
+    instructions: '',
+  },
+]
+
 // Loading fallback component
 function LoadingFallback() {
   return (
@@ -74,8 +125,8 @@ function CreateTableExerciseContent() {
   const editId = searchParams.get('edit')
   const { t, locale } = useLanguage()
 
-  // Step state for guided wizard
-  const [step, setStep] = useState<'build' | 'details'>('build')
+  // Step state for guided wizard - start at 'build' if editing, otherwise 'template'
+  const [step, setStep] = useState<'template' | 'build' | 'details'>(editId ? 'build' : 'template')
   const [detailsStep, setDetailsStep] = useState<1 | 2 | 3>(1)
 
   // Form state
@@ -212,6 +263,21 @@ function CreateTableExerciseContent() {
       const newColumns = [...columns]
       ;[newColumns[index], newColumns[index + 1]] = [newColumns[index + 1], newColumns[index]]
       setColumns(newColumns)
+    }
+  }
+
+  // Handle template selection
+  const handleSelectTemplate = (templateId: string) => {
+    const template = tableTemplates.find(t => t.id === templateId)
+    if (template) {
+      // Assign unique IDs to columns
+      const columnsWithIds = template.columns.map(col => ({
+        ...col,
+        id: generateId(),
+      }))
+      setColumns(columnsWithIds)
+      setInstructions(template.instructions)
+      setStep('build')
     }
   }
 
@@ -463,6 +529,88 @@ function CreateTableExerciseContent() {
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <AnimatePresence mode="wait">
+          {/* TEMPLATE SELECTION STEP */}
+          {step === 'template' && (
+            <motion.div
+              key="template"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-4xl mx-auto"
+            >
+              {/* Header */}
+              <div className="text-center mb-10">
+                <Link href="/resources/create">
+                  <motion.div whileHover={{ x: -4 }} className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6">
+                    <ArrowLeft className="w-4 h-4" />
+                    <span className="text-sm">{locale === 'fr' ? 'Retour' : 'Back'}</span>
+                  </motion.div>
+                </Link>
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                  className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-100/80 mb-6"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-200/50">
+                    <Table2 className="w-6 h-6 text-white" />
+                  </div>
+                </motion.div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-3">
+                  {locale === 'fr' ? 'Créer un tableau' : 'Create a Table Exercise'}
+                </h1>
+                <p className="text-gray-600 max-w-md mx-auto">
+                  {locale === 'fr'
+                    ? 'Personnalisez un modèle existant ou créez votre tableau à partir de zéro'
+                    : 'Start with a template or create from scratch'}
+                </p>
+              </div>
+
+              {/* Templates Grid */}
+              <div className="max-w-3xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {tableTemplates.map((template, index) => (
+                    <motion.div
+                      key={template.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      whileHover={{ scale: 1.02, y: -4 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleSelectTemplate(template.id)}
+                      className={`bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-5 cursor-pointer transition-all duration-300 border-2 shadow-lg shadow-gray-200/40 hover:shadow-xl ${
+                        template.id === 'blank'
+                          ? 'border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/50'
+                          : 'border-white/60 hover:border-emerald-200'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-xl mb-4 flex items-center justify-center ${
+                        template.id === 'blank' ? 'bg-emerald-100' : 'bg-emerald-100'
+                      }`}>
+                        {template.id === 'blank' ? (
+                          <Plus className="w-5 h-5 text-emerald-600" />
+                        ) : (
+                          <Table2 className="w-5 h-5 text-emerald-600" />
+                        )}
+                      </div>
+                      <h3 className="font-semibold text-gray-900 mb-1">
+                        {template.name[locale as 'en' | 'fr']}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {template.description[locale as 'en' | 'fr']}
+                      </p>
+                      {template.id !== 'blank' && (
+                        <p className="text-xs text-emerald-600 mt-2">
+                          {template.columns.length} {locale === 'fr' ? 'colonnes' : 'columns'}
+                        </p>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* BUILD STEP */}
           {step === 'build' && (
             <motion.div
@@ -477,14 +625,23 @@ function CreateTableExerciseContent() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center justify-between mb-6"
               >
-                <Link href={editId ? `/resources/${editId}` : "/resources/create"}>
+                {editId ? (
+                  <Link href={`/resources/${editId}`}>
+                    <motion.div whileHover={{ x: -4 }} className="inline-block">
+                      <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        {locale === 'fr' ? 'Retour' : 'Back'}
+                      </Button>
+                    </motion.div>
+                  </Link>
+                ) : (
                   <motion.div whileHover={{ x: -4 }} className="inline-block">
-                    <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
+                    <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80" onClick={() => setStep('template')}>
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       {locale === 'fr' ? 'Retour' : 'Back'}
                     </Button>
                   </motion.div>
-                </Link>
+                )}
                 <div className="flex items-center gap-2">
                   {/* Auto-save Status Indicator */}
                   <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">

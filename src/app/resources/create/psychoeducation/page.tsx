@@ -162,14 +162,72 @@ const allCategories: ResourceCategory[] = [
   'children', 'teens', 'adults', 'couples', 'family', 'general'
 ]
 
+const generateId = () => Math.random().toString(36).substring(2, 9)
+
+// Psychoeducation templates for quick start
+const educationTemplates = [
+  {
+    id: 'condition-overview',
+    name: { en: 'Condition Overview', fr: 'Aperçu d\'une condition' },
+    description: { en: 'Explain a mental health condition', fr: 'Expliquer une condition de santé mentale' },
+    blocks: [
+      { id: '1', type: 'heading' as ContentBlockType, content: 'What is [Condition]?' },
+      { id: '2', type: 'paragraph' as ContentBlockType, content: 'Provide a clear, accessible explanation of the condition here.' },
+      { id: '3', type: 'heading' as ContentBlockType, content: 'Common Symptoms' },
+      { id: '4', type: 'key_points' as ContentBlockType, content: 'Symptoms', points: ['Symptom 1', 'Symptom 2', 'Symptom 3'] },
+      { id: '5', type: 'heading' as ContentBlockType, content: 'Causes & Risk Factors' },
+      { id: '6', type: 'paragraph' as ContentBlockType, content: 'Explain what causes this condition and who may be at risk.' },
+      { id: '7', type: 'callout' as ContentBlockType, content: 'Remember: This condition is treatable. You are not alone.', calloutType: 'tip' as const },
+    ],
+    learningObjectives: ['Understand what this condition is', 'Recognize common symptoms', 'Know that treatment is available'],
+  },
+  {
+    id: 'coping-strategy',
+    name: { en: 'Coping Strategy Guide', fr: 'Guide de stratégie d\'adaptation' },
+    description: { en: 'Teach a specific coping technique', fr: 'Enseigner une technique d\'adaptation spécifique' },
+    blocks: [
+      { id: '1', type: 'heading' as ContentBlockType, content: '[Strategy Name]' },
+      { id: '2', type: 'paragraph' as ContentBlockType, content: 'Introduce the coping strategy and explain why it\'s helpful.' },
+      { id: '3', type: 'heading' as ContentBlockType, content: 'When to Use This Strategy' },
+      { id: '4', type: 'key_points' as ContentBlockType, content: 'Use this when:', points: ['Situation 1', 'Situation 2', 'Situation 3'] },
+      { id: '5', type: 'heading' as ContentBlockType, content: 'Step-by-Step Guide' },
+      { id: '6', type: 'key_points' as ContentBlockType, content: 'Steps:', points: ['Step 1: ...', 'Step 2: ...', 'Step 3: ...'] },
+      { id: '7', type: 'callout' as ContentBlockType, content: 'Practice makes progress! Start with short sessions.', calloutType: 'tip' as const },
+    ],
+    learningObjectives: ['Understand what this strategy is', 'Know when to use it', 'Be able to practice the technique'],
+  },
+  {
+    id: 'treatment-explainer',
+    name: { en: 'Treatment Explainer', fr: 'Explication de traitement' },
+    description: { en: 'Explain a therapy or treatment approach', fr: 'Expliquer une approche thérapeutique' },
+    blocks: [
+      { id: '1', type: 'heading' as ContentBlockType, content: 'Understanding [Treatment Name]' },
+      { id: '2', type: 'paragraph' as ContentBlockType, content: 'Provide an overview of this treatment approach.' },
+      { id: '3', type: 'heading' as ContentBlockType, content: 'How It Works' },
+      { id: '4', type: 'paragraph' as ContentBlockType, content: 'Explain the mechanism or theory behind this treatment.' },
+      { id: '5', type: 'heading' as ContentBlockType, content: 'What to Expect' },
+      { id: '6', type: 'key_points' as ContentBlockType, content: 'During treatment:', points: ['What happens in sessions', 'How long it typically takes', 'What you might experience'] },
+      { id: '7', type: 'callout' as ContentBlockType, content: 'Every person\'s journey is different. Be patient with yourself.', calloutType: 'info' as const },
+    ],
+    learningObjectives: ['Understand what this treatment involves', 'Know what to expect', 'Feel more prepared for treatment'],
+  },
+  {
+    id: 'blank',
+    name: { en: 'Blank Document', fr: 'Document vierge' },
+    description: { en: 'Start from scratch', fr: 'Créez sans modèle' },
+    blocks: [],
+    learningObjectives: [''],
+  },
+]
+
 function CreatePsychoeducationContent() {
   const { t, locale } = useLanguage()
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
 
-  // Step state - start directly with build (skip template)
-  const [step, setStep] = useState<'template' | 'build' | 'details'>('build')
+  // Step state - start at 'build' if editing, otherwise 'template'
+  const [step, setStep] = useState<'template' | 'build' | 'details'>(editId ? 'build' : 'template')
   const [detailsStep, setDetailsStep] = useState<1 | 2 | 3>(1)
 
   // Edit mode state
@@ -333,6 +391,21 @@ function CreatePsychoeducationContent() {
       }
     }
   }, [])
+
+  // Handle template selection
+  const handleSelectTemplate = (templateId: string) => {
+    const template = educationTemplates.find(t => t.id === templateId)
+    if (template) {
+      // Assign unique IDs to blocks
+      const blocksWithIds = template.blocks.map(block => ({
+        ...block,
+        id: generateId(),
+      }))
+      setBlocks(blocksWithIds as ContentBlock[])
+      setLearningObjectives(template.learningObjectives)
+      setStep('build')
+    }
+  }
 
   // Add new block
   const addBlock = (type: ContentBlockType) => {
@@ -1973,6 +2046,88 @@ function CreatePsychoeducationContent() {
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <AnimatePresence mode="wait">
+          {/* TEMPLATE SELECTION STEP */}
+          {step === 'template' && (
+            <motion.div
+              key="template"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-4xl mx-auto"
+            >
+              {/* Header */}
+              <div className="text-center mb-10">
+                <Link href="/resources/create">
+                  <motion.div whileHover={{ x: -4 }} className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6">
+                    <ArrowLeft className="w-4 h-4" />
+                    <span className="text-sm">{locale === 'fr' ? 'Retour' : 'Back'}</span>
+                  </motion.div>
+                </Link>
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                  className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-violet-100/80 mb-6"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center shadow-lg shadow-violet-200/50">
+                    <BookOpen className="w-6 h-6 text-white" />
+                  </div>
+                </motion.div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-3">
+                  {locale === 'fr' ? 'Créer un document éducatif' : 'Create Educational Content'}
+                </h1>
+                <p className="text-gray-600 max-w-md mx-auto">
+                  {locale === 'fr'
+                    ? 'Personnalisez un modèle existant ou créez votre document à partir de zéro'
+                    : 'Start with a template or create from scratch'}
+                </p>
+              </div>
+
+              {/* Templates Grid */}
+              <div className="max-w-3xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {educationTemplates.map((template, index) => (
+                    <motion.div
+                      key={template.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      whileHover={{ scale: 1.02, y: -4 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleSelectTemplate(template.id)}
+                      className={`bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-5 cursor-pointer transition-all duration-300 border-2 shadow-lg shadow-gray-200/40 hover:shadow-xl ${
+                        template.id === 'blank'
+                          ? 'border-dashed border-violet-300 hover:border-violet-500 bg-violet-50/50'
+                          : 'border-white/60 hover:border-violet-200'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-xl mb-4 flex items-center justify-center ${
+                        template.id === 'blank' ? 'bg-violet-100' : 'bg-violet-100'
+                      }`}>
+                        {template.id === 'blank' ? (
+                          <Plus className="w-5 h-5 text-violet-600" />
+                        ) : (
+                          <BookOpen className="w-5 h-5 text-violet-600" />
+                        )}
+                      </div>
+                      <h3 className="font-semibold text-gray-900 mb-1">
+                        {template.name[locale as 'en' | 'fr']}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {template.description[locale as 'en' | 'fr']}
+                      </p>
+                      {template.id !== 'blank' && (
+                        <p className="text-xs text-violet-600 mt-2">
+                          {template.blocks.length} {locale === 'fr' ? 'sections' : 'sections'}
+                        </p>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* Build Content (Main Step) */}
           {step === 'build' && (
             <motion.div
@@ -1987,14 +2142,23 @@ function CreatePsychoeducationContent() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center justify-between mb-6"
               >
-                <Link href={isEditMode ? '/resources' : '/resources/create'}>
+                {isEditMode ? (
+                  <Link href="/resources">
+                    <motion.div whileHover={{ x: -4 }} className="inline-block">
+                      <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        {locale === 'fr' ? 'Retour' : 'Back'}
+                      </Button>
+                    </motion.div>
+                  </Link>
+                ) : (
                   <motion.div whileHover={{ x: -4 }} className="inline-block">
-                    <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
+                    <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80" onClick={() => setStep('template')}>
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       {locale === 'fr' ? 'Retour' : 'Back'}
                     </Button>
                   </motion.div>
-                </Link>
+                )}
                 <div className="flex items-center gap-2">
                   {/* Auto-save Status Indicator */}
                   <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">

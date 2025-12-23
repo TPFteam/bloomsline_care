@@ -83,7 +83,7 @@ function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
-  const { t, setLocale } = useLanguage()
+  const { t, locale, setLocale } = useLanguage()
 
   useEffect(() => {
     const getUser = async () => {
@@ -756,7 +756,7 @@ function DashboardContent() {
               </div>
               <div className="text-left">
                 <p className="text-sm font-medium text-gray-900">{user?.full_name || 'User'}</p>
-                <p className="text-xs text-gray-500">{user?.user_type === 'mentor' ? 'Practitioner' : 'Member'}</p>
+                <p className="text-xs text-gray-500">{user?.user_type === 'mentor' ? (locale === 'fr' ? 'Praticien' : 'Practitioner') : (locale === 'fr' ? 'Membre' : 'Member')}</p>
               </div>
             </motion.div>
           </div>
