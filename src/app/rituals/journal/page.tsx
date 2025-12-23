@@ -178,7 +178,12 @@ export default function RitualHistoryPage() {
         setHistory(completionsResult.data as RitualCompletion[])
       }
       if (memberRitualsResult.data) {
-        setRitualHistory(memberRitualsResult.data as MemberRitualHistory[])
+        // Transform data - Supabase returns ritual as array, we need single object
+        const transformed = memberRitualsResult.data.map((mr: { id: string; ritual_id: string; added_at: string | null; removed_at: string | null; is_active: boolean; ritual: Ritual[] | Ritual | null }) => ({
+          ...mr,
+          ritual: Array.isArray(mr.ritual) ? mr.ritual[0] || null : mr.ritual
+        }))
+        setRitualHistory(transformed as MemberRitualHistory[])
       }
       setLoading(false)
     }
