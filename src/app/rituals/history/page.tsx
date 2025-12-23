@@ -91,6 +91,7 @@ interface RitualCompletion {
   duration_minutes: number | null
   notes: string | null
   mood: string | null
+  created_at: string
   ritual: Ritual
 }
 
@@ -715,6 +716,15 @@ export default function RitualHistoryPage() {
                                       {item.completion.duration_minutes}m
                                     </span>
                                   )}
+                                  {item.completion?.created_at && (
+                                    <span className="text-xs text-gray-400">
+                                      {new Date(item.completion.created_at).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                                        hour: 'numeric',
+                                        minute: '2-digit',
+                                        hour12: locale !== 'fr'
+                                      })}
+                                    </span>
+                                  )}
                                   {category && (
                                     <span className={`text-xs ${category.color}`}>
                                       {locale === 'fr' ? category.titleFr : category.titleEn}
@@ -843,6 +853,15 @@ function CompletionCard({
               <span className="text-xs text-gray-500 flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 {completion.duration_minutes}m
+              </span>
+            )}
+            {completion.created_at && (
+              <span className="text-xs text-gray-400">
+                {new Date(completion.created_at).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: locale !== 'fr'
+                })}
               </span>
             )}
             {category && !showDate && (

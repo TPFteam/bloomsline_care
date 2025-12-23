@@ -86,6 +86,8 @@ interface MemberRitual {
   is_active: boolean
   sort_order: number
   planned_time: string | null
+  added_at: string | null
+  removed_at: string | null
   ritual: Ritual
 }
 
@@ -97,6 +99,7 @@ interface RitualCompletion {
   completed: boolean
   duration_minutes: number | null
   notes: string | null
+  created_at: string
 }
 
 // Ritual icon mapping (Lucide - fallback)
@@ -278,9 +281,11 @@ export default function MyResourcesPage() {
   const [todaysMoments, setTodaysMoments] = useState<Moment[]>([])
   const [memberRituals, setMemberRituals] = useState<MemberRitual[]>([])
   const [todayCompletions, setTodayCompletions] = useState<RitualCompletion[]>([])
+  const [selectedDateCompletions, setSelectedDateCompletions] = useState<RitualCompletion[]>([])
   const [loading, setLoading] = useState(true)
   const [processingInvitation, setProcessingInvitation] = useState<string | null>(null)
   const [previewMoment, setPreviewMoment] = useState<Moment | null>(null)
+  const [previewRitual, setPreviewRitual] = useState<{ ritual: MemberRitual; completion: RitualCompletion | null } | null>(null)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [allMoments, setAllMoments] = useState<Moment[]>([])
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -302,7 +307,7 @@ export default function MyResourcesPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Filter moments when selectedDate changes
+  // Filter moments and fetch completions when selectedDate changes
   useEffect(() => {
     const targetDate = new Date(selectedDate)
     targetDate.setHours(0, 0, 0, 0)
@@ -314,7 +319,30 @@ export default function MyResourcesPage() {
     setTodaysMoments(filteredMoments.sort((a, b) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     ))
-  }, [selectedDate, allMoments])
+
+    // Fetch completions for the selected date
+    async function fetchCompletionsForDate() {
+      if (members.length === 0) return
+
+      const supabase = createClient()
+      const memberId = members[0].id
+      const dateStr = selectedDate.toLocaleDateString('en-CA') // YYYY-MM-DD format
+
+      const { data: completionsData } = await supabase
+        .from('ritual_completions')
+        .select('*')
+        .eq('member_id', memberId)
+        .eq('completion_date', dateStr)
+
+      if (completionsData) {
+        setSelectedDateCompletions(completionsData as RitualCompletion[])
+      } else {
+        setSelectedDateCompletions([])
+      }
+    }
+
+    fetchCompletionsForDate()
+  }, [selectedDate, allMoments, members])
 
   // Date navigation functions
   const goToPreviousDay = () => {
@@ -506,6 +534,7 @@ export default function MyResourcesPage() {
 
         if (completionsData) {
           setTodayCompletions(completionsData as RitualCompletion[])
+          setSelectedDateCompletions(completionsData as RitualCompletion[]) // Also set for selected date (initially today)
         }
       }
     } catch (error) {
@@ -914,64 +943,122 @@ export default function MyResourcesPage() {
 
             {/* Planned rituals on timeline */}
             {memberRituals.length > 0 && (
-              <div className="absolute inset-0 pointer-events-none">
-                {memberRituals.map((mr, i) => {
-                  if (!mr.planned_time) return null
+              <div className="absolute inset-0">
+                {(() => {
+                  // Filter rituals that were active on the selected date
+                  const selectedDateStart = new Date(selectedDate)
+                  selectedDateStart.setHours(0, 0, 0, 0)
+                  const selectedDateEnd = new Date(selectedDate)
+                  selectedDateEnd.setHours(23, 59, 59, 999)
 
-                  // Parse planned time (format: "HH:MM:SS")
-                  const [hours, minutes] = mr.planned_time.split(':').map(Number)
-                  const plannedHour = hours + minutes / 60
-                  const position = hourToPosition(plannedHour)
+                  const ritualsForDate = memberRituals.filter(mr => {
+                    // Check if ritual was added before or on the selected date
+                    if (mr.added_at) {
+                      const addedDate = new Date(mr.added_at)
+                      if (addedDate > selectedDateEnd) return false // Added after this date
+                    }
 
-                  // Skip if outside visible range
-                  if (position < -5 || position > 105) return null
+                    // Check if ritual was removed before the selected date
+                    if (mr.removed_at) {
+                      const removedDate = new Date(mr.removed_at)
+                      if (removedDate < selectedDateStart) return false // Removed before this date
+                    }
 
-                  // Check if completed
-                  const isCompleted = todayCompletions.some(
-                    c => c.ritual_id === mr.ritual_id && c.completed
-                  )
+                    return true
+                  })
 
-                  // Check if in the past
-                  const currentHour = currentTime.getHours() + currentTime.getMinutes() / 60
-                  const isPast = plannedHour < currentHour
-                  const isFuture = plannedHour > currentHour
+                  return ritualsForDate.map((mr, i) => {
+                    if (!mr.planned_time) return null
 
-                  // Get ritual icon and colors
-                  const RitualIcon = RITUAL_ICONS[mr.ritual.icon || ''] || Circle
-                  const gradient = CATEGORY_GRADIENTS[mr.ritual.category]
+                    // Use completions for the selected date
+                    const completion = selectedDateCompletions.find(
+                      c => c.ritual_id === mr.ritual_id && c.completed
+                    ) || null
+                    const isCompleted = !!completion
 
-                  return (
-                    <motion.div
-                      key={mr.id}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.3 + i * 0.05 }}
-                      className="absolute -translate-x-1/2 top-1/2 -translate-y-1/2 z-5"
-                      style={{ left: `${position}%` }}
-                    >
-                      <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center border-2 border-white ${
-                          isFuture ? 'blur-[1px] opacity-50' : ''
-                        }`}
-                        style={{
-                          background: isCompleted
-                            ? `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`
-                            : isPast && !isCompleted
-                              ? '#d1d5db'
-                              : `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`,
-                          boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-                        }}
+                    // Use actual completion time if completed, otherwise use planned time
+                    let displayHour: number
+                    let displayTimeLabel: string | null = null
+
+                    if (isCompleted && completion?.created_at) {
+                      // Use actual completion time
+                      const completionTime = new Date(completion.created_at)
+                      displayHour = completionTime.getHours() + completionTime.getMinutes() / 60
+                      displayTimeLabel = completionTime.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: locale !== 'fr'
+                      })
+                    } else {
+                      // Use planned time (format: "HH:MM:SS")
+                      const [hours, minutes] = mr.planned_time.split(':').map(Number)
+                      displayHour = hours + minutes / 60
+                    }
+
+                    const position = hourToPosition(displayHour)
+
+                    // Skip if outside visible range
+                    if (position < -5 || position > 105) return null
+
+                    // Check if viewing today vs past date
+                    const viewingToday = isToday()
+                    const currentHour = currentTime.getHours() + currentTime.getMinutes() / 60
+                    const isPastTime = displayHour < currentHour
+                    const isFutureTime = displayHour > currentHour
+
+                    // For past dates: incomplete rituals are shown in grey (they were missed)
+                    // For today: future rituals are blurred, past incomplete are grey
+                    const showAsGrey = !isCompleted && (!viewingToday || (viewingToday && isPastTime))
+                    const showAsBlurred = viewingToday && isFutureTime && !isCompleted
+
+                    // Get ritual icon and colors
+                    const RitualIcon = RITUAL_ICONS[mr.ritual.icon || ''] || Circle
+                    const gradient = CATEGORY_GRADIENTS[mr.ritual.category]
+
+                    return (
+                      <motion.div
+                        key={mr.id}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.3 + i * 0.05 }}
+                        className="absolute -translate-x-1/2 top-1/2 -translate-y-1/2 z-5 cursor-pointer"
+                        style={{ left: `${position}%` }}
+                        onClick={() => setPreviewRitual({ ritual: mr, completion })}
                       >
-                        <RitualIcon className={`w-3 h-3 ${isCompleted || isFuture ? 'text-white' : 'text-gray-500'}`} />
-                      </div>
-                      {isCompleted && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full flex items-center justify-center">
-                          <Check className="w-2 h-2 text-white" />
-                        </div>
-                      )}
-                    </motion.div>
-                  )
-                })}
+                        <motion.div
+                          whileHover={{ scale: 1.15 }}
+                          whileTap={{ scale: 0.95 }}
+                          className={`w-6 h-6 rounded-full flex items-center justify-center border-2 border-white ${
+                            showAsBlurred ? 'blur-[1px] opacity-50' : ''
+                          }`}
+                          style={{
+                            background: isCompleted
+                              ? `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`
+                              : showAsGrey
+                                ? '#d1d5db'
+                                : `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`,
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                          }}
+                        >
+                          <RitualIcon className={`w-3 h-3 ${isCompleted || showAsBlurred ? 'text-white' : showAsGrey ? 'text-gray-500' : 'text-white'}`} />
+                        </motion.div>
+                        {isCompleted && (
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full flex items-center justify-center">
+                            <Check className="w-2 h-2 text-white" />
+                          </div>
+                        )}
+                        {/* Show completion time label */}
+                        {isCompleted && displayTimeLabel && (
+                          <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                            <span className="text-[9px] font-medium text-emerald-600 bg-emerald-50 px-1 rounded">
+                              {displayTimeLabel}
+                            </span>
+                          </div>
+                        )}
+                      </motion.div>
+                    )
+                  })
+                })()}
               </div>
             )}
 
@@ -1233,7 +1320,7 @@ export default function MyResourcesPage() {
         <div className="h-8" />
       </div>
 
-      {/* Preview Modal */}
+      {/* Preview Modal - Moments */}
       <AnimatePresence>
         {previewMoment && (
           <motion.div
@@ -1316,6 +1403,150 @@ export default function MyResourcesPage() {
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* Preview Modal - Rituals */}
+      <AnimatePresence>
+        {previewRitual && (() => {
+          const { ritual: mr, completion } = previewRitual
+          const RitualIcon = RITUAL_ICONS[mr.ritual.icon || ''] || Circle
+          const gradient = CATEGORY_GRADIENTS[mr.ritual.category]
+          const isCompleted = !!completion
+
+          return (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+              onClick={() => setPreviewRitual(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: 'spring', damping: 25 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-3xl w-full max-w-xs overflow-hidden shadow-2xl"
+              >
+                {/* Ritual Header with gradient */}
+                <div
+                  className="p-6 flex flex-col items-center"
+                  style={{
+                    background: `linear-gradient(135deg, ${gradient.from}20, ${gradient.to}20)`,
+                  }}
+                >
+                  <div
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3"
+                    style={{
+                      background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`,
+                    }}
+                  >
+                    <RitualIcon className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 text-center">
+                    {locale === 'fr' ? mr.ritual.name_fr : mr.ritual.name}
+                  </h3>
+                  <span
+                    className="mt-2 px-3 py-1 rounded-full text-xs font-medium text-white"
+                    style={{ background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }}
+                  >
+                    {getCategoryLabel(mr.ritual.category, locale)}
+                  </span>
+                </div>
+
+                {/* Content */}
+                <div className="p-4">
+                  {/* Description */}
+                  {(mr.ritual.description || mr.ritual.description_fr) && (
+                    <p className="text-gray-600 text-sm mb-4">
+                      {locale === 'fr' ? mr.ritual.description_fr : mr.ritual.description}
+                    </p>
+                  )}
+
+                  {/* Benefit */}
+                  {(mr.ritual.benefit || mr.ritual.benefit_fr) && (
+                    <div className="bg-emerald-50 rounded-xl p-3 mb-4">
+                      <p className="text-xs text-emerald-600 font-medium mb-1">
+                        {locale === 'fr' ? 'Bienfait' : 'Benefit'}
+                      </p>
+                      <p className="text-sm text-emerald-700">
+                        {locale === 'fr' ? mr.ritual.benefit_fr : mr.ritual.benefit}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Details */}
+                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                    {mr.planned_time && (
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-4 h-4" />
+                        <span>{locale === 'fr' ? 'Prévu' : 'Planned'}: {mr.planned_time.slice(0, 5)}</span>
+                      </div>
+                    )}
+                    {mr.ritual.duration_suggestion && (
+                      <span>{mr.ritual.duration_suggestion} min</span>
+                    )}
+                  </div>
+
+                  {/* Completion Status */}
+                  {isCompleted && completion?.created_at && (
+                    <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl mb-4">
+                      <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                        <Check className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-emerald-700">
+                          {locale === 'fr' ? 'Complété' : 'Completed'}
+                        </p>
+                        <p className="text-xs text-emerald-600">
+                          {new Date(completion.created_at).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: locale !== 'fr'
+                          })}
+                          {completion.duration_minutes && ` • ${completion.duration_minutes} min`}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Notes if any */}
+                  {completion?.notes && (
+                    <div className="bg-gray-50 rounded-xl p-3 mb-4">
+                      <p className="text-xs text-gray-500 font-medium mb-1">
+                        {locale === 'fr' ? 'Notes' : 'Notes'}
+                      </p>
+                      <p className="text-sm text-gray-700">{completion.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setPreviewRitual(null)}
+                      className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium"
+                    >
+                      {locale === 'fr' ? 'Fermer' : 'Close'}
+                    </button>
+                    {!isCompleted && (
+                      <button
+                        onClick={() => {
+                          setPreviewRitual(null)
+                          router.push('/rituals')
+                        }}
+                        className="flex-1 py-2.5 rounded-xl text-white text-sm font-medium"
+                        style={{ background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }}
+                      >
+                        {locale === 'fr' ? 'Commencer' : 'Start'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )
+        })()}
       </AnimatePresence>
 
       {/* Bloom Chat */}

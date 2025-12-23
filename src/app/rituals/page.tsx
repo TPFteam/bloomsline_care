@@ -180,6 +180,7 @@ export default function RitualsPage() {
   const [saving, setSaving] = useState(false)
   const [memberId, setMemberId] = useState<string | null>(null)
   const [expandedCategory, setExpandedCategory] = useState<RitualCategory | null>(null)
+  const expandedContentRef = useRef<HTMLDivElement>(null)
   const [allRituals, setAllRituals] = useState<Ritual[]>([])
   const [memberRituals, setMemberRituals] = useState<MemberRitual[]>([])
   const [completions, setCompletions] = useState<RitualCompletion[]>([])
@@ -332,6 +333,17 @@ export default function RitualsPage() {
   const [loadingHistory, setLoadingHistory] = useState(false)
 
   const todayStr = getTodayStr()
+
+  // Scroll to and focus expanded content when category is expanded
+  useEffect(() => {
+    if (expandedCategory && expandedContentRef.current) {
+      setTimeout(() => {
+        expandedContentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        // Focus the expanded content for accessibility
+        expandedContentRef.current?.focus()
+      }, 250) // Wait for animation to start
+    }
+  }, [expandedCategory])
 
   // Timer effect - counts down to 0, then counts up (negative = overtime)
   useEffect(() => {
@@ -1021,9 +1033,10 @@ export default function RitualsPage() {
           </motion.div>
         )}
 
-        {/* Category Cards - Grid View */}
+        {/* Category Cards - Split into Rows for Better Expansion UX */}
+        {/* First Row: Morning & Midday */}
         <div className="grid grid-cols-2 gap-3">
-          {ritualCategories.map((category, idx) => {
+          {ritualCategories.slice(0, 2).map((category, idx) => {
             const Icon = category.icon
             const isExpanded = expandedCategory === category.id
             const categoryRituals = getRitualsForCategory(category.id)
@@ -1068,15 +1081,200 @@ export default function RitualsPage() {
           })}
         </div>
 
-        {/* Expanded Category Content */}
+        {/* Expanded Content for First Row (Morning/Midday) */}
         <AnimatePresence>
-          {expandedCategory && (
+          {expandedCategory && (expandedCategory === 'morning' || expandedCategory === 'midday') && (
             <motion.div
+              ref={expandedContentRef}
+              tabIndex={-1}
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="mt-4 overflow-hidden"
+              className="mt-3 overflow-hidden outline-none"
+            >
+              {(() => {
+                const category = ritualCategories.find(c => c.id === expandedCategory)!
+                const categoryRituals = getRitualsForCategory(expandedCategory)
+
+                return (
+                  <div className="bg-white rounded-2xl p-4 border border-gray-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 ${category.iconBg} rounded-lg flex items-center justify-center`}>
+                          <category.icon className={`w-4 h-4 ${category.color}`} />
+                        </div>
+                        <h3 className="font-semibold text-gray-900">
+                          {locale === 'fr' ? category.titleFr : category.titleEn}
+                        </h3>
+                      </div>
+                      <button
+                        onClick={() => setExpandedCategory(null)}
+                        className="p-1 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {categoryRituals.map((mr) => {
+                        const RitualIcon = mr.ritual.icon ? iconMap[mr.ritual.icon] || Circle : Circle
+                        const completed = isCompletedToday(mr.ritual_id)
+
+                        return (
+                          <motion.div
+                            key={mr.id}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className={`bg-gray-50 rounded-xl p-3 border ${completed ? 'border-emerald-100' : 'border-gray-100'} flex items-center gap-3`}
+                          >
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleCompletion(mr.ritual_id)
+                              }}
+                              disabled={saving}
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                                completed ? 'bg-emerald-100' : `${category.iconBg} hover:opacity-80`
+                              }`}
+                            >
+                              {completed ? (
+                                <Check className="w-4 h-4 text-emerald-600" />
+                              ) : (
+                                <RitualIcon className={`w-4 h-4 ${category.color}`} />
+                              )}
+                            </button>
+
+                            <button
+                              onClick={() => !completed && openRitualModal(mr)}
+                              className="flex-1 min-w-0 text-left"
+                              disabled={completed}
+                            >
+                              <p className={`font-medium text-sm ${completed ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                                {locale === 'fr' ? mr.ritual.name_fr : mr.ritual.name}
+                              </p>
+                              {mr.ritual.description && (
+                                <p className="text-xs text-gray-400 truncate">
+                                  {locale === 'fr' ? mr.ritual.description_fr : mr.ritual.description}
+                                </p>
+                              )}
+                            </button>
+
+                            {!completed && (
+                              <button
+                                onClick={() => openRitualModal(mr)}
+                                className={`px-3 py-1.5 ${category.iconBg} ${category.color} text-xs font-medium rounded-lg`}
+                              >
+                                {locale === 'fr' ? 'Faire' : 'Start'}
+                              </button>
+                            )}
+
+                            {completed && mr.ritual.duration_suggestion && (
+                              <div className="flex items-center gap-1 text-xs text-gray-400">
+                                <Clock className="w-3 h-3" />
+                                {mr.ritual.duration_suggestion}m
+                              </div>
+                            )}
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setMenuRitual(mr)
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                          </motion.div>
+                        )
+                      })}
+
+                      {categoryRituals.length === 0 && (
+                        <div className="bg-gray-50 rounded-xl p-4 text-center">
+                          <p className="text-sm text-gray-400">
+                            {locale === 'fr' ? 'Aucun rituel ajouté' : 'No rituals added'}
+                          </p>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          setAddingToCategory(expandedCategory)
+                          setShowAddModal(true)
+                        }}
+                        className="w-full bg-gray-50 hover:bg-gray-100 rounded-xl p-3 border border-dashed border-gray-200 flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <Plus className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm font-medium text-gray-500">
+                          {locale === 'fr' ? 'Ajouter un rituel' : 'Add ritual'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Second Row: Evening & Self-Care */}
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          {ritualCategories.slice(2, 4).map((category, idx) => {
+            const Icon = category.icon
+            const isExpanded = expandedCategory === category.id
+            const categoryRituals = getRitualsForCategory(category.id)
+            const progress = getCategoryProgress(category.id)
+
+            return (
+              <motion.button
+                key={category.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: (idx + 2) * 0.05 }}
+                onClick={() => setExpandedCategory(isExpanded ? null : category.id)}
+                className={`relative ${category.bg} rounded-2xl p-4 border ${isExpanded ? 'border-gray-300 ring-1 ring-gray-200' : 'border-gray-100'} text-left transition-all`}
+                whileTap={{ scale: 0.97 }}
+              >
+                <div className={`w-10 h-10 ${category.iconBg} rounded-xl flex items-center justify-center mb-3`}>
+                  <Icon className={`w-5 h-5 ${category.color}`} />
+                </div>
+                <h4 className="font-semibold text-gray-900 mb-1">
+                  {locale === 'fr' ? category.titleFr : category.titleEn}
+                </h4>
+                <p className="text-xs text-gray-500">
+                  {categoryRituals.length > 0 ? (
+                    <span className={progress.completed === progress.total && progress.total > 0 ? 'text-emerald-600 font-medium' : ''}>
+                      {progress.completed}/{progress.total} {locale === 'fr' ? 'fait' : 'done'}
+                    </span>
+                  ) : (
+                    locale === 'fr' ? category.descFr : category.descEn
+                  )}
+                </p>
+                {progress.completed === progress.total && progress.total > 0 && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute top-3 right-3 w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center"
+                  >
+                    <Check className="w-3 h-3 text-emerald-600" />
+                  </motion.div>
+                )}
+              </motion.button>
+            )
+          })}
+        </div>
+
+        {/* Expanded Content for Second Row (Evening/Self-Care) */}
+        <AnimatePresence>
+          {expandedCategory && (expandedCategory === 'evening' || expandedCategory === 'selfcare') && (
+            <motion.div
+              ref={expandedContentRef}
+              tabIndex={-1}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mt-3 overflow-hidden outline-none"
             >
               {(() => {
                 const category = ritualCategories.find(c => c.id === expandedCategory)!
