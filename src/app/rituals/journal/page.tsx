@@ -32,6 +32,14 @@ import {
   ChevronLeft,
   ChevronRight,
   TrendingUp,
+  Laugh,
+  SmilePlus,
+  Meh,
+  Frown,
+  Angry,
+  Plus,
+  Minus,
+  History,
 } from 'lucide-react'
 import MemberLayout from '@/components/member/MemberLayout'
 import { useLanguage } from '@/lib/i18n/context'
@@ -62,7 +70,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 }
 
 type RitualCategory = 'morning' | 'midday' | 'evening' | 'selfcare'
-type FilterType = 'day' | 'category' | 'all'
+type FilterType = 'day' | 'category' | 'all' | 'changes'
 
 interface Ritual {
   id: string
@@ -82,8 +90,27 @@ interface RitualCompletion {
   completed: boolean
   duration_minutes: number | null
   notes: string | null
+  mood: string | null
   ritual: Ritual
 }
+
+interface MemberRitualHistory {
+  id: string
+  ritual_id: string
+  added_at: string | null
+  removed_at: string | null
+  is_active: boolean
+  ritual: Ritual | null
+}
+
+// Mood options for display
+const moodOptions = [
+  { value: 'great', icon: Laugh, label: 'Great', labelFr: 'Super', color: 'text-emerald-500', bg: 'bg-emerald-100' },
+  { value: 'good', icon: SmilePlus, label: 'Good', labelFr: 'Bien', color: 'text-green-500', bg: 'bg-green-100' },
+  { value: 'okay', icon: Meh, label: 'Okay', labelFr: 'Okay', color: 'text-yellow-500', bg: 'bg-yellow-100' },
+  { value: 'low', icon: Frown, label: 'Low', labelFr: 'Bas', color: 'text-orange-500', bg: 'bg-orange-100' },
+  { value: 'difficult', icon: Angry, label: 'Difficult', labelFr: 'Difficile', color: 'text-red-500', bg: 'bg-red-100' },
+]
 
 const ritualCategories = [
   { id: 'morning' as RitualCategory, titleEn: 'Morning', titleFr: 'Matin', color: 'text-amber-600', bg: 'bg-amber-50' },
@@ -102,6 +129,7 @@ export default function RitualHistoryPage() {
   const { locale } = useLanguage()
   const [loading, setLoading] = useState(true)
   const [history, setHistory] = useState<RitualCompletion[]>([])
+  const [ritualHistory, setRitualHistory] = useState<MemberRitualHistory[]>([])
   const [historyFilter, setHistoryFilter] = useState<FilterType>('day')
   const [selectedDate, setSelectedDate] = useState(getTodayStr())
   const [selectedCategory, setSelectedCategory] = useState<RitualCategory | 'all'>('all')
@@ -129,18 +157,28 @@ export default function RitualHistoryPage() {
         return
       }
 
-      const { data } = await supabase
-        .from('ritual_completions')
-        .select(`
-          *,
-          ritual:rituals(*)
-        `)
-        .eq('member_id', member.id)
-        .order('completion_date', { ascending: false })
-        .limit(200)
+      // Fetch completions and member ritual history in parallel
+      const [completionsResult, memberRitualsResult] = await Promise.all([
+        supabase
+          .from('ritual_completions')
+          .select(`
+            *,
+            ritual:rituals(*)
+          `)
+          .eq('member_id', member.id)
+          .order('completion_date', { ascending: false })
+          .limit(200),
+        supabase
+          .from('member_rituals')
+          .select('id, ritual_id, added_at, removed_at, is_active, ritual:rituals(*)')
+          .eq('member_id', member.id)
+      ])
 
-      if (data) {
-        setHistory(data as RitualCompletion[])
+      if (completionsResult.data) {
+        setHistory(completionsResult.data as RitualCompletion[])
+      }
+      if (memberRitualsResult.data) {
+        setRitualHistory(memberRitualsResult.data as MemberRitualHistory[])
       }
       setLoading(false)
     }
@@ -208,6 +246,69 @@ export default function RitualHistoryPage() {
     return grouped
   }
 
+  // Calculate how many rituals the user had on a specific date
+  // A ritual was active on a date if: added_at <= date AND (removed_at IS NULL OR removed_at > date)
+  const getRitualCountForDate = (dateStr: string) => {
+    const targetDate = new Date(dateStr + 'T23:59:59') // End of day for comparison
+
+    return ritualHistory.filter(mr => {
+      // If no added_at, assume it was always there
+      const addedAt = mr.added_at ? new Date(mr.added_at) : new Date(0)
+      const addedDate = new Date(addedAt.toISOString().split('T')[0] + 'T00:00:00')
+
+      // Was it added before or on this date?
+      if (addedDate > targetDate) return false
+
+      // If not removed, it's still active
+      if (!mr.removed_at) return true
+
+      // Was it removed after this date?
+      const removedAt = new Date(mr.removed_at)
+      const removedDate = new Date(removedAt.toISOString().split('T')[0] + 'T00:00:00')
+      return removedDate > targetDate
+    }).length
+  }
+
+  // Get changes timeline (additions and removals)
+  const getChangesTimeline = () => {
+    const changes: { type: 'added' | 'removed', date: string, ritual: MemberRitualHistory }[] = []
+
+    ritualHistory.forEach(mr => {
+      if (mr.added_at) {
+        changes.push({
+          type: 'added',
+          date: new Date(mr.added_at).toISOString().split('T')[0],
+          ritual: mr
+        })
+      }
+      if (mr.removed_at) {
+        changes.push({
+          type: 'removed',
+          date: new Date(mr.removed_at).toISOString().split('T')[0],
+          ritual: mr
+        })
+      }
+    })
+
+    // Sort by date descending (most recent first)
+    return changes.sort((a, b) => b.date.localeCompare(a.date))
+  }
+
+  // Group changes by date
+  const getGroupedChanges = () => {
+    const changes = getChangesTimeline()
+    const grouped: Record<string, typeof changes> = {}
+
+    changes.forEach(change => {
+      if (!grouped[change.date]) {
+        grouped[change.date] = []
+      }
+      grouped[change.date].push(change)
+    })
+
+    return grouped
+  }
+
   // Navigate dates
   const navigateDate = (direction: 'prev' | 'next') => {
     const dates = getUniqueDates()
@@ -258,48 +359,64 @@ export default function RitualHistoryPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-semibold text-gray-900">
-                {locale === 'fr' ? 'Historique' : 'History'}
+                {historyFilter === 'changes'
+                  ? (locale === 'fr' ? 'Changements' : 'Changes')
+                  : (locale === 'fr' ? 'Historique' : 'History')
+                }
               </h1>
               <p className="text-sm text-gray-500 mt-0.5">
-                {history.length} {locale === 'fr' ? 'rituels complétés' : 'rituals completed'}
+                {historyFilter === 'changes'
+                  ? `${getChangesTimeline().length} ${locale === 'fr' ? 'changements' : 'changes'}`
+                  : `${history.length} ${locale === 'fr' ? 'rituels complétés' : 'rituals completed'}`
+                }
               </p>
             </div>
-            {history.length > 0 && (
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <TrendingUp className="w-4 h-4" />
-                <span>{getUniqueDates().length} {locale === 'fr' ? 'jours' : 'days'}</span>
-              </div>
-            )}
+            <button
+              onClick={() => setHistoryFilter(historyFilter === 'changes' ? 'day' : 'changes')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                historyFilter === 'changes'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <History className="w-4 h-4" />
+              {historyFilter === 'changes'
+                ? (locale === 'fr' ? 'Retour' : 'Back')
+                : (locale === 'fr' ? 'Changements' : 'Changes')
+              }
+            </button>
           </div>
         </motion.div>
 
-        {/* Filter Tabs */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-5"
-        >
-          <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
-            {[
-              { id: 'day' as FilterType, labelEn: 'By Day', labelFr: 'Par jour' },
-              { id: 'category' as FilterType, labelEn: 'By Theme', labelFr: 'Par thème' },
-              { id: 'all' as FilterType, labelEn: 'All', labelFr: 'Tout' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setHistoryFilter(tab.id)}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                  historyFilter === tab.id
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {locale === 'fr' ? tab.labelFr : tab.labelEn}
-              </button>
-            ))}
-          </div>
-        </motion.div>
+        {/* Filter Tabs - hide when viewing changes */}
+        {historyFilter !== 'changes' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-5"
+          >
+            <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
+              {[
+                { id: 'day' as FilterType, labelEn: 'By Day', labelFr: 'Par jour' },
+                { id: 'category' as FilterType, labelEn: 'By Theme', labelFr: 'Par thème' },
+                { id: 'all' as FilterType, labelEn: 'All', labelFr: 'Tout' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setHistoryFilter(tab.id)}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    historyFilter === tab.id
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {locale === 'fr' ? tab.labelFr : tab.labelEn}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         {/* Date Navigator (for day filter) */}
         {historyFilter === 'day' && getUniqueDates().length > 0 && (
@@ -320,7 +437,7 @@ export default function RitualHistoryPage() {
               <div className="text-center">
                 <p className="font-medium text-gray-900">{formatDate(selectedDate)}</p>
                 <p className="text-xs text-gray-400">
-                  {getFilteredHistory().length} {locale === 'fr' ? 'rituels' : 'rituals'}
+                  {getFilteredHistory().length} / {getRitualCountForDate(selectedDate)} {locale === 'fr' ? 'complétés' : 'completed'}
                 </p>
               </div>
               <button
@@ -400,6 +517,90 @@ export default function RitualHistoryPage() {
                 {locale === 'fr' ? 'Commencer' : 'Get started'}
               </button>
             </div>
+          ) : historyFilter === 'changes' ? (
+            // Changes timeline view
+            <div className="space-y-6">
+              {Object.keys(getGroupedChanges()).length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <History className="w-7 h-7 text-gray-400" />
+                  </div>
+                  <p className="text-gray-600 font-medium mb-1">
+                    {locale === 'fr' ? 'Aucun changement' : 'No changes yet'}
+                  </p>
+                  <p className="text-gray-400 text-sm">
+                    {locale === 'fr' ? 'Les ajouts et retraits apparaîtront ici' : 'Additions and removals will appear here'}
+                  </p>
+                </div>
+              ) : (
+                Object.entries(getGroupedChanges()).map(([date, changes], groupIndex) => (
+                  <div key={date}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm font-medium text-gray-900">
+                        {formatDate(date)}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {changes.length} {locale === 'fr' ? 'changement(s)' : 'change(s)'}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {changes.map((change, index) => {
+                        const category = ritualCategories.find(c => c.id === change.ritual.ritual?.category)
+                        const RitualIcon = change.ritual.ritual?.icon ? iconMap[change.ritual.ritual.icon] || Circle : Circle
+                        const ritualName = locale === 'fr'
+                          ? change.ritual.ritual?.name_fr || 'Rituel inconnu'
+                          : change.ritual.ritual?.name || 'Unknown ritual'
+
+                        return (
+                          <motion.div
+                            key={`${change.type}-${change.ritual.id}-${index}`}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: groupIndex * 0.03 + index * 0.02 }}
+                            className="bg-white rounded-xl p-4 border border-gray-100"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                change.type === 'added' ? 'bg-emerald-100' : 'bg-red-100'
+                              }`}>
+                                {change.type === 'added' ? (
+                                  <Plus className="w-5 h-5 text-emerald-600" />
+                                ) : (
+                                  <Minus className="w-5 h-5 text-red-600" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-gray-900">{ritualName}</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                    change.type === 'added'
+                                      ? 'bg-emerald-50 text-emerald-600'
+                                      : 'bg-red-50 text-red-600'
+                                  }`}>
+                                    {change.type === 'added'
+                                      ? (locale === 'fr' ? 'Ajouté' : 'Added')
+                                      : (locale === 'fr' ? 'Retiré' : 'Removed')
+                                    }
+                                  </span>
+                                  {category && (
+                                    <span className={`text-xs ${category.color}`}>
+                                      {locale === 'fr' ? category.titleFr : category.titleEn}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${category?.bg || 'bg-gray-100'}`}>
+                                <RitualIcon className={`w-4 h-4 ${category?.color || 'text-gray-500'}`} />
+                              </div>
+                            </div>
+                          </motion.div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           ) : historyFilter === 'all' ? (
             // Grouped by date view
             <div className="space-y-6">
@@ -410,7 +611,7 @@ export default function RitualHistoryPage() {
                       {formatDate(date)}
                     </span>
                     <span className="text-xs text-gray-400">
-                      {completions.length} {locale === 'fr' ? 'rituels' : 'rituals'}
+                      {completions.length} / {getRitualCountForDate(date)} {locale === 'fr' ? 'complétés' : 'completed'}
                     </span>
                   </div>
                   <div className="space-y-2">
@@ -504,6 +705,18 @@ function CompletionCard({
               : completion.ritual?.name || 'Deleted ritual'}
           </p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {/* Mood badge */}
+            {completion.mood && (() => {
+              const moodConfig = moodOptions.find(m => m.value === completion.mood)
+              if (!moodConfig) return null
+              const MoodIcon = moodConfig.icon
+              return (
+                <span className={`text-xs ${moodConfig.bg} ${moodConfig.color} px-2 py-0.5 rounded-full flex items-center gap-1`}>
+                  <MoodIcon className="w-3 h-3" />
+                  {locale === 'fr' ? moodConfig.labelFr : moodConfig.label}
+                </span>
+              )
+            })()}
             {showDate && (
               <span className="text-xs text-gray-400">
                 {formatCardDate(completion.completion_date)}

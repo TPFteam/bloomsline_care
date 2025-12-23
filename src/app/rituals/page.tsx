@@ -39,6 +39,14 @@ import {
   History,
   Calendar,
   MessageSquare,
+  Pencil,
+  Trash2,
+  MoreVertical,
+  Laugh,
+  SmilePlus,
+  Meh,
+  Frown,
+  Angry,
 } from 'lucide-react'
 import MemberLayout from '@/components/member/MemberLayout'
 import { useLanguage } from '@/lib/i18n/context'
@@ -101,6 +109,7 @@ interface RitualCompletion {
   completed: boolean
   duration_minutes: number | null
   notes: string | null
+  mood: string | null
 }
 
 const ritualCategories = [
@@ -177,7 +186,29 @@ export default function RitualsPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [addingToCategory, setAddingToCategory] = useState<RitualCategory | null>(null)
   const [showCustomModal, setShowCustomModal] = useState(false)
-  const [customRitual, setCustomRitual] = useState({ name: '', description: '', time: '08:00' })
+  const [customRitual, setCustomRitual] = useState({ name: '', description: '', time: '08:00', hasDuration: false, duration: 5, icon: 'heart' })
+
+  // Available icons for custom rituals
+  const availableIcons = [
+    { id: 'heart', icon: Heart },
+    { id: 'sun', icon: Sun },
+    { id: 'moon', icon: Moon },
+    { id: 'coffee', icon: Coffee },
+    { id: 'eye', icon: Eye },
+    { id: 'sprout', icon: Sprout },
+    { id: 'music', icon: Music },
+    { id: 'cloud', icon: Cloud },
+    { id: 'stars', icon: Stars },
+    { id: 'smile', icon: Smile },
+    { id: 'shield', icon: Shield },
+    { id: 'gift', icon: Gift },
+    { id: 'hand', icon: Hand },
+    { id: 'mail', icon: Mail },
+    { id: 'sofa', icon: Sofa },
+  ]
+  const [editingRitual, setEditingRitual] = useState<{ id: string, memberRitualId: string, name: string, description: string, time: string, hasDuration: boolean, duration: number, icon: string } | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ ritualId: string, memberRitualId: string, name: string } | null>(null)
+  const [menuRitual, setMenuRitual] = useState<MemberRitual | null>(null)
 
   // Time selection for adding rituals
   const [selectedRitualToAdd, setSelectedRitualToAdd] = useState<Ritual | null>(null)
@@ -188,7 +219,111 @@ export default function RitualsPage() {
   const [timerSeconds, setTimerSeconds] = useState(0)
   const [timerRunning, setTimerRunning] = useState(false)
   const [ritualNotes, setRitualNotes] = useState('')
+  const [ritualMood, setRitualMood] = useState<string | null>(null)
+  const [showCompletionFlow, setShowCompletionFlow] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Mood options with Lucide icons
+  const moodOptions = [
+    { value: 'great', icon: Laugh, label: locale === 'fr' ? 'Super' : 'Great', color: 'text-emerald-500', bg: 'bg-emerald-100' },
+    { value: 'good', icon: SmilePlus, label: locale === 'fr' ? 'Bien' : 'Good', color: 'text-green-500', bg: 'bg-green-100' },
+    { value: 'okay', icon: Meh, label: locale === 'fr' ? 'Okay' : 'Okay', color: 'text-yellow-500', bg: 'bg-yellow-100' },
+    { value: 'low', icon: Frown, label: locale === 'fr' ? 'Bas' : 'Low', color: 'text-orange-500', bg: 'bg-orange-100' },
+    { value: 'difficult', icon: Angry, label: locale === 'fr' ? 'Difficile' : 'Difficult', color: 'text-red-500', bg: 'bg-red-100' },
+  ]
+
+  // Personalized reflection prompts for each mood (5 options each)
+  const moodPrompts: Record<string, { en: string[], fr: string[] }> = {
+    great: {
+      en: [
+        "✨ Amazing! What made this moment special?",
+        "🌟 You're glowing! What sparked this joy?",
+        "💫 Wonderful! What are you grateful for right now?",
+        "🎉 Love this energy! What would you like to remember?",
+        "☀️ Beautiful! How can you carry this feeling forward?",
+      ],
+      fr: [
+        "✨ Magnifique! Qu'est-ce qui a rendu ce moment spécial?",
+        "🌟 Vous rayonnez! Qu'est-ce qui a déclenché cette joie?",
+        "💫 Merveilleux! De quoi êtes-vous reconnaissant(e)?",
+        "🎉 J'adore cette énergie! Que voulez-vous retenir?",
+        "☀️ Beau moment! Comment garder ce sentiment?",
+      ],
+    },
+    good: {
+      en: [
+        "🌿 What felt good about this?",
+        "🌱 Nice work! What's one thing you noticed?",
+        "💚 Lovely! What helped you get here?",
+        "🍃 Well done! Any insights to capture?",
+        "🌻 Great effort! What are you proud of?",
+      ],
+      fr: [
+        "🌿 Qu'est-ce qui vous a fait du bien?",
+        "🌱 Bien joué! Qu'avez-vous remarqué?",
+        "💚 Super! Qu'est-ce qui vous a aidé?",
+        "🍃 Bravo! Des réflexions à noter?",
+        "🌻 Bel effort! De quoi êtes-vous fier(e)?",
+      ],
+    },
+    okay: {
+      en: [
+        "💭 Anything you'd like to capture?",
+        "🌤️ You showed up - that matters. Any thoughts?",
+        "💬 Sometimes okay is enough. What's on your mind?",
+        "🤔 What would make tomorrow even better?",
+        "📝 Any reflections from this moment?",
+      ],
+      fr: [
+        "💭 Y a-t-il quelque chose à noter?",
+        "🌤️ Vous avez fait l'effort - c'est important. Des pensées?",
+        "💬 Parfois 'okay' suffit. Qu'avez-vous en tête?",
+        "🤔 Qu'est-ce qui rendrait demain meilleur?",
+        "📝 Des réflexions sur ce moment?",
+      ],
+    },
+    low: {
+      en: [
+        "🤗 What would help you right now?",
+        "💙 It's okay to feel this way. What do you need?",
+        "🫂 You're not alone. What's weighing on you?",
+        "🌧️ Tough moments pass. What would feel supportive?",
+        "💜 Be gentle with yourself. What's one small comfort?",
+      ],
+      fr: [
+        "🤗 Qu'est-ce qui vous aiderait maintenant?",
+        "💙 C'est normal de se sentir ainsi. De quoi avez-vous besoin?",
+        "🫂 Vous n'êtes pas seul(e). Qu'est-ce qui pèse sur vous?",
+        "🌧️ Les moments difficiles passent. Qu'est-ce qui vous soutiendrait?",
+        "💜 Soyez doux avec vous-même. Un petit réconfort?",
+      ],
+    },
+    difficult: {
+      en: [
+        "💙 It takes courage to show up. What's on your heart?",
+        "🌊 Let it out - this is your safe space. How are you really?",
+        "💪 You're stronger than you know. What do you need to release?",
+        "🕊️ Hard days happen. What would feel healing right now?",
+        "❤️‍🩹 Your feelings are valid. What would you tell a friend?",
+      ],
+      fr: [
+        "💙 Il faut du courage pour continuer. Que ressentez-vous?",
+        "🌊 Laissez sortir - c'est votre espace sûr. Comment allez-vous vraiment?",
+        "💪 Vous êtes plus fort(e) que vous pensez. Que devez-vous libérer?",
+        "🕊️ Les jours difficiles arrivent. Qu'est-ce qui vous guérirait?",
+        "❤️‍🩹 Vos sentiments sont valides. Que diriez-vous à un ami?",
+      ],
+    },
+  }
+
+  // Get random prompt for current mood
+  const getRandomPrompt = (mood: string) => {
+    const prompts = moodPrompts[mood]?.[locale === 'fr' ? 'fr' : 'en'] || []
+    return prompts[Math.floor(Math.random() * prompts.length)] || ''
+  }
+
+  // Store the random prompt when mood changes
+  const [currentPrompt, setCurrentPrompt] = useState('')
 
   // History Modal state (single ritual)
   const [historyRitual, setHistoryRitual] = useState<MemberRitual | null>(null)
@@ -215,6 +350,9 @@ export default function RitualsPage() {
     setTimerSeconds((mr.ritual.duration_suggestion || 1) * 60)
     setTimerRunning(false)
     setRitualNotes('')
+    setRitualMood(null)
+    setCurrentPrompt('')
+    setShowCompletionFlow(false)
   }
 
   // Close ritual modal
@@ -280,7 +418,7 @@ export default function RitualsPage() {
     })
   }
 
-  // Complete ritual with notes
+  // Complete ritual with notes and mood
   const completeRitualWithNotes = async () => {
     if (!activeRitual || !memberId) return
     setSaving(true)
@@ -291,41 +429,51 @@ export default function RitualsPage() {
       ? (activeRitual.ritual.duration_suggestion * 60 - timerSeconds) / 60
       : null
 
-    if (existing) {
-      const { error } = await supabase
-        .from('ritual_completions')
-        .update({
-          completed: true,
-          notes: ritualNotes || null,
-          duration_minutes: durationUsed ? Math.round(durationUsed) : null
-        })
-        .eq('id', existing.id)
+    try {
+      if (existing) {
+        const { error } = await supabase
+          .from('ritual_completions')
+          .update({
+            completed: true,
+            notes: ritualNotes || null,
+            mood: ritualMood,
+            duration_minutes: durationUsed ? Math.round(durationUsed) : null
+          })
+          .eq('id', existing.id)
 
-      if (!error) {
-        setCompletions(prev =>
-          prev.map(c => c.id === existing.id
-            ? { ...c, completed: true, notes: ritualNotes || null, duration_minutes: durationUsed ? Math.round(durationUsed) : null }
-            : c
+        if (error) {
+          console.error('Error updating ritual completion:', error)
+        } else {
+          setCompletions(prev =>
+            prev.map(c => c.id === existing.id
+              ? { ...c, completed: true, notes: ritualNotes || null, mood: ritualMood, duration_minutes: durationUsed ? Math.round(durationUsed) : null }
+              : c
+            )
           )
-        )
-      }
-    } else {
-      const { data, error } = await supabase
-        .from('ritual_completions')
-        .insert({
-          member_id: memberId,
-          ritual_id: activeRitual.ritual_id,
-          completion_date: todayStr,
-          completed: true,
-          notes: ritualNotes || null,
-          duration_minutes: durationUsed ? Math.round(durationUsed) : null
-        })
-        .select()
-        .single()
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('ritual_completions')
+          .insert({
+            member_id: memberId,
+            ritual_id: activeRitual.ritual_id,
+            completion_date: todayStr,
+            completed: true,
+            notes: ritualNotes || null,
+            mood: ritualMood,
+            duration_minutes: durationUsed ? Math.round(durationUsed) : null
+          })
+          .select()
+          .single()
 
-      if (!error && data) {
-        setCompletions(prev => [...prev, data])
+        if (error) {
+          console.error('Error inserting ritual completion:', error)
+        } else if (data) {
+          setCompletions(prev => [...prev, data])
+        }
       }
+    } catch (err) {
+      console.error('Exception in completeRitualWithNotes:', err)
     }
 
     setSaving(false)
@@ -515,21 +663,110 @@ export default function RitualsPage() {
     setSelectedTime('08:00')
   }
 
-  // Remove ritual from member's list
+  // Remove ritual from member's list (soft delete for historical tracking)
   const removeRitual = async (memberRitualId: string) => {
     if (!memberId || saving) return
     setSaving(true)
 
     const supabase = createClient()
+
+    // Soft delete - mark as inactive with removal timestamp
     const { error } = await supabase
       .from('member_rituals')
-      .delete()
+      .update({
+        is_active: false,
+        removed_at: new Date().toISOString()
+      })
       .eq('id', memberRitualId)
 
     if (!error) {
       setMemberRituals(prev => prev.filter(mr => mr.id !== memberRitualId))
     }
 
+    setSaving(false)
+  }
+
+  // Delete custom ritual permanently
+  const deleteCustomRitual = async () => {
+    if (!memberId || !showDeleteConfirm || saving) return
+    setSaving(true)
+
+    const supabase = createClient()
+    const { ritualId, memberRitualId } = showDeleteConfirm
+
+    // Soft delete from member_rituals for history tracking
+    await supabase
+      .from('member_rituals')
+      .update({
+        is_active: false,
+        removed_at: new Date().toISOString()
+      })
+      .eq('id', memberRitualId)
+
+    // Then delete the ritual itself (permanent since it's custom)
+    const { error } = await supabase
+      .from('rituals')
+      .delete()
+      .eq('id', ritualId)
+      .eq('is_predefined', false)
+      .eq('created_by', memberId)
+
+    if (!error) {
+      setMemberRituals(prev => prev.filter(mr => mr.id !== memberRitualId))
+      setAllRituals(prev => prev.filter(r => r.id !== ritualId))
+    }
+
+    setShowDeleteConfirm(null)
+    setSaving(false)
+  }
+
+  // Update custom ritual
+  const updateCustomRitual = async () => {
+    if (!memberId || !editingRitual || !editingRitual.name.trim() || saving) return
+    setSaving(true)
+
+    const supabase = createClient()
+
+    // Update the ritual
+    const { error: ritualError } = await supabase
+      .from('rituals')
+      .update({
+        name: editingRitual.name,
+        name_fr: editingRitual.name,
+        description: editingRitual.description || null,
+        description_fr: editingRitual.description || null,
+        icon: editingRitual.icon,
+        duration_suggestion: editingRitual.hasDuration ? editingRitual.duration : null,
+      })
+      .eq('id', editingRitual.id)
+      .eq('is_predefined', false)
+      .eq('created_by', memberId)
+
+    if (!ritualError) {
+      // Update time in member_rituals
+      await supabase
+        .from('member_rituals')
+        .update({ planned_time: editingRitual.time })
+        .eq('id', editingRitual.memberRitualId)
+
+      // Refresh data
+      const { data: updatedRituals } = await supabase
+        .from('rituals')
+        .select('*')
+        .or(`is_predefined.eq.true,created_by.eq.${memberId}`)
+
+      if (updatedRituals) setAllRituals(updatedRituals)
+
+      const { data: updatedMemberRituals } = await supabase
+        .from('member_rituals')
+        .select('*, ritual:rituals(*)')
+        .eq('member_id', memberId)
+        .eq('is_active', true)
+
+      if (updatedMemberRituals) setMemberRituals(updatedMemberRituals as MemberRitual[])
+    }
+
+    setEditingRitual(null)
     setSaving(false)
   }
 
@@ -549,8 +786,10 @@ export default function RitualsPage() {
         description: customRitual.description || null,
         description_fr: customRitual.description || null,
         category: addingToCategory,
+        icon: customRitual.icon,
         is_predefined: false,
         created_by: memberId,
+        duration_suggestion: customRitual.hasDuration ? customRitual.duration : null,
       })
       .select()
       .single()
@@ -591,7 +830,7 @@ export default function RitualsPage() {
       }))
     }
 
-    setCustomRitual({ name: '', description: '', time: '08:00' })
+    setCustomRitual({ name: '', description: '', time: '08:00', hasDuration: false, duration: 5, icon: 'heart' })
     setShowCustomModal(false)
     setSaving(false)
   }
@@ -918,15 +1157,15 @@ export default function RitualsPage() {
                               </div>
                             )}
 
-                            {/* Remove button */}
+                            {/* More options button */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
-                                removeRitual(mr.id)
+                                setMenuRitual(mr)
                               }}
-                              className="p-1.5 text-gray-300 hover:text-red-400 transition-colors"
+                              className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
                             >
-                              <X className="w-4 h-4" />
+                              <MoreVertical className="w-4 h-4" />
                             </button>
                           </motion.div>
                         )
@@ -1220,6 +1459,33 @@ export default function RitualsPage() {
                     />
                   </div>
 
+                  {/* Icon Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {locale === 'fr' ? 'Icône' : 'Icon'}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableIcons.map((iconOption) => {
+                        const IconComponent = iconOption.icon
+                        const isSelected = customRitual.icon === iconOption.id
+                        return (
+                          <button
+                            key={iconOption.id}
+                            type="button"
+                            onClick={() => setCustomRitual(prev => ({ ...prev, icon: iconOption.id }))}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                              isSelected
+                                ? 'bg-emerald-100 ring-2 ring-emerald-500'
+                                : 'bg-gray-100 hover:bg-gray-200'
+                            }`}
+                          >
+                            <IconComponent className={`w-5 h-5 ${isSelected ? 'text-emerald-600' : 'text-gray-500'}`} />
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {locale === 'fr' ? 'Description (optionnel)' : 'Description (optional)'}
@@ -1246,6 +1512,47 @@ export default function RitualsPage() {
                     />
                   </div>
 
+                  {/* Duration toggle and input */}
+                  <div className="p-4 bg-gray-50 rounded-xl space-y-3">
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-sm font-medium text-gray-700">
+                        {locale === 'fr' ? 'Durée prévue' : 'Set duration'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setCustomRitual(prev => ({ ...prev, hasDuration: !prev.hasDuration }))}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          customRitual.hasDuration ? 'bg-emerald-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            customRitual.hasDuration ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </label>
+
+                    {customRitual.hasDuration && (
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          min="1"
+                          max="120"
+                          value={customRitual.duration}
+                          onChange={(e) => setCustomRitual(prev => ({
+                            ...prev,
+                            duration: Math.max(1, Math.min(120, parseInt(e.target.value) || 1))
+                          }))}
+                          className="w-24 px-3 py-2 bg-white rounded-lg border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-center font-medium"
+                        />
+                        <span className="text-sm text-gray-500">
+                          {locale === 'fr' ? 'minutes' : 'minutes'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     onClick={createCustomRitual}
                     disabled={!customRitual.name.trim() || saving}
@@ -1255,6 +1562,324 @@ export default function RitualsPage() {
                       <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                     ) : (
                       locale === 'fr' ? 'Créer' : 'Create'
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Edit Custom Ritual Modal */}
+        <AnimatePresence>
+          {editingRitual && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setEditingRitual(null)}
+                className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[100]"
+              />
+              <motion.div
+                initial={{ opacity: 0, y: 100 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 100 }}
+                className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl p-5 pb-8 z-[100]"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">
+                    {locale === 'fr' ? 'Modifier le rituel' : 'Edit Ritual'}
+                  </h3>
+                  <button
+                    onClick={() => setEditingRitual(null)}
+                    className="p-2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {locale === 'fr' ? 'Nom' : 'Name'}
+                    </label>
+                    <input
+                      type="text"
+                      value={editingRitual.name}
+                      onChange={(e) => setEditingRitual(prev => prev ? ({ ...prev, name: e.target.value }) : null)}
+                      placeholder={locale === 'fr' ? 'Mon rituel...' : 'My ritual...'}
+                      className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                    />
+                  </div>
+
+                  {/* Icon Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {locale === 'fr' ? 'Icône' : 'Icon'}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableIcons.map((iconOption) => {
+                        const IconComponent = iconOption.icon
+                        const isSelected = editingRitual.icon === iconOption.id
+                        return (
+                          <button
+                            key={iconOption.id}
+                            type="button"
+                            onClick={() => setEditingRitual(prev => prev ? ({ ...prev, icon: iconOption.id }) : null)}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                              isSelected
+                                ? 'bg-blue-100 ring-2 ring-blue-500'
+                                : 'bg-gray-100 hover:bg-gray-200'
+                            }`}
+                          >
+                            <IconComponent className={`w-5 h-5 ${isSelected ? 'text-blue-600' : 'text-gray-500'}`} />
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {locale === 'fr' ? 'Description (optionnel)' : 'Description (optional)'}
+                    </label>
+                    <textarea
+                      value={editingRitual.description}
+                      onChange={(e) => setEditingRitual(prev => prev ? ({ ...prev, description: e.target.value }) : null)}
+                      placeholder={locale === 'fr' ? 'Décrivez votre rituel...' : 'Describe your ritual...'}
+                      rows={2}
+                      className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <Clock className="w-4 h-4 inline mr-1" />
+                      {locale === 'fr' ? 'Heure prévue' : 'Planned Time'}
+                    </label>
+                    <input
+                      type="time"
+                      value={editingRitual.time}
+                      onChange={(e) => setEditingRitual(prev => prev ? ({ ...prev, time: e.target.value }) : null)}
+                      className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-center text-lg font-medium"
+                    />
+                  </div>
+
+                  {/* Duration toggle and input */}
+                  <div className="p-4 bg-gray-50 rounded-xl space-y-3">
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-sm font-medium text-gray-700">
+                        {locale === 'fr' ? 'Durée prévue' : 'Set duration'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setEditingRitual(prev => prev ? ({ ...prev, hasDuration: !prev.hasDuration }) : null)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          editingRitual.hasDuration ? 'bg-blue-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            editingRitual.hasDuration ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </label>
+
+                    {editingRitual.hasDuration && (
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          min="1"
+                          max="120"
+                          value={editingRitual.duration}
+                          onChange={(e) => setEditingRitual(prev => prev ? ({
+                            ...prev,
+                            duration: Math.max(1, Math.min(120, parseInt(e.target.value) || 1))
+                          }) : null)}
+                          className="w-24 px-3 py-2 bg-white rounded-lg border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none text-center font-medium"
+                        />
+                        <span className="text-sm text-gray-500">
+                          {locale === 'fr' ? 'minutes' : 'minutes'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={updateCustomRitual}
+                    disabled={!editingRitual.name.trim() || saving}
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {saving ? (
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                    ) : (
+                      locale === 'fr' ? 'Enregistrer' : 'Save Changes'
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Options Bottom Sheet */}
+        <AnimatePresence>
+          {menuRitual && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setMenuRitual(null)}
+                className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[100]"
+              />
+              <motion.div
+                initial={{ opacity: 0, y: 100 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 100 }}
+                className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl p-4 pb-8 z-[100]"
+              >
+                {/* Handle bar */}
+                <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+
+                {/* Ritual name */}
+                <p className="text-center font-medium text-gray-900 mb-4">
+                  {locale === 'fr' ? menuRitual.ritual.name_fr : menuRitual.ritual.name}
+                </p>
+
+                <div className="space-y-2">
+                  {/* Edit - only for custom rituals */}
+                  {!menuRitual.ritual.is_predefined && (
+                    <button
+                      onClick={() => {
+                        setMenuRitual(null)
+                        setEditingRitual({
+                          id: menuRitual.ritual.id,
+                          memberRitualId: menuRitual.id,
+                          name: menuRitual.ritual.name,
+                          description: menuRitual.ritual.description || '',
+                          time: menuRitual.planned_time || '08:00',
+                          hasDuration: !!menuRitual.ritual.duration_suggestion,
+                          duration: menuRitual.ritual.duration_suggestion || 5,
+                          icon: menuRitual.ritual.icon || 'heart'
+                        })
+                      }}
+                      className="w-full px-4 py-4 bg-gray-50 hover:bg-gray-100 rounded-xl text-left text-gray-700 flex items-center gap-4 transition-colors"
+                    >
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Pencil className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{locale === 'fr' ? 'Modifier' : 'Edit'}</p>
+                        <p className="text-xs text-gray-500">{locale === 'fr' ? 'Changer le nom, durée...' : 'Change name, duration...'}</p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Remove from list */}
+                  <button
+                    onClick={() => {
+                      setMenuRitual(null)
+                      removeRitual(menuRitual.id)
+                    }}
+                    className="w-full px-4 py-4 bg-gray-50 hover:bg-gray-100 rounded-xl text-left text-gray-700 flex items-center gap-4 transition-colors"
+                  >
+                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                      <X className="w-5 h-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{locale === 'fr' ? 'Retirer' : 'Remove'}</p>
+                      <p className="text-xs text-gray-500">{locale === 'fr' ? 'Retirer de votre liste' : 'Remove from your list'}</p>
+                    </div>
+                  </button>
+
+                  {/* Delete permanently - only for custom rituals */}
+                  {!menuRitual.ritual.is_predefined && (
+                    <button
+                      onClick={() => {
+                        const ritualName = locale === 'fr' ? menuRitual.ritual.name_fr : menuRitual.ritual.name
+                        setMenuRitual(null)
+                        setShowDeleteConfirm({
+                          ritualId: menuRitual.ritual.id,
+                          memberRitualId: menuRitual.id,
+                          name: ritualName
+                        })
+                      }}
+                      className="w-full px-4 py-4 bg-red-50 hover:bg-red-100 rounded-xl text-left text-red-600 flex items-center gap-4 transition-colors"
+                    >
+                      <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                        <Trash2 className="w-5 h-5 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{locale === 'fr' ? 'Supprimer' : 'Delete'}</p>
+                        <p className="text-xs text-red-500">{locale === 'fr' ? 'Supprimer définitivement' : 'Delete permanently'}</p>
+                      </div>
+                    </button>
+                  )}
+                </div>
+
+                {/* Cancel button */}
+                <button
+                  onClick={() => setMenuRitual(null)}
+                  className="w-full mt-4 py-3 text-gray-500 font-medium"
+                >
+                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                </button>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Delete Confirmation Modal */}
+        <AnimatePresence>
+          {showDeleteConfirm && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowDeleteConfirm(null)}
+                className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[100]"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm bg-white rounded-2xl p-5 z-[100]"
+              >
+                <div className="text-center mb-4">
+                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Trash2 className="w-6 h-6 text-red-500" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">
+                    {locale === 'fr' ? 'Supprimer définitivement ?' : 'Delete permanently?'}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {locale === 'fr'
+                      ? `"${showDeleteConfirm.name}" sera supprimé définitivement. Cette action est irréversible.`
+                      : `"${showDeleteConfirm.name}" will be permanently deleted. This action cannot be undone.`
+                    }
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowDeleteConfirm(null)}
+                    className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
+                  >
+                    {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                  </button>
+                  <button
+                    onClick={deleteCustomRitual}
+                    disabled={saving}
+                    className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl disabled:opacity-50 transition-colors"
+                  >
+                    {saving ? (
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                    ) : (
+                      locale === 'fr' ? 'Supprimer' : 'Delete'
                     )}
                   </button>
                 </div>
@@ -1329,7 +1954,9 @@ export default function RitualsPage() {
                     </button>
 
                     {/* Main content */}
-                    <div className="relative h-full flex flex-col items-center justify-center px-8 py-12">
+                    <div className="relative h-full flex flex-col items-center px-8 py-8 overflow-y-auto">
+                      {/* Spacer for centering */}
+                      <div className="flex-1 min-h-4" />
                       {/* Completion celebration - triggers once when reaching 0 */}
                       {timerSeconds === 0 && activeRitual.ritual.duration_suggestion && (
                         <motion.div
@@ -1470,7 +2097,7 @@ export default function RitualsPage() {
                       )}
 
                       {/* Motivational text when timer running */}
-                      {timerRunning && !isOvertime && (
+                      {timerRunning && !isOvertime && !showCompletionFlow && (
                         <motion.p
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -1480,69 +2107,150 @@ export default function RitualsPage() {
                         </motion.p>
                       )}
 
-                      {/* Overtime message */}
-                      {isOvertime && timerRunning && (
+                      {/* Overtime message - only when not in completion flow */}
+                      {isOvertime && !showCompletionFlow && (
                         <motion.p
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           className="text-emerald-600 text-sm text-center mb-4 font-medium"
                         >
-                          {locale === 'fr' ? 'Continuez, vous êtes dans le flow!' : 'Keep going, you\'re in the flow!'}
+                          {locale === 'fr' ? 'Continuez ou terminez quand vous êtes prêt!' : 'Keep going or finish when ready!'}
                         </motion.p>
                       )}
 
-                      {/* Notes (shown when timer complete or no timer) */}
-                      {(isOvertime || !activeRitual.ritual.duration_suggestion) && (
-                        <motion.div
-                          initial={{ y: 20, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          className="w-full max-w-sm mb-6"
-                        >
-                          <textarea
-                            value={ritualNotes}
-                            onChange={(e) => setRitualNotes(e.target.value)}
-                            placeholder={locale === 'fr' ? 'Comment vous sentez-vous?' : 'How do you feel?'}
-                            rows={3}
-                            className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm rounded-2xl border-0 focus:ring-2 focus:ring-white/50 outline-none transition-all resize-none text-gray-700 placeholder-gray-400"
-                          />
-                        </motion.div>
-                      )}
-
-                      {/* Complete/Finish Button - shows after minimum time or if no timer */}
-                      {(isOvertime || !activeRitual.ritual.duration_suggestion) && (
+                      {/* Finish button - shows after overtime, starts completion flow */}
+                      {(isOvertime || !activeRitual.ritual.duration_suggestion) && !showCompletionFlow && (
                         <motion.button
                           initial={{ y: 20, opacity: 0 }}
                           animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.2 }}
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => {
                             setTimerRunning(false)
-                            completeRitualWithNotes()
+                            setShowCompletionFlow(true)
                           }}
-                          disabled={saving}
-                          className="w-full max-w-sm bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 transition-colors"
+                          className="w-full max-w-sm bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg transition-colors"
                         >
-                          {saving ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                          ) : (
-                            <>
-                              <Sparkles className="w-5 h-5" />
-                              {isOvertime && timerRunning
-                                ? (locale === 'fr' ? 'Terminer' : 'Finish')
-                                : (locale === 'fr' ? 'Terminer le rituel' : 'Complete Ritual')}
-                            </>
-                          )}
+                          <Sparkles className="w-5 h-5" />
+                          {locale === 'fr' ? 'Terminer' : 'Finish'}
                         </motion.button>
                       )}
 
-                      {/* Skip option - only show before minimum time */}
-                      <button
-                        onClick={closeRitualModal}
-                        className="mt-4 text-gray-500 text-sm hover:text-gray-700 transition-colors"
-                      >
-                        {locale === 'fr' ? 'Faire plus tard' : 'Do later'}
-                      </button>
+                      {/* COMPLETION FLOW - Step by step */}
+                      {showCompletionFlow && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="w-full max-w-sm space-y-4"
+                        >
+                          {/* Step 1: Mood Selection */}
+                          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4">
+                            <p className="text-sm text-gray-600 text-center mb-3 font-medium">
+                              {locale === 'fr' ? 'Comment vous sentez-vous?' : 'How do you feel?'}
+                            </p>
+                            <div className="flex justify-center gap-2">
+                              {moodOptions.map((mood) => {
+                                const MoodIcon = mood.icon
+                                const isSelected = ritualMood === mood.value
+                                return (
+                                  <button
+                                    key={mood.value}
+                                    onClick={() => {
+                                      if (isSelected) {
+                                        setRitualMood(null)
+                                        setCurrentPrompt('')
+                                      } else {
+                                        setRitualMood(mood.value)
+                                        setCurrentPrompt(getRandomPrompt(mood.value))
+                                      }
+                                    }}
+                                    className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
+                                      isSelected
+                                        ? `${mood.bg} scale-110 shadow-md`
+                                        : 'bg-white/70 hover:bg-white'
+                                    }`}
+                                  >
+                                    <MoodIcon className={`w-7 h-7 ${isSelected ? mood.color : 'text-gray-400'}`} />
+                                    <span className={`text-xs ${isSelected ? mood.color : 'text-gray-400'}`}>
+                                      {mood.label}
+                                    </span>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Step 2: Question & Notes (appears after mood selected) */}
+                          {ritualMood && currentPrompt && (
+                            <motion.div
+                              key={currentPrompt}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="space-y-3"
+                            >
+                              {/* Prompt card */}
+                              <div className="bg-white/80 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm flex items-center gap-2">
+                                <span className="text-lg">{currentPrompt.match(/^[^\s]+/)?.[0]}</span>
+                                <p className="text-sm text-gray-700 font-medium">
+                                  {currentPrompt.replace(/^[^\s]+\s*/, '')}
+                                </p>
+                              </div>
+
+                              <textarea
+                                value={ritualNotes}
+                                onChange={(e) => {
+                                  setRitualNotes(e.target.value)
+                                  e.target.style.height = 'auto'
+                                  e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px'
+                                }}
+                                placeholder={locale === 'fr' ? 'Partagez vos pensées...' : 'Share your thoughts...'}
+                                rows={2}
+                                className="w-full px-3 py-2 bg-white/80 backdrop-blur-sm rounded-xl border-0 focus:ring-2 focus:ring-white/50 outline-none transition-all resize-none text-gray-700 placeholder-gray-400 text-sm shadow-sm min-h-[52px]"
+                              />
+
+                              {/* Step 3: Complete button */}
+                              <motion.button
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={completeRitualWithNotes}
+                                disabled={saving}
+                                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg transition-colors disabled:opacity-50"
+                              >
+                                {saving ? (
+                                  <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Sparkles className="w-5 h-5" />
+                                    {locale === 'fr' ? 'Terminer le rituel' : 'Complete Ritual'}
+                                  </>
+                                )}
+                              </motion.button>
+                            </motion.div>
+                          )}
+
+                          {/* Back button if they want to continue */}
+                          <button
+                            onClick={() => setShowCompletionFlow(false)}
+                            className="text-gray-500 text-sm hover:text-gray-700 transition-colors"
+                          >
+                            {locale === 'fr' ? '← Continuer le rituel' : '← Continue ritual'}
+                          </button>
+                        </motion.div>
+                      )}
+
+                      {/* Skip option - only show before timer complete and not in completion flow */}
+                      {!isOvertime && activeRitual.ritual.duration_suggestion && !showCompletionFlow && (
+                        <button
+                          onClick={closeRitualModal}
+                          className="mt-4 text-gray-500 text-sm hover:text-gray-700 transition-colors"
+                        >
+                          {locale === 'fr' ? 'Faire plus tard' : 'Do later'}
+                        </button>
+                      )}
+                      {/* Bottom spacer for centering */}
+                      <div className="flex-1 min-h-4" />
                     </div>
                   </div>
                 )
@@ -1627,6 +2335,18 @@ export default function RitualsPage() {
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2">
+                                    {/* Mood indicator */}
+                                    {completion.mood && (() => {
+                                      const moodConfig = moodOptions.find(m => m.value === completion.mood)
+                                      if (!moodConfig) return null
+                                      const MoodIcon = moodConfig.icon
+                                      return (
+                                        <span className={`text-xs ${moodConfig.bg} ${moodConfig.color} px-2 py-1 rounded-full flex items-center gap-1`}>
+                                          <MoodIcon className="w-3 h-3" />
+                                          {moodConfig.label}
+                                        </span>
+                                      )
+                                    })()}
                                     {completion.duration_minutes && (
                                       <span className="text-xs bg-emerald-100 text-emerald-600 px-2 py-1 rounded-full flex items-center gap-1">
                                         <Clock className="w-3 h-3" />
