@@ -756,7 +756,7 @@ function DashboardContent() {
               </div>
               <div className="text-left">
                 <p className="text-sm font-medium text-gray-900">{user?.full_name || 'User'}</p>
-                <p className="text-xs text-gray-500 capitalize">{user?.user_type || 'Member'}</p>
+                <p className="text-xs text-gray-500">{user?.user_type === 'mentor' ? 'Practitioner' : 'Member'}</p>
               </div>
             </motion.div>
           </div>

@@ -74,7 +74,7 @@ export default function OnboardingPage() {
     {
       type: 'mentor' as UserType,
       icon: Heart,
-      title: 'Mentor',
+      title: 'Practitioner',
       description: 'I provide therapeutic services and support clients',
       gradient: 'from-mint-400 to-mint-600',
       bg: 'bg-mint-50',
