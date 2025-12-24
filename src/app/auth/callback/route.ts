@@ -106,8 +106,60 @@ export async function GET(request: NextRequest) {
       const message = `Hi ${userName}! We don't have an account for you yet. Would you like to create one?`
       redirectUrl = `${requestUrl.origin}/sign-up?info=${encodeURIComponent(message)}`
     } else if (isNewUser) {
-      // New user from sign-up page - redirect to onboarding to select user type
-      redirectUrl = `${requestUrl.origin}/onboarding`
+      // New user - check if they're on the early access waitlist
+      const userEmail = data.user?.email
+      const adminClient = createAdminClient()
+
+      if (userEmail) {
+        // Check waitlist status using admin client (bypasses RLS)
+        const { data: waitlistEntry } = await adminClient
+          .from('early_access_waitlist')
+          .select('id, status, name')
+          .eq('email', userEmail)
+          .single()
+
+        console.log('Waitlist check:', { email: userEmail, entry: waitlistEntry })
+
+        if (!waitlistEntry || waitlistEntry.status === 'pending') {
+          // User is NOT on the waitlist or hasn't been invited yet
+          // Delete the auto-created account
+          const userId = data.user?.id
+
+          if (userId) {
+            try {
+              console.log('Deleting non-waitlisted user:', userId)
+              await adminClient.auth.admin.deleteUser(userId)
+            } catch (error) {
+              console.error('Error deleting non-waitlisted user:', error)
+            }
+          }
+
+          // Redirect to early access page with a friendly message
+          const userName = data.user?.user_metadata?.full_name?.split(' ')[0] || 'there'
+          const message = waitlistEntry
+            ? `Hey ${userName}! You're on our waitlist. We'll reach out personally when your spot is ready.`
+            : `Hey ${userName}! We're currently in early access. Request an invite to join us.`
+          redirectUrl = `${requestUrl.origin}/early-access?info=${encodeURIComponent(message)}`
+        } else {
+          // User is on the waitlist and has been invited - allow signup
+          // Update their status to 'activated'
+          await adminClient
+            .from('early_access_waitlist')
+            .update({
+              status: 'activated',
+              activated_at: new Date().toISOString()
+            })
+            .eq('id', waitlistEntry.id)
+
+          console.log('Activated waitlist user:', userEmail)
+
+          // Redirect to onboarding
+          redirectUrl = `${requestUrl.origin}/onboarding`
+        }
+      } else {
+        // No email - shouldn't happen with Google OAuth, but handle it
+        redirectUrl = `${requestUrl.origin}/early-access`
+      }
     }
 
     // Create final redirect response and copy cookies from temp response

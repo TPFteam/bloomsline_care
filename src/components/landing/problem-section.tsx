@@ -49,8 +49,8 @@ export function ProblemSection({ selectedAudience: initialAudience }: ProblemSec
           fr: 'Les apps envoient des notifications. Elles ne fournissent pas de vraie guidance.',
         },
       ],
-      cta: { en: 'Get started', fr: 'Commencer' },
-      link: '/sign-up',
+      cta: { en: 'Request Early Access', fr: 'Demander un accès anticipé' },
+      link: '/early-access',
     },
     practitioner: {
       problems: [

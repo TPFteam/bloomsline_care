@@ -14,7 +14,7 @@ export function Navbar() {
 
   const navItems = [
     { label: t.nav.home, href: '/', active: true },
-    { label: locale === 'fr' ? 'Pour tous' : 'For Everyone', href: '/sign-up' },
+    { label: locale === 'fr' ? 'Accès anticipé' : 'Early Access', href: '/early-access' },
     { label: t.nav.forPractitioners, href: '/practitioner' },
   ]
 
@@ -84,12 +84,12 @@ export function Navbar() {
                 {t.nav.signIn}
               </Button>
             </Link>
-            <Link href="/sign-up">
+            <Link href="/early-access">
               <Button
                 className="font-semibold bg-gradient-to-r from-lavender-500 to-lavender-600 text-white hover:from-lavender-600 hover:to-lavender-700 rounded-full px-6 shadow-lg shadow-lavender-500/30 hover:shadow-xl transition-all duration-300"
                 suppressHydrationWarning
               >
-                {t.nav.getStarted}
+                {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
               </Button>
             </Link>
           </motion.div>
@@ -141,9 +141,9 @@ export function Navbar() {
                     {t.nav.signIn}
                   </Button>
                 </Link>
-                <Link href="/sign-up" className="w-full">
+                <Link href="/early-access" className="w-full">
                   <Button className="w-full font-semibold bg-gradient-to-r from-lavender-500 to-lavender-600 text-white hover:from-lavender-600 hover:to-lavender-700 rounded-full shadow-lg" suppressHydrationWarning>
-                    {t.nav.getStarted}
+                    {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
                   </Button>
                 </Link>
               </div>
