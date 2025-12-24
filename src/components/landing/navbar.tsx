@@ -10,12 +10,12 @@ import { LanguageSwitcher } from '@/components/language-switcher'
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
 
   const navItems = [
-    { label: t.nav.home, href: '#', active: true },
-    { label: t.nav.features, href: '#features' },
-    { label: t.nav.forPractitioners, href: '#solutions' },
+    { label: t.nav.home, href: '/', active: true },
+    { label: locale === 'fr' ? 'Pour tous' : 'For Everyone', href: '/sign-up' },
+    { label: t.nav.forPractitioners, href: '/practitioner' },
   ]
 
   return (
@@ -23,7 +23,7 @@ export function Navbar() {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}
-      className="fixed top-0 left-0 right-0 z-50"
+      className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md border-b border-neutral-100 dark:border-neutral-800"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
