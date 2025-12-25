@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { ArrowLeft, Rocket, Shield, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Logo } from '@/components/ui/logo'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -86,11 +87,8 @@ function SignUpContent() {
       <header className="absolute top-0 left-0 right-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-mint-400 to-lavender-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">B</span>
-              </div>
-              <span className="font-semibold text-foreground">Bloomsline</span>
+            <Link href="/">
+              <Logo size="md" showText />
             </Link>
             <Link
               href="/"

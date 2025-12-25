@@ -29,6 +29,7 @@ import {
   CalendarCheck,
 } from 'lucide-react'
 import { AnimatedIcon } from '@/components/ui/animated-icons'
+import { Logo } from '@/components/ui/logo'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n/context'
 import { LanguageSwitcher } from '@/components/language-switcher'
@@ -571,12 +572,9 @@ function DashboardContent() {
       >
         <div className="h-full bg-white/90 backdrop-blur-2xl rounded-[1.5rem] border border-white/60 shadow-xl shadow-gray-200/40 p-4 flex flex-col">
           {/* Logo */}
-          <div className="flex items-center gap-3 mb-8 px-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-lavender-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200/50 flex-shrink-0">
-              <span className="text-white font-bold text-lg">B</span>
-            </div>
-            <span className="font-semibold text-lg text-gray-900">Bloomsline</span>
-          </div>
+          <Link href="/dashboard" className="mb-8 px-2 block hover:opacity-80 transition-opacity">
+            <Logo size="lg" showText />
+          </Link>
 
           {/* Navigation Pills */}
           <nav className="flex-1 space-y-1.5">

@@ -10,6 +10,7 @@ import {
   Phone,
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
+import { Logo } from '@/components/ui/logo'
 
 const socialLinks = [
   { icon: Twitter, href: '#', key: 'twitter' },
@@ -32,12 +33,7 @@ export function Footer() {
             className="lg:col-span-2"
           >
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-lavender-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/30">
-                <span className="text-white font-bold text-xl">B</span>
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-teal-600 to-lavender-600 bg-clip-text text-transparent">
-                Bloomsline
-              </span>
+              <Logo size="lg" showText />
             </div>
             <p className="text-muted-foreground mb-6 max-w-sm" suppressHydrationWarning>
               {t.footer.brandDescription}

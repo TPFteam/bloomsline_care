@@ -4,6 +4,7 @@ import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { Logo } from '@/components/ui/logo'
 import {
   ArrowLeft,
   Mail,
@@ -265,11 +266,8 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
       <header className="bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <Link href={isLoggedIn ? '/dashboard' : '/'} className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-mint-400 to-lavender-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">B</span>
-              </div>
-              <span className="font-semibold text-gray-900">Bloomsline</span>
+            <Link href={isLoggedIn ? '/dashboard' : '/'}>
+              <Logo size="md" showText />
             </Link>
           </div>
         </div>

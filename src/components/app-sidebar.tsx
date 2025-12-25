@@ -25,6 +25,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import { AnimatedIcon } from '@/components/ui/animated-icons'
+import { Logo } from '@/components/ui/logo'
 
 interface AppSidebarProps {
   userType?: 'mentor' | 'member'
@@ -172,11 +173,8 @@ export function AppSidebar({ userType: propUserType }: AppSidebarProps) {
       <div className="h-full bg-white/90 backdrop-blur-2xl rounded-[1.5rem] border border-white/60 shadow-xl shadow-gray-200/40 p-4 flex flex-col">
         {/* Logo */}
         <Link href="/dashboard">
-          <div className="flex items-center gap-3 mb-8 px-2 cursor-pointer hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-lavender-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200/50 flex-shrink-0">
-              <span className="text-white font-bold text-lg">B</span>
-            </div>
-            <span className="font-semibold text-lg text-gray-900">Bloomsline</span>
+          <div className="mb-8 px-2 cursor-pointer hover:opacity-80 transition-opacity">
+            <Logo size="lg" showText />
           </div>
         </Link>
 

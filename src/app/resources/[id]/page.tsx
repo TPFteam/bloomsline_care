@@ -34,6 +34,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
+import { Logo } from '@/components/ui/logo'
 import { useLanguage } from '@/lib/i18n/context'
 import { getResourceById, deleteResource, getResourceSubmissions, updateSubmission, type ResourceSubmission } from '@/lib/services/resources'
 import { removeResourceFromAllCollections, isResourceSaved } from '@/lib/services/collections'
@@ -198,6 +199,16 @@ export default function ResourceDetailPage() {
   const [selectedSubmission, setSelectedSubmission] = useState<ResourceSubmission | null>(null)
   const [reviewNotes, setReviewNotes] = useState('')
   const [savingNotes, setSavingNotes] = useState(false)
+  const [accessStatus, setAccessStatus] = useState<'allowed' | 'private' | 'not_found' | null>(null)
+  const [privateResourceCreator, setPrivateResourceCreator] = useState<{
+    id: string
+    slug: string | null
+    full_name: string
+    avatar_url: string | null
+    headline: string | null
+    credentials: string[]
+    is_verified: boolean
+  } | null>(null)
 
   useEffect(() => {
     async function fetchResource() {
@@ -216,16 +227,46 @@ export default function ResourceDetailPage() {
         if (user && data && data.practitioner_id === user.id) {
           console.log('Setting isOwner to true')
           setIsOwner(true)
+          setAccessStatus('allowed')
           // Fetch submissions if owner
           fetchSubmissions(params.id as string)
         } else if (data) {
           // If not owner, check if the resource is saved in their collections
           const saved = await isResourceSaved(data.id)
           setIsSaved(saved)
+          setAccessStatus('allowed')
+
+          // For public/link_only resources, fetch proper creator profile from API
+          // (browser client may not have access to users table due to RLS)
+          if (data.creator_profile?.full_name === 'Practitioner' || !data.creator_profile?.full_name) {
+            try {
+              const creatorResponse = await fetch(`/api/resources/creator?id=${params.id}`)
+              const creatorData = await creatorResponse.json()
+              if (creatorData.creatorProfile) {
+                setResource(prev => prev ? { ...prev, creator_profile: creatorData.creatorProfile } : prev)
+              }
+            } catch (e) {
+              console.error('Error fetching creator profile:', e)
+            }
+          }
+        } else {
+          // Resource is null - check if it's truly not found or just private
+          const response = await fetch(`/api/resources/check-access?id=${params.id}`)
+          const accessData = await response.json()
+
+          if (accessData.exists && !accessData.hasAccess) {
+            setAccessStatus('private')
+            if (accessData.creatorProfile) {
+              setPrivateResourceCreator(accessData.creatorProfile)
+            }
+          } else {
+            setAccessStatus('not_found')
+          }
         }
       } catch (error) {
         console.error('Error fetching resource:', error)
         toast.error(locale === 'fr' ? 'Erreur lors du chargement' : 'Error loading resource')
+        setAccessStatus('not_found')
       } finally {
         setLoading(false)
       }
@@ -335,16 +376,113 @@ export default function ResourceDetailPage() {
 
   if (!resource) {
     return (
-      <div className="min-h-screen gradient-mesh flex items-center justify-center">
+      <div className="min-h-screen gradient-mesh flex items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center bg-white/90 backdrop-blur-xl rounded-[1.5rem] p-8 shadow-lg shadow-gray-200/40 border border-white/60"
+          className="text-center bg-white/90 backdrop-blur-xl rounded-[1.5rem] p-8 shadow-lg shadow-gray-200/40 border border-white/60 max-w-md"
         >
-          <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            {locale === 'fr' ? 'Ressource non trouvée' : 'Resource not found'}
-          </h1>
+          {accessStatus === 'private' ? (
+            <>
+              <Lock className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                {locale === 'fr' ? 'Ressource privée' : 'Private Resource'}
+              </h1>
+              <p className="text-gray-600 mb-6">
+                {locale === 'fr'
+                  ? 'Cette ressource n\'est pas accessible publiquement. Veuillez contacter le propriétaire pour demander l\'accès.'
+                  : 'This resource is not publicly accessible. Please contact the owner to request access.'}
+              </p>
+
+              {/* Creator Profile Card */}
+              {privateResourceCreator && (
+                <div className="mb-6">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+                    {locale === 'fr' ? 'Créé par' : 'Created by'}
+                  </p>
+                  {privateResourceCreator.slug ? (
+                    <Link
+                      href={`/practitioners/${privateResourceCreator.slug}`}
+                      className="block bg-gray-50 hover:bg-gray-100 rounded-2xl p-4 transition-colors border border-gray-100"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-lavender-400 to-lavender-600 flex items-center justify-center text-white text-xl font-semibold flex-shrink-0 overflow-hidden">
+                          {privateResourceCreator.avatar_url ? (
+                            <img
+                              src={privateResourceCreator.avatar_url}
+                              alt={privateResourceCreator.full_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            privateResourceCreator.full_name.charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div className="text-left flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-gray-900 truncate">
+                              {privateResourceCreator.full_name}
+                            </span>
+                            {privateResourceCreator.is_verified && (
+                              <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                            )}
+                          </div>
+                          {privateResourceCreator.headline && (
+                            <p className="text-sm text-gray-600 truncate">
+                              {privateResourceCreator.headline}
+                            </p>
+                          )}
+                          {privateResourceCreator.credentials && privateResourceCreator.credentials.length > 0 && (
+                            <p className="text-xs text-gray-500 truncate">
+                              {privateResourceCreator.credentials.slice(0, 3).join(', ')}
+                            </p>
+                          )}
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-lavender-400 to-lavender-600 flex items-center justify-center text-white text-xl font-semibold flex-shrink-0 overflow-hidden">
+                          {privateResourceCreator.avatar_url ? (
+                            <img
+                              src={privateResourceCreator.avatar_url}
+                              alt={privateResourceCreator.full_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            privateResourceCreator.full_name.charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div className="text-left flex-1 min-w-0">
+                          <span className="font-semibold text-gray-900 truncate block">
+                            {privateResourceCreator.full_name}
+                          </span>
+                          {privateResourceCreator.headline && (
+                            <p className="text-sm text-gray-600 truncate">
+                              {privateResourceCreator.headline}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                {locale === 'fr' ? 'Ressource non trouvée' : 'Resource not found'}
+              </h1>
+              <p className="text-gray-600 mb-6">
+                {locale === 'fr'
+                  ? 'Cette ressource n\'existe pas ou a été supprimée.'
+                  : 'This resource does not exist or has been deleted.'}
+              </p>
+            </>
+          )}
           <Link href="/resources">
             <Button className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl">
               {locale === 'fr' ? 'Retour aux ressources' : 'Back to Resources'}
@@ -405,6 +543,27 @@ export default function ResourceDetailPage() {
 
   return (
     <div className="min-h-screen gradient-mesh relative">
+      {/* Public Branding Header - Only show for non-owners */}
+      {!isOwner && (
+        <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-14">
+              <Link href="/" className="flex items-center gap-2">
+                <Logo size="sm" showText />
+              </Link>
+              <Link href="/early-access">
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-lg text-xs h-8 px-3"
+                >
+                  {locale === 'fr' ? 'Rejoindre' : 'Join Bloomsline'}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Decorative Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-mint-200/30 rounded-full blur-3xl" />
@@ -413,15 +572,17 @@ export default function ResourceDetailPage() {
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        {/* Breadcrumb Navigation */}
-        <div className="mb-6">
-          <Breadcrumb
-            items={[
-              { label: 'Resources', labelFr: 'Ressources', href: '/resources', icon: <FileText className="w-4 h-4" /> },
-              { label: typeof resource.title === 'string' ? resource.title : 'Resource' },
-            ]}
-          />
-        </div>
+        {/* Breadcrumb Navigation - Only show for owner */}
+        {isOwner && (
+          <div className="mb-6">
+            <Breadcrumb
+              items={[
+                { label: 'Resources', labelFr: 'Ressources', href: '/resources', icon: <FileText className="w-4 h-4" /> },
+                { label: typeof resource.title === 'string' ? resource.title : 'Resource' },
+              ]}
+            />
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -444,12 +605,15 @@ export default function ResourceDetailPage() {
                     <TypeIcon className="w-3 h-3 mr-1" />
                     {typeLabel}
                   </Badge>
-                  <Badge className={resource.status === 'published' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 border' : 'bg-amber-50 text-amber-700 border-amber-200 border'}>
-                    {resource.status === 'published'
-                      ? (locale === 'fr' ? 'Publié' : 'Published')
-                      : (locale === 'fr' ? 'Brouillon' : 'Draft')
-                    }
-                  </Badge>
+                  {/* Status badge - only show for owner */}
+                  {isOwner && (
+                    <Badge className={resource.status === 'published' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 border' : 'bg-amber-50 text-amber-700 border-amber-200 border'}>
+                      {resource.status === 'published'
+                        ? (locale === 'fr' ? 'Publié' : 'Published')
+                        : (locale === 'fr' ? 'Brouillon' : 'Draft')
+                      }
+                    </Badge>
+                  )}
                 </div>
               </div>
 
@@ -467,20 +631,29 @@ export default function ResourceDetailPage() {
                       {typeof resource.category === 'string' ? resource.category : ''}
                     </span>
                   )}
-                  <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600">
-                    {resource.visibility === 'public' ? (
-                      <>
-                        <Globe className="w-4 h-4 text-gray-400" />
-                        {locale === 'fr' ? 'Public' : 'Public'}
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="w-4 h-4 text-gray-400" />
-                        {locale === 'fr' ? 'Privé' : 'Private'}
-                      </>
-                    )}
-                  </span>
-                  {resource.times_assigned > 0 && (
+                  {/* Visibility badge - only show for owner */}
+                  {isOwner && (
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600">
+                      {resource.visibility === 'public' ? (
+                        <>
+                          <Globe className="w-4 h-4 text-gray-400" />
+                          {locale === 'fr' ? 'Public' : 'Public'}
+                        </>
+                      ) : resource.visibility === 'link_only' ? (
+                        <>
+                          <Globe className="w-4 h-4 text-gray-400" />
+                          {locale === 'fr' ? 'Lien partageable' : 'Shareable link'}
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4 text-gray-400" />
+                          {locale === 'fr' ? 'Privé' : 'Private'}
+                        </>
+                      )}
+                    </span>
+                  )}
+                  {/* Times assigned - only show for owner */}
+                  {isOwner && resource.times_assigned > 0 && (
                     <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600">
                       <Users className="w-4 h-4 text-gray-400" />
                       {resource.times_assigned} {locale === 'fr' ? 'assigné(s)' : 'assigned'}
@@ -508,7 +681,8 @@ export default function ResourceDetailPage() {
                     <Clock className="w-4 h-4 text-gray-400" />
                     {locale === 'fr' ? 'Créé le' : 'Created'} {new Date(resource.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US')}
                   </span>
-                  {resource.times_completed > 0 && (
+                  {/* Times completed - only show for owner */}
+                  {isOwner && resource.times_completed > 0 && (
                     <span className="flex items-center gap-2 text-sm text-gray-500">
                       <CheckCircle className="w-4 h-4 text-emerald-500" />
                       {resource.times_completed} {locale === 'fr' ? 'complété(s)' : 'completed'}
@@ -1748,38 +1922,49 @@ export default function ResourceDetailPage() {
                   </div>
                 </div>
 
-                <div>
-                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
-                    {locale === 'fr' ? 'Statut' : 'Status'}
-                  </p>
-                  <Badge className={resource.status === 'published' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 border' : 'bg-amber-50 text-amber-700 border-amber-200 border'}>
-                    {resource.status === 'published'
-                      ? (locale === 'fr' ? 'Publié' : 'Published')
-                      : resource.status === 'draft'
-                      ? (locale === 'fr' ? 'Brouillon' : 'Draft')
-                      : (locale === 'fr' ? 'Archivé' : 'Archived')
-                    }
-                  </Badge>
-                </div>
+                {/* Status - only show for owner */}
+                {isOwner && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                      {locale === 'fr' ? 'Statut' : 'Status'}
+                    </p>
+                    <Badge className={resource.status === 'published' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 border' : 'bg-amber-50 text-amber-700 border-amber-200 border'}>
+                      {resource.status === 'published'
+                        ? (locale === 'fr' ? 'Publié' : 'Published')
+                        : resource.status === 'draft'
+                        ? (locale === 'fr' ? 'Brouillon' : 'Draft')
+                        : (locale === 'fr' ? 'Archivé' : 'Archived')
+                      }
+                    </Badge>
+                  </div>
+                )}
 
-                <div>
-                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
-                    {locale === 'fr' ? 'Visibilité' : 'Visibility'}
-                  </p>
-                  <Badge className={resource.visibility === 'public' ? 'bg-blue-50 text-blue-700 border-blue-200 border' : 'bg-gray-50 text-gray-700 border-gray-200 border'}>
-                    {resource.visibility === 'public' ? (
-                      <>
-                        <Globe className="w-3 h-3 mr-1" />
-                        {locale === 'fr' ? 'Public' : 'Public'}
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="w-3 h-3 mr-1" />
-                        {locale === 'fr' ? 'Privé' : 'Private'}
-                      </>
-                    )}
-                  </Badge>
-                </div>
+                {/* Visibility - only show for owner */}
+                {isOwner && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                      {locale === 'fr' ? 'Visibilité' : 'Visibility'}
+                    </p>
+                    <Badge className={resource.visibility === 'public' ? 'bg-blue-50 text-blue-700 border-blue-200 border' : resource.visibility === 'link_only' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 border' : 'bg-gray-50 text-gray-700 border-gray-200 border'}>
+                      {resource.visibility === 'public' ? (
+                        <>
+                          <Globe className="w-3 h-3 mr-1" />
+                          {locale === 'fr' ? 'Public' : 'Public'}
+                        </>
+                      ) : resource.visibility === 'link_only' ? (
+                        <>
+                          <Globe className="w-3 h-3 mr-1" />
+                          {locale === 'fr' ? 'Lien partageable' : 'Shareable link'}
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-3 h-3 mr-1" />
+                          {locale === 'fr' ? 'Privé' : 'Private'}
+                        </>
+                      )}
+                    </Badge>
+                  </div>
+                )}
 
                 {resource.category && (
                   <div>
@@ -2180,25 +2365,52 @@ export default function ResourceDetailPage() {
           </motion.div>
         )}
 
-        {/* Back Button */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="mt-8"
-        >
-          <motion.div whileHover={{ x: -4 }} className="inline-block">
-            <Button
-              variant="ghost"
-              onClick={() => router.back()}
-              className="rounded-xl hover:bg-white/80 transition-all"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {locale === 'fr' ? 'Retour' : 'Go Back'}
-            </Button>
+        {/* Back Button - only show for owner */}
+        {isOwner && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="mt-8"
+          >
+            <motion.div whileHover={{ x: -4 }} className="inline-block">
+              <Button
+                variant="ghost"
+                onClick={() => router.back()}
+                className="rounded-xl hover:bg-white/80 transition-all"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                {locale === 'fr' ? 'Retour' : 'Go Back'}
+              </Button>
+            </motion.div>
           </motion.div>
-        </motion.div>
+        )}
       </div>
+
+      {/* Public Branding Footer - Only show for non-owners */}
+      {!isOwner && (
+        <div className="relative z-10 mt-12 py-8 border-t border-gray-200/50 bg-gradient-to-b from-white/50 to-lavender-50/30">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <Link href="/" className="flex items-center gap-2 group">
+                <Logo size="md" showText />
+              </Link>
+              <p className="text-sm text-gray-500 flex items-center gap-1.5">
+                {locale === 'fr' ? 'Créé avec' : 'Made with'}
+                <svg className="w-4 h-4 text-rose-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                </svg>
+                {locale === 'fr' ? 'pour votre bien-être' : 'for your wellbeing'}
+              </p>
+              <p className="text-xs text-gray-400">
+                {locale === 'fr'
+                  ? 'Accompagner chaque parcours de guérison, un pas à la fois'
+                  : 'Supporting every healing journey, one step at a time'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

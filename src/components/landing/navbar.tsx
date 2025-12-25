@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Logo } from '@/components/ui/logo'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n/context'
 import { LanguageSwitcher } from '@/components/language-switcher'
@@ -35,10 +36,7 @@ export function Navbar() {
             className="flex items-center"
           >
             <a href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-lavender-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">B</span>
-              </div>
-              <span className="font-semibold text-foreground">Bloomsline</span>
+              <Logo size="md" showText />
             </a>
           </motion.div>
 

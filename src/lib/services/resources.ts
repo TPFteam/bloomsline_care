@@ -19,7 +19,7 @@ export async function getResources(filters?: {
   type?: ResourceType
   status?: ResourceStatus
   category?: string
-  visibility?: 'private' | 'public'
+  visibility?: 'private' | 'link_only' | 'public'
   publicOnly?: boolean
   myResourcesOnly?: boolean // Only fetch resources created by the current user
 }): Promise<Resource[]> {
@@ -219,7 +219,7 @@ export async function deleteResource(id: string): Promise<void> {
   }
 }
 
-export async function publishResource(id: string, visibility: 'private' | 'public' = 'private'): Promise<Resource> {
+export async function publishResource(id: string, visibility: 'private' | 'link_only' | 'public' = 'private'): Promise<Resource> {
   const supabase = createClient()
 
   const updateData: Record<string, unknown> = {

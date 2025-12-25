@@ -301,7 +301,7 @@ export function MainHero() {
             animate={{ opacity: 1 }}
             transition={{ delay: 3 }}
             onClick={() => setPhase('reveal')}
-            className="absolute bottom-12 text-neutral-400 dark:text-white/30 text-sm hover:text-neutral-600 dark:hover:text-white/60 transition-colors duration-300"
+            className="absolute bottom-24 sm:bottom-12 text-neutral-400 dark:text-white/30 text-sm hover:text-neutral-600 dark:hover:text-white/60 transition-colors duration-300 z-50"
           >
             {locale === 'fr' ? 'Passer' : 'Skip'}
           </motion.button>

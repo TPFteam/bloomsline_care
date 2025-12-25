@@ -242,7 +242,7 @@ function CreatePsychoeducationContent() {
   const [blocks, setBlocks] = useState<ContentBlock[]>([])
   const [learningObjectives, setLearningObjectives] = useState<string[]>([''])
   const [isSaving, setIsSaving] = useState(false)
-  const [visibility, setVisibility] = useState<'private' | 'public'>('private')
+  const [visibility, setVisibility] = useState<'private' | 'link_only' | 'public'>('private')
   const [saveAs, setSaveAs] = useState<'draft' | 'published'>('draft')
 
   // UI state
@@ -370,6 +370,31 @@ function CreatePsychoeducationContent() {
 
     loadResource()
   }, [editId, locale, router])
+
+  // Reset form state when creating a new resource (not editing)
+  useEffect(() => {
+    if (!editId) {
+      setTitle('')
+      setDescription('')
+      setSelectedCategory(null)
+      setBlocks([])
+      setLearningObjectives([''])
+      setVisibility('private')
+      setResourceLanguage(locale as 'en' | 'fr')
+      setSaveAs('draft')
+      setStep('template')
+      setDetailsStep(1)
+      setIsEditMode(false)
+      setIsLoading(false)
+      setShowBlockPicker(false)
+      setExpandedBlock(null)
+      setViewMode('edit')
+      setAutoSaveDraftId(null)
+      setAutoSaveStatus('idle')
+      setLastSavedAt(null)
+      setHasUnsavedChanges(false)
+    }
+  }, [editId, locale])
 
   // Connect video stream to preview element after state changes
   useEffect(() => {
@@ -2892,23 +2917,23 @@ function CreatePsychoeducationContent() {
                             whileTap={{ scale: 0.98 }}
                             onClick={() => setVisibility('private')}
                             className={`p-4 rounded-xl border-2 text-left transition-all ${
-                              visibility === 'private'
+                              visibility === 'private' || visibility === 'link_only'
                                 ? 'border-purple-400 bg-purple-50'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
                             <div className="flex items-center gap-3 mb-2">
                               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                visibility === 'private' ? 'bg-purple-200' : 'bg-gray-100'
+                                visibility === 'private' || visibility === 'link_only' ? 'bg-purple-200' : 'bg-gray-100'
                               }`}>
-                                <Lock className={`w-4 h-4 ${visibility === 'private' ? 'text-purple-700' : 'text-gray-500'}`} />
+                                <Lock className={`w-4 h-4 ${visibility === 'private' || visibility === 'link_only' ? 'text-purple-700' : 'text-gray-500'}`} />
                               </div>
-                              <span className={`font-medium ${visibility === 'private' ? 'text-purple-900' : 'text-gray-700'}`}>
+                              <span className={`font-medium ${visibility === 'private' || visibility === 'link_only' ? 'text-purple-900' : 'text-gray-700'}`}>
                                 {locale === 'fr' ? 'Privé' : 'Private'}
                               </span>
                             </div>
                             <p className="text-xs text-gray-500">
-                              {locale === 'fr' ? 'Visible uniquement pour vous' : 'Only visible in My Resources'}
+                              {locale === 'fr' ? 'Vous + vos membres' : 'You + your members'}
                             </p>
                           </motion.button>
 
@@ -2933,10 +2958,44 @@ function CreatePsychoeducationContent() {
                               </span>
                             </div>
                             <p className="text-xs text-gray-500">
-                              {locale === 'fr' ? 'Accessible à la communauté' : 'Shared in the Digital Library'}
+                              {locale === 'fr' ? 'Bibliothèque numérique' : 'Digital Library'}
                             </p>
                           </motion.button>
                         </div>
+
+                        {/* External link toggle - only show for private */}
+                        {(visibility === 'private' || visibility === 'link_only') && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="mt-4"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setVisibility(visibility === 'link_only' ? 'private' : 'link_only')}
+                              className={`w-full p-4 rounded-xl border-2 text-left transition-all flex items-center justify-between ${
+                                visibility === 'link_only'
+                                  ? 'border-teal-400 bg-teal-50'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <ExternalLink className={`w-4 h-4 ${visibility === 'link_only' ? 'text-teal-600' : 'text-gray-400'}`} />
+                                <div>
+                                  <p className={`text-sm font-medium ${visibility === 'link_only' ? 'text-teal-900' : 'text-gray-700'}`}>
+                                    {locale === 'fr' ? 'Partager via lien externe' : 'Share via external link'}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {locale === 'fr' ? 'Tout le monde peut voir sans connexion' : 'Anyone can view without login'}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className={`w-11 h-6 rounded-full transition-colors ${visibility === 'link_only' ? 'bg-teal-500' : 'bg-gray-300'}`}>
+                                <div className={`w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform mt-0.5 ${visibility === 'link_only' ? 'translate-x-5 ml-0.5' : 'translate-x-0.5'}`} />
+                              </div>
+                            </button>
+                          </motion.div>
+                        )}
 
                         {visibility === 'public' && (
                           <motion.div

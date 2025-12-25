@@ -3,7 +3,7 @@ export type ResourceType = 'worksheet' | 'exercise' | 'psychoeducation' | 'table
 
 export type ResourceStatus = 'draft' | 'published' | 'archived'
 
-export type ResourceVisibility = 'private' | 'public'
+export type ResourceVisibility = 'private' | 'link_only' | 'public'
 
 export type ResourceLanguage = 'en' | 'fr'
 
