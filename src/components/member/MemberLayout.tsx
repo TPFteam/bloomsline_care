@@ -128,9 +128,6 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
   const isReflectionPage = pathname === '/reflection'
   const isSettingsPage = pathname?.startsWith('/settings')
 
-  // Don't show floating camera on moments pages (they have their own add button)
-  const isMomentsPage = pathname?.startsWith('/moments')
-
   // Hide all navigation on focus pages (reflection, settings)
   const hideNavigation = isFillingResource || isReflectionPage || isSettingsPage
 
@@ -141,15 +138,15 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
         {children}
       </main>
 
-      {/* Floating Camera Button - Hide on moments pages and focus pages */}
-      {!hideNavigation && !isMomentsPage && (
+      {/* Floating Camera Button - Only on home page */}
+      {pathname === '/home' && (
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.2 }}
         >
           <Link
-            href="/moments/capture"
+            href="/moments/capture?from=/home"
             className="fixed bottom-24 right-4 z-50 w-14 h-14 bg-gradient-to-br from-rose-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg shadow-pink-300/50 active:scale-95 transition-transform"
           >
             <motion.div

@@ -30,8 +30,19 @@ import { useRouter } from 'next/navigation'
 import MemberLayout from '@/components/member/MemberLayout'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
 
 type TabType = 'today' | 'reflect' | 'trends'
+type TimeRange = 'weekly' | 'monthly' | 'custom'
 
 export default function BalancePage() {
   const { locale } = useLanguage()
@@ -108,6 +119,30 @@ export default function BalancePage() {
     feeling?: 'great' | 'good' | 'okay' | 'tired' | 'rough'
   }>({ confirmed: false })
 
+  // Editing mode - allows editing hours after day is confirmed
+  const [isEditing, setIsEditing] = useState(false)
+
+  // Weekly trends data
+  const [weeklyData, setWeeklyData] = useState<{
+    date: string
+    dayName: string
+    sleep: number
+    work: number
+    life: number
+    sleepTarget: number
+    workTarget: number
+    lifeTarget: number
+    confirmed: boolean
+  }[]>([])
+  const [loadingWeekly, setLoadingWeekly] = useState(false)
+
+  // Trends chart state
+  const [trendsTimeRange, setTrendsTimeRange] = useState<TimeRange>('weekly')
+  const [customDateRange, setCustomDateRange] = useState<{ startDate: string; endDate: string }>({ startDate: '', endDate: '' })
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const [chartData, setChartData] = useState<{ date: string; dateLabel: string; sleep: number; work: number; life: number }[]>([])
+  const [visibleLines, setVisibleLines] = useState<{ sleep: boolean; work: boolean; life: boolean }>({ sleep: true, work: true, life: true })
+
   // Date navigation - initialize with timezone-safe today
   const getInitialDate = () => {
     const today = new Date()
@@ -137,6 +172,30 @@ export default function BalancePage() {
     fetchOldestDate()
   }, [])
 
+  // Fetch weekly data when trends tab is selected - always refresh
+  useEffect(() => {
+    if (activeTab === 'trends' && memberId) {
+      // Clear existing data to show loading state
+      setWeeklyData([])
+      fetchWeeklyData()
+
+      // Also fetch chart data for the selected time range
+      const today = new Date()
+      const todayStr = getTodayStr()
+      if (trendsTimeRange === 'weekly') {
+        const startDate = new Date()
+        startDate.setDate(today.getDate() - 6)
+        const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+        fetchTrendsData(startStr, todayStr)
+      } else if (trendsTimeRange === 'monthly') {
+        const startDate = new Date()
+        startDate.setDate(today.getDate() - 29)
+        const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+        fetchTrendsData(startStr, todayStr)
+      }
+    }
+  }, [activeTab, memberId])
+
   // Fetch the oldest date with entries
   const fetchOldestDate = async () => {
     try {
@@ -165,6 +224,273 @@ export default function BalancePage() {
       }
     } catch (error) {
       console.error('Error fetching oldest date:', error)
+    }
+  }
+
+  // Fetch weekly trends data (last 7 days)
+  const fetchWeeklyData = async () => {
+    if (!memberId) return
+    setLoadingWeekly(true)
+
+    try {
+      const days: typeof weeklyData = []
+      const dayNames = locale === 'fr'
+        ? ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
+        : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+      // Default targets in minutes (8h each) as fallback
+      const defaultSleepTarget = (targetHours.sleep || 8) * 60
+      const defaultWorkTarget = (targetHours.work || 8) * 60
+      const defaultLifeTarget = (targetHours.life || 8) * 60
+
+      // Get last 7 days
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date()
+        date.setDate(date.getDate() - i)
+        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+        const dayName = dayNames[date.getDay()]
+
+        days.push({
+          date: dateStr,
+          dayName,
+          sleep: 0,
+          work: 0,
+          life: 0,
+          sleepTarget: defaultSleepTarget,
+          workTarget: defaultWorkTarget,
+          lifeTarget: defaultLifeTarget,
+          confirmed: false,
+        })
+      }
+
+      // Fetch all entries for the week
+      const startDate = days[0].date
+      const endDate = days[days.length - 1].date
+
+      const { data: entries } = await supabase
+        .from('balance_entries')
+        .select('*')
+        .eq('member_id', memberId)
+        .gte('entry_date', startDate)
+        .lte('entry_date', endDate)
+
+      // Fetch confirmations for the week
+      const { data: confirmations } = await supabase
+        .from('day_confirmations')
+        .select('confirmation_date')
+        .eq('member_id', memberId)
+        .gte('confirmation_date', startDate)
+        .lte('confirmation_date', endDate)
+
+      // Fetch historical settings for target calculation
+      const { data: historicalSettings } = await supabase
+        .from('balance_settings_history')
+        .select('*')
+        .eq('member_id', memberId)
+        .lte('effective_from', endDate)
+        .order('effective_from', { ascending: false })
+
+      // Process entries - check for _total first, then sum activities
+      if (entries) {
+        // Group entries by date
+        const entriesByDate: Record<string, typeof entries> = {}
+        entries.forEach(entry => {
+          if (!entriesByDate[entry.entry_date]) {
+            entriesByDate[entry.entry_date] = []
+          }
+          entriesByDate[entry.entry_date].push(entry)
+        })
+
+        // Process each day's entries
+        days.forEach(day => {
+          const dayEntries = entriesByDate[day.date] || []
+
+          // Check for _total entries first
+          const sleepTotal = dayEntries.find(e => e.category === 'sleep' && e.activity_name === '_total')
+          const workTotal = dayEntries.find(e => e.category === 'work' && e.activity_name === '_total')
+          const lifeTotal = dayEntries.find(e => e.category === 'life' && e.activity_name === '_total')
+
+          // Use _total if exists, otherwise sum activities
+          if (sleepTotal) {
+            day.sleep = sleepTotal.duration_minutes
+          } else {
+            day.sleep = dayEntries
+              .filter(e => e.category === 'sleep' && e.activity_name !== '_total')
+              .reduce((sum, e) => sum + e.duration_minutes, 0)
+          }
+
+          if (workTotal) {
+            day.work = workTotal.duration_minutes
+          } else {
+            day.work = dayEntries
+              .filter(e => e.category === 'work' && e.activity_name !== '_total')
+              .reduce((sum, e) => sum + e.duration_minutes, 0)
+          }
+
+          if (lifeTotal) {
+            day.life = lifeTotal.duration_minutes
+          } else {
+            day.life = dayEntries
+              .filter(e => e.category === 'life' && e.activity_name !== '_total')
+              .reduce((sum, e) => sum + e.duration_minutes, 0)
+          }
+        })
+      }
+
+      // Process confirmations
+      if (confirmations) {
+        confirmations.forEach(conf => {
+          const day = days.find(d => d.date === conf.confirmation_date)
+          if (day) day.confirmed = true
+        })
+      }
+
+      // Apply historical targets for each day
+      if (historicalSettings && historicalSettings.length > 0) {
+        days.forEach(day => {
+          // Find the most recent settings effective on or before this day
+          const applicableSettings = historicalSettings.find(s => s.effective_from <= day.date)
+          if (applicableSettings) {
+            // Only use if values are valid (> 0), otherwise keep defaults
+            if (applicableSettings.sleep_target > 0) day.sleepTarget = applicableSettings.sleep_target
+            if (applicableSettings.work_target > 0) day.workTarget = applicableSettings.work_target
+            if (applicableSettings.life_target > 0) day.lifeTarget = applicableSettings.life_target
+          }
+        })
+      }
+
+      setWeeklyData(days)
+    } catch (error) {
+      console.error('Error fetching weekly data:', error)
+    } finally {
+      setLoadingWeekly(false)
+    }
+  }
+
+  // Fetch trends chart data for variable date ranges
+  const fetchTrendsData = async (startDate: string, endDate: string) => {
+    if (!memberId) return
+    setLoadingWeekly(true)
+
+    try {
+      // Calculate number of days
+      const start = new Date(startDate)
+      const end = new Date(endDate)
+      const dayCount = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+
+      const days: typeof chartData = []
+
+      // Generate date range
+      for (let i = 0; i < dayCount; i++) {
+        const date = new Date(start)
+        date.setDate(date.getDate() + i)
+        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+
+        // Format label based on range size
+        let dateLabel: string
+        if (dayCount <= 7) {
+          dateLabel = date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short' })
+        } else {
+          dateLabel = date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })
+        }
+
+        days.push({
+          date: dateStr,
+          dateLabel,
+          sleep: 0,
+          work: 0,
+          life: 0,
+        })
+      }
+
+      // Fetch all entries for the date range
+      const { data: entries } = await supabase
+        .from('balance_entries')
+        .select('*')
+        .eq('member_id', memberId)
+        .gte('entry_date', startDate)
+        .lte('entry_date', endDate)
+
+      // Process entries
+      if (entries) {
+        const entriesByDate: Record<string, typeof entries> = {}
+        entries.forEach(entry => {
+          if (!entriesByDate[entry.entry_date]) {
+            entriesByDate[entry.entry_date] = []
+          }
+          entriesByDate[entry.entry_date].push(entry)
+        })
+
+        days.forEach(day => {
+          const dayEntries = entriesByDate[day.date] || []
+
+          // Check for _total entries first
+          const sleepTotal = dayEntries.find(e => e.category === 'sleep' && e.activity_name === '_total')
+          const workTotal = dayEntries.find(e => e.category === 'work' && e.activity_name === '_total')
+          const lifeTotal = dayEntries.find(e => e.category === 'life' && e.activity_name === '_total')
+
+          // Convert minutes to hours for display
+          if (sleepTotal) {
+            day.sleep = Math.round((sleepTotal.duration_minutes / 60) * 10) / 10
+          } else {
+            day.sleep = Math.round((dayEntries
+              .filter(e => e.category === 'sleep' && e.activity_name !== '_total')
+              .reduce((sum, e) => sum + e.duration_minutes, 0) / 60) * 10) / 10
+          }
+
+          if (workTotal) {
+            day.work = Math.round((workTotal.duration_minutes / 60) * 10) / 10
+          } else {
+            day.work = Math.round((dayEntries
+              .filter(e => e.category === 'work' && e.activity_name !== '_total')
+              .reduce((sum, e) => sum + e.duration_minutes, 0) / 60) * 10) / 10
+          }
+
+          if (lifeTotal) {
+            day.life = Math.round((lifeTotal.duration_minutes / 60) * 10) / 10
+          } else {
+            day.life = Math.round((dayEntries
+              .filter(e => e.category === 'life' && e.activity_name !== '_total')
+              .reduce((sum, e) => sum + e.duration_minutes, 0) / 60) * 10) / 10
+          }
+        })
+      }
+
+      setChartData(days)
+    } catch (error) {
+      console.error('Error fetching trends data:', error)
+    } finally {
+      setLoadingWeekly(false)
+    }
+  }
+
+  // Handle time range change for trends chart
+  const handleTimeRangeChange = async (range: TimeRange) => {
+    setTrendsTimeRange(range)
+
+    const today = new Date()
+    const todayStr = getTodayStr()
+
+    if (range === 'weekly') {
+      const startDate = new Date()
+      startDate.setDate(today.getDate() - 6)
+      const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+      await fetchTrendsData(startStr, todayStr)
+    } else if (range === 'monthly') {
+      const startDate = new Date()
+      startDate.setDate(today.getDate() - 29)
+      const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+      await fetchTrendsData(startStr, todayStr)
+    } else if (range === 'custom') {
+      setShowDatePicker(true)
+    }
+  }
+
+  // Apply custom date range
+  const applyCustomDateRange = async () => {
+    if (customDateRange.startDate && customDateRange.endDate) {
+      setShowDatePicker(false)
+      await fetchTrendsData(customDateRange.startDate, customDateRange.endDate)
     }
   }
 
@@ -542,25 +868,38 @@ export default function BalancePage() {
     if (!memberId) return
 
     try {
-      // Find existing _total entry (stores the user's intended total)
-      const { data: existingTotal } = await supabase
+      // Find existing _total entries (there might be duplicates due to a bug)
+      const { data: existingTotals, error: findError } = await supabase
         .from('balance_entries')
         .select('id')
         .eq('member_id', memberId)
         .eq('entry_date', selectedDate)
         .eq('category', category)
         .eq('activity_name', '_total')
-        .maybeSingle()
+        .order('created_at', { ascending: false })
 
-      if (existingTotal) {
-        // Update existing _total
-        await supabase
+      if (findError) return
+
+      if (existingTotals && existingTotals.length > 0) {
+        // Update the most recent _total entry
+        const { error: updateError } = await supabase
           .from('balance_entries')
           .update({ duration_minutes: newMinutes })
-          .eq('id', existingTotal.id)
+          .eq('id', existingTotals[0].id)
+
+        if (updateError) console.error('Error updating entry:', updateError)
+
+        // Clean up duplicates if any exist
+        if (existingTotals.length > 1) {
+          const duplicateIds = existingTotals.slice(1).map(e => e.id)
+          await supabase
+            .from('balance_entries')
+            .delete()
+            .in('id', duplicateIds)
+        }
       } else {
         // Create new _total entry
-        await supabase
+        const { error: insertError } = await supabase
           .from('balance_entries')
           .insert({
             member_id: memberId,
@@ -569,6 +908,8 @@ export default function BalancePage() {
             duration_minutes: newMinutes,
             entry_date: selectedDate,
           })
+
+        if (insertError) console.error('Error inserting entry:', insertError)
       }
     } catch (error) {
       console.error('Error adjusting category time:', error)
@@ -652,6 +993,7 @@ export default function BalancePage() {
     if (prevDate < minDate) return
 
     setSelectedDate(prevDate)
+    setIsEditing(false) // Reset editing mode
     setHistoricalTargets(null) // Reset to prevent stale data
     setDailyMinutes({ sleep: 0, work: 0, life: 0 }) // Reset while loading
     setLoadingDate(true)
@@ -673,6 +1015,7 @@ export default function BalancePage() {
     if (nextDate > todayStr) return
 
     setSelectedDate(nextDate)
+    setIsEditing(false) // Reset editing mode
     setHistoricalTargets(null) // Reset to prevent stale data
     setDailyMinutes({ sleep: 0, work: 0, life: 0 }) // Reset while loading
     setLoadingDate(true)
@@ -1031,49 +1374,51 @@ export default function BalancePage() {
           </div>
         </motion.div>
 
-        {/* Date Navigation */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-center gap-3 mb-6"
-        >
-          <button
-            onClick={goToPreviousDay}
-            disabled={selectedDate <= minDate || loadingDate}
-            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-              selectedDate > minDate && !loadingDate
-                ? 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 active:scale-95'
-                : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-            }`}
+        {/* Date Navigation - hide on trends tab */}
+        {activeTab !== 'trends' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-center gap-3 mb-6"
           >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+            <button
+              onClick={goToPreviousDay}
+              disabled={selectedDate <= minDate || loadingDate}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                selectedDate > minDate && !loadingDate
+                  ? 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 active:scale-95'
+                  : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+              }`}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
 
-          <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-gray-200 min-w-[140px] justify-center">
-            {loadingDate ? (
-              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-            ) : (
-              <>
-                <Calendar className="w-4 h-4 text-gray-400" />
-                <span className="text-sm font-medium text-gray-700">
-                  {formatDateDisplay(selectedDate)}
-                </span>
-              </>
-            )}
-          </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-gray-200 min-w-[140px] justify-center">
+              {loadingDate ? (
+                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+              ) : (
+                <>
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700">
+                    {formatDateDisplay(selectedDate)}
+                  </span>
+                </>
+              )}
+            </div>
 
-          <button
-            onClick={goToNextDay}
-            disabled={selectedDate >= getTodayStr() || loadingDate}
-            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-              selectedDate < getTodayStr() && !loadingDate
-                ? 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 active:scale-95'
-                : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-            }`}
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </motion.div>
+            <button
+              onClick={goToNextDay}
+              disabled={selectedDate >= getTodayStr() || loadingDate}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                selectedDate < getTodayStr() && !loadingDate
+                  ? 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 active:scale-95'
+                  : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+              }`}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </motion.div>
+        )}
 
         {/* Configuration Modal */}
         <AnimatePresence>
@@ -1481,6 +1826,76 @@ export default function BalancePage() {
           )}
         </AnimatePresence>
 
+        {/* Custom Date Range Picker Modal */}
+        <AnimatePresence>
+          {showDatePicker && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowDatePicker(false)}
+                className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50"
+              />
+              <motion.div
+                initial={{ opacity: 0, y: 100 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 100 }}
+                className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 p-6 pb-10"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {locale === 'fr' ? 'Période personnalisée' : 'Custom Date Range'}
+                  </h3>
+                  <button
+                    onClick={() => setShowDatePicker(false)}
+                    className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"
+                  >
+                    <X className="w-4 h-4 text-gray-600" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {locale === 'fr' ? 'Date de début' : 'Start Date'}
+                    </label>
+                    <input
+                      type="date"
+                      value={customDateRange.startDate}
+                      onChange={(e) => setCustomDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                      max={getTodayStr()}
+                      className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {locale === 'fr' ? 'Date de fin' : 'End Date'}
+                    </label>
+                    <input
+                      type="date"
+                      value={customDateRange.endDate}
+                      onChange={(e) => setCustomDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                      min={customDateRange.startDate}
+                      max={getTodayStr()}
+                      className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                    />
+                  </div>
+
+                  <button
+                    onClick={applyCustomDateRange}
+                    disabled={!customDateRange.startDate || !customDateRange.endDate}
+                    className="w-full py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {locale === 'fr' ? 'Appliquer' : 'Apply'}
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
         {activeTab === 'today' && (
           <>
             {/* Circular Chart */}
@@ -1573,25 +1988,64 @@ export default function BalancePage() {
               {dayConfirmation.confirmed ? (
                 // Day is confirmed - show confirmed badge
                 <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-full border border-emerald-200">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  <span className="text-sm font-medium text-emerald-700">
-                    {locale === 'fr' ? 'Confirmé' : 'Confirmed'}
-                  </span>
-                  {dayConfirmation.feeling && (() => {
-                    const feeling = feelingOptions.find(f => f.id === dayConfirmation.feeling)
-                    if (feeling) {
-                      const FeelingIcon = feeling.icon
-                      return <FeelingIcon className={`w-4 h-4 ${feeling.iconColor}`} />
-                    }
-                    return null
-                  })()}
-                  {canConfirmDate(selectedDate) && (
-                    <button
-                      onClick={() => setShowConfirmModal(true)}
-                      className="ml-1 text-xs text-emerald-600 underline hover:text-emerald-700"
-                    >
-                      {locale === 'fr' ? 'Modifier' : 'Edit'}
-                    </button>
+                  {isEditing ? (
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5 text-amber-600">
+                        <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                        <span className="text-sm font-medium">
+                          {locale === 'fr' ? 'Modification en cours' : 'Making changes'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setShowConfirmModal(true)}
+                          className="px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
+                        >
+                          {dayConfirmation.feeling ? (
+                            <span className="flex items-center gap-1">
+                              {(() => {
+                                const feeling = feelingOptions.find(f => f.id === dayConfirmation.feeling)
+                                if (feeling) {
+                                  const FeelingIcon = feeling.icon
+                                  return <FeelingIcon className={`w-3 h-3 ${feeling.iconColor}`} />
+                                }
+                                return null
+                              })()}
+                              {locale === 'fr' ? 'Humeur' : 'Mood'}
+                            </span>
+                          ) : (locale === 'fr' ? 'Humeur' : 'Mood')}
+                        </button>
+                        <button
+                          onClick={() => setIsEditing(false)}
+                          className="px-3 py-1 text-xs font-medium text-white bg-emerald-500 rounded-full hover:bg-emerald-600 transition-colors shadow-sm"
+                        >
+                          {locale === 'fr' ? 'Terminé' : 'Save'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      <span className="text-sm font-medium text-emerald-700">
+                        {locale === 'fr' ? 'Confirmé' : 'Confirmed'}
+                      </span>
+                      {dayConfirmation.feeling && (() => {
+                        const feeling = feelingOptions.find(f => f.id === dayConfirmation.feeling)
+                        if (feeling) {
+                          const FeelingIcon = feeling.icon
+                          return <FeelingIcon className={`w-4 h-4 ${feeling.iconColor}`} />
+                        }
+                        return null
+                      })()}
+                      {canConfirmDate(selectedDate) && (
+                        <button
+                          onClick={() => setIsEditing(true)}
+                          className="ml-1 text-xs text-emerald-600 underline hover:text-emerald-700"
+                        >
+                          {locale === 'fr' ? 'Modifier' : 'Edit'}
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               ) : canConfirmDate(selectedDate) ? (
@@ -1647,28 +2101,28 @@ export default function BalancePage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => adjustCategoryTime('sleep', -30)}
-                        disabled={dayConfirmation.confirmed || !canConfirmDate(selectedDate)}
+                        disabled={(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)}
                         className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                          dayConfirmation.confirmed || !canConfirmDate(selectedDate)
+                          (dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)
                             ? 'bg-gray-100 cursor-not-allowed'
                             : 'bg-violet-50 hover:bg-violet-100'
                         }`}
                       >
-                        <Minus className={`w-4 h-4 ${dayConfirmation.confirmed || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-violet-500'}`} />
+                        <Minus className={`w-4 h-4 ${(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-violet-500'}`} />
                       </button>
                       <span className={`text-2xl font-bold min-w-[80px] text-center ${isUntrackedDay ? 'text-gray-400' : 'text-gray-900'}`}>
                         {formatDailyTime(displayMinutes.sleep)}
                       </span>
                       <button
                         onClick={() => adjustCategoryTime('sleep', 30)}
-                        disabled={dayConfirmation.confirmed || !canConfirmDate(selectedDate)}
+                        disabled={(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)}
                         className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                          dayConfirmation.confirmed || !canConfirmDate(selectedDate)
+                          (dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)
                             ? 'bg-gray-100 cursor-not-allowed'
                             : 'bg-violet-50 hover:bg-violet-100'
                         }`}
                       >
-                        <Plus className={`w-4 h-4 ${dayConfirmation.confirmed || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-violet-500'}`} />
+                        <Plus className={`w-4 h-4 ${(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-violet-500'}`} />
                       </button>
                     </div>
                   </div>
@@ -1701,28 +2155,28 @@ export default function BalancePage() {
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => adjustActivityTime(activity.id, -15)}
-                                disabled={dayConfirmation.confirmed || !canConfirmDate(selectedDate)}
+                                disabled={(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)}
                                 className={`w-7 h-7 rounded-full border flex items-center justify-center ${
-                                  dayConfirmation.confirmed || !canConfirmDate(selectedDate)
+                                  (dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)
                                     ? 'bg-gray-50 border-gray-100 cursor-not-allowed'
                                     : 'bg-white border-gray-200'
                                 }`}
                               >
-                                <Minus className={`w-3 h-3 ${dayConfirmation.confirmed || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-gray-500'}`} />
+                                <Minus className={`w-3 h-3 ${(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-gray-500'}`} />
                               </button>
                               <span className="text-sm font-medium text-gray-700 w-14 text-center">
                                 {formatMinutes(activity.minutes)}
                               </span>
                               <button
                                 onClick={() => adjustActivityTime(activity.id, 15)}
-                                disabled={dayConfirmation.confirmed || !canConfirmDate(selectedDate)}
+                                disabled={(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)}
                                 className={`w-7 h-7 rounded-full border flex items-center justify-center ${
-                                  dayConfirmation.confirmed || !canConfirmDate(selectedDate)
+                                  (dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)
                                     ? 'bg-gray-50 border-gray-100 cursor-not-allowed'
                                     : 'bg-white border-gray-200'
                                 }`}
                               >
-                                <Plus className={`w-3 h-3 ${dayConfirmation.confirmed || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-gray-500'}`} />
+                                <Plus className={`w-3 h-3 ${(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-gray-500'}`} />
                               </button>
                               {!dayConfirmation.confirmed && canConfirmDate(selectedDate) && (
                                 <button
@@ -1794,28 +2248,28 @@ export default function BalancePage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => adjustCategoryTime('work', -30)}
-                        disabled={dayConfirmation.confirmed || !canConfirmDate(selectedDate)}
+                        disabled={(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)}
                         className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                          dayConfirmation.confirmed || !canConfirmDate(selectedDate)
+                          (dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)
                             ? 'bg-gray-100 cursor-not-allowed'
                             : 'bg-amber-50 hover:bg-amber-100'
                         }`}
                       >
-                        <Minus className={`w-4 h-4 ${dayConfirmation.confirmed || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-amber-500'}`} />
+                        <Minus className={`w-4 h-4 ${(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-amber-500'}`} />
                       </button>
                       <span className={`text-2xl font-bold min-w-[80px] text-center ${isUntrackedDay ? 'text-gray-400' : 'text-gray-900'}`}>
                         {formatDailyTime(displayMinutes.work)}
                       </span>
                       <button
                         onClick={() => adjustCategoryTime('work', 30)}
-                        disabled={dayConfirmation.confirmed || !canConfirmDate(selectedDate)}
+                        disabled={(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)}
                         className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                          dayConfirmation.confirmed || !canConfirmDate(selectedDate)
+                          (dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)
                             ? 'bg-gray-100 cursor-not-allowed'
                             : 'bg-amber-50 hover:bg-amber-100'
                         }`}
                       >
-                        <Plus className={`w-4 h-4 ${dayConfirmation.confirmed || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-amber-500'}`} />
+                        <Plus className={`w-4 h-4 ${(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-amber-500'}`} />
                       </button>
                     </div>
                   </div>
@@ -1848,28 +2302,28 @@ export default function BalancePage() {
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => adjustActivityTime(activity.id, -15)}
-                                disabled={dayConfirmation.confirmed || !canConfirmDate(selectedDate)}
+                                disabled={(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)}
                                 className={`w-7 h-7 rounded-full border flex items-center justify-center ${
-                                  dayConfirmation.confirmed || !canConfirmDate(selectedDate)
+                                  (dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)
                                     ? 'bg-gray-50 border-gray-100 cursor-not-allowed'
                                     : 'bg-white border-gray-200'
                                 }`}
                               >
-                                <Minus className={`w-3 h-3 ${dayConfirmation.confirmed || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-gray-500'}`} />
+                                <Minus className={`w-3 h-3 ${(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-gray-500'}`} />
                               </button>
                               <span className="text-sm font-medium text-gray-700 w-14 text-center">
                                 {formatMinutes(activity.minutes)}
                               </span>
                               <button
                                 onClick={() => adjustActivityTime(activity.id, 15)}
-                                disabled={dayConfirmation.confirmed || !canConfirmDate(selectedDate)}
+                                disabled={(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)}
                                 className={`w-7 h-7 rounded-full border flex items-center justify-center ${
-                                  dayConfirmation.confirmed || !canConfirmDate(selectedDate)
+                                  (dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)
                                     ? 'bg-gray-50 border-gray-100 cursor-not-allowed'
                                     : 'bg-white border-gray-200'
                                 }`}
                               >
-                                <Plus className={`w-3 h-3 ${dayConfirmation.confirmed || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-gray-500'}`} />
+                                <Plus className={`w-3 h-3 ${(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-gray-500'}`} />
                               </button>
                               {!dayConfirmation.confirmed && canConfirmDate(selectedDate) && (
                                 <button
@@ -1941,28 +2395,28 @@ export default function BalancePage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => adjustCategoryTime('life', -30)}
-                        disabled={dayConfirmation.confirmed || !canConfirmDate(selectedDate)}
+                        disabled={(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)}
                         className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                          dayConfirmation.confirmed || !canConfirmDate(selectedDate)
+                          (dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)
                             ? 'bg-gray-100 cursor-not-allowed'
                             : 'bg-emerald-50 hover:bg-emerald-100'
                         }`}
                       >
-                        <Minus className={`w-4 h-4 ${dayConfirmation.confirmed || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-emerald-500'}`} />
+                        <Minus className={`w-4 h-4 ${(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-emerald-500'}`} />
                       </button>
                       <span className={`text-2xl font-bold min-w-[80px] text-center ${isUntrackedDay ? 'text-gray-400' : 'text-gray-900'}`}>
                         {formatDailyTime(displayMinutes.life)}
                       </span>
                       <button
                         onClick={() => adjustCategoryTime('life', 30)}
-                        disabled={dayConfirmation.confirmed || !canConfirmDate(selectedDate)}
+                        disabled={(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)}
                         className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                          dayConfirmation.confirmed || !canConfirmDate(selectedDate)
+                          (dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)
                             ? 'bg-gray-100 cursor-not-allowed'
                             : 'bg-emerald-50 hover:bg-emerald-100'
                         }`}
                       >
-                        <Plus className={`w-4 h-4 ${dayConfirmation.confirmed || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-emerald-500'}`} />
+                        <Plus className={`w-4 h-4 ${(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-emerald-500'}`} />
                       </button>
                     </div>
                   </div>
@@ -1995,28 +2449,28 @@ export default function BalancePage() {
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => adjustActivityTime(activity.id, -15)}
-                                disabled={dayConfirmation.confirmed || !canConfirmDate(selectedDate)}
+                                disabled={(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)}
                                 className={`w-7 h-7 rounded-full border flex items-center justify-center ${
-                                  dayConfirmation.confirmed || !canConfirmDate(selectedDate)
+                                  (dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)
                                     ? 'bg-gray-50 border-gray-100 cursor-not-allowed'
                                     : 'bg-white border-gray-200'
                                 }`}
                               >
-                                <Minus className={`w-3 h-3 ${dayConfirmation.confirmed || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-gray-500'}`} />
+                                <Minus className={`w-3 h-3 ${(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-gray-500'}`} />
                               </button>
                               <span className="text-sm font-medium text-gray-700 w-14 text-center">
                                 {formatMinutes(activity.minutes)}
                               </span>
                               <button
                                 onClick={() => adjustActivityTime(activity.id, 15)}
-                                disabled={dayConfirmation.confirmed || !canConfirmDate(selectedDate)}
+                                disabled={(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)}
                                 className={`w-7 h-7 rounded-full border flex items-center justify-center ${
-                                  dayConfirmation.confirmed || !canConfirmDate(selectedDate)
+                                  (dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate)
                                     ? 'bg-gray-50 border-gray-100 cursor-not-allowed'
                                     : 'bg-white border-gray-200'
                                 }`}
                               >
-                                <Plus className={`w-3 h-3 ${dayConfirmation.confirmed || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-gray-500'}`} />
+                                <Plus className={`w-3 h-3 ${(dayConfirmation.confirmed && !isEditing) || !canConfirmDate(selectedDate) ? 'text-gray-300' : 'text-gray-500'}`} />
                               </button>
                               {!dayConfirmation.confirmed && canConfirmDate(selectedDate) && (
                                 <button
@@ -2090,87 +2544,452 @@ export default function BalancePage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+            className="space-y-4"
           >
-            <h3 className="font-semibold text-gray-800 mb-4">
-              {locale === 'fr' ? 'Tendances hebdomadaires' : 'Weekly Trends'}
-            </h3>
-            <div className="space-y-4">
-              {/* Sleep */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-violet-100 rounded-full flex items-center justify-center">
-                  <Moon className="w-5 h-5 text-violet-500" />
+            {loadingWeekly ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+              </div>
+            ) : (
+              <>
+                {/* Daily Performance - Activity Rings */}
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-gray-800">
+                      {locale === 'fr' ? 'Performance quotidienne' : 'Daily Performance'}
+                    </h3>
+                    {/* Legend */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1">
+                        <div className="w-2.5 h-2.5 rounded-full bg-violet-500" />
+                        <span className="text-[10px] text-gray-500">{locale === 'fr' ? 'Som.' : 'Sleep'}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                        <span className="text-[10px] text-gray-500">{locale === 'fr' ? 'Trav.' : 'Work'}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                        <span className="text-[10px] text-gray-500">{locale === 'fr' ? 'Vie' : 'Life'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Activity Rings Grid */}
+                  <div className="flex items-center justify-between py-2 px-1">
+                    {weeklyData.map((day, dayIndex) => {
+                      const isToday = day.date === getTodayStr()
+                      const sleepPercent = day.sleepTarget > 0 ? (day.sleep / day.sleepTarget) * 100 : 0
+                      const workPercent = day.workTarget > 0 ? (day.work / day.workTarget) * 100 : 0
+                      const lifePercent = day.lifeTarget > 0 ? (day.life / day.lifeTarget) * 100 : 0
+
+                      // Check if overworked - only work being over is a problem
+                      // Sleep and life being over target is generally okay
+                      const workOver = workPercent > 105
+                      const hasOverwork = workOver
+                      const allComplete = sleepPercent >= 95 && workPercent >= 95 && workPercent <= 105 && lifePercent >= 95
+
+                      // Ring properties - smaller for mobile fit
+                      const size = 40
+                      const strokeWidth = 3.5
+                      const radius1 = 16 // Sleep (outer)
+                      const radius2 = 11 // Work (middle)
+                      const radius3 = 6  // Life (inner)
+                      const circumference1 = 2 * Math.PI * radius1
+                      const circumference2 = 2 * Math.PI * radius2
+                      const circumference3 = 2 * Math.PI * radius3
+
+                      return (
+                        <div key={day.date} className="flex flex-col items-center">
+                          {/* Ring Chart */}
+                          <div className={`relative p-1 rounded-full ${isToday ? 'bg-emerald-50' : ''}`}>
+                            <svg width={size} height={size} className="transform -rotate-90">
+                              {/* Background rings */}
+                              <circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={radius1}
+                                fill="none"
+                                stroke="#f3f4f6"
+                                strokeWidth={strokeWidth}
+                              />
+                              <circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={radius2}
+                                fill="none"
+                                stroke="#f3f4f6"
+                                strokeWidth={strokeWidth}
+                              />
+                              <circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={radius3}
+                                fill="none"
+                                stroke="#f3f4f6"
+                                strokeWidth={strokeWidth}
+                              />
+
+                              {/* Sleep ring (outer) - stays violet even if over (more sleep is good) */}
+                              <motion.circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={radius1}
+                                fill="none"
+                                stroke="#8b5cf6"
+                                strokeWidth={strokeWidth}
+                                strokeLinecap="round"
+                                strokeDasharray={circumference1}
+                                initial={{ strokeDashoffset: circumference1 }}
+                                animate={{
+                                  strokeDashoffset: circumference1 - (circumference1 * Math.min(sleepPercent, 100)) / 100
+                                }}
+                                transition={{ duration: 0.8, delay: dayIndex * 0.05, ease: "easeOut" }}
+                              />
+
+                              {/* Work ring (middle) - turns red if overworked */}
+                              <motion.circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={radius2}
+                                fill="none"
+                                stroke={workOver ? '#f43f5e' : '#f59e0b'}
+                                strokeWidth={strokeWidth}
+                                strokeLinecap="round"
+                                strokeDasharray={circumference2}
+                                initial={{ strokeDashoffset: circumference2 }}
+                                animate={{
+                                  strokeDashoffset: circumference2 - (circumference2 * Math.min(workPercent, 100)) / 100
+                                }}
+                                transition={{ duration: 0.8, delay: dayIndex * 0.05 + 0.1, ease: "easeOut" }}
+                              />
+
+                              {/* Life ring (inner) - stays green even if over (more life is good) */}
+                              <motion.circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={radius3}
+                                fill="none"
+                                stroke="#10b981"
+                                strokeWidth={strokeWidth}
+                                strokeLinecap="round"
+                                strokeDasharray={circumference3}
+                                initial={{ strokeDashoffset: circumference3 }}
+                                animate={{
+                                  strokeDashoffset: circumference3 - (circumference3 * Math.min(lifePercent, 100)) / 100
+                                }}
+                                transition={{ duration: 0.8, delay: dayIndex * 0.05 + 0.2, ease: "easeOut" }}
+                              />
+                            </svg>
+
+                            {/* Overwork indicator - only for work exceeding target */}
+                            {hasOverwork && (
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: 0.6 }}
+                                className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-rose-500 rounded-full flex items-center justify-center"
+                              >
+                                <span className="text-[8px] text-white font-bold">!</span>
+                              </motion.div>
+                            )}
+
+                            {/* Complete checkmark */}
+                            {allComplete && !hasOverwork && (
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: 0.6 }}
+                                className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full flex items-center justify-center"
+                              >
+                                <CheckCircle2 className="w-2 h-2 text-white" />
+                              </motion.div>
+                            )}
+                          </div>
+
+                          {/* Day label */}
+                          <span className={`text-[11px] mt-1.5 font-medium ${
+                            hasOverwork
+                              ? 'text-rose-600'
+                              : isToday
+                                ? 'text-emerald-600'
+                                : day.confirmed
+                                  ? 'text-gray-700'
+                                  : 'text-gray-400'
+                          }`}>
+                            {day.dayName.slice(0, 2)}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Summary text */}
+                  <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-center gap-4 text-xs text-gray-500">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span>{locale === 'fr' ? 'Complet' : 'Complete'}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-rose-500" />
+                      <span>{locale === 'fr' ? 'Dépassé' : 'Over'}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">
+
+                {/* Historical Trends Line Chart */}
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-800">
+                      {locale === 'fr' ? 'Tendances' : 'Trends'}
+                    </h3>
+
+                    {/* Time Range Selector */}
+                    <div className="flex bg-gray-100 rounded-lg p-0.5">
+                      {[
+                        { id: 'weekly' as TimeRange, labelEn: '7D', labelFr: '7J' },
+                        { id: 'monthly' as TimeRange, labelEn: '30D', labelFr: '30J' },
+                        { id: 'custom' as TimeRange, labelEn: 'Custom', labelFr: 'Perso.' },
+                      ].map((option) => (
+                        <button
+                          key={option.id}
+                          onClick={() => handleTimeRangeChange(option.id)}
+                          className={`py-1 px-2.5 rounded-md text-xs font-medium transition-all ${
+                            trendsTimeRange === option.id
+                              ? 'bg-white shadow-sm text-gray-900'
+                              : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          {locale === 'fr' ? option.labelFr : option.labelEn}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Line Toggle Buttons */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <button
+                      onClick={() => setVisibleLines(prev => ({ ...prev, sleep: !prev.sleep }))}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        visibleLines.sleep
+                          ? 'bg-violet-100 text-violet-700 border-2 border-violet-300'
+                          : 'bg-gray-100 text-gray-400 border-2 border-transparent'
+                      }`}
+                    >
+                      <div className={`w-2 h-2 rounded-full ${visibleLines.sleep ? 'bg-violet-500' : 'bg-gray-300'}`} />
                       {locale === 'fr' ? 'Sommeil' : 'Sleep'}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {Math.round(displayMinutes.sleep * 7 / 60)}h/week
-                    </span>
-                  </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${totalDisplayMinutes > 0 ? (displayMinutes.sleep / totalDisplayMinutes) * 100 : 33}%` }}
-                      transition={{ duration: 0.8, ease: 'easeOut' }}
-                      className="h-full rounded-full bg-violet-300"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Work */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                  <Briefcase className="w-5 h-5 text-amber-500" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">
+                    </button>
+                    <button
+                      onClick={() => setVisibleLines(prev => ({ ...prev, work: !prev.work }))}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        visibleLines.work
+                          ? 'bg-amber-100 text-amber-700 border-2 border-amber-300'
+                          : 'bg-gray-100 text-gray-400 border-2 border-transparent'
+                      }`}
+                    >
+                      <div className={`w-2 h-2 rounded-full ${visibleLines.work ? 'bg-amber-500' : 'bg-gray-300'}`} />
                       {locale === 'fr' ? 'Travail' : 'Work'}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {Math.round(displayMinutes.work * 7 / 60)}h/week
-                    </span>
-                  </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${totalDisplayMinutes > 0 ? (displayMinutes.work / totalDisplayMinutes) * 100 : 33}%` }}
-                      transition={{ duration: 0.8, ease: 'easeOut' }}
-                      className="h-full rounded-full bg-amber-300"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Life */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                  <Heart className="w-5 h-5 text-emerald-500" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">
+                    </button>
+                    <button
+                      onClick={() => setVisibleLines(prev => ({ ...prev, life: !prev.life }))}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        visibleLines.life
+                          ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-300'
+                          : 'bg-gray-100 text-gray-400 border-2 border-transparent'
+                      }`}
+                    >
+                      <div className={`w-2 h-2 rounded-full ${visibleLines.life ? 'bg-emerald-500' : 'bg-gray-300'}`} />
                       {locale === 'fr' ? 'Vie' : 'Life'}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {Math.round(displayMinutes.life * 7 / 60)}h/week
-                    </span>
+                    </button>
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${totalDisplayMinutes > 0 ? (displayMinutes.life / totalDisplayMinutes) * 100 : 33}%` }}
-                      transition={{ duration: 0.8, ease: 'easeOut' }}
-                      className="h-full rounded-full bg-emerald-300"
-                    />
+
+                  {/* Chart */}
+                  {chartData.length > 0 ? (
+                    <div className="h-64 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={chartData}
+                          margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis
+                            dataKey="dateLabel"
+                            tick={{ fontSize: 10, fill: '#6b7280' }}
+                            tickLine={false}
+                            axisLine={{ stroke: '#e5e7eb' }}
+                            interval={chartData.length > 14 ? Math.floor(chartData.length / 7) : 0}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 10, fill: '#6b7280' }}
+                            tickLine={false}
+                            axisLine={{ stroke: '#e5e7eb' }}
+                            tickFormatter={(value) => `${value}h`}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'white',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '12px',
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                              fontSize: '12px',
+                            }}
+                            formatter={(value, name) => [
+                              `${(value as number)?.toFixed(1) ?? 0}h`,
+                              name === 'sleep' ? (locale === 'fr' ? 'Sommeil' : 'Sleep') :
+                              name === 'work' ? (locale === 'fr' ? 'Travail' : 'Work') :
+                              (locale === 'fr' ? 'Vie' : 'Life')
+                            ]}
+                          />
+                          {visibleLines.sleep && (
+                            <Line
+                              type="monotone"
+                              dataKey="sleep"
+                              name="sleep"
+                              stroke="#8b5cf6"
+                              strokeWidth={2}
+                              dot={{ fill: '#8b5cf6', strokeWidth: 0, r: 3 }}
+                              activeDot={{ r: 5, fill: '#8b5cf6' }}
+                            />
+                          )}
+                          {visibleLines.work && (
+                            <Line
+                              type="monotone"
+                              dataKey="work"
+                              name="work"
+                              stroke="#f59e0b"
+                              strokeWidth={2}
+                              dot={{ fill: '#f59e0b', strokeWidth: 0, r: 3 }}
+                              activeDot={{ r: 5, fill: '#f59e0b' }}
+                            />
+                          )}
+                          {visibleLines.life && (
+                            <Line
+                              type="monotone"
+                              dataKey="life"
+                              name="life"
+                              stroke="#10b981"
+                              strokeWidth={2}
+                              dot={{ fill: '#10b981', strokeWidth: 0, r: 3 }}
+                              activeDot={{ r: 5, fill: '#10b981' }}
+                            />
+                          )}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-48 text-gray-400 text-sm">
+                      {loadingWeekly ? (
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                      ) : (
+                        locale === 'fr' ? 'Aucune donnée disponible' : 'No data available'
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Weekly Insights - This Week */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-gray-800 px-1">
+                    {locale === 'fr' ? 'Cette semaine' : 'This Week'}
+                  </h3>
+
+                  {/* Sleep Insight */}
+                  <div className="bg-violet-50 rounded-xl p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
+                        <Moon className="w-5 h-5 text-violet-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xl font-bold text-violet-700">
+                            {Math.round(weeklyData.reduce((sum, d) => sum + d.sleep, 0) / 60)}h
+                          </span>
+                          <span className="text-sm text-violet-500">
+                            / {Math.round(weeklyData.reduce((sum, d) => sum + d.sleepTarget, 0) / 60)}h
+                          </span>
+                        </div>
+                        <p className="text-xs text-violet-600 mt-0.5">
+                          {(() => {
+                            const actual = weeklyData.reduce((sum, d) => sum + d.sleep, 0)
+                            const target = weeklyData.reduce((sum, d) => sum + d.sleepTarget, 0)
+                            const diff = Math.round((actual - target) / 60)
+                            if (diff >= 0) return locale === 'fr' ? `+${diff}h de sommeil` : `+${diff}h sleep`
+                            return locale === 'fr' ? `${diff}h de sommeil` : `${diff}h sleep`
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Work Insight */}
+                  <div className="bg-amber-50 rounded-xl p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                        <Briefcase className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xl font-bold text-amber-700">
+                            {Math.round(weeklyData.reduce((sum, d) => sum + d.work, 0) / 60)}h
+                          </span>
+                          <span className="text-sm text-amber-500">
+                            / {Math.round(weeklyData.reduce((sum, d) => sum + d.workTarget, 0) / 60)}h
+                          </span>
+                        </div>
+                        <p className="text-xs text-amber-600 mt-0.5">
+                          {(() => {
+                            const actual = weeklyData.reduce((sum, d) => sum + d.work, 0)
+                            const target = weeklyData.reduce((sum, d) => sum + d.workTarget, 0)
+                            const diff = Math.round((actual - target) / 60)
+                            if (diff > 0) return locale === 'fr' ? `+${diff}h de travail` : `+${diff}h work`
+                            if (diff < 0) return locale === 'fr' ? `${diff}h de travail` : `${diff}h work`
+                            return locale === 'fr' ? 'Objectif atteint' : 'On target'
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Life Insight */}
+                  <div className="bg-emerald-50 rounded-xl p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                        <Heart className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xl font-bold text-emerald-700">
+                            {Math.round(weeklyData.reduce((sum, d) => sum + d.life, 0) / 60)}h
+                          </span>
+                          <span className="text-sm text-emerald-500">
+                            / {Math.round(weeklyData.reduce((sum, d) => sum + d.lifeTarget, 0) / 60)}h
+                          </span>
+                        </div>
+                        <p className="text-xs text-emerald-600 mt-0.5">
+                          {(() => {
+                            const actual = weeklyData.reduce((sum, d) => sum + d.life, 0)
+                            const target = weeklyData.reduce((sum, d) => sum + d.lifeTarget, 0)
+                            const diff = Math.round((actual - target) / 60)
+                            if (diff >= 0) return locale === 'fr' ? `+${diff}h de vie` : `+${diff}h life`
+                            return locale === 'fr' ? `${diff}h de vie` : `${diff}h life`
+                          })()}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+
+                {/* Days Tracked */}
+                <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+                  <span className="text-sm text-gray-600">
+                    {locale === 'fr' ? 'Jours confirmés cette semaine' : 'Days confirmed this week'}
+                  </span>
+                  <span className="text-lg font-bold text-gray-800">
+                    {weeklyData.filter(d => d.confirmed).length} / 7
+                  </span>
+                </div>
+              </>
+            )}
           </motion.div>
         )}
       </div>
