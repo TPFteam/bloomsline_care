@@ -2553,30 +2553,30 @@ export default function BalancePage() {
             ) : (
               <>
                 {/* Daily Performance - Activity Rings */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-800">
+                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-800 text-sm">
                       {locale === 'fr' ? 'Performance quotidienne' : 'Daily Performance'}
                     </h3>
                     {/* Legend */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1">
-                        <div className="w-2.5 h-2.5 rounded-full bg-violet-500" />
-                        <span className="text-[10px] text-gray-500">{locale === 'fr' ? 'Som.' : 'Sleep'}</span>
+                        <div className="w-2 h-2 rounded-full bg-violet-500" />
+                        <span className="text-[9px] text-gray-500">{locale === 'fr' ? 'Som.' : 'Sleep'}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                        <span className="text-[10px] text-gray-500">{locale === 'fr' ? 'Trav.' : 'Work'}</span>
+                        <div className="w-2 h-2 rounded-full bg-amber-500" />
+                        <span className="text-[9px] text-gray-500">{locale === 'fr' ? 'Trav.' : 'Work'}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                        <span className="text-[10px] text-gray-500">{locale === 'fr' ? 'Vie' : 'Life'}</span>
+                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="text-[9px] text-gray-500">{locale === 'fr' ? 'Vie' : 'Life'}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Activity Rings Grid */}
-                  <div className="flex items-center justify-between py-2 px-1">
+                  <div className="flex items-center justify-between py-2">
                     {weeklyData.map((day, dayIndex) => {
                       const isToday = day.date === getTodayStr()
                       const sleepPercent = day.sleepTarget > 0 ? (day.sleep / day.sleepTarget) * 100 : 0
@@ -2589,12 +2589,12 @@ export default function BalancePage() {
                       const hasOverwork = workOver
                       const allComplete = sleepPercent >= 95 && workPercent >= 95 && workPercent <= 105 && lifePercent >= 95
 
-                      // Ring properties - smaller for mobile fit
-                      const size = 40
-                      const strokeWidth = 3.5
-                      const radius1 = 16 // Sleep (outer)
-                      const radius2 = 11 // Work (middle)
-                      const radius3 = 6  // Life (inner)
+                      // Ring properties - compact for mobile fit
+                      const size = 36
+                      const strokeWidth = 3
+                      const radius1 = 14 // Sleep (outer)
+                      const radius2 = 10 // Work (middle)
+                      const radius3 = 5.5  // Life (inner)
                       const circumference1 = 2 * Math.PI * radius1
                       const circumference2 = 2 * Math.PI * radius2
                       const circumference3 = 2 * Math.PI * radius3
