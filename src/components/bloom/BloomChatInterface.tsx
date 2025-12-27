@@ -124,12 +124,19 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true, ent
     return () => clearInterval(interval)
   }, [taglines.length])
 
+  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Scroll to bottom and focus input when chat opens
   useEffect(() => {
     if (isOpen) {
+      // Scroll to latest message
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+      }, 100)
+      // Focus input
       setTimeout(() => inputRef.current?.focus(), 200)
     }
   }, [isOpen])
