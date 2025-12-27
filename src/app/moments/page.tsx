@@ -1114,8 +1114,8 @@ export default function MomentsPage() {
                               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                             }}
                             labelStyle={{ color: isDark ? '#fff' : '#000', fontWeight: 600 }}
-                            formatter={(value: number, name: string) => [
-                              `${value}%`,
+                            formatter={(value) => [
+                              `${value ?? 0}%`,
                               locale === 'fr' ? 'Positivité' : 'Positivity'
                             ]}
                           />
