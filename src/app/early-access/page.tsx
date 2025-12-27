@@ -354,7 +354,7 @@ function EarlyAccessContent() {
                       <div className="space-y-3">
                         {userTypeOptions.map((option) => {
                           const isSelected = formData.userType === option.value
-                          const colorStyles = {
+                          const colorStylesMap = {
                             rose: {
                               selected: 'border-rose-400 bg-rose-50 dark:bg-rose-900/20',
                               icon: 'bg-rose-100 dark:bg-rose-900/30',
@@ -370,7 +370,8 @@ function EarlyAccessContent() {
                               icon: 'bg-teal-100 dark:bg-teal-900/30',
                               check: 'border-teal-400 bg-teal-400',
                             },
-                          }[option.color]
+                          }
+                          const colorStyles = colorStylesMap[option.color as keyof typeof colorStylesMap] || colorStylesMap.teal
 
                           return (
                             <motion.button
