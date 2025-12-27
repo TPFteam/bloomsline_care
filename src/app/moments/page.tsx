@@ -1138,9 +1138,10 @@ export default function MomentsPage() {
                             dataKey="displayScore"
                             stroke="#8b5cf6"
                             strokeWidth={2.5}
-                            dot={(props: { cx: number; cy: number; payload: { hasData: boolean } }) => {
-                              const { cx, cy, payload } = props
-                              if (!payload.hasData) {
+                            dot={(props) => {
+                              const { cx, cy, payload } = props as { cx?: number; cy?: number; payload?: { hasData: boolean } }
+                              if (cx === undefined || cy === undefined) return null
+                              if (!payload?.hasData) {
                                 // No data - show dashed circle at bottom
                                 return (
                                   <circle
