@@ -8,12 +8,10 @@ export async function GET(request: NextRequest) {
   const errorDescription = requestUrl.searchParams.get('error_description')
   const flow = requestUrl.searchParams.get('flow') // 'signup' or 'signin'
 
-  console.log('Auth callback hit with params:', {
-    code: code ? 'present' : 'missing',
-    error,
-    flow,
-    fullUrl: request.url
-  })
+  // Debug logging (production-safe - no PII)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Auth callback:', { hasCode: !!code, hasError: !!error, flow })
+  }
 
   // Handle OAuth errors
   if (error) {
@@ -45,15 +43,10 @@ export async function GET(request: NextRequest) {
     // If timestamps are within 2 seconds of each other, consider it a new user
     const isNewUser = timeDiff < 2000
 
-    // Debug logging
-    console.log('Auth Debug:', {
-      email: data.user?.email,
-      created_at: data.user?.created_at,
-      last_sign_in_at: data.user?.last_sign_in_at,
-      timeDiff,
-      isNewUser,
-      flow
-    })
+    // Debug logging (no PII in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Auth Debug:', { isNewUser, flow, timeDiff })
+    }
 
     // Determine the redirect URL based on the flow and user type
     let redirectUrl = `${requestUrl.origin}/dashboard`
@@ -87,18 +80,15 @@ export async function GET(request: NextRequest) {
 
       if (userId) {
         try {
-          // Delete the user using admin client
+          // Delete the user using admin client (no account exists scenario)
           const adminClient = createAdminClient()
-          console.log('Attempting to delete user:', userId)
           const { error: deleteError } = await adminClient.auth.admin.deleteUser(userId)
 
           if (deleteError) {
-            console.error('Error deleting user:', deleteError)
-          } else {
-            console.log('User deleted successfully:', userId)
+            console.error('Error cleaning up auth state')
           }
-        } catch (error) {
-          console.error('Exception deleting user:', error)
+        } catch {
+          // Silently handle deletion errors
         }
       }
 
@@ -118,7 +108,7 @@ export async function GET(request: NextRequest) {
           .eq('email', userEmail)
           .single()
 
-        console.log('Waitlist check:', { email: userEmail, entry: waitlistEntry })
+        // Waitlist check (no PII logged)
 
         if (!waitlistEntry || waitlistEntry.status === 'pending') {
           // User is NOT on the waitlist or hasn't been invited yet
@@ -127,10 +117,9 @@ export async function GET(request: NextRequest) {
 
           if (userId) {
             try {
-              console.log('Deleting non-waitlisted user:', userId)
               await adminClient.auth.admin.deleteUser(userId)
-            } catch (error) {
-              console.error('Error deleting non-waitlisted user:', error)
+            } catch {
+              // Silently handle deletion errors
             }
           }
 
@@ -150,8 +139,6 @@ export async function GET(request: NextRequest) {
               activated_at: new Date().toISOString()
             })
             .eq('id', waitlistEntry.id)
-
-          console.log('Activated waitlist user:', userEmail)
 
           // Redirect to onboarding
           redirectUrl = `${requestUrl.origin}/onboarding`

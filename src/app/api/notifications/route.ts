@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createNotificationService } from '@/lib/notifications/service'
+import { sanitizeLimit, sanitizeOffset } from '@/lib/security/validation'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -28,10 +29,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Parse query params
+    // Parse and validate query params
     const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const limit = sanitizeLimit(searchParams.get('limit'), 50, 100)
+    const offset = sanitizeOffset(searchParams.get('offset'), 0)
     const unreadOnly = searchParams.get('unread') === 'true'
 
     // Use service role for fetching

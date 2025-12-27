@@ -4,9 +4,21 @@ import { createAdminClient } from '@/lib/supabase/server-client'
 import { getBloomSystemPrompt } from '@/lib/bloom/prompts'
 import { buildBloomContext, formatContextForPrompt, type EntryPoint } from '@/lib/bloom/context'
 import type { BloomPersonality } from '@/types/bloom'
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting for expensive AI operations
+    const clientId = getClientIdentifier(request)
+    const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.expensive)
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      )
+    }
+
     // Check for API key first
     if (!process.env.ANTHROPIC_API_KEY) {
       console.error('ANTHROPIC_API_KEY is not set')
@@ -65,6 +77,23 @@ export async function POST(request: NextRequest) {
 
     // Get or create conversation
     let activeConversationId = conversationId
+
+    // SECURITY: Verify conversation ownership if conversationId provided
+    if (conversationId) {
+      const { data: existingConversation, error: convCheckError } = await supabase
+        .from('bloom_conversations')
+        .select('user_id')
+        .eq('id', conversationId)
+        .single()
+
+      if (convCheckError || !existingConversation) {
+        return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
+      }
+
+      if (existingConversation.user_id !== user.id) {
+        return NextResponse.json({ error: 'Unauthorized: Cannot access this conversation' }, { status: 403 })
+      }
+    }
 
     if (!activeConversationId) {
       // Create new conversation

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server-client';
 import type { CreateBookingInput, GoogleCalendarEvent } from '@/types/calendar';
 import { notifyBookingRequest } from '@/lib/notifications';
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
@@ -104,11 +105,18 @@ async function getAccessTokenForUser(
 // POST /api/bookings - Create a new booking (public)
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting for public booking endpoint
+    const clientId = getClientIdentifier(request)
+    const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.public)
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many booking requests. Please try again later.' },
+        { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      )
+    }
+
     const body: CreateBookingInput = await request.json();
-    console.log('=== NEW BOOKING REQUEST ===');
-    console.log('Practitioner ID:', body.practitioner_id);
-    console.log('Client:', body.client_name, body.client_email);
-    console.log('Session type:', body.session_type);
 
     // Validate required fields
     if (
