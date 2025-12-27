@@ -1,5 +1,5 @@
 /**
- * Input validation utilities for API endpoints
+ * Input validation and sanitization utilities
  */
 
 /**
@@ -89,4 +89,54 @@ export function isValidTimezone(tz: string): boolean {
   } catch {
     return false
   }
+}
+
+/**
+ * Sanitize a URL to prevent XSS attacks
+ * Blocks javascript:, data:, and vbscript: URLs
+ * Returns '#' for invalid URLs
+ */
+export function sanitizeUrl(url: string | undefined | null): string {
+  if (!url) return '#'
+
+  const trimmedUrl = url.trim().toLowerCase()
+
+  // Block dangerous protocols
+  const dangerousProtocols = [
+    'javascript:',
+    'data:',
+    'vbscript:',
+    'file:',
+  ]
+
+  for (const protocol of dangerousProtocols) {
+    if (trimmedUrl.startsWith(protocol)) {
+      return '#'
+    }
+  }
+
+  // Allow http, https, mailto, tel, and relative URLs
+  if (
+    trimmedUrl.startsWith('http://') ||
+    trimmedUrl.startsWith('https://') ||
+    trimmedUrl.startsWith('mailto:') ||
+    trimmedUrl.startsWith('tel:') ||
+    trimmedUrl.startsWith('/') ||
+    trimmedUrl.startsWith('#') ||
+    !trimmedUrl.includes(':') // relative URL without protocol
+  ) {
+    return url
+  }
+
+  // For any other protocol, block it
+  return '#'
+}
+
+/**
+ * Sanitize HTML to prevent XSS (strips all tags)
+ * Use this for user-generated text that shouldn't contain HTML
+ */
+export function stripHtml(input: string | undefined | null): string {
+  if (!input) return ''
+  return input.replace(/<[^>]*>/g, '')
 }

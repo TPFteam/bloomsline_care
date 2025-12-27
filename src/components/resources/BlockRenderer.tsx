@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import type { ResourceBlock } from '@/types/resource'
+import { sanitizeUrl } from '@/lib/security/validation'
 
 interface BlockRendererProps {
   block: ResourceBlock
@@ -175,9 +176,11 @@ export function BlockRenderer({
         soundcloud: '🔊',
         other: '🔗',
       }
+      // Sanitize URL to prevent XSS via javascript: URLs
+      const safeLinkUrl = sanitizeUrl(linkUrl)
       return (
         <motion.a
-          href={linkUrl || '#'}
+          href={safeLinkUrl}
           target="_blank"
           rel="noopener noreferrer"
           initial={{ opacity: 0 }}

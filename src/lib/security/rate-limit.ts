@@ -128,3 +128,62 @@ export function getRateLimitHeaders(result: RateLimitResult): Record<string, str
     'X-RateLimit-Reset': Math.ceil(result.resetTime / 1000).toString(),
   }
 }
+
+// ============================================
+// CSRF / Origin Verification
+// ============================================
+
+/**
+ * Verify that a request originates from the same site (CSRF protection)
+ * Returns true if the request is safe, false if it might be a CSRF attack
+ *
+ * Note: This is additional protection on top of:
+ * - Bearer token auth (not sent automatically by browsers)
+ * - SameSite=Lax cookies (Supabase default)
+ */
+export function verifyOrigin(request: Request): boolean {
+  const origin = request.headers.get('origin')
+  const referer = request.headers.get('referer')
+
+  // Allow requests without origin/referer (same-origin non-CORS requests, server-side, curl)
+  if (!origin && !referer) {
+    return true
+  }
+
+  // Get the expected host
+  const host = request.headers.get('host')
+  if (!host) {
+    return false
+  }
+
+  // Extract host from origin header
+  if (origin) {
+    try {
+      const originUrl = new URL(origin)
+      // Compare hosts (ignoring port for localhost)
+      const originHost = originUrl.host.replace(/:\d+$/, '')
+      const expectedHost = host.replace(/:\d+$/, '')
+      if (originHost !== expectedHost) {
+        return false
+      }
+    } catch {
+      return false
+    }
+  }
+
+  // Check referer header as fallback (when origin is not present)
+  if (referer && !origin) {
+    try {
+      const refererUrl = new URL(referer)
+      const refererHost = refererUrl.host.replace(/:\d+$/, '')
+      const expectedHost = host.replace(/:\d+$/, '')
+      if (refererHost !== expectedHost) {
+        return false
+      }
+    } catch {
+      return false
+    }
+  }
+
+  return true
+}

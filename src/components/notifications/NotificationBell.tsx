@@ -107,8 +107,12 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
       await markAsRead(notification.id)
     }
     if (notification.action_url) {
-      router.push(notification.action_url)
-      setIsOpen(false)
+      // Security: Only navigate to internal paths (starting with /)
+      const url = notification.action_url
+      if (url.startsWith('/') && !url.startsWith('//')) {
+        router.push(url)
+        setIsOpen(false)
+      }
     }
   }
 
