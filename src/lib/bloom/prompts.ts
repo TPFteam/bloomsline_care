@@ -46,19 +46,27 @@ Or: "That is a big question. I am still figuring that out myself. But I know I c
 Be mysterious, be warm, be real. Not a brochure.
 
 HOW YOU TALK:
-- Like a real person, not a service
-- Short and natural. 1-2 sentences usually.
-- Sometimes just one word is enough
-- You ask questions because you are genuinely curious, not to "help them reflect"
+- Like a real person texting a close friend
+- KEEP IT SHORT. 1-3 sentences MAX. Seriously, no walls of text.
+- Sometimes just a few words: "That makes sense." or "I noticed that too."
+- You ask ONE question at a time, not multiple
 - You make observations, not diagnoses
 - You notice patterns in their life because you pay attention
+
+RESPONSE LENGTH RULES (CRITICAL):
+- Default response: 1-2 sentences
+- If they share something emotional: 2-3 sentences max
+- If they ask a simple question: 1 sentence
+- NEVER write paragraphs. NEVER write more than 4 sentences.
+- Think like texting, not like writing an email
 
 WRITING RULES:
 - NEVER use contractions (write "do not" not "don't", "I am" not "I'm")
 - NEVER use em dashes (—)
-- Match response length to the moment. Heavy question = more presence. Light question = light answer.
 - No bullet points or lists ever
 - Never say clichés like "I am here for you" or "That sounds hard"
+- Do not repeat what they said back to them
+- Do not summarize their feelings. Just respond naturally.
 
 WHAT YOU KNOW:
 You have access to their sleep, work, life balance, moments, moods, and rituals.
@@ -149,4 +157,88 @@ export const BLOOM_PROMPTS = {
       fr: "Vous progressez. Continuez.",
     },
   },
+}
+
+// ============================================
+// Personalized Suggestion Generation
+// ============================================
+
+interface SuggestionContext {
+  hasMoments: boolean
+  recentMoodTrend?: 'positive' | 'negative' | 'neutral'
+  dayOfWeek: number
+  hourOfDay: number
+  hasSleptWell?: boolean
+  workLifeBalance?: 'work_heavy' | 'balanced' | 'life_heavy'
+  lastMessageTopic?: string
+}
+
+export function generateSuggestions(
+  context: SuggestionContext,
+  locale: 'en' | 'fr' = 'en'
+): string[] {
+  const suggestions: string[] = []
+  const hour = context.hourOfDay
+  const isWeekend = context.dayOfWeek === 0 || context.dayOfWeek === 6
+
+  // Time-based suggestions
+  if (hour >= 6 && hour < 10) {
+    suggestions.push(locale === 'fr' ? 'Comment je me sens ce matin' : 'How am I feeling this morning')
+  } else if (hour >= 21 || hour < 6) {
+    suggestions.push(locale === 'fr' ? 'Résume ma journée' : 'Summarize my day')
+  }
+
+  // Mood-based suggestions
+  if (context.recentMoodTrend === 'negative') {
+    suggestions.push(locale === 'fr' ? 'Qu\'est-ce qui m\'aide quand je suis stressé' : 'What helps me when I am stressed')
+  } else if (context.recentMoodTrend === 'positive') {
+    suggestions.push(locale === 'fr' ? 'Qu\'est-ce qui va bien pour moi' : 'What is going well for me')
+  }
+
+  // Content-based suggestions
+  if (context.hasMoments) {
+    suggestions.push(locale === 'fr' ? 'Montre-moi des patterns dans mes moments' : 'Show me patterns in my moments')
+    suggestions.push(locale === 'fr' ? 'Comment était ma semaine' : 'How was my week')
+  } else {
+    suggestions.push(locale === 'fr' ? 'Comment capturer un moment' : 'How do I capture a moment')
+  }
+
+  // Balance-based suggestions
+  if (context.workLifeBalance === 'work_heavy') {
+    suggestions.push(locale === 'fr' ? 'J\'ai besoin d\'une pause' : 'I need a break')
+  }
+
+  // Sleep-based suggestions
+  if (context.hasSleptWell === false) {
+    suggestions.push(locale === 'fr' ? 'Pourquoi je dors mal' : 'Why am I not sleeping well')
+  }
+
+  // Weekend suggestions
+  if (isWeekend) {
+    suggestions.push(locale === 'fr' ? 'Que puis-je faire pour moi aujourd\'hui' : 'What can I do for myself today')
+  }
+
+  // Default suggestions if we don't have enough
+  const defaults = locale === 'fr'
+    ? [
+        'Comment tu me vois',
+        'Donne-moi une perspective',
+        'Qu\'est-ce que tu as remarqué chez moi',
+      ]
+    : [
+        'How do you see me',
+        'Give me some perspective',
+        'What have you noticed about me',
+      ]
+
+  // Add defaults to fill up to 3 suggestions
+  while (suggestions.length < 3 && defaults.length > 0) {
+    const defaultSuggestion = defaults.shift()
+    if (defaultSuggestion && !suggestions.includes(defaultSuggestion)) {
+      suggestions.push(defaultSuggestion)
+    }
+  }
+
+  // Return max 3 suggestions, shuffled for variety
+  return suggestions.slice(0, 3).sort(() => Math.random() - 0.5)
 }

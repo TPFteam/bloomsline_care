@@ -66,18 +66,17 @@ function TypingIndicator({ isDark }: { isDark: boolean }) {
   )
 }
 
-const QUICK_REPLIES_EN = [
-  "I'm feeling stressed",
-  "Had a good day",
-  "Need to vent",
-  "Feeling grateful",
+// Default suggestions shown before first API response
+const DEFAULT_SUGGESTIONS_EN = [
+  "How am I feeling today",
+  "What have you noticed about me",
+  "I need some perspective",
 ]
 
-const QUICK_REPLIES_FR = [
-  "Je suis stressé(e)",
-  "Bonne journée",
-  "Besoin de parler",
-  "Reconnaissant(e)",
+const DEFAULT_SUGGESTIONS_FR = [
+  "Comment je me sens aujourd'hui",
+  "Qu'est-ce que tu as remarqué chez moi",
+  "J'ai besoin de perspective",
 ]
 
 const TAGLINES_EN = [
@@ -110,11 +109,15 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true, ent
     isLoading,
     sendUserMessage,
     error,
+    suggestions,
   } = useBloomChat({ locale: locale as 'en' | 'fr', entryPoint })
 
-  const quickReplies = locale === 'fr' ? QUICK_REPLIES_FR : QUICK_REPLIES_EN
+  // Use API suggestions if available, otherwise show defaults
+  const defaultSuggestions = locale === 'fr' ? DEFAULT_SUGGESTIONS_FR : DEFAULT_SUGGESTIONS_EN
+  const displaySuggestions = suggestions.length > 0 ? suggestions : defaultSuggestions
   const taglines = locale === 'fr' ? TAGLINES_FR : TAGLINES_EN
-  const showQuickReplies = messages.length <= 2 && !isLoading
+  // Show suggestions after each Bloom response (not during loading)
+  const showSuggestions = !isLoading && messages.length > 0
 
   // Rotate taglines
   useEffect(() => {
@@ -260,9 +263,9 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true, ent
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Quick Replies */}
+              {/* Personalized Suggestions */}
               <AnimatePresence>
-                {showQuickReplies && (
+                {showSuggestions && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -270,23 +273,23 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true, ent
                     className={`px-4 pt-3 border-t ${isDark ? 'border-white/10' : 'border-gray-100'}`}
                   >
                     <p className={`text-xs mb-2 ${isDark ? 'text-white/40' : 'text-gray-400'}`}>
-                      {locale === 'fr' ? 'Suggestions' : 'Quick replies'}
+                      {locale === 'fr' ? 'Suggestions pour vous' : 'Suggestions for you'}
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {quickReplies.map((reply, i) => (
+                      {displaySuggestions.map((suggestion, i) => (
                         <motion.button
-                          key={reply}
+                          key={suggestion}
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ delay: i * 0.05 }}
-                          onClick={() => sendUserMessage(reply)}
+                          onClick={() => sendUserMessage(suggestion)}
                           className={`px-3 py-1.5 rounded-full text-[13px] transition-all ${
                             isDark
                               ? 'bg-white/10 text-white/70 hover:bg-white/15 hover:text-white'
                               : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
                           }`}
                         >
-                          {reply}
+                          {suggestion}
                         </motion.button>
                       ))}
                     </div>
@@ -295,7 +298,7 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true, ent
               </AnimatePresence>
 
               {/* Input */}
-              <div className={`px-4 py-4 ${!showQuickReplies ? `border-t ${isDark ? 'border-white/10' : 'border-gray-100'}` : ''}`}>
+              <div className={`px-4 py-4 ${!showSuggestions ? `border-t ${isDark ? 'border-white/10' : 'border-gray-100'}` : ''}`}>
                 <div className="flex items-center gap-3">
                   <input
                     ref={inputRef}

@@ -93,7 +93,7 @@ export interface ChatRequest {
 export interface ChatResponse {
   message: string
   conversationId: string
-  suggestedActions?: string[]
+  suggestions?: string[]
   relatedMomentIds?: string[]
 }
 

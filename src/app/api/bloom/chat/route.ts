@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createAdminClient } from '@/lib/supabase/server-client'
-import { getBloomSystemPrompt } from '@/lib/bloom/prompts'
+import { getBloomSystemPrompt, generateSuggestions } from '@/lib/bloom/prompts'
 import { buildBloomContext, formatContextForPrompt, type EntryPoint } from '@/lib/bloom/context'
 import type { BloomPersonality } from '@/types/bloom'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit'
@@ -185,9 +185,32 @@ ${contextPrompt}`
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', activeConversationId)
 
+    // Generate personalized suggestions based on context
+    const now = new Date()
+    const todayBalance = bloomContext.today.balance
+    const weeklyMoods = bloomContext.thisWeek.moods
+
+    // Determine mood trend from weekly data
+    let moodTrend: 'positive' | 'negative' | 'neutral' | undefined
+    if (weeklyMoods.positive > 60) moodTrend = 'positive'
+    else if (weeklyMoods.negative > 40) moodTrend = 'negative'
+    else moodTrend = 'neutral'
+
+    const suggestions = generateSuggestions({
+      hasMoments: bloomContext.today.moments.count > 0 || bloomContext.thisWeek.momentsCount > 0,
+      recentMoodTrend: moodTrend,
+      dayOfWeek: now.getDay(),
+      hourOfDay: now.getHours(),
+      hasSleptWell: todayBalance.hasLogged ? (todayBalance.sleep / 60) >= 7 : undefined,
+      workLifeBalance: todayBalance.hasLogged
+        ? (todayBalance.work > 9 ? 'work_heavy' : 'balanced')
+        : undefined,
+    }, locale)
+
     return NextResponse.json({
       message: responseText,
       conversationId: activeConversationId,
+      suggestions,
     })
   } catch (error) {
     console.error('Bloom chat error:', error)
