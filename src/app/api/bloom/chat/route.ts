@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createAdminClient } from '@/lib/supabase/server-client'
-import { getBloomSystemPrompt, formatMomentsContext } from '@/lib/bloom/prompts'
+import { getBloomSystemPrompt } from '@/lib/bloom/prompts'
+import { buildBloomContext, formatContextForPrompt, type EntryPoint } from '@/lib/bloom/context'
 import type { BloomPersonality } from '@/types/bloom'
 
 export async function POST(request: NextRequest) {
@@ -22,9 +23,14 @@ export async function POST(request: NextRequest) {
     const {
       message,
       conversationId,
-      includeRecentMoments = true,
       locale = 'en',
-    } = body
+      entryPoint = 'general',
+    } = body as {
+      message: string
+      conversationId?: string
+      locale?: 'en' | 'fr'
+      entryPoint?: EntryPoint
+    }
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json(
@@ -90,25 +96,15 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: true })
       .limit(20)
 
-    // Get recent moments for context
-    let momentsContext = ''
-    if (includeRecentMoments) {
-      const { data: moments } = await supabase
-        .from('moments')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5)
+    // Build comprehensive user context
+    const bloomContext = await buildBloomContext(supabase, user.id, entryPoint)
+    const contextPrompt = formatContextForPrompt(bloomContext, locale)
 
-      if (moments && moments.length > 0) {
-        momentsContext = formatMomentsContext(moments, locale)
-      }
-    }
-
-    // Build system prompt
+    // Build system prompt with full context
     const systemPrompt = `${getBloomSystemPrompt(personality, locale)}
 
-${momentsContext ? `\n${momentsContext}` : ''}`
+USER CONTEXT:
+${contextPrompt}`
 
     // Build messages array for Claude
     const messages: Anthropic.MessageParam[] = [

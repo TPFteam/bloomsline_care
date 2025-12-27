@@ -1554,6 +1554,7 @@ export default function MyResourcesPage() {
         isOpen={showBloomChat}
         onClose={() => setShowBloomChat(false)}
         isDark={false}
+        entryPoint="home"
       />
     </MemberLayout>
   )

@@ -970,6 +970,7 @@ export default function MomentsPage() {
         isOpen={isBloomOpen}
         onClose={() => setIsBloomOpen(false)}
         isDark={isDark}
+        entryPoint="moments"
       />
 
       {/* Mood Trends Modal */}

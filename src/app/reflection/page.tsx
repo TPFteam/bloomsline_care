@@ -997,6 +997,7 @@ export default function ReflectionPage() {
         isOpen={showBloomChat}
         onClose={() => setShowBloomChat(false)}
         isDark={false}
+        entryPoint="reflect"
       />
     </MemberLayout>
   )

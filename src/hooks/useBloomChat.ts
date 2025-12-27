@@ -2,12 +2,13 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { sendMessage, getActiveConversation, getConversationMessages } from '@/lib/services/bloom'
-import { getGreeting } from '@/lib/bloom/prompts'
 import type { BloomMessage, BloomState } from '@/types/bloom'
+
+export type BloomEntryPoint = 'home' | 'balance' | 'moments' | 'rituals' | 'progress' | 'reflect' | 'general'
 
 interface UseBloomChatOptions {
   locale?: 'en' | 'fr'
-  includeRecentMoments?: boolean
+  entryPoint?: BloomEntryPoint
 }
 
 interface UseBloomChatReturn {
@@ -21,7 +22,7 @@ interface UseBloomChatReturn {
 }
 
 export function useBloomChat(options: UseBloomChatOptions = {}): UseBloomChatReturn {
-  const { locale = 'en', includeRecentMoments = true } = options
+  const { locale = 'en', entryPoint = 'general' } = options
 
   const [messages, setMessages] = useState<BloomMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -29,29 +30,84 @@ export function useBloomChat(options: UseBloomChatOptions = {}): UseBloomChatRet
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [initialized, setInitialized] = useState(false)
+  const [greetingLoading, setGreetingLoading] = useState(false)
 
-  // Initialize with greeting
+  // Fetch context-aware greeting from API
   useEffect(() => {
-    if (initialized) return
+    if (initialized || greetingLoading) return
 
-    const greeting = getGreeting(locale)
-    const greetingMessage: BloomMessage = {
-      id: 'greeting',
-      conversation_id: '',
-      user_id: '',
-      role: 'assistant',
-      content: greeting,
-      is_voice_message: false,
-      audio_url: null,
-      audio_duration_seconds: null,
-      tokens_used: null,
-      model_version: null,
-      created_at: new Date().toISOString(),
+    async function fetchGreeting() {
+      setGreetingLoading(true)
+      try {
+        const response = await fetch('/api/bloom/greeting', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ locale, entryPoint }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const greetingMessage: BloomMessage = {
+            id: 'greeting',
+            conversation_id: '',
+            user_id: '',
+            role: 'assistant',
+            content: data.greeting,
+            is_voice_message: false,
+            audio_url: null,
+            audio_duration_seconds: null,
+            tokens_used: null,
+            model_version: null,
+            created_at: new Date().toISOString(),
+          }
+          setMessages([greetingMessage])
+        } else {
+          // Fallback to simple greeting
+          const hour = new Date().getHours()
+          const greeting = locale === 'fr'
+            ? (hour < 12 ? 'Bonjour. Comment vas-tu ?' : 'Bonsoir. Comment vas-tu ?')
+            : (hour < 12 ? 'Good morning. How are you?' : 'Good evening. How are you?')
+
+          const greetingMessage: BloomMessage = {
+            id: 'greeting',
+            conversation_id: '',
+            user_id: '',
+            role: 'assistant',
+            content: greeting,
+            is_voice_message: false,
+            audio_url: null,
+            audio_duration_seconds: null,
+            tokens_used: null,
+            model_version: null,
+            created_at: new Date().toISOString(),
+          }
+          setMessages([greetingMessage])
+        }
+      } catch {
+        // Fallback greeting on error
+        const greeting = locale === 'fr' ? 'Bonjour. Comment vas-tu ?' : 'Hey. How are you?'
+        const greetingMessage: BloomMessage = {
+          id: 'greeting',
+          conversation_id: '',
+          user_id: '',
+          role: 'assistant',
+          content: greeting,
+          is_voice_message: false,
+          audio_url: null,
+          audio_duration_seconds: null,
+          tokens_used: null,
+          model_version: null,
+          created_at: new Date().toISOString(),
+        }
+        setMessages([greetingMessage])
+      } finally {
+        setGreetingLoading(false)
+        setInitialized(true)
+      }
     }
 
-    setMessages([greetingMessage])
-    setInitialized(true)
-  }, [locale, initialized])
+    fetchGreeting()
+  }, [locale, entryPoint, initialized, greetingLoading])
 
   // Load existing conversation if available
   useEffect(() => {
@@ -102,8 +158,8 @@ export function useBloomChat(options: UseBloomChatOptions = {}): UseBloomChatRet
       const response = await sendMessage({
         message,
         conversationId: conversationId || undefined,
-        includeRecentMoments,
         locale,
+        entryPoint,
       })
 
       setConversationId(response.conversationId)
@@ -139,7 +195,7 @@ export function useBloomChat(options: UseBloomChatOptions = {}): UseBloomChatRet
     } finally {
       setIsLoading(false)
     }
-  }, [conversationId, includeRecentMoments, locale])
+  }, [conversationId, locale, entryPoint])
 
   const clearChat = useCallback(() => {
     setMessages([])

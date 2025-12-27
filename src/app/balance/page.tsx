@@ -3221,6 +3221,7 @@ export default function BalancePage() {
       <BloomChatInterface
         isOpen={showBloomChat}
         onClose={() => setShowBloomChat(false)}
+        entryPoint={activeTab === 'reflect' ? 'reflect' : 'balance'}
       />
     </MemberLayout>
   )

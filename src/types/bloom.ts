@@ -79,12 +79,15 @@ export interface BloomUserSettings {
   updated_at: string
 }
 
+// Entry point for context-aware interactions
+export type BloomEntryPoint = 'home' | 'balance' | 'moments' | 'rituals' | 'progress' | 'reflect' | 'general'
+
 // Chat API types
 export interface ChatRequest {
   message: string
   conversationId?: string
-  includeRecentMoments?: boolean
   locale: 'en' | 'fr'
+  entryPoint?: BloomEntryPoint
 }
 
 export interface ChatResponse {

@@ -71,6 +71,7 @@ export default function ProgressPage() {
         isOpen={showBloomChat}
         onClose={() => setShowBloomChat(false)}
         isDark={false}
+        entryPoint="progress"
       />
     </MemberLayout>
   )

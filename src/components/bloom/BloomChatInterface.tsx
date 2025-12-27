@@ -7,10 +7,13 @@ import { useLanguage } from '@/lib/i18n/context'
 import { useBloomChat } from '@/hooks/useBloomChat'
 import type { BloomMessage } from '@/types/bloom'
 
+export type BloomEntryPoint = 'home' | 'balance' | 'moments' | 'rituals' | 'progress' | 'reflect' | 'general'
+
 interface BloomChatInterfaceProps {
   isOpen: boolean
   onClose: () => void
   isDark?: boolean
+  entryPoint?: BloomEntryPoint
 }
 
 function ChatBubble({ message, isUser, isDark }: { message: BloomMessage; isUser: boolean; isDark: boolean }) {
@@ -95,7 +98,7 @@ const TAGLINES_FR = [
   "Je suis là",
 ]
 
-export default function BloomChatInterface({ isOpen, onClose, isDark = true }: BloomChatInterfaceProps) {
+export default function BloomChatInterface({ isOpen, onClose, isDark = true, entryPoint = 'general' }: BloomChatInterfaceProps) {
   const { locale } = useLanguage()
   const [inputValue, setInputValue] = useState('')
   const [taglineIndex, setTaglineIndex] = useState(0)
@@ -107,7 +110,7 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true }: B
     isLoading,
     sendUserMessage,
     error,
-  } = useBloomChat({ locale: locale as 'en' | 'fr' })
+  } = useBloomChat({ locale: locale as 'en' | 'fr', entryPoint })
 
   const quickReplies = locale === 'fr' ? QUICK_REPLIES_FR : QUICK_REPLIES_EN
   const taglines = locale === 'fr' ? TAGLINES_FR : TAGLINES_EN
