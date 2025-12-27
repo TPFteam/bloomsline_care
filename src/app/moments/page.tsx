@@ -1087,10 +1087,17 @@ export default function MomentsPage() {
                     })
                   }
 
+                  // For display, convert null to 0 but track which days have no data
+                  const displayData = chartData.map(d => ({
+                    ...d,
+                    displayScore: d.score ?? 0,
+                    hasData: d.score !== null
+                  }))
+
                   return (
                     <div className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <LineChart data={displayData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                           <CartesianGrid
                             strokeDasharray="3 3"
                             stroke={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}
@@ -1118,19 +1125,48 @@ export default function MomentsPage() {
                               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                             }}
                             labelStyle={{ color: isDark ? '#fff' : '#000', fontWeight: 600 }}
-                            formatter={(value) => [
-                              `${value ?? 0}%`,
-                              locale === 'fr' ? 'Positivité' : 'Positivity'
-                            ]}
+                            formatter={(value, name, props) => {
+                              const hasData = props.payload?.hasData
+                              if (!hasData) {
+                                return [locale === 'fr' ? 'Pas de données' : 'No data', '']
+                              }
+                              return [`${value}%`, locale === 'fr' ? 'Positivité' : 'Positivity']
+                            }}
                           />
                           <Line
                             type="monotone"
-                            dataKey="score"
+                            dataKey="displayScore"
                             stroke="#8b5cf6"
                             strokeWidth={2.5}
-                            dot={{ fill: '#8b5cf6', strokeWidth: 0, r: 4 }}
+                            dot={(props: { cx: number; cy: number; payload: { hasData: boolean } }) => {
+                              const { cx, cy, payload } = props
+                              if (!payload.hasData) {
+                                // No data - show dashed circle at bottom
+                                return (
+                                  <circle
+                                    key={`dot-${cx}`}
+                                    cx={cx}
+                                    cy={cy}
+                                    r={5}
+                                    fill={isDark ? '#3a3a3c' : '#e5e5e5'}
+                                    stroke={isDark ? '#5a5a5c' : '#ccc'}
+                                    strokeWidth={2}
+                                    strokeDasharray="2 2"
+                                  />
+                                )
+                              }
+                              // Has data - show solid dot
+                              return (
+                                <circle
+                                  key={`dot-${cx}`}
+                                  cx={cx}
+                                  cy={cy}
+                                  r={5}
+                                  fill="#8b5cf6"
+                                />
+                              )
+                            }}
                             activeDot={{ r: 6, fill: '#8b5cf6' }}
-                            connectNulls={false}
                           />
                         </LineChart>
                       </ResponsiveContainer>
