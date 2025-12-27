@@ -83,20 +83,26 @@ function EarlyAccessContent() {
     {
       value: 'member' as UserType,
       icon: Heart,
+      emoji: '🌱',
       label: { en: 'For myself', fr: 'Pour moi' },
       description: { en: 'I want support for my own wellbeing', fr: 'Je cherche du soutien pour mon bien-être' },
+      color: 'rose',
     },
     {
       value: 'practitioner' as UserType,
       icon: Users,
+      emoji: '💜',
       label: { en: 'I help others', fr: 'J\'accompagne les autres' },
       description: { en: 'I\'m a therapist, coach, or practitioner', fr: 'Je suis thérapeute, coach ou praticien' },
+      color: 'lavender',
     },
     {
       value: 'both' as UserType,
-      icon: Heart,
+      icon: Sparkles,
+      emoji: '✨',
       label: { en: 'Both', fr: 'Les deux' },
       description: { en: 'I care for myself and support others', fr: 'Je prends soin de moi et j\'accompagne les autres' },
+      color: 'teal',
     },
   ]
 
@@ -345,39 +351,67 @@ function EarlyAccessContent() {
                       <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
                         {locale === 'fr' ? 'Comment voulez-vous utiliser Bloomsline?' : 'How do you want to use Bloomsline?'}
                       </label>
-                      <div className="space-y-2">
-                        {userTypeOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, userType: option.value })}
-                            className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                              formData.userType === option.value
-                                ? 'border-lavender-500 bg-lavender-50 dark:bg-lavender-900/20'
-                                : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                formData.userType === option.value
-                                  ? 'border-lavender-500 bg-lavender-500'
-                                  : 'border-neutral-300 dark:border-neutral-600'
-                              }`}>
-                                {formData.userType === option.value && (
-                                  <Check className="w-3 h-3 text-white" />
-                                )}
+                      <div className="space-y-3">
+                        {userTypeOptions.map((option) => {
+                          const isSelected = formData.userType === option.value
+                          const colorStyles = {
+                            rose: {
+                              selected: 'border-rose-400 bg-rose-50 dark:bg-rose-900/20',
+                              icon: 'bg-rose-100 dark:bg-rose-900/30',
+                              check: 'border-rose-400 bg-rose-400',
+                            },
+                            lavender: {
+                              selected: 'border-lavender-400 bg-lavender-50 dark:bg-lavender-900/20',
+                              icon: 'bg-lavender-100 dark:bg-lavender-900/30',
+                              check: 'border-lavender-400 bg-lavender-400',
+                            },
+                            teal: {
+                              selected: 'border-teal-400 bg-teal-50 dark:bg-teal-900/20',
+                              icon: 'bg-teal-100 dark:bg-teal-900/30',
+                              check: 'border-teal-400 bg-teal-400',
+                            },
+                          }[option.color]
+
+                          return (
+                            <motion.button
+                              key={option.value}
+                              type="button"
+                              whileHover={{ scale: 1.01 }}
+                              whileTap={{ scale: 0.99 }}
+                              onClick={() => setFormData({ ...formData, userType: option.value })}
+                              className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-200 ${
+                                isSelected
+                                  ? colorStyles.selected
+                                  : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all ${
+                                  isSelected ? colorStyles.icon : 'bg-neutral-100 dark:bg-neutral-800'
+                                }`}>
+                                  {option.emoji}
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-medium text-neutral-800 dark:text-neutral-200">
+                                    {locale === 'fr' ? option.label.fr : option.label.en}
+                                  </p>
+                                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                    {locale === 'fr' ? option.description.fr : option.description.en}
+                                  </p>
+                                </div>
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                  isSelected
+                                    ? colorStyles.check
+                                    : 'border-neutral-300 dark:border-neutral-600'
+                                }`}>
+                                  {isSelected && (
+                                    <Check className="w-3 h-3 text-white" />
+                                  )}
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-medium text-neutral-800 dark:text-neutral-200">
-                                  {locale === 'fr' ? option.label.fr : option.label.en}
-                                </p>
-                                <p className="text-xs text-neutral-500">
-                                  {locale === 'fr' ? option.description.fr : option.description.en}
-                                </p>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
+                            </motion.button>
+                          )
+                        })}
                       </div>
                     </div>
 

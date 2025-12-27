@@ -749,8 +749,12 @@ function DashboardContent() {
               whileHover={{ scale: 1.02 }}
               className="flex items-center gap-3 bg-white/90 backdrop-blur-xl rounded-2xl px-4 py-3 border border-white/60 shadow-lg shadow-gray-200/40"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-lavender-500 rounded-xl flex items-center justify-center text-white font-semibold shadow-md">
-                {user?.full_name?.[0] || 'U'}
+              <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-lavender-500 rounded-xl flex items-center justify-center text-white font-semibold shadow-md overflow-hidden">
+                {user?.avatar_url ? (
+                  <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  user?.full_name?.[0] || 'U'
+                )}
               </div>
               <div className="text-left">
                 <p className="text-sm font-medium text-gray-900">{user?.full_name || 'User'}</p>

@@ -17,7 +17,7 @@ import {
   Upload,
   MicOff,
 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createMoment } from '@/lib/services/moments'
@@ -91,6 +91,8 @@ const captureTypes = [
 export default function CaptureMomentPage() {
   const { locale } = useLanguage()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const returnTo = searchParams.get('from') || '/moments'
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -246,7 +248,7 @@ export default function CaptureMomentPage() {
         toast.success(
           locale === 'fr' ? 'Moment sauvegardé!' : 'Moment saved!'
         )
-        router.push('/moments')
+        router.push(returnTo)
       } else {
         toast.error(
           locale === 'fr'
@@ -366,42 +368,37 @@ export default function CaptureMomentPage() {
               exit={{ opacity: 0 }}
               className="flex-1 flex flex-col items-center justify-center p-6"
             >
-              <div className="w-full aspect-square max-w-sm bg-black/50 rounded-3xl flex flex-col items-center justify-center mb-8 border-2 border-dashed border-white/20">
-                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-4">
-                  <Camera className="w-12 h-12 text-white/60" />
+              <button
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.setAttribute('capture', 'environment')
+                    fileInputRef.current.click()
+                  }
+                }}
+                className="w-full aspect-square max-w-sm bg-gradient-to-br from-sky-500/20 to-blue-500/20 rounded-3xl flex flex-col items-center justify-center mb-8 border-2 border-sky-400/30 hover:border-sky-400/50 hover:from-sky-500/30 hover:to-blue-500/30 transition-all cursor-pointer active:scale-[0.98]"
+              >
+                <div className="w-24 h-24 bg-gradient-to-br from-sky-400 to-blue-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-sky-500/30">
+                  <Camera className="w-12 h-12 text-white" />
                 </div>
-                <p className="text-white/60 text-center px-8">
-                  {locale === 'fr' ? 'Prenez ou choisissez une photo' : 'Take or choose a photo'}
+                <p className="text-white text-center px-8 font-medium">
+                  {locale === 'fr' ? 'Appuyez pour prendre une photo' : 'Tap to take a photo'}
                 </p>
-              </div>
+              </button>
 
-              <div className="flex items-center gap-6">
-                <button
-                  onClick={() => {
-                    if (fileInputRef.current) {
-                      fileInputRef.current.removeAttribute('capture')
-                      fileInputRef.current.click()
-                    }
-                  }}
-                  className="w-14 h-14 bg-white/10 backdrop-blur-lg rounded-full flex items-center justify-center flex-col gap-1"
-                >
-                  <Upload className="w-6 h-6 text-white" />
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (fileInputRef.current) {
-                      fileInputRef.current.setAttribute('capture', 'environment')
-                      fileInputRef.current.click()
-                    }
-                  }}
-                  className="w-20 h-20 bg-gradient-to-br from-rose-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg shadow-pink-500/30"
-                >
-                  <Camera className="w-8 h-8 text-white" />
-                </button>
-
-                <div className="w-14" />
-              </div>
+              <button
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.removeAttribute('capture')
+                    fileInputRef.current.click()
+                  }
+                }}
+                className="flex items-center gap-2 px-5 py-3 bg-white/10 backdrop-blur-lg rounded-full text-white/80 hover:bg-white/20 transition-all"
+              >
+                <Upload className="w-5 h-5" />
+                <span className="text-sm font-medium">
+                  {locale === 'fr' ? 'Choisir une photo' : 'Choose from gallery'}
+                </span>
+              </button>
 
               <input
                 ref={fileInputRef}
@@ -421,42 +418,37 @@ export default function CaptureMomentPage() {
               exit={{ opacity: 0 }}
               className="flex-1 flex flex-col items-center justify-center p-6"
             >
-              <div className="w-full aspect-video max-w-sm bg-black/50 rounded-3xl flex flex-col items-center justify-center mb-8 border-2 border-dashed border-white/20">
-                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-4">
-                  <Video className="w-12 h-12 text-white/60" />
+              <button
+                onClick={() => {
+                  if (videoInputRef.current) {
+                    videoInputRef.current.setAttribute('capture', 'environment')
+                    videoInputRef.current.click()
+                  }
+                }}
+                className="w-full aspect-video max-w-sm bg-gradient-to-br from-sky-500/20 to-blue-500/20 rounded-3xl flex flex-col items-center justify-center mb-8 border-2 border-sky-400/30 hover:border-sky-400/50 hover:from-sky-500/30 hover:to-blue-500/30 transition-all cursor-pointer active:scale-[0.98]"
+              >
+                <div className="w-24 h-24 bg-gradient-to-br from-sky-400 to-blue-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-sky-500/30">
+                  <Video className="w-12 h-12 text-white" />
                 </div>
-                <p className="text-white/60 text-center px-8">
-                  {locale === 'fr' ? 'Enregistrez ou choisissez une vidéo' : 'Record or choose a video'}
+                <p className="text-white text-center px-8 font-medium">
+                  {locale === 'fr' ? 'Appuyez pour enregistrer une vidéo' : 'Tap to record a video'}
                 </p>
-              </div>
+              </button>
 
-              <div className="flex items-center gap-6">
-                <button
-                  onClick={() => {
-                    if (videoInputRef.current) {
-                      videoInputRef.current.removeAttribute('capture')
-                      videoInputRef.current.click()
-                    }
-                  }}
-                  className="w-14 h-14 bg-white/10 backdrop-blur-lg rounded-full flex items-center justify-center"
-                >
-                  <Upload className="w-6 h-6 text-white" />
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (videoInputRef.current) {
-                      videoInputRef.current.setAttribute('capture', 'environment')
-                      videoInputRef.current.click()
-                    }
-                  }}
-                  className="w-20 h-20 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30"
-                >
-                  <Video className="w-8 h-8 text-white" />
-                </button>
-
-                <div className="w-14" />
-              </div>
+              <button
+                onClick={() => {
+                  if (videoInputRef.current) {
+                    videoInputRef.current.removeAttribute('capture')
+                    videoInputRef.current.click()
+                  }
+                }}
+                className="flex items-center gap-2 px-5 py-3 bg-white/10 backdrop-blur-lg rounded-full text-white/80 hover:bg-white/20 transition-all"
+              >
+                <Upload className="w-5 h-5" />
+                <span className="text-sm font-medium">
+                  {locale === 'fr' ? 'Choisir une vidéo' : 'Choose from gallery'}
+                </span>
+              </button>
 
               <input
                 ref={videoInputRef}

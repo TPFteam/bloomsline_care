@@ -21,6 +21,7 @@ import {
   X,
   ExternalLink,
   AlertCircle,
+  Camera,
 } from 'lucide-react'
 import { AnimatedIcon } from '@/components/ui/animated-icons'
 import { Button } from '@/components/ui/button'
@@ -71,6 +72,7 @@ export default function ProfilePage() {
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [activeTab, setActiveTab] = useState<TabId>('about')
   const [user, setUser] = useState<{ id: string; full_name: string | null; avatar_url: string | null; email: string } | null>(null)
   const [profile, setProfile] = useState<Partial<PractitionerProfile>>({
@@ -253,6 +255,67 @@ export default function ProfilePage() {
     }
   }
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !user) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB')
+      return
+    }
+
+    setUploadingAvatar(true)
+    try {
+      // Create a unique filename
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`
+      const filePath = `avatars/${fileName}`
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true })
+
+      if (uploadError) {
+        // If bucket doesn't exist, create it or show friendly error
+        if (uploadError.message.includes('not found')) {
+          toast.error('Avatar storage is being set up. Please try again later.')
+          return
+        }
+        throw uploadError
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath)
+
+      // Update user record
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id)
+
+      if (updateError) throw updateError
+
+      // Update local state
+      setUser(prev => prev ? { ...prev, avatar_url: publicUrl } : null)
+      toast.success('Profile photo updated!')
+    } catch (error) {
+      console.error('Error uploading avatar:', error)
+      toast.error('Failed to upload image. Please try again.')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   const tabs: { id: TabId; label: string; icon: typeof User }[] = [
     { id: 'about', label: t.profile.tabs.about, icon: User },
     { id: 'credentials', label: t.profile.tabs.credentials, icon: GraduationCap },
@@ -412,12 +475,33 @@ export default function ProfilePage() {
               <div className="flex-shrink-0 flex justify-center md:justify-start">
                 <div className="relative group">
                   <div className="absolute -inset-2 bg-gradient-to-br from-lavender-400/30 to-mint-400/30 rounded-[1.75rem] blur-xl opacity-60 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-[1.5rem] bg-gradient-to-br from-lavender-100 via-lavender-50 to-lavender-200 flex items-center justify-center text-lavender-700 font-bold text-3xl sm:text-4xl shadow-lg border-2 border-white/80">
+                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-[1.5rem] bg-gradient-to-br from-lavender-100 via-lavender-50 to-lavender-200 flex items-center justify-center text-lavender-700 font-bold text-3xl sm:text-4xl shadow-lg border-2 border-white/80 overflow-hidden">
                     {user?.avatar_url ? (
                       <img src={user.avatar_url} alt="" className="w-full h-full rounded-[1.5rem] object-cover" />
                     ) : (
                       user?.full_name?.charAt(0) || 'P'
                     )}
+
+                    {/* Upload overlay */}
+                    <label className="absolute inset-0 bg-black/0 hover:bg-black/40 flex items-center justify-center cursor-pointer transition-all duration-200 group/upload">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                        disabled={uploadingAvatar}
+                      />
+                      <div className="opacity-0 group-hover/upload:opacity-100 transition-opacity duration-200">
+                        {uploadingAvatar ? (
+                          <Loader2 className="w-8 h-8 text-white animate-spin" />
+                        ) : (
+                          <div className="flex flex-col items-center">
+                            <Camera className="w-6 h-6 text-white" />
+                            <span className="text-white text-xs mt-1 font-medium">Change</span>
+                          </div>
+                        )}
+                      </div>
+                    </label>
                   </div>
                 </div>
               </div>

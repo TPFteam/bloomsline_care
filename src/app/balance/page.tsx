@@ -172,26 +172,28 @@ export default function BalancePage() {
     fetchOldestDate()
   }, [])
 
-  // Fetch weekly data when trends tab is selected - always refresh
+  // Fetch weekly data when trends or reflect tab is selected - always refresh
   useEffect(() => {
-    if (activeTab === 'trends' && memberId) {
+    if ((activeTab === 'trends' || activeTab === 'reflect') && memberId) {
       // Clear existing data to show loading state
       setWeeklyData([])
       fetchWeeklyData()
 
-      // Also fetch chart data for the selected time range
-      const today = new Date()
-      const todayStr = getTodayStr()
-      if (trendsTimeRange === 'weekly') {
-        const startDate = new Date()
-        startDate.setDate(today.getDate() - 6)
-        const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
-        fetchTrendsData(startStr, todayStr)
-      } else if (trendsTimeRange === 'monthly') {
-        const startDate = new Date()
-        startDate.setDate(today.getDate() - 29)
-        const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
-        fetchTrendsData(startStr, todayStr)
+      // Also fetch chart data for the selected time range (only for trends)
+      if (activeTab === 'trends') {
+        const today = new Date()
+        const todayStr = getTodayStr()
+        if (trendsTimeRange === 'weekly') {
+          const startDate = new Date()
+          startDate.setDate(today.getDate() - 5)
+          const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+          fetchTrendsData(startStr, todayStr)
+        } else if (trendsTimeRange === 'monthly') {
+          const startDate = new Date()
+          startDate.setDate(today.getDate() - 29)
+          const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+          fetchTrendsData(startStr, todayStr)
+        }
       }
     }
   }, [activeTab, memberId])
@@ -243,8 +245,8 @@ export default function BalancePage() {
       const defaultWorkTarget = (targetHours.work || 8) * 60
       const defaultLifeTarget = (targetHours.life || 8) * 60
 
-      // Get last 7 days
-      for (let i = 6; i >= 0; i--) {
+      // Get last 6 days
+      for (let i = 5; i >= 0; i--) {
         const date = new Date()
         date.setDate(date.getDate() - i)
         const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -473,7 +475,7 @@ export default function BalancePage() {
 
     if (range === 'weekly') {
       const startDate = new Date()
-      startDate.setDate(today.getDate() - 6)
+      startDate.setDate(today.getDate() - 5)
       const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
       await fetchTrendsData(startStr, todayStr)
     } else if (range === 'monthly') {
@@ -2520,21 +2522,227 @@ export default function BalancePage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+            className="space-y-4"
           >
-            <h3 className="font-semibold text-gray-800 mb-3">
-              {locale === 'fr' ? 'Réflexion quotidienne' : 'Daily Reflection'}
-            </h3>
-            <p className="text-gray-500 text-sm leading-relaxed mb-4">
-              {locale === 'fr'
-                ? 'Prenez un moment pour réfléchir à votre équilibre vie-travail aujourd\'hui.'
-                : 'Take a moment to reflect on your work-life balance today.'}
-            </p>
-            <div className="p-4 bg-gray-50 rounded-xl">
-              <p className="text-sm text-gray-600 italic">
+            {/* Bloom Insights - AI-style warm observation */}
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-5 border border-emerald-100">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-emerald-600" />
+                <span className="text-sm font-medium text-emerald-700">
+                  {locale === 'fr' ? 'Aperçu Bloom' : 'Bloom Insight'}
+                </span>
+              </div>
+              <p className="text-gray-700 leading-relaxed">
+                {(() => {
+                  const totalSleep = weeklyData.reduce((sum, d) => sum + d.sleep, 0)
+                  const totalWork = weeklyData.reduce((sum, d) => sum + d.work, 0)
+                  const totalLife = weeklyData.reduce((sum, d) => sum + d.life, 0)
+                  const avgSleep = totalSleep / Math.max(weeklyData.length, 1) / 60
+                  const avgWork = totalWork / Math.max(weeklyData.length, 1) / 60
+                  const avgLife = totalLife / Math.max(weeklyData.length, 1) / 60
+
+                  // Generate human insight based on patterns
+                  if (avgSleep >= 7 && avgWork <= 9 && avgLife >= 2) {
+                    return locale === 'fr'
+                      ? "Vous avez trouvé un bel équilibre cette semaine. Votre rythme de sommeil est régulier et vous prenez du temps pour vous."
+                      : "You've found a lovely balance this week. Your sleep rhythm is steady and you're making time for yourself."
+                  } else if (avgWork > 10) {
+                    return locale === 'fr'
+                      ? "Cette semaine a été intense côté travail. N'oubliez pas de prendre soin de vous aussi."
+                      : "This week has been work-heavy. Remember to take care of yourself too."
+                  } else if (avgSleep < 6) {
+                    return locale === 'fr'
+                      ? "Votre sommeil mérite un peu plus d'attention. Le repos est la base de tout."
+                      : "Your sleep could use some love. Rest is the foundation of everything."
+                  } else if (avgLife < 1) {
+                    return locale === 'fr'
+                      ? "Vous avez été très occupé. Essayez de vous accorder quelques moments de détente."
+                      : "You've been quite busy. Try to give yourself some moments of joy."
+                  } else {
+                    return locale === 'fr'
+                      ? "Vous faites de votre mieux pour équilibrer les différentes facettes de votre vie."
+                      : "You're doing your best to balance the different parts of your life."
+                  }
+                })()}
+              </p>
+            </div>
+
+            {/* How your week has been going */}
+            <div className="pt-2">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-800">
+                  {locale === 'fr' ? 'Comment va ta semaine' : 'How your week has been'}
+                </h3>
+                <span className="text-xs text-gray-400">
+                  {weeklyData.length > 0 && (() => {
+                    const firstDate = new Date(weeklyData[0]?.date)
+                    const lastDate = new Date(weeklyData[weeklyData.length - 1]?.date)
+                    const formatDate = (d: Date) => d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })
+                    return `${formatDate(firstDate)} - ${formatDate(lastDate)}`
+                  })()}
+                </span>
+              </div>
+
+              {/* Sleep Card */}
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-3"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-violet-500" />
+                    <span className="font-medium text-gray-800">{locale === 'fr' ? 'Sommeil' : 'Sleep'}</span>
+                  </div>
+                  <span className="text-xs text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full">
+                    {(() => {
+                      const avg = weeklyData.reduce((sum, d) => sum + d.sleep, 0) / Math.max(weeklyData.length, 1) / 60
+                      const target = (targetHours.sleep || 8)
+                      const diff = avg - target
+                      return diff >= 0 ? `+${diff.toFixed(1)}h` : `${diff.toFixed(1)}h`
+                    })()} {locale === 'fr' ? 'vs objectif' : 'vs target'}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mb-2">
+                  {(() => {
+                    const avg = weeklyData.reduce((sum, d) => sum + d.sleep, 0) / Math.max(weeklyData.length, 1) / 60
+                    const target = targetHours.sleep || 8
+                    return locale === 'fr'
+                      ? `En moyenne ${avg.toFixed(1)} heures par nuit (objectif: ${target}h)`
+                      : `Averaging ${avg.toFixed(1)} hours per night (aiming for ${target}h)`
+                  })()}
+                </p>
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  (() => {
+                    const avg = weeklyData.reduce((sum, d) => sum + d.sleep, 0) / Math.max(weeklyData.length, 1) / 60
+                    const target = targetHours.sleep || 8
+                    const ratio = avg / target
+                    if (ratio >= 0.9) return 'bg-emerald-100 text-emerald-700'
+                    if (ratio >= 0.7) return 'bg-amber-100 text-amber-700'
+                    return 'bg-rose-100 text-rose-700'
+                  })()
+                }`}>
+                  {(() => {
+                    const avg = weeklyData.reduce((sum, d) => sum + d.sleep, 0) / Math.max(weeklyData.length, 1) / 60
+                    const target = targetHours.sleep || 8
+                    const ratio = avg / target
+                    if (ratio >= 0.9) return locale === 'fr' ? 'Bien reposé' : 'Well rested'
+                    if (ratio >= 0.7) return locale === 'fr' ? 'Peut mieux faire' : 'Room to improve'
+                    return locale === 'fr' ? 'Besoin de repos' : 'Needs attention'
+                  })()}
+                </span>
+              </motion.div>
+
+              {/* Work Card */}
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-3"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                    <span className="font-medium text-gray-800">{locale === 'fr' ? 'Travail' : 'Work'}</span>
+                  </div>
+                  <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                    {(() => {
+                      const avg = weeklyData.reduce((sum, d) => sum + d.work, 0) / Math.max(weeklyData.length, 1) / 60
+                      const target = (targetHours.work || 8)
+                      const diff = avg - target
+                      return diff >= 0 ? `+${diff.toFixed(1)}h` : `${diff.toFixed(1)}h`
+                    })()} {locale === 'fr' ? 'vs objectif' : 'vs target'}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mb-2">
+                  {(() => {
+                    const avg = weeklyData.reduce((sum, d) => sum + d.work, 0) / Math.max(weeklyData.length, 1) / 60
+                    const target = targetHours.work || 8
+                    return locale === 'fr'
+                      ? `En moyenne ${avg.toFixed(1)} heures par jour (objectif: ${target}h)`
+                      : `Averaging ${avg.toFixed(1)} hours per day (aiming for ${target}h)`
+                  })()}
+                </p>
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  (() => {
+                    const avg = weeklyData.reduce((sum, d) => sum + d.work, 0) / Math.max(weeklyData.length, 1) / 60
+                    const target = targetHours.work || 8
+                    const ratio = avg / target
+                    if (ratio >= 0.9 && ratio <= 1.1) return 'bg-emerald-100 text-emerald-700'
+                    if (ratio > 1.1) return 'bg-rose-100 text-rose-700'
+                    return 'bg-amber-100 text-amber-700'
+                  })()
+                }`}>
+                  {(() => {
+                    const avg = weeklyData.reduce((sum, d) => sum + d.work, 0) / Math.max(weeklyData.length, 1) / 60
+                    const target = targetHours.work || 8
+                    const ratio = avg / target
+                    if (ratio >= 0.9 && ratio <= 1.1) return locale === 'fr' ? 'Bien équilibré' : 'Well balanced'
+                    if (ratio > 1.1) return locale === 'fr' ? 'Surcharge' : 'Overworking'
+                    return locale === 'fr' ? 'Sous l\'objectif' : 'Under target'
+                  })()}
+                </span>
+              </motion.div>
+
+              {/* Life Card */}
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                    <span className="font-medium text-gray-800">{locale === 'fr' ? 'Vie perso' : 'Life'}</span>
+                  </div>
+                  <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    {(() => {
+                      const avg = weeklyData.reduce((sum, d) => sum + d.life, 0) / Math.max(weeklyData.length, 1) / 60
+                      const target = (targetHours.life || 8)
+                      const diff = avg - target
+                      return diff >= 0 ? `+${diff.toFixed(1)}h` : `${diff.toFixed(1)}h`
+                    })()} {locale === 'fr' ? 'vs objectif' : 'vs target'}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mb-2">
+                  {(() => {
+                    const avg = weeklyData.reduce((sum, d) => sum + d.life, 0) / Math.max(weeklyData.length, 1) / 60
+                    const target = targetHours.life || 8
+                    return locale === 'fr'
+                      ? `En moyenne ${avg.toFixed(1)} heures par jour (objectif: ${target}h)`
+                      : `Averaging ${avg.toFixed(1)} hours per day (aiming for ${target}h)`
+                  })()}
+                </p>
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  (() => {
+                    const avg = weeklyData.reduce((sum, d) => sum + d.life, 0) / Math.max(weeklyData.length, 1) / 60
+                    const target = targetHours.life || 8
+                    const ratio = avg / target
+                    if (ratio >= 0.8) return 'bg-emerald-100 text-emerald-700'
+                    if (ratio >= 0.5) return 'bg-amber-100 text-amber-700'
+                    return 'bg-rose-100 text-rose-700'
+                  })()
+                }`}>
+                  {(() => {
+                    const avg = weeklyData.reduce((sum, d) => sum + d.life, 0) / Math.max(weeklyData.length, 1) / 60
+                    const target = targetHours.life || 8
+                    const ratio = avg / target
+                    if (ratio >= 0.8) return locale === 'fr' ? 'Épanoui' : 'Thriving'
+                    if (ratio >= 0.5) return locale === 'fr' ? 'En progrès' : 'Getting there'
+                    return locale === 'fr' ? 'Besoin d\'attention' : 'Needs more you-time'
+                  })()}
+                </span>
+              </motion.div>
+            </div>
+
+            {/* Gentle encouragement */}
+            <div className="p-4 bg-gray-50 rounded-xl mt-2">
+              <p className="text-sm text-gray-500 italic text-center">
                 {locale === 'fr'
-                  ? '"L\'équilibre n\'est pas quelque chose que vous trouvez, c\'est quelque chose que vous créez."'
-                  : '"Balance is not something you find, it\'s something you create."'}
+                  ? '"Chaque jour est une nouvelle chance de trouver ton équilibre."'
+                  : '"Every day is a new chance to find your balance."'}
               </p>
             </div>
           </motion.div>
@@ -2737,6 +2945,98 @@ export default function BalancePage() {
                   </div>
                 </div>
 
+                {/* Weekly Insights - This Week */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-gray-800 px-1">
+                    {locale === 'fr' ? 'Cette semaine' : 'This Week'}
+                  </h3>
+
+                  {/* Sleep Insight */}
+                  <div className="bg-violet-50 rounded-xl p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
+                        <Moon className="w-5 h-5 text-violet-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xl font-bold text-violet-700">
+                            {Math.round(weeklyData.reduce((sum, d) => sum + d.sleep, 0) / 60)}h
+                          </span>
+                          <span className="text-sm text-violet-500">
+                            / {Math.round(weeklyData.reduce((sum, d) => sum + d.sleepTarget, 0) / 60)}h
+                          </span>
+                        </div>
+                        <p className="text-xs text-violet-600 mt-0.5">
+                          {(() => {
+                            const actual = weeklyData.reduce((sum, d) => sum + d.sleep, 0)
+                            const target = weeklyData.reduce((sum, d) => sum + d.sleepTarget, 0)
+                            const diff = Math.round((actual - target) / 60)
+                            if (diff >= 0) return locale === 'fr' ? `+${diff}h de sommeil` : `+${diff}h sleep`
+                            return locale === 'fr' ? `${diff}h de sommeil` : `${diff}h sleep`
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Work Insight */}
+                  <div className="bg-amber-50 rounded-xl p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                        <Briefcase className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xl font-bold text-amber-700">
+                            {Math.round(weeklyData.reduce((sum, d) => sum + d.work, 0) / 60)}h
+                          </span>
+                          <span className="text-sm text-amber-500">
+                            / {Math.round(weeklyData.reduce((sum, d) => sum + d.workTarget, 0) / 60)}h
+                          </span>
+                        </div>
+                        <p className="text-xs text-amber-600 mt-0.5">
+                          {(() => {
+                            const actual = weeklyData.reduce((sum, d) => sum + d.work, 0)
+                            const target = weeklyData.reduce((sum, d) => sum + d.workTarget, 0)
+                            const diff = Math.round((actual - target) / 60)
+                            if (diff > 0) return locale === 'fr' ? `+${diff}h de travail` : `+${diff}h work`
+                            if (diff < 0) return locale === 'fr' ? `${diff}h de travail` : `${diff}h work`
+                            return locale === 'fr' ? 'Objectif atteint' : 'On target'
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Life Insight */}
+                  <div className="bg-emerald-50 rounded-xl p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                        <Heart className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xl font-bold text-emerald-700">
+                            {Math.round(weeklyData.reduce((sum, d) => sum + d.life, 0) / 60)}h
+                          </span>
+                          <span className="text-sm text-emerald-500">
+                            / {Math.round(weeklyData.reduce((sum, d) => sum + d.lifeTarget, 0) / 60)}h
+                          </span>
+                        </div>
+                        <p className="text-xs text-emerald-600 mt-0.5">
+                          {(() => {
+                            const actual = weeklyData.reduce((sum, d) => sum + d.life, 0)
+                            const target = weeklyData.reduce((sum, d) => sum + d.lifeTarget, 0)
+                            const diff = Math.round((actual - target) / 60)
+                            if (diff >= 0) return locale === 'fr' ? `+${diff}h de vie` : `+${diff}h life`
+                            return locale === 'fr' ? `${diff}h de vie` : `${diff}h life`
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Historical Trends Line Chart */}
                 <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-3">
@@ -2747,7 +3047,7 @@ export default function BalancePage() {
                     {/* Time Range Selector */}
                     <div className="flex bg-gray-100 rounded-lg p-0.5">
                       {[
-                        { id: 'weekly' as TimeRange, labelEn: '7D', labelFr: '7J' },
+                        { id: 'weekly' as TimeRange, labelEn: '6D', labelFr: '6J' },
                         { id: 'monthly' as TimeRange, labelEn: '30D', labelFr: '30J' },
                         { id: 'custom' as TimeRange, labelEn: 'Custom', labelFr: 'Perso.' },
                       ].map((option) => (
@@ -2887,107 +3187,6 @@ export default function BalancePage() {
                   )}
                 </div>
 
-                {/* Weekly Insights - This Week */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-800 px-1">
-                    {locale === 'fr' ? 'Cette semaine' : 'This Week'}
-                  </h3>
-
-                  {/* Sleep Insight */}
-                  <div className="bg-violet-50 rounded-xl p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
-                        <Moon className="w-5 h-5 text-violet-600" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-xl font-bold text-violet-700">
-                            {Math.round(weeklyData.reduce((sum, d) => sum + d.sleep, 0) / 60)}h
-                          </span>
-                          <span className="text-sm text-violet-500">
-                            / {Math.round(weeklyData.reduce((sum, d) => sum + d.sleepTarget, 0) / 60)}h
-                          </span>
-                        </div>
-                        <p className="text-xs text-violet-600 mt-0.5">
-                          {(() => {
-                            const actual = weeklyData.reduce((sum, d) => sum + d.sleep, 0)
-                            const target = weeklyData.reduce((sum, d) => sum + d.sleepTarget, 0)
-                            const diff = Math.round((actual - target) / 60)
-                            if (diff >= 0) return locale === 'fr' ? `+${diff}h de sommeil` : `+${diff}h sleep`
-                            return locale === 'fr' ? `${diff}h de sommeil` : `${diff}h sleep`
-                          })()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Work Insight */}
-                  <div className="bg-amber-50 rounded-xl p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                        <Briefcase className="w-5 h-5 text-amber-600" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-xl font-bold text-amber-700">
-                            {Math.round(weeklyData.reduce((sum, d) => sum + d.work, 0) / 60)}h
-                          </span>
-                          <span className="text-sm text-amber-500">
-                            / {Math.round(weeklyData.reduce((sum, d) => sum + d.workTarget, 0) / 60)}h
-                          </span>
-                        </div>
-                        <p className="text-xs text-amber-600 mt-0.5">
-                          {(() => {
-                            const actual = weeklyData.reduce((sum, d) => sum + d.work, 0)
-                            const target = weeklyData.reduce((sum, d) => sum + d.workTarget, 0)
-                            const diff = Math.round((actual - target) / 60)
-                            if (diff > 0) return locale === 'fr' ? `+${diff}h de travail` : `+${diff}h work`
-                            if (diff < 0) return locale === 'fr' ? `${diff}h de travail` : `${diff}h work`
-                            return locale === 'fr' ? 'Objectif atteint' : 'On target'
-                          })()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Life Insight */}
-                  <div className="bg-emerald-50 rounded-xl p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <Heart className="w-5 h-5 text-emerald-600" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-xl font-bold text-emerald-700">
-                            {Math.round(weeklyData.reduce((sum, d) => sum + d.life, 0) / 60)}h
-                          </span>
-                          <span className="text-sm text-emerald-500">
-                            / {Math.round(weeklyData.reduce((sum, d) => sum + d.lifeTarget, 0) / 60)}h
-                          </span>
-                        </div>
-                        <p className="text-xs text-emerald-600 mt-0.5">
-                          {(() => {
-                            const actual = weeklyData.reduce((sum, d) => sum + d.life, 0)
-                            const target = weeklyData.reduce((sum, d) => sum + d.lifeTarget, 0)
-                            const diff = Math.round((actual - target) / 60)
-                            if (diff >= 0) return locale === 'fr' ? `+${diff}h de vie` : `+${diff}h life`
-                            return locale === 'fr' ? `${diff}h de vie` : `${diff}h life`
-                          })()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Days Tracked */}
-                <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-                  <span className="text-sm text-gray-600">
-                    {locale === 'fr' ? 'Jours confirmés cette semaine' : 'Days confirmed this week'}
-                  </span>
-                  <span className="text-lg font-bold text-gray-800">
-                    {weeklyData.filter(d => d.confirmed).length} / 7
-                  </span>
-                </div>
               </>
             )}
           </motion.div>
