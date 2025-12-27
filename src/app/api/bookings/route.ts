@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server-client';
 import type { CreateBookingInput, GoogleCalendarEvent } from '@/types/calendar';
+import { notifyBookingRequest } from '@/lib/notifications';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
@@ -179,6 +180,22 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to create booking' },
         { status: 500 }
       );
+    }
+
+    // Send notification to practitioner about new booking request
+    try {
+      await notifyBookingRequest(supabase, {
+        practitionerUserId: body.practitioner_id,
+        bookingId: booking.id,
+        clientName: body.client_name,
+        clientEmail: body.client_email,
+        sessionType: sessionType.name,
+        requestedTime: body.start_time,
+        notes: body.notes,
+      });
+    } catch (notifyError) {
+      console.error('Error sending booking notification:', notifyError);
+      // Don't fail the booking if notification fails
     }
 
     // If confirmed (no approval needed), create Google Calendar event

@@ -52,6 +52,7 @@ import type { Collection, CollectionColor, CollectionIcon, collectionColorConfig
 import type { Member } from '@/types/member'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/browser-client'
+import { notifyResourceShared } from '@/lib/notifications'
 import { ResourceCard } from '@/components/resources/ResourceCard'
 
 // Collection icon mapping
@@ -474,6 +475,30 @@ export default function MyResourcesPage() {
           throw error
         }
         return
+      }
+
+      // Send notification to member
+      try {
+        // Get member's user_id and practitioner name
+        const [memberResult, practitionerResult] = await Promise.all([
+          supabase.from('members').select('user_id').eq('id', selectedMemberId).single(),
+          supabase.from('users').select('full_name').eq('id', user.id).single(),
+        ])
+
+        if (memberResult.data?.user_id) {
+          await notifyResourceShared(supabase, {
+            memberId: selectedMemberId,
+            memberUserId: memberResult.data.user_id,
+            resourceId: selectedResourceToShare.id,
+            resourceTitle: selectedResourceToShare.title,
+            resourceType: selectedResourceToShare.type,
+            practitionerName: practitionerResult.data?.full_name || 'Your practitioner',
+            message: shareMessage.trim() || undefined,
+          })
+        }
+      } catch (notifyError) {
+        console.error('Error sending notification:', notifyError)
+        // Don't fail the share operation if notification fails
       }
 
       toast.success(locale === 'fr' ? 'Ressource partagée avec succès' : 'Resource shared successfully')

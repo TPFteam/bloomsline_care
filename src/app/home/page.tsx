@@ -15,7 +15,6 @@ import {
   Check,
   X,
   UserPlus,
-  Bell,
   Heart,
   Leaf,
   Sparkles,
@@ -61,6 +60,7 @@ import {
 import { toast } from 'sonner'
 import BloomChatInterface from '@/components/bloom/BloomChatInterface'
 import MemberLayout from '@/components/member/MemberLayout'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 import type { Member } from '@/types/member'
 import { getMemberMoments, type Moment } from '@/lib/services/moments'
 // Ritual types
@@ -645,12 +645,9 @@ export default function MyResourcesPage() {
           </div>
 
           {/* Header Icons */}
-          <button className="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-sm relative">
-            <Bell className="w-5 h-5 text-gray-600" />
-            {invitations.length > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full" />
-            )}
-          </button>
+          <div className="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-sm">
+            <NotificationBell />
+          </div>
         </div>
       </div>
 

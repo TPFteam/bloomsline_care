@@ -1,24 +1,79 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, Check, CheckCheck, X } from 'lucide-react'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { motion, AnimatePresence, PanInfo } from 'framer-motion'
+import {
+  Bell,
+  Check,
+  CheckCheck,
+  X,
+  FileText,
+  Calendar,
+  UserPlus,
+  Clock,
+  MessageSquare,
+  Trash2,
+  Share2,
+} from 'lucide-react'
 import { useNotifications } from '@/hooks/useNotifications'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useLanguage } from '@/lib/i18n/context'
+import type { NotificationType } from '@/lib/notifications/types'
 
 interface NotificationBellProps {
   className?: string
 }
 
-export default function NotificationBell({ className = '' }: NotificationBellProps) {
+const notificationIcons: Record<string, React.ElementType> = {
+  resource_shared: Share2,
+  resource_assigned: FileText,
+  resource_submitted: FileText,
+  resource_started: FileText,
+  session_scheduled: Calendar,
+  session_reminder_24h: Clock,
+  session_reminder_1h: Clock,
+  session_cancelled: Calendar,
+  session_rescheduled: Calendar,
+  booking_request: Calendar,
+  booking_confirmed: Calendar,
+  booking_cancelled: Calendar,
+  reschedule_requested: Clock,
+  member_invitation_accepted: UserPlus,
+  member_invitation_rejected: UserPlus,
+  member_inactive: UserPlus,
+  weekly_summary: MessageSquare,
+  ritual_reminder: Bell,
+  bloom_checkin: MessageSquare,
+}
+
+const notificationColors: Record<string, string> = {
+  resource_shared: 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400',
+  resource_assigned: 'bg-purple-100 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400',
+  resource_submitted: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
+  session_scheduled: 'bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400',
+  booking_request: 'bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400',
+  member_invitation_accepted: 'bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400',
+  default: 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-white/60',
+}
+
+export function NotificationBell({ className = '' }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [swipedId, setSwipedId] = useState<string | null>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const router = useRouter()
+  const pathname = usePathname()
   const { locale } = useLanguage()
+
+  // Detect if user is on member pages vs practitioner pages
+  const isMemberSide = useMemo(() => {
+    const memberPaths = ['/home', '/care', '/worksheets', '/resources', '/profile/member', '/settings/member']
+    return memberPaths.some(p => pathname?.startsWith(p))
+  }, [pathname])
+
+  const settingsUrl = isMemberSide ? '/settings/member' : '/settings?tab=notifications'
 
   const {
     notifications,
@@ -26,6 +81,7 @@ export default function NotificationBell({ className = '' }: NotificationBellPro
     isLoading,
     markAsRead,
     markAllAsRead,
+    deleteNotification,
   } = useNotifications()
 
   // Close panel when clicking outside
@@ -38,6 +94,7 @@ export default function NotificationBell({ className = '' }: NotificationBellPro
         !buttonRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false)
+        setSwipedId(null)
       }
     }
 
@@ -55,11 +112,38 @@ export default function NotificationBell({ className = '' }: NotificationBellPro
     }
   }
 
+  const handleSwipe = (notificationId: string, info: PanInfo) => {
+    if (info.offset.x < -80) {
+      setSwipedId(notificationId)
+    } else {
+      setSwipedId(null)
+    }
+  }
+
+  const handleDelete = async (e: React.MouseEvent, notificationId: string) => {
+    e.stopPropagation()
+    await deleteNotification(notificationId)
+    setSwipedId(null)
+  }
+
+  const handleMarkAsRead = async (e: React.MouseEvent, notificationId: string) => {
+    e.stopPropagation()
+    await markAsRead(notificationId)
+  }
+
   const formatTime = (dateStr: string) => {
     return formatDistanceToNow(new Date(dateStr), {
       addSuffix: true,
       locale: locale === 'fr' ? fr : undefined,
     })
+  }
+
+  const getIcon = (type: NotificationType) => {
+    return notificationIcons[type] || Bell
+  }
+
+  const getIconColor = (type: NotificationType) => {
+    return notificationColors[type] || notificationColors.default
   }
 
   return (
@@ -97,23 +181,30 @@ export default function NotificationBell({ className = '' }: NotificationBellPro
             className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white dark:bg-[#1a1a1c] rounded-2xl shadow-xl border border-gray-200 dark:border-white/10 overflow-hidden z-50"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-white/10">
-              <h3 className="font-semibold text-gray-900 dark:text-white">
-                {locale === 'fr' ? 'Notifications' : 'Notifications'}
-              </h3>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
               <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  {locale === 'fr' ? 'Notifications' : 'Notifications'}
+                </h3>
+                {unreadCount > 0 && (
+                  <span className="px-2 py-0.5 text-xs font-medium bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 rounded-full">
+                    {unreadCount} {locale === 'fr' ? 'nouvelles' : 'new'}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
-                    className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                    className="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                    title={locale === 'fr' ? 'Tout marquer comme lu' : 'Mark all as read'}
                   >
-                    <CheckCheck className="w-3.5 h-3.5" />
-                    {locale === 'fr' ? 'Tout marquer lu' : 'Mark all read'}
+                    <CheckCheck className="w-4 h-4" />
                   </button>
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-white/10"
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                 >
                   <X className="w-4 h-4 text-gray-400" />
                 </button>
@@ -121,71 +212,139 @@ export default function NotificationBell({ className = '' }: NotificationBellPro
             </div>
 
             {/* Notification List */}
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-[400px] overflow-y-auto overflow-x-hidden">
               {isLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                <div className="flex items-center justify-center py-12">
+                  <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : notifications.length === 0 ? (
-                <div className="py-12 text-center">
-                  <Bell className="w-10 h-10 mx-auto text-gray-300 dark:text-white/20 mb-3" />
-                  <p className="text-gray-500 dark:text-white/50 text-sm">
+                <div className="py-16 text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center">
+                    <Bell className="w-8 h-8 text-gray-300 dark:text-white/20" />
+                  </div>
+                  <p className="text-gray-500 dark:text-white/50 font-medium">
                     {locale === 'fr' ? 'Aucune notification' : 'No notifications yet'}
+                  </p>
+                  <p className="text-gray-400 dark:text-white/30 text-sm mt-1">
+                    {locale === 'fr'
+                      ? 'Vous verrez vos notifications ici'
+                      : "You'll see your notifications here"}
                   </p>
                 </div>
               ) : (
-                <div>
-                  {notifications.map((notification) => (
-                    <motion.button
-                      key={notification.id}
-                      onClick={() => handleNotificationClick(notification)}
-                      className={`w-full text-left px-4 py-3 border-b border-gray-50 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${
-                        !notification.read ? 'bg-emerald-50/50 dark:bg-emerald-500/5' : ''
-                      }`}
-                    >
-                      <div className="flex gap-3">
-                        {/* Unread indicator */}
-                        <div className="mt-1.5">
-                          {!notification.read ? (
-                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                          ) : (
-                            <Check className="w-3 h-3 text-gray-300 dark:text-white/20" />
-                          )}
+                <div className="divide-y divide-gray-50 dark:divide-white/5">
+                  {notifications.map((notification) => {
+                    const Icon = getIcon(notification.type)
+                    const isSwiped = swipedId === notification.id
+
+                    return (
+                      <div key={notification.id} className="relative overflow-hidden">
+                        {/* Delete action behind */}
+                        <div className="absolute inset-y-0 right-0 flex items-center">
+                          <button
+                            onClick={(e) => handleDelete(e, notification.id)}
+                            className="h-full px-4 bg-red-500 hover:bg-red-600 text-white flex items-center gap-2 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span className="text-sm font-medium">
+                              {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                            </span>
+                          </button>
                         </div>
 
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-medium truncate ${
+                        {/* Notification content */}
+                        <motion.div
+                          drag="x"
+                          dragConstraints={{ left: -100, right: 0 }}
+                          dragElastic={0.1}
+                          onDragEnd={(_, info) => handleSwipe(notification.id, info)}
+                          animate={{ x: isSwiped ? -100 : 0 }}
+                          className={`relative bg-white dark:bg-[#1a1a1c] cursor-pointer group ${
                             !notification.read
-                              ? 'text-gray-900 dark:text-white'
-                              : 'text-gray-600 dark:text-white/70'
-                          }`}>
-                            {notification.title}
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-white/50 line-clamp-2 mt-0.5">
-                            {notification.body}
-                          </p>
-                          <p className="text-xs text-gray-400 dark:text-white/30 mt-1">
-                            {formatTime(notification.created_at)}
-                          </p>
-                        </div>
+                              ? 'bg-gradient-to-r from-emerald-50/80 to-transparent dark:from-emerald-500/5'
+                              : ''
+                          }`}
+                        >
+                          <div
+                            onClick={() => handleNotificationClick(notification)}
+                            className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                          >
+                            <div className="flex gap-3">
+                              {/* Icon */}
+                              <div
+                                className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${getIconColor(
+                                  notification.type
+                                )}`}
+                              >
+                                <Icon className="w-5 h-5" />
+                              </div>
+
+                              {/* Content */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <p
+                                    className={`text-sm font-medium leading-snug ${
+                                      !notification.read
+                                        ? 'text-gray-900 dark:text-white'
+                                        : 'text-gray-600 dark:text-white/70'
+                                    }`}
+                                  >
+                                    {notification.title}
+                                  </p>
+                                  {!notification.read && (
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0 mt-1.5" />
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-500 dark:text-white/50 line-clamp-2 mt-0.5 leading-snug">
+                                  {notification.body}
+                                </p>
+                                <div className="flex items-center justify-between mt-2">
+                                  <p className="text-xs text-gray-400 dark:text-white/30">
+                                    {formatTime(notification.created_at)}
+                                  </p>
+
+                                  {/* Action buttons - visible on hover */}
+                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {!notification.read && (
+                                      <button
+                                        onClick={(e) => handleMarkAsRead(e, notification.id)}
+                                        className="p-1 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-emerald-500 transition-colors"
+                                        title={locale === 'fr' ? 'Marquer comme lu' : 'Mark as read'}
+                                      >
+                                        <Check className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={(e) => handleDelete(e, notification.id)}
+                                      className="p-1 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-red-500 transition-colors"
+                                      title={locale === 'fr' ? 'Supprimer' : 'Delete'}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
                       </div>
-                    </motion.button>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
 
             {/* Footer */}
             {notifications.length > 0 && (
-              <div className="px-4 py-2 border-t border-gray-100 dark:border-white/10">
+              <div className="px-4 py-3 border-t border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
                 <button
                   onClick={() => {
-                    router.push('/settings?tab=notifications')
+                    router.push(settingsUrl)
                     setIsOpen(false)
                   }}
-                  className="text-xs text-gray-500 dark:text-white/50 hover:text-emerald-600 dark:hover:text-emerald-400"
+                  className="text-sm text-gray-500 dark:text-white/50 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                 >
-                  {locale === 'fr' ? 'Gérer les préférences' : 'Manage preferences'}
+                  {locale === 'fr' ? '⚙️ Gérer les préférences' : '⚙️ Manage preferences'}
                 </button>
               </div>
             )}

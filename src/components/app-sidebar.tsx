@@ -26,6 +26,7 @@ import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import { AnimatedIcon } from '@/components/ui/animated-icons'
 import { Logo } from '@/components/ui/logo'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 
 interface AppSidebarProps {
   userType?: 'mentor' | 'member'
@@ -171,12 +172,15 @@ export function AppSidebar({ userType: propUserType }: AppSidebarProps) {
       className="fixed left-6 top-6 bottom-6 z-50 w-64 transition-all duration-300"
     >
       <div className="h-full bg-white/90 backdrop-blur-2xl rounded-[1.5rem] border border-white/60 shadow-xl shadow-gray-200/40 p-4 flex flex-col">
-        {/* Logo */}
-        <Link href="/dashboard">
-          <div className="mb-8 px-2 cursor-pointer hover:opacity-80 transition-opacity">
-            <Logo size="lg" showText />
-          </div>
-        </Link>
+        {/* Logo and Notifications */}
+        <div className="flex items-center justify-between mb-8 px-2">
+          <Link href="/dashboard">
+            <div className="cursor-pointer hover:opacity-80 transition-opacity">
+              <Logo size="lg" showText />
+            </div>
+          </Link>
+          <NotificationBell />
+        </div>
 
         {/* Navigation Pills */}
         <nav className="flex-1 space-y-1.5">

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/browser-client'
+import { notifyResourceSubmitted } from '@/lib/notifications'
 import type { Member } from '@/types/member'
 import type {
   Resource,
@@ -613,6 +614,31 @@ export async function submitResponse(
 
     if (assignmentError) {
       console.error('Error updating assignment status:', assignmentError)
+      // Don't throw - the response was submitted successfully
+    }
+  }
+
+  // Send notification to practitioner about the submission
+  if (data && data.practitioner_id && data.member_id && data.resource_id) {
+    try {
+      // Get member name and resource title
+      const [memberResult, resourceResult] = await Promise.all([
+        supabase.from('members').select('first_name, last_name').eq('id', data.member_id).single(),
+        supabase.from('resources').select('title').eq('id', data.resource_id).single(),
+      ])
+
+      if (memberResult.data && resourceResult.data) {
+        await notifyResourceSubmitted(supabase, {
+          practitionerUserId: data.practitioner_id,
+          memberId: data.member_id,
+          memberName: `${memberResult.data.first_name} ${memberResult.data.last_name}`,
+          resourceId: data.resource_id,
+          resourceTitle: resourceResult.data.title,
+          responseId: data.id,
+        })
+      }
+    } catch (notifyError) {
+      console.error('Error sending submission notification:', notifyError)
       // Don't throw - the response was submitted successfully
     }
   }

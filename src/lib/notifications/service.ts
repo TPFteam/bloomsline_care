@@ -78,7 +78,10 @@ export function createNotificationService(supabase: SupabaseClient): Notificatio
           .single()
 
         if (error) {
-          console.error('Error creating notification:', error)
+          console.error('Error creating notification:', JSON.stringify(error, null, 2))
+          console.error('Error code:', error.code)
+          console.error('Error message:', error.message)
+          console.error('Error details:', error.details)
           return null
         }
 
@@ -264,10 +267,37 @@ export function createNotificationService(supabase: SupabaseClient): Notificatio
 // ============================================
 
 /**
+ * Send notification via API (bypasses RLS)
+ */
+async function sendNotificationViaAPI(params: {
+  userId: string
+  userType: UserType
+  type: NotificationType
+  metadata: Record<string, unknown>
+  entityType?: EntityType
+  entityId?: string
+}): Promise<void> {
+  try {
+    const response = await fetch('/api/notifications/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      console.error('Failed to send notification:', error)
+    }
+  } catch (error) {
+    console.error('Error sending notification:', error)
+  }
+}
+
+/**
  * Send resource shared notification
  */
 export async function notifyResourceShared(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   params: {
     memberId: string
     memberUserId: string
@@ -278,8 +308,7 @@ export async function notifyResourceShared(
     message?: string
   }
 ): Promise<void> {
-  const service = createNotificationService(supabase)
-  await service.send({
+  await sendNotificationViaAPI({
     userId: params.memberUserId,
     userType: 'member',
     type: 'resource_shared',
@@ -299,7 +328,7 @@ export async function notifyResourceShared(
  * Send resource submitted notification
  */
 export async function notifyResourceSubmitted(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   params: {
     practitionerUserId: string
     memberId: string
@@ -309,8 +338,7 @@ export async function notifyResourceSubmitted(
     responseId: string
   }
 ): Promise<void> {
-  const service = createNotificationService(supabase)
-  await service.send({
+  await sendNotificationViaAPI({
     userId: params.practitionerUserId,
     userType: 'practitioner',
     type: 'resource_submitted',
@@ -331,7 +359,7 @@ export async function notifyResourceSubmitted(
  * Send session scheduled notification
  */
 export async function notifySessionScheduled(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   params: {
     memberUserId: string
     sessionId: string
@@ -339,8 +367,7 @@ export async function notifySessionScheduled(
     practitionerName: string
   }
 ): Promise<void> {
-  const service = createNotificationService(supabase)
-  await service.send({
+  await sendNotificationViaAPI({
     userId: params.memberUserId,
     userType: 'member',
     type: 'session_scheduled',
@@ -358,7 +385,7 @@ export async function notifySessionScheduled(
  * Send booking request notification
  */
 export async function notifyBookingRequest(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   params: {
     practitionerUserId: string
     bookingId: string
@@ -369,8 +396,7 @@ export async function notifyBookingRequest(
     notes?: string
   }
 ): Promise<void> {
-  const service = createNotificationService(supabase)
-  await service.send({
+  await sendNotificationViaAPI({
     userId: params.practitionerUserId,
     userType: 'practitioner',
     type: 'booking_request',
@@ -391,7 +417,7 @@ export async function notifyBookingRequest(
  * Send reschedule requested notification
  */
 export async function notifyRescheduleRequested(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   params: {
     practitionerUserId: string
     sessionId: string
@@ -401,8 +427,7 @@ export async function notifyRescheduleRequested(
     reason?: string
   }
 ): Promise<void> {
-  const service = createNotificationService(supabase)
-  await service.send({
+  await sendNotificationViaAPI({
     userId: params.practitionerUserId,
     userType: 'practitioner',
     type: 'reschedule_requested',
@@ -422,7 +447,7 @@ export async function notifyRescheduleRequested(
  * Send member invitation accepted notification
  */
 export async function notifyMemberInvitationAccepted(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   params: {
     practitionerUserId: string
     memberId: string
@@ -430,8 +455,7 @@ export async function notifyMemberInvitationAccepted(
     memberEmail: string
   }
 ): Promise<void> {
-  const service = createNotificationService(supabase)
-  await service.send({
+  await sendNotificationViaAPI({
     userId: params.practitionerUserId,
     userType: 'practitioner',
     type: 'member_invitation_accepted',

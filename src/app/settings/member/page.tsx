@@ -12,6 +12,9 @@ import {
   Loader2,
   Check,
   Sparkles,
+  Bell,
+  Mail,
+  Smartphone,
 } from 'lucide-react'
 import MemberLayout from '@/components/member/MemberLayout'
 import { useLanguage } from '@/lib/i18n/context'
@@ -27,6 +30,11 @@ interface MemberProfile {
   created_at: string
 }
 
+interface NotificationPrefs {
+  email_enabled: boolean
+  push_enabled: boolean
+}
+
 export default function MemberSettingsPage() {
   const router = useRouter()
   const { locale, setLocale } = useLanguage()
@@ -35,6 +43,11 @@ export default function MemberSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<MemberProfile | null>(null)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>({
+    email_enabled: true,
+    push_enabled: true,
+  })
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false)
 
   // Translations
   const t = {
@@ -52,6 +65,11 @@ export default function MemberSettingsPage() {
       loggingOut: 'Logging out...',
       version: 'Version 1.0.0',
       madeWith: 'Made with care',
+      notifications: 'Notifications',
+      notificationsDescription: 'Choose how you receive updates',
+      emailNotifications: 'Email',
+      pushNotifications: 'Push',
+      saving: 'Saving...',
     },
     fr: {
       title: 'Paramètres',
@@ -67,6 +85,11 @@ export default function MemberSettingsPage() {
       loggingOut: 'Déconnexion...',
       version: 'Version 1.0.0',
       madeWith: 'Fait avec soin',
+      notifications: 'Notifications',
+      notificationsDescription: 'Choisissez comment recevoir les mises à jour',
+      emailNotifications: 'Email',
+      pushNotifications: 'Push',
+      saving: 'Enregistrement...',
     },
   }
 
@@ -96,6 +119,20 @@ export default function MemberSettingsPage() {
           email: user.email || '',
         })
       }
+
+      // Fetch notification preferences
+      const { data: prefs } = await supabase
+        .from('notification_preferences')
+        .select('email_enabled, push_enabled')
+        .eq('user_id', user.id)
+        .single()
+
+      if (prefs) {
+        setNotificationPrefs({
+          email_enabled: prefs.email_enabled ?? true,
+          push_enabled: prefs.push_enabled ?? true,
+        })
+      }
     } catch (error) {
       console.error('Error fetching profile:', error)
     } finally {
@@ -106,6 +143,39 @@ export default function MemberSettingsPage() {
   const handleLanguageChange = (newLocale: 'en' | 'fr') => {
     setLocale(newLocale)
     toast.success(newLocale === 'fr' ? 'Langue changée' : 'Language changed')
+  }
+
+  const handleNotificationToggle = async (type: 'email_enabled' | 'push_enabled') => {
+    const newPrefs = {
+      ...notificationPrefs,
+      [type]: !notificationPrefs[type],
+    }
+    setNotificationPrefs(newPrefs)
+    setIsSavingNotifications(true)
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { error } = await supabase
+        .from('notification_preferences')
+        .upsert({
+          user_id: user.id,
+          user_type: 'member',
+          ...newPrefs,
+          updated_at: new Date().toISOString(),
+        })
+
+      if (error) throw error
+      toast.success(locale === 'fr' ? 'Préférences enregistrées' : 'Preferences saved')
+    } catch (error) {
+      console.error('Error saving notification preferences:', error)
+      // Revert on error
+      setNotificationPrefs(notificationPrefs)
+      toast.error(locale === 'fr' ? 'Erreur lors de l\'enregistrement' : 'Error saving preferences')
+    } finally {
+      setIsSavingNotifications(false)
+    }
   }
 
   const handleLogout = async () => {
@@ -265,6 +335,80 @@ export default function MemberSettingsPage() {
                   {text.french}
                 </span>
               </button>
+            </div>
+          </motion.div>
+
+          {/* Notification Preferences */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-rose-400 to-pink-500 rounded-xl flex items-center justify-center">
+                <Bell className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">{text.notifications}</h3>
+                <p className="text-sm text-gray-500">{text.notificationsDescription}</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {/* Email Toggle */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                    notificationPrefs.email_enabled
+                      ? 'bg-emerald-100 text-emerald-600'
+                      : 'bg-gray-200 text-gray-400'
+                  }`}>
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <span className="font-medium text-gray-700">{text.emailNotifications}</span>
+                </div>
+                <button
+                  onClick={() => handleNotificationToggle('email_enabled')}
+                  disabled={isSavingNotifications}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                    notificationPrefs.email_enabled ? 'bg-emerald-500' : 'bg-gray-300'
+                  } ${isSavingNotifications ? 'opacity-50' : ''}`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                      notificationPrefs.email_enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Push Toggle */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                    notificationPrefs.push_enabled
+                      ? 'bg-emerald-100 text-emerald-600'
+                      : 'bg-gray-200 text-gray-400'
+                  }`}>
+                    <Smartphone className="w-4 h-4" />
+                  </div>
+                  <span className="font-medium text-gray-700">{text.pushNotifications}</span>
+                </div>
+                <button
+                  onClick={() => handleNotificationToggle('push_enabled')}
+                  disabled={isSavingNotifications}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                    notificationPrefs.push_enabled ? 'bg-emerald-500' : 'bg-gray-300'
+                  } ${isSavingNotifications ? 'opacity-50' : ''}`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                      notificationPrefs.push_enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           </motion.div>
 

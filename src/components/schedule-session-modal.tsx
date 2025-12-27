@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Search, Calendar, Clock, Users, Check, ChevronRight, ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
+import { notifySessionScheduled } from '@/lib/notifications'
 import { format, addDays, startOfDay, isSameDay } from 'date-fns'
 import type { Member } from '@/types/member'
 
@@ -195,6 +196,26 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           throw new Error(error.message || 'Failed to create session')
         }
 
+        // Send notification to member
+        if (selectedMember.user_id) {
+          try {
+            const { data: practitioner } = await supabase
+              .from('users')
+              .select('full_name')
+              .eq('id', userId)
+              .single()
+
+            await notifySessionScheduled(supabase, {
+              memberUserId: selectedMember.user_id,
+              sessionId: selectedMember.id, // We don't have session ID in manual mode
+              scheduledAt: startTime.toISOString(),
+              practitionerName: practitioner?.full_name || 'Your practitioner',
+            })
+          } catch (notifyError) {
+            console.error('Error sending session notification:', notifyError)
+          }
+        }
+
         toast.success(`Session scheduled with ${selectedMember.first_name} ${selectedMember.last_name}`)
       } else {
         // Create the booking (with calendar integration)
@@ -229,6 +250,26 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         }
 
         console.log('Booking created:', data)
+
+        // Send notification to member
+        if (selectedMember.user_id && data?.id) {
+          try {
+            const { data: practitioner } = await supabase
+              .from('users')
+              .select('full_name')
+              .eq('id', userId)
+              .single()
+
+            await notifySessionScheduled(supabase, {
+              memberUserId: selectedMember.user_id,
+              sessionId: data.id,
+              scheduledAt: startTime.toISOString(),
+              practitionerName: practitioner?.full_name || 'Your practitioner',
+            })
+          } catch (notifyError) {
+            console.error('Error sending session notification:', notifyError)
+          }
+        }
 
         // Sync to Google Calendar via API
         if (data?.id) {

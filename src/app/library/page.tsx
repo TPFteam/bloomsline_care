@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 import { getCollections, addResourceToCollection, createCollection, getSavedResources } from '@/lib/services/collections'
+import { notifyResourceShared } from '@/lib/notifications'
 import type { Collection } from '@/types/collection'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -381,6 +382,30 @@ export default function LibraryPage() {
           return
         }
         throw error
+      }
+
+      // Send notification to member
+      try {
+        // Get member's user_id and resource details
+        const [memberResult, resourceResult, practitionerResult] = await Promise.all([
+          supabase.from('members').select('user_id').eq('id', memberId).single(),
+          supabase.from('resources').select('title, type').eq('id', resourceId).single(),
+          supabase.from('users').select('full_name').eq('id', user.id).single(),
+        ])
+
+        if (memberResult.data?.user_id && resourceResult.data) {
+          await notifyResourceShared(supabase, {
+            memberId,
+            memberUserId: memberResult.data.user_id,
+            resourceId,
+            resourceTitle: resourceResult.data.title,
+            resourceType: resourceResult.data.type,
+            practitionerName: practitionerResult.data?.full_name || 'Your practitioner',
+          })
+        }
+      } catch (notifyError) {
+        console.error('Error sending notification:', notifyError)
+        // Don't fail the share operation if notification fails
       }
 
       toast.success(

@@ -18,6 +18,7 @@ import {
   saveBookingSettings,
 } from '@/lib/services/calendar'
 import type { CalendarConnection, BookingSettings, DayOfWeek, SessionType } from '@/types/calendar'
+import { NotificationSettings } from '@/components/notifications/NotificationSettings'
 
 const DAYS_OF_WEEK: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
@@ -638,6 +639,9 @@ function SettingsContent() {
               </Button>
             </CardContent>
           </Card>
+
+          {/* Notification Settings */}
+          <NotificationSettings />
         </div>
       </div>
     </div>

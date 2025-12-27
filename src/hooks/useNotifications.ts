@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { createClient } from '@/lib/supabase/browser-client'
 import type { Notification } from '@/lib/notifications/types'
 
 interface UseNotificationsReturn {
@@ -11,6 +11,7 @@ interface UseNotificationsReturn {
   error: string | null
   markAsRead: (notificationId: string) => Promise<void>
   markAllAsRead: () => Promise<void>
+  deleteNotification: (notificationId: string) => Promise<void>
   refresh: () => Promise<void>
 }
 
@@ -20,12 +21,15 @@ export function useNotifications(): UseNotificationsReturn {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const supabase = useMemo(() => createClient(), [])
+
   const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
 
       const { data: { session } } = await supabase.auth.getSession()
+
       if (!session) {
         setNotifications([])
         setUnreadCount(0)
@@ -46,12 +50,12 @@ export function useNotifications(): UseNotificationsReturn {
       setNotifications(data.notifications)
       setUnreadCount(data.unreadCount)
     } catch (err) {
-      console.error('Error fetching notifications:', err)
+      console.error('[Notifications] Error fetching:', err)
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [supabase])
 
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
@@ -77,7 +81,7 @@ export function useNotifications(): UseNotificationsReturn {
     } catch (err) {
       console.error('Error marking as read:', err)
     }
-  }, [])
+  }, [supabase])
 
   const markAllAsRead = useCallback(async () => {
     try {
@@ -99,20 +103,71 @@ export function useNotifications(): UseNotificationsReturn {
     } catch (err) {
       console.error('Error marking all as read:', err)
     }
-  }, [])
+  }, [supabase])
 
-  // Initial fetch
+  const deleteNotification = useCallback(async (notificationId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      // Optimistically update local state
+      const notification = notifications.find(n => n.id === notificationId)
+      setNotifications(prev => prev.filter(n => n.id !== notificationId))
+      if (notification && !notification.read) {
+        setUnreadCount(prev => Math.max(0, prev - 1))
+      }
+
+      const response = await fetch(`/api/notifications/${notificationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (!response.ok) {
+        // Revert on failure
+        if (notification) {
+          setNotifications(prev => [notification, ...prev])
+          if (!notification.read) {
+            setUnreadCount(prev => prev + 1)
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error deleting notification:', err)
+    }
+  }, [supabase, notifications])
+
+  // Wait for auth state and fetch notifications
   useEffect(() => {
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        fetchNotifications()
+      } else {
+        setNotifications([])
+        setUnreadCount(0)
+        setIsLoading(false)
+      }
+    })
+
+    // Also try to fetch immediately if session exists
     fetchNotifications()
-  }, [fetchNotifications])
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [fetchNotifications, supabase])
 
   // Subscribe to real-time updates
   useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
     const setupRealtimeSubscription = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const channel = supabase
+      channel = supabase
         .channel('notifications')
         .on(
           'postgres_changes',
@@ -129,13 +184,15 @@ export function useNotifications(): UseNotificationsReturn {
           }
         )
         .subscribe()
-
-      return () => {
-        supabase.removeChannel(channel)
-      }
     }
 
     setupRealtimeSubscription()
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
+    }
   }, [])
 
   return {
@@ -145,6 +202,7 @@ export function useNotifications(): UseNotificationsReturn {
     error,
     markAsRead,
     markAllAsRead,
+    deleteNotification,
     refresh: fetchNotifications,
   }
 }
