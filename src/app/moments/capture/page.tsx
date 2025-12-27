@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Camera,
@@ -88,7 +88,7 @@ const captureTypes = [
   },
 ]
 
-export default function CaptureMomentPage() {
+function CaptureMomentContent() {
   const { locale } = useLanguage()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -761,5 +761,17 @@ export default function CaptureMomentPage() {
         </AnimatePresence>
       </div>
     </motion.div>
+  )
+}
+
+export default function CaptureMomentPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-white animate-spin" />
+      </div>
+    }>
+      <CaptureMomentContent />
+    </Suspense>
   )
 }
