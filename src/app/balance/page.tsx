@@ -25,9 +25,11 @@ import {
   Meh,
   Battery,
   CloudRain,
+  MessageCircle,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import MemberLayout from '@/components/member/MemberLayout'
+import BloomChatInterface from '@/components/bloom/BloomChatInterface'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import {
@@ -69,6 +71,7 @@ export default function BalancePage() {
     life: 8,
   })
   const [showSomeday, setShowSomeday] = useState(false)
+  const [showBloomChat, setShowBloomChat] = useState(false)
   const [somedayItems, setSomedayItems] = useState<{
     id: string
     name: string
@@ -2549,7 +2552,7 @@ export default function BalancePage() {
                     </p>
                   </div>
                 </div>
-                <p className="text-gray-600 leading-relaxed text-[15px]">
+                <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
                   {(() => {
                     const totalSleep = weeklyData.reduce((sum, d) => sum + d.sleep, 0)
                     const totalWork = weeklyData.reduce((sum, d) => sum + d.work, 0)
@@ -2581,6 +2584,15 @@ export default function BalancePage() {
                     }
                   })()}
                 </p>
+
+                {/* Chat with Bloom button */}
+                <button
+                  onClick={() => setShowBloomChat(true)}
+                  className="flex items-center gap-2 text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {locale === 'fr' ? 'Envie d\'en parler ?' : 'Want to talk about it?'}
+                </button>
               </div>
             </motion.div>
 
@@ -3204,6 +3216,12 @@ export default function BalancePage() {
           </motion.div>
         )}
       </div>
+
+      {/* Bloom Chat Interface */}
+      <BloomChatInterface
+        isOpen={showBloomChat}
+        onClose={() => setShowBloomChat(false)}
+      />
     </MemberLayout>
   )
 }

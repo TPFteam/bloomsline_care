@@ -155,7 +155,7 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true }: B
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
           />
 
           {/* Chat container */}
@@ -164,7 +164,7 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true }: B
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-4 left-4 right-4 z-50 max-w-md mx-auto"
+            className="fixed bottom-4 left-4 right-4 z-[70] max-w-md mx-auto"
           >
             <div
               className={`rounded-3xl overflow-hidden backdrop-blur-2xl ${

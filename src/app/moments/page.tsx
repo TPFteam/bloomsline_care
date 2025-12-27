@@ -22,10 +22,23 @@ import {
   ChevronLeft,
   MessageCircle,
   Sparkles,
+  Heart,
+  TrendingUp,
+  TrendingDown,
+  BarChart2,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/i18n/context'
 import { getMemberMoments, getMomentStats, deleteMoment, type Moment, type MomentType } from '@/lib/services/moments'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
 import { getUserPreferences, updateUserPreferences } from '@/lib/services/preferences'
 import { toast } from 'sonner'
 import BloomChatInterface from '@/components/bloom/BloomChatInterface'
@@ -188,6 +201,8 @@ export default function MomentsPage() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('all')
   const [prefsLoaded, setPrefsLoaded] = useState(false)
   const [reflectMoment, setReflectMoment] = useState<Moment | null>(null)
+  const [showMoodTrends, setShowMoodTrends] = useState(false)
+  const [trendsTimeRange, setTrendsTimeRange] = useState<'weekly' | 'monthly'>('weekly')
 
   // Pick a random moment for reflection
   const openReflection = () => {
@@ -563,6 +578,138 @@ export default function MomentsPage() {
         </div>
       </div>
 
+      {/* Mood Insights Section */}
+      {moments.length > 0 && (
+        <div className="relative z-10 px-5 mb-6">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`rounded-3xl p-5 ${theme.cardBg} border ${theme.cardBorder} overflow-hidden relative`}
+          >
+            {/* Decorative gradient blob */}
+            <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-200/40'}`} />
+            <div className={`absolute -bottom-8 -left-8 w-24 h-24 rounded-full blur-2xl ${isDark ? 'bg-violet-500/15' : 'bg-violet-200/30'}`} />
+
+            <div className="relative">
+              {/* Header */}
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center shadow-sm">
+                  <Heart className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <span className={`text-sm font-semibold ${theme.text}`}>
+                    {locale === 'fr' ? 'Comment tu vas' : 'How you\'re doing'}
+                  </span>
+                  <p className={`text-xs ${theme.textFaint}`}>
+                    {locale === 'fr' ? 'Cette semaine' : 'This week'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Mood analysis */}
+              {(() => {
+                // Get moments from last 7 days
+                const weekAgo = new Date()
+                weekAgo.setDate(weekAgo.getDate() - 7)
+                const recentMoments = moments.filter(m => new Date(m.created_at) >= weekAgo)
+
+                // Count all moods
+                const moodCounts: Record<string, number> = {}
+                recentMoments.forEach(m => {
+                  m.moods?.forEach(mood => {
+                    moodCounts[mood] = (moodCounts[mood] || 0) + 1
+                  })
+                })
+
+                // Find top mood
+                const sortedMoods = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])
+                const topMood = sortedMoods[0]?.[0]
+                const totalMoods = Object.values(moodCounts).reduce((a, b) => a + b, 0)
+
+                // Positive moods
+                const positiveMoods = ['grateful', 'peaceful', 'joyful', 'inspired', 'loved', 'calm', 'hopeful', 'proud']
+                const positiveCount = Object.entries(moodCounts)
+                  .filter(([mood]) => positiveMoods.includes(mood))
+                  .reduce((sum, [, count]) => sum + count, 0)
+                const positiveRatio = totalMoods > 0 ? positiveCount / totalMoods : 0
+
+                // Generate insight
+                let insight = ''
+                if (recentMoments.length === 0) {
+                  insight = locale === 'fr'
+                    ? "Pas encore de moments cette semaine. Prends un instant pour capturer ce qui compte."
+                    : "No moments captured this week yet. Take a moment to capture what matters."
+                } else if (positiveRatio >= 0.7) {
+                  insight = locale === 'fr'
+                    ? `Tu traverses une belle période. ${topMood ? `Tu te sens souvent ${topMood}.` : ''} Continue comme ça.`
+                    : `You're going through a beautiful time. ${topMood ? `You've been feeling ${topMood} a lot.` : ''} Keep it up.`
+                } else if (positiveRatio >= 0.4) {
+                  insight = locale === 'fr'
+                    ? "Des hauts et des bas, c'est normal. Chaque moment compte dans ton parcours."
+                    : "Ups and downs are normal. Every moment matters in your journey."
+                } else if (totalMoods > 0) {
+                  insight = locale === 'fr'
+                    ? "Cette semaine semble difficile. N'hésite pas à prendre soin de toi."
+                    : "This week seems tough. Remember to take care of yourself."
+                } else {
+                  insight = locale === 'fr'
+                    ? "Commence à capturer tes émotions pour mieux te comprendre."
+                    : "Start capturing your emotions to better understand yourself."
+                }
+
+                return (
+                  <>
+                    <p className={`${theme.textMuted} leading-relaxed text-[15px] mb-4`}>
+                      {insight}
+                    </p>
+
+                    {/* Mood pills */}
+                    {sortedMoods.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {sortedMoods.slice(0, 4).map(([mood, count]) => (
+                          <span
+                            key={mood}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize ${
+                              positiveMoods.includes(mood)
+                                ? isDark ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-700'
+                                : isDark ? 'bg-violet-500/20 text-violet-300' : 'bg-violet-100 text-violet-700'
+                            }`}
+                          >
+                            {mood} × {count}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => setShowMoodTrends(true)}
+                        className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                          isDark ? 'text-violet-400 hover:text-violet-300' : 'text-violet-600 hover:text-violet-700'
+                        }`}
+                      >
+                        <BarChart2 className="w-4 h-4" />
+                        {locale === 'fr' ? 'Voir les tendances' : 'See trends'}
+                      </button>
+                      <button
+                        onClick={() => setIsBloomOpen(true)}
+                        className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                          isDark ? 'text-emerald-400 hover:text-emerald-300' : 'text-emerald-600 hover:text-emerald-700'
+                        }`}
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        {locale === 'fr' ? 'En parler' : 'Talk about it'}
+                      </button>
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* Content */}
       <div className="relative z-10 px-5">
         {filteredMoments.length === 0 && moments.length === 0 ? (
@@ -824,6 +971,180 @@ export default function MomentsPage() {
         onClose={() => setIsBloomOpen(false)}
         isDark={isDark}
       />
+
+      {/* Mood Trends Modal */}
+      <AnimatePresence>
+        {showMoodTrends && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowMoodTrends(false)}
+              className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 50 }}
+              className={`fixed bottom-0 left-0 right-0 z-[70] rounded-t-3xl ${isDark ? 'bg-[#1a1a1c]' : 'bg-white'} max-h-[85vh] overflow-hidden`}
+            >
+              {/* Handle */}
+              <div className="flex justify-center pt-3 pb-2">
+                <div className={`w-10 h-1 rounded-full ${isDark ? 'bg-white/20' : 'bg-gray-300'}`} />
+              </div>
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 pb-4">
+                <div>
+                  <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {locale === 'fr' ? 'Tendances d\'humeur' : 'Mood Trends'}
+                  </h2>
+                  <p className={`text-sm ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
+                    {locale === 'fr' ? 'Score de positivité quotidien' : 'Daily positivity score'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowMoodTrends(false)}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center ${isDark ? 'bg-white/10 text-white' : 'bg-gray-100 text-gray-600'}`}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Time Range Selector */}
+              <div className="flex gap-2 px-5 mb-4">
+                {(['weekly', 'monthly'] as const).map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setTrendsTimeRange(range)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      trendsTimeRange === range
+                        ? isDark ? 'bg-violet-500 text-white' : 'bg-violet-500 text-white'
+                        : isDark ? 'bg-white/10 text-white/60' : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {range === 'weekly'
+                      ? (locale === 'fr' ? '7 jours' : '7 days')
+                      : (locale === 'fr' ? '30 jours' : '30 days')
+                    }
+                  </button>
+                ))}
+              </div>
+
+              {/* Chart */}
+              <div className="px-5 pb-8">
+                {(() => {
+                  // Calculate mood scores per day
+                  const days = trendsTimeRange === 'weekly' ? 7 : 30
+                  const startDate = new Date()
+                  startDate.setDate(startDate.getDate() - days + 1)
+                  startDate.setHours(0, 0, 0, 0)
+
+                  const positiveMoods = ['grateful', 'peaceful', 'joyful', 'inspired', 'loved', 'calm', 'hopeful', 'proud']
+
+                  // Group moments by day and calculate average positivity
+                  const chartData = []
+                  for (let i = 0; i < days; i++) {
+                    const date = new Date(startDate)
+                    date.setDate(date.getDate() + i)
+                    const dateStr = date.toISOString().split('T')[0]
+
+                    const dayMoments = moments.filter(m => {
+                      const mDate = new Date(m.created_at).toISOString().split('T')[0]
+                      return mDate === dateStr
+                    })
+
+                    let positivityScore = 0
+                    if (dayMoments.length > 0) {
+                      let totalMoods = 0
+                      let positiveMoodCount = 0
+                      dayMoments.forEach(m => {
+                        m.moods?.forEach(mood => {
+                          totalMoods++
+                          if (positiveMoods.includes(mood)) positiveMoodCount++
+                        })
+                      })
+                      positivityScore = totalMoods > 0 ? Math.round((positiveMoodCount / totalMoods) * 100) : 0
+                    }
+
+                    const label = trendsTimeRange === 'weekly'
+                      ? date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short' })
+                      : date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric' })
+
+                    chartData.push({
+                      date: dateStr,
+                      label,
+                      score: positivityScore,
+                      moments: dayMoments.length
+                    })
+                  }
+
+                  return (
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey="label"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)', fontSize: 11 }}
+                            interval={trendsTimeRange === 'monthly' ? 4 : 0}
+                          />
+                          <YAxis
+                            domain={[0, 100]}
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)', fontSize: 11 }}
+                            tickFormatter={(value) => `${value}%`}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: isDark ? '#2a2a2c' : '#fff',
+                              border: 'none',
+                              borderRadius: '12px',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            }}
+                            labelStyle={{ color: isDark ? '#fff' : '#000', fontWeight: 600 }}
+                            formatter={(value: number, name: string) => [
+                              `${value}%`,
+                              locale === 'fr' ? 'Positivité' : 'Positivity'
+                            ]}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="score"
+                            stroke="#8b5cf6"
+                            strokeWidth={2.5}
+                            dot={{ fill: '#8b5cf6', strokeWidth: 0, r: 4 }}
+                            activeDot={{ r: 6, fill: '#8b5cf6' }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )
+                })()}
+
+                {/* Legend */}
+                <div className={`mt-4 text-center text-sm ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
+                  {locale === 'fr'
+                    ? '% d\'émotions positives par jour'
+                    : '% of positive emotions per day'
+                  }
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Reflection Modal - Peaceful full-screen experience */}
       <AnimatePresence>
