@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Send, X, Loader2 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 import { useBloomChat } from '@/hooks/useBloomChat'
+import { ContentBlockRenderer } from './ContentBlocks'
 import type { BloomMessage } from '@/types/bloom'
 
 export type BloomEntryPoint = 'home' | 'balance' | 'moments' | 'rituals' | 'progress' | 'reflect' | 'general'
@@ -110,6 +111,7 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true, ent
     sendUserMessage,
     error,
     suggestions,
+    contentBlocks,
   } = useBloomChat({ locale: locale as 'en' | 'fr', entryPoint })
 
   // Use API suggestions if available, otherwise show defaults
@@ -253,6 +255,19 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true, ent
                 ))}
 
                 {isLoading && <TypingIndicator isDark={isDark} />}
+
+                {/* Rich Content Blocks */}
+                {!isLoading && contentBlocks.length > 0 && (
+                  <div className="mt-2">
+                    {contentBlocks.map((block, index) => (
+                      <ContentBlockRenderer
+                        key={`${block.type}-${index}`}
+                        block={block}
+                        isDark={isDark}
+                      />
+                    ))}
+                  </div>
+                )}
 
                 {error && (
                   <motion.div

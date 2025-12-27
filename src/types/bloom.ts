@@ -90,10 +90,90 @@ export interface ChatRequest {
   entryPoint?: BloomEntryPoint
 }
 
+// ============================================
+// Rich Content Blocks for Bloom Responses
+// ============================================
+
+export type ContentBlockType = 'chart' | 'moments' | 'stats' | 'weekly_summary' | 'insight'
+
+// Chart data for mini visualizations
+export interface ChartContentBlock {
+  type: 'chart'
+  chartType: 'line' | 'bar' | 'donut'
+  title: string
+  data: {
+    labels: string[]
+    values: number[]
+    colors?: string[]
+  }
+  subtitle?: string
+}
+
+// Display recent moments
+export interface MomentsContentBlock {
+  type: 'moments'
+  title: string
+  moments: {
+    id: string
+    type: 'photo' | 'video' | 'voice' | 'write'
+    preview?: string // URL for media or text preview
+    moods: string[]
+    date: string
+    caption?: string
+  }[]
+}
+
+// Quick stats display
+export interface StatsContentBlock {
+  type: 'stats'
+  title: string
+  stats: {
+    label: string
+    value: string | number
+    icon?: string
+    trend?: 'up' | 'down' | 'neutral'
+    trendValue?: string
+  }[]
+}
+
+// Weekly summary card
+export interface WeeklySummaryBlock {
+  type: 'weekly_summary'
+  weekLabel: string
+  highlights: {
+    icon: string
+    text: string
+  }[]
+  moodBreakdown?: {
+    positive: number
+    neutral: number
+    negative: number
+  }
+  sleepAverage?: number
+  momentsCount?: number
+}
+
+// Insight card
+export interface InsightContentBlock {
+  type: 'insight'
+  insightType: 'pattern' | 'achievement' | 'suggestion'
+  title: string
+  description: string
+  icon?: string
+}
+
+export type ContentBlock =
+  | ChartContentBlock
+  | MomentsContentBlock
+  | StatsContentBlock
+  | WeeklySummaryBlock
+  | InsightContentBlock
+
 export interface ChatResponse {
   message: string
   conversationId: string
   suggestions?: string[]
+  contentBlocks?: ContentBlock[]
   relatedMomentIds?: string[]
 }
 

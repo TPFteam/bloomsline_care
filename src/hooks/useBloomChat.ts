@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { sendMessage, getActiveConversation, getConversationMessages } from '@/lib/services/bloom'
-import type { BloomMessage, BloomState } from '@/types/bloom'
+import type { BloomMessage, BloomState, ContentBlock } from '@/types/bloom'
 
 export type BloomEntryPoint = 'home' | 'balance' | 'moments' | 'rituals' | 'progress' | 'reflect' | 'general'
 
@@ -18,6 +18,7 @@ interface UseBloomChatReturn {
   conversationId: string | null
   error: string | null
   suggestions: string[]
+  contentBlocks: ContentBlock[]
   sendUserMessage: (message: string) => Promise<void>
   clearChat: () => void
 }
@@ -31,6 +32,7 @@ export function useBloomChat(options: UseBloomChatOptions = {}): UseBloomChatRet
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<string[]>([])
+  const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([])
   const [initialized, setInitialized] = useState(false)
   const [greetingLoading, setGreetingLoading] = useState(false)
 
@@ -171,6 +173,13 @@ export function useBloomChat(options: UseBloomChatOptions = {}): UseBloomChatRet
         setSuggestions(response.suggestions)
       }
 
+      // Update content blocks from API response
+      if (response.contentBlocks) {
+        setContentBlocks(response.contentBlocks)
+      } else {
+        setContentBlocks([])
+      }
+
       // Add assistant response
       const assistantMessage: BloomMessage = {
         id: `response-${Date.now()}`,
@@ -218,6 +227,7 @@ export function useBloomChat(options: UseBloomChatOptions = {}): UseBloomChatRet
     conversationId,
     error,
     suggestions,
+    contentBlocks,
     sendUserMessage,
     clearChat,
   }

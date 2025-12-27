@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createAdminClient } from '@/lib/supabase/server-client'
-import { getBloomSystemPrompt, generateSuggestions } from '@/lib/bloom/prompts'
+import { getBloomSystemPrompt, generateSuggestions, generateContentBlocks } from '@/lib/bloom/prompts'
 import { buildBloomContext, formatContextForPrompt, type EntryPoint } from '@/lib/bloom/context'
 import type { BloomPersonality } from '@/types/bloom'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit'
@@ -207,10 +207,14 @@ ${contextPrompt}`
         : undefined,
     }, locale)
 
+    // Generate rich content blocks based on user's message
+    const contentBlocks = generateContentBlocks(message, bloomContext, locale)
+
     return NextResponse.json({
       message: responseText,
       conversationId: activeConversationId,
       suggestions,
+      contentBlocks: contentBlocks.length > 0 ? contentBlocks : undefined,
     })
   } catch (error) {
     console.error('Bloom chat error:', error)
