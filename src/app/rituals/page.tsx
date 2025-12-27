@@ -515,16 +515,39 @@ export default function RitualsPage() {
         return
       }
 
-      // Get member
-      const { data: member } = await supabase
+      // Get or create member record
+      let { data: member } = await supabase
         .from('members')
         .select('id')
         .eq('user_id', user.id)
         .single()
 
+      // Auto-create member record if it doesn't exist (self-serve user)
       if (!member) {
-        setLoading(false)
-        return
+        const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Member'
+        const nameParts = fullName.split(' ')
+        const firstName = nameParts[0] || 'Member'
+        const lastName = nameParts.slice(1).join(' ') || ''
+
+        const { data: newMember, error: createError } = await supabase
+          .from('members')
+          .insert({
+            user_id: user.id,
+            practitioner_id: user.id, // Self-serve: user is their own practitioner
+            first_name: firstName,
+            last_name: lastName || firstName, // Use first name if no last name
+            email: user.email,
+            status: 'active',
+          })
+          .select('id')
+          .single()
+
+        if (createError || !newMember) {
+          console.error('Error creating member:', createError)
+          setLoading(false)
+          return
+        }
+        member = newMember
       }
 
       setMemberId(member.id)
