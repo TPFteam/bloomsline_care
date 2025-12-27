@@ -2,12 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server-client'
 import { buildBloomContext, getContextAwareGreeting, type EntryPoint } from '@/lib/bloom/context'
 import { detectAndStorePatterns } from '@/lib/bloom/patterns'
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit'
 
 // Track last pattern detection per user (in-memory, resets on deploy)
 const lastPatternDetection = new Map<string, number>()
 const PATTERN_DETECTION_INTERVAL = 24 * 60 * 60 * 1000 // 24 hours
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const clientId = getClientIdentifier(request)
+  const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.api)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+    )
+  }
+
   try {
     const body = await request.json()
     const { locale = 'en', entryPoint = 'general' } = body as {

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server-client';
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/security/rate-limit';
+import { encryptToken } from '@/lib/security/encryption';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
@@ -7,6 +9,14 @@ const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/calendar/callback`;
 
 // GET /api/calendar/callback - Handle OAuth callback
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const clientId = getClientIdentifier(request);
+  const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.auth);
+  if (!rateLimitResult.success) {
+    return NextResponse.redirect(
+      new URL('/settings?calendar_error=rate_limited', request.url)
+    );
+  }
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
   const error = searchParams.get('error');
@@ -75,6 +85,12 @@ export async function GET(request: NextRequest) {
     const expiresAt = new Date();
     expiresAt.setSeconds(expiresAt.getSeconds() + tokens.expires_in);
 
+    // Encrypt tokens before storing
+    const encryptedAccessToken = encryptToken(tokens.access_token);
+    const encryptedRefreshToken = tokens.refresh_token
+      ? encryptToken(tokens.refresh_token)
+      : null;
+
     // Save calendar connection to database
     const { error: dbError } = await supabase
       .from('calendar_connections')
@@ -82,8 +98,8 @@ export async function GET(request: NextRequest) {
         user_id: user.id,
         provider: 'google',
         provider_email: userInfo.email,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
+        access_token: encryptedAccessToken,
+        refresh_token: encryptedRefreshToken,
         token_expires_at: expiresAt.toISOString(),
         calendar_id: 'primary',
         sync_enabled: true,

@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase/server-client'
 import { UserType, isValidUserType } from '@/types/user'
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit'
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const clientId = getClientIdentifier(request)
+  const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.auth)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+    )
+  }
+
   try {
     const response = NextResponse.next()
     const supabase = createRouteHandlerClient(request, response)

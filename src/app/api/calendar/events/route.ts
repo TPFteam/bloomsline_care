@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server-client';
 import type { GoogleCalendarEvent } from '@/types/calendar';
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
+import { decryptToken, encryptToken, isEncrypted } from '@/lib/security/encryption';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
@@ -24,13 +26,35 @@ async function getValidAccessToken(
   const now = new Date();
   const expiresAt = new Date(connection.token_expires_at);
 
+  // Decrypt the stored access token
+  let accessToken: string;
+  try {
+    accessToken = isEncrypted(connection.access_token)
+      ? decryptToken(connection.access_token)
+      : connection.access_token; // Handle legacy unencrypted tokens
+  } catch {
+    console.error('Failed to decrypt access token');
+    return null;
+  }
+
   // If token is still valid, return it
   if (expiresAt > now) {
-    return connection.access_token;
+    return accessToken;
   }
 
   // Token expired, refresh it
   if (!connection.refresh_token) {
+    return null;
+  }
+
+  // Decrypt refresh token
+  let refreshToken: string;
+  try {
+    refreshToken = isEncrypted(connection.refresh_token)
+      ? decryptToken(connection.refresh_token)
+      : connection.refresh_token;
+  } catch {
+    console.error('Failed to decrypt refresh token');
     return null;
   }
 
@@ -43,7 +67,7 @@ async function getValidAccessToken(
       body: new URLSearchParams({
         client_id: GOOGLE_CLIENT_ID,
         client_secret: GOOGLE_CLIENT_SECRET,
-        refresh_token: connection.refresh_token,
+        refresh_token: refreshToken,
         grant_type: 'refresh_token',
       }),
     });
@@ -55,14 +79,16 @@ async function getValidAccessToken(
 
     const tokens = await tokenResponse.json();
 
-    // Update token in database
+    // Encrypt and update token in database
     const newExpiresAt = new Date();
     newExpiresAt.setSeconds(newExpiresAt.getSeconds() + tokens.expires_in);
+
+    const encryptedNewToken = encryptToken(tokens.access_token);
 
     await supabase
       .from('calendar_connections')
       .update({
-        access_token: tokens.access_token,
+        access_token: encryptedNewToken,
         token_expires_at: newExpiresAt.toISOString(),
       })
       .eq('id', connection.id);
@@ -76,6 +102,16 @@ async function getValidAccessToken(
 
 // POST /api/calendar/events - Create calendar event
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const clientId = getClientIdentifier(request);
+  const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.api);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+    );
+  }
+
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -146,6 +182,16 @@ export async function POST(request: NextRequest) {
 
 // DELETE /api/calendar/events?eventId=xxx - Delete calendar event
 export async function DELETE(request: NextRequest) {
+  // Rate limiting
+  const clientId = getClientIdentifier(request);
+  const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.api);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+    );
+  }
+
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -209,6 +255,16 @@ export async function DELETE(request: NextRequest) {
 
 // PATCH /api/calendar/events?eventId=xxx - Update calendar event
 export async function PATCH(request: NextRequest) {
+  // Rate limiting
+  const clientId = getClientIdentifier(request);
+  const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.api);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+    );
+  }
+
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();

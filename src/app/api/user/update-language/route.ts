@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase/server-client'
 import { isValidLanguage, type Language } from '@/types/user'
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit'
 
 // API endpoint to update user's preferred language
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const clientId = getClientIdentifier(request)
+  const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.api)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+    )
+  }
+
   try {
     const response = NextResponse.next()
     const supabase = createRouteHandlerClient(request, response)
