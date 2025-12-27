@@ -1,5 +1,5 @@
 // ============================================
-// Email Service (SendGrid)
+// Email Service (Resend)
 // ============================================
 
 import type { NotificationType } from './types'
@@ -21,44 +21,38 @@ interface EmailTemplate {
 }
 
 /**
- * Send an email using SendGrid
+ * Send an email using Resend
  */
 export async function sendEmail(params: SendEmailParams): Promise<boolean> {
   const { to, subject, body, actionUrl, actionText, preheader } = params
 
-  // Check if SendGrid is configured
-  const apiKey = process.env.SENDGRID_API_KEY
+  // Check if Resend is configured
+  const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
-    console.warn('SendGrid API key not configured, skipping email')
+    console.warn('Resend API key not configured, skipping email')
     return false
   }
 
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'notifications@bloomsline.care'
-  const fromName = process.env.SENDGRID_FROM_NAME || 'Bloomsline Care'
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'notifications@bloomsline.care'
 
   try {
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        personalizations: [{ to: [{ email: to }] }],
-        from: { email: fromEmail, name: fromName },
+        from: fromEmail,
+        to: [to],
         subject,
-        content: [
-          {
-            type: 'text/html',
-            value: generateEmailHtml({ subject, body, actionUrl, actionText, preheader }),
-          },
-        ],
+        html: generateEmailHtml({ subject, body, actionUrl, actionText, preheader }),
       }),
     })
 
     if (!response.ok) {
-      const error = await response.text()
-      console.error('SendGrid error:', error)
+      const error = await response.json()
+      console.error('Resend error:', error)
       return false
     }
 
@@ -183,7 +177,7 @@ function generateEmailHtml(params: {
  */
 export function getEmailContent(
   type: NotificationType,
-  metadata: Record<string, unknown>,
+  _metadata: Record<string, unknown>,
   locale: 'en' | 'fr' = 'en'
 ): EmailTemplate {
   // Map notification types to email-specific content
@@ -208,7 +202,7 @@ export function getEmailContent(
 /**
  * Process pending email deliveries (called by cron job)
  */
-export async function processPendingEmails(supabase: unknown): Promise<number> {
+export async function processPendingEmails(_supabase: unknown): Promise<number> {
   // This would be called by a cron job to process the delivery queue
   // For now, emails are sent immediately when notification is created
   // This function can be used for retry logic and batch processing

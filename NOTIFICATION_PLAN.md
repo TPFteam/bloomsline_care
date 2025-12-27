@@ -197,7 +197,7 @@ CREATE INDEX idx_push_tokens_user ON push_tokens(user_id) WHERE is_active = TRUE
 
 ### Services Stack
 
-1. **Email**: SendGrid (reliable, good API, reasonable pricing)
+1. **Email**: Resend (modern, developer-friendly, great for Next.js)
 2. **Push Notifications**: Firebase Cloud Messaging (free, cross-platform)
 3. **In-App**: Supabase Realtime (already using Supabase)
 4. **Background Jobs**: Vercel Cron + Edge Functions (no extra infra)
@@ -427,7 +427,7 @@ Using Vercel Cron or similar:
 
 ```json
 {
-  "@sendgrid/mail": "^8.1.0",
+  "resend": "^2.0.0",
   "firebase-admin": "^12.0.0"
 }
 ```
@@ -437,10 +437,9 @@ Using Vercel Cron or similar:
 ## Environment Variables Needed
 
 ```env
-# SendGrid
-SENDGRID_API_KEY=
-SENDGRID_FROM_EMAIL=notifications@bloomsline.care
-SENDGRID_FROM_NAME=Bloomsline Care
+# Resend (Email)
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=Bloomsline Care <notifications@bloomsline.care>
 
 # Firebase (for Push)
 FIREBASE_PROJECT_ID=
