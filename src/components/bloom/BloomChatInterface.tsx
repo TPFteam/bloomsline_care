@@ -236,9 +236,13 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true, ent
               </div>
 
               {/* Messages */}
-              <div className={`h-80 overflow-y-auto px-5 py-4 ${
-                isDark ? 'bg-transparent' : 'bg-gray-50/50'
-              }`}>
+              <div
+                className={`h-80 overflow-y-auto px-5 py-4 ${
+                  isDark
+                    ? 'bg-transparent scrollbar-minimal'
+                    : 'bg-gray-50/50 scrollbar-minimal-light'
+                }`}
+              >
                 {messages.map((message) => (
                   <ChatBubble
                     key={message.id}
