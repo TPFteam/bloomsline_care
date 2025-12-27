@@ -533,11 +533,11 @@ export default function RitualsPage() {
           .from('members')
           .insert({
             user_id: user.id,
-            practitioner_id: user.id, // Self-serve: user is their own practitioner
             first_name: firstName,
-            last_name: lastName || firstName, // Use first name if no last name
+            last_name: lastName || firstName,
             email: user.email,
             status: 'active',
+            is_self_serve: true,
           })
           .select('id')
           .single()
