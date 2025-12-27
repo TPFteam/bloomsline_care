@@ -1376,8 +1376,8 @@ export default function BalancePage() {
           </div>
         </motion.div>
 
-        {/* Date Navigation - hide on trends tab */}
-        {activeTab !== 'trends' && (
+        {/* Date Navigation - only show on today tab */}
+        {activeTab === 'today' && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -2522,56 +2522,73 @@ export default function BalancePage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-4"
+            className="space-y-5"
           >
-            {/* Bloom Insights - AI-style warm observation */}
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-5 border border-emerald-100">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-emerald-600" />
-                <span className="text-sm font-medium text-emerald-700">
-                  {locale === 'fr' ? 'Aperçu Bloom' : 'Bloom Insight'}
-                </span>
+            {/* Bloom Insights - Warm AI observation card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 }}
+              className="relative overflow-hidden bg-white rounded-3xl p-5 border border-gray-100"
+            >
+              {/* Decorative gradient blob */}
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-emerald-200/40 to-teal-200/40 rounded-full blur-2xl" />
+              <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-gradient-to-br from-violet-200/30 to-purple-200/30 rounded-full blur-2xl" />
+
+              <div className="relative">
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-sm">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {locale === 'fr' ? 'Aperçu Bloom' : 'Bloom Insight'}
+                    </span>
+                    <p className="text-xs text-gray-400">
+                      {locale === 'fr' ? 'Cette semaine' : 'This week'}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-gray-600 leading-relaxed text-[15px]">
+                  {(() => {
+                    const totalSleep = weeklyData.reduce((sum, d) => sum + d.sleep, 0)
+                    const totalWork = weeklyData.reduce((sum, d) => sum + d.work, 0)
+                    const totalLife = weeklyData.reduce((sum, d) => sum + d.life, 0)
+                    const avgSleep = totalSleep / Math.max(weeklyData.length, 1) / 60
+                    const avgWork = totalWork / Math.max(weeklyData.length, 1) / 60
+                    const avgLife = totalLife / Math.max(weeklyData.length, 1) / 60
+
+                    if (avgSleep >= 7 && avgWork <= 9 && avgLife >= 2) {
+                      return locale === 'fr'
+                        ? "Vous avez trouvé un bel équilibre cette semaine. Votre rythme de sommeil est régulier et vous prenez du temps pour vous."
+                        : "You've found a lovely balance this week. Your sleep rhythm is steady and you're making time for yourself."
+                    } else if (avgWork > 10) {
+                      return locale === 'fr'
+                        ? "Cette semaine a été intense côté travail. N'oubliez pas de prendre soin de vous aussi."
+                        : "This week has been work-heavy. Remember to take care of yourself too."
+                    } else if (avgSleep < 6) {
+                      return locale === 'fr'
+                        ? "Votre sommeil mérite un peu plus d'attention. Le repos est la base de tout."
+                        : "Your sleep could use some love. Rest is the foundation of everything."
+                    } else if (avgLife < 1) {
+                      return locale === 'fr'
+                        ? "Vous avez été très occupé. Essayez de vous accorder quelques moments de détente."
+                        : "You've been quite busy. Try to give yourself some moments of joy."
+                    } else {
+                      return locale === 'fr'
+                        ? "Vous faites de votre mieux pour équilibrer les différentes facettes de votre vie."
+                        : "You're doing your best to balance the different parts of your life."
+                    }
+                  })()}
+                </p>
               </div>
-              <p className="text-gray-700 leading-relaxed">
-                {(() => {
-                  const totalSleep = weeklyData.reduce((sum, d) => sum + d.sleep, 0)
-                  const totalWork = weeklyData.reduce((sum, d) => sum + d.work, 0)
-                  const totalLife = weeklyData.reduce((sum, d) => sum + d.life, 0)
-                  const avgSleep = totalSleep / Math.max(weeklyData.length, 1) / 60
-                  const avgWork = totalWork / Math.max(weeklyData.length, 1) / 60
-                  const avgLife = totalLife / Math.max(weeklyData.length, 1) / 60
+            </motion.div>
 
-                  // Generate human insight based on patterns
-                  if (avgSleep >= 7 && avgWork <= 9 && avgLife >= 2) {
-                    return locale === 'fr'
-                      ? "Vous avez trouvé un bel équilibre cette semaine. Votre rythme de sommeil est régulier et vous prenez du temps pour vous."
-                      : "You've found a lovely balance this week. Your sleep rhythm is steady and you're making time for yourself."
-                  } else if (avgWork > 10) {
-                    return locale === 'fr'
-                      ? "Cette semaine a été intense côté travail. N'oubliez pas de prendre soin de vous aussi."
-                      : "This week has been work-heavy. Remember to take care of yourself too."
-                  } else if (avgSleep < 6) {
-                    return locale === 'fr'
-                      ? "Votre sommeil mérite un peu plus d'attention. Le repos est la base de tout."
-                      : "Your sleep could use some love. Rest is the foundation of everything."
-                  } else if (avgLife < 1) {
-                    return locale === 'fr'
-                      ? "Vous avez été très occupé. Essayez de vous accorder quelques moments de détente."
-                      : "You've been quite busy. Try to give yourself some moments of joy."
-                  } else {
-                    return locale === 'fr'
-                      ? "Vous faites de votre mieux pour équilibrer les différentes facettes de votre vie."
-                      : "You're doing your best to balance the different parts of your life."
-                  }
-                })()}
-              </p>
-            </div>
-
-            {/* How your week has been going */}
-            <div className="pt-2">
-              <div className="flex items-center justify-between mb-4">
+            {/* Weekly Summary Cards */}
+            <div>
+              <div className="flex items-center justify-between mb-3 px-1">
                 <h3 className="font-semibold text-gray-800">
-                  {locale === 'fr' ? 'Comment va ta semaine' : 'How your week has been'}
+                  {locale === 'fr' ? 'Résumé de la semaine' : 'Weekly Summary'}
                 </h3>
                 <span className="text-xs text-gray-400">
                   {weeklyData.length > 0 && (() => {
@@ -2583,168 +2600,163 @@ export default function BalancePage() {
                 </span>
               </div>
 
-              {/* Sleep Card */}
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 }}
-                className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-3"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-violet-500" />
-                    <span className="font-medium text-gray-800">{locale === 'fr' ? 'Sommeil' : 'Sleep'}</span>
+              <div className="space-y-3">
+                {/* Sleep Card */}
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="bg-violet-50 rounded-3xl p-4 border border-violet-100/50"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center shadow-sm flex-shrink-0">
+                      <Moon className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-gray-800">{locale === 'fr' ? 'Sommeil' : 'Sleep'}</span>
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                          (() => {
+                            const avg = weeklyData.reduce((sum, d) => sum + d.sleep, 0) / Math.max(weeklyData.length, 1) / 60
+                            const target = targetHours.sleep || 8
+                            const ratio = avg / target
+                            if (ratio >= 0.9) return 'bg-emerald-100 text-emerald-700'
+                            if (ratio >= 0.7) return 'bg-amber-100 text-amber-700'
+                            return 'bg-rose-100 text-rose-700'
+                          })()
+                        }`}>
+                          {(() => {
+                            const avg = weeklyData.reduce((sum, d) => sum + d.sleep, 0) / Math.max(weeklyData.length, 1) / 60
+                            const target = targetHours.sleep || 8
+                            const ratio = avg / target
+                            if (ratio >= 0.9) return locale === 'fr' ? 'Bien reposé' : 'Well rested'
+                            if (ratio >= 0.7) return locale === 'fr' ? 'À améliorer' : 'Room to grow'
+                            return locale === 'fr' ? 'Besoin de repos' : 'Needs attention'
+                          })()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {(() => {
+                          const avg = weeklyData.reduce((sum, d) => sum + d.sleep, 0) / Math.max(weeklyData.length, 1) / 60
+                          const target = targetHours.sleep || 8
+                          return locale === 'fr'
+                            ? `${avg.toFixed(1)}h en moyenne • Objectif: ${target}h`
+                            : `${avg.toFixed(1)}h average • Goal: ${target}h`
+                        })()}
+                      </p>
+                    </div>
                   </div>
-                  <span className="text-xs text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full">
-                    {(() => {
-                      const avg = weeklyData.reduce((sum, d) => sum + d.sleep, 0) / Math.max(weeklyData.length, 1) / 60
-                      const target = (targetHours.sleep || 8)
-                      const diff = avg - target
-                      return diff >= 0 ? `+${diff.toFixed(1)}h` : `${diff.toFixed(1)}h`
-                    })()} {locale === 'fr' ? 'vs objectif' : 'vs target'}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 mb-2">
-                  {(() => {
-                    const avg = weeklyData.reduce((sum, d) => sum + d.sleep, 0) / Math.max(weeklyData.length, 1) / 60
-                    const target = targetHours.sleep || 8
-                    return locale === 'fr'
-                      ? `En moyenne ${avg.toFixed(1)} heures par nuit (objectif: ${target}h)`
-                      : `Averaging ${avg.toFixed(1)} hours per night (aiming for ${target}h)`
-                  })()}
-                </p>
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  (() => {
-                    const avg = weeklyData.reduce((sum, d) => sum + d.sleep, 0) / Math.max(weeklyData.length, 1) / 60
-                    const target = targetHours.sleep || 8
-                    const ratio = avg / target
-                    if (ratio >= 0.9) return 'bg-emerald-100 text-emerald-700'
-                    if (ratio >= 0.7) return 'bg-amber-100 text-amber-700'
-                    return 'bg-rose-100 text-rose-700'
-                  })()
-                }`}>
-                  {(() => {
-                    const avg = weeklyData.reduce((sum, d) => sum + d.sleep, 0) / Math.max(weeklyData.length, 1) / 60
-                    const target = targetHours.sleep || 8
-                    const ratio = avg / target
-                    if (ratio >= 0.9) return locale === 'fr' ? 'Bien reposé' : 'Well rested'
-                    if (ratio >= 0.7) return locale === 'fr' ? 'Peut mieux faire' : 'Room to improve'
-                    return locale === 'fr' ? 'Besoin de repos' : 'Needs attention'
-                  })()}
-                </span>
-              </motion.div>
+                </motion.div>
 
-              {/* Work Card */}
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-                className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-3"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                    <span className="font-medium text-gray-800">{locale === 'fr' ? 'Travail' : 'Work'}</span>
+                {/* Work Card */}
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-amber-50 rounded-3xl p-4 border border-amber-100/50"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-sm flex-shrink-0">
+                      <Briefcase className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-gray-800">{locale === 'fr' ? 'Travail' : 'Work'}</span>
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                          (() => {
+                            const avg = weeklyData.reduce((sum, d) => sum + d.work, 0) / Math.max(weeklyData.length, 1) / 60
+                            const target = targetHours.work || 8
+                            const ratio = avg / target
+                            if (ratio >= 0.9 && ratio <= 1.1) return 'bg-emerald-100 text-emerald-700'
+                            if (ratio > 1.1) return 'bg-rose-100 text-rose-700'
+                            return 'bg-amber-100 text-amber-700'
+                          })()
+                        }`}>
+                          {(() => {
+                            const avg = weeklyData.reduce((sum, d) => sum + d.work, 0) / Math.max(weeklyData.length, 1) / 60
+                            const target = targetHours.work || 8
+                            const ratio = avg / target
+                            if (ratio >= 0.9 && ratio <= 1.1) return locale === 'fr' ? 'Équilibré' : 'Balanced'
+                            if (ratio > 1.1) return locale === 'fr' ? 'Surcharge' : 'Overworking'
+                            return locale === 'fr' ? 'Sous objectif' : 'Under target'
+                          })()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {(() => {
+                          const avg = weeklyData.reduce((sum, d) => sum + d.work, 0) / Math.max(weeklyData.length, 1) / 60
+                          const target = targetHours.work || 8
+                          return locale === 'fr'
+                            ? `${avg.toFixed(1)}h en moyenne • Objectif: ${target}h`
+                            : `${avg.toFixed(1)}h average • Goal: ${target}h`
+                        })()}
+                      </p>
+                    </div>
                   </div>
-                  <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-                    {(() => {
-                      const avg = weeklyData.reduce((sum, d) => sum + d.work, 0) / Math.max(weeklyData.length, 1) / 60
-                      const target = (targetHours.work || 8)
-                      const diff = avg - target
-                      return diff >= 0 ? `+${diff.toFixed(1)}h` : `${diff.toFixed(1)}h`
-                    })()} {locale === 'fr' ? 'vs objectif' : 'vs target'}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 mb-2">
-                  {(() => {
-                    const avg = weeklyData.reduce((sum, d) => sum + d.work, 0) / Math.max(weeklyData.length, 1) / 60
-                    const target = targetHours.work || 8
-                    return locale === 'fr'
-                      ? `En moyenne ${avg.toFixed(1)} heures par jour (objectif: ${target}h)`
-                      : `Averaging ${avg.toFixed(1)} hours per day (aiming for ${target}h)`
-                  })()}
-                </p>
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  (() => {
-                    const avg = weeklyData.reduce((sum, d) => sum + d.work, 0) / Math.max(weeklyData.length, 1) / 60
-                    const target = targetHours.work || 8
-                    const ratio = avg / target
-                    if (ratio >= 0.9 && ratio <= 1.1) return 'bg-emerald-100 text-emerald-700'
-                    if (ratio > 1.1) return 'bg-rose-100 text-rose-700'
-                    return 'bg-amber-100 text-amber-700'
-                  })()
-                }`}>
-                  {(() => {
-                    const avg = weeklyData.reduce((sum, d) => sum + d.work, 0) / Math.max(weeklyData.length, 1) / 60
-                    const target = targetHours.work || 8
-                    const ratio = avg / target
-                    if (ratio >= 0.9 && ratio <= 1.1) return locale === 'fr' ? 'Bien équilibré' : 'Well balanced'
-                    if (ratio > 1.1) return locale === 'fr' ? 'Surcharge' : 'Overworking'
-                    return locale === 'fr' ? 'Sous l\'objectif' : 'Under target'
-                  })()}
-                </span>
-              </motion.div>
+                </motion.div>
 
-              {/* Life Card */}
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 }}
-                className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                    <span className="font-medium text-gray-800">{locale === 'fr' ? 'Vie perso' : 'Life'}</span>
+                {/* Life Card */}
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.25 }}
+                  className="bg-emerald-50 rounded-3xl p-4 border border-emerald-100/50"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-sm flex-shrink-0">
+                      <Heart className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-gray-800">{locale === 'fr' ? 'Vie perso' : 'Life'}</span>
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                          (() => {
+                            const avg = weeklyData.reduce((sum, d) => sum + d.life, 0) / Math.max(weeklyData.length, 1) / 60
+                            const target = targetHours.life || 8
+                            const ratio = avg / target
+                            if (ratio >= 0.8) return 'bg-emerald-100 text-emerald-700'
+                            if (ratio >= 0.5) return 'bg-amber-100 text-amber-700'
+                            return 'bg-rose-100 text-rose-700'
+                          })()
+                        }`}>
+                          {(() => {
+                            const avg = weeklyData.reduce((sum, d) => sum + d.life, 0) / Math.max(weeklyData.length, 1) / 60
+                            const target = targetHours.life || 8
+                            const ratio = avg / target
+                            if (ratio >= 0.8) return locale === 'fr' ? 'Épanoui' : 'Thriving'
+                            if (ratio >= 0.5) return locale === 'fr' ? 'En progrès' : 'Growing'
+                            return locale === 'fr' ? 'À cultiver' : 'Needs love'
+                          })()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {(() => {
+                          const avg = weeklyData.reduce((sum, d) => sum + d.life, 0) / Math.max(weeklyData.length, 1) / 60
+                          const target = targetHours.life || 8
+                          return locale === 'fr'
+                            ? `${avg.toFixed(1)}h en moyenne • Objectif: ${target}h`
+                            : `${avg.toFixed(1)}h average • Goal: ${target}h`
+                        })()}
+                      </p>
+                    </div>
                   </div>
-                  <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                    {(() => {
-                      const avg = weeklyData.reduce((sum, d) => sum + d.life, 0) / Math.max(weeklyData.length, 1) / 60
-                      const target = (targetHours.life || 8)
-                      const diff = avg - target
-                      return diff >= 0 ? `+${diff.toFixed(1)}h` : `${diff.toFixed(1)}h`
-                    })()} {locale === 'fr' ? 'vs objectif' : 'vs target'}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 mb-2">
-                  {(() => {
-                    const avg = weeklyData.reduce((sum, d) => sum + d.life, 0) / Math.max(weeklyData.length, 1) / 60
-                    const target = targetHours.life || 8
-                    return locale === 'fr'
-                      ? `En moyenne ${avg.toFixed(1)} heures par jour (objectif: ${target}h)`
-                      : `Averaging ${avg.toFixed(1)} hours per day (aiming for ${target}h)`
-                  })()}
-                </p>
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  (() => {
-                    const avg = weeklyData.reduce((sum, d) => sum + d.life, 0) / Math.max(weeklyData.length, 1) / 60
-                    const target = targetHours.life || 8
-                    const ratio = avg / target
-                    if (ratio >= 0.8) return 'bg-emerald-100 text-emerald-700'
-                    if (ratio >= 0.5) return 'bg-amber-100 text-amber-700'
-                    return 'bg-rose-100 text-rose-700'
-                  })()
-                }`}>
-                  {(() => {
-                    const avg = weeklyData.reduce((sum, d) => sum + d.life, 0) / Math.max(weeklyData.length, 1) / 60
-                    const target = targetHours.life || 8
-                    const ratio = avg / target
-                    if (ratio >= 0.8) return locale === 'fr' ? 'Épanoui' : 'Thriving'
-                    if (ratio >= 0.5) return locale === 'fr' ? 'En progrès' : 'Getting there'
-                    return locale === 'fr' ? 'Besoin d\'attention' : 'Needs more you-time'
-                  })()}
-                </span>
-              </motion.div>
+                </motion.div>
+              </div>
             </div>
 
             {/* Gentle encouragement */}
-            <div className="p-4 bg-gray-50 rounded-xl mt-2">
-              <p className="text-sm text-gray-500 italic text-center">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white rounded-3xl p-5 border border-gray-100 text-center"
+            >
+              <p className="text-sm text-gray-500 italic leading-relaxed">
                 {locale === 'fr'
                   ? '"Chaque jour est une nouvelle chance de trouver ton équilibre."'
                   : '"Every day is a new chance to find your balance."'}
               </p>
-            </div>
+            </motion.div>
           </motion.div>
         )}
 
