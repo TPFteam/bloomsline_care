@@ -35,7 +35,8 @@ DROP POLICY IF EXISTS "Service can manage deliveries" ON notification_deliveries
 -- Users should be able to delete their own notifications
 -- ============================================
 
-CREATE POLICY IF NOT EXISTS "Users can delete own notifications"
+DROP POLICY IF EXISTS "Users can delete own notifications" ON notifications;
+CREATE POLICY "Users can delete own notifications"
   ON notifications FOR DELETE
   USING (auth.uid() = user_id);
 
@@ -63,7 +64,8 @@ CREATE POLICY "Anyone can create bookings for enabled practitioners"
 -- This allows clients to see bookings they've made
 -- ============================================
 
-CREATE POLICY IF NOT EXISTS "Clients can view own bookings by email"
+DROP POLICY IF EXISTS "Clients can view own bookings by email" ON bookings;
+CREATE POLICY "Clients can view own bookings by email"
   ON bookings FOR SELECT
   USING (
     -- Practitioners can always see their bookings (existing policy)
