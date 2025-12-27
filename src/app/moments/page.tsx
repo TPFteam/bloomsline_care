@@ -1040,25 +1040,29 @@ export default function MomentsPage() {
                 {(() => {
                   // Calculate mood scores per day
                   const days = trendsTimeRange === 'weekly' ? 7 : 30
-                  const startDate = new Date()
-                  startDate.setDate(startDate.getDate() - days + 1)
-                  startDate.setHours(0, 0, 0, 0)
-
                   const positiveMoods = ['grateful', 'peaceful', 'joyful', 'inspired', 'loved', 'calm', 'hopeful', 'proud']
 
                   // Group moments by day and calculate average positivity
-                  const chartData = []
-                  for (let i = 0; i < days; i++) {
-                    const date = new Date(startDate)
-                    date.setDate(date.getDate() + i)
-                    const dateStr = date.toISOString().split('T')[0]
+                  const chartData: { date: string; label: string; score: number | null; moments: number }[] = []
+
+                  for (let i = days - 1; i >= 0; i--) {
+                    const date = new Date()
+                    date.setDate(date.getDate() - i)
+                    // Use local date string to avoid timezone issues
+                    const year = date.getFullYear()
+                    const month = String(date.getMonth() + 1).padStart(2, '0')
+                    const day = String(date.getDate()).padStart(2, '0')
+                    const dateStr = `${year}-${month}-${day}`
 
                     const dayMoments = moments.filter(m => {
-                      const mDate = new Date(m.created_at).toISOString().split('T')[0]
-                      return mDate === dateStr
+                      const mDate = new Date(m.created_at)
+                      const mYear = mDate.getFullYear()
+                      const mMonth = String(mDate.getMonth() + 1).padStart(2, '0')
+                      const mDay = String(mDate.getDate()).padStart(2, '0')
+                      return `${mYear}-${mMonth}-${mDay}` === dateStr
                     })
 
-                    let positivityScore = 0
+                    let positivityScore: number | null = null
                     if (dayMoments.length > 0) {
                       let totalMoods = 0
                       let positiveMoodCount = 0
@@ -1126,6 +1130,7 @@ export default function MomentsPage() {
                             strokeWidth={2.5}
                             dot={{ fill: '#8b5cf6', strokeWidth: 0, r: 4 }}
                             activeDot={{ r: 6, fill: '#8b5cf6' }}
+                            connectNulls={false}
                           />
                         </LineChart>
                       </ResponsiveContainer>
