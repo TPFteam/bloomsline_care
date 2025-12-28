@@ -10,7 +10,6 @@ import {
   FileImage,
   Minus,
   Plus,
-  GripVertical,
   Trash2,
   X,
   ChevronUp,
@@ -242,18 +241,49 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps) {
                         updateBlock(block.id, { ...block.content, items: newItems })
                       }}
                       placeholder="List item..."
-                      className="flex-1 p-2 border-0 border-b border-gray-200 text-gray-700 placeholder:text-gray-400 focus:border-emerald-400 focus:ring-0 outline-none transition-colors"
+                      className="flex-1 p-2 border-0 border-b border-gray-200 text-gray-700 placeholder:text-gray-400 focus:border-emerald-400 focus:ring-0 outline-none transition-colors bg-transparent"
                     />
                     {block.content.items.length > 1 && (
-                      <button
-                        onClick={() => {
-                          const newItems = block.content.items.filter((_: any, idx: number) => idx !== i)
-                          updateBlock(block.id, { ...block.content, items: newItems })
-                        }}
-                        className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-red-50 rounded-lg text-red-500 transition-all"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => {
+                            if (i > 0) {
+                              const newItems = [...block.content.items]
+                              ;[newItems[i], newItems[i - 1]] = [newItems[i - 1], newItems[i]]
+                              updateBlock(block.id, { ...block.content, items: newItems })
+                            }
+                          }}
+                          disabled={i === 0}
+                          className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                          title="Move up"
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (i < block.content.items.length - 1) {
+                              const newItems = [...block.content.items]
+                              ;[newItems[i], newItems[i + 1]] = [newItems[i + 1], newItems[i]]
+                              updateBlock(block.id, { ...block.content, items: newItems })
+                            }
+                          }}
+                          disabled={i === block.content.items.length - 1}
+                          className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                          title="Move down"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newItems = block.content.items.filter((_: any, idx: number) => idx !== i)
+                            updateBlock(block.id, { ...block.content, items: newItems })
+                          }}
+                          className="p-1 hover:bg-red-50 rounded text-red-500 transition-all"
+                          title="Delete"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}

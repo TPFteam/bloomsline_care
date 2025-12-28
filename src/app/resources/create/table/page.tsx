@@ -366,17 +366,20 @@ function CreateTableExerciseContent() {
         },
       }
 
-      if (editId) {
-        // Update existing resource
+      // Check if we have an existing resource to update (either from edit mode or auto-saved draft)
+      const existingResourceId = editId || autoSaveDraftId
+
+      if (existingResourceId) {
+        // Update existing resource (either editing or updating auto-saved draft)
         const { error } = await supabase
           .from('resources')
           .update(resourceData)
-          .eq('id', editId)
+          .eq('id', existingResourceId)
 
         if (error) throw error
 
         toast.success(locale === 'fr' ? 'Exercice tableau mis à jour!' : 'Table exercise updated!')
-        router.push(`/resources/${editId}`)
+        router.push(`/resources/${existingResourceId}`)
       } else {
         // Create new resource
         const { error } = await supabase

@@ -15,6 +15,9 @@ import {
   Bell,
   Mail,
   Smartphone,
+  Phone,
+  Edit2,
+  X,
 } from 'lucide-react'
 import MemberLayout from '@/components/member/MemberLayout'
 import { useLanguage } from '@/lib/i18n/context'
@@ -27,12 +30,17 @@ interface MemberProfile {
   last_name: string
   email: string
   phone?: string
+  avatar_url?: string
   created_at: string
 }
 
 interface NotificationPrefs {
   email_enabled: boolean
   push_enabled: boolean
+}
+
+interface EditableInfo {
+  phone: string
 }
 
 export default function MemberSettingsPage() {
@@ -48,6 +56,9 @@ export default function MemberSettingsPage() {
     push_enabled: true,
   })
   const [isSavingNotifications, setIsSavingNotifications] = useState(false)
+  const [editableInfo, setEditableInfo] = useState<EditableInfo>({ phone: '' })
+  const [isEditingPhone, setIsEditingPhone] = useState(false)
+  const [isSavingPhone, setIsSavingPhone] = useState(false)
 
   // Translations
   const t = {
@@ -70,6 +81,16 @@ export default function MemberSettingsPage() {
       emailNotifications: 'Email',
       pushNotifications: 'Push',
       saving: 'Saving...',
+      contactInfo: 'Contact Information',
+      contactDescription: 'Update your contact details',
+      phone: 'Phone Number',
+      phonePlaceholder: 'Enter phone number',
+      edit: 'Edit',
+      save: 'Save',
+      cancel: 'Cancel',
+      phoneUpdated: 'Phone number updated',
+      errorUpdating: 'Error updating phone',
+      notProvided: 'Not provided',
     },
     fr: {
       title: 'Paramètres',
@@ -90,6 +111,16 @@ export default function MemberSettingsPage() {
       emailNotifications: 'Email',
       pushNotifications: 'Push',
       saving: 'Enregistrement...',
+      contactInfo: 'Coordonnées',
+      contactDescription: 'Mettez à jour vos coordonnées',
+      phone: 'Numéro de téléphone',
+      phonePlaceholder: 'Entrez le numéro de téléphone',
+      edit: 'Modifier',
+      save: 'Enregistrer',
+      cancel: 'Annuler',
+      phoneUpdated: 'Numéro de téléphone mis à jour',
+      errorUpdating: 'Erreur lors de la mise à jour',
+      notProvided: 'Non fourni',
     },
   }
 
@@ -109,7 +140,7 @@ export default function MemberSettingsPage() {
 
       const { data: member } = await supabase
         .from('members')
-        .select('id, first_name, last_name, phone, created_at')
+        .select('id, first_name, last_name, phone, avatar_url, created_at')
         .eq('user_id', user.id)
         .single()
 
@@ -118,14 +149,15 @@ export default function MemberSettingsPage() {
           ...member,
           email: user.email || '',
         })
+        setEditableInfo({ phone: member.phone || '' })
       }
 
-      // Fetch notification preferences
+      // Fetch notification preferences (use maybeSingle to handle no row gracefully)
       const { data: prefs } = await supabase
         .from('notification_preferences')
         .select('email_enabled, push_enabled')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (prefs) {
         setNotificationPrefs({
@@ -133,6 +165,7 @@ export default function MemberSettingsPage() {
           push_enabled: prefs.push_enabled ?? true,
         })
       }
+      // If no prefs exist, keep defaults (true, true)
     } catch (error) {
       console.error('Error fetching profile:', error)
     } finally {
@@ -176,6 +209,34 @@ export default function MemberSettingsPage() {
     } finally {
       setIsSavingNotifications(false)
     }
+  }
+
+  const handleSavePhone = async () => {
+    if (!profile) return
+
+    setIsSavingPhone(true)
+    try {
+      const { error } = await supabase
+        .from('members')
+        .update({ phone: editableInfo.phone || null })
+        .eq('id', profile.id)
+
+      if (error) throw error
+
+      setProfile({ ...profile, phone: editableInfo.phone })
+      setIsEditingPhone(false)
+      toast.success(text.phoneUpdated)
+    } catch (error) {
+      console.error('Error updating phone:', error)
+      toast.error(text.errorUpdating)
+    } finally {
+      setIsSavingPhone(false)
+    }
+  }
+
+  const handleCancelPhoneEdit = () => {
+    setEditableInfo({ phone: profile?.phone || '' })
+    setIsEditingPhone(false)
   }
 
   const handleLogout = async () => {
@@ -246,8 +307,16 @@ export default function MemberSettingsPage() {
 
             <div className="relative flex items-center gap-4">
               {/* Avatar */}
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl font-bold">
-                {getInitials()}
+              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl font-bold overflow-hidden">
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  getInitials()
+                )}
               </div>
 
               <div className="flex-1">
@@ -270,6 +339,77 @@ export default function MemberSettingsPage() {
               {text.viewProfile}
               <ChevronRight className="w-4 h-4" />
             </button>
+          </motion.div>
+
+          {/* Contact Information / Phone Edit */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center">
+                <Phone className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900">{text.contactInfo}</h3>
+                <p className="text-sm text-gray-500">{text.contactDescription}</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-50 rounded-2xl">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm text-gray-500">{text.phone}</label>
+                {!isEditingPhone && (
+                  <button
+                    onClick={() => setIsEditingPhone(true)}
+                    className="text-emerald-600 hover:text-emerald-700 text-sm font-medium flex items-center gap-1"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    {text.edit}
+                  </button>
+                )}
+              </div>
+
+              {isEditingPhone ? (
+                <div className="space-y-3">
+                  <input
+                    type="tel"
+                    value={editableInfo.phone}
+                    onChange={(e) => setEditableInfo({ phone: e.target.value })}
+                    placeholder={text.phonePlaceholder}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleCancelPhoneEdit}
+                      disabled={isSavingPhone}
+                      className="flex-1 py-2.5 px-4 border border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <X className="w-4 h-4" />
+                      {text.cancel}
+                    </button>
+                    <button
+                      onClick={handleSavePhone}
+                      disabled={isSavingPhone}
+                      className="flex-1 py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 rounded-xl font-medium text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isSavingPhone ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Check className="w-4 h-4" />
+                      )}
+                      {isSavingPhone ? text.saving : text.save}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className={`font-medium ${profile?.phone ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {profile?.phone || text.notProvided}
+                </p>
+              )}
+            </div>
           </motion.div>
 
           {/* Language Selection */}

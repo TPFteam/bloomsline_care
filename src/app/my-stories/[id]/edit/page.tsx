@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import { ArrowLeft, Check, Cloud, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,7 @@ import { BlockEditor } from '@/components/story/block-editor'
 import { PublishModal } from '@/components/story/publish-modal'
 
 export default function EditStoryPage() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const router = useRouter()
   const params = useParams()
   const storyId = params.id as string
@@ -24,6 +24,13 @@ export default function EditStoryPage() {
   const [title, setTitle] = useState('')
   const [blocks, setBlocks] = useState<ContentBlock[]>([])
   const [showPublishModal, setShowPublishModal] = useState(false)
+
+  // Auto-save state
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const isInitialLoadRef = useRef(true)
 
   useEffect(() => {
     fetchStory()
@@ -77,6 +84,7 @@ export default function EditStoryPage() {
       }
 
       setBlocks(parsedContent)
+      isInitialLoadRef.current = false
     } catch (error) {
       console.error('Error fetching story:', error)
       toast.error('Failed to load story')
@@ -85,6 +93,67 @@ export default function EditStoryPage() {
       setLoading(false)
     }
   }
+
+  // Auto-save function
+  const performAutoSave = useCallback(async () => {
+    if (!title.trim() || blocks.length === 0) return
+
+    setAutoSaveStatus('saving')
+    try {
+      const { error } = await supabase
+        .from('stories')
+        .update({
+          title: title.trim(),
+          content: blocks,
+        })
+        .eq('id', storyId)
+
+      if (error) throw error
+
+      setAutoSaveStatus('saved')
+      setLastSavedAt(new Date())
+      setHasUnsavedChanges(false)
+
+      // Reset to idle after 3 seconds
+      setTimeout(() => setAutoSaveStatus('idle'), 3000)
+    } catch (error) {
+      console.error('Auto-save error:', error)
+      setAutoSaveStatus('error')
+      setTimeout(() => setAutoSaveStatus('idle'), 3000)
+    }
+  }, [title, blocks, storyId, supabase])
+
+  // Track changes and trigger auto-save
+  useEffect(() => {
+    if (isInitialLoadRef.current || loading) return
+
+    setHasUnsavedChanges(true)
+
+    // Clear existing timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current)
+    }
+
+    // Set new timer for auto-save (2 second delay)
+    autoSaveTimerRef.current = setTimeout(() => {
+      performAutoSave()
+    }, 2000)
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current)
+      }
+    }
+  }, [title, blocks, loading, performAutoSave])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current)
+      }
+    }
+  }, [])
 
   const handleUpdate = async (publish?: boolean, secretCode?: string) => {
     if (!title.trim()) {
@@ -156,12 +225,50 @@ export default function EditStoryPage() {
         <div className="max-w-5xl mx-auto">
           <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200 shadow-xl">
             <div className="flex items-center justify-between mb-8">
-              <h1 className="text-3xl font-bold text-foreground">Edit Story</h1>
-              {story && (
-                <div className="text-sm text-gray-500">
-                  {story.published ? 'Published' : 'Draft'}
+              <h1 className="text-3xl font-bold text-foreground">
+                {locale === 'fr' ? 'Modifier l\'histoire' : 'Edit Story'}
+              </h1>
+              <div className="flex items-center gap-4">
+                {/* Auto-save status */}
+                <div className="flex items-center gap-2 text-sm">
+                  {autoSaveStatus === 'saving' && (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                      <span className="text-amber-600">{locale === 'fr' ? 'Enregistrement...' : 'Saving...'}</span>
+                    </>
+                  )}
+                  {autoSaveStatus === 'saved' && (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-500" />
+                      <span className="text-emerald-600">{locale === 'fr' ? 'Enregistré' : 'Saved'}</span>
+                    </>
+                  )}
+                  {autoSaveStatus === 'error' && (
+                    <span className="text-red-500">{locale === 'fr' ? 'Erreur d\'enregistrement' : 'Save error'}</span>
+                  )}
+                  {autoSaveStatus === 'idle' && hasUnsavedChanges && (
+                    <>
+                      <Cloud className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-500">{locale === 'fr' ? 'Non enregistré' : 'Unsaved'}</span>
+                    </>
+                  )}
+                  {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
+                    <>
+                      <Cloud className="w-4 h-4 text-emerald-400" />
+                      <span className="text-gray-400">
+                        {locale === 'fr' ? 'Enregistré à ' : 'Saved at '}
+                        {lastSavedAt.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </>
+                  )}
                 </div>
-              )}
+
+                {story && (
+                  <div className={`text-sm px-3 py-1 rounded-full ${story.published ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                    {story.published ? (locale === 'fr' ? 'Publié' : 'Published') : (locale === 'fr' ? 'Brouillon' : 'Draft')}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-6">

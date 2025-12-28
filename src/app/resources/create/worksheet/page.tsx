@@ -1179,9 +1179,12 @@ function CreateWorksheetContent() {
           }))
       }
 
-      if (isEditMode && editId) {
-        // Update existing resource
-        await updateResource(editId, {
+      // Check if we have an existing resource to update (either from edit mode or auto-saved draft)
+      const existingResourceId = editId || autoSaveDraftId
+
+      if (existingResourceId) {
+        // Update existing resource (either editing or updating auto-saved draft)
+        await updateResource(existingResourceId, {
           title,
           description: description || undefined,
           category: selectedCategory || undefined,

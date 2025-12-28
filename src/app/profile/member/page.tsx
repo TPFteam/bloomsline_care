@@ -13,6 +13,7 @@ import {
   Edit2,
   Check,
   X,
+  Trash2,
 } from 'lucide-react'
 import MemberLayout from '@/components/member/MemberLayout'
 import { useLanguage } from '@/lib/i18n/context'
@@ -38,6 +39,7 @@ export default function MemberProfilePage() {
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<MemberProfile | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [removing, setRemoving] = useState(false)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editForm, setEditForm] = useState({ first_name: '', last_name: '', phone: '' })
@@ -58,8 +60,10 @@ export default function MemberProfilePage() {
       cancel: 'Cancel',
       saving: 'Saving...',
       photoUpdated: 'Photo updated',
+      photoRemoved: 'Photo removed',
       profileUpdated: 'Profile updated',
       errorUpdating: 'Error updating profile',
+      removePhoto: 'Remove photo',
     },
     fr: {
       title: 'Profil',
@@ -76,8 +80,10 @@ export default function MemberProfilePage() {
       cancel: 'Annuler',
       saving: 'Enregistrement...',
       photoUpdated: 'Photo mise à jour',
+      photoRemoved: 'Photo supprimée',
       profileUpdated: 'Profil mis à jour',
       errorUpdating: 'Erreur lors de la mise à jour',
+      removePhoto: 'Supprimer la photo',
     },
   }
 
@@ -153,6 +159,29 @@ export default function MemberProfilePage() {
       toast.error(text.errorUpdating)
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handleRemovePhoto = async () => {
+    if (!profile || !profile.avatar_url) return
+
+    setRemoving(true)
+    try {
+      // Update database to remove avatar_url
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({ avatar_url: null })
+        .eq('id', profile.id)
+
+      if (updateError) throw updateError
+
+      setProfile({ ...profile, avatar_url: undefined })
+      toast.success(text.photoRemoved)
+    } catch (error) {
+      console.error('Error removing photo:', error)
+      toast.error(text.errorUpdating)
+    } finally {
+      setRemoving(false)
     }
   }
 
@@ -270,7 +299,7 @@ export default function MemberProfilePage() {
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
+              disabled={uploading || removing}
               className="absolute -bottom-2 -right-2 w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors"
             >
               {uploading ? (
@@ -280,7 +309,30 @@ export default function MemberProfilePage() {
               )}
             </button>
           </div>
-          <p className="text-sm text-gray-500 mt-3">{text.changePhoto}</p>
+          <div className="flex items-center gap-3 mt-3">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || removing}
+              className="text-sm text-emerald-600 hover:text-emerald-700 transition-colors"
+            >
+              {text.changePhoto}
+            </button>
+            {profile?.avatar_url && (
+              <>
+                <span className="text-gray-300">|</span>
+                <button
+                  onClick={handleRemovePhoto}
+                  disabled={uploading || removing}
+                  className="text-sm text-red-500 hover:text-red-600 transition-colors flex items-center gap-1"
+                >
+                  {removing ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : null}
+                  {text.removePhoto}
+                </button>
+              </>
+            )}
+          </div>
         </motion.div>
 
         {/* Profile Info */}

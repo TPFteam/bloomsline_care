@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { motion, AnimatePresence, Reorder } from 'framer-motion'
+import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion'
 import {
   ArrowLeft,
   Save,
@@ -219,6 +219,27 @@ const educationTemplates = [
     learningObjectives: [''],
   },
 ]
+
+// Draggable block wrapper component for handle-only drag
+function DraggableBlockWrapper({
+  block,
+  children
+}: {
+  block: ContentBlock
+  children: (dragControls: ReturnType<typeof useDragControls>) => React.ReactNode
+}) {
+  const dragControls = useDragControls()
+
+  return (
+    <Reorder.Item
+      value={block}
+      dragListener={false}
+      dragControls={dragControls}
+    >
+      {children(dragControls)}
+    </Reorder.Item>
+  )
+}
 
 function CreatePsychoeducationContent() {
   const { t, locale } = useLanguage()
@@ -917,9 +938,12 @@ function CreatePsychoeducationContent() {
         estimatedReadingTime: estimateReadingTime(),
       }
 
-      if (isEditMode && editId) {
-        // Update existing resource
-        await updateResource(editId, {
+      // Check if we have an existing resource to update (either from edit mode or auto-saved draft)
+      const existingResourceId = editId || autoSaveDraftId
+
+      if (existingResourceId) {
+        // Update existing resource (either editing or updating auto-saved draft)
+        await updateResource(existingResourceId, {
           title,
           description: description || undefined,
           category: selectedCategory || undefined,
@@ -1308,7 +1332,7 @@ function CreatePsychoeducationContent() {
   }
 
   // Render block editor
-  const renderBlockEditor = (block: ContentBlock) => {
+  const renderBlockEditor = (block: ContentBlock, dragControls?: ReturnType<typeof useDragControls>) => {
     const isExpanded = expandedBlock === block.id
     const blockType = contentBlockTypes.find(bt => bt.type === block.type)
     const Icon = blockType?.icon || BookOpen
@@ -1323,7 +1347,13 @@ function CreatePsychoeducationContent() {
           className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer rounded-lg transition-colors ${isExpanded ? 'bg-gray-50/80' : 'hover:bg-gray-100/60'}`}
           onClick={() => setExpandedBlock(isExpanded ? null : block.id)}
         >
-          <div className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400 touch-none select-none">
+          <div
+            className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400 touch-none select-none"
+            onPointerDown={(e) => {
+              e.stopPropagation()
+              dragControls?.start(e)
+            }}
+          >
             <GripVertical className="w-4 h-4" />
           </div>
 
@@ -1393,11 +1423,21 @@ function CreatePsychoeducationContent() {
                       {locale === 'fr' ? 'Contenu' : 'Content'}
                     </label>
                     <textarea
+                      ref={(el) => {
+                        // Auto-resize on mount when content exists
+                        if (el && block.content) {
+                          el.style.height = 'auto'
+                          el.style.height = el.scrollHeight + 'px'
+                        }
+                      }}
                       value={block.content}
-                      onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                      onChange={(e) => {
+                        updateBlock(block.id, { content: e.target.value })
+                        e.target.style.height = 'auto'
+                        e.target.style.height = e.target.scrollHeight + 'px'
+                      }}
                       placeholder={locale === 'fr' ? 'Écrivez votre contenu éducatif...' : 'Write your educational content...'}
-                      rows={5}
-                      className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none"
+                      className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-y min-h-[120px] overflow-hidden"
                     />
                   </div>
                 )}
@@ -1490,11 +1530,20 @@ function CreatePsychoeducationContent() {
                         {locale === 'fr' ? 'Contenu' : 'Content'}
                       </label>
                       <textarea
+                        ref={(el) => {
+                          if (el && block.content) {
+                            el.style.height = 'auto'
+                            el.style.height = el.scrollHeight + 'px'
+                          }
+                        }}
                         value={block.content}
-                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        onChange={(e) => {
+                          updateBlock(block.id, { content: e.target.value })
+                          e.target.style.height = 'auto'
+                          e.target.style.height = e.target.scrollHeight + 'px'
+                        }}
                         placeholder={locale === 'fr' ? 'Contenu de l\'encadré...' : 'Callout content...'}
-                        rows={3}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-y min-h-[80px] overflow-hidden"
                       />
                     </div>
                   </>
@@ -1508,11 +1557,20 @@ function CreatePsychoeducationContent() {
                         {locale === 'fr' ? 'Citation' : 'Quote'}
                       </label>
                       <textarea
+                        ref={(el) => {
+                          if (el && block.content) {
+                            el.style.height = 'auto'
+                            el.style.height = el.scrollHeight + 'px'
+                          }
+                        }}
                         value={block.content}
-                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        onChange={(e) => {
+                          updateBlock(block.id, { content: e.target.value })
+                          e.target.style.height = 'auto'
+                          e.target.style.height = e.target.scrollHeight + 'px'
+                        }}
                         placeholder={locale === 'fr' ? 'Entrez la citation...' : 'Enter the quote...'}
-                        rows={3}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl italic focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl italic focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-y min-h-[80px] overflow-hidden"
                       />
                     </div>
                     <div>
@@ -1990,11 +2048,20 @@ function CreatePsychoeducationContent() {
                         {locale === 'fr' ? 'Description (optionnel)' : 'Description (optional)'}
                       </label>
                       <textarea
+                        ref={(el) => {
+                          if (el && block.content) {
+                            el.style.height = 'auto'
+                            el.style.height = el.scrollHeight + 'px'
+                          }
+                        }}
                         value={block.content || ''}
-                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        onChange={(e) => {
+                          updateBlock(block.id, { content: e.target.value })
+                          e.target.style.height = 'auto'
+                          e.target.style.height = e.target.scrollHeight + 'px'
+                        }}
                         placeholder={locale === 'fr' ? 'Brève description du contenu...' : 'Brief description of the content...'}
-                        rows={2}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent resize-none"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent resize-y min-h-[60px] overflow-hidden"
                       />
                     </div>
 
@@ -2349,9 +2416,9 @@ function CreatePsychoeducationContent() {
                       <div className="space-y-3">
                         <Reorder.Group axis="y" values={blocks} onReorder={setBlocks}>
                           {blocks.map((block) => (
-                            <Reorder.Item key={block.id} value={block}>
-                              {renderBlockEditor(block)}
-                            </Reorder.Item>
+                            <DraggableBlockWrapper key={block.id} block={block}>
+                              {(dragControls) => renderBlockEditor(block, dragControls)}
+                            </DraggableBlockWrapper>
                           ))}
                         </Reorder.Group>
                       </div>
