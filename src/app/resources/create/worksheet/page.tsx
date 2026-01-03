@@ -42,6 +42,10 @@ import {
   CircleDot,
   ToggleLeft,
   Smile,
+  Laugh,
+  Meh,
+  Frown,
+  Angry,
   Calendar,
   Clock,
   Minus,
@@ -319,13 +323,31 @@ const likertPresets = {
   },
 }
 
-// Default mood options with scoring values
+// Mood icon mapping
+const moodIcons: Record<string, React.ElementType> = {
+  'Angry': Angry,
+  'Frown': Frown,
+  'Meh': Meh,
+  'Smile': Smile,
+  'Laugh': Laugh,
+}
+
+// Mood icon colors
+const moodColors: Record<string, string> = {
+  'Angry': 'text-red-500',
+  'Frown': 'text-orange-500',
+  'Meh': 'text-amber-500',
+  'Smile': 'text-teal-500',
+  'Laugh': 'text-emerald-500',
+}
+
+// Default mood options with scoring values (using icon names)
 const defaultScoredMoodOptions = [
-  { emoji: '🌧️', label: 'Struggling', value: 1 },
-  { emoji: '🍂', label: 'Low', value: 2 },
-  { emoji: '🌱', label: 'Okay', value: 3 },
-  { emoji: '🌿', label: 'Good', value: 4 },
-  { emoji: '🌸', label: 'Thriving', value: 5 },
+  { emoji: 'Angry', label: 'Struggling', value: 1 },
+  { emoji: 'Frown', label: 'Low', value: 2 },
+  { emoji: 'Meh', label: 'Okay', value: 3 },
+  { emoji: 'Smile', label: 'Good', value: 4 },
+  { emoji: 'Laugh', label: 'Thriving', value: 5 },
 ]
 
 // Worksheet templates for quick start
@@ -391,12 +413,13 @@ function CreateWorksheetContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
+  const templateParam = searchParams.get('template')
 
   // User state for file uploads
   const [userId, setUserId] = useState<string | null>(null)
 
-  // Step state - start at 'build' if editing, otherwise 'template'
-  const [step, setStep] = useState<'template' | 'build' | 'details'>(editId ? 'build' : 'template')
+  // Step state - start at 'build' if editing or template param provided, otherwise 'template'
+  const [step, setStep] = useState<'template' | 'build' | 'details'>(editId || templateParam ? 'build' : 'template')
   // Sub-steps for the details wizard: 1=Details, 2=Scoring, 3=Publish
   const [detailsStep, setDetailsStep] = useState<1 | 2 | 3>(1)
 
@@ -462,9 +485,27 @@ function CreateWorksheetContent() {
     getUser()
   }, [])
 
-  // Reset form when creating new resource (no editId)
+  // Apply template from URL parameter (skip template selection step)
   useEffect(() => {
-    if (!editId) {
+    if (templateParam && !editId) {
+      const generateId = () => Math.random().toString(36).substr(2, 9)
+      if (templateParam === 'blank') {
+        setBlocks([])
+        setTitle('')
+      } else {
+        const template = worksheetTemplates.find(t => t.id === templateParam)
+        if (template && template.id !== 'blank') {
+          setBlocks(template.blocks.map(b => ({ ...b, id: generateId() })))
+          setTitle(template.name[locale])
+        }
+      }
+      setSelectedTemplate(templateParam)
+    }
+  }, [templateParam, editId, locale])
+
+  // Reset form when creating new resource (no editId and no templateParam)
+  useEffect(() => {
+    if (!editId && !templateParam) {
       // Reset all form state for new resource
       setTitle('')
       setDescription('')
@@ -482,7 +523,7 @@ function CreateWorksheetContent() {
       setScoringRanges([])
       setAutoSaveDraftId(null)
     }
-  }, [editId])
+  }, [editId, templateParam])
 
   // Load existing resource for edit mode
   useEffect(() => {
@@ -626,11 +667,11 @@ function CreateWorksheetContent() {
 
   // Default mood options - nature/wellness themed
   const defaultMoodOptions = [
-    { emoji: '🌧️', label: locale === 'fr' ? 'Difficile' : 'Struggling' },
-    { emoji: '🍂', label: locale === 'fr' ? 'Fragile' : 'Low' },
-    { emoji: '🌱', label: locale === 'fr' ? 'Neutre' : 'Okay' },
-    { emoji: '🌿', label: locale === 'fr' ? 'Bien' : 'Good' },
-    { emoji: '🌸', label: locale === 'fr' ? 'Épanoui' : 'Thriving' },
+    { emoji: 'Angry', label: locale === 'fr' ? 'Difficile' : 'Struggling' },
+    { emoji: 'Frown', label: locale === 'fr' ? 'Fragile' : 'Low' },
+    { emoji: 'Meh', label: locale === 'fr' ? 'Neutre' : 'Okay' },
+    { emoji: 'Smile', label: locale === 'fr' ? 'Bien' : 'Good' },
+    { emoji: 'Laugh', label: locale === 'fr' ? 'Épanoui' : 'Thriving' },
   ]
 
   // Add new block
@@ -1710,7 +1751,14 @@ function CreateWorksheetContent() {
                         : 'hover:bg-gray-50'
                     } ${testSubmitted && isTestMode ? 'cursor-not-allowed opacity-80' : ''}`}
                   >
-                    <span className="text-3xl">{mood.emoji}</span>
+                    {moodIcons[mood.emoji] ? (
+                      (() => {
+                        const Icon = moodIcons[mood.emoji]
+                        return <Icon className={`w-8 h-8 ${moodColors[mood.emoji] || 'text-gray-500'}`} />
+                      })()
+                    ) : (
+                      <span className="text-3xl">{mood.emoji}</span>
+                    )}
                     <span className="text-xs text-gray-600">{mood.label}</span>
                   </button>
                 )
@@ -3170,7 +3218,14 @@ function CreateWorksheetContent() {
                             key={index}
                             className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-white/50 transition-all"
                           >
-                            <span className="text-2xl sm:text-3xl">{mood.emoji}</span>
+                            {moodIcons[mood.emoji] ? (
+                              (() => {
+                                const Icon = moodIcons[mood.emoji]
+                                return <Icon className={`w-6 h-6 sm:w-8 sm:h-8 ${moodColors[mood.emoji] || 'text-gray-500'}`} />
+                              })()
+                            ) : (
+                              <span className="text-2xl sm:text-3xl">{mood.emoji}</span>
+                            )}
                             <span className="text-xs text-gray-600 hidden sm:block">{mood.label}</span>
                           </button>
                         ))}
@@ -3396,14 +3451,14 @@ function CreateWorksheetContent() {
                         </p>
                         <div className="flex flex-wrap gap-4 justify-center">
                           {[
-                            { emoji: '🌸', label: locale === 'fr' ? 'Épanoui' : 'Thriving', color: 'text-pink-500' },
-                            { emoji: '🌿', label: locale === 'fr' ? 'Bien' : 'Good', color: 'text-emerald-500' },
-                            { emoji: '🌱', label: locale === 'fr' ? 'Neutre' : 'Okay', color: 'text-teal-500' },
-                            { emoji: '🍂', label: locale === 'fr' ? 'Fragile' : 'Low', color: 'text-amber-500' },
-                            { emoji: '🌧️', label: locale === 'fr' ? 'Difficile' : 'Struggling', color: 'text-slate-400' },
+                            { icon: Laugh, label: locale === 'fr' ? 'Épanoui' : 'Thriving', color: 'text-emerald-500' },
+                            { icon: Smile, label: locale === 'fr' ? 'Bien' : 'Good', color: 'text-teal-500' },
+                            { icon: Meh, label: locale === 'fr' ? 'Neutre' : 'Okay', color: 'text-amber-500' },
+                            { icon: Frown, label: locale === 'fr' ? 'Fragile' : 'Low', color: 'text-orange-500' },
+                            { icon: Angry, label: locale === 'fr' ? 'Difficile' : 'Struggling', color: 'text-red-500' },
                           ].map((mood, i) => (
                             <div key={i} className="flex flex-col items-center gap-1.5">
-                              <span className="text-2xl">{mood.emoji}</span>
+                              <mood.icon className={`w-6 h-6 ${mood.color}`} />
                               <span className={`text-[10px] font-medium ${mood.color}`}>{mood.label}</span>
                             </div>
                           ))}
@@ -3797,7 +3852,14 @@ function CreateWorksheetContent() {
                     <div className="flex flex-wrap gap-3 justify-center">
                       {(block.moodOptions || defaultScoredMoodOptions).map((mood, index) => (
                         <div key={index} className="flex flex-col items-center gap-1">
-                          <span className="text-xl">{mood.emoji}</span>
+                          {moodIcons[mood.emoji] ? (
+                            (() => {
+                              const Icon = moodIcons[mood.emoji]
+                              return <Icon className={`w-6 h-6 ${moodColors[mood.emoji] || 'text-gray-500'}`} />
+                            })()
+                          ) : (
+                            <span className="text-xl">{mood.emoji}</span>
+                          )}
                           <input
                             type="number"
                             min="0"
@@ -4137,17 +4199,18 @@ function CreateWorksheetContent() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center justify-between mb-6"
               >
-                <motion.div whileHover={{ x: -4 }} className="inline-block">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setStep('template')}
-                    className="rounded-xl hover:bg-white/80"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    {locale === 'fr' ? 'Modèles' : 'Templates'}
-                  </Button>
-                </motion.div>
+                <Link href="/resources/create">
+                  <motion.div whileHover={{ x: -4 }} className="inline-block">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-xl hover:bg-white/80"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      {locale === 'fr' ? 'Retour' : 'Back'}
+                    </Button>
+                  </motion.div>
+                </Link>
                 <div className="flex items-center gap-2">
                   {/* Auto-save Status Indicator */}
                   <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">

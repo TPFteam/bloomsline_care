@@ -1,0 +1,161 @@
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  Bell,
+  Moon,
+  Sun,
+  MessageCircle,
+  User,
+  Settings,
+  LogOut,
+  Globe,
+} from 'lucide-react'
+import { useLanguage } from '@/lib/i18n/context'
+import { useTheme } from '@/lib/theme/context'
+import { createClient } from '@/lib/supabase/browser-client'
+import { useRouter } from 'next/navigation'
+import type { User as UserType } from '@/types/user'
+
+interface AppHeaderProps {
+  user: UserType | null
+  leftContent?: React.ReactNode
+}
+
+export function AppHeader({ user, leftContent }: AppHeaderProps) {
+  const { locale, setLocale } = useLanguage()
+  const { theme, toggleTheme } = useTheme()
+  const router = useRouter()
+  const supabase = createClient()
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+  }
+
+  return (
+    <header className="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-8 h-[65px] flex items-center transition-colors">
+      <div className="flex items-center justify-between w-full">
+        {leftContent}
+
+        <div className="flex items-center gap-3">
+          {/* Talk to Bloom */}
+          <Link href="/bloom">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-sm text-gray-900 dark:text-gray-100 font-medium">
+              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-lavender-400 to-teal-400 flex items-center justify-center">
+                <MessageCircle className="w-3 h-3 text-white" />
+              </div>
+              <span>{locale === 'fr' ? 'Parler à Bloom' : 'Talk to Bloom'}</span>
+            </div>
+          </Link>
+
+          {/* Dark mode toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
+
+          <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors">
+            <Bell className="w-5 h-5" />
+          </button>
+
+          {/* Profile Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors"
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-lavender-500 rounded-full flex items-center justify-center text-white text-sm font-medium overflow-hidden">
+                {user?.avatar_url ? (
+                  <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  user?.full_name?.[0] || 'U'
+                )}
+              </div>
+            </button>
+
+            {/* Dropdown Menu */}
+            <AnimatePresence>
+              {showProfileMenu && (
+                <>
+                  {/* Backdrop */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowProfileMenu(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg z-50 overflow-hidden"
+                  >
+                    <div className="p-2">
+                      <Link
+                        href="/profile"
+                        onClick={() => setShowProfileMenu(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <User className="w-4 h-4" />
+                        <span>{locale === 'fr' ? 'Profil' : 'Profile'}</span>
+                      </Link>
+                      <Link
+                        href="/settings"
+                        onClick={() => setShowProfileMenu(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <Settings className="w-4 h-4" />
+                        <span>{locale === 'fr' ? 'Paramètres' : 'Settings'}</span>
+                      </Link>
+                      <div className="flex items-center gap-2 px-3 py-2">
+                        <Globe className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-full p-0.5">
+                          <button
+                            onClick={() => setLocale('en')}
+                            className={`px-2 py-0.5 text-xs font-medium rounded-full transition-all ${
+                              locale === 'en'
+                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
+                          >
+                            EN
+                          </button>
+                          <button
+                            onClick={() => setLocale('fr')}
+                            className={`px-2 py-0.5 text-xs font-medium rounded-full transition-all ${
+                              locale === 'fr'
+                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
+                          >
+                            FR
+                          </button>
+                        </div>
+                      </div>
+                      <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false)
+                          handleSignOut()
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>{locale === 'fr' ? 'Déconnexion' : 'Log out'}</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+    </header>
+  )
+}

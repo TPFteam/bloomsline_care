@@ -304,14 +304,14 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-lavender-100 to-lavender-200 flex items-center justify-center shadow-sm">
-            <Clock className="w-5 h-5 text-lavender-600" />
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center ">
+            <Clock className="w-5 h-5 text-blue-600" />
           </div>
           {t.members.sessions.title}
         </h2>
         <Button
           onClick={() => setShowScheduleModal(true)}
-          className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-smooth hover-lift"
+          className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
         >
           <Plus className="w-4 h-4 mr-2" />
           {t.members.sessions.addSession}
@@ -327,7 +327,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
             exit={{ opacity: 0, y: -10, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] p-6 shadow-lg shadow-gray-200/40 border border-white/60">
+            <div className="bg-white rounded-2xl p-6  border border-gray-200">
               <h3 className="font-semibold text-gray-900 mb-5 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-lavender-500" />
                 {t.members.sessions.scheduleSession}
@@ -341,7 +341,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   <select
                     value={sessionType}
                     onChange={(e) => setSessionType(e.target.value as SessionType)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white/80 backdrop-blur-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white "
                   >
                     <option value="initial_consultation">{t.members.sessionTypes.initial_consultation}</option>
                     <option value="follow_up">{t.members.sessionTypes.follow_up}</option>
@@ -358,7 +358,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   <select
                     value={sessionFormat}
                     onChange={(e) => setSessionFormat(e.target.value as SessionFormat)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white/80 backdrop-blur-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white "
                   >
                     <option value="in_person">{t.members.sessionFormats.in_person}</option>
                     <option value="virtual">{t.members.sessionFormats.virtual}</option>
@@ -377,7 +377,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                     type="datetime-local"
                     value={scheduledAt}
                     onChange={(e) => setScheduledAt(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white/80 backdrop-blur-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white "
                   />
                 </div>
                 <div>
@@ -387,7 +387,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   <select
                     value={duration}
                     onChange={(e) => setDuration(Number(e.target.value))}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white/80 backdrop-blur-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white "
                   >
                     <option value={30}>30 {t.members.sessions.minutes}</option>
                     <option value={45}>45 {t.members.sessions.minutes}</option>
@@ -407,7 +407,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   onChange={(e) => setSummary(e.target.value)}
                   placeholder="Session summary..."
                   rows={3}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none resize-none bg-white/80 backdrop-blur-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none resize-none bg-white "
                 />
               </div>
 
@@ -418,7 +418,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                 <Button
                   onClick={handleAddSession}
                   disabled={saving}
-                  className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50"
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50"
                 >
                   {saving ? t.members.form.saving : t.members.sessions.scheduleSession}
                 </Button>
@@ -432,10 +432,10 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] p-6 shadow-lg shadow-gray-200/40 border border-white/60 hover-lift"
+        className="bg-white rounded-2xl p-6  border border-gray-200 hover-lift"
       >
         <h3 className="font-semibold text-gray-900 mb-5 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center shadow-sm">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center ">
             <Calendar className="w-5 h-5 text-blue-600" />
           </div>
           {t.members.sessions.upcomingSessions}
@@ -448,7 +448,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
         {upcomingSessions.length === 0 ? (
           <div className="text-center py-10">
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4 ">
               <Calendar className="w-7 h-7 text-blue-400" />
             </div>
             <p className="text-sm font-medium text-gray-500">{t.members.sessions.noUpcoming}</p>
@@ -565,7 +565,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           : hasPendingProposal
                           ? 'from-purple-100 to-purple-200'
                           : 'from-blue-100 to-blue-200'
-                      } flex items-center justify-center shadow-sm`}>
+                      } flex items-center justify-center `}>
                         <FormatIcon className={`w-6 h-6 ${
                           hasRescheduleRequest
                             ? 'text-amber-600'
@@ -596,10 +596,10 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           })}
                         </p>
                         <div className="flex items-center gap-3 mt-2">
-                          <span className="text-xs text-gray-400 glass-subtle px-2 py-1 rounded-lg">
+                          <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
                             {session.duration_minutes} {t.members.sessions.minutes}
                           </span>
-                          <span className="text-xs text-gray-400 glass-subtle px-2 py-1 rounded-lg">
+                          <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
                             {t.members.sessionFormats[session.session_format]}
                           </span>
                         </div>
@@ -623,7 +623,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                         variant="ghost"
                         size="sm"
                         onClick={() => handleUpdateStatus(session.id, 'completed')}
-                        className="h-10 w-10 p-0 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-smooth"
+                        className="h-10 w-10 p-0 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
                         title={t.members.sessions.markComplete}
                       >
                         <Check className="w-5 h-5" />
@@ -632,7 +632,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                         variant="ghost"
                         size="sm"
                         onClick={() => handleUpdateStatus(session.id, 'cancelled')}
-                        className="h-10 w-10 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-smooth"
+                        className="h-10 w-10 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                         title={t.members.sessions.cancel}
                       >
                         <X className="w-5 h-5" />
@@ -662,7 +662,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           variant="ghost"
                           size="sm"
                           onClick={() => setDeletingSessionId(session.id)}
-                          className="h-10 w-10 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-smooth"
+                          className="h-10 w-10 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                           title="Delete session"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -682,10 +682,10 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] p-6 shadow-lg shadow-gray-200/40 border border-white/60"
+        className="bg-white rounded-2xl p-6  border border-gray-200"
       >
         <h3 className="font-semibold text-gray-900 mb-5 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-sm">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center ">
             <Clock className="w-5 h-5 text-gray-600" />
           </div>
           {t.members.sessions.pastSessions}
@@ -698,7 +698,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
         {pastSessions.length === 0 ? (
           <div className="text-center py-10">
-            <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+            <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4 ">
               <Clock className="w-7 h-7 text-gray-400" />
             </div>
             <p className="text-sm font-medium text-gray-500">{t.members.sessions.noPast}</p>
@@ -718,7 +718,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-white/80 flex items-center justify-center shadow-sm">
+                      <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center ">
                         <FormatIcon className="w-6 h-6 text-gray-600" />
                       </div>
                       <div className="flex-1">
@@ -750,7 +750,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             <div className="flex items-start gap-2">
                               <FileText className="w-4 h-4 text-lavender-500 mt-0.5 flex-shrink-0" />
                               <div>
-                                <p className="text-xs font-medium text-lavender-600 mb-1">Summary</p>
+                                <p className="text-xs font-medium text-blue-600 mb-1">Summary</p>
                                 <p className="text-sm text-gray-700 whitespace-pre-wrap">
                                   {session.summary}
                                 </p>
@@ -766,7 +766,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                         variant="ghost"
                         size="sm"
                         onClick={() => handleStartEdit(session)}
-                        className="h-8 px-3 text-xs text-lavender-600 hover:bg-lavender-50 rounded-lg transition-smooth"
+                        className="h-8 px-3 text-xs text-blue-600 hover:bg-gray-50 rounded-lg transition-colors"
                       >
                         <Pencil className="w-3.5 h-3.5 mr-1" />
                         Edit
@@ -778,7 +778,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             variant="ghost"
                             size="sm"
                             onClick={() => handleUpdateStatus(session.id, 'completed')}
-                            className="h-8 px-3 text-xs text-emerald-600 hover:bg-emerald-50 rounded-lg transition-smooth"
+                            className="h-8 px-3 text-xs text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                           >
                             <Check className="w-3.5 h-3.5 mr-1" />
                             {t.members.sessions.markComplete}
@@ -787,7 +787,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             variant="ghost"
                             size="sm"
                             onClick={() => handleUpdateStatus(session.id, 'no_show')}
-                            className="h-8 px-3 text-xs text-red-500 hover:bg-red-50 rounded-lg transition-smooth"
+                            className="h-8 px-3 text-xs text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                           >
                             <X className="w-3.5 h-3.5 mr-1" />
                             No Show
@@ -795,7 +795,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                         </div>
                       )}
                       {session.mood_rating && (
-                        <div className="text-right glass-subtle px-3 py-2 rounded-xl">
+                        <div className="text-right bg-gray-50 px-3 py-2 rounded-xl">
                           <p className="text-xs text-gray-400 mb-0.5">{t.members.sessions.mood}</p>
                           <p className="font-bold text-gray-700 text-lg">{session.mood_rating}<span className="text-sm text-gray-400">/10</span></p>
                         </div>
@@ -826,7 +826,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           variant="ghost"
                           size="sm"
                           onClick={() => setDeletingSessionId(session.id)}
-                          className="h-8 px-3 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-smooth"
+                          className="h-8 px-3 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5 mr-1" />
                           Delete
@@ -848,7 +848,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/50  z-50 flex items-center justify-center p-4"
             onClick={handleCancelEdit}
           >
             <motion.div
@@ -882,7 +882,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   <select
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value as SessionStatus)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
                   >
                     <option value="scheduled">{t.members.sessionStatus.scheduled}</option>
                     <option value="completed">{t.members.sessionStatus.completed}</option>
@@ -900,7 +900,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                     <select
                       value={editSessionType}
                       onChange={(e) => setEditSessionType(e.target.value as SessionType)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
                     >
                       <option value="initial_consultation">{t.members.sessionTypes.initial_consultation}</option>
                       <option value="follow_up">{t.members.sessionTypes.follow_up}</option>
@@ -917,7 +917,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                     <select
                       value={editSessionFormat}
                       onChange={(e) => setEditSessionFormat(e.target.value as SessionFormat)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
                     >
                       <option value="in_person">{t.members.sessionFormats.in_person}</option>
                       <option value="virtual">{t.members.sessionFormats.virtual}</option>
@@ -936,7 +936,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                       type="datetime-local"
                       value={editScheduledAt}
                       onChange={(e) => setEditScheduledAt(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
                     />
                   </div>
                   <div>
@@ -946,7 +946,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                     <select
                       value={editDuration}
                       onChange={(e) => setEditDuration(Number(e.target.value))}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
                     >
                       <option value={30}>30 {t.members.sessions.minutes}</option>
                       <option value={45}>45 {t.members.sessions.minutes}</option>
@@ -967,7 +967,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                     onChange={(e) => setEditSummary(e.target.value)}
                     placeholder="Summary of what was discussed or accomplished..."
                     rows={3}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none resize-none bg-white"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none resize-none bg-white"
                   />
                 </div>
               </div>
@@ -984,7 +984,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                 <Button
                   onClick={handleSaveEdit}
                   disabled={saving}
-                  className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50"
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50"
                 >
                   {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
@@ -1011,7 +1011,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/50  z-50 flex items-center justify-center p-4"
             onClick={() => setProposingSession(null)}
           >
             <motion.div

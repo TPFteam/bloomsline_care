@@ -64,7 +64,7 @@ const MilestoneCard = memo(function MilestoneCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all group"
+      className="bg-white rounded-xl p-4  border border-gray-100 hover:shadow-md transition-all group"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -74,7 +74,7 @@ const MilestoneCard = memo(function MilestoneCard({
               {categoryLabel}
             </span>
             {milestone.shared_with_member && (
-              <span className="flex items-center gap-1 text-xs text-lavender-600 bg-lavender-50 px-1.5 py-0.5 rounded-full">
+              <span className="flex items-center gap-1 text-xs text-blue-600 bg-lavender-50 px-1.5 py-0.5 rounded-full">
                 <Eye className="w-3 h-3" />
                 Shared
               </span>
@@ -94,8 +94,8 @@ const MilestoneCard = memo(function MilestoneCard({
             onClick={() => onToggleShare(milestone.id, milestone.shared_with_member)}
             className={`p-1.5 rounded-lg transition-all ${
               milestone.shared_with_member
-                ? 'text-lavender-600 bg-lavender-50 hover:bg-lavender-100'
-                : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-lavender-600 hover:bg-lavender-50'
+                ? 'text-blue-600 bg-lavender-50 hover:bg-lavender-100'
+                : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-600 hover:bg-gray-50'
             }`}
             title={milestone.shared_with_member ? 'Hide from member' : 'Share with member'}
           >
@@ -390,7 +390,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-8 text-center">
+        <div className="bg-white rounded-2xl  border border-gray-200 p-8 text-center">
           <div className="w-12 h-12 border-4 border-lavender-500 border-t-transparent rounded-full animate-spin mx-auto mb-4 animate-pulse-glow"></div>
           <p className="text-gray-500 font-medium">Loading goals...</p>
         </div>
@@ -403,14 +403,14 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-lavender-100 to-lavender-200 flex items-center justify-center shadow-sm">
-            <TrendingUp className="w-5 h-5 text-lavender-600" />
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center ">
+            <TrendingUp className="w-5 h-5 text-blue-600" />
           </div>
           {t.members.progress.title}
         </h2>
         <Button
           onClick={() => setShowAddMilestone(!showAddMilestone)}
-          className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-smooth hover-lift"
+          className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Goal
@@ -425,7 +425,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
           className="grid grid-cols-4 gap-3"
         >
           {/* Total Goals Card */}
-          <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-4 shadow-sm border border-white/60">
+          <div className="bg-white rounded-2xl p-4  border border-gray-200">
             <p className="text-xs text-gray-500 mb-1">Total Goals</p>
             <p className="text-2xl font-bold text-gray-900">{milestones.length}</p>
           </div>
@@ -473,7 +473,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
             exit={{ opacity: 0, y: -10, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6">
+            <div className="bg-white rounded-2xl  border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                   <Target className="w-5 h-5 text-lavender-500" />
@@ -497,7 +497,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g., Practice breathing exercises daily"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white/80 backdrop-blur-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white "
                   />
                 </div>
 
@@ -510,7 +510,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Additional details about this goal..."
                     rows={2}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none resize-none bg-white/80 backdrop-blur-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none resize-none bg-white "
                   />
                 </div>
 
@@ -522,7 +522,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
                     <select
                       value={category}
                       onChange={(e) => setCategory(e.target.value as MilestoneCategory)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white/80 backdrop-blur-sm"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white "
                     >
                       <option value="general">{t.members.milestoneCategories.general}</option>
                       <option value="therapy_goal">{t.members.milestoneCategories.therapy_goal}</option>
@@ -539,7 +539,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
                     <select
                       value={initialStatus}
                       onChange={(e) => setInitialStatus(e.target.value as MilestoneStatus)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white/80 backdrop-blur-sm"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white "
                     >
                       <option value="planned">Planned</option>
                       <option value="in_progress">In Progress</option>
@@ -555,7 +555,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
                       type="date"
                       value={targetDate}
                       onChange={(e) => setTargetDate(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white/80 backdrop-blur-sm"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white "
                     />
                   </div>
                 </div>
@@ -568,7 +568,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
                         shareWithMember ? 'bg-lavender-100' : 'bg-gray-100 group-hover:bg-gray-200'
                       }`}>
                         {shareWithMember ? (
-                          <Eye className="w-5 h-5 text-lavender-600" />
+                          <Eye className="w-5 h-5 text-blue-600" />
                         ) : (
                           <EyeOff className="w-5 h-5 text-gray-400" />
                         )}
@@ -585,7 +585,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
                       onClick={() => setShareWithMember(!shareWithMember)}
                     >
                       <div
-                        className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
+                        className={`absolute top-0.5 w-5 h-5 bg-white rounded-full  transition-transform ${
                           shareWithMember ? 'translate-x-5.5 left-0.5' : 'left-0.5'
                         }`}
                         style={{ transform: shareWithMember ? 'translateX(22px)' : 'translateX(0)' }}
@@ -602,7 +602,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
                 <Button
                   onClick={handleAddMilestone}
                   disabled={saving}
-                  className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50"
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50"
                 >
                   {saving ? 'Adding...' : 'Add Goal'}
                 </Button>
@@ -617,12 +617,12 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-16 text-center"
+          className="bg-white rounded-2xl  border border-gray-200 p-16 text-center"
         >
           <div className="relative inline-block">
             <div className="absolute inset-0 bg-gradient-to-br from-lavender-400/30 to-mint-400/30 rounded-3xl blur-xl" />
-            <div className="relative w-20 h-20 bg-gradient-to-br from-lavender-100 to-lavender-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-              <Target className="w-10 h-10 text-lavender-600" />
+            <div className="relative w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <Target className="w-10 h-10 text-blue-600" />
             </div>
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-3">
@@ -633,7 +633,7 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
           </p>
           <Button
             onClick={() => setShowAddMilestone(true)}
-            className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50 px-6 transition-smooth hover-lift"
+            className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 px-6 transition-colors hover-lift"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add First Goal
@@ -655,12 +655,12 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
                 <div className="p-4 border-b border-white/50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className={`w-8 h-8 rounded-lg bg-white/80 flex items-center justify-center shadow-sm`}>
+                      <div className={`w-8 h-8 rounded-lg bg-white flex items-center justify-center `}>
                         <Icon className={`w-4 h-4 ${column.color}`} />
                       </div>
                       <h3 className="font-semibold text-gray-900">{column.title}</h3>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold bg-white/80 ${column.color}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold bg-white ${column.color}`}>
                       {column.items.length}
                     </span>
                   </div>

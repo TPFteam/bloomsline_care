@@ -245,7 +245,7 @@ export default function SubmissionsTab({ member }: SubmissionsTabProps) {
 
       {/* Submissions List */}
       {filteredSubmissions.length === 0 ? (
-        <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-12 text-center border border-white/60 shadow-lg">
+        <div className="bg-white rounded-2xl p-12 text-center border border-gray-200 shadow-lg">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <FileText className="w-8 h-8 text-gray-400" />
           </div>
@@ -280,7 +280,7 @@ export default function SubmissionsTab({ member }: SubmissionsTabProps) {
                 key={submission.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white/90 backdrop-blur-xl rounded-2xl border border-white/60 shadow-lg overflow-hidden"
+                className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden"
               >
                 {/* Header */}
                 <div
@@ -371,7 +371,7 @@ export default function SubmissionsTab({ member }: SubmissionsTabProps) {
                         {submission.practitioner_notes && (
                           <div className="p-4 bg-lavender-50 rounded-xl border border-lavender-100">
                             <div className="flex items-center gap-2 mb-2">
-                              <MessageSquare className="w-4 h-4 text-lavender-600" />
+                              <MessageSquare className="w-4 h-4 text-blue-600" />
                               <span className="text-sm font-medium text-lavender-700">
                                 {locale === 'fr' ? 'Vos notes' : 'Your Notes'}
                               </span>

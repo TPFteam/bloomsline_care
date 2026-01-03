@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft,
   User,
   GraduationCap,
   Briefcase,
@@ -20,12 +19,11 @@ import {
   Plus,
   X,
   ExternalLink,
-  AlertCircle,
   Camera,
 } from 'lucide-react'
-import { AnimatedIcon } from '@/components/ui/animated-icons'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
+import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type {
@@ -37,8 +35,6 @@ import type {
   ClientAcceptanceStatus,
   Education,
   License,
-  Certification,
-  calculateProfileCompleteness,
 } from '@/types/practitioner-profile'
 
 type TabId = 'about' | 'credentials' | 'practice' | 'contact' | 'settings'
@@ -66,7 +62,7 @@ const AGE_GROUPS: AgeGroup[] = ['children', 'adolescents', 'young_adults', 'adul
 const SESSION_TYPES: SessionType[] = ['individual', 'couples', 'family', 'group']
 
 export default function ProfilePage() {
-  const { t, locale } = useLanguage()
+  const { t } = useLanguage()
   const router = useRouter()
   const supabase = createClient()
 
@@ -393,42 +389,35 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-mesh flex items-center justify-center relative overflow-hidden">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-lavender-400/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-mint-400/20 rounded-full blur-3xl" />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center glass-card rounded-3xl p-12"
-        >
-          <div className="w-16 h-16 border-4 border-lavender-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-          <p className="text-gray-600 font-medium">{t.dashboard.loading}</p>
-        </motion.div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+          <span className="text-gray-500 text-sm">{t.dashboard.loading}</span>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen gradient-mesh relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-lavender-300/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-mint-300/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
+    <div className="min-h-screen bg-gray-50 flex">
+      <AppSidebar />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-6"
-        >
-          <Link href="/dashboard">
-            <Button variant="ghost" className="text-gray-600 hover:text-gray-900 glass-subtle hover:bg-white/60 rounded-xl">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {t.dashboard.backToDashboard}
-            </Button>
-          </Link>
+      {/* Main Content */}
+      <main className="flex-1 ml-64">
+        <AppHeader
+          user={user as any}
+          leftContent={
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+              <User className="w-4 h-4" />
+              <span>{t.profile.title}</span>
+            </div>
+          }
+        />
 
-          <div className="flex items-center gap-3">
+        {/* Content */}
+        <div className="p-8">
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-3 mb-6">
             {user && (
               <Link
                 href={`/p/${profile.is_public && profile.slug ? profile.slug : user.id}`}
@@ -444,7 +433,7 @@ export default function ProfilePage() {
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-200/50"
+              className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
             >
               {saving ? (
                 <>
@@ -459,169 +448,150 @@ export default function ProfilePage() {
               )}
             </Button>
           </div>
-        </motion.div>
 
-        {/* Profile Header Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-gray-200/50 border border-white/60 overflow-hidden mb-6"
-        >
-          <div className="h-1.5 bg-gradient-to-r from-lavender-400 to-mint-500" />
-          <div className="p-6 sm:p-8">
-            <div className="flex flex-col md:flex-row gap-6 md:gap-8">
-              {/* Avatar */}
-              <div className="flex-shrink-0 flex justify-center md:justify-start">
-                <div className="relative group">
-                  <div className="absolute -inset-2 bg-gradient-to-br from-lavender-400/30 to-mint-400/30 rounded-[1.75rem] blur-xl opacity-60 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-[1.5rem] bg-gradient-to-br from-lavender-100 via-lavender-50 to-lavender-200 flex items-center justify-center text-lavender-700 font-bold text-3xl sm:text-4xl shadow-lg border-2 border-white/80 overflow-hidden">
-                    {user?.avatar_url ? (
-                      <img src={user.avatar_url} alt="" className="w-full h-full rounded-[1.5rem] object-cover" />
-                    ) : (
-                      user?.full_name?.charAt(0) || 'P'
-                    )}
+          {/* Profile Header Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6"
+          >
+            <div className="p-6">
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Avatar */}
+                <div className="flex-shrink-0 flex justify-center md:justify-start">
+                  <div className="relative group">
+                    <div className="w-20 h-20 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-2xl overflow-hidden">
+                      {user?.avatar_url ? (
+                        <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        user?.full_name?.charAt(0) || 'P'
+                      )}
 
-                    {/* Upload overlay */}
-                    <label className="absolute inset-0 bg-black/0 hover:bg-black/40 flex items-center justify-center cursor-pointer transition-all duration-200 group/upload">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAvatarUpload}
-                        className="hidden"
-                        disabled={uploadingAvatar}
-                      />
-                      <div className="opacity-0 group-hover/upload:opacity-100 transition-opacity duration-200">
-                        {uploadingAvatar ? (
-                          <Loader2 className="w-8 h-8 text-white animate-spin" />
-                        ) : (
-                          <div className="flex flex-col items-center">
+                      {/* Upload overlay */}
+                      <label className="absolute inset-0 bg-black/0 hover:bg-black/40 flex items-center justify-center cursor-pointer transition-all duration-200 group/upload rounded-2xl">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          className="hidden"
+                          disabled={uploadingAvatar}
+                        />
+                        <div className="opacity-0 group-hover/upload:opacity-100 transition-opacity duration-200">
+                          {uploadingAvatar ? (
+                            <Loader2 className="w-6 h-6 text-white animate-spin" />
+                          ) : (
                             <Camera className="w-6 h-6 text-white" />
-                            <span className="text-white text-xs mt-1 font-medium">Change</span>
-                          </div>
-                        )}
-                      </div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 text-center md:text-left">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
-                  {user?.full_name || t.profile.title}
-                </h1>
-                {profile.credentials && profile.credentials.length > 0 && (
-                  <p className="text-gray-600 mb-2">{profile.credentials.join(', ')}</p>
-                )}
-                {profile.headline && (
-                  <p className="text-gray-500 italic">{profile.headline}</p>
-                )}
-                <div className="flex items-center justify-center md:justify-start gap-2 mt-3 flex-wrap">
-                  {profile.is_public ? (
-                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-50 text-emerald-700">
-                      <Globe className="w-3.5 h-3.5 mr-1.5" />
-                      Public Profile
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
-                      <Shield className="w-3.5 h-3.5 mr-1.5" />
-                      Private Profile
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Completeness */}
-              <div className="flex-shrink-0 text-center md:text-right">
-                <div className="inline-flex flex-col items-center bg-gray-50/80 rounded-2xl p-4">
-                  <div className="relative w-20 h-20">
-                    <svg className="w-20 h-20 transform -rotate-90">
-                      <circle
-                        cx="40"
-                        cy="40"
-                        r="35"
-                        stroke="currentColor"
-                        strokeWidth="6"
-                        fill="none"
-                        className="text-gray-200"
-                      />
-                      <circle
-                        cx="40"
-                        cy="40"
-                        r="35"
-                        stroke="currentColor"
-                        strokeWidth="6"
-                        fill="none"
-                        strokeDasharray={`${profileCompleteness * 2.2} 220`}
-                        strokeLinecap="round"
-                        className="text-lavender-500 transition-all duration-500"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xl font-bold text-gray-900">{profileCompleteness}%</span>
+                          )}
+                        </div>
+                      </label>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">{t.profile.completeness.title}</p>
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 text-center md:text-left">
+                  <h1 className="text-xl font-semibold text-gray-900 mb-1">
+                    {user?.full_name || t.profile.title}
+                  </h1>
+                  {profile.credentials && profile.credentials.length > 0 && (
+                    <p className="text-gray-600 text-sm mb-2">{profile.credentials.join(', ')}</p>
+                  )}
+                  {profile.headline && (
+                    <p className="text-gray-500 text-sm">{profile.headline}</p>
+                  )}
+                  <div className="flex items-center justify-center md:justify-start gap-2 mt-3 flex-wrap">
+                    {profile.is_public ? (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700">
+                        <Globe className="w-3 h-3 mr-1" />
+                        Public Profile
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-600">
+                        <Shield className="w-3 h-3 mr-1" />
+                        Private Profile
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Completeness */}
+                <div className="flex-shrink-0 text-center md:text-right">
+                  <div className="inline-flex flex-col items-center bg-gray-50 rounded-xl p-4">
+                    <div className="relative w-16 h-16">
+                      <svg className="w-16 h-16 transform -rotate-90">
+                        <circle
+                          cx="32"
+                          cy="32"
+                          r="28"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                          className="text-gray-200"
+                        />
+                        <circle
+                          cx="32"
+                          cy="32"
+                          r="28"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                          strokeDasharray={`${profileCompleteness * 1.76} 176`}
+                          strokeLinecap="round"
+                          className="text-gray-900 transition-all duration-500"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-sm font-bold text-gray-900">{profileCompleteness}%</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">{t.profile.completeness.title}</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        {/* Tabs Navigation */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-2 mb-6 shadow-lg shadow-gray-200/30 border border-white/60"
-        >
-          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-            {tabs.map((tab, index) => {
+          {/* Tabs Navigation */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="flex items-center gap-1 mb-6 bg-white rounded-xl p-1 border border-gray-200 overflow-x-auto"
+          >
+            {tabs.map((tab) => {
               const Icon = tab.icon
               const isActive = activeTab === tab.id
               return (
-                <motion.button
+                <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 + index * 0.05 }}
-                  className={`relative flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
-                    isActive ? 'text-white' : 'text-gray-600 hover:bg-white/60'
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                    isActive
+                      ? 'bg-gray-900 text-white'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeProfileTab"
-                      className="absolute inset-0 bg-gradient-to-r from-lavender-500 to-lavender-600 rounded-xl shadow-lg shadow-lavender-300/50"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
-                    {tab.label}
-                  </span>
-                </motion.button>
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
               )
             })}
-          </div>
-        </motion.div>
+          </motion.div>
 
-        {/* Tab Content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            {/* About Tab */}
-            {activeTab === 'about' && (
-              <div className="space-y-6">
-                <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6 sm:p-8">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">{t.profile.about.title}</h2>
+          {/* Tab Content */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* About Tab */}
+              {activeTab === 'about' && (
+                <div className="space-y-6">
+                  <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-6">{t.profile.about.title}</h2>
 
                   {/* Headline */}
                   <div className="mb-6">
@@ -634,7 +604,7 @@ export default function ProfilePage() {
                       onChange={(e) => setProfile(prev => ({ ...prev, headline: e.target.value }))}
                       placeholder={t.profile.about.headline.placeholder}
                       maxLength={100}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
                     />
                     <p className="text-xs text-gray-500 mt-1">{t.profile.about.headline.help}</p>
                   </div>
@@ -649,7 +619,7 @@ export default function ProfilePage() {
                       onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
                       placeholder={t.profile.about.bio.placeholder}
                       rows={8}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none resize-none"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none resize-none"
                     />
                     <p className="text-xs text-gray-500 mt-1">{t.profile.about.bio.help}</p>
                   </div>
@@ -660,7 +630,7 @@ export default function ProfilePage() {
             {/* Credentials Tab */}
             {activeTab === 'credentials' && (
               <div className="space-y-6">
-                <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6 sm:p-8">
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
                   <h2 className="text-xl font-semibold text-gray-900 mb-6">{t.profile.credentials.title}</h2>
 
                   {/* Credentials List */}
@@ -676,7 +646,7 @@ export default function ProfilePage() {
                         credentials: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
                       }))}
                       placeholder={t.profile.credentials.credentialsList.placeholder}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
                     />
                     <p className="text-xs text-gray-500 mt-1">{t.profile.credentials.credentialsList.help}</p>
                   </div>
@@ -693,7 +663,7 @@ export default function ProfilePage() {
                       placeholder={t.profile.credentials.yearsExperience.placeholder}
                       min={0}
                       max={60}
-                      className="w-48 px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                      className="w-48 px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
                     />
                   </div>
 
@@ -715,14 +685,14 @@ export default function ProfilePage() {
                               value={edu.degree}
                               onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
                               placeholder={t.profile.credentials.education.degreePlaceholder}
-                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none text-sm"
+                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none text-sm"
                             />
                             <input
                               type="text"
                               value={edu.institution}
                               onChange={(e) => updateEducation(edu.id, 'institution', e.target.value)}
                               placeholder={t.profile.credentials.education.institutionPlaceholder}
-                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none text-sm"
+                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none text-sm"
                             />
                             <input
                               type="number"
@@ -731,7 +701,7 @@ export default function ProfilePage() {
                               placeholder={t.profile.credentials.education.year}
                               min={1950}
                               max={new Date().getFullYear()}
-                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none text-sm"
+                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none text-sm"
                             />
                           </div>
                           <button
@@ -766,27 +736,27 @@ export default function ProfilePage() {
                               value={lic.type}
                               onChange={(e) => updateLicense(lic.id, 'type', e.target.value)}
                               placeholder={t.profile.credentials.licenses.typePlaceholder}
-                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none text-sm"
+                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none text-sm"
                             />
                             <input
                               type="text"
                               value={lic.number || ''}
                               onChange={(e) => updateLicense(lic.id, 'number', e.target.value || null)}
                               placeholder={t.profile.credentials.licenses.number}
-                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none text-sm"
+                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none text-sm"
                             />
                             <input
                               type="text"
                               value={lic.state_province || ''}
                               onChange={(e) => updateLicense(lic.id, 'state_province', e.target.value || null)}
                               placeholder={t.profile.credentials.licenses.state}
-                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none text-sm"
+                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none text-sm"
                             />
                             <input
                               type="date"
                               value={lic.expiration_date || ''}
                               onChange={(e) => updateLicense(lic.id, 'expiration_date', e.target.value || null)}
-                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none text-sm"
+                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none text-sm"
                             />
                           </div>
                           <button
@@ -809,7 +779,7 @@ export default function ProfilePage() {
             {/* Practice Tab */}
             {activeTab === 'practice' && (
               <div className="space-y-6">
-                <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6 sm:p-8">
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
                   <h2 className="text-xl font-semibold text-gray-900 mb-6">{t.profile.practice.title}</h2>
 
                   {/* Specialties */}
@@ -829,7 +799,7 @@ export default function ProfilePage() {
                             }))}
                             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                               isSelected
-                                ? 'bg-lavender-100 text-lavender-700 border-2 border-lavender-400'
+                                ? 'bg-gray-100 text-gray-900 border-2 border-gray-400'
                                 : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
                             }`}
                           >
@@ -934,7 +904,7 @@ export default function ProfilePage() {
                             type="checkbox"
                             checked={profile.offers_telehealth}
                             onChange={(e) => setProfile(prev => ({ ...prev, offers_telehealth: e.target.checked }))}
-                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                            className="w-4 h-4 rounded border-gray-300 text-gray-600 focus:ring-gray-500"
                           />
                           <span className="text-sm text-gray-700">{t.profile.practice.availability.telehealth}</span>
                         </label>
@@ -943,7 +913,7 @@ export default function ProfilePage() {
                             type="checkbox"
                             checked={profile.offers_in_person}
                             onChange={(e) => setProfile(prev => ({ ...prev, offers_in_person: e.target.checked }))}
-                            className="w-4 h-4 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                            className="w-4 h-4 rounded border-gray-300 text-gray-600 focus:ring-gray-500"
                           />
                           <span className="text-sm text-gray-700">{t.profile.practice.availability.inPerson}</span>
                         </label>
@@ -984,7 +954,7 @@ export default function ProfilePage() {
                         languages: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
                       }))}
                       placeholder={t.profile.practice.languages.placeholder}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
                     />
                     <p className="text-xs text-gray-500 mt-1">{t.profile.practice.languages.help}</p>
                   </div>
@@ -995,7 +965,7 @@ export default function ProfilePage() {
             {/* Contact Tab */}
             {activeTab === 'contact' && (
               <div className="space-y-6">
-                <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6 sm:p-8">
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
                   <h2 className="text-xl font-semibold text-gray-900 mb-6">{t.profile.contact.title}</h2>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -1007,7 +977,7 @@ export default function ProfilePage() {
                         type="email"
                         value={profile.contact_email || ''}
                         onChange={(e) => setProfile(prev => ({ ...prev, contact_email: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
                       />
                       <p className="text-xs text-gray-500 mt-1">{t.profile.contact.email.help}</p>
                     </div>
@@ -1020,7 +990,7 @@ export default function ProfilePage() {
                         type="tel"
                         value={profile.contact_phone || ''}
                         onChange={(e) => setProfile(prev => ({ ...prev, contact_phone: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
                       />
                       <p className="text-xs text-gray-500 mt-1">{t.profile.contact.phone.help}</p>
                     </div>
@@ -1047,7 +1017,7 @@ export default function ProfilePage() {
                             }
                           }))}
                           placeholder="https://yourwebsite.com"
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
                         />
                       </div>
                       <div>
@@ -1067,7 +1037,7 @@ export default function ProfilePage() {
                             }
                           }))}
                           placeholder="https://linkedin.com/in/yourprofile"
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
                         />
                       </div>
                     </div>
@@ -1079,7 +1049,7 @@ export default function ProfilePage() {
             {/* Settings Tab */}
             {activeTab === 'settings' && (
               <div className="space-y-6">
-                <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6 sm:p-8">
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
                   <h2 className="text-xl font-semibold text-gray-900 mb-6">{t.profile.settings.title}</h2>
 
                   {/* Visibility */}
@@ -1139,7 +1109,7 @@ export default function ProfilePage() {
                             ...prev,
                             slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
                           }))}
-                          className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-200 transition-all outline-none"
+                          className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-1">{t.profile.settings.slug.help}</p>
@@ -1148,9 +1118,10 @@ export default function ProfilePage() {
                 </div>
               </div>
             )}
-          </motion.div>
-        </AnimatePresence>
-      </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </main>
     </div>
   )
 }

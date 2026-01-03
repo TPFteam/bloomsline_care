@@ -232,7 +232,7 @@ export default function FilesTab({ memberId }: FilesTabProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-8 text-center">
+        <div className="bg-white rounded-2xl  border border-gray-200 p-8 text-center">
           <div className="w-12 h-12 border-4 border-lavender-500 border-t-transparent rounded-full animate-spin mx-auto mb-4 animate-pulse-glow"></div>
           <p className="text-gray-500 font-medium">Loading files...</p>
         </div>
@@ -253,14 +253,14 @@ export default function FilesTab({ memberId }: FilesTabProps) {
       {/* Header with Upload */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-lavender-100 to-lavender-200 flex items-center justify-center shadow-sm">
-            <FileText className="w-5 h-5 text-lavender-600" />
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center ">
+            <FileText className="w-5 h-5 text-blue-600" />
           </div>
           {t.members.files.title}
         </h2>
         <Button
           onClick={() => fileInputRef.current?.click()}
-          className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-smooth hover-lift"
+          className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
         >
           <Upload className="w-4 h-4 mr-2" />
           {t.members.files.uploadFile}
@@ -274,7 +274,7 @@ export default function FilesTab({ memberId }: FilesTabProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/40  z-50 flex items-center justify-center p-4"
             onClick={handleCloseModal}
           >
             <motion.div
@@ -282,7 +282,7 @@ export default function FilesTab({ memberId }: FilesTabProps) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-[1.5rem] shadow-2xl max-w-lg w-full overflow-hidden"
+              className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
             >
               {/* Modal Header */}
               <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
@@ -302,7 +302,7 @@ export default function FilesTab({ memberId }: FilesTabProps) {
               <div className="p-6 space-y-5">
                 {/* Selected File Preview */}
                 <div className="flex items-center gap-4 p-4 bg-gradient-to-br from-lavender-50 to-gray-50 rounded-xl">
-                  <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-xl bg-white  flex items-center justify-center">
                     {selectedFile.type.includes('image') ? (
                       <FileImage className="w-6 h-6 text-lavender-500" />
                     ) : selectedFile.type.includes('pdf') ? (
@@ -327,7 +327,7 @@ export default function FilesTab({ memberId }: FilesTabProps) {
                     value={fileTitle}
                     onChange={(e) => setFileTitle(e.target.value)}
                     placeholder="Enter a title for this file..."
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
                   />
                 </div>
 
@@ -342,7 +342,7 @@ export default function FilesTab({ memberId }: FilesTabProps) {
                     onChange={(e) => setFileDescription(e.target.value)}
                     placeholder="Add a description or notes about this file..."
                     rows={3}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none resize-none bg-white"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none resize-none bg-white"
                   />
                 </div>
 
@@ -354,7 +354,7 @@ export default function FilesTab({ memberId }: FilesTabProps) {
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value as FileCategory)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
                   >
                     <option value="general">{t.members.fileCategories.general}</option>
                     <option value="intake">{t.members.fileCategories.intake}</option>
@@ -379,7 +379,7 @@ export default function FilesTab({ memberId }: FilesTabProps) {
                 <Button
                   onClick={handleFileUpload}
                   disabled={uploading || !fileTitle.trim()}
-                  className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50"
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50"
                 >
                   {uploading ? (
                     <>
@@ -403,14 +403,14 @@ export default function FilesTab({ memberId }: FilesTabProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 overflow-hidden"
+        className="bg-white rounded-2xl  border border-gray-200 overflow-hidden"
       >
         {files.length === 0 ? (
           <div className="p-16 text-center">
             <div className="relative inline-block">
               <div className="absolute inset-0 bg-gradient-to-br from-lavender-400/30 to-mint-400/30 rounded-3xl blur-xl" />
-              <div className="relative w-20 h-20 bg-gradient-to-br from-lavender-100 to-lavender-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <Folder className="w-10 h-10 text-lavender-600" />
+              <div className="relative w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Folder className="w-10 h-10 text-blue-600" />
               </div>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-3">
@@ -421,7 +421,7 @@ export default function FilesTab({ memberId }: FilesTabProps) {
             </p>
             <Button
               onClick={() => fileInputRef.current?.click()}
-              className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50 px-6 transition-smooth hover-lift"
+              className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 px-6 transition-colors hover-lift"
             >
               <Upload className="w-4 h-4 mr-2" />
               {t.members.files.uploadFile}
@@ -443,7 +443,7 @@ export default function FilesTab({ memberId }: FilesTabProps) {
                 >
                   <div className="flex items-start gap-4">
                     {/* File Icon */}
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center flex-shrink-0  group-hover:shadow-md group-hover:scale-105 transition-all">
                       <FileIcon className="w-6 h-6 text-gray-500" />
                     </div>
 
@@ -478,7 +478,7 @@ export default function FilesTab({ memberId }: FilesTabProps) {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleView(file)}
-                            className="h-9 w-9 p-0 text-gray-400 hover:text-mint-600 hover:bg-mint-50 rounded-xl transition-smooth"
+                            className="h-9 w-9 p-0 text-gray-400 hover:text-teal-600 hover:bg-gray-50 rounded-xl transition-colors"
                             title="View file"
                           >
                             <Eye className="w-4 h-4" />
@@ -487,7 +487,7 @@ export default function FilesTab({ memberId }: FilesTabProps) {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDownload(file)}
-                            className="h-9 w-9 p-0 text-gray-400 hover:text-lavender-600 hover:bg-lavender-50 rounded-xl transition-smooth"
+                            className="h-9 w-9 p-0 text-gray-400 hover:text-blue-600 hover:bg-gray-50 rounded-xl transition-colors"
                             title="Download file"
                           >
                             <Download className="w-4 h-4" />
@@ -496,7 +496,7 @@ export default function FilesTab({ memberId }: FilesTabProps) {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDelete(file)}
-                            className="h-9 w-9 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-smooth"
+                            className="h-9 w-9 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                             title="Delete file"
                           >
                             <Trash2 className="w-4 h-4" />

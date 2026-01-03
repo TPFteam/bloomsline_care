@@ -7,88 +7,89 @@ import { toast } from 'sonner'
 import type { User } from '@/types/user'
 import { motion } from 'framer-motion'
 import {
-  BookOpen,
-  Heart,
-  Users,
-  BarChart3,
-  Settings,
-  ArrowRight,
-  LogOut,
   Home,
-  Sparkles,
-  Camera,
-  Scale,
-  MessageSquare,
   FileText,
-  Calendar,
-  Clock,
   TrendingUp,
-  CheckCircle2,
   Plus,
-  User as UserIcon,
+  FolderOpen,
+  Table2,
+  ChevronRight,
+  Users,
   CalendarCheck,
+  BookOpen,
+  BarChart3,
 } from 'lucide-react'
-import { AnimatedIcon } from '@/components/ui/animated-icons'
-import { Logo } from '@/components/ui/logo'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n/context'
-import { LanguageSwitcher } from '@/components/language-switcher'
+import { AppHeader, AppSidebar } from '@/components/layout'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 
-interface TodayBooking {
+interface RecentResource {
   id: string
-  client_name: string
-  session_type: string
-  start_time: string
-  status: string
+  title: string
+  type: string
+  created_at: string
 }
 
-interface SessionType {
+interface TemplateOption {
   id: string
-  name: string
+  type: 'worksheet' | 'table' | 'psychoeducation'
+  name: { en: string; fr: string }
+  description: { en: string; fr: string }
+  href: string
 }
 
-interface DashboardStats {
-  activeMembers: number
-  sessionsThisWeek: number
-  resourcesSaved: number
-  completionRate: number
-  totalSessions: number
-  collectionsCount: number
-}
-
-interface RecentActivity {
-  id: string
-  type: 'session_completed' | 'resource_saved' | 'member_added' | 'booking_created'
-  description: string
-  time: string
-  relatedName?: string
-}
 
 function DashboardContent() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeSection, setActiveSection] = useState('home')
-  const [todayBookings, setTodayBookings] = useState<TodayBooking[]>([])
-  const [sessionTypes, setSessionTypes] = useState<SessionType[]>([])
   const [showScheduleModal, setShowScheduleModal] = useState(false)
-  const [stats, setStats] = useState<DashboardStats>({
-    activeMembers: 0,
-    sessionsThisWeek: 0,
-    resourcesSaved: 0,
-    completionRate: 0,
-    totalSessions: 0,
-    collectionsCount: 0,
-  })
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
+  const [recentResources, setRecentResources] = useState<RecentResource[]>([])
+
+  // Featured templates - one from each type
+  const featuredTemplates: TemplateOption[] = [
+    {
+      id: 'thought-record',
+      type: 'worksheet',
+      name: { en: 'Thought Record', fr: 'Journal de pensées' },
+      description: { en: 'Classic CBT thought record', fr: 'Journal de pensées TCC classique' },
+      href: '/resources/create/worksheet?template=thought-record',
+    },
+    {
+      id: 'thought-log',
+      type: 'table',
+      name: { en: 'Thought Log', fr: 'Suivi des pensées' },
+      description: { en: 'Track thoughts over time', fr: 'Suivre les pensées au fil du temps' },
+      href: '/resources/create/table?template=thought-log',
+    },
+    {
+      id: 'condition-overview',
+      type: 'psychoeducation',
+      name: { en: 'Condition Overview', fr: 'Aperçu d\'une condition' },
+      description: { en: 'Explain a mental health topic', fr: 'Expliquer un sujet de santé mentale' },
+      href: '/resources/create/psychoeducation?template=condition-overview',
+    },
+  ]
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
   const { t, locale, setLocale } = useLanguage()
 
   useEffect(() => {
+    const fetchRecentData = async (userId: string) => {
+      const { data: resources } = await supabase
+        .from('resources')
+        .select('id, title, type, created_at')
+        .eq('practitioner_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(3)
+
+      if (resources && resources.length > 0) {
+        setRecentResources(resources)
+      }
+    }
+
     const getUser = async () => {
-      // Check auth status first
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
 
       if (authError || !authUser) {
@@ -96,7 +97,6 @@ function DashboardContent() {
         return
       }
 
-      // Fetch user profile from database
       const { data: userProfile, error: profileError } = await supabase
         .from('users')
         .select('*')
@@ -104,21 +104,15 @@ function DashboardContent() {
         .single()
 
       if (profileError) {
-        console.error('Error fetching user profile:', profileError)
-        // If profile doesn't exist, redirect to onboarding
         if (profileError.code === 'PGRST116') {
           router.push('/onboarding')
           return
         }
-        // Use auth user data as fallback
         const userType = authUser.user_metadata?.user_type || 'mentor'
-
-        // Redirect members to their mobile home page
         if (userType === 'member') {
           router.replace('/home')
           return
         }
-
         setUser({
           id: authUser.id,
           email: authUser.email!,
@@ -130,901 +124,460 @@ function DashboardContent() {
           updated_at: authUser.updated_at || authUser.created_at,
         })
       } else {
-        // Redirect members to their mobile home page
         if (userProfile.user_type === 'member') {
           router.replace('/home')
           return
         }
-
         setUser(userProfile)
-        // Load user's preferred language from database
         if (userProfile.preferred_language) {
-          setLocale(userProfile.preferred_language, false) // Don't sync back to DB
+          setLocale(userProfile.preferred_language, false)
         }
       }
 
       setLoading(false)
 
-      // Show welcome message for new users
       if (searchParams.get('welcome') === 'true') {
         toast.success(`Welcome to Bloomsline, ${authUser.user_metadata?.full_name || 'there'}!`)
       }
 
-      // Fetch today's bookings
-      const today = new Date()
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString()
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString()
-
-      const { data: bookings } = await supabase
-        .from('bookings')
-        .select('id, client_name, session_type, start_time, status')
-        .eq('practitioner_id', authUser.id)
-        .gte('start_time', startOfDay)
-        .lt('start_time', endOfDay)
-        .in('status', ['confirmed', 'pending'])
-        .order('start_time', { ascending: true })
-
-      if (bookings) {
-        setTodayBookings(bookings)
-      }
-
-      // Fetch session types
-      const { data: settings } = await supabase
-        .from('booking_settings')
-        .select('session_types')
-        .eq('user_id', authUser.id)
-        .single()
-
-      if (settings?.session_types) {
-        setSessionTypes(settings.session_types as SessionType[])
-      }
-
-      // Fetch dashboard stats
-      await fetchDashboardStats(authUser.id)
-
-      // Fetch recent activity
-      await fetchRecentActivity(authUser.id)
-    }
-
-    const fetchDashboardStats = async (userId: string) => {
-      // Fetch active members count
-      const { count: membersCount } = await supabase
-        .from('members')
-        .select('*', { count: 'exact', head: true })
-        .eq('practitioner_id', userId)
-        .eq('status', 'active')
-
-      // Fetch sessions this week
-      const startOfWeek = new Date()
-      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
-      startOfWeek.setHours(0, 0, 0, 0)
-
-      const endOfWeek = new Date(startOfWeek)
-      endOfWeek.setDate(endOfWeek.getDate() + 7)
-
-      const { count: sessionsCount } = await supabase
-        .from('bookings')
-        .select('*', { count: 'exact', head: true })
-        .eq('practitioner_id', userId)
-        .gte('start_time', startOfWeek.toISOString())
-        .lt('start_time', endOfWeek.toISOString())
-        .in('status', ['confirmed', 'completed'])
-
-      // Fetch saved resources count
-      const { count: resourcesCount } = await supabase
-        .from('resources')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-
-      // Calculate completion rate (completed sessions / total past sessions)
-      const { count: completedCount } = await supabase
-        .from('bookings')
-        .select('*', { count: 'exact', head: true })
-        .eq('practitioner_id', userId)
-        .eq('status', 'completed')
-
-      const { count: totalPastCount } = await supabase
-        .from('bookings')
-        .select('*', { count: 'exact', head: true })
-        .eq('practitioner_id', userId)
-        .lt('start_time', new Date().toISOString())
-        .in('status', ['completed', 'cancelled', 'no_show'])
-
-      const completionRate = totalPastCount && totalPastCount > 0
-        ? Math.round((completedCount || 0) / totalPastCount * 100)
-        : 0
-
-      // Get total sessions (all time)
-      const { count: totalSessionsCount } = await supabase
-        .from('bookings')
-        .select('*', { count: 'exact', head: true })
-        .eq('practitioner_id', userId)
-        .in('status', ['confirmed', 'completed'])
-
-      // Get collections count
-      const { count: collectionsCount } = await supabase
-        .from('collections')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-
-      setStats({
-        activeMembers: membersCount || 0,
-        sessionsThisWeek: sessionsCount || 0,
-        resourcesSaved: resourcesCount || 0,
-        completionRate: completionRate,
-        totalSessions: totalSessionsCount || 0,
-        collectionsCount: collectionsCount || 0,
-      })
-    }
-
-    const fetchRecentActivity = async (userId: string) => {
-      const activities: RecentActivity[] = []
-
-      // Get recent completed sessions
-      const { data: recentSessions } = await supabase
-        .from('bookings')
-        .select('id, client_name, updated_at')
-        .eq('practitioner_id', userId)
-        .eq('status', 'completed')
-        .order('updated_at', { ascending: false })
-        .limit(2)
-
-      if (recentSessions) {
-        recentSessions.forEach(session => {
-          activities.push({
-            id: session.id,
-            type: 'session_completed',
-            description: `Completed session with ${session.client_name}`,
-            time: session.updated_at,
-            relatedName: session.client_name,
-          })
-        })
-      }
-
-      // Get recent resources
-      const { data: recentResources } = await supabase
-        .from('resources')
-        .select('id, title, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(2)
-
-      if (recentResources) {
-        recentResources.forEach(resource => {
-          activities.push({
-            id: resource.id,
-            type: 'resource_saved',
-            description: `Saved "${resource.title}" to resources`,
-            time: resource.created_at,
-            relatedName: resource.title,
-          })
-        })
-      }
-
-      // Get recent members added
-      const { data: recentMembers } = await supabase
-        .from('members')
-        .select('id, first_name, last_name, created_at')
-        .eq('practitioner_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(2)
-
-      if (recentMembers) {
-        recentMembers.forEach(member => {
-          activities.push({
-            id: member.id,
-            type: 'member_added',
-            description: `Added ${member.first_name} ${member.last_name} as a member`,
-            time: member.created_at,
-            relatedName: `${member.first_name} ${member.last_name}`,
-          })
-        })
-      }
-
-      // Sort by time and take top 4
-      activities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-      setRecentActivity(activities.slice(0, 4))
+      await fetchRecentData(authUser.id)
     }
 
     getUser()
   }, [router, searchParams, supabase, setLocale])
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    toast.success('Signed out successfully')
-    router.push('/')
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return locale === 'fr' ? 'Bonjour' : 'Good morning'
+    if (hour < 18) return locale === 'fr' ? 'Bon après-midi' : 'Good afternoon'
+    return locale === 'fr' ? 'Bonsoir' : 'Good evening'
   }
 
-  // Mentor sections (default for all users) - now with real data
-  // Using teal (primary) and lavender (secondary) color scheme
-  const sections = [
+  const getTemplateIcon = (type: TemplateOption['type']) => {
+    switch (type) {
+      case 'worksheet': return FileText
+      case 'table': return Table2
+      case 'psychoeducation': return BookOpen
+      default: return FileText
+    }
+  }
+
+  const getTemplateColor = (type: TemplateOption['type']) => {
+    switch (type) {
+      case 'worksheet': return 'bg-blue-50 text-blue-600'
+      case 'table': return 'bg-emerald-50 text-emerald-600'
+      case 'psychoeducation': return 'bg-purple-50 text-purple-600'
+      default: return 'bg-gray-50 text-gray-600'
+    }
+  }
+
+  const getTemplateTypeLabel = (type: TemplateOption['type']) => {
+    switch (type) {
+      case 'worksheet': return locale === 'fr' ? 'Exercice' : 'Worksheet'
+      case 'table': return locale === 'fr' ? 'Tableau' : 'Table'
+      case 'psychoeducation': return locale === 'fr' ? 'Psychoéducation' : 'Psychoeducation'
+      default: return ''
+    }
+  }
+
+  const quickActions = [
     {
-      title: t.dashboard.sections.library.title,
-      description: t.dashboard.sections.library.description,
-      detail: t.dashboard.sections.library.detail,
+      id: 'worksheet',
+      title: locale === 'fr' ? 'Exercice' : 'Worksheet',
+      icon: FileText,
+      color: 'from-blue-400 to-blue-500',
+      bgColor: 'bg-blue-50',
+      href: '/resources/create?type=worksheet',
+    },
+    {
+      id: 'table',
+      title: locale === 'fr' ? 'Tableau' : 'Table',
+      icon: Table2,
+      color: 'from-emerald-400 to-emerald-500',
+      bgColor: 'bg-emerald-50',
+      href: '/resources/create?type=table',
+    },
+    {
+      id: 'education',
+      title: locale === 'fr' ? 'Psychoéducation' : 'Psychoeducation',
       icon: BookOpen,
-      gradient: 'from-teal-400 to-teal-600',
-      bg: 'bg-teal-100/80',
-      shadow: 'shadow-teal-200/50',
-      stats: [
-        { label: t.dashboard.sections.library.stats.resources, value: '150+' },
-        { label: t.dashboard.sections.library.stats.categories, value: '12' },
-      ],
-      tags: [
-        t.dashboard.sections.library.tags.expertCurated,
-        t.dashboard.sections.library.tags.customizable,
-        t.dashboard.sections.library.tags.evidenceBased,
-      ],
-      href: '/library',
+      color: 'from-purple-400 to-purple-500',
+      bgColor: 'bg-purple-50',
+      href: '/resources/create?type=psychoeducation',
     },
     {
-      title: t.dashboard.sections.resources.title,
-      description: t.dashboard.sections.resources.description,
-      detail: t.dashboard.sections.resources.detail,
-      icon: Heart,
-      gradient: 'from-teal-400 to-teal-600',
-      bg: 'bg-teal-100/80',
-      shadow: 'shadow-teal-200/50',
-      stats: [
-        { label: t.dashboard.sections.resources.stats.savedItems, value: stats.resourcesSaved.toString() },
-        { label: t.dashboard.sections.resources.stats.collections, value: stats.collectionsCount.toString() },
-      ],
-      tags: [
-        t.dashboard.sections.resources.tags.personalSaved,
-        t.dashboard.sections.resources.tags.collections,
-        t.dashboard.sections.resources.tags.quickAccess,
-      ],
-      href: '/resources',
-    },
-    {
-      title: t.dashboard.sections.members.title,
-      description: t.dashboard.sections.members.description,
-      detail: t.dashboard.sections.members.detail,
+      id: 'members',
+      title: locale === 'fr' ? 'Patients' : 'Members',
       icon: Users,
-      gradient: 'from-lavender-400 to-lavender-600',
-      bg: 'bg-lavender-100/80',
-      shadow: 'shadow-lavender-200/50',
-      stats: [
-        { label: t.dashboard.sections.members.stats.activeClients, value: stats.activeMembers.toString() },
-        { label: t.dashboard.sections.members.stats.sessions, value: stats.totalSessions.toString() },
-      ],
-      tags: [
-        t.dashboard.sections.members.tags.clientManagement,
-        t.dashboard.sections.members.tags.sessionTracking,
-        t.dashboard.sections.members.tags.progressNotes,
-      ],
+      color: 'from-pink-400 to-pink-500',
+      bgColor: 'bg-pink-50',
       href: '/members',
     },
     {
-      title: t.dashboard.sections.analytics.title,
-      description: t.dashboard.sections.analytics.description,
-      detail: t.dashboard.sections.analytics.detail,
+      id: 'bookings',
+      title: locale === 'fr' ? 'Séances' : 'Sessions',
+      icon: CalendarCheck,
+      color: 'from-amber-400 to-amber-500',
+      bgColor: 'bg-amber-50',
+      href: '/bookings',
+    },
+    {
+      id: 'analytics',
+      title: locale === 'fr' ? 'Statistiques' : 'Analytics',
       icon: BarChart3,
-      gradient: 'from-teal-400 to-teal-600',
-      bg: 'bg-teal-100/80',
-      shadow: 'shadow-teal-200/50',
-      stats: [
-        { label: t.dashboard.sections.analytics.stats.successRate, value: stats.completionRate > 0 ? `${stats.completionRate}%` : '-' },
-        { label: t.dashboard.sections.analytics.stats.insights, value: stats.totalSessions.toString() },
-      ],
-      tags: [
-        t.dashboard.sections.analytics.tags.analytics,
-        t.dashboard.sections.analytics.tags.clientInsights,
-        t.dashboard.sections.analytics.tags.outcomes,
-      ],
+      color: 'from-teal-400 to-teal-500',
+      bgColor: 'bg-teal-50',
       href: '/analytics',
     },
   ]
 
-  // Member-specific sections (only for members)
-  // Using teal (primary) and lavender (secondary) color scheme
-  const memberSections = [
-    {
-      title: 'My Resources',
-      description: 'Assigned resources',
-      detail: 'View and complete worksheets and exercises assigned by your practitioner.',
-      icon: Heart,
-      gradient: 'from-teal-400 to-teal-600',
-      bg: 'bg-teal-100/80',
-      shadow: 'shadow-teal-200/50',
-      stats: [
-        { label: 'Pending', value: '0' },
-        { label: 'Completed', value: '0' },
-      ],
-      tags: ['Worksheets', 'Exercises', 'Assignments'],
-      href: '/home',
-    },
-    {
-      title: t.dashboard.sections.rituals.title,
-      description: t.dashboard.sections.rituals.description,
-      detail: t.dashboard.sections.rituals.detail,
-      icon: Sparkles,
-      gradient: 'from-lavender-400 to-lavender-600',
-      bg: 'bg-lavender-100/80',
-      shadow: 'shadow-lavender-200/50',
-      stats: [
-        { label: t.dashboard.sections.rituals.stats.activeRituals, value: '5' },
-        { label: t.dashboard.sections.rituals.stats.streak, value: '12' },
-      ],
-      tags: [
-        t.dashboard.sections.rituals.tags.dailyPractice,
-        t.dashboard.sections.rituals.tags.trackProgress,
-        t.dashboard.sections.rituals.tags.buildHabits,
-      ],
-      href: '/rituals',
-    },
-    {
-      title: t.dashboard.sections.moments.title,
-      description: t.dashboard.sections.moments.description,
-      detail: t.dashboard.sections.moments.detail,
-      icon: Camera,
-      gradient: 'from-teal-400 to-teal-600',
-      bg: 'bg-teal-100/80',
-      shadow: 'shadow-teal-200/50',
-      stats: [
-        { label: t.dashboard.sections.moments.stats.totalMoments, value: '48' },
-        { label: t.dashboard.sections.moments.stats.thisWeek, value: '7' },
-      ],
-      tags: [
-        t.dashboard.sections.moments.tags.journaling,
-        t.dashboard.sections.moments.tags.reflection,
-        t.dashboard.sections.moments.tags.insights,
-      ],
-      href: '/moments',
-    },
-    {
-      title: t.dashboard.sections.balance.title,
-      description: t.dashboard.sections.balance.description,
-      detail: t.dashboard.sections.balance.detail,
-      icon: Scale,
-      gradient: 'from-teal-400 to-teal-600',
-      bg: 'bg-teal-100/80',
-      shadow: 'shadow-teal-200/50',
-      stats: [
-        { label: t.dashboard.sections.balance.stats.balanceScore, value: '78%' },
-        { label: t.dashboard.sections.balance.stats.categories, value: '6' },
-      ],
-      tags: [
-        t.dashboard.sections.balance.tags.wellness,
-        t.dashboard.sections.balance.tags.tracking,
-        t.dashboard.sections.balance.tags.holistic,
-      ],
-      href: '/balance',
-    },
-    {
-      title: t.dashboard.sections.reflection.title,
-      description: t.dashboard.sections.reflection.description,
-      detail: t.dashboard.sections.reflection.detail,
-      icon: MessageSquare,
-      gradient: 'from-lavender-400 to-lavender-600',
-      bg: 'bg-lavender-100/80',
-      shadow: 'shadow-lavender-200/50',
-      stats: [
-        { label: t.dashboard.sections.reflection.stats.reflections, value: '32' },
-        { label: t.dashboard.sections.reflection.stats.growth, value: '85%' },
-      ],
-      tags: [
-        t.dashboard.sections.reflection.tags.selfAwareness,
-        t.dashboard.sections.reflection.tags.progress,
-        t.dashboard.sections.reflection.tags.celebration,
-      ],
-      href: '/reflection',
-    },
-    {
-      title: t.dashboard.sections.stories.title,
-      description: t.dashboard.sections.stories.description,
-      detail: t.dashboard.sections.stories.detail,
-      icon: FileText,
-      gradient: 'from-teal-400 to-teal-600',
-      bg: 'bg-teal-100/80',
-      shadow: 'shadow-teal-200/50',
-      stats: [
-        { label: t.dashboard.sections.stories.stats.published, value: '14' },
-        { label: t.dashboard.sections.stories.stats.views, value: '326' },
-      ],
-      tags: [
-        t.dashboard.sections.stories.tags.richContent,
-        t.dashboard.sections.stories.tags.shareableLink,
-        t.dashboard.sections.stories.tags.multimedia,
-      ],
-      href: '/my-stories',
-    },
-  ]
-
-  // Combine sections based on user type
-  const displaySections = user?.user_type === 'member' ? memberSections : sections
-
-  // Get time-based greeting
-  const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return t.dashboard.greeting.morning
-    if (hour < 18) return t.dashboard.greeting.afternoon
-    return t.dashboard.greeting.evening
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center gradient-mesh">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-mint-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">{t.dashboard.loading}</p>
+          <div className="w-10 h-10 border-3 border-gray-300 dark:border-gray-700 border-t-gray-900 dark:border-t-gray-100 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">{t.dashboard.loading}</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen gradient-mesh relative overflow-hidden flex">
-      {/* Decorative Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-teal-200/30 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 -left-40 w-80 h-80 bg-lavender-200/30 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-teal-200/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 left-1/4 w-60 h-60 bg-lavender-200/20 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex transition-colors">
+      <AppSidebar activeItem="home" />
 
-      {/* Floating Pill Sidebar */}
-      <motion.aside
-        initial={{ x: -20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="fixed left-6 top-6 bottom-6 z-50 w-64 transition-all duration-300"
-      >
-        <div className="h-full bg-white/90 backdrop-blur-2xl rounded-[1.5rem] border border-white/60 shadow-xl shadow-gray-200/40 p-4 flex flex-col">
-          {/* Logo */}
-          <Link href="/dashboard" className="mb-8 px-2 block hover:opacity-80 transition-opacity">
-            <Logo size="lg" showText />
-          </Link>
+      {/* Main Content */}
+      <main className="flex-1 ml-64">
+        <AppHeader
+          user={user}
+          leftContent={
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+              <Home className="w-4 h-4" strokeWidth={2.5} />
+              <span>{locale === 'fr' ? 'Accueil' : 'Home'}</span>
+            </div>
+          }
+        />
 
-          {/* Navigation Pills */}
-          <nav className="flex-1 space-y-1.5">
-            <Link href="/dashboard" onClick={() => setActiveSection('home')}>
-              <motion.div
-                whileHover={{ x: 2 }}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer
-                ${activeSection === 'home'
-                  ? 'bg-gradient-to-r from-teal-500 to-teal-600 shadow-md shadow-teal-200/50'
-                  : 'hover:bg-gray-50/80'
-                }`}
-              >
-                <AnimatedIcon
-                  icon={Home}
-                  animation="bounce"
-                  size={20}
-                  animateOnHover
-                  animateOnRender={false}
-                  className={`flex-shrink-0 ${activeSection === 'home' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}
-                />
-                <span className={`text-sm font-medium ${activeSection === 'home' ? 'text-white' : 'text-gray-600 group-hover:text-gray-900'}`}>
-                  {t.dashboard.sidebar.home}
-                </span>
-              </motion.div>
-            </Link>
-
-            {displaySections.map((section) => {
-              const Icon = section.icon
-              const isActive = activeSection === section.href
-              return (
-                <Link key={section.title} href={section.href} onClick={() => setActiveSection(section.href)}>
-                  <motion.div
-                    whileHover={{ x: 2 }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer
-                    ${isActive
-                      ? `bg-gradient-to-r ${section.gradient} shadow-md ${section.shadow}`
-                      : 'hover:bg-gray-50/80'
-                    }`}
-                  >
-                    <AnimatedIcon
-                      icon={Icon}
-                      animation="scale"
-                      size={20}
-                      animateOnHover
-                      animateOnRender={false}
-                      className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}
-                    />
-                    <span className={`text-sm font-medium ${isActive ? 'text-white' : 'text-gray-600 group-hover:text-gray-900'}`}>
-                      {section.title}
-                    </span>
-                  </motion.div>
-                </Link>
-              )
-            })}
-
-            {/* Bookings */}
-            <Link href="/bookings" onClick={() => setActiveSection('/bookings')}>
-              <motion.div
-                whileHover={{ x: 2 }}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer
-                ${activeSection === '/bookings'
-                  ? 'bg-gradient-to-r from-teal-500 to-teal-600 shadow-md shadow-teal-200/50'
-                  : 'hover:bg-gray-50/80'
-                }`}
-              >
-                <AnimatedIcon
-                  icon={CalendarCheck}
-                  animation="scale"
-                  size={20}
-                  animateOnHover
-                  animateOnRender={false}
-                  className={`flex-shrink-0 ${activeSection === '/bookings' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}
-                />
-                <span className={`text-sm font-medium ${activeSection === '/bookings' ? 'text-white' : 'text-gray-600 group-hover:text-gray-900'}`}>
-                  {t.dashboard.sections.bookings?.title || 'Bookings'}
-                </span>
-              </motion.div>
-            </Link>
-
-            {/* Profile */}
-            <Link href="/profile" onClick={() => setActiveSection('/profile')}>
-              <motion.div
-                whileHover={{ x: 2 }}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer
-                ${activeSection === '/profile'
-                  ? 'bg-gradient-to-r from-lavender-500 to-lavender-600 shadow-md shadow-lavender-200/50'
-                  : 'hover:bg-gray-50/80'
-                }`}
-              >
-                <AnimatedIcon
-                  icon={UserIcon}
-                  animation="scale"
-                  size={20}
-                  animateOnHover
-                  animateOnRender={false}
-                  className={`flex-shrink-0 ${activeSection === '/profile' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}
-                />
-                <span className={`text-sm font-medium ${activeSection === '/profile' ? 'text-white' : 'text-gray-600 group-hover:text-gray-900'}`}>
-                  {t.profile.title}
-                </span>
-              </motion.div>
-            </Link>
-          </nav>
-
-          {/* Bottom Actions */}
-          <div className="pt-4 border-t border-gray-100 space-y-1.5">
-            <Link href="/settings" onClick={() => setActiveSection('/settings')}>
-              <motion.div
-                whileHover={{ x: 2 }}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer
-                ${activeSection === '/settings'
-                  ? 'bg-gradient-to-r from-gray-500 to-gray-600 shadow-md'
-                  : 'hover:bg-gray-50/80'
-                }`}
-              >
-                <AnimatedIcon
-                  icon={Settings}
-                  animation="spin"
-                  size={20}
-                  animateOnHover
-                  animateOnRender={false}
-                  className={`flex-shrink-0 ${activeSection === '/settings' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}
-                />
-                <span className={`text-sm font-medium ${activeSection === '/settings' ? 'text-white' : 'text-gray-600 group-hover:text-gray-900'}`}>
-                  {t.dashboard.sections.settings.title}
-                </span>
-              </motion.div>
-            </Link>
-
-            <motion.button
-              whileHover={{ x: 2 }}
-              onClick={handleSignOut}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50/80 transition-all duration-300 group"
-            >
-              <AnimatedIcon
-                icon={LogOut}
-                animation="arrow-right"
-                size={20}
-                animateOnHover
-                animateOnRender={false}
-                className="flex-shrink-0 text-gray-500 group-hover:text-red-500"
-              />
-              <span className="text-sm font-medium text-gray-600 group-hover:text-red-500">
-                {t.dashboard.sidebar.signOut}
-              </span>
-            </motion.button>
-          </div>
-        </div>
-      </motion.aside>
-
-      {/* Main Content Area */}
-      <main className="flex-1 ml-80 transition-all duration-300 p-8 relative z-10">
-        {/* Top Bar */}
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="flex items-center justify-between mb-10"
-        >
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">
-              {getGreeting()},
-              <span className="bg-gradient-to-r from-teal-500 to-lavender-500 bg-clip-text text-transparent"> {user?.full_name?.split(' ')[0] || 'there'}</span>
+        {/* Content */}
+        <div className="p-8">
+          {/* Greeting Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <p className="text-sm text-gray-500 mb-1">
+              {locale === 'fr' ? 'Mon espace de travail' : 'My Workspace'}
+            </p>
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+              {getGreeting()}, {user?.full_name?.split(' ')[0] || 'there'}
             </h1>
-            <p className="text-gray-500">{t.dashboard.tagline}</p>
-          </div>
+          </motion.div>
 
-          {/* User Profile & Language Switcher */}
-          <div className="flex items-center gap-3">
-            <LanguageSwitcher />
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="flex items-center gap-3 bg-white/90 backdrop-blur-xl rounded-2xl px-4 py-3 border border-white/60 shadow-lg shadow-gray-200/40"
-            >
-              <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-lavender-500 rounded-xl flex items-center justify-center text-white font-semibold shadow-md overflow-hidden">
-                {user?.avatar_url ? (
-                  <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  user?.full_name?.[0] || 'U'
-                )}
-              </div>
-              <div className="text-left">
-                <p className="text-sm font-medium text-gray-900">{user?.full_name || 'User'}</p>
-                <p className="text-xs text-gray-500">{user?.user_type === 'mentor' ? (locale === 'fr' ? 'Praticien' : 'Practitioner') : (locale === 'fr' ? 'Membre' : 'Member')}</p>
-              </div>
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* Overview Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {[
-            { label: t.dashboard.stats.activeClients.label, value: stats.activeMembers.toString(), icon: Users, color: 'lavender' },
-            { label: t.dashboard.stats.sessionsThisWeek.label, value: stats.sessionsThisWeek.toString(), icon: Calendar, color: 'emerald' },
-            { label: t.dashboard.stats.completionRate.label, value: stats.completionRate > 0 ? `${stats.completionRate}%` : '-', icon: TrendingUp, color: 'peach' },
-          ].map((stat, index) => {
-            const Icon = stat.icon
-            const colorClasses = {
-              lavender: { bg: 'bg-lavender-100/80', iconBg: 'from-lavender-400 to-lavender-600', shadow: 'shadow-lavender-200/50' },
-              emerald: { bg: 'bg-emerald-100/80', iconBg: 'from-emerald-400 to-emerald-600', shadow: 'shadow-emerald-200/50' },
-              coral: { bg: 'bg-coral-100/80', iconBg: 'from-coral-400 to-coral-600', shadow: 'shadow-coral-200/50' },
-              peach: { bg: 'bg-peach-100/80', iconBg: 'from-peach-400 to-peach-600', shadow: 'shadow-peach-200/50' },
-            }[stat.color]!
-
-            return (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
-                whileHover={{ scale: 1.02, y: -2 }}
-                className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-5 shadow-lg shadow-gray-200/40 border border-white/60 cursor-default group"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-12 h-12 rounded-2xl ${colorClasses.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                    <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${colorClasses.iconBg} flex items-center justify-center shadow-md ${colorClasses.shadow}`}>
-                      <Icon className="w-4.5 h-4.5 text-white" />
-                    </div>
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</p>
-                <p className="text-sm text-gray-500">{stat.label}</p>
-              </motion.div>
-            )
-          })}
-        </div>
-
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Quick Actions */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="lg:col-span-2 bg-white/90 backdrop-blur-xl rounded-[1.5rem] p-6 shadow-lg shadow-gray-200/40 border border-white/60"
+            transition={{ delay: 0.1 }}
+            className="mb-10"
           >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-600" />
-              <h2 className="text-xl font-semibold text-gray-900">{t.dashboard.quickActions.title}</h2>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {/* New Session Note */}
-              <Link href="/members">
-                <motion.div
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="bg-gray-50/80 border border-gray-100 rounded-xl p-5 hover:border-lavender-200 hover:bg-white/80 hover:shadow-md transition-all duration-300 cursor-pointer group"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-lavender-100/80 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-lavender-400 to-lavender-600 flex items-center justify-center shadow-md">
-                      <AnimatedIcon icon={FileText} animation="scale" size={18} animateOnHover animateOnRender={false} className="text-white" />
-                    </div>
-                  </div>
-                  <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{t.dashboard.quickActions.newSessionNote}</p>
-                </motion.div>
-              </Link>
+            <div className="grid grid-cols-6 gap-4">
+              {quickActions.map((action, index) => (
+                <Link key={action.id} href={action.href}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + index * 0.05 }}
+                    whileHover={{ y: -2, scale: 1.02 }}
+                    className="flex flex-col items-center cursor-pointer group"
+                  >
+                    <div className="w-full aspect-square bg-gray-100 rounded-2xl flex items-center justify-center mb-3 group-hover:bg-gray-200/80 transition-colors relative overflow-hidden p-4 isolate">
+                      {/* Custom illustrations for each card */}
+                      {action.id === 'worksheet' && (
+                        <div className="relative">
+                          {/* Document */}
+                          <motion.div
+                            className="w-16 h-20 bg-white rounded-lg shadow-md flex flex-col p-2 gap-1.5"
+                            animate={{ y: [0, -2, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <div className="w-full h-1.5 bg-blue-200 rounded-full" />
+                            <div className="w-3/4 h-1.5 bg-blue-100 rounded-full" />
+                            <div className="w-full h-1.5 bg-blue-200 rounded-full" />
+                            <div className="w-1/2 h-1.5 bg-blue-100 rounded-full" />
+                          </motion.div>
+                          {/* Floating checkmark */}
+                          <motion.div
+                            className="absolute -right-3 -top-2 w-7 h-7 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg"
+                            animate={{ scale: [1, 1.1, 1], rotate: [0, 5, 0] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <FileText className="w-3.5 h-3.5 text-white" />
+                          </motion.div>
+                        </div>
+                      )}
 
-              {/* Schedule Appointment - Opens Modal */}
-              <motion.div
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setShowScheduleModal(true)}
-                className="bg-gray-50/80 border border-gray-100 rounded-xl p-5 hover:border-emerald-200 hover:bg-white/80 hover:shadow-md transition-all duration-300 cursor-pointer group"
-              >
-                <div className="w-12 h-12 rounded-xl bg-emerald-100/80 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-md">
-                    <AnimatedIcon icon={Calendar} animation="scale" size={18} animateOnHover animateOnRender={false} className="text-white" />
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{t.dashboard.quickActions.scheduleAppointment}</p>
-              </motion.div>
+                      {action.id === 'table' && (
+                        <div className="relative">
+                          {/* Table grid */}
+                          <motion.div
+                            className="grid grid-cols-3 gap-1 p-2 bg-white rounded-lg shadow-md"
+                            animate={{ y: [0, -2, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+                          >
+                            {[...Array(9)].map((_, i) => (
+                              <motion.div
+                                key={i}
+                                className={`w-4 h-4 rounded ${i < 3 ? 'bg-emerald-300' : 'bg-emerald-100'}`}
+                                animate={{ opacity: [0.7, 1, 0.7] }}
+                                transition={{ duration: 2, repeat: Infinity, delay: i * 0.1 }}
+                              />
+                            ))}
+                          </motion.div>
+                          {/* Floating badge */}
+                          <motion.div
+                            className="absolute -right-2 -bottom-2 w-7 h-7 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center shadow-lg"
+                            animate={{ scale: [1, 1.1, 1] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                          >
+                            <Table2 className="w-3.5 h-3.5 text-white" />
+                          </motion.div>
+                        </div>
+                      )}
 
-              {/* Add New Member */}
-              <Link href="/members/new">
-                <motion.div
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="bg-gray-50/80 border border-gray-100 rounded-xl p-5 hover:border-mint-200 hover:bg-white/80 hover:shadow-md transition-all duration-300 cursor-pointer group"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-mint-100/80 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-mint-400 to-mint-600 flex items-center justify-center shadow-md">
-                      <AnimatedIcon icon={Plus} animation="scale" size={18} animateOnHover animateOnRender={false} className="text-white" />
-                    </div>
-                  </div>
-                  <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{t.dashboard.quickActions.addNewMember || 'Add New Member'}</p>
-                </motion.div>
-              </Link>
+                      {action.id === 'education' && (
+                        <div className="relative">
+                          {/* Book */}
+                          <motion.div
+                            className="w-14 h-18 bg-gradient-to-br from-purple-500 to-purple-600 rounded-r-lg rounded-l shadow-md flex flex-col justify-center items-center"
+                            animate={{ rotateY: [0, 5, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <div className="w-10 h-1 bg-white/30 rounded mb-1" />
+                            <div className="w-8 h-1 bg-white/20 rounded mb-1" />
+                            <div className="w-10 h-1 bg-white/30 rounded" />
+                          </motion.div>
+                          {/* Floating elements */}
+                          <motion.div
+                            className="absolute -left-3 -top-2 w-6 h-6 bg-purple-200 rounded-lg flex items-center justify-center"
+                            animate={{ y: [0, -4, 0], rotate: [-5, 5, -5] }}
+                            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <span className="text-xs">💡</span>
+                          </motion.div>
+                          <motion.div
+                            className="absolute -right-2 top-0 w-5 h-5 bg-purple-300 rounded-full"
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                          />
+                        </div>
+                      )}
 
-              {/* View Analytics */}
-              <Link href="/analytics">
-                <motion.div
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="bg-gray-50/80 border border-gray-100 rounded-xl p-5 hover:border-peach-200 hover:bg-white/80 hover:shadow-md transition-all duration-300 cursor-pointer group"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-peach-100/80 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-peach-400 to-peach-600 flex items-center justify-center shadow-md">
-                      <AnimatedIcon icon={BarChart3} animation="scale" size={18} animateOnHover animateOnRender={false} className="text-white" />
+                      {action.id === 'members' && (
+                        <div className="relative flex items-center justify-center w-full h-full">
+                          {/* Profile cards - stacked horizontally */}
+                          <div className="flex items-center -space-x-2">
+                            <motion.div
+                              className="w-9 h-11 bg-white rounded-lg shadow-md flex flex-col items-center justify-center z-10"
+                              animate={{ x: [0, 1, 0] }}
+                              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                            >
+                              <div className="w-4 h-4 bg-pink-200 rounded-full mb-1" />
+                              <div className="w-5 h-1 bg-pink-100 rounded" />
+                            </motion.div>
+                            <motion.div
+                              className="w-9 h-11 bg-white rounded-lg shadow-md flex flex-col items-center justify-center z-20"
+                              animate={{ x: [0, -1, 0] }}
+                              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                            >
+                              <div className="w-4 h-4 bg-pink-300 rounded-full mb-1" />
+                              <div className="w-5 h-1 bg-pink-200 rounded" />
+                            </motion.div>
+                            <motion.div
+                              className="w-9 h-11 bg-white rounded-lg shadow-md flex flex-col items-center justify-center z-30 relative"
+                              animate={{ x: [0, 1, 0] }}
+                              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+                            >
+                              <div className="w-4 h-4 bg-pink-400 rounded-full mb-1" />
+                              <div className="w-5 h-1 bg-pink-300 rounded" />
+                              {/* Plus badge - bottom right */}
+                              <motion.div
+                                className="absolute -right-1.5 -bottom-1.5 w-5 h-5 bg-gradient-to-br from-pink-400 to-pink-600 rounded-full flex items-center justify-center shadow-lg z-40"
+                                animate={{ scale: [1, 1.1, 1] }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                              >
+                                <Plus className="w-2.5 h-2.5 text-white" />
+                              </motion.div>
+                            </motion.div>
+                          </div>
+                        </div>
+                      )}
+
+                      {action.id === 'bookings' && (
+                        <div className="relative">
+                          {/* Calendar */}
+                          <motion.div
+                            className="w-16 h-16 bg-white rounded-lg shadow-md overflow-hidden"
+                            animate={{ y: [0, -2, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <div className="h-4 bg-amber-400 flex items-center justify-center">
+                              <div className="w-8 h-1 bg-white/50 rounded" />
+                            </div>
+                            <div className="p-1.5 grid grid-cols-4 gap-0.5">
+                              {[...Array(12)].map((_, i) => (
+                                <motion.div
+                                  key={i}
+                                  className={`w-2.5 h-2.5 rounded-sm ${i === 5 ? 'bg-amber-400' : 'bg-gray-100'}`}
+                                  animate={i === 5 ? { scale: [1, 1.2, 1] } : {}}
+                                  transition={{ duration: 1.5, repeat: Infinity }}
+                                />
+                              ))}
+                            </div>
+                          </motion.div>
+                          {/* Clock */}
+                          <motion.div
+                            className="absolute -right-2 -bottom-1 w-7 h-7 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg"
+                            animate={{ rotate: [0, 10, 0] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <CalendarCheck className="w-3.5 h-3.5 text-white" />
+                          </motion.div>
+                        </div>
+                      )}
+
+                      {action.id === 'analytics' && (
+                        <div className="relative">
+                          {/* Chart */}
+                          <motion.div
+                            className="flex items-end gap-1.5 h-16"
+                            animate={{ y: [0, -2, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            {[40, 65, 45, 80, 55].map((height, i) => (
+                              <motion.div
+                                key={i}
+                                className="w-3 bg-gradient-to-t from-teal-500 to-teal-300 rounded-t"
+                                style={{ height: `${height}%` }}
+                                animate={{ scaleY: [0.9, 1, 0.9] }}
+                                transition={{ duration: 2, repeat: Infinity, delay: i * 0.15 }}
+                              />
+                            ))}
+                          </motion.div>
+                          {/* Trend line */}
+                          <motion.div
+                            className="absolute -right-1 top-1 w-6 h-6 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center shadow-lg"
+                            animate={{ y: [0, -3, 0] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <TrendingUp className="w-3 h-3 text-white" />
+                          </motion.div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{t.dashboard.quickActions.viewAnalytics}</p>
-                </motion.div>
-              </Link>
+                    <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900 text-center">{action.title}</p>
+                  </motion.div>
+                </Link>
+              ))}
             </div>
           </motion.div>
 
-          {/* Today's Schedule */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] p-6 shadow-lg shadow-gray-200/40 border border-white/60"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-100/80 flex items-center justify-center">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-md">
-                    <AnimatedIcon icon={Clock} animation="pulse" size={14} animateOnHover animateOnRender={false} className="text-white" />
-                  </div>
-                </div>
-                <h2 className="text-lg font-semibold text-gray-900">{t.dashboard.schedule.title}</h2>
+          {/* Two Column Layout */}
+          <div className="grid grid-cols-2 gap-8">
+            {/* Latest Resources */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {locale === 'fr' ? 'Dernières ressources' : 'Latest resources'}
+                </h2>
+                <Link href="/resources" className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1">
+                  {locale === 'fr' ? 'Voir tout' : 'View all'}
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
               </div>
-              <Link href="/bookings">
-                <span className="text-xs text-gray-500 hover:text-gray-700 cursor-pointer">{t.dashboard.schedule.viewAll}</span>
-              </Link>
-            </div>
-            <div className="space-y-3">
-              {todayBookings.length === 0 ? (
-                <div className="text-center py-6 text-gray-500">
-                  <AnimatedIcon icon={Calendar} animation="scale" size={32} animateOnHover animateOnRender={false} className="mx-auto mb-2 text-gray-300" />
-                  <p className="text-sm">{t.dashboard.schedule.noAppointments}</p>
-                </div>
-              ) : (
-                todayBookings.map((booking, index) => {
-                  const colors = ['lavender', 'emerald', 'coral', 'peach', 'mint'] as const
-                  const color = colors[index % colors.length]
-                  const colorClasses = {
-                    lavender: 'bg-lavender-100 text-lavender-700',
-                    emerald: 'bg-emerald-100 text-emerald-700',
-                    coral: 'bg-coral-100 text-coral-700',
-                    peach: 'bg-peach-100 text-peach-700',
-                    mint: 'bg-mint-100 text-mint-700',
-                  }[color]
 
-                  // Format time from ISO string
-                  const time = new Date(booking.start_time).toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true,
-                  })
-
-                  // Get session type name
-                  const sessionType = sessionTypes.find(st => st.id === booking.session_type)
-                  const typeName = sessionType?.name || booking.session_type
-
-                  return (
-                    <Link key={booking.id} href="/bookings">
-                      <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.5 + index * 0.05 }}
-                        className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50/80 transition-colors cursor-pointer group"
-                      >
-                        <div className="w-16 text-sm font-semibold text-gray-500">{time}</div>
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900 text-sm">{booking.client_name}</p>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${colorClasses}`}>{typeName}</span>
+              <div className="space-y-2">
+                {recentResources.length === 0 ? (
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-8 text-center">
+                    <FolderOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500">
+                      {locale === 'fr' ? 'Aucune ressource créée' : 'No resources yet'}
+                    </p>
+                  </div>
+                ) : (
+                  recentResources.map((resource, index) => (
+                    <motion.div
+                      key={resource.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.25 + index * 0.05 }}
+                    >
+                      <Link href={`/resources/${resource.id}`}>
+                        <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group">
+                          <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-gray-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-teal-600">
+                              {resource.title}
+                            </p>
+                            <p className="text-xs text-gray-500 capitalize">{resource.type}</p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
                         </div>
-                        <AnimatedIcon icon={ArrowRight} animation="arrow-right" size={16} animateOnHover animateOnRender={false} className="text-gray-300 group-hover:text-gray-500" />
+                      </Link>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+
+            {/* Explore Templates */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                {locale === 'fr' ? 'Modèles à explorer' : 'Explore templates'}
+              </h2>
+
+              <div className="space-y-2">
+                {featuredTemplates.map((template, index) => {
+                  const TemplateIcon = getTemplateIcon(template.type)
+                  const colorClass = getTemplateColor(template.type)
+                  return (
+                    <Link key={template.id} href={template.href}>
+                      <motion.div
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.35 + index * 0.05 }}
+                        className="flex items-center gap-4 bg-white dark:bg-gray-800 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group"
+                      >
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass.split(' ')[0]}`}>
+                          <TemplateIcon className={`w-5 h-5 ${colorClass.split(' ')[1]}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-gray-700">
+                            {template.name[locale]}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {getTemplateTypeLabel(template.type)}
+                          </p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
                       </motion.div>
                     </Link>
                   )
-                })
-              )}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="grid grid-cols-1 gap-6">
-          {/* Recent Activity */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] p-6 shadow-lg shadow-gray-200/40 border border-white/60"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-amber-100/80 flex items-center justify-center">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-md">
-                  <AnimatedIcon icon={Sparkles} animation="sparkle" size={14} animateOnHover animateOnRender={false} className="text-white" />
-                </div>
+                })}
               </div>
-              <h2 className="text-lg font-semibold text-gray-900">{t.dashboard.activity.title}</h2>
-            </div>
-            <div className="space-y-3">
-              {recentActivity.length === 0 ? (
-                <div className="text-center py-6 text-gray-500">
-                  <AnimatedIcon icon={Sparkles} animation="sparkle" size={32} animateOnHover animateOnRender={false} className="mx-auto mb-2 text-gray-300" />
-                  <p className="text-sm">No recent activity</p>
-                </div>
-              ) : (
-                recentActivity.map((activity, index) => {
-                  const activityConfig = {
-                    session_completed: { icon: CheckCircle2, color: 'bg-emerald-100 text-emerald-600' },
-                    resource_saved: { icon: Plus, color: 'bg-mint-100 text-mint-600' },
-                    member_added: { icon: Users, color: 'bg-lavender-100 text-lavender-600' },
-                    booking_created: { icon: Calendar, color: 'bg-peach-100 text-peach-600' },
-                  }[activity.type]
+            </motion.div>
+          </div>
 
-                  const Icon = activityConfig.icon
-
-                  // Format relative time
-                  const formatRelativeTime = (dateStr: string) => {
-                    const date = new Date(dateStr)
-                    const now = new Date()
-                    const diffMs = now.getTime() - date.getTime()
-                    const diffMins = Math.floor(diffMs / 60000)
-                    const diffHours = Math.floor(diffMins / 60)
-                    const diffDays = Math.floor(diffHours / 24)
-
-                    if (diffMins < 1) return 'Just now'
-                    if (diffMins < 60) return `${diffMins} min ago`
-                    if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`
-                    if (diffDays === 1) return 'Yesterday'
-                    if (diffDays < 7) return `${diffDays} days ago`
-                    return date.toLocaleDateString()
-                  }
-
-                  return (
-                    <motion.div
-                      key={activity.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.55 + index * 0.05 }}
-                      className="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50/80 transition-colors"
-                    >
-                      <div className={`w-8 h-8 rounded-lg ${activityConfig.color} flex items-center justify-center flex-shrink-0`}>
-                        <AnimatedIcon icon={Icon} animation="scale" size={16} animateOnHover animateOnRender={false} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-700 leading-relaxed">{activity.description}</p>
-                        <p className="text-xs text-gray-400 mt-1">{formatRelativeTime(activity.time)}</p>
-                      </div>
-                    </motion.div>
-                  )
-                })
-              )}
-            </div>
-          </motion.div>
         </div>
       </main>
 
@@ -1032,31 +585,7 @@ function DashboardContent() {
       <ScheduleSessionModal
         isOpen={showScheduleModal}
         onClose={() => setShowScheduleModal(false)}
-        onSuccess={() => {
-          // Refresh today's bookings after scheduling
-          const fetchBookings = async () => {
-            const { data: { user: authUser } } = await supabase.auth.getUser()
-            if (!authUser) return
-
-            const today = new Date()
-            const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString()
-            const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString()
-
-            const { data: bookings } = await supabase
-              .from('bookings')
-              .select('id, client_name, session_type, start_time, status')
-              .eq('practitioner_id', authUser.id)
-              .gte('start_time', startOfDay)
-              .lt('start_time', endOfDay)
-              .in('status', ['confirmed', 'pending'])
-              .order('start_time', { ascending: true })
-
-            if (bookings) {
-              setTodayBookings(bookings)
-            }
-          }
-          fetchBookings()
-        }}
+        onSuccess={() => setShowScheduleModal(false)}
       />
     </div>
   )
@@ -1065,10 +594,10 @@ function DashboardContent() {
 export default function DashboardPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center gradient-mesh">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="w-10 h-10 border-3 border-gray-300 dark:border-gray-700 border-t-gray-900 dark:border-t-gray-100 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Loading...</p>
         </div>
       </div>
     }>

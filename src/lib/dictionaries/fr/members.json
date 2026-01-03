@@ -13,7 +13,7 @@
   },
 
   "filters": {
-    "all": "Tous les Clients",
+    "all": "Tous",
     "active": "Actifs",
     "inactive": "Inactifs",
     "pending": "En Attente",
@@ -34,7 +34,7 @@
   },
 
   "actions": {
-    "addMember": "Ajouter un Client",
+    "addMember": "Ajouter",
     "viewDetails": "Voir les Détails",
     "editMember": "Modifier",
     "contact": "Contacter",

@@ -1,98 +1,54 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft,
   ArrowRight,
-  Save,
-  Eye,
-  Share2,
-  X,
-  Plus,
   FileText,
   BookOpen,
   Lightbulb,
-  Upload,
-  Paperclip,
-  Trash2,
-  Sparkles,
-  CheckCircle,
+  Check,
   Table2,
+  ChevronRight,
+  Sparkles,
+  Plus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { useLanguage } from '@/lib/i18n/context'
-import type { ResourceCategory } from '@/types/library'
+import { AppHeader, AppSidebar } from '@/components/layout'
+import { createClient } from '@/lib/supabase/browser-client'
+import type { User } from '@/types/user'
 
-// Simplified resource types for practitioners based on research
-type PractitionerResourceType = 'worksheet' | 'psychoeducation' | 'exercise' | 'table'
+// Simplified resource types for practitioners
+type PractitionerResourceType = 'worksheet' | 'psychoeducation' | 'table' | 'exercise'
 
 interface ResourceTypeOption {
   id: PractitionerResourceType
-  icon: React.ElementType
-  gradient: string
-  iconBg: string
-  glow: string
-  examples: { en: string[]; fr: string[] }
   comingSoon?: boolean
 }
 
-// 4 main resource types practitioners commonly create
+interface Template {
+  id: string
+  name: { en: string; fr: string }
+  description: { en: string; fr: string }
+  blocks: number
+  isBlank?: boolean
+}
+
+// 4 main resource types
 const resourceTypes: ResourceTypeOption[] = [
-  {
-    id: 'worksheet',
-    icon: FileText,
-    gradient: 'from-blue-400 to-blue-600',
-    iconBg: 'bg-blue-100/80',
-    glow: 'shadow-blue-200/50',
-    examples: {
-      en: ['Self-esteem', 'Relationships', 'Regulation'],
-      fr: ['Estime de soi', 'Relations', 'Régulation'],
-    },
-  },
-  {
-    id: 'table',
-    icon: Table2,
-    gradient: 'from-emerald-400 to-emerald-600',
-    iconBg: 'bg-emerald-100/80',
-    glow: 'shadow-emerald-200/50',
-    examples: {
-      en: ['Automatic thoughts', 'Anxiety'],
-      fr: ['Pensées automatiques', 'Anxiété'],
-    },
-  },
-  {
-    id: 'psychoeducation',
-    icon: BookOpen,
-    gradient: 'from-purple-400 to-purple-600',
-    iconBg: 'bg-purple-100/80',
-    glow: 'shadow-purple-200/50',
-    examples: {
-      en: ['Psychoeducation', 'Fact sheets', 'Guides'],
-      fr: ['Psychoéducation', 'Fiches explicatives', 'Guides'],
-    },
-  },
-  {
-    id: 'exercise',
-    icon: Lightbulb,
-    gradient: 'from-amber-400 to-amber-600',
-    iconBg: 'bg-amber-100/80',
-    glow: 'shadow-amber-200/50',
-    examples: {
-      en: ['Breathing', 'Grounding', 'Mindfulness'],
-      fr: ['Respiration', 'Ancrage', 'Pleine conscience'],
-    },
-    comingSoon: true,
-  },
+  { id: 'worksheet' },
+  { id: 'table' },
+  { id: 'psychoeducation' },
+  { id: 'exercise', comingSoon: true },
 ]
 
 const typeLabels: Record<PractitionerResourceType, { en: string; fr: string }> = {
   worksheet: { en: 'Worksheet', fr: 'Exercice' },
   table: { en: 'Table Exercise', fr: 'Tableau' },
-  psychoeducation: { en: 'Education', fr: 'Éducation' },
+  psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
   exercise: { en: 'Exercise / Activity', fr: 'Exercice / Activité' },
 }
 
@@ -115,621 +71,519 @@ const typeDescriptions: Record<PractitionerResourceType, { en: string; fr: strin
   },
 }
 
-const allCategories: ResourceCategory[] = [
-  'anxiety', 'depression', 'stress', 'relationships', 'self_esteem',
-  'mindfulness', 'coping_skills', 'communication', 'grief', 'trauma',
-  'children', 'teens', 'adults', 'couples', 'family', 'general'
-]
+const typeExamples: Record<PractitionerResourceType, { en: string[]; fr: string[] }> = {
+  worksheet: {
+    en: ['Self-esteem', 'Relationships', 'Regulation'],
+    fr: ['Estime de soi', 'Relations', 'Régulation'],
+  },
+  table: {
+    en: ['Automatic thoughts', 'Anxiety tracking'],
+    fr: ['Pensées automatiques', 'Suivi anxiété'],
+  },
+  psychoeducation: {
+    en: ['Fact sheets', 'Guides', 'Explanations'],
+    fr: ['Fiches explicatives', 'Guides', 'Explications'],
+  },
+  exercise: {
+    en: ['Breathing', 'Grounding', 'Mindfulness'],
+    fr: ['Respiration', 'Ancrage', 'Pleine conscience'],
+  },
+}
 
-interface Attachment {
-  id: string
-  name: string
-  size: number
-  type: string
+// Templates for each resource type (IDs must match the actual templates in each editor page)
+const templates: Record<PractitionerResourceType, Template[]> = {
+  worksheet: [
+    {
+      id: 'thought-record',
+      name: { en: 'Thought Record', fr: 'Journal de pensées' },
+      description: { en: 'Classic CBT thought record template', fr: 'Modèle classique de journal de pensées TCC' },
+      blocks: 9,
+    },
+    {
+      id: 'gratitude',
+      name: { en: 'Daily Gratitude', fr: 'Gratitude quotidienne' },
+      description: { en: 'Daily gratitude reflection', fr: 'Réflexion quotidienne de gratitude' },
+      blocks: 6,
+    },
+  ],
+  table: [
+    {
+      id: 'thought-log',
+      name: { en: 'Thought Log', fr: 'Journal de pensées' },
+      description: { en: 'Track thoughts and emotions over time', fr: 'Suivre les pensées et émotions au fil du temps' },
+      blocks: 4,
+    },
+    {
+      id: 'emotion-tracker',
+      name: { en: 'Emotion Tracker', fr: 'Suivi des émotions' },
+      description: { en: 'Monitor emotions and coping strategies', fr: 'Surveiller les émotions et stratégies d\'adaptation' },
+      blocks: 5,
+    },
+  ],
+  psychoeducation: [
+    {
+      id: 'condition-overview',
+      name: { en: 'Condition Overview', fr: 'Aperçu d\'une condition' },
+      description: { en: 'Explain a mental health condition', fr: 'Expliquer une condition de santé mentale' },
+      blocks: 7,
+    },
+    {
+      id: 'coping-strategy',
+      name: { en: 'Coping Strategy Guide', fr: 'Guide de stratégie d\'adaptation' },
+      description: { en: 'Teach a specific coping technique', fr: 'Enseigner une technique d\'adaptation spécifique' },
+      blocks: 7,
+    },
+  ],
+  exercise: [],
 }
 
 export default function CreateResourcePage() {
-  const { t, locale } = useLanguage()
+  const { locale } = useLanguage()
   const router = useRouter()
-
-  // Step state
-  const [step, setStep] = useState<'select-type' | 'create-form'>('select-type')
+  const searchParams = useSearchParams()
+  const supabase = createClient()
   const [selectedResourceType, setSelectedResourceType] = useState<PractitionerResourceType | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const templatesRef = useRef<HTMLDivElement>(null)
 
-  // Form state
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<ResourceCategory | null>(null)
-  const [content, setContent] = useState('')
-  const [tags, setTags] = useState<string[]>([])
-  const [tagInput, setTagInput] = useState('')
-  const [attachments, setAttachments] = useState<Attachment[]>([])
-  const [isSaving, setIsSaving] = useState(false)
+  // Auto-select type from URL query parameter (e.g., ?type=worksheet)
+  useEffect(() => {
+    const typeFromUrl = searchParams.get('type')
+    if (typeFromUrl && ['worksheet', 'table', 'psychoeducation', 'exercise'].includes(typeFromUrl)) {
+      const validType = typeFromUrl as PractitionerResourceType
+      // Only auto-select if not already selected and not coming soon
+      const resourceType = resourceTypes.find(r => r.id === validType)
+      if (resourceType && !resourceType.comingSoon) {
+        setSelectedResourceType(validType)
+      }
+    }
+  }, [searchParams])
 
-  // Handle type selection
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (authUser) {
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', authUser.id)
+          .single()
+        if (userProfile) {
+          setUser(userProfile)
+        } else {
+          setUser({
+            id: authUser.id,
+            email: authUser.email!,
+            full_name: authUser.user_metadata?.full_name || null,
+            avatar_url: authUser.user_metadata?.avatar_url || null,
+            user_type: authUser.user_metadata?.user_type || 'mentor',
+            preferred_language: 'en',
+            created_at: authUser.created_at,
+            updated_at: authUser.updated_at || authUser.created_at,
+          })
+        }
+      }
+    }
+    fetchUser()
+  }, [supabase])
+
   const handleTypeSelect = (type: PractitionerResourceType) => {
     setSelectedResourceType(type)
+    setSelectedTemplate(null)
+  }
+
+  // Scroll to templates when type is selected
+  useEffect(() => {
+    if (selectedResourceType && templatesRef.current) {
+      setTimeout(() => {
+        templatesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    }
+  }, [selectedResourceType])
+
+  const handleTemplateSelect = (templateId: string) => {
+    setSelectedTemplate(templateId)
   }
 
   const handleContinue = () => {
-    if (selectedResourceType) {
-      // Navigate to the dedicated page for each resource type
-      router.push(`/resources/create/${selectedResourceType}`)
+    if (selectedResourceType && selectedTemplate) {
+      // Always pass template param, including for blank
+      router.push(`/resources/create/${selectedResourceType}?template=${selectedTemplate}`)
     }
   }
 
-  const handleBack = () => {
-    setStep('select-type')
-  }
-
-  // Handle tag input
-  const handleAddTag = () => {
-    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()])
-      setTagInput('')
-    }
-  }
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove))
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleAddTag()
-    }
-  }
-
-  // Handle file upload
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (files) {
-      const newAttachments: Attachment[] = Array.from(files).map(file => ({
-        id: Math.random().toString(36).substr(2, 9),
-        name: file.name,
-        size: file.size,
-        type: file.type,
-      }))
-      setAttachments([...attachments, ...newAttachments])
-    }
-  }
-
-  const handleRemoveAttachment = (id: string) => {
-    setAttachments(attachments.filter(a => a.id !== id))
-  }
-
-  // Format file size
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B'
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-  }
-
-  // Handle save
-  const handleSave = async () => {
-    if (!title || !selectedResourceType || !selectedCategory || !content) {
-      alert('Please fill in all required fields')
-      return
-    }
-
-    setIsSaving(true)
-    setTimeout(() => {
-      setIsSaving(false)
-      router.push('/resources')
-    }, 1500)
-  }
-
-  // Check if form is valid
-  const isValid = title && selectedResourceType && selectedCategory && content
-
-  // Get current type config
-  const currentTypeConfig = selectedResourceType
-    ? resourceTypes.find(t => t.id === selectedResourceType)
-    : null
+  const currentTemplates = selectedResourceType ? templates[selectedResourceType] : []
 
   return (
-    <div className="min-h-screen gradient-mesh relative">
-      {/* Decorative Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-lavender-200/30 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-mint-200/30 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-blue-200/20 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      <AppSidebar activeItem="library" />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        <AnimatePresence mode="wait">
-          {step === 'select-type' ? (
-            <motion.div
-              key="select-type"
-              initial={{ opacity: 0, y: 20 }}
+      {/* Main Content */}
+      <main className="flex-1 ml-64">
+        <AppHeader
+          user={user}
+          leftContent={
+            <div className="flex items-center gap-2 text-sm">
+              <Link href="/library" className="text-gray-500 hover:text-gray-700 transition-colors">
+                <BookOpen className="w-4 h-4" />
+              </Link>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <span className="font-medium text-gray-900">
+                {locale === 'fr' ? 'Créer' : 'Create'}
+              </span>
+            </div>
+          }
+        />
+
+        {/* Content */}
+        <div className="p-8 max-w-6xl mx-auto">
+          {/* Title Section */}
+          <div className="mb-8">
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              className="text-2xl font-semibold text-gray-900 mb-2"
             >
-              {/* Header */}
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between mb-8"
-              >
-                <Link href="/resources">
-                  <motion.div whileHover={{ x: -4 }} className="inline-block">
-                    <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      {t.library.myResources.title}
-                    </Button>
-                  </motion.div>
-                </Link>
-              </motion.div>
+              {locale === 'fr' ? 'Créer un support' : 'Create a Resource'}
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="text-gray-500"
+            >
+              {locale === 'fr'
+                ? 'Choisissez le format du support que vous souhaitez créer'
+                : 'Choose the type of resource you want to create'}
+            </motion.p>
+          </div>
 
-              {/* Title Section */}
-              <div className="text-center mb-12">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-lavender-100/80 mb-6"
+          {/* Resource Type Selection - Large Cards with Illustrations */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+            {resourceTypes.map((type, index) => {
+              const isSelected = selectedResourceType === type.id
+              const isDisabled = type.comingSoon
+
+              return (
+                <motion.button
+                  key={type.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  onClick={() => !isDisabled && handleTypeSelect(type.id)}
+                  disabled={isDisabled}
+                  className={`relative text-center p-6 rounded-2xl border-2 transition-all group ${
+                    isDisabled
+                      ? 'cursor-not-allowed opacity-50 bg-gray-50 border-gray-100'
+                      : isSelected
+                      ? 'bg-white border-gray-900 shadow-xl ring-4 ring-gray-900/5'
+                      : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-lg'
+                  }`}
+                  whileHover={isDisabled ? {} : { y: -4 }}
+                  whileTap={isDisabled ? {} : { scale: 0.98 }}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-lavender-400 to-lavender-600 flex items-center justify-center shadow-lg shadow-lavender-200/50">
-                    <Sparkles className="w-6 h-6 text-white" />
-                  </div>
-                </motion.div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                  {locale === 'fr' ? 'Créer un support' : 'Create a Resource'}
-                </h1>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  {locale === 'fr'
-                    ? 'Choisissez le format du support'
-                    : 'What type of resource would you like to create?'}
-                </p>
-              </div>
+                  {/* Selection indicator */}
+                  {isSelected && !isDisabled && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute top-3 right-3 z-10 w-6 h-6 bg-gray-900 rounded-full flex items-center justify-center"
+                    >
+                      <Check className="w-3.5 h-3.5 text-white" />
+                    </motion.span>
+                  )}
 
-              {/* Resource Type Selection */}
-              <div className="max-w-4xl mx-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                  {resourceTypes.map((type, index) => {
-                    const Icon = type.icon
-                    const isSelected = selectedResourceType === type.id
-                    const isDisabled = type.comingSoon
-                    return (
-                      <motion.div
-                        key={type.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        whileHover={isDisabled ? {} : { scale: 1.02, y: -4 }}
-                        whileTap={isDisabled ? {} : { scale: 0.98 }}
-                        onClick={() => !isDisabled && handleTypeSelect(type.id)}
-                        className={`relative bg-white/90 backdrop-blur-xl rounded-[1.5rem] p-6 transition-all duration-300 border-2 ${
-                          isDisabled
-                            ? 'cursor-not-allowed opacity-70 border-white/60 shadow-lg shadow-gray-200/40'
-                            : isSelected
-                            ? `cursor-pointer border-transparent ring-2 ring-offset-2 ring-offset-white shadow-xl ${type.glow}`
-                            : 'cursor-pointer border-white/60 shadow-lg shadow-gray-200/40 hover:shadow-xl'
-                        }`}
-                        style={{
-                          boxShadow: isSelected && !isDisabled ? `0 0 0 2px var(--tw-ring-color)` : undefined,
-                        }}
-                      >
-                        {/* Coming Soon badge */}
-                        {isDisabled && (
-                          <div className="absolute top-4 right-4">
-                            <span className="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                              {locale === 'fr' ? 'Bientôt' : 'Coming Soon'}
-                            </span>
-                          </div>
-                        )}
+                  {/* Illustrated Icon Area */}
+                  <div className="w-full aspect-square bg-gray-100 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-gray-200/80 transition-colors relative overflow-hidden p-4">
+                    {/* Coming Soon badge - inside illustration area */}
+                    {isDisabled && (
+                      <span className="absolute top-3 right-3 z-10 px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-semibold rounded-full whitespace-nowrap">
+                        {locale === 'fr' ? 'Bientôt' : 'Coming Soon'}
+                      </span>
+                    )}
+                    {type.id === 'worksheet' && (
+                      <div className="relative">
+                        {/* Document */}
+                        <motion.div
+                          className="w-16 h-20 bg-white rounded-lg shadow-md flex flex-col p-2 gap-1.5"
+                          animate={{ y: [0, -2, 0] }}
+                          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          <div className="w-full h-1.5 bg-blue-200 rounded-full" />
+                          <div className="w-3/4 h-1.5 bg-blue-100 rounded-full" />
+                          <div className="w-full h-1.5 bg-blue-200 rounded-full" />
+                          <div className="w-1/2 h-1.5 bg-blue-100 rounded-full" />
+                        </motion.div>
+                        {/* Floating badge */}
+                        <motion.div
+                          className="absolute -right-3 -top-2 w-7 h-7 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg"
+                          animate={{ scale: [1, 1.1, 1], rotate: [0, 5, 0] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          <FileText className="w-3.5 h-3.5 text-white" />
+                        </motion.div>
+                      </div>
+                    )}
 
-                        {/* Selection indicator */}
-                        {isSelected && !isDisabled && (
+                    {type.id === 'table' && (
+                      <div className="relative">
+                        {/* Table grid */}
+                        <motion.div
+                          className="grid grid-cols-3 gap-1 p-2 bg-white rounded-lg shadow-md"
+                          animate={{ y: [0, -2, 0] }}
+                          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+                        >
+                          {[...Array(9)].map((_, i) => (
+                            <motion.div
+                              key={i}
+                              className={`w-4 h-4 rounded ${i < 3 ? 'bg-emerald-300' : 'bg-emerald-100'}`}
+                              animate={{ opacity: [0.7, 1, 0.7] }}
+                              transition={{ duration: 2, repeat: Infinity, delay: i * 0.1 }}
+                            />
+                          ))}
+                        </motion.div>
+                        {/* Floating badge */}
+                        <motion.div
+                          className="absolute -right-2 -bottom-2 w-7 h-7 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center shadow-lg"
+                          animate={{ scale: [1, 1.1, 1] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                        >
+                          <Table2 className="w-3.5 h-3.5 text-white" />
+                        </motion.div>
+                      </div>
+                    )}
+
+                    {type.id === 'psychoeducation' && (
+                      <div className="relative">
+                        {/* Book */}
+                        <motion.div
+                          className="w-14 h-18 bg-gradient-to-br from-purple-500 to-purple-600 rounded-r-lg rounded-l shadow-md flex flex-col justify-center items-center"
+                          animate={{ rotateY: [0, 5, 0] }}
+                          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          <div className="w-10 h-1 bg-white/30 rounded mb-1" />
+                          <div className="w-8 h-1 bg-white/20 rounded mb-1" />
+                          <div className="w-10 h-1 bg-white/30 rounded" />
+                        </motion.div>
+                        {/* Floating elements */}
+                        <motion.div
+                          className="absolute -left-3 -top-2 w-6 h-6 bg-purple-200 rounded-lg flex items-center justify-center"
+                          animate={{ y: [0, -4, 0], rotate: [-5, 5, -5] }}
+                          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          <Lightbulb className="w-3 h-3 text-purple-600" />
+                        </motion.div>
+                        <motion.div
+                          className="absolute -right-2 top-0 w-5 h-5 bg-purple-300 rounded-full"
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                        />
+                      </div>
+                    )}
+
+                    {type.id === 'exercise' && (
+                      <div className="relative">
+                        {/* Meditation/breathing visualization */}
+                        <motion.div
+                          className="relative w-16 h-16 flex items-center justify-center"
+                          animate={{ scale: [1, 1.05, 1] }}
+                          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          {/* Outer ring - breathing circle */}
                           <motion.div
+                            className="absolute w-16 h-16 rounded-full border-4 border-amber-200"
+                            animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.8, 0.5] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                          />
+                          {/* Middle ring */}
+                          <motion.div
+                            className="absolute w-12 h-12 rounded-full bg-amber-100"
+                            animate={{ scale: [1, 1.1, 1] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+                          />
+                          {/* Inner circle - person silhouette */}
+                          <motion.div
+                            className="absolute w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-md"
+                            animate={{ y: [0, -2, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <div className="w-3 h-3 bg-white rounded-full" />
+                          </motion.div>
+                        </motion.div>
+                        {/* Floating sparkles */}
+                        <motion.div
+                          className="absolute -right-2 -top-1 w-5 h-5 bg-amber-200 rounded-full flex items-center justify-center"
+                          animate={{ y: [0, -3, 0], opacity: [0.6, 1, 0.6] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          <Sparkles className="w-2.5 h-2.5 text-amber-600" />
+                        </motion.div>
+                        <motion.div
+                          className="absolute -left-2 bottom-0 w-4 h-4 bg-amber-300 rounded-full"
+                          animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.8, 0.5] }}
+                          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                        />
+                        {/* Activity badge */}
+                        <motion.div
+                          className="absolute -right-3 -bottom-2 w-7 h-7 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg"
+                          animate={{ rotate: [0, 10, 0] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          <Lightbulb className="w-3.5 h-3.5 text-white" />
+                        </motion.div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Type Label */}
+                  <h3 className="font-semibold text-gray-900 mb-2 text-lg">
+                    {typeLabels[type.id][locale]}
+                  </h3>
+
+                  {/* Description */}
+                  <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+                    {typeDescriptions[type.id][locale]}
+                  </p>
+
+                  {/* Examples */}
+                  <div className="flex flex-wrap justify-center gap-1.5">
+                    {typeExamples[type.id][locale].map((example, i) => (
+                      <span
+                        key={i}
+                        className="text-xs px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full"
+                      >
+                        {example}
+                      </span>
+                    ))}
+                  </div>
+                </motion.button>
+              )
+            })}
+          </div>
+
+          {/* Templates Section - Shows when type is selected */}
+          <AnimatePresence>
+            {selectedResourceType && (
+              <motion.div
+                ref={templatesRef}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="pt-8 border-t border-gray-200"
+              >
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-1">
+                    {locale === 'fr' ? 'Choisir un modèle' : 'Choose a template'}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {locale === 'fr'
+                      ? 'Commencez avec un modèle ou créez à partir de zéro'
+                      : 'Start with a template or create from scratch'}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                  {/* Template Cards */}
+                  {currentTemplates.map((template, index) => {
+                    const isSelected = selectedTemplate === template.id
+                    return (
+                      <motion.button
+                        key={template.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        onClick={() => handleTemplateSelect(template.id)}
+                        className={`relative text-left p-5 rounded-xl border-2 transition-all ${
+                          isSelected
+                            ? 'bg-white border-gray-900 shadow-lg'
+                            : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-md'
+                        }`}
+                      >
+                        {isSelected && (
+                          <motion.span
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            className="absolute top-4 right-4"
+                            className="absolute top-3 right-3 w-5 h-5 bg-gray-900 rounded-full flex items-center justify-center"
                           >
-                            <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${type.gradient} flex items-center justify-center shadow-md`}>
-                              <CheckCircle className="w-4 h-4 text-white" />
-                            </div>
-                          </motion.div>
+                            <Check className="w-3 h-3 text-white" />
+                          </motion.span>
                         )}
-
-                        <div className="flex items-start gap-4">
-                          <div className={`w-14 h-14 rounded-2xl ${type.iconBg} flex items-center justify-center flex-shrink-0 ${isDisabled ? 'grayscale-[30%]' : ''}`}>
-                            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${type.gradient} flex items-center justify-center shadow-lg ${isDisabled ? 'grayscale-[30%]' : ''}`}>
-                              <Icon className="w-5 h-5 text-white" />
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className={`text-lg font-semibold mb-1 ${isDisabled ? 'text-gray-500' : 'text-gray-900'}`}>
-                              {typeLabels[type.id][locale]}
-                            </h3>
-                            <p className={`text-sm mb-3 leading-relaxed ${isDisabled ? 'text-gray-400' : 'text-gray-500'}`}>
-                              {typeDescriptions[type.id][locale]}
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {type.examples[locale].slice(0, 3).map((example, i) => (
-                                <span
-                                  key={i}
-                                  className={`text-xs px-2 py-1 rounded-md ${isDisabled ? 'bg-gray-100/60 text-gray-400' : 'bg-gray-100/80 text-gray-600'}`}
-                                >
-                                  {example}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
+                        <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mb-3">
+                          <FileText className="w-5 h-5 text-blue-600" />
                         </div>
-                      </motion.div>
+                        <h3 className="font-medium text-gray-900 mb-1">
+                          {template.name[locale]}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-2">
+                          {template.description[locale]}
+                        </p>
+                        <span className="text-xs text-blue-600 font-medium">
+                          {template.blocks} {locale === 'fr' ? 'blocs' : 'blocks'}
+                        </span>
+                      </motion.button>
                     )
                   })}
+
+                  {/* Blank Option - Always last */}
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: currentTemplates.length * 0.05 }}
+                    onClick={() => handleTemplateSelect('blank')}
+                    className={`relative text-left p-5 rounded-xl border-2 border-dashed transition-all ${
+                      selectedTemplate === 'blank'
+                        ? 'bg-white border-gray-900 shadow-lg'
+                        : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-md'
+                    }`}
+                  >
+                    {selectedTemplate === 'blank' && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute top-3 right-3 w-5 h-5 bg-gray-900 rounded-full flex items-center justify-center"
+                      >
+                        <Check className="w-3 h-3 text-white" />
+                      </motion.span>
+                    )}
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-3">
+                      <Plus className="w-5 h-5 text-gray-500" />
+                    </div>
+                    <h3 className="font-medium text-gray-900 mb-1">
+                      {locale === 'fr' ? `${typeLabels[selectedResourceType][locale]} vierge` : `Blank ${typeLabels[selectedResourceType][locale]}`}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {locale === 'fr' ? 'Commencer à partir de zéro' : 'Start from scratch'}
+                    </p>
+                  </motion.button>
                 </div>
 
                 {/* Continue Button */}
                 <motion.div
+                  className="flex justify-start"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="flex justify-center"
+                  transition={{ delay: 0.2 }}
                 >
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      onClick={handleContinue}
-                      disabled={!selectedResourceType}
-                      className={`px-8 py-3 h-auto rounded-xl text-base font-medium transition-all duration-300 ${
-                        selectedResourceType
-                          ? 'bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 shadow-lg shadow-lavender-200/50'
-                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      }`}
-                    >
-                      {locale === 'fr' ? 'Continuer' : 'Continue'}
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </Button>
-                  </motion.div>
-                </motion.div>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="create-form"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              {/* Header */}
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between mb-8"
-              >
-                <motion.div whileHover={{ x: -4 }} className="inline-block">
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleBack}
-                    className="rounded-xl hover:bg-white/80"
+                    onClick={handleContinue}
+                    disabled={!selectedTemplate}
+                    className={`px-8 py-3 h-auto rounded-xl text-sm font-medium transition-all ${
+                      selectedTemplate
+                        ? 'bg-gray-900 hover:bg-gray-800 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    }`}
                   >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    {locale === 'fr' ? 'Changer le type' : 'Change type'}
+                    {locale === 'fr' ? 'Continuer' : 'Continue'}
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </motion.div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" disabled={!isValid} className="rounded-xl">
-                    <Eye className="w-4 h-4 mr-2" />
-                    {t.library.create.preview}
-                  </Button>
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      size="sm"
-                      className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 shadow-lg shadow-lavender-200/50 rounded-xl"
-                      onClick={handleSave}
-                      disabled={!isValid || isSaving}
-                    >
-                      {isSaving ? (
-                        <>
-                          <span className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          {t.library.create.saving}
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4 mr-2" />
-                          {t.library.create.save}
-                        </>
-                      )}
-                    </Button>
-                  </motion.div>
-                </div>
               </motion.div>
-
-              {/* Title Section with Selected Type */}
-              <div className="mb-8">
-                <div className="flex items-center gap-4 mb-2">
-                  {currentTypeConfig && (
-                    <div className={`w-14 h-14 rounded-2xl ${currentTypeConfig.iconBg} flex items-center justify-center`}>
-                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${currentTypeConfig.gradient} flex items-center justify-center shadow-lg`}>
-                        <currentTypeConfig.icon className="w-5 h-5 text-white" />
-                      </div>
-                    </div>
-                  )}
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-900">
-                      {locale === 'fr' ? 'Nouvelle ' : 'New '}
-                      {selectedResourceType && typeLabels[selectedResourceType][locale]}
-                    </h1>
-                    <p className="text-gray-600">{t.library.create.subtitle}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Form */}
-                <div className="lg:col-span-2 space-y-6">
-                  {/* Basic Info */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
-                  >
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                      {t.library.create.basicInfo}
-                    </h2>
-
-                    {/* Title */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        {t.library.create.resourceTitle} <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder={t.library.create.resourceTitlePlaceholder}
-                        className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all"
-                      />
-                    </div>
-
-                    {/* Description */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        {t.library.create.description}
-                      </label>
-                      <textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder={t.library.create.descriptionPlaceholder}
-                        rows={3}
-                        className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all resize-none"
-                      />
-                    </div>
-
-                    {/* Category */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t.library.create.category} <span className="text-red-500">*</span>
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {allCategories.map((category) => (
-                          <motion.button
-                            key={category}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setSelectedCategory(category)}
-                            className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-                              selectedCategory === category
-                                ? 'bg-gradient-to-r from-lavender-500 to-lavender-600 text-white shadow-md shadow-lavender-200/50'
-                                : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
-                            }`}
-                          >
-                            {t.library.categories[category]}
-                          </motion.button>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  {/* Content */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
-                  >
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                      {t.library.create.content} <span className="text-red-500">*</span>
-                    </h2>
-                    <textarea
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      placeholder={t.library.create.contentPlaceholder}
-                      rows={12}
-                      className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all resize-none font-mono text-sm"
-                    />
-                    <p className="text-xs text-gray-500 mt-2">
-                      {locale === 'fr' ? 'Le formatage Markdown est pris en charge' : 'Markdown formatting is supported'}
-                    </p>
-                  </motion.div>
-
-                  {/* Attachments */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
-                  >
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                      {t.library.create.attachments}
-                    </h2>
-
-                    {/* Upload Area */}
-                    <label className="block border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-lavender-400 hover:bg-lavender-50/50 transition-all">
-                      <input
-                        type="file"
-                        multiple
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
-                      <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                        <Upload className="w-6 h-6 text-gray-400" />
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        {locale === 'fr' ? 'Cliquez pour télécharger des fichiers' : 'Click to upload files'}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">PDF, DOC, DOCX, images, etc.</p>
-                    </label>
-
-                    {/* Attachment List */}
-                    {attachments.length > 0 && (
-                      <div className="mt-4 space-y-2">
-                        {attachments.map((attachment) => (
-                          <div
-                            key={attachment.id}
-                            className="flex items-center justify-between p-3 bg-gray-50/80 rounded-xl"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-lavender-100 flex items-center justify-center">
-                                <Paperclip className="w-4 h-4 text-lavender-600" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-gray-700">{attachment.name}</p>
-                                <p className="text-xs text-gray-400">{formatFileSize(attachment.size)}</p>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => handleRemoveAttachment(attachment.id)}
-                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </motion.div>
-                </div>
-
-                {/* Sidebar */}
-                <div className="space-y-6">
-                  {/* Tags */}
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
-                  >
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                      {t.library.create.tags}
-                    </h2>
-
-                    {/* Tag Input */}
-                    <div className="flex gap-2 mb-3">
-                      <input
-                        type="text"
-                        value={tagInput}
-                        onChange={(e) => setTagInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder={t.library.create.tagsPlaceholder}
-                        className="flex-1 px-3 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent"
-                      />
-                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleAddTag}
-                          disabled={!tagInput.trim()}
-                          className="rounded-xl h-10 w-10 p-0"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </motion.div>
-                    </div>
-
-                    {/* Tag List */}
-                    <div className="flex flex-wrap gap-2">
-                      {tags.map((tag) => (
-                        <Badge
-                          key={tag}
-                          className="flex items-center gap-1 bg-lavender-50 text-lavender-700 border-0 px-3 py-1.5"
-                        >
-                          {tag}
-                          <button
-                            onClick={() => handleRemoveTag(tag)}
-                            className="ml-1 hover:text-lavender-900"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                      {tags.length === 0 && (
-                        <p className="text-sm text-gray-400">
-                          {locale === 'fr' ? 'Aucun tag ajouté' : 'No tags added yet'}
-                        </p>
-                      )}
-                    </div>
-                  </motion.div>
-
-                  {/* Sharing Options */}
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
-                  >
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                      {t.library.share.title}
-                    </h2>
-                    <p className="text-sm text-gray-600 mb-4">
-                      {t.library.share.description}
-                    </p>
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Button
-                        variant="outline"
-                        className="w-full rounded-xl border-2 border-lavender-200 hover:border-lavender-300 hover:bg-lavender-50"
-                        disabled={!isValid}
-                      >
-                        <Share2 className="w-4 h-4 mr-2 text-lavender-600" />
-                        <span className="text-lavender-700">{t.library.create.saveAndShare}</span>
-                      </Button>
-                    </motion.div>
-                  </motion.div>
-
-                  {/* Tips */}
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="bg-gradient-to-br from-amber-50 via-orange-50/50 to-yellow-50/30 rounded-[1.5rem] border-2 border-amber-200/60 p-6 shadow-lg shadow-amber-100/30"
-                  >
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-xl bg-amber-100/80 flex items-center justify-center">
-                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
-                          <Lightbulb className="w-4 h-4 text-white" />
-                        </div>
-                      </div>
-                      <h3 className="font-semibold text-gray-900">
-                        {locale === 'fr' ? 'Conseils' : 'Tips'}
-                      </h3>
-                    </div>
-                    <ul className="space-y-2 text-sm text-gray-700">
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 flex-shrink-0" />
-                        {locale === 'fr' ? 'Utilisez des titres clairs et descriptifs' : 'Use clear, descriptive titles'}
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 flex-shrink-0" />
-                        {locale === 'fr' ? 'Incluez des instructions étape par étape' : 'Include step-by-step instructions'}
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 flex-shrink-0" />
-                        {locale === 'fr' ? 'Ajoutez des tags pertinents' : 'Add relevant tags for discoverability'}
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 flex-shrink-0" />
-                        {locale === 'fr' ? 'Joignez des documents utiles' : 'Attach supporting documents when helpful'}
-                      </li>
-                    </ul>
-                  </motion.div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+            )}
+          </AnimatePresence>
+        </div>
+      </main>
     </div>
   )
 }

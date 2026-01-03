@@ -15,13 +15,17 @@ import {
   Share2,
   Sparkles,
   Users,
+  ChevronRight,
+  Edit,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { useLanguage } from '@/lib/i18n/context'
+import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { Member, ProgressNote, Session as MemberSession } from '@/types/member'
+import type { User as UserType } from '@/types/user'
 import { getMemberFullName, getMemberInitials, formatRelativeTime } from '@/types/member'
 
 // Tab Components
@@ -41,6 +45,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
   const supabase = createClient()
 
   const [member, setMember] = useState<Member | null>(null)
+  const [user, setUser] = useState<UserType | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [notes, setNotes] = useState<ProgressNote[]>([])
@@ -54,17 +59,39 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
 
   const fetchMember = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) {
         router.push('/sign-in')
         return
+      }
+
+      // Fetch user profile
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .single()
+
+      if (userProfile) {
+        setUser(userProfile)
+      } else {
+        setUser({
+          id: authUser.id,
+          email: authUser.email!,
+          full_name: authUser.user_metadata?.full_name || null,
+          avatar_url: authUser.user_metadata?.avatar_url || null,
+          user_type: authUser.user_metadata?.user_type || 'mentor',
+          preferred_language: 'en',
+          created_at: authUser.created_at,
+          updated_at: authUser.updated_at || authUser.created_at,
+        })
       }
 
       const { data, error } = await supabase
         .from('members')
         .select('*')
         .eq('id', resolvedParams.id)
-        .eq('practitioner_id', user.id)
+        .eq('practitioner_id', authUser.id)
         .single()
 
       if (error) {
@@ -131,27 +158,19 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
     { id: 'shared', label: t.members.profile.sharedResources, icon: Share2 },
   ]
 
-  const statusStyles = {
-    active: { bg: 'bg-emerald-50', text: 'text-emerald-700', gradient: 'from-emerald-400 to-mint-500', dot: 'bg-emerald-500' },
-    inactive: { bg: 'bg-gray-50', text: 'text-gray-600', gradient: 'from-gray-300 to-gray-400', dot: 'bg-gray-400' },
-    pending: { bg: 'bg-amber-50', text: 'text-amber-700', gradient: 'from-amber-400 to-peach-500', dot: 'bg-amber-500' },
+  const statusConfig = {
+    active: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+    inactive: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' },
+    pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-mesh flex items-center justify-center relative overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-lavender-400/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-mint-400/20 rounded-full blur-3xl" />
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center glass-card rounded-3xl p-12"
-        >
-          <div className="w-16 h-16 border-4 border-lavender-500 border-t-transparent rounded-full animate-spin mx-auto mb-6 animate-pulse-glow"></div>
-          <p className="text-gray-600 font-medium">{t.dashboard.loading}</p>
-        </motion.div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+          <span className="text-gray-500 text-sm">{t.dashboard.loading}</span>
+        </div>
       </div>
     )
   }
@@ -160,245 +179,196 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
     return null
   }
 
-  const status = statusStyles[member.status]
+  const status = statusConfig[member.status]
 
   return (
-    <div className="min-h-screen gradient-mesh relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-lavender-300/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-mint-300/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-coral-300/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+    <div className="min-h-screen bg-gray-50 flex">
+      <AppSidebar activeItem="members" />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
-        {/* Breadcrumb Navigation */}
-        <div className="mb-6">
-          <Breadcrumb
-            items={[
-              { label: 'Members', labelFr: 'Membres', href: '/members', icon: <Users className="w-4 h-4" /> },
-              { label: getMemberFullName(member) },
-            ]}
-          />
-        </div>
+      {/* Main Content */}
+      <main className="flex-1 ml-64">
+        <AppHeader
+          user={user}
+          leftContent={
+            <div className="flex items-center gap-2 text-sm">
+              <Link href="/members" className="text-gray-500 hover:text-gray-700 transition-colors">
+                <Users className="w-4 h-4" />
+              </Link>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <span className="font-medium text-gray-900 truncate max-w-[300px]">
+                {getMemberFullName(member)}
+              </span>
+            </div>
+          }
+        />
 
-        {/* Profile Header Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="relative mb-6"
-        >
-          {/* Main Profile Card */}
-          <div className="bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-gray-200/50 border border-white/60 overflow-hidden">
-            {/* Status Bar with gradient */}
-            <div className={`h-1.5 bg-gradient-to-r ${status.gradient}`} />
-
-            <div className="p-6 sm:p-8">
-              <div className="flex flex-col md:flex-row gap-6 md:gap-8">
-                {/* Avatar with glow effect */}
+        {/* Content */}
+        <div className="p-8">
+          {/* Profile Header Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6"
+          >
+            <div className="p-6">
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Avatar */}
                 <div className="flex-shrink-0 flex justify-center md:justify-start">
-                  <div className="relative group">
-                    <div className="absolute -inset-2 bg-gradient-to-br from-lavender-400/30 to-mint-400/30 rounded-[1.75rem] blur-xl opacity-60 group-hover:opacity-100 transition-opacity" />
-                    <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-[1.5rem] bg-gradient-to-br from-lavender-100 via-lavender-50 to-lavender-200 flex items-center justify-center text-lavender-700 font-bold text-3xl sm:text-4xl shadow-lg border-2 border-white/80">
+                  <div className="relative">
+                    <div className="w-20 h-20 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-2xl">
                       {member.avatar_url ? (
-                        <img src={member.avatar_url} alt="" className="w-full h-full rounded-[1.5rem] object-cover" />
+                        <img src={member.avatar_url} alt="" className="w-full h-full rounded-2xl object-cover" />
                       ) : (
                         getMemberInitials(member)
                       )}
                     </div>
-                    {/* Status indicator */}
-                    <div className={`absolute -bottom-1 -right-1 w-7 h-7 ${status.dot} rounded-full border-[3px] border-white shadow-lg`}>
-                      <div className={`absolute inset-0 ${status.dot} rounded-full animate-ping opacity-30`} />
-                    </div>
+                    <div className={`absolute -bottom-1 -right-1 w-5 h-5 ${status.dot} rounded-full border-2 border-white`} />
                   </div>
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 text-center md:text-left">
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 flex items-center justify-center md:justify-start gap-2">
+                  <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                    <h1 className="text-xl font-semibold text-gray-900">
                       {getMemberFullName(member)}
-                      {member.engagement_level === 'high' && (
-                        <Sparkles className="w-5 h-5 text-amber-500" />
-                      )}
                     </h1>
-                    <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
-                      <span className={`inline-flex items-center px-3.5 py-1.5 rounded-full text-sm font-semibold ${status.bg} ${status.text}`}>
-                        <span className={`w-2 h-2 ${status.dot} rounded-full mr-2`} />
-                        {t.members.status[member.status]}
+                    {member.engagement_level === 'high' && (
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                    )}
+                    <Link href={`/members/${member.id}/edit`}>
+                      <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </div>
+
+                  <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap mb-4">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${status.bg} ${status.text}`}>
+                      <span className={`w-1.5 h-1.5 ${status.dot} rounded-full mr-1.5`} />
+                      {t.members.status[member.status]}
+                    </span>
+                    {member.date_of_birth && (
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(member.date_of_birth).toLocaleDateString()}
                       </span>
-                      {member.date_of_birth && (
-                        <span className="text-sm text-gray-500 flex items-center gap-1.5 bg-gray-50/80 px-3 py-1.5 rounded-full">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {new Date(member.date_of_birth).toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
 
                   {/* Contact Info */}
-                  <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-5">
+                  <div className="flex flex-wrap justify-center md:justify-start gap-4">
                     {member.email && (
                       <a
                         href={`mailto:${member.email}`}
-                        className="flex items-center gap-2.5 text-sm text-gray-600 hover:text-lavender-600 transition-all bg-gray-50/80 hover:bg-lavender-50 px-4 py-2.5 rounded-xl group"
+                        className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
                       >
-                        <div className="w-8 h-8 rounded-lg bg-lavender-100 group-hover:bg-lavender-200 flex items-center justify-center transition-colors">
-                          <Mail className="w-4 h-4 text-lavender-600" />
-                        </div>
-                        <span className="font-medium">{member.email}</span>
+                        <Mail className="w-4 h-4" />
+                        <span>{member.email}</span>
                       </a>
                     )}
                     {member.phone && (
                       <a
                         href={`tel:${member.phone}`}
-                        className="flex items-center gap-2.5 text-sm text-gray-600 hover:text-mint-600 transition-all bg-gray-50/80 hover:bg-mint-50 px-4 py-2.5 rounded-xl group"
+                        className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
                       >
-                        <div className="w-8 h-8 rounded-lg bg-mint-100 group-hover:bg-mint-200 flex items-center justify-center transition-colors">
-                          <Phone className="w-4 h-4 text-mint-600" />
-                        </div>
-                        <span className="font-medium">{member.phone}</span>
+                        <Phone className="w-4 h-4" />
+                        <span>{member.phone}</span>
                       </a>
                     )}
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Stats Section - Separated with subtle bg */}
-            <div className="bg-gradient-to-r from-gray-50/80 via-gray-50/60 to-gray-50/80 border-t border-gray-100/80 px-6 sm:px-8 py-5">
-              <div className="grid grid-cols-3 gap-4 sm:gap-8">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="text-center group"
-                >
-                  <div className="flex flex-col items-center">
-                    <div className="w-10 h-10 rounded-xl bg-lavender-100/80 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                      <Calendar className="w-5 h-5 text-lavender-600" />
-                    </div>
-                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-0.5">{t.members.profile.memberSince}</p>
-                    <p className="font-bold text-gray-900">
+                {/* Stats */}
+                <div className="flex md:flex-col gap-4 md:gap-2 justify-center md:justify-start md:border-l md:border-gray-100 md:pl-6">
+                  <div className="text-center md:text-right">
+                    <p className="text-xs text-gray-400 uppercase tracking-wider">{t.members.profile.memberSince}</p>
+                    <p className="text-sm font-medium text-gray-900">
                       {new Date(member.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                     </p>
                   </div>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 }}
-                  className="text-center group border-x border-gray-200/50"
-                >
-                  <div className="flex flex-col items-center">
-                    <div className="w-10 h-10 rounded-xl bg-mint-100/80 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                      <Clock className="w-5 h-5 text-mint-600" />
-                    </div>
-                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-0.5">{t.members.profile.lastSession}</p>
-                    <p className="font-bold text-gray-900">
+                  <div className="text-center md:text-right">
+                    <p className="text-xs text-gray-400 uppercase tracking-wider">{t.members.profile.lastSession}</p>
+                    <p className="text-sm font-medium text-gray-900">
                       {formatRelativeTime(member.last_session_at)}
                     </p>
                   </div>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-center group"
-                >
-                  <div className="flex flex-col items-center">
-                    <div className="w-10 h-10 rounded-xl bg-coral-100/80 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                      <TrendingUp className="w-5 h-5 text-coral-600" />
-                    </div>
-                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-0.5">{t.members.profile.totalSessions}</p>
-                    <p className="font-bold text-gray-900">{totalSessions}</p>
+                  <div className="text-center md:text-right">
+                    <p className="text-xs text-gray-400 uppercase tracking-wider">{t.members.profile.totalSessions}</p>
+                    <p className="text-sm font-medium text-gray-900">{totalSessions}</p>
                   </div>
-                </motion.div>
+                </div>
               </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        {/* Tabs Navigation */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-2 mb-6 shadow-lg shadow-gray-200/30 border border-white/60"
-        >
-          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-            {tabs.map((tab, index) => {
+          {/* Tabs Navigation */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="flex items-center gap-1 mb-6 bg-white rounded-xl p-1 border border-gray-200 overflow-x-auto"
+          >
+            {tabs.map((tab) => {
               const Icon = tab.icon
               const isActive = activeTab === tab.id
               return (
-                <motion.button
+                <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 + index * 0.05 }}
-                  className={`relative flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium transition-smooth whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                     isActive
-                      ? 'text-white'
-                      : 'text-gray-600 hover:bg-white/60'
+                      ? 'bg-gray-900 text-white'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute inset-0 bg-gradient-to-r from-lavender-500 to-lavender-600 rounded-xl shadow-lg shadow-lavender-300/50"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
-                    {tab.label}
-                  </span>
-                </motion.button>
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
               )
             })}
-          </div>
-        </motion.div>
-
-        {/* Tab Content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            {activeTab === 'overview' && (
-              <OverviewTab
-                member={member}
-                notes={notes}
-                onNotesUpdate={fetchRelatedData}
-                onMemberUpdate={fetchMember}
-              />
-            )}
-            {activeTab === 'sessions' && (
-              <SessionsTab
-                memberId={member.id}
-                member={member}
-                sessions={sessions}
-                onSessionsUpdate={fetchRelatedData}
-              />
-            )}
-            {activeTab === 'progress' && (
-              <ProgressTab memberId={member.id} />
-            )}
-            {activeTab === 'submissions' && (
-              <SubmissionsTab member={member} />
-            )}
-            {activeTab === 'files' && (
-              <FilesTab memberId={member.id} />
-            )}
-            {activeTab === 'shared' && (
-              <SharedTab memberId={member.id} />
-            )}
           </motion.div>
-        </AnimatePresence>
-      </div>
+
+          {/* Tab Content */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {activeTab === 'overview' && (
+                <OverviewTab
+                  member={member}
+                  notes={notes}
+                  onNotesUpdate={fetchRelatedData}
+                  onMemberUpdate={fetchMember}
+                />
+              )}
+              {activeTab === 'sessions' && (
+                <SessionsTab
+                  memberId={member.id}
+                  member={member}
+                  sessions={sessions}
+                  onSessionsUpdate={fetchRelatedData}
+                />
+              )}
+              {activeTab === 'progress' && (
+                <ProgressTab memberId={member.id} />
+              )}
+              {activeTab === 'submissions' && (
+                <SubmissionsTab member={member} />
+              )}
+              {activeTab === 'files' && (
+                <FilesTab memberId={member.id} />
+              )}
+              {activeTab === 'shared' && (
+                <SharedTab memberId={member.id} />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </main>
     </div>
   )
 }

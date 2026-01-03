@@ -10,46 +10,29 @@ import {
   FolderOpen,
   Heart,
   Search,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-  Eye,
-  ClipboardCheck,
-  Puzzle,
-  Sun,
   BookOpen,
-  FileText,
-  Sparkles,
   Loader2,
   X,
   Briefcase,
   Lightbulb,
   Brain,
-  Table2,
   SlidersHorizontal,
   Check,
   Star,
   Users,
   Share2,
+  LayoutGrid,
+  List,
 } from 'lucide-react'
-import { AnimatedIcon } from '@/components/ui/animated-icons'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { useLanguage } from '@/lib/i18n/context'
-import { AppSidebar } from '@/components/app-sidebar'
-import type { ResourceType, UserResource } from '@/types/library'
+import { AppHeader, AppSidebar } from '@/components/layout'
 import { getResources, deleteResource } from '@/lib/services/resources'
-import { getCollections, createCollection, deleteCollection, removeResourceFromAllCollections, getSavedResources, addResourceToCollection } from '@/lib/services/collections'
+import { getCollections, createCollection, removeResourceFromAllCollections, getSavedResources, addResourceToCollection } from '@/lib/services/collections'
 import type { Resource } from '@/types/resource'
 import type { Collection, CollectionColor, CollectionIcon, collectionColorConfig } from '@/types/collection'
 import type { Member } from '@/types/member'
+import type { User } from '@/types/user'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/browser-client'
 import { notifyResourceShared } from '@/lib/notifications'
@@ -68,170 +51,35 @@ const collectionIcons: Record<CollectionIcon, React.ElementType> = {
 
 // Collection color config
 const colorConfig: typeof collectionColorConfig = {
-  blue: {
-    gradient: 'from-blue-400 to-blue-600',
-    bg: 'bg-blue-100/80',
-    text: 'text-blue-700',
-    iconBg: 'bg-blue-50',
-  },
-  red: {
-    gradient: 'from-red-400 to-red-600',
-    bg: 'bg-red-100/80',
-    text: 'text-red-700',
-    iconBg: 'bg-red-50',
-  },
-  emerald: {
-    gradient: 'from-emerald-400 to-emerald-600',
-    bg: 'bg-emerald-100/80',
-    text: 'text-emerald-700',
-    iconBg: 'bg-emerald-50',
-  },
-  amber: {
-    gradient: 'from-amber-400 to-amber-600',
-    bg: 'bg-amber-100/80',
-    text: 'text-amber-700',
-    iconBg: 'bg-amber-50',
-  },
-  purple: {
-    gradient: 'from-purple-400 to-purple-600',
-    bg: 'bg-purple-100/80',
-    text: 'text-purple-700',
-    iconBg: 'bg-purple-50',
-  },
-  pink: {
-    gradient: 'from-pink-400 to-pink-600',
-    bg: 'bg-pink-100/80',
-    text: 'text-pink-700',
-    iconBg: 'bg-pink-50',
-  },
-  slate: {
-    gradient: 'from-slate-400 to-slate-600',
-    bg: 'bg-slate-100/80',
-    text: 'text-slate-700',
-    iconBg: 'bg-slate-50',
-  },
+  blue: { gradient: 'from-blue-400 to-blue-600', bg: 'bg-blue-100/80', text: 'text-blue-700', iconBg: 'bg-blue-50' },
+  red: { gradient: 'from-red-400 to-red-600', bg: 'bg-red-100/80', text: 'text-red-700', iconBg: 'bg-red-50' },
+  emerald: { gradient: 'from-emerald-400 to-emerald-600', bg: 'bg-emerald-100/80', text: 'text-emerald-700', iconBg: 'bg-emerald-50' },
+  amber: { gradient: 'from-amber-400 to-amber-600', bg: 'bg-amber-100/80', text: 'text-amber-700', iconBg: 'bg-amber-50' },
+  purple: { gradient: 'from-purple-400 to-purple-600', bg: 'bg-purple-100/80', text: 'text-purple-700', iconBg: 'bg-purple-50' },
+  pink: { gradient: 'from-pink-400 to-pink-600', bg: 'bg-pink-100/80', text: 'text-pink-700', iconBg: 'bg-pink-50' },
+  slate: { gradient: 'from-slate-400 to-slate-600', bg: 'bg-slate-100/80', text: 'text-slate-700', iconBg: 'bg-slate-50' },
 }
 
-// Type icons
-const typeIcons: Record<ResourceType, React.ElementType> = {
-  assessment: ClipboardCheck,
-  activity: Puzzle,
-  ritual: Sun,
-  educational: BookOpen,
-  template: FileText,
-}
-
-// Enhanced type config with gradients matching Member Hub style
-const typeConfig: Record<ResourceType, {
-  gradient: string
-  bg: string
-  text: string
-  iconBg: string
-  glow: string
-}> = {
-  assessment: {
-    gradient: 'from-blue-400 to-blue-600',
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    iconBg: 'bg-blue-100/80',
-    glow: 'shadow-blue-200/50',
-  },
-  activity: {
-    gradient: 'from-emerald-400 to-emerald-600',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    iconBg: 'bg-emerald-100/80',
-    glow: 'shadow-emerald-200/50',
-  },
-  ritual: {
-    gradient: 'from-amber-400 to-amber-600',
-    bg: 'bg-amber-50',
-    text: 'text-amber-700',
-    iconBg: 'bg-amber-100/80',
-    glow: 'shadow-amber-200/50',
-  },
-  educational: {
-    gradient: 'from-purple-400 to-purple-600',
-    bg: 'bg-purple-50',
-    text: 'text-purple-700',
-    iconBg: 'bg-purple-100/80',
-    glow: 'shadow-purple-200/50',
-  },
-  template: {
-    gradient: 'from-slate-400 to-slate-600',
-    bg: 'bg-slate-50',
-    text: 'text-slate-700',
-    iconBg: 'bg-slate-100/80',
-    glow: 'shadow-slate-200/50',
-  },
-}
-
-// Resource type icons for database resources
-const dbResourceTypeIcons: Record<string, React.ElementType> = {
-  worksheet: FileText,
-  assessment: FileText, // Legacy: assessment now maps to worksheet
-  exercise: Puzzle,
-  psychoeducation: BookOpen,
-  table: Table2,
-}
-
-// Resource type config for database resources
-const dbResourceTypeConfig: Record<string, {
-  gradient: string
-  bg: string
-  text: string
-  iconBg: string
-  glow: string
-}> = {
-  worksheet: {
-    gradient: 'from-blue-400 to-blue-600',
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    iconBg: 'bg-blue-100/80',
-    glow: 'shadow-blue-200/50',
-  },
-  assessment: {
-    // Legacy: assessment now displays same as worksheet
-    gradient: 'from-blue-400 to-blue-600',
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    iconBg: 'bg-blue-100/80',
-    glow: 'shadow-blue-200/50',
-  },
-  exercise: {
-    gradient: 'from-emerald-400 to-emerald-600',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    iconBg: 'bg-emerald-100/80',
-    glow: 'shadow-emerald-200/50',
-  },
-  psychoeducation: {
-    gradient: 'from-amber-400 to-amber-600',
-    bg: 'bg-amber-50',
-    text: 'text-amber-700',
-    iconBg: 'bg-amber-100/80',
-    glow: 'shadow-amber-200/50',
-  },
-  table: {
-    gradient: 'from-emerald-400 to-emerald-600',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    iconBg: 'bg-emerald-100/80',
-    glow: 'shadow-emerald-200/50',
-  },
-}
-
-type TabType = 'saved' | 'created' | 'collections'
+type SubTab = 'created' | 'saved' | 'collections'
 
 export default function MyResourcesPage() {
   const { t, locale } = useLanguage()
   const router = useRouter()
   const supabase = createClient()
-  const [activeTab, setActiveTab] = useState<TabType>('created')
+
+  // User state
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  // Sub-tab state (within My Resources)
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>('created')
   const [searchQuery, setSearchQuery] = useState('')
   const [languageFilter, setLanguageFilter] = useState<'all' | 'en' | 'fr'>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'worksheet' | 'psychoeducation' | 'exercise' | 'table'>('all')
   const [showFilters, setShowFilters] = useState(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+
+  // Resources state
   const [dbResources, setDbResources] = useState<Resource[]>([])
   const [savedDbResources, setSavedDbResources] = useState<Resource[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -242,7 +90,6 @@ export default function MyResourcesPage() {
 
   // Collections state
   const [collections, setCollections] = useState<Collection[]>([])
-  const [isLoadingCollections, setIsLoadingCollections] = useState(true)
   const [showCreateCollectionModal, setShowCreateCollectionModal] = useState(false)
   const [isCreatingCollection, setIsCreatingCollection] = useState(false)
   const [newCollectionName, setNewCollectionName] = useState('')
@@ -250,7 +97,7 @@ export default function MyResourcesPage() {
   const [newCollectionColor, setNewCollectionColor] = useState<CollectionColor>('blue')
   const [newCollectionIcon, setNewCollectionIcon] = useState<CollectionIcon>('folder')
 
-  // Share with member state
+  // Share state
   const [showShareModal, setShowShareModal] = useState(false)
   const [selectedResourceToShare, setSelectedResourceToShare] = useState<Resource | null>(null)
   const [members, setMembers] = useState<Member[]>([])
@@ -260,33 +107,53 @@ export default function MyResourcesPage() {
   const [isSharing, setIsSharing] = useState(false)
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
 
-  // Fetch resources from database and current user
+
+  // Fetch user
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+
+      if (authError || !authUser) {
+        router.push('/sign-in')
+        return
+      }
+
+      setCurrentUserId(authUser.id)
+
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .single()
+
+      if (userProfile) {
+        if (userProfile.user_type === 'member') {
+          router.replace('/home')
+          return
+        }
+        setUser(userProfile)
+      }
+      setLoading(false)
+    }
+    getUser()
+  }, [router, supabase])
+
+  // Fetch resources
   useEffect(() => {
     const fetchResources = async () => {
       try {
-        // Get current user ID
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-          // Not authenticated yet, skip fetching
-          setIsLoading(false)
-          return
-        }
-        setCurrentUserId(user.id)
-
-        // Only fetch resources created by the current user
         const resources = await getResources({ myResourcesOnly: true })
         setDbResources(resources)
       } catch (error) {
         console.error('Error fetching resources:', error)
-        toast.error(locale === 'fr' ? 'Erreur lors du chargement des ressources' : 'Error loading resources')
       } finally {
         setIsLoading(false)
       }
     }
     fetchResources()
-  }, [locale, supabase])
+  }, [])
 
-  // Fetch saved resources (resources in collections, not created by user)
+  // Fetch saved resources
   useEffect(() => {
     const fetchSavedResources = async () => {
       try {
@@ -301,7 +168,7 @@ export default function MyResourcesPage() {
     fetchSavedResources()
   }, [])
 
-  // Fetch collections from database
+  // Fetch collections
   useEffect(() => {
     const fetchCollections = async () => {
       try {
@@ -309,9 +176,6 @@ export default function MyResourcesPage() {
         setCollections(collectionsData)
       } catch (error) {
         console.error('Error fetching collections:', error)
-        // Don't show error toast - collections table might not exist yet
-      } finally {
-        setIsLoadingCollections(false)
       }
     }
     fetchCollections()
@@ -323,7 +187,6 @@ export default function MyResourcesPage() {
       toast.error(locale === 'fr' ? 'Le nom est requis' : 'Name is required')
       return
     }
-
     setIsCreatingCollection(true)
     try {
       const newCollection = await createCollection({
@@ -336,8 +199,6 @@ export default function MyResourcesPage() {
       setShowCreateCollectionModal(false)
       setNewCollectionName('')
       setNewCollectionDescription('')
-      setNewCollectionColor('blue')
-      setNewCollectionIcon('folder')
       toast.success(locale === 'fr' ? 'Collection créée' : 'Collection created')
     } catch (error) {
       console.error('Error creating collection:', error)
@@ -347,26 +208,9 @@ export default function MyResourcesPage() {
     }
   }
 
-  // Handle delete collection
-  const handleDeleteCollection = async (id: string) => {
-    if (!confirm(locale === 'fr' ? 'Êtes-vous sûr de vouloir supprimer cette collection?' : 'Are you sure you want to delete this collection?')) {
-      return
-    }
-    try {
-      await deleteCollection(id)
-      setCollections(prev => prev.filter(c => c.id !== id))
-      toast.success(locale === 'fr' ? 'Collection supprimée' : 'Collection deleted')
-    } catch (error) {
-      console.error('Error deleting collection:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors de la suppression' : 'Error deleting collection')
-    }
-  }
-
-  // Handle delete
+  // Handle delete resource
   const handleDelete = async (id: string) => {
-    if (!confirm(locale === 'fr' ? 'Êtes-vous sûr de vouloir supprimer cette ressource?' : 'Are you sure you want to delete this resource?')) {
-      return
-    }
+    if (!confirm(locale === 'fr' ? 'Supprimer cette ressource?' : 'Delete this resource?')) return
     setIsDeleting(id)
     try {
       await deleteResource(id)
@@ -374,48 +218,43 @@ export default function MyResourcesPage() {
       toast.success(locale === 'fr' ? 'Ressource supprimée' : 'Resource deleted')
     } catch (error) {
       console.error('Error deleting resource:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors de la suppression' : 'Error deleting resource')
+      toast.error(locale === 'fr' ? 'Erreur' : 'Error')
     } finally {
       setIsDeleting(null)
     }
   }
 
-  // Handle remove from library (for resources not owned by user)
+  // Handle remove from library
   const handleRemoveFromLibrary = async (id: string) => {
-    if (!confirm(locale === 'fr' ? 'Êtes-vous sûr de vouloir retirer cette ressource de votre bibliothèque?' : 'Are you sure you want to remove this resource from your library?')) {
-      return
-    }
+    if (!confirm(locale === 'fr' ? 'Retirer de votre bibliothèque?' : 'Remove from your library?')) return
     setIsRemoving(id)
     try {
       await removeResourceFromAllCollections(id)
-      // Update both states - savedDbResources for saved tab, dbResources for created tab
       setSavedDbResources(prev => prev.filter(r => r.id !== id))
-      setDbResources(prev => prev.filter(r => r.id !== id))
-      toast.success(locale === 'fr' ? 'Ressource retirée de votre bibliothèque' : 'Resource removed from your library')
+      toast.success(locale === 'fr' ? 'Ressource retirée' : 'Resource removed')
     } catch (error) {
       console.error('Error removing resource:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors du retrait' : 'Error removing resource')
+      toast.error(locale === 'fr' ? 'Erreur' : 'Error')
     } finally {
       setIsRemoving(null)
     }
   }
 
-  // Handle adding resource to a collection
+  // Handle add to collection
   const handleAddToCollection = async (resourceId: string, collectionId: string) => {
     try {
       await addResourceToCollection(collectionId, resourceId)
-      toast.success(locale === 'fr' ? 'Ressource ajoutée à la collection' : 'Resource added to collection')
+      toast.success(locale === 'fr' ? 'Ajouté à la collection' : 'Added to collection')
     } catch (error: any) {
       if (error?.code === '23505') {
         toast.info(locale === 'fr' ? 'Déjà dans cette collection' : 'Already in this collection')
       } else {
-        console.error('Error adding to collection:', error)
-        toast.error(locale === 'fr' ? 'Erreur lors de l\'ajout' : 'Error adding to collection')
+        toast.error(locale === 'fr' ? 'Erreur' : 'Error')
       }
     }
   }
 
-  // Open share modal and fetch members
+  // Handle share modal
   const handleOpenShareModal = async (resource: Resource) => {
     setSelectedResourceToShare(resource)
     setShowShareModal(true)
@@ -428,37 +267,28 @@ export default function MyResourcesPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
-
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('members')
           .select('*')
           .eq('practitioner_id', user.id)
           .order('first_name', { ascending: true })
-
-        if (error) throw error
         setMembers(data || [])
       } catch (error) {
         console.error('Error fetching members:', error)
-        toast.error(locale === 'fr' ? 'Erreur lors du chargement des membres' : 'Error loading members')
       } finally {
         setIsLoadingMembers(false)
       }
     }
   }
 
-  // Share resource with member
+  // Handle share resource
   const handleShareResource = async () => {
-    if (!selectedResourceToShare || !selectedMemberId) {
-      toast.error(locale === 'fr' ? 'Veuillez sélectionner un membre' : 'Please select a member')
-      return
-    }
-
+    if (!selectedResourceToShare || !selectedMemberId) return
     setIsSharing(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Insert into member_shared_resources table
       const { error } = await supabase
         .from('member_shared_resources')
         .insert({
@@ -470,21 +300,19 @@ export default function MyResourcesPage() {
 
       if (error) {
         if (error.code === '23505') {
-          toast.error(locale === 'fr' ? 'Cette ressource est déjà partagée avec ce membre' : 'This resource is already shared with this member')
+          toast.error(locale === 'fr' ? 'Déjà partagé' : 'Already shared')
         } else {
           throw error
         }
         return
       }
 
-      // Send notification to member
+      // Send notification
       try {
-        // Get member's user_id and practitioner name
         const [memberResult, practitionerResult] = await Promise.all([
           supabase.from('members').select('user_id').eq('id', selectedMemberId).single(),
           supabase.from('users').select('full_name').eq('id', user.id).single(),
         ])
-
         if (memberResult.data?.user_id) {
           await notifyResourceShared(supabase, {
             memberId: selectedMemberId,
@@ -498,461 +326,254 @@ export default function MyResourcesPage() {
         }
       } catch (notifyError) {
         console.error('Error sending notification:', notifyError)
-        // Don't fail the share operation if notification fails
       }
 
-      toast.success(locale === 'fr' ? 'Ressource partagée avec succès' : 'Resource shared successfully')
+      toast.success(locale === 'fr' ? 'Ressource partagée' : 'Resource shared')
       setShowShareModal(false)
-      setSelectedResourceToShare(null)
-      setSelectedMemberId(null)
-      setShareMessage('')
     } catch (error) {
       console.error('Error sharing resource:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors du partage' : 'Error sharing resource')
+      toast.error(locale === 'fr' ? 'Erreur' : 'Error')
     } finally {
       setIsSharing(false)
     }
   }
 
-  // Filter members by search
+  // Filter members
   const filteredMembers = useMemo(() => {
     if (!memberSearchQuery) return members
     const query = memberSearchQuery.toLowerCase()
     return members.filter(m =>
       m.first_name.toLowerCase().includes(query) ||
-      m.last_name.toLowerCase().includes(query) ||
-      (m.email || '').toLowerCase().includes(query)
+      m.last_name.toLowerCase().includes(query)
     )
   }, [members, memberSearchQuery])
 
-  // Saved resources (from collections, not created by user)
+  // Filter resources
   const savedResources = useMemo(() => {
     let filtered = savedDbResources
-
-    // Filter by language
-    if (languageFilter !== 'all') {
-      filtered = filtered.filter(r => r.language === languageFilter)
-    }
-
-    // Filter by type
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(r => r.type === typeFilter)
-    }
-
-    // Filter by search query
+    if (languageFilter !== 'all') filtered = filtered.filter(r => r.language === languageFilter)
+    if (typeFilter !== 'all') filtered = filtered.filter(r => r.type === typeFilter)
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(r =>
-        r.title.toLowerCase().includes(query) ||
-        (r.description || '').toLowerCase().includes(query)
-      )
+      filtered = filtered.filter(r => r.title.toLowerCase().includes(query) || (r.description || '').toLowerCase().includes(query))
     }
-
     return filtered
   }, [savedDbResources, searchQuery, languageFilter, typeFilter])
 
-  // User-created resources from database
   const createdResources = useMemo(() => {
     let filtered = dbResources
-
-    // Filter by language
-    if (languageFilter !== 'all') {
-      filtered = filtered.filter(r => r.language === languageFilter)
-    }
-
-    // Filter by type
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(r => r.type === typeFilter)
-    }
-
-    // Filter by search query
+    if (languageFilter !== 'all') filtered = filtered.filter(r => r.language === languageFilter)
+    if (typeFilter !== 'all') filtered = filtered.filter(r => r.type === typeFilter)
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(r =>
-        r.title.toLowerCase().includes(query) ||
-        (r.description || '').toLowerCase().includes(query)
-      )
+      filtered = filtered.filter(r => r.title.toLowerCase().includes(query) || (r.description || '').toLowerCase().includes(query))
     }
-
     return filtered
-  }, [searchQuery, dbResources, languageFilter, typeFilter])
+  }, [dbResources, searchQuery, languageFilter, typeFilter])
 
-  const tabs = [
-    { id: 'created' as TabType, label: t.library.myResources.tabs.created, count: createdResources.length, icon: FolderOpen },
-    { id: 'saved' as TabType, label: t.library.myResources.tabs.saved, count: savedResources.length, icon: Bookmark },
-    { id: 'collections' as TabType, label: locale === 'fr' ? 'Collections' : 'Collections', count: collections.length, icon: Heart },
-  ]
+  const hasActiveFilters = searchQuery || typeFilter !== 'all' || languageFilter !== 'all'
 
-  // Stats
-  const stats = {
-    saved: savedDbResources.length,
-    created: dbResources.length,
-    collections: collections.length,
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-10 h-10 border-3 border-gray-300 border-t-gray-900 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500 text-sm">{t.dashboard.loading}</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen gradient-mesh relative flex">
-      {/* Decorative Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-coral-200/30 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-lavender-200/30 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-mint-200/20 rounded-full blur-3xl" />
-      </div>
-
-      {/* Sidebar */}
-      <AppSidebar />
+    <div className="min-h-screen bg-gray-50 flex">
+      <AppSidebar activeItem="library" />
 
       {/* Main Content */}
-      <main className="flex-1 ml-80 p-8 relative z-10">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8"
-        >
-          {/* Title Section */}
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-coral-100/80 flex items-center justify-center">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-coral-400 to-coral-600 flex items-center justify-center shadow-lg shadow-coral-200/50">
-                <Heart className="w-5 h-5 text-white" />
-              </div>
+      <main className="flex-1 ml-64">
+        <AppHeader
+          user={user}
+          leftContent={
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+              <FolderOpen className="w-4 h-4" strokeWidth={2.5} />
+              <span>{locale === 'fr' ? 'Mes ressources' : 'My Resources'}</span>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{t.library.myResources.title}</h1>
-              <p className="text-gray-600">{t.library.myResources.subtitle}</p>
-            </div>
-          </div>
-          <Link href="/resources/create">
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button size="sm" className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 shadow-lg shadow-lavender-200/50 rounded-xl">
-                <AnimatedIcon icon={Plus} animation="scale" size={16} animateOnHover animateOnRender={false} className="mr-2" />
-                {t.library.create.title}
-              </Button>
-            </motion.div>
-          </Link>
-        </motion.div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-5 hover-lift cursor-default group shadow-lg shadow-gray-200/40 border border-white/60"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-lavender-100/80 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-lavender-400 to-lavender-600 flex items-center justify-center shadow-md">
-                  <AnimatedIcon icon={Bookmark} animation="scale" size={18} animateOnHover animateOnRender={false} className="text-white" />
-                </div>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{stats.saved}</p>
-                <p className="text-sm text-gray-500">{t.library.stats.savedItems}</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-5 hover-lift cursor-default group shadow-lg shadow-gray-200/40 border border-white/60"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100/80 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-md">
-                  <AnimatedIcon icon={FolderOpen} animation="scale" size={18} animateOnHover animateOnRender={false} className="text-white" />
-                </div>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{stats.created}</p>
-                <p className="text-sm text-gray-500">{t.library.stats.myCreations}</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-5 hover-lift cursor-default group shadow-lg shadow-gray-200/40 border border-white/60"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100/80 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-md">
-                  <AnimatedIcon icon={Sparkles} animation="sparkle" size={18} animateOnHover animateOnRender={false} className="text-white" />
-                </div>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{stats.collections}</p>
-                <p className="text-sm text-gray-500">{t.library.stats.collections}</p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Tabs and Search */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-5 mb-6 relative z-[50] overflow-visible"
-        >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-visible">
-            {/* Tabs */}
-            <div className="flex items-center gap-2 bg-gray-100/80 rounded-xl p-1.5">
-              {tabs.map((tab) => {
-                const Icon = tab.icon
-                const isActive = activeTab === tab.id
-                return (
-                  <motion.button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                      isActive
-                        ? 'bg-gradient-to-r from-lavender-500 to-lavender-600 text-white shadow-md shadow-lavender-200/50'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
-                    }`}
-                  >
-                    <AnimatedIcon icon={Icon} animation="scale" size={16} animateOnHover animateOnRender={false} />
-                    {tab.label}
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      isActive
-                        ? 'bg-white/20 text-white'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}>
-                      {tab.count}
-                    </span>
-                  </motion.button>
-                )
-              })}
-            </div>
-
-            {/* Right side controls */}
-            <div className="ml-auto flex items-center gap-3 relative z-[60]">
-              {/* Filters Button */}
-              <div className="relative z-[60]">
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                    (typeFilter !== 'all' || languageFilter !== 'all')
-                      ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                      : 'bg-gray-100/50 text-gray-600 hover:bg-gray-100 border border-transparent'
-                  }`}
-                >
-                  <SlidersHorizontal className="w-4 h-4" />
-                  {locale === 'fr' ? 'Filtres' : 'Filters'}
-                  {(typeFilter !== 'all' || languageFilter !== 'all') && (
-                    <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center">
-                      {(typeFilter !== 'all' ? 1 : 0) + (languageFilter !== 'all' ? 1 : 0)}
-                    </span>
-                  )}
-                </button>
-
-                {/* Filter Dropdown */}
-                <AnimatePresence>
-                  {showFilters && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-200/60 p-4 z-[100]"
-                    >
-                      {/* Type Filter */}
-                      <div className="mb-4">
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                          {locale === 'fr' ? 'Type de ressource' : 'Resource Type'}
-                        </label>
-                        <div className="space-y-1">
-                          <button
-                            onClick={() => setTypeFilter('all')}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                              typeFilter === 'all'
-                                ? 'bg-gray-100 text-gray-700'
-                                : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                          >
-                            <div className="w-4 h-4" />
-                            <span className="flex-1 text-left">{locale === 'fr' ? 'Tous les types' : 'All Types'}</span>
-                            {typeFilter === 'all' && <Check className="w-4 h-4" />}
-                          </button>
-                          <button
-                            onClick={() => setTypeFilter('worksheet')}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                              typeFilter === 'worksheet'
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                          >
-                            <FileText className="w-4 h-4" />
-                            <span className="flex-1 text-left">{locale === 'fr' ? 'Feuilles de travail' : 'Worksheets'}</span>
-                            {typeFilter === 'worksheet' && <Check className="w-4 h-4" />}
-                          </button>
-                          <button
-                            onClick={() => setTypeFilter('table')}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                              typeFilter === 'table'
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                          >
-                            <Table2 className="w-4 h-4" />
-                            <span className="flex-1 text-left">{locale === 'fr' ? 'Exercices tableau' : 'Table Exercises'}</span>
-                            {typeFilter === 'table' && <Check className="w-4 h-4" />}
-                          </button>
-                          <button
-                            onClick={() => setTypeFilter('psychoeducation')}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                              typeFilter === 'psychoeducation'
-                                ? 'bg-amber-50 text-amber-700'
-                                : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                          >
-                            <BookOpen className="w-4 h-4" />
-                            <span className="flex-1 text-left">{locale === 'fr' ? 'Éducation' : 'Education'}</span>
-                            {typeFilter === 'psychoeducation' && <Check className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Language Filter */}
-                      <div className="mb-4">
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                          {locale === 'fr' ? 'Langue' : 'Language'}
-                        </label>
-                        <div className="space-y-1">
-                          <button
-                            onClick={() => setLanguageFilter('all')}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                              languageFilter === 'all'
-                                ? 'bg-purple-50 text-purple-700'
-                                : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                          >
-                            <span className="flex-1 text-left">{locale === 'fr' ? 'Toutes les langues' : 'All Languages'}</span>
-                            {languageFilter === 'all' && <Check className="w-4 h-4" />}
-                          </button>
-                          <button
-                            onClick={() => setLanguageFilter('en')}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                              languageFilter === 'en'
-                                ? 'bg-red-50 text-red-700'
-                                : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                          >
-                            <span className="flex-1 text-left">English</span>
-                            {languageFilter === 'en' && <Check className="w-4 h-4" />}
-                          </button>
-                          <button
-                            onClick={() => setLanguageFilter('fr')}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                              languageFilter === 'fr'
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                          >
-                            <span className="flex-1 text-left">Français</span>
-                            {languageFilter === 'fr' && <Check className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Clear Filters */}
-                      {(typeFilter !== 'all' || languageFilter !== 'all') && (
-                        <button
-                          onClick={() => {
-                            setTypeFilter('all')
-                            setLanguageFilter('all')
-                          }}
-                          className="w-full px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-all"
-                        >
-                          {locale === 'fr' ? 'Effacer les filtres' : 'Clear filters'}
-                        </button>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Search */}
-              <div className="relative w-72">
-                <AnimatedIcon icon={Search} animation="scale" size={16} animateOnHover animateOnRender={false} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder={t.library.search.placeholder}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all"
-                />
-              </div>
-            </div>
-          </div>
-        </motion.div>
+          }
+        />
 
         {/* Content */}
-        <AnimatePresence mode="wait">
-          {activeTab === 'saved' && (
-            <motion.div
-              key="saved"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              {isLoadingSaved ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-8 h-8 animate-spin text-lavender-500" />
+        <div className="p-8">
+          {/* Tabs Navigation */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-1">
+              <Link href="/library">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors text-sm">
+                  <BookOpen className="w-4 h-4" />
+                  <span>{locale === 'fr' ? 'Explorer' : 'Explore'}</span>
                 </div>
-              ) : savedResources.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {savedResources.map((resource, index) => (
-                    <ResourceCard
-                      key={resource.id}
-                      resource={resource}
-                      locale={locale}
-                      variant="saved"
-                      index={index}
-                      onPreview={() => router.push(`/resources/${resource.id}`)}
-                      onRemove={() => handleRemoveFromLibrary(resource.id)}
-                      onShare={() => handleOpenShareModal(resource)}
-                      collections={collections}
-                      onAddToCollection={handleAddToCollection}
-                      isRemoving={isRemoving === resource.id}
-                      isOwner={false}
-                    />
-                  ))}
+              </Link>
+              <Link href="/resources">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-900 font-medium text-sm">
+                  <span>{locale === 'fr' ? 'Mes ressources' : 'My Resources'}</span>
                 </div>
-              ) : (
-                <EmptyState
-                  icon={Bookmark}
-                  title={t.library.myResources.noSaved}
-                  description={t.library.myResources.noSavedDescription}
-                  actionLabel={t.library.empty.browseButton}
-                  onAction={() => router.push('/library')}
-                />
-              )}
-            </motion.div>
-          )}
+              </Link>
+            </div>
 
-          {activeTab === 'created' && (
-            <motion.div
-              key="created"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+            <div className="text-sm text-gray-500">
+              {createdResources.length} {locale === 'fr' ? 'ressources créées' : 'resources created'}
+            </div>
+          </div>
+
+          {/* Sub-tabs for My Resources */}
+          <div className="flex items-center gap-2 mb-6">
+            <button
+              onClick={() => setActiveSubTab('created')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeSubTab === 'created'
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
             >
-              {isLoading ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-8 h-8 animate-spin text-lavender-500" />
-                </div>
-              ) : createdResources.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {createdResources.map((resource, index) => {
-                    const resourceIsOwner = currentUserId === resource.practitioner_id
-                    return (
+              {locale === 'fr' ? 'Créées' : 'Created'} ({createdResources.length})
+            </button>
+            <button
+              onClick={() => setActiveSubTab('saved')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeSubTab === 'saved'
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {locale === 'fr' ? 'Enregistrées' : 'Saved'} ({savedResources.length})
+            </button>
+          </div>
+
+          {/* Search and Filters */}
+          <div className="flex items-center gap-3 mb-8">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder={locale === 'fr' ? 'Rechercher...' : 'Search...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-gray-300 focus:ring-0 outline-none transition-all text-sm"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="relative">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all border ${
+                  hasActiveFilters ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-200'
+                }`}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                {locale === 'fr' ? 'Filtres' : 'Filters'}
+              </button>
+
+              <AnimatePresence>
+                {showFilters && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 p-4 z-50"
+                  >
+                    <div className="mb-4">
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Type</label>
+                      <div className="space-y-1">
+                        {[
+                          { value: 'all', label: locale === 'fr' ? 'Tous' : 'All' },
+                          { value: 'worksheet', label: locale === 'fr' ? 'Exercices' : 'Worksheets' },
+                          { value: 'table', label: locale === 'fr' ? 'Tableaux' : 'Tables' },
+                          { value: 'psychoeducation', label: locale === 'fr' ? 'Éducation' : 'Education' },
+                        ].map((item) => (
+                          <button
+                            key={item.value}
+                            onClick={() => setTypeFilter(item.value as any)}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                              typeFilter === item.value ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span className="flex-1 text-left">{item.label}</span>
+                            {typeFilter === item.value && <Check className="w-4 h-4" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">{locale === 'fr' ? 'Langue' : 'Language'}</label>
+                      <div className="space-y-1">
+                        {[
+                          { value: 'all', label: locale === 'fr' ? 'Toutes' : 'All' },
+                          { value: 'en', label: 'English' },
+                          { value: 'fr', label: 'Français' },
+                        ].map((item) => (
+                          <button
+                            key={item.value}
+                            onClick={() => setLanguageFilter(item.value as any)}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                              languageFilter === item.value ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span className="flex-1 text-left">{item.label}</span>
+                            {languageFilter === item.value && <Check className="w-4 h-4" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {hasActiveFilters && (
+                      <button
+                        onClick={() => { setTypeFilter('all'); setLanguageFilter('all') }}
+                        className="w-full px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg"
+                      >
+                        {locale === 'fr' ? 'Effacer' : 'Clear'}
+                      </button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
+
+            <Link href="/resources/create">
+              <Button className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-4">
+                <Plus className="w-4 h-4 mr-2" />
+                {locale === 'fr' ? 'Créer' : 'Create'}
+              </Button>
+            </Link>
+          </div>
+
+          {/* Content based on sub-tab */}
+          <AnimatePresence mode="wait">
+            {activeSubTab === 'created' && (
+              <motion.div key="created" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                  </div>
+                ) : createdResources.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                    {createdResources.map((resource, index) => (
                       <ResourceCard
                         key={resource.id}
                         resource={resource}
@@ -962,517 +583,261 @@ export default function MyResourcesPage() {
                         onEdit={() => router.push(`/resources/create/${resource.type}?edit=${resource.id}`)}
                         onPreview={() => router.push(`/resources/${resource.id}`)}
                         onDelete={() => handleDelete(resource.id)}
-                        onRemove={() => handleRemoveFromLibrary(resource.id)}
                         onShare={() => handleOpenShareModal(resource)}
                         isDeleting={isDeleting === resource.id}
-                        isRemoving={isRemoving === resource.id}
-                        isOwner={resourceIsOwner}
+                        isOwner={currentUserId === resource.practitioner_id}
                       />
-                    )
-                  })}
-                </div>
-              ) : (
-                <EmptyState
-                  icon={FolderOpen}
-                  title={t.library.myResources.noCreated}
-                  description={t.library.myResources.noCreatedDescription}
-                  actionLabel={t.library.create.title}
-                  onAction={() => router.push('/resources/create')}
-                />
-              )}
-            </motion.div>
-          )}
-
-          {activeTab === 'collections' && (
-            <motion.div
-              key="collections"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              {/* Create Collection Button */}
-              <div className="flex justify-end mb-6">
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowCreateCollectionModal(true)}
-                    className="rounded-xl border-2 border-lavender-200 hover:border-lavender-300 hover:bg-lavender-50"
-                  >
-                    <Plus className="w-4 h-4 mr-2 text-lavender-600" />
-                    <span className="text-lavender-700">{t.library.collections.createCollection}</span>
-                  </Button>
-                </motion.div>
-              </div>
-
-              {isLoadingCollections ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-8 h-8 animate-spin text-lavender-500" />
-                </div>
-              ) : collections.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {collections.map((collection) => {
-                    const IconComponent = collectionIcons[collection.icon as CollectionIcon] || FolderOpen
-                    const config = colorConfig[collection.color as CollectionColor] || colorConfig.blue
-                    return (
-                      <motion.div
-                        key={collection.id}
-                        whileHover={{ scale: 1.02, y: -2 }}
-                        onClick={() => router.push(`/resources/collections/${collection.id}`)}
-                        className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] shadow-lg shadow-gray-200/40 border border-white/60 p-5 cursor-pointer hover:shadow-xl transition-all group relative"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className={`w-12 h-12 rounded-2xl ${config.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-md`}>
-                              <IconComponent className="w-4 h-4 text-white" />
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 truncate">{collection.name}</h3>
-                            <p className="text-sm text-gray-500">
-                              {collection.resource_count || 0} {locale === 'fr' ? 'ressources' : 'resources'}
-                            </p>
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button
-                                onClick={(e) => e.stopPropagation()}
-                                className="p-2 rounded-lg hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
-                              >
-                                <MoreHorizontal className="w-4 h-4 text-gray-400" />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="rounded-xl">
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  router.push(`/resources/collections/${collection.id}`)
-                                }}
-                                className="rounded-lg"
-                              >
-                                <Eye className="w-4 h-4 mr-2" />
-                                {locale === 'fr' ? 'Voir' : 'View'}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="rounded-lg">
-                                <Pencil className="w-4 h-4 mr-2" />
-                                {locale === 'fr' ? 'Modifier' : 'Edit'}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleDeleteCollection(collection.id)
-                                }}
-                                className="text-red-600 rounded-lg"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                {locale === 'fr' ? 'Supprimer' : 'Delete'}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                        {collection.description && (
-                          <p className="text-xs text-gray-400 mt-3 line-clamp-2">{collection.description}</p>
-                        )}
-                      </motion.div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-center py-16"
-                >
-                  <div className="w-20 h-20 rounded-2xl bg-gray-100/80 flex items-center justify-center mx-auto mb-5">
-                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center shadow-inner">
-                      <FolderOpen className="w-7 h-7 text-gray-500" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-16">
+                    <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <FolderOpen className="w-8 h-8 text-gray-400" />
                     </div>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                    {locale === 'fr' ? 'Aucune collection' : 'No collections yet'}
-                  </h3>
-                  <p className="text-gray-500 mb-8 max-w-md mx-auto leading-relaxed">
-                    {locale === 'fr'
-                      ? 'Créez des collections pour organiser vos ressources'
-                      : 'Create collections to organize your resources'}
-                  </p>
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      onClick={() => setShowCreateCollectionModal(true)}
-                      className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 shadow-lg shadow-lavender-200/50 rounded-xl px-6 py-2.5"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      {t.library.collections.createCollection}
-                    </Button>
-                  </motion.div>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Create Collection Modal */}
-        <AnimatePresence>
-          {showCreateCollectionModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-              onClick={() => setShowCreateCollectionModal(false)}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
-              >
-                {/* Modal Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Nouvelle collection' : 'New Collection'}
-                  </h2>
-                  <button
-                    onClick={() => setShowCreateCollectionModal(false)}
-                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <X className="w-5 h-5 text-gray-400" />
-                  </button>
-                </div>
-
-                {/* Modal Body */}
-                <div className="p-6 space-y-5">
-                  {/* Name Input */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      {locale === 'fr' ? 'Nom' : 'Name'} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={newCollectionName}
-                      onChange={(e) => setNewCollectionName(e.target.value)}
-                      placeholder={locale === 'fr' ? 'Ex: Outils pour l\'anxiété' : 'e.g., Anxiety Tools'}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all"
-                    />
-                  </div>
-
-                  {/* Description Input */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      {locale === 'fr' ? 'Description' : 'Description'}
-                    </label>
-                    <textarea
-                      value={newCollectionDescription}
-                      onChange={(e) => setNewCollectionDescription(e.target.value)}
-                      placeholder={locale === 'fr' ? 'Description optionnelle...' : 'Optional description...'}
-                      rows={2}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all resize-none"
-                    />
-                  </div>
-
-                  {/* Color Selection */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {locale === 'fr' ? 'Couleur' : 'Color'}
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {(Object.keys(colorConfig) as CollectionColor[]).map((color) => (
-                        <button
-                          key={color}
-                          onClick={() => setNewCollectionColor(color)}
-                          className={`w-8 h-8 rounded-lg bg-gradient-to-br ${colorConfig[color].gradient} transition-all ${
-                            newCollectionColor === color
-                              ? 'ring-2 ring-offset-2 ring-gray-400 scale-110'
-                              : 'hover:scale-105'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Icon Selection */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {locale === 'fr' ? 'Icône' : 'Icon'}
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {(Object.keys(collectionIcons) as CollectionIcon[]).map((icon) => {
-                        const IconComp = collectionIcons[icon]
-                        return (
-                          <button
-                            key={icon}
-                            onClick={() => setNewCollectionIcon(icon)}
-                            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-                              newCollectionIcon === icon
-                                ? `${colorConfig[newCollectionColor].bg} ${colorConfig[newCollectionColor].text} ring-2 ring-offset-1 ring-gray-300`
-                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                            }`}
-                          >
-                            <IconComp className="w-5 h-5" />
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Preview */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {locale === 'fr' ? 'Aperçu' : 'Preview'}
-                    </label>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl ${colorConfig[newCollectionColor].bg} flex items-center justify-center`}>
-                          <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${colorConfig[newCollectionColor].gradient} flex items-center justify-center`}>
-                            {(() => {
-                              const PreviewIcon = collectionIcons[newCollectionIcon]
-                              return <PreviewIcon className="w-3.5 h-3.5 text-white" />
-                            })()}
-                          </div>
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {newCollectionName || (locale === 'fr' ? 'Nom de la collection' : 'Collection name')}
-                          </p>
-                          <p className="text-xs text-gray-500">0 {locale === 'fr' ? 'ressources' : 'resources'}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Modal Footer */}
-                <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50/50">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowCreateCollectionModal(false)}
-                    className="rounded-xl"
-                  >
-                    {locale === 'fr' ? 'Annuler' : 'Cancel'}
-                  </Button>
-                  <Button
-                    onClick={handleCreateCollection}
-                    disabled={!newCollectionName.trim() || isCreatingCollection}
-                    className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 rounded-xl"
-                  >
-                    {isCreatingCollection ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        {locale === 'fr' ? 'Création...' : 'Creating...'}
-                      </>
-                    ) : (
-                      <>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                      {locale === 'fr' ? 'Aucune ressource créée' : 'No resources created'}
+                    </h2>
+                    <p className="text-gray-500 mb-4">
+                      {locale === 'fr' ? 'Créez votre première ressource' : 'Create your first resource'}
+                    </p>
+                    <Link href="/resources/create">
+                      <Button className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl">
                         <Plus className="w-4 h-4 mr-2" />
                         {locale === 'fr' ? 'Créer' : 'Create'}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Share with Member Modal */}
-        <AnimatePresence>
-          {showShareModal && selectedResourceToShare && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-              onClick={() => setShowShareModal(false)}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
-              >
-                {/* Modal Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">
-                      {locale === 'fr' ? 'Partager à un patient' : 'Share with Member'}
-                    </h2>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {selectedResourceToShare.title}
-                    </p>
+                      </Button>
+                    </Link>
                   </div>
-                  <button
-                    onClick={() => setShowShareModal(false)}
-                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <X className="w-5 h-5 text-gray-400" />
-                  </button>
-                </div>
+                )}
+              </motion.div>
+            )}
 
-                {/* Modal Body */}
-                <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
-                  {/* Search Members */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {locale === 'fr' ? 'Rechercher un membre' : 'Search Member'}
-                    </label>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        value={memberSearchQuery}
-                        onChange={(e) => setMemberSearchQuery(e.target.value)}
-                        placeholder={locale === 'fr' ? 'Rechercher...' : 'Search...'}
-                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all"
+            {activeSubTab === 'saved' && (
+              <motion.div key="saved" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                {isLoadingSaved ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                  </div>
+                ) : savedResources.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                    {savedResources.map((resource, index) => (
+                      <ResourceCard
+                        key={resource.id}
+                        resource={resource}
+                        locale={locale}
+                        variant="saved"
+                        index={index}
+                        onPreview={() => router.push(`/resources/${resource.id}`)}
+                        onRemove={() => handleRemoveFromLibrary(resource.id)}
+                        onShare={() => handleOpenShareModal(resource)}
+                        isRemoving={isRemoving === resource.id}
+                        isOwner={false}
                       />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-16">
+                    <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <Bookmark className="w-8 h-8 text-gray-400" />
                     </div>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                      {locale === 'fr' ? 'Aucune ressource enregistrée' : 'No saved resources'}
+                    </h2>
+                    <p className="text-gray-500 mb-4">
+                      {locale === 'fr' ? 'Explorez la bibliothèque' : 'Explore the library'}
+                    </p>
+                    <Link href="/library">
+                      <Button variant="outline" className="rounded-xl">
+                        {locale === 'fr' ? 'Explorer' : 'Explore'}
+                      </Button>
+                    </Link>
                   </div>
-
-                  {/* Members List */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {locale === 'fr' ? 'Sélectionner un membre' : 'Select a Member'}
-                    </label>
-                    {isLoadingMembers ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin text-lavender-500" />
-                      </div>
-                    ) : filteredMembers.length > 0 ? (
-                      <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {filteredMembers.map((member) => (
-                          <button
-                            key={member.id}
-                            onClick={() => setSelectedMemberId(member.id)}
-                            className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
-                              selectedMemberId === member.id
-                                ? 'border-lavender-500 bg-lavender-50'
-                                : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
-                            }`}
-                          >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
-                              selectedMemberId === member.id
-                                ? 'bg-lavender-500 text-white'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}>
-                              {member.first_name[0]}{member.last_name[0]}
-                            </div>
-                            <div className="text-left flex-1">
-                              <p className="font-medium text-gray-900">
-                                {member.first_name} {member.last_name}
-                              </p>
-                              {member.email && (
-                                <p className="text-xs text-gray-500">{member.email}</p>
-                              )}
-                            </div>
-                            {selectedMemberId === member.id && (
-                              <div className="w-5 h-5 rounded-full bg-lavender-500 flex items-center justify-center">
-                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                              </div>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 bg-gray-50 rounded-xl">
-                        <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500">
-                          {locale === 'fr' ? 'Aucun membre trouvé' : 'No members found'}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Optional Message */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {locale === 'fr' ? 'Message (optionnel)' : 'Message (optional)'}
-                    </label>
-                    <textarea
-                      value={shareMessage}
-                      onChange={(e) => setShareMessage(e.target.value)}
-                      placeholder={locale === 'fr' ? 'Ajouter un message personnel...' : 'Add a personal message...'}
-                      rows={3}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all resize-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Modal Footer */}
-                <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50/50">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowShareModal(false)}
-                    className="rounded-xl"
-                  >
-                    {locale === 'fr' ? 'Annuler' : 'Cancel'}
-                  </Button>
-                  <Button
-                    onClick={handleShareResource}
-                    disabled={!selectedMemberId || isSharing}
-                    className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 rounded-xl"
-                  >
-                    {isSharing ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        {locale === 'fr' ? 'Partage...' : 'Sharing...'}
-                      </>
-                    ) : (
-                      <>
-                        <Share2 className="w-4 h-4 mr-2" />
-                        {locale === 'fr' ? 'Partager' : 'Share'}
-                      </>
-                    )}
-                  </Button>
-                </div>
+                )}
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
-    </div>
-  )
-}
+            )}
 
-// Empty State Component
-function EmptyState({
-  icon: Icon,
-  title,
-  description,
-  actionLabel,
-  onAction,
-}: {
-  icon: React.ElementType
-  title: string
-  description: string
-  actionLabel?: string
-  onAction?: () => void
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="text-center py-16"
-    >
-      <div className="w-20 h-20 rounded-2xl bg-gray-100/80 flex items-center justify-center mx-auto mb-5">
-        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center shadow-inner">
-          <Icon className="w-7 h-7 text-gray-500" />
+          </AnimatePresence>
         </div>
-      </div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-3">{title}</h3>
-      <p className="text-gray-500 mb-8 max-w-md mx-auto leading-relaxed">{description}</p>
-      {actionLabel && onAction && (
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Button
-            onClick={onAction}
-            className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 shadow-lg shadow-lavender-200/50 rounded-xl px-6 py-2.5"
+      </main>
+
+      {/* Create Collection Modal */}
+      <AnimatePresence>
+        {showCreateCollectionModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowCreateCollectionModal(false)}
           >
-            {actionLabel}
-          </Button>
-        </motion.div>
-      )}
-    </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md"
+            >
+              <div className="flex items-center justify-between p-6 border-b">
+                <h2 className="text-xl font-semibold">{locale === 'fr' ? 'Nouvelle collection' : 'New Collection'}</h2>
+                <button onClick={() => setShowCreateCollectionModal(false)} className="p-2 rounded-lg hover:bg-gray-100">
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">{locale === 'fr' ? 'Nom' : 'Name'}</label>
+                  <input
+                    type="text"
+                    value={newCollectionName}
+                    onChange={(e) => setNewCollectionName(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">{locale === 'fr' ? 'Couleur' : 'Color'}</label>
+                  <div className="flex gap-2">
+                    {(Object.keys(colorConfig) as CollectionColor[]).map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => setNewCollectionColor(color)}
+                        className={`w-8 h-8 rounded-lg bg-gradient-to-br ${colorConfig[color].gradient} ${
+                          newCollectionColor === color ? 'ring-2 ring-offset-2 ring-gray-400' : ''
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">{locale === 'fr' ? 'Icône' : 'Icon'}</label>
+                  <div className="flex gap-2">
+                    {(Object.keys(collectionIcons) as CollectionIcon[]).map((icon) => {
+                      const IconComp = collectionIcons[icon]
+                      return (
+                        <button
+                          key={icon}
+                          onClick={() => setNewCollectionIcon(icon)}
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            newCollectionIcon === icon ? 'bg-gray-200' : 'bg-gray-100 hover:bg-gray-150'
+                          }`}
+                        >
+                          <IconComp className="w-5 h-5 text-gray-600" />
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3 p-6 border-t bg-gray-50 rounded-b-2xl">
+                <Button variant="outline" onClick={() => setShowCreateCollectionModal(false)} className="flex-1 rounded-xl">
+                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                </Button>
+                <Button
+                  onClick={handleCreateCollection}
+                  disabled={!newCollectionName.trim() || isCreatingCollection}
+                  className="flex-1 bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
+                >
+                  {isCreatingCollection ? <Loader2 className="w-4 h-4 animate-spin" /> : locale === 'fr' ? 'Créer' : 'Create'}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Share Modal */}
+      <AnimatePresence>
+        {showShareModal && selectedResourceToShare && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowShareModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg"
+            >
+              <div className="flex items-center justify-between p-6 border-b">
+                <div>
+                  <h2 className="text-xl font-semibold">{locale === 'fr' ? 'Partager' : 'Share'}</h2>
+                  <p className="text-sm text-gray-500 mt-1">{selectedResourceToShare.title}</p>
+                </div>
+                <button onClick={() => setShowShareModal(false)} className="p-2 rounded-lg hover:bg-gray-100">
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={memberSearchQuery}
+                    onChange={(e) => setMemberSearchQuery(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Rechercher...' : 'Search...'}
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl"
+                  />
+                </div>
+                {isLoadingMembers ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                  </div>
+                ) : filteredMembers.length > 0 ? (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {filteredMembers.map((member) => (
+                      <button
+                        key={member.id}
+                        onClick={() => setSelectedMemberId(member.id)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 ${
+                          selectedMemberId === member.id ? 'border-gray-900 bg-gray-50' : 'border-gray-100 hover:border-gray-200'
+                        }`}
+                      >
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+                          selectedMemberId === member.id ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {member.first_name[0]}{member.last_name[0]}
+                        </div>
+                        <div className="text-left flex-1">
+                          <p className="font-medium">{member.first_name} {member.last_name}</p>
+                          {member.email && <p className="text-xs text-gray-500">{member.email}</p>}
+                        </div>
+                        {selectedMemberId === member.id && <Check className="w-5 h-5" />}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 bg-gray-50 rounded-xl">
+                    <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">{locale === 'fr' ? 'Aucun membre' : 'No members'}</p>
+                  </div>
+                )}
+                <textarea
+                  value={shareMessage}
+                  onChange={(e) => setShareMessage(e.target.value)}
+                  placeholder={locale === 'fr' ? 'Message (optionnel)' : 'Message (optional)'}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl resize-none"
+                />
+              </div>
+              <div className="flex gap-3 p-6 border-t bg-gray-50 rounded-b-2xl">
+                <Button variant="outline" onClick={() => setShowShareModal(false)} className="flex-1 rounded-xl">
+                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                </Button>
+                <Button
+                  onClick={handleShareResource}
+                  disabled={!selectedMemberId || isSharing}
+                  className="flex-1 bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
+                >
+                  {isSharing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
+                  {locale === 'fr' ? 'Partager' : 'Share'}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }

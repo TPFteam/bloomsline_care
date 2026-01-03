@@ -16,7 +16,30 @@ import {
   Play,
   Pause,
   File,
+  Smile,
+  Laugh,
+  Meh,
+  Frown,
+  Angry,
 } from 'lucide-react'
+
+// Mood icon mapping
+const moodIcons: Record<string, React.ElementType> = {
+  'Angry': Angry,
+  'Frown': Frown,
+  'Meh': Meh,
+  'Smile': Smile,
+  'Laugh': Laugh,
+}
+
+// Mood icon colors
+const moodColors: Record<string, string> = {
+  'Angry': 'text-red-500',
+  'Frown': 'text-orange-500',
+  'Meh': 'text-amber-500',
+  'Smile': 'text-teal-500',
+  'Laugh': 'text-emerald-500',
+}
 import { AnimatePresence } from 'framer-motion'
 import type { ResourceBlock } from '@/types/resource'
 import { sanitizeUrl } from '@/lib/security/validation'
@@ -712,13 +735,13 @@ function LikertBlock({
   const scaleLabels = 'scaleLabels' in block ? block.scaleLabels as string[] : []
   const numbers = Array.from({ length: scale }, (_, i) => i + 1)
 
-  // Mood options for mood scale type
+  // Mood options for mood scale type (using icon names)
   const moodOptions = [
-    { emoji: '🌧️', label: locale === 'fr' ? 'Difficile' : 'Struggling', value: 1 },
-    { emoji: '🍂', label: locale === 'fr' ? 'Fragile' : 'Low', value: 2 },
-    { emoji: '🌱', label: locale === 'fr' ? 'Neutre' : 'Okay', value: 3 },
-    { emoji: '🌿', label: locale === 'fr' ? 'Bien' : 'Good', value: 4 },
-    { emoji: '🌸', label: locale === 'fr' ? 'Épanoui' : 'Thriving', value: 5 },
+    { emoji: 'Angry', label: locale === 'fr' ? 'Difficile' : 'Struggling', value: 1 },
+    { emoji: 'Frown', label: locale === 'fr' ? 'Fragile' : 'Low', value: 2 },
+    { emoji: 'Meh', label: locale === 'fr' ? 'Neutre' : 'Okay', value: 3 },
+    { emoji: 'Smile', label: locale === 'fr' ? 'Bien' : 'Good', value: 4 },
+    { emoji: 'Laugh', label: locale === 'fr' ? 'Épanoui' : 'Thriving', value: 5 },
   ]
 
   return (
@@ -749,7 +772,14 @@ function LikertBlock({
                     : 'bg-gray-50/50 hover:bg-white border-2 border-transparent hover:border-gray-100'
                 } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
               >
-                <span className="text-2xl sm:text-3xl mb-1.5">{mood.emoji}</span>
+                {moodIcons[mood.emoji] ? (
+                  (() => {
+                    const Icon = moodIcons[mood.emoji]
+                    return <Icon className={`w-7 h-7 sm:w-9 sm:h-9 mb-1.5 ${isSelected ? moodColors[mood.emoji] : 'text-gray-400'}`} />
+                  })()
+                ) : (
+                  <span className="text-2xl sm:text-3xl mb-1.5">{mood.emoji}</span>
+                )}
                 <span className={`text-[10px] sm:text-xs ${isSelected ? 'text-teal-700 font-medium' : 'text-gray-500'}`}>
                   {mood.label}
                 </span>
@@ -1060,11 +1090,11 @@ function MoodBlock({
   const moodOptions = ('moodOptions' in block && Array.isArray(block.moodOptions))
     ? block.moodOptions
     : [
-        { emoji: '🌧️', label: locale === 'fr' ? 'Difficile' : 'Struggling', value: 1 },
-        { emoji: '🍂', label: locale === 'fr' ? 'Fragile' : 'Low', value: 2 },
-        { emoji: '🌱', label: locale === 'fr' ? 'Neutre' : 'Okay', value: 3 },
-        { emoji: '🌿', label: locale === 'fr' ? 'Bien' : 'Good', value: 4 },
-        { emoji: '🌸', label: locale === 'fr' ? 'Épanoui' : 'Thriving', value: 5 },
+        { emoji: 'Angry', label: locale === 'fr' ? 'Difficile' : 'Struggling', value: 1 },
+        { emoji: 'Frown', label: locale === 'fr' ? 'Fragile' : 'Low', value: 2 },
+        { emoji: 'Meh', label: locale === 'fr' ? 'Neutre' : 'Okay', value: 3 },
+        { emoji: 'Smile', label: locale === 'fr' ? 'Bien' : 'Good', value: 4 },
+        { emoji: 'Laugh', label: locale === 'fr' ? 'Épanoui' : 'Thriving', value: 5 },
       ]
 
   return (
@@ -1094,7 +1124,14 @@ function MoodBlock({
                   : 'bg-gray-50/50 hover:bg-white border-2 border-transparent hover:border-gray-100'
               } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
             >
-              <span className="text-2xl sm:text-3xl mb-1.5">{mood.emoji}</span>
+              {moodIcons[mood.emoji] ? (
+                (() => {
+                  const Icon = moodIcons[mood.emoji]
+                  return <Icon className={`w-7 h-7 sm:w-9 sm:h-9 mb-1.5 ${isSelected ? moodColors[mood.emoji] : 'text-gray-400'}`} />
+                })()
+              ) : (
+                <span className="text-2xl sm:text-3xl mb-1.5">{mood.emoji}</span>
+              )}
               <span className={`text-[10px] sm:text-xs ${isSelected ? 'text-teal-700 font-medium' : 'text-gray-500'}`}>
                 {mood.label}
               </span>

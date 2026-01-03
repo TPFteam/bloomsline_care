@@ -246,9 +246,10 @@ function CreatePsychoeducationContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
+  const templateParam = searchParams.get('template')
 
-  // Step state - start at 'build' if editing, otherwise 'template'
-  const [step, setStep] = useState<'template' | 'build' | 'details'>(editId ? 'build' : 'template')
+  // Step state - start at 'build' if editing or template param provided, otherwise 'template'
+  const [step, setStep] = useState<'template' | 'build' | 'details'>(editId || templateParam ? 'build' : 'template')
   const [detailsStep, setDetailsStep] = useState<1 | 2 | 3>(1)
 
   // Edit mode state
@@ -392,9 +393,31 @@ function CreatePsychoeducationContent() {
     loadResource()
   }, [editId, locale, router])
 
-  // Reset form state when creating a new resource (not editing)
+  // Apply template from URL parameter (skip template selection step)
   useEffect(() => {
-    if (!editId) {
+    if (templateParam && !editId) {
+      const template = educationTemplates.find(t => t.id === templateParam)
+      if (template) {
+        if (template.id === 'blank') {
+          setBlocks([])
+          setLearningObjectives([''])
+          setTitle('')
+        } else {
+          const blocksWithIds = template.blocks.map(block => ({
+            ...block,
+            id: generateId(),
+          }))
+          setBlocks(blocksWithIds as ContentBlock[])
+          setLearningObjectives(template.learningObjectives)
+          setTitle(template.name[locale])
+        }
+      }
+    }
+  }, [templateParam, editId, locale])
+
+  // Reset form state when creating a new resource (not editing and no template)
+  useEffect(() => {
+    if (!editId && !templateParam) {
       setTitle('')
       setDescription('')
       setSelectedCategory(null)
@@ -415,7 +438,7 @@ function CreatePsychoeducationContent() {
       setLastSavedAt(null)
       setHasUnsavedChanges(false)
     }
-  }, [editId, locale])
+  }, [editId, templateParam, locale])
 
   // Connect video stream to preview element after state changes
   useEffect(() => {
@@ -2244,12 +2267,14 @@ function CreatePsychoeducationContent() {
                     </motion.div>
                   </Link>
                 ) : (
-                  <motion.div whileHover={{ x: -4 }} className="inline-block">
-                    <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80" onClick={() => setStep('template')}>
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      {locale === 'fr' ? 'Retour' : 'Back'}
-                    </Button>
-                  </motion.div>
+                  <Link href="/resources/create">
+                    <motion.div whileHover={{ x: -4 }} className="inline-block">
+                      <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        {locale === 'fr' ? 'Retour' : 'Back'}
+                      </Button>
+                    </motion.div>
+                  </Link>
                 )}
                 <div className="flex items-center gap-2">
                   {/* Auto-save Status Indicator */}

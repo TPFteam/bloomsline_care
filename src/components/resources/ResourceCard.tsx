@@ -14,12 +14,10 @@ import {
   Trash2,
   Share2,
   Users,
-  FolderPlus,
   Sparkles,
   Lock,
   Globe,
   Bookmark,
-  Check,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -32,7 +30,6 @@ import {
   DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu'
 import type { Resource } from '@/types/resource'
-import type { Collection } from '@/types/collection'
 
 const resourceTypeIcons: Record<string, React.ElementType> = {
   worksheet: FileText,
@@ -106,9 +103,7 @@ interface ResourceCardProps {
   onRemove?: () => void
   onShare?: () => void
   onBookmark?: (resourceId: string) => void
-  collections?: Collection[]
   members?: SimpleMember[]
-  onAddToCollection?: (resourceId: string, collectionId: string) => void
   onShareWithMember?: (resourceId: string, memberId: string, memberName: string) => void
   isDeleting?: boolean
   isRemoving?: boolean
@@ -128,9 +123,7 @@ export function ResourceCard({
   onRemove,
   onShare,
   onBookmark,
-  collections = [],
   members = [],
-  onAddToCollection,
   onShareWithMember,
   isDeleting = false,
   isRemoving = false,
@@ -165,9 +158,9 @@ export function ResourceCard({
       transition={{ duration: 0.2, delay: index * 0.03 }}
       onClick={handleClick}
       className={`
-        group bg-gray-50/80 rounded-2xl p-5
+        group bg-white rounded-2xl p-5
         cursor-pointer transition-all duration-200
-        hover:bg-gray-100/80 hover:shadow-sm
+        border border-gray-200 hover:border-gray-300 hover:shadow-sm
         ${isDeleting || isRemoving ? 'opacity-50 pointer-events-none' : ''}
       `}
     >
@@ -232,24 +225,6 @@ export function ResourceCard({
                   <Users className="w-4 h-4 mr-2" />
                   {locale === 'fr' ? 'Partager' : 'Share'}
                 </DropdownMenuItem>
-              )}
-              {(variant === 'library' || variant === 'saved') && collections.length > 0 && onAddToCollection && (
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <FolderPlus className="w-4 h-4 mr-2 text-gray-400" />
-                    {locale === 'fr' ? 'Ajouter à' : 'Add to'}
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-48">
-                    {collections.map((collection) => (
-                      <DropdownMenuItem
-                        key={collection.id}
-                        onClick={() => onAddToCollection(resource.id, collection.id)}
-                      >
-                        {collection.name}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
               )}
               {variant === 'library' && members.length > 0 && onShareWithMember && (
                 <DropdownMenuSub>
@@ -366,10 +341,6 @@ export function ResourceCardList({
   onDelete,
   onShare,
   onBookmark,
-  collections = [],
-  members = [],
-  onAddToCollection,
-  onShareWithMember,
   isDeleting = false,
   isOwner = true,
   showCuratedBadge = false,
@@ -402,9 +373,9 @@ export function ResourceCardList({
       transition={{ duration: 0.15, delay: index * 0.02 }}
       onClick={handleClick}
       className={`
-        group bg-gray-50/80 rounded-xl p-4
+        group bg-white rounded-xl p-4
         cursor-pointer transition-all duration-200
-        hover:bg-gray-100/80 hover:shadow-sm
+        border border-gray-200 hover:border-gray-300 hover:shadow-sm
         flex items-center gap-4
         ${isDeleting ? 'opacity-50 pointer-events-none' : ''}
       `}

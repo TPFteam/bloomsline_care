@@ -6,29 +6,29 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users,
-  UserCheck,
   Clock,
   Plus,
   Search,
   Calendar,
   Mail,
-  Phone,
   Edit,
   Trash2,
-  Eye,
-  TrendingUp,
-  Sparkles,
-  Activity,
-  MoreHorizontal,
+  LayoutGrid,
+  List,
+  Loader2,
+  CalendarCheck,
+  Phone,
+  X,
+  Save,
 } from 'lucide-react'
-import { AnimatedIcon } from '@/components/ui/animated-icons'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
-import { AppSidebar } from '@/components/app-sidebar'
+import { AppHeader, AppSidebar } from '@/components/layout'
+import type { User } from '@/types/user'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { Member, MemberFilter, MemberHubStats, Session } from '@/types/member'
-import { getMemberFullName, getMemberInitials, formatDate, formatRelativeTime } from '@/types/member'
+import { getMemberFullName, getMemberInitials, formatDate } from '@/types/member'
 
 export default function MembersPage() {
   const { t, locale } = useLanguage()
@@ -40,6 +40,8 @@ export default function MembersPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<MemberFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [user, setUser] = useState<User | null>(null)
   const [stats, setStats] = useState<MemberHubStats>({
     total_members: 0,
     active_members: 0,
@@ -49,23 +51,50 @@ export default function MembersPage() {
     average_engagement: 0,
   })
 
+  // Add Member Modal
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '' })
+  const [saving, setSaving] = useState(false)
+
   useEffect(() => {
     fetchMembers()
   }, [])
 
   const fetchMembers = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user: authUser } } = await supabase.auth.getUser()
 
-      if (!user) {
+      if (!authUser) {
         router.push('/sign-in')
         return
+      }
+
+      // Fetch user profile
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .single()
+
+      if (userProfile) {
+        setUser(userProfile)
+      } else {
+        setUser({
+          id: authUser.id,
+          email: authUser.email!,
+          full_name: authUser.user_metadata?.full_name || null,
+          avatar_url: authUser.user_metadata?.avatar_url || null,
+          user_type: authUser.user_metadata?.user_type || 'mentor',
+          preferred_language: 'en',
+          created_at: authUser.created_at,
+          updated_at: authUser.updated_at || authUser.created_at,
+        })
       }
 
       const { data, error } = await supabase
         .from('members')
         .select('*')
-        .eq('practitioner_id', user.id)
+        .eq('practitioner_id', authUser.id)
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -154,6 +183,60 @@ export default function MembersPage() {
     }
   }
 
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!newMember.firstName.trim() || !newMember.lastName.trim() || !newMember.email.trim()) {
+      toast.error(locale === 'fr'
+        ? 'Le prénom, le nom et l\'email sont requis'
+        : 'First name, last name, and email are required')
+      return
+    }
+
+    setSaving(true)
+
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) {
+        router.push('/sign-in')
+        return
+      }
+
+      const memberData = {
+        practitioner_id: authUser.id,
+        first_name: newMember.firstName.trim(),
+        last_name: newMember.lastName.trim(),
+        email: newMember.email.trim(),
+        phone: newMember.phone.trim() || null,
+        status: 'pending' as const,
+        engagement_level: 'medium' as const,
+      }
+
+      const { data, error } = await supabase
+        .from('members')
+        .insert(memberData)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Add to list and recalculate stats
+      const updatedMembers = [data, ...members]
+      setMembers(updatedMembers)
+      calculateStats(updatedMembers)
+
+      // Reset form and close modal
+      setNewMember({ firstName: '', lastName: '', email: '', phone: '' })
+      setShowAddModal(false)
+      toast.success(t.members.success.memberCreated)
+    } catch (error) {
+      console.error('Error creating member:', error)
+      toast.error(error instanceof Error ? error.message : t.members.errors.saveFailed)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const filteredMembers = members.filter(member => {
     if (filter !== 'all' && member.status !== filter) return false
 
@@ -180,171 +263,158 @@ export default function MembersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-mesh flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
-        >
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-lavender-400 to-lavender-600 flex items-center justify-center mx-auto mb-4 animate-pulse-glow">
-            <AnimatedIcon icon={Users} animation="pulse" size={32} animateOnHover={false} animateOnRender className="text-white" />
-          </div>
-          <p className="text-gray-500 font-medium">{t.dashboard.loading}</p>
-        </motion.div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+          <span className="text-gray-500 text-sm">{t.dashboard.loading}</span>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen gradient-mesh flex">
-      {/* Decorative elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-lavender-200/30 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-mint-200/30 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-coral-200/20 rounded-full blur-3xl" />
-      </div>
-
-      {/* Sidebar */}
-      <AppSidebar />
+    <div className="min-h-screen bg-gray-50 flex">
+      <AppSidebar activeItem="members" />
 
       {/* Main Content */}
-      <main className="flex-1 ml-80 p-8 relative">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8"
-        >
-          {/* Title Section */}
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-lavender-100/80 flex items-center justify-center">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-lavender-400 to-lavender-600 flex items-center justify-center shadow-lg shadow-lavender-200/50">
-                <AnimatedIcon icon={Users} animation="scale" size={20} animateOnHover animateOnRender={false} className="text-white" />
-              </div>
+      <main className="flex-1 ml-64">
+        <AppHeader
+          user={user}
+          leftContent={
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+              <Users className="w-4 h-4" strokeWidth={2.5} />
+              <span>{locale === 'fr' ? 'Patients' : 'Members'}</span>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                {t.members.title}
-                <AnimatedIcon icon={Sparkles} animation="sparkle" size={24} animateOnHover animateOnRender={false} className="text-lavender-400" />
-              </h1>
-              <p className="text-gray-600">{t.members.subtitle}</p>
-            </div>
-          </div>
-          <Link href="/members/new">
-            <Button className="bg-gradient-to-r from-lavender-500 via-lavender-500 to-indigo-500 hover:from-lavender-600 hover:via-lavender-600 hover:to-indigo-600 text-white shadow-xl shadow-lavender-300/30 border-0 rounded-xl px-6 py-3 text-base font-medium hover-lift">
-              <AnimatedIcon icon={Plus} animation="scale" size={20} animateOnHover animateOnRender={false} className="mr-2" />
-              {t.members.actions.addMember}
-            </Button>
-          </Link>
-        </motion.div>
+          }
+        />
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[
-            { icon: Users, value: stats.total_members, label: t.members.stats.totalMembers, gradient: 'from-lavender-400 to-lavender-600', bg: 'from-lavender-50 to-lavender-100/50', iconBg: 'bg-lavender-100/80' },
-            { icon: UserCheck, value: stats.active_members, label: t.members.stats.activeMembers, gradient: 'from-emerald-400 to-emerald-600', bg: 'from-emerald-50 to-emerald-100/50', iconBg: 'bg-emerald-100/80' },
-            { icon: Clock, value: stats.pending_members, label: t.members.stats.pendingMembers, gradient: 'from-amber-400 to-amber-600', bg: 'from-amber-50 to-amber-100/50', iconBg: 'bg-amber-100/80' },
-            { icon: TrendingUp, value: `${stats.average_engagement}%`, label: t.members.stats.engagementRate, gradient: 'from-mint-400 to-mint-600', bg: 'from-mint-50 to-mint-100/50', iconBg: 'bg-mint-100/80' },
-          ].map((stat, index) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + index * 0.05 }}
-              className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-5 hover-lift cursor-default group shadow-lg shadow-gray-200/40 border border-white/60"
-            >
-              <div className={`w-12 h-12 rounded-2xl ${stat.iconBg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-md`}>
-                  <AnimatedIcon icon={stat.icon} animation="scale" size={18} animateOnHover animateOnRender={false} className="text-white" />
+        {/* Content */}
+        <div className="p-8">
+          {/* Filters and Search */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex flex-col gap-4 mb-6"
+          >
+            {/* Top Row: Filter Pills and Actions */}
+            <div className="flex items-center justify-between gap-4">
+              {/* Filter Pills */}
+              <div className="flex items-center gap-2">
+                {filterOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setFilter(option.value)}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                      filter === option.value
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                    }`}
+                  >
+                    {option.label}
+                    <span className={`px-1.5 py-0.5 rounded-md text-xs ${
+                      filter === option.value
+                        ? 'bg-white/20 text-white'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {option.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Right Side Actions */}
+              <div className="flex items-center gap-3">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder={t.members.filters.searchPlaceholder}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-64 pl-10 pr-4 py-2 rounded-xl bg-white border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                  />
                 </div>
-              </div>
-              <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
-              <p className="text-sm text-gray-500 font-medium">{stat.label}</p>
-            </motion.div>
-          ))}
-        </div>
 
-        {/* Filters and Search */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-4 mb-6 shadow-lg shadow-gray-200/30 border border-white/60"
-        >
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Filter Pills */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {filterOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setFilter(option.value)}
-                  className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
-                    filter === option.value
-                      ? 'bg-gradient-to-r from-lavender-500 to-indigo-500 text-white shadow-lg shadow-lavender-200/50'
-                      : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80 hover:shadow-sm'
-                  }`}
+                {/* View Mode */}
+                <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded-lg transition-all ${
+                      viewMode === 'grid'
+                        ? 'bg-gray-100 text-gray-900'
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-lg transition-all ${
+                      viewMode === 'list'
+                        ? 'bg-gray-100 text-gray-900'
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Bookings Button */}
+                <Link href="/bookings">
+                  <Button variant="outline" className="rounded-xl px-4 border-gray-200">
+                    <CalendarCheck className="w-4 h-4 mr-2" />
+                    {locale === 'fr' ? 'Séances' : 'Bookings'}
+                  </Button>
+                </Link>
+
+                {/* Add Member Button */}
+                <Button
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-4"
                 >
-                  {option.label}
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${
-                    filter === option.value
-                      ? 'bg-white/20 text-white'
-                      : 'bg-gray-200/80 text-gray-500'
-                  }`}>
-                    {option.count}
-                  </span>
-                </button>
-              ))}
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t.members.actions.addMember}
+                </Button>
+              </div>
             </div>
+          </motion.div>
 
-            {/* Search */}
-            <div className="flex-1 relative">
-              <AnimatedIcon icon={Search} animation="scale" size={20} animateOnHover animateOnRender={false} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder={t.members.filters.searchPlaceholder}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-full bg-gray-50/80 border border-gray-100/80 focus:bg-white focus:border-lavender-300 focus:ring-2 focus:ring-lavender-100 outline-none transition-all text-sm placeholder:text-gray-400"
-              />
-            </div>
-          </div>
-        </motion.div>
+          {/* Results Count */}
+          <AnimatePresence>
+            {(searchQuery || filter !== 'all') && members.length > 0 && (
+              <motion.p
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="text-sm text-gray-500 mb-4"
+              >
+                {t.members.list.showing} <span className="font-semibold text-gray-700">{filteredMembers.length}</span> {t.members.list.of} {members.length} {t.members.list.members}
+              </motion.p>
+            )}
+          </AnimatePresence>
 
-        {/* Results Count */}
-        <AnimatePresence>
-          {(searchQuery || filter !== 'all') && members.length > 0 && (
-            <motion.p
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="text-sm text-gray-500 mb-4"
-            >
-              {t.members.list.showing} <span className="font-semibold text-gray-700">{filteredMembers.length}</span> {t.members.list.of} {members.length} {t.members.list.members}
-            </motion.p>
-          )}
-        </AnimatePresence>
-
-        {/* Members Grid */}
-        <div className="max-w-7xl">
+          {/* Members Grid/List */}
           {members.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="text-center py-20"
             >
-              <div className="bg-white/90 backdrop-blur-xl rounded-[2rem] p-12 max-w-md mx-auto shadow-xl shadow-gray-200/40 border border-white/60">
-                <div className="w-20 h-20 bg-gradient-to-br from-lavender-100 to-lavender-200 rounded-2xl flex items-center justify-center mx-auto mb-6 animate-float">
-                  <Users className="w-10 h-10 text-lavender-600" />
+              <div className="bg-white rounded-2xl p-12 max-w-md mx-auto border border-gray-200">
+                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Users className="w-8 h-8 text-gray-400" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
                   {t.members.list.noMembers}
                 </h2>
-                <p className="text-gray-500 mb-8">
+                <p className="text-gray-500 mb-6">
                   {t.members.list.noMembersDescription}
                 </p>
                 <Link href="/members/new">
-                  <Button className="bg-gradient-to-r from-lavender-500 to-indigo-500 hover:from-lavender-600 hover:to-indigo-600 text-white shadow-xl shadow-lavender-300/30 rounded-xl px-8 py-3 text-base font-medium">
-                    <Plus className="w-5 h-5 mr-2" />
+                  <Button className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-6">
+                    <Plus className="w-4 h-4 mr-2" />
                     {t.members.actions.addMember}
                   </Button>
                 </Link>
@@ -356,11 +426,11 @@ export default function MembersPage() {
               animate={{ opacity: 1, scale: 1 }}
               className="text-center py-20"
             >
-              <div className="bg-white/90 backdrop-blur-xl rounded-[2rem] p-12 max-w-md mx-auto shadow-xl shadow-gray-200/40 border border-white/60">
-                <div className="w-20 h-20 bg-gray-100/80 rounded-[1.25rem] flex items-center justify-center mx-auto mb-6">
-                  <Search className="w-10 h-10 text-gray-400" />
+              <div className="bg-white rounded-2xl p-12 max-w-md mx-auto border border-gray-200">
+                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Search className="w-8 h-8 text-gray-400" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
                   {t.members.list.noResults}
                 </h2>
                 <p className="text-gray-500">
@@ -369,29 +439,176 @@ export default function MembersPage() {
               </div>
             </motion.div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div className={
+              viewMode === 'grid'
+                ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5'
+                : 'flex flex-col gap-3'
+            }>
               <AnimatePresence mode="popLayout">
                 {filteredMembers.map((member, index) => (
-                  <MemberCard
-                    key={member.id}
-                    member={member}
-                    index={index}
-                    onDelete={handleDeleteMember}
-                    t={t}
-                    locale={locale}
-                    nextSession={nextSessions[member.id] || null}
-                  />
+                  viewMode === 'grid' ? (
+                    <MemberCard
+                      key={member.id}
+                      member={member}
+                      index={index}
+                      onDelete={handleDeleteMember}
+                      t={t}
+                      locale={locale}
+                      nextSession={nextSessions[member.id] || null}
+                    />
+                  ) : (
+                    <MemberListItem
+                      key={member.id}
+                      member={member}
+                      index={index}
+                      onDelete={handleDeleteMember}
+                      t={t}
+                      locale={locale}
+                      nextSession={nextSessions[member.id] || null}
+                    />
+                  )
                 ))}
               </AnimatePresence>
             </div>
           )}
         </div>
       </main>
+
+      {/* Add Member Modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowAddModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-xl w-full max-w-md shadow-xl"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {locale === 'fr' ? 'Nouveau Client' : 'New Member'}
+                </h2>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleAddMember} className="p-5">
+                <div className="space-y-4">
+                  {/* Name Row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {t.members.form.firstName} *
+                      </label>
+                      <input
+                        type="text"
+                        value={newMember.firstName}
+                        onChange={(e) => setNewMember({ ...newMember, firstName: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                        placeholder={locale === 'fr' ? 'Jean' : 'John'}
+                        required
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {t.members.form.lastName} *
+                      </label>
+                      <input
+                        type="text"
+                        value={newMember.lastName}
+                        onChange={(e) => setNewMember({ ...newMember, lastName: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                        placeholder={locale === 'fr' ? 'Dupont' : 'Doe'}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-gray-400" />
+                      {t.members.form.email} *
+                    </label>
+                    <input
+                      type="email"
+                      value={newMember.email}
+                      onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                      placeholder={locale === 'fr' ? 'jean@exemple.com' : 'john@example.com'}
+                      required
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-gray-400" />
+                      {t.members.form.phone}
+                      <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={newMember.phone}
+                      onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                      placeholder={locale === 'fr' ? '+33 6 12 34 56 78' : '+1 (555) 123-4567'}
+                    />
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setShowAddModal(false)}
+                    className="text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+                  >
+                    {t.members.form.cancel}
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={saving}
+                    className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg px-4 text-sm"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {t.members.form.saving}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        {locale === 'fr' ? 'Créer' : 'Create'}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
-// Member Card Component
+// Member Card Component (Grid View)
 function MemberCard({
   member,
   index,
@@ -408,36 +625,17 @@ function MemberCard({
   nextSession: Session | null
 }) {
   const router = useRouter()
-  const [showActions, setShowActions] = useState(false)
 
   const statusConfig = {
-    active: {
-      gradient: 'from-emerald-400 to-emerald-500',
-      bg: 'bg-emerald-50',
-      text: 'text-emerald-700',
-      dot: 'bg-emerald-500',
-      glow: 'shadow-emerald-200/50',
-    },
-    inactive: {
-      gradient: 'from-gray-300 to-gray-400',
-      bg: 'bg-gray-50',
-      text: 'text-gray-600',
-      dot: 'bg-gray-400',
-      glow: 'shadow-gray-200/50',
-    },
-    pending: {
-      gradient: 'from-amber-400 to-amber-500',
-      bg: 'bg-amber-50',
-      text: 'text-amber-700',
-      dot: 'bg-amber-500',
-      glow: 'shadow-amber-200/50',
-    },
+    active: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+    inactive: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' },
+    pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
   }
 
   const engagementConfig = {
-    high: { bg: 'bg-emerald-50', text: 'text-emerald-700', icon: '🔥' },
-    medium: { bg: 'bg-amber-50', text: 'text-amber-700', icon: '⚡' },
-    low: { bg: 'bg-red-50', text: 'text-red-700', icon: '💤' },
+    high: { bg: 'bg-emerald-50', text: 'text-emerald-700', label: '🔥' },
+    medium: { bg: 'bg-amber-50', text: 'text-amber-700', label: '⚡' },
+    low: { bg: 'bg-gray-100', text: 'text-gray-600', label: '💤' },
   }
 
   const status = statusConfig[member.status]
@@ -446,147 +644,185 @@ function MemberCard({
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.3, delay: index * 0.05 }}
-      whileHover={{ y: -4 }}
-      className="group"
+      transition={{ duration: 0.2, delay: index * 0.03 }}
+      onClick={() => router.push(`/members/${member.id}`)}
+      className="group bg-white rounded-2xl p-5 cursor-pointer transition-all border border-gray-200 hover:border-gray-300 hover:shadow-md"
     >
-      <div
-        className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] overflow-hidden cursor-pointer transition-all duration-300 shadow-lg shadow-gray-200/40 hover:shadow-xl hover:shadow-gray-200/60 border border-white/60"
-        onClick={() => router.push(`/members/${member.id}`)}
-        onMouseEnter={() => setShowActions(true)}
-        onMouseLeave={() => setShowActions(false)}
-      >
-        {/* Gradient accent bar */}
-        <div className={`h-1.5 bg-gradient-to-r ${status.gradient}`} />
-
-        <div className="p-5">
-          {/* Header */}
-          <div className="flex items-start gap-4 mb-4">
-            {/* Avatar */}
-            <div className="relative">
-              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br from-lavender-100 via-lavender-50 to-lavender-200 flex items-center justify-center text-lavender-700 font-bold text-lg shadow-md border border-white/80 ${status.glow} group-hover:scale-105 transition-transform duration-300`}>
-                {member.avatar_url ? (
-                  <img src={member.avatar_url} alt="" className="w-full h-full rounded-2xl object-cover" />
-                ) : (
-                  getMemberInitials(member)
-                )}
-              </div>
-              {/* Status indicator */}
-              <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full ${status.dot} border-[2.5px] border-white shadow-md ${member.status === 'active' ? 'status-dot-active' : ''}`} />
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-lavender-700 transition-colors">
-                {getMemberFullName(member)}
-              </h3>
-              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${status.bg} ${status.text}`}>
-                  <span className={`w-1.5 h-1.5 ${status.dot} rounded-full mr-1.5`} />
-                  {t.members.status[member.status]}
-                </span>
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${engagement.bg} ${engagement.text}`}>
-                  <span>{engagement.icon}</span>
-                  {t.members.engagement[member.engagement_level]}
-                </span>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <AnimatePresence>
-              {showActions && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="flex items-center gap-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 w-9 p-0 rounded-lg bg-white/80 text-gray-500 hover:text-lavender-600 hover:bg-lavender-50"
-                    onClick={() => router.push(`/members/${member.id}/edit`)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 w-9 p-0 rounded-lg bg-white/80 text-gray-500 hover:text-red-500 hover:bg-red-50"
-                    onClick={() => onDelete(member.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Contact Info */}
-          <div className="space-y-2.5 mb-4">
-            {member.email && (
-              <div className="flex items-center gap-2.5 text-sm text-gray-500 group/item hover:text-gray-700 transition-colors">
-                <div className="w-8 h-8 rounded-xl bg-gray-50/80 flex items-center justify-center group-hover/item:bg-lavender-50 transition-colors">
-                  <Mail className="w-4 h-4 group-hover/item:text-lavender-500 transition-colors" />
-                </div>
-                <span className="truncate">{member.email}</span>
-              </div>
-            )}
-            {member.phone && (
-              <div className="flex items-center gap-2.5 text-sm text-gray-500 group/item hover:text-gray-700 transition-colors">
-                <div className="w-8 h-8 rounded-xl bg-gray-50/80 flex items-center justify-center group-hover/item:bg-mint-50 transition-colors">
-                  <Phone className="w-4 h-4 group-hover/item:text-mint-500 transition-colors" />
-                </div>
-                <span>{member.phone}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="pt-4 border-t border-gray-100/60 mt-auto space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <Calendar className="w-3.5 h-3.5" />
-                <span>
-                  {locale === 'fr' ? 'Dernière' : 'Last'}: {formatDate(member.last_session_at, locale)}
-                  {member.last_session_at && (
-                    <span className="text-gray-400 ml-1">({formatRelativeTime(member.last_session_at)})</span>
-                  )}
-                </span>
-              </div>
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: showActions ? 1 : 0 }}
-                className="flex items-center gap-1.5 text-lavender-600 text-xs font-medium"
-              >
-                <Eye className="w-3.5 h-3.5" />
-                {locale === 'fr' ? 'Voir profil' : 'View Profile'}
-              </motion.div>
-            </div>
-
-            {nextSession ? (
-              <div className="flex items-center gap-2 text-xs">
-                <div className="w-3.5 h-3.5 flex items-center justify-center">
-                  <Clock className="w-3.5 h-3.5 text-emerald-500" />
-                </div>
-                <span className="text-emerald-600 font-medium">
-                  {locale === 'fr' ? 'Prochaine' : 'Next'}: {formatDate(nextSession.scheduled_at, locale)}
-                </span>
-              </div>
+      {/* Header */}
+      <div className="flex items-start gap-4 mb-4">
+        {/* Avatar */}
+        <div className="relative">
+          <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-sm">
+            {member.avatar_url ? (
+              <img src={member.avatar_url} alt="" className="w-full h-full rounded-xl object-cover" />
             ) : (
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <div className="w-3.5 h-3.5 flex items-center justify-center">
-                  <Clock className="w-3.5 h-3.5" />
-                </div>
-                <span>{locale === 'fr' ? 'Pas de séance planifiée' : 'No session scheduled'}</span>
-              </div>
+              getMemberInitials(member)
             )}
+          </div>
+          <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full ${status.dot} border-2 border-white`} />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900 truncate group-hover:text-gray-700 transition-colors">
+            {getMemberFullName(member)}
+          </h3>
+          <div className="flex items-center gap-2 mt-1">
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${status.bg} ${status.text}`}>
+              {t.members.status[member.status]}
+            </span>
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${engagement.bg} ${engagement.text}`}>
+              {engagement.label}
+            </span>
           </div>
         </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => router.push(`/members/${member.id}/edit`)}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => onDelete(member.id)}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Contact Info */}
+      <div className="space-y-2 mb-4">
+        {member.email && (
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Mail className="w-4 h-4" />
+            <span className="truncate">{member.email}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="pt-4 border-t border-gray-100 space-y-2">
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <Calendar className="w-3.5 h-3.5" />
+          <span>
+            {locale === 'fr' ? 'Dernière' : 'Last'}: {formatDate(member.last_session_at, locale)}
+          </span>
+        </div>
+        {nextSession ? (
+          <div className="flex items-center gap-2 text-xs text-emerald-600">
+            <Clock className="w-3.5 h-3.5" />
+            <span className="font-medium">
+              {locale === 'fr' ? 'Prochaine' : 'Next'}: {formatDate(nextSession.scheduled_at, locale)}
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-xs text-gray-400">
+            <Clock className="w-3.5 h-3.5" />
+            <span>{locale === 'fr' ? 'Pas de séance planifiée' : 'No session scheduled'}</span>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+// Member List Item Component (List View)
+function MemberListItem({
+  member,
+  index,
+  onDelete,
+  t,
+  locale,
+  nextSession,
+}: {
+  member: Member
+  index: number
+  onDelete: (id: string) => void
+  t: ReturnType<typeof useLanguage>['t']
+  locale: 'en' | 'fr'
+  nextSession: Session | null
+}) {
+  const router = useRouter()
+
+  const statusConfig = {
+    active: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+    inactive: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' },
+    pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
+  }
+
+  const status = statusConfig[member.status]
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15, delay: index * 0.02 }}
+      onClick={() => router.push(`/members/${member.id}`)}
+      className="group bg-white rounded-xl p-4 cursor-pointer transition-all border border-gray-200 hover:border-gray-300 hover:shadow-sm flex items-center gap-4"
+    >
+      {/* Avatar */}
+      <div className="relative flex-shrink-0">
+        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-sm">
+          {member.avatar_url ? (
+            <img src={member.avatar_url} alt="" className="w-full h-full rounded-lg object-cover" />
+          ) : (
+            getMemberInitials(member)
+          )}
+        </div>
+        <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ${status.dot} border-2 border-white`} />
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <h3 className="font-medium text-gray-900 truncate">
+            {getMemberFullName(member)}
+          </h3>
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${status.bg} ${status.text}`}>
+            {t.members.status[member.status]}
+          </span>
+        </div>
+        <p className="text-sm text-gray-500 truncate">
+          {member.email || (locale === 'fr' ? 'Pas de contact' : 'No contact')}
+        </p>
+      </div>
+
+      {/* Session Info */}
+      <div className="hidden lg:flex items-center gap-4 text-sm text-gray-500 flex-shrink-0">
+        <div className="flex items-center gap-1.5">
+          <Calendar className="w-4 h-4" />
+          <span>{formatDate(member.last_session_at, locale)}</span>
+        </div>
+        {nextSession && (
+          <div className="flex items-center gap-1.5 text-emerald-600">
+            <Clock className="w-4 h-4" />
+            <span>{formatDate(nextSession.scheduled_at, locale)}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        <button
+          onClick={() => router.push(`/members/${member.id}/edit`)}
+          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+        >
+          <Edit className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => onDelete(member.id)}
+          className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
     </motion.div>
   )

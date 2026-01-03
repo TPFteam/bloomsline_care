@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
-  ArrowLeft,
   Calendar,
+  CalendarCheck,
   Clock,
   User,
   Mail,
@@ -23,11 +23,11 @@ import {
   Copy,
   ExternalLink,
 } from 'lucide-react'
-import { AnimatedIcon } from '@/components/ui/animated-icons'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useLanguage } from '@/lib/i18n/context'
+import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
 import { format, parseISO, isToday, isTomorrow, isPast } from 'date-fns'
 import {
@@ -83,11 +83,11 @@ const STATUS_CONFIG = {
     cardBg: 'from-red-50/30 to-white',
   },
   completed: {
-    bg: 'bg-lavender-100/80',
-    text: 'text-lavender-700',
-    border: 'border-lavender-200',
-    iconBg: 'from-lavender-400 to-lavender-600',
-    cardBg: 'from-lavender-50/30 to-white',
+    bg: 'bg-blue-100/80',
+    text: 'text-blue-700',
+    border: 'border-blue-200',
+    iconBg: 'from-blue-400 to-blue-600',
+    cardBg: 'from-blue-50/30 to-white',
   },
   no_show: {
     bg: 'bg-gray-100/80',
@@ -132,7 +132,7 @@ interface AvailabilitySlot {
 }
 
 export default function BookingsPage() {
-  const { t } = useLanguage()
+  useLanguage() // For locale context
 
   // Main tab state
   const [mainTab, setMainTab] = useState<MainTab>('appointments')
@@ -473,49 +473,41 @@ export default function BookingsPage() {
   }
 
   return (
-    <div className="min-h-screen gradient-mesh relative overflow-hidden">
-      {/* Decorative Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-lavender-200/30 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 -left-40 w-80 h-80 bg-mint-200/30 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-coral-200/20 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      <AppSidebar activeItem="members" />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        <Link href="/dashboard">
-          <motion.button
-            whileHover={{ x: -2 }}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {t.dashboard.backToDashboard}
-          </motion.button>
-        </Link>
-
-        <div className="max-w-5xl mx-auto space-y-6">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-between"
-          >
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                <span className="bg-gradient-to-r from-lavender-600 to-mint-600 bg-clip-text text-transparent">Bookings</span>
-              </h1>
-              <p className="text-gray-500">Manage appointments and booking settings</p>
+      {/* Main Content */}
+      <main className="flex-1 ml-64">
+        <AppHeader
+          user={null}
+          leftContent={
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+              <CalendarCheck className="w-4 h-4" />
+              <span>Bookings</span>
             </div>
-            {pendingCount > 0 && (
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white px-4 py-2 rounded-full shadow-md shadow-amber-200/50"
-              >
-                <AlertCircle className="w-4 h-4" />
-                <span className="font-medium">{pendingCount} pending</span>
-              </motion.div>
-            )}
-          </motion.div>
+          }
+        />
+
+        {/* Content */}
+        <div className="p-8">
+          <div className="max-w-5xl mx-auto space-y-6">
+            {/* Header */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-between"
+            >
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900 mb-1">Bookings</h1>
+                <p className="text-gray-500 text-sm">Manage appointments and booking settings</p>
+              </div>
+              {pendingCount > 0 && (
+                <div className="flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg text-sm font-medium">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{pendingCount} pending</span>
+                </div>
+              )}
+            </motion.div>
 
           {/* Message Toast */}
           {message && (
@@ -547,26 +539,21 @@ export default function BookingsPage() {
             </motion.div>
           )}
 
-          {/* Main Tabs */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white/90 backdrop-blur-xl rounded-2xl p-1.5 shadow-lg shadow-gray-200/40 border border-white/60 inline-flex"
-          >
-            <button
-              onClick={() => setMainTab('appointments')}
-              className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl transition-all ${
-                mainTab === 'appointments'
-                  ? 'bg-gradient-to-r from-lavender-500 to-lavender-600 text-white shadow-md shadow-lavender-200/50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <Calendar className="w-4 h-4" />
-              Appointments
-              {pendingCount > 0 && (
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
+            {/* Main Tabs */}
+            <div className="flex items-center gap-1 bg-white rounded-xl p-1 border border-gray-200 mb-6">
+              <button
+                onClick={() => setMainTab('appointments')}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                   mainTab === 'appointments'
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <Calendar className="w-4 h-4" />
+                Appointments
+                {pendingCount > 0 && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    mainTab === 'appointments'
                     ? 'bg-white/20 text-white'
                     : 'bg-amber-500 text-white'
                 }`}>
@@ -574,68 +561,61 @@ export default function BookingsPage() {
                 </span>
               )}
             </button>
-            <button
-              onClick={() => setMainTab('settings')}
-              className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl transition-all ${
-                mainTab === 'settings'
-                  ? 'bg-gradient-to-r from-lavender-500 to-lavender-600 text-white shadow-md shadow-lavender-200/50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <Settings className="w-4 h-4" />
-              Settings
-            </button>
-          </motion.div>
+              <button
+                onClick={() => setMainTab('settings')}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                  mainTab === 'settings'
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <Settings className="w-4 h-4" />
+                Settings
+              </button>
+            </div>
 
           {/* Appointments Tab Content */}
           {mainTab === 'appointments' && (
             <>
               {/* Sub Tabs */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-                className="flex gap-2 flex-wrap"
-              >
+              <div className="flex gap-2 flex-wrap">
                 {(['pending', 'upcoming', 'past', 'all'] as AppointmentFilter[]).map((tab) => {
                   const isActive = appointmentFilter === tab
 
                   return (
-                    <motion.button
+                    <button
                       key={tab}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
                       onClick={() => setAppointmentFilter(tab)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                         isActive
-                          ? 'bg-white shadow-md shadow-gray-200/50 text-gray-900 border border-gray-100'
+                          ? 'bg-white shadow-sm text-gray-900 border border-gray-200'
                           : 'text-gray-500 hover:text-gray-700 hover:bg-white/50'
                       }`}
                     >
                       {tab.charAt(0).toUpperCase() + tab.slice(1)}
                       {tab === 'pending' && pendingCount > 0 && (
-                        <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs px-2 py-0.5 rounded-full">
+                        <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
                           {pendingCount}
                         </span>
                       )}
-                    </motion.button>
+                    </button>
                   )
                 })}
-              </motion.div>
+              </div>
 
               {/* Bookings List */}
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="w-12 h-12 border-4 border-lavender-500 border-t-transparent rounded-full animate-spin" />
+                  <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
                 </div>
               ) : filteredBookings.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] p-12 shadow-lg shadow-gray-200/40 border border-white/60 border-dashed text-center"
+                  className="bg-white rounded-[1.5rem] p-12 border border-gray-200 border-dashed text-center"
                 >
-                  <div className="w-16 h-16 rounded-2xl bg-lavender-100/80 flex items-center justify-center mx-auto mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-lavender-400 to-lavender-600 flex items-center justify-center shadow-md">
+                  <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-gray-900 flex items-center justify-center">
                       <Calendar className="w-6 h-6 text-white" />
                     </div>
                   </div>
@@ -768,7 +748,7 @@ export default function BookingsPage() {
                                     whileTap={{ scale: 0.98 }}
                                     onClick={() => handleMarkStatus(booking.id, 'completed')}
                                     disabled={processingId === booking.id}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-lavender-500 to-lavender-600 text-white text-sm font-medium rounded-xl shadow-md shadow-lavender-200/50 hover:shadow-lg transition-all disabled:opacity-50"
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-all disabled:opacity-50"
                                   >
                                     {processingId === booking.id ? (
                                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -834,10 +814,10 @@ export default function BookingsPage() {
             <div className="space-y-6">
               {/* Booking Link */}
               {practitionerSlug && bookingSettings?.booking_page_enabled && (
-                <Card className="border-lavender-200 bg-gradient-to-r from-lavender-50/50 to-white">
+                <Card className="border-gray-200 bg-white">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <LinkIcon className="w-5 h-5 text-lavender-600" />
+                      <LinkIcon className="w-5 h-5 text-gray-600" />
                       Your Booking Link
                     </CardTitle>
                     <CardDescription>
@@ -952,7 +932,7 @@ export default function BookingsPage() {
                     <select
                       value={timezone}
                       onChange={(e) => setTimezone(e.target.value)}
-                      className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lavender-500 focus:border-transparent"
+                      className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                     >
                       <option value="America/New_York">Eastern Time (ET)</option>
                       <option value="America/Chicago">Central Time (CT)</option>
@@ -1055,7 +1035,7 @@ export default function BookingsPage() {
                         }))
                       }
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        bookingSettings?.booking_page_enabled ? 'bg-lavender-600' : 'bg-gray-200'
+                        bookingSettings?.booking_page_enabled ? 'bg-gray-900' : 'bg-gray-200'
                       }`}
                     >
                       <span
@@ -1081,7 +1061,7 @@ export default function BookingsPage() {
                         }))
                       }
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        bookingSettings?.require_approval ? 'bg-lavender-600' : 'bg-gray-200'
+                        bookingSettings?.require_approval ? 'bg-gray-900' : 'bg-gray-200'
                       }`}
                     >
                       <span
@@ -1180,8 +1160,9 @@ export default function BookingsPage() {
               </Card>
             </div>
           )}
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

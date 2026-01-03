@@ -13,7 +13,7 @@
   },
 
   "filters": {
-    "all": "All Members",
+    "all": "All",
     "active": "Active",
     "inactive": "Inactive",
     "pending": "Pending",
@@ -34,7 +34,7 @@
   },
 
   "actions": {
-    "addMember": "Add Member",
+    "addMember": "Add",
     "viewDetails": "View Details",
     "editMember": "Edit",
     "contact": "Contact",

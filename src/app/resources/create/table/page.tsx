@@ -124,10 +124,11 @@ function CreateTableExerciseContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
+  const templateParam = searchParams.get('template')
   const { t, locale } = useLanguage()
 
-  // Step state for guided wizard - start at 'build' if editing, otherwise 'template'
-  const [step, setStep] = useState<'template' | 'build' | 'details'>(editId ? 'build' : 'template')
+  // Step state for guided wizard - start at 'build' if editing or template param provided, otherwise 'template'
+  const [step, setStep] = useState<'template' | 'build' | 'details'>(editId || templateParam ? 'build' : 'template')
   const [detailsStep, setDetailsStep] = useState<1 | 2 | 3>(1)
 
   // Form state
@@ -228,9 +229,31 @@ function CreateTableExerciseContent() {
     loadResource()
   }, [editId, locale])
 
-  // Reset form state when creating a new resource (not editing)
+  // Apply template from URL parameter (skip template selection step)
   useEffect(() => {
-    if (!editId) {
+    if (templateParam && !editId) {
+      const template = tableTemplates.find(t => t.id === templateParam)
+      if (template) {
+        if (template.id === 'blank') {
+          setColumns([
+            { id: generateId(), header: '', description: '' },
+            { id: generateId(), header: '', description: '' },
+            { id: generateId(), header: '', description: '' },
+          ])
+          setTitle('')
+          setInstructions('')
+        } else {
+          setColumns(template.columns.map(c => ({ ...c, id: generateId() })))
+          setTitle(template.name[locale])
+          setInstructions(template.instructions || '')
+        }
+      }
+    }
+  }, [templateParam, editId, locale])
+
+  // Reset form state when creating a new resource (not editing and no template)
+  useEffect(() => {
+    if (!editId && !templateParam) {
       setTitle('')
       setDescription('')
       setSelectedCategory(null)
@@ -256,7 +279,7 @@ function CreateTableExerciseContent() {
       setLastSavedAt(null)
       setHasUnsavedChanges(false)
     }
-  }, [editId, locale])
+  }, [editId, templateParam, locale])
 
   // Add column
   const addColumn = () => {
@@ -669,12 +692,14 @@ function CreateTableExerciseContent() {
                     </motion.div>
                   </Link>
                 ) : (
-                  <motion.div whileHover={{ x: -4 }} className="inline-block">
-                    <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80" onClick={() => setStep('template')}>
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      {locale === 'fr' ? 'Retour' : 'Back'}
-                    </Button>
-                  </motion.div>
+                  <Link href="/resources/create">
+                    <motion.div whileHover={{ x: -4 }} className="inline-block">
+                      <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        {locale === 'fr' ? 'Retour' : 'Back'}
+                      </Button>
+                    </motion.div>
+                  </Link>
                 )}
                 <div className="flex items-center gap-2">
                   {/* Auto-save Status Indicator */}

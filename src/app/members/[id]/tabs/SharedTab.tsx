@@ -234,7 +234,7 @@ export default function SharedTab({ memberId }: SharedTabProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-8 text-center">
+        <div className="bg-white rounded-2xl  border border-gray-200 p-8 text-center">
           <div className="w-12 h-12 border-4 border-lavender-500 border-t-transparent rounded-full animate-spin mx-auto mb-4 animate-pulse-glow"></div>
           <p className="text-gray-500 font-medium">Loading shared resources...</p>
         </div>
@@ -247,15 +247,15 @@ export default function SharedTab({ memberId }: SharedTabProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-lavender-100 to-lavender-200 flex items-center justify-center shadow-sm">
-            <Share2 className="w-5 h-5 text-lavender-600" />
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center ">
+            <Share2 className="w-5 h-5 text-blue-600" />
           </div>
           {t.members.shared.title}
         </h2>
         <Button
           onClick={() => setShowShareModal(true)}
           disabled={availableStories.length === 0}
-          className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-smooth hover-lift disabled:opacity-50"
+          className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift disabled:opacity-50"
         >
           <Plus className="w-4 h-4 mr-2" />
           {t.members.shared.shareStory}
@@ -271,7 +271,7 @@ export default function SharedTab({ memberId }: SharedTabProps) {
             exit={{ opacity: 0, y: -10, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6">
+            <div className="bg-white rounded-2xl  border border-gray-200 p-6">
               <h3 className="font-semibold text-gray-900 mb-5 flex items-center gap-2">
                 <Book className="w-5 h-5 text-lavender-500" />
                 {t.members.shared.shareStory}
@@ -285,7 +285,7 @@ export default function SharedTab({ memberId }: SharedTabProps) {
                   <select
                     value={selectedStory}
                     onChange={(e) => setSelectedStory(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none bg-white/80 backdrop-blur-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white "
                   >
                     <option value="">Choose a story...</option>
                     {availableStories.map((story) => (
@@ -306,7 +306,7 @@ export default function SharedTab({ memberId }: SharedTabProps) {
                     onChange={(e) => setShareMessage(e.target.value)}
                     placeholder="Add a personal message for your client..."
                     rows={3}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200/80 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-100 outline-none resize-none bg-white/80 backdrop-blur-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none resize-none bg-white "
                   />
                 </div>
               </div>
@@ -318,7 +318,7 @@ export default function SharedTab({ memberId }: SharedTabProps) {
                 <Button
                   onClick={handleShareStory}
                   disabled={saving || !selectedStory}
-                  className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50"
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50"
                 >
                   {saving ? t.members.form.saving : t.members.shared.shareStory}
                 </Button>
@@ -333,10 +333,10 @@ export default function SharedTab({ memberId }: SharedTabProps) {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 overflow-hidden"
+          className="bg-white rounded-2xl  border border-gray-200 overflow-hidden"
         >
           <div className="p-4 border-b border-gray-100/50 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-mint-600" />
+            <FileText className="w-5 h-5 text-teal-600" />
             <h3 className="font-semibold text-gray-900">
               {locale === 'fr' ? 'Ressources de la Bibliothèque' : 'Library Resources'}
             </h3>
@@ -358,7 +358,7 @@ export default function SharedTab({ memberId }: SharedTabProps) {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
-                      <div className={`w-14 h-14 rounded-2xl ${config.iconBg} flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all`}>
+                      <div className={`w-14 h-14 rounded-2xl ${config.iconBg} flex items-center justify-center flex-shrink-0  group-hover:shadow-md group-hover:scale-105 transition-all`}>
                         <TypeIcon className={`w-7 h-7 ${config.text}`} />
                       </div>
                       <div>
@@ -374,7 +374,7 @@ export default function SharedTab({ memberId }: SharedTabProps) {
                           <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
                             {resource.resource.type}
                           </span>
-                          <span className="flex items-center gap-1.5 text-xs text-gray-500 glass-subtle px-3 py-1 rounded-full">
+                          <span className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
                             <Calendar className="w-3 h-3" />
                             {locale === 'fr' ? 'Partagé le' : 'Shared on'} {new Date(resource.shared_at).toLocaleDateString()}
                           </span>
@@ -397,7 +397,7 @@ export default function SharedTab({ memberId }: SharedTabProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-mint-600 hover:bg-mint-50 rounded-xl transition-smooth"
+                          className="text-teal-600 hover:bg-gray-50 rounded-xl transition-colors"
                         >
                           <ExternalLink className="w-4 h-4 mr-1" />
                           {locale === 'fr' ? 'Voir' : 'View'}
@@ -407,7 +407,7 @@ export default function SharedTab({ memberId }: SharedTabProps) {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleUnshareLibraryResource(resource.id)}
-                        className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-smooth"
+                        className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -424,14 +424,14 @@ export default function SharedTab({ memberId }: SharedTabProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 overflow-hidden"
+        className="bg-white rounded-2xl  border border-gray-200 overflow-hidden"
       >
         {sharedResources.length === 0 && sharedLibraryResources.length === 0 ? (
           <div className="p-16 text-center">
             <div className="relative inline-block">
               <div className="absolute inset-0 bg-gradient-to-br from-lavender-400/30 to-mint-400/30 rounded-3xl blur-xl" />
-              <div className="relative w-20 h-20 bg-gradient-to-br from-lavender-100 to-lavender-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <Book className="w-10 h-10 text-lavender-600" />
+              <div className="relative w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Book className="w-10 h-10 text-blue-600" />
               </div>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-3">
@@ -443,7 +443,7 @@ export default function SharedTab({ memberId }: SharedTabProps) {
             {availableStories.length > 0 && (
               <Button
                 onClick={() => setShowShareModal(true)}
-                className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50 px-6 transition-smooth hover-lift"
+                className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 px-6 transition-colors hover-lift"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 {t.members.shared.shareStory}
@@ -453,7 +453,7 @@ export default function SharedTab({ memberId }: SharedTabProps) {
         ) : sharedResources.length > 0 ? (
           <>
             <div className="p-4 border-b border-gray-100/50 flex items-center gap-2">
-              <Book className="w-5 h-5 text-lavender-600" />
+              <Book className="w-5 h-5 text-blue-600" />
               <h3 className="font-semibold text-gray-900">
                 {locale === 'fr' ? 'Histoires Partagées' : 'Shared Stories'}
               </h3>
@@ -472,15 +472,15 @@ export default function SharedTab({ memberId }: SharedTabProps) {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-lavender-100 to-lavender-200 flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all">
-                        <Book className="w-7 h-7 text-lavender-600" />
+                      <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center flex-shrink-0  group-hover:shadow-md group-hover:scale-105 transition-all">
+                        <Book className="w-7 h-7 text-blue-600" />
                       </div>
                       <div>
                         <h4 className="font-semibold text-gray-900">
                           {resource.story.title}
                         </h4>
                         <div className="flex items-center gap-3 mt-2 flex-wrap">
-                          <span className="flex items-center gap-1.5 text-xs text-gray-500 glass-subtle px-3 py-1 rounded-full">
+                          <span className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
                             <Calendar className="w-3 h-3" />
                             {t.members.shared.sharedOn} {new Date(resource.shared_at).toLocaleDateString()}
                           </span>
@@ -497,7 +497,7 @@ export default function SharedTab({ memberId }: SharedTabProps) {
                           )}
                         </div>
                         {resource.message && (
-                          <div className="mt-3 glass-subtle p-3 rounded-xl">
+                          <div className="mt-3 bg-gray-50 p-3 rounded-xl">
                             <p className="text-sm text-gray-600 flex items-start gap-2">
                               <MessageSquare className="w-4 h-4 mt-0.5 flex-shrink-0 text-gray-400" />
                               {resource.message}
@@ -515,7 +515,7 @@ export default function SharedTab({ memberId }: SharedTabProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-lavender-600 hover:bg-lavender-50 rounded-xl transition-smooth"
+                          className="text-blue-600 hover:bg-gray-50 rounded-xl transition-colors"
                         >
                           <ExternalLink className="w-4 h-4 mr-1" />
                           {t.members.shared.viewStory}
@@ -525,7 +525,7 @@ export default function SharedTab({ memberId }: SharedTabProps) {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleUnshare(resource.id)}
-                        className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-smooth"
+                        className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

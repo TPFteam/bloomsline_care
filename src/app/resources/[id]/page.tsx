@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
-  ArrowLeft,
   Clock,
   ChevronRight,
   FileText,
@@ -27,15 +26,14 @@ import {
   MessageSquare,
   CheckCircle2,
   X,
-  ChevronDown,
-  ChevronUp,
   Table2,
+  FolderOpen,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { Logo } from '@/components/ui/logo'
 import { useLanguage } from '@/lib/i18n/context'
+import { AppHeader, AppSidebar } from '@/components/layout'
 import { getResourceById, deleteResource, getResourceSubmissions, updateSubmission, type ResourceSubmission } from '@/lib/services/resources'
 import { removeResourceFromAllCollections, isResourceSaved } from '@/lib/services/collections'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -188,6 +186,7 @@ export default function ResourceDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { locale } = useLanguage()
+  const supabase = createClient()
   const [resource, setResource] = useState<Resource | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
@@ -209,6 +208,7 @@ export default function ResourceDetailPage() {
     credentials: string[]
     is_verified: boolean
   } | null>(null)
+  const [user, setUser] = useState<{ full_name?: string; avatar_url?: string } | null>(null)
 
   useEffect(() => {
     async function fetchResource() {
@@ -228,6 +228,15 @@ export default function ResourceDetailPage() {
           console.log('Setting isOwner to true')
           setIsOwner(true)
           setAccessStatus('allowed')
+          // Fetch user profile for header
+          const { data: userProfile } = await supabase
+            .from('users')
+            .select('full_name, avatar_url')
+            .eq('id', user.id)
+            .single()
+          if (userProfile) {
+            setUser(userProfile)
+          }
           // Fetch submissions if owner
           fetchSubmissions(params.id as string)
         } else if (data) {
@@ -494,7 +503,6 @@ export default function ResourceDetailPage() {
   }
 
   // Handle legacy 'assessment' type as 'worksheet' for display
-  const displayType = (resource.type as string) === 'assessment' ? 'worksheet' : resource.type
   const TypeIcon = typeIcons[resource.type as ResourceType | 'assessment'] || FileText
   const config = typeConfig[resource.type as ResourceType | 'assessment'] || typeConfig.worksheet
 
@@ -541,10 +549,11 @@ export default function ResourceDetailPage() {
   }
   const typeLabel = typeLabels[resource.type as string] || typeLabels.worksheet
 
-  return (
-    <div className="min-h-screen gradient-mesh relative">
-      {/* Public Branding Header - Only show for non-owners */}
-      {!isOwner && (
+  // For non-owners, show simpler public view
+  if (!isOwner) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Public Branding Header */}
         <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-14">
@@ -554,7 +563,7 @@ export default function ResourceDetailPage() {
               <Link href="/early-access">
                 <Button
                   size="sm"
-                  className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-lg text-xs h-8 px-3"
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs h-8 px-3"
                 >
                   {locale === 'fr' ? 'Rejoindre' : 'Join Bloomsline'}
                 </Button>
@@ -562,42 +571,177 @@ export default function ResourceDetailPage() {
             </div>
           </div>
         </div>
-      )}
 
-      {/* Decorative Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-mint-200/30 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-lavender-200/30 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-blue-200/20 rounded-full blur-3xl" />
-      </div>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Header Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200"
+              >
+                {/* Type Header */}
+                <div className={`h-24 bg-gradient-to-br ${config.lightBg} relative flex items-center px-6`}>
+                  <div className={`w-14 h-14 rounded-xl ${config.iconBg} flex items-center justify-center`}>
+                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-md`}>
+                      <TypeIcon className="w-5 h-5 text-white" />
+                    </div>
+                  </div>
+                  <div className="absolute top-4 right-4 flex items-center gap-2">
+                    <Badge className={`${config.bg} ${config.text} ${config.border} border`}>
+                      <TypeIcon className="w-3 h-3 mr-1" />
+                      {typeLabel}
+                    </Badge>
+                  </div>
+                </div>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        {/* Breadcrumb Navigation - Only show for owner */}
-        {isOwner && (
-          <div className="mb-6">
-            <Breadcrumb
-              items={[
-                { label: 'Resources', labelFr: 'Ressources', href: '/resources', icon: <FileText className="w-4 h-4" /> },
-                { label: typeof resource.title === 'string' ? resource.title : 'Resource' },
-              ]}
-            />
+                {/* Title & Meta */}
+                <div className="p-6">
+                  <h1 className="text-2xl font-bold text-gray-900 mb-3">{typeof resource.title === 'string' ? resource.title : ''}</h1>
+                  {resource.description && (
+                    <p className="text-gray-600 mb-5 leading-relaxed">{typeof resource.description === 'string' ? resource.description : ''}</p>
+                  )}
+
+                  {/* Meta Row */}
+                  <div className="flex flex-wrap items-center gap-3 mb-5">
+                    {resource.category && (
+                      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600">
+                        {typeof resource.category === 'string' ? resource.category : ''}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Tags */}
+                  {resource.tags && resource.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-5">
+                      {resource.tags.map((tag, idx) => (
+                        <span
+                          key={typeof tag === 'string' ? tag : idx}
+                          className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full"
+                        >
+                          {typeof tag === 'string' ? tag : ''}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Stats */}
+                  <div className="flex items-center gap-6 pt-4 border-t border-gray-100">
+                    <span className="flex items-center gap-2 text-sm text-gray-500">
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      {locale === 'fr' ? 'Créé le' : 'Created'} {new Date(resource.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US')}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Sidebar - Creator Info for public view */}
+            <div className="space-y-6">
+              {resource.creator_profile && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
+                >
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">
+                    {locale === 'fr' ? 'Créé par' : 'Created by'}
+                  </p>
+                  <Link href={resource.creator_profile.slug ? `/p/${resource.creator_profile.slug}` : `/p/${resource.creator_profile.id}`}>
+                    <div className="flex items-start gap-3 hover:bg-gray-50 rounded-xl p-2 -m-2 transition-colors">
+                      {resource.creator_profile.avatar_url ? (
+                        <img
+                          src={resource.creator_profile.avatar_url}
+                          alt={resource.creator_profile.full_name || ''}
+                          className="w-12 h-12 rounded-xl object-cover"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center">
+                          <span className="text-lg font-bold text-white">
+                            {(resource.creator_profile.full_name || 'P').charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {resource.creator_profile.full_name || (locale === 'fr' ? 'Praticien' : 'Practitioner')}
+                        </p>
+                        {resource.creator_profile.credentials.length > 0 && (
+                          <p className="text-xs text-gray-600 font-medium mt-0.5">
+                            {resource.creator_profile.credentials.slice(0, 3).join(', ')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+
+                  {/* Remove from library button for non-owners who have saved the resource */}
+                  {isSaved && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <Button
+                        variant="outline"
+                        className="w-full h-10 rounded-xl border-amber-200 hover:border-amber-300 hover:bg-amber-50 text-amber-600"
+                        onClick={handleRemoveFromLibrary}
+                        disabled={removing}
+                      >
+                        {removing ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4 mr-2" />
+                        )}
+                        {locale === 'fr' ? 'Retirer de ma bibliothèque' : 'Remove from library'}
+                      </Button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
+      </div>
+    )
+  }
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+  // Owner view with sidebar
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      <AppSidebar activeItem="library" />
+
+      {/* Main Content */}
+      <main className="flex-1 ml-64">
+        <AppHeader
+          user={user as any}
+          leftContent={
+            <div className="flex items-center gap-2 text-sm">
+              <Link href="/resources" className="text-gray-500 hover:text-gray-700 transition-colors">
+                <FolderOpen className="w-4 h-4" />
+              </Link>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <span className="font-medium text-gray-900 truncate max-w-[300px]">
+                {typeof resource.title === 'string' ? resource.title : 'Resource'}
+              </span>
+            </div>
+          }
+        />
+
+        {/* Content */}
+        <div className="p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-6">
             {/* Header Card */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] overflow-hidden shadow-lg shadow-gray-200/40 border border-white/60"
+              className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200"
             >
               {/* Type Header */}
-              <div className={`h-28 bg-gradient-to-br ${config.lightBg} relative flex items-center px-6`}>
-                <div className={`w-16 h-16 rounded-2xl ${config.iconBg} flex items-center justify-center`}>
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg ${config.glow}`}>
-                    <TypeIcon className="w-6 h-6 text-white" />
+              <div className={`h-24 bg-gradient-to-br ${config.lightBg} relative flex items-center px-6`}>
+                <div className={`w-14 h-14 rounded-xl ${config.iconBg} flex items-center justify-center`}>
+                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-md`}>
+                    <TypeIcon className="w-5 h-5 text-white" />
                   </div>
                 </div>
                 <div className="absolute top-4 right-4 flex items-center gap-2">
@@ -704,7 +848,7 @@ export default function ResourceDetailPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+                  className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
                 >
                   <div className="flex items-center gap-3 mb-5">
                     <div className="w-10 h-10 rounded-xl bg-emerald-100/80 flex items-center justify-center">
@@ -788,7 +932,7 @@ export default function ResourceDetailPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+                className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
               >
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-10 h-10 rounded-xl bg-blue-100/80 flex items-center justify-center">
@@ -978,7 +1122,7 @@ export default function ResourceDetailPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
-                className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+                className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
               >
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-10 h-10 rounded-xl bg-indigo-100/80 flex items-center justify-center">
@@ -1028,7 +1172,7 @@ export default function ResourceDetailPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+                className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
@@ -1533,7 +1677,7 @@ export default function ResourceDetailPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
+                className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
@@ -1856,7 +2000,7 @@ export default function ResourceDetailPage() {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6 sticky top-8"
+              className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sticky top-8"
             >
               {/* Only show edit/delete buttons if the user is the owner */}
               {isOwner && (
@@ -2077,7 +2221,7 @@ export default function ResourceDetailPage() {
             transition={{ delay: 0.3 }}
             className="mt-8"
           >
-            <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               {/* Header */}
               <div className="p-6 border-b border-gray-100">
                 <div className="flex items-center justify-between">
@@ -2364,53 +2508,8 @@ export default function ResourceDetailPage() {
             </motion.div>
           </motion.div>
         )}
-
-        {/* Back Button - only show for owner */}
-        {isOwner && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="mt-8"
-          >
-            <motion.div whileHover={{ x: -4 }} className="inline-block">
-              <Button
-                variant="ghost"
-                onClick={() => router.back()}
-                className="rounded-xl hover:bg-white/80 transition-all"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                {locale === 'fr' ? 'Retour' : 'Go Back'}
-              </Button>
-            </motion.div>
-          </motion.div>
-        )}
-      </div>
-
-      {/* Public Branding Footer - Only show for non-owners */}
-      {!isOwner && (
-        <div className="relative z-10 mt-12 py-8 border-t border-gray-200/50 bg-gradient-to-b from-white/50 to-lavender-50/30">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col items-center gap-4 text-center">
-              <Link href="/" className="flex items-center gap-2 group">
-                <Logo size="md" showText />
-              </Link>
-              <p className="text-sm text-gray-500 flex items-center gap-1.5">
-                {locale === 'fr' ? 'Créé avec' : 'Made with'}
-                <svg className="w-4 h-4 text-rose-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                </svg>
-                {locale === 'fr' ? 'pour votre bien-être' : 'for your wellbeing'}
-              </p>
-              <p className="text-xs text-gray-400">
-                {locale === 'fr'
-                  ? 'Accompagner chaque parcours de guérison, un pas à la fois'
-                  : 'Supporting every healing journey, one step at a time'}
-              </p>
-            </div>
-          </div>
         </div>
-      )}
+      </main>
     </div>
   )
 }
