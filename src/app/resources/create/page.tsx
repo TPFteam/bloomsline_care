@@ -36,7 +36,7 @@ interface ResourceTypeOption {
   gradient: string
   iconBg: string
   glow: string
-  examples: string[]
+  examples: { en: string[]; fr: string[] }
   comingSoon?: boolean
 }
 
@@ -48,7 +48,10 @@ const resourceTypes: ResourceTypeOption[] = [
     gradient: 'from-blue-400 to-blue-600',
     iconBg: 'bg-blue-100/80',
     glow: 'shadow-blue-200/50',
-    examples: ['Journal de pensées', 'Journal d\'humeur', 'Évaluations', 'Liste de symptômes'],
+    examples: {
+      en: ['Self-esteem', 'Relationships', 'Regulation'],
+      fr: ['Estime de soi', 'Relations', 'Régulation'],
+    },
   },
   {
     id: 'table',
@@ -56,7 +59,10 @@ const resourceTypes: ResourceTypeOption[] = [
     gradient: 'from-emerald-400 to-emerald-600',
     iconBg: 'bg-emerald-100/80',
     glow: 'shadow-emerald-200/50',
-    examples: ['TCC', 'Tableau des émotions', 'Journal de gratitude'],
+    examples: {
+      en: ['Automatic thoughts', 'Anxiety'],
+      fr: ['Pensées automatiques', 'Anxiété'],
+    },
   },
   {
     id: 'psychoeducation',
@@ -64,7 +70,10 @@ const resourceTypes: ResourceTypeOption[] = [
     gradient: 'from-purple-400 to-purple-600',
     iconBg: 'bg-purple-100/80',
     glow: 'shadow-purple-200/50',
-    examples: ['Fiches explicatives', 'Guides de traitement', 'Stratégies d\'adaptation'],
+    examples: {
+      en: ['Psychoeducation', 'Fact sheets', 'Guides'],
+      fr: ['Psychoéducation', 'Fiches explicatives', 'Guides'],
+    },
   },
   {
     id: 'exercise',
@@ -72,7 +81,10 @@ const resourceTypes: ResourceTypeOption[] = [
     gradient: 'from-amber-400 to-amber-600',
     iconBg: 'bg-amber-100/80',
     glow: 'shadow-amber-200/50',
-    examples: ['Techniques d\'ancrage', 'Exercices de respiration', 'Pleine conscience'],
+    examples: {
+      en: ['Breathing', 'Grounding', 'Mindfulness'],
+      fr: ['Respiration', 'Ancrage', 'Pleine conscience'],
+    },
     comingSoon: true,
   },
 ]
@@ -86,20 +98,20 @@ const typeLabels: Record<PractitionerResourceType, { en: string; fr: string }> =
 
 const typeDescriptions: Record<PractitionerResourceType, { en: string; fr: string }> = {
   worksheet: {
-    en: 'Structured forms and questionnaires with optional scoring for assessments',
-    fr: 'Créez, personnalisez et partagez vos propres exercices à vos patients',
+    en: 'Engage through active exploration',
+    fr: 'Faire travailler par une exploration active',
   },
   table: {
-    en: 'Table-based exercises where members can add multiple entries (thought records, logs)',
-    fr: 'TCC - Tableau des émotions - Journal de gratitude',
+    en: 'Help observe, structure and gain perspective',
+    fr: 'Aider à observer, structurer et à prendre du recul',
   },
   psychoeducation: {
-    en: 'Educational materials explaining conditions, treatments, or strategies',
-    fr: 'Matériel éducatif expliquant les conditions, traitements ou stratégies',
+    en: 'Explain, share and establish a common framework',
+    fr: 'Expliquer, transmettre et poser un cadre commun',
   },
   exercise: {
-    en: 'Guided activities and techniques to practice in or outside sessions',
-    fr: 'Activités guidées et techniques à pratiquer en séance ou en dehors',
+    en: 'Offer a concrete practice to do independently',
+    fr: 'Proposer une pratique concrète à faire en autonomie',
   },
 }
 
@@ -266,7 +278,7 @@ export default function CreateResourcePage() {
                 </h1>
                 <p className="text-gray-600 max-w-md mx-auto">
                   {locale === 'fr'
-                    ? 'Quel type de support souhaitez-vous créer ?'
+                    ? 'Choisissez le format du support'
                     : 'What type of resource would you like to create?'}
                 </p>
               </div>
@@ -334,7 +346,7 @@ export default function CreateResourcePage() {
                               {typeDescriptions[type.id][locale]}
                             </p>
                             <div className="flex flex-wrap gap-1.5">
-                              {type.examples.slice(0, 3).map((example, i) => (
+                              {type.examples[locale].slice(0, 3).map((example, i) => (
                                 <span
                                   key={i}
                                   className={`text-xs px-2 py-1 rounded-md ${isDisabled ? 'bg-gray-100/60 text-gray-400' : 'bg-gray-100/80 text-gray-600'}`}

@@ -6,8 +6,6 @@ import { ArrowRight, Heart, Users } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 import Link from 'next/link'
 
-const BREATH_DURATION = 4
-
 const rotatingWords = {
   en: ['care', 'peace', 'rest', 'calm', 'joy', 'healing'],
   fr: ['paix', 'repos', 'calme', 'joie', 'soin', 'guérison'],
@@ -15,28 +13,37 @@ const rotatingWords = {
 
 export function MainHero() {
   const { locale } = useLanguage()
-  const [phase, setPhase] = useState<'breathe' | 'reveal'>('breathe')
-  const [breathState, setBreathState] = useState<'in' | 'out'>('in')
+  const [showLine, setShowLine] = useState(true)
+  const [showContent, setShowContent] = useState(false)
   const [wordIndex, setWordIndex] = useState(0)
 
   useEffect(() => {
-    // Skip breathing if there's a hash in URL (user navigated to specific section)
+    // Skip animation if there's a hash in URL (user navigated to specific section)
     if (typeof window !== 'undefined' && window.location.hash) {
-      setPhase('reveal')
+      setShowLine(false)
+      setShowContent(true)
       return
     }
 
-    // Reveal content after 2 breath cycles
-    const revealTimer = setTimeout(() => {
-      setPhase('reveal')
-    }, BREATH_DURATION * 2 * 1000)
+    // Start showing content as line reaches middle
+    const contentTimer = setTimeout(() => {
+      setShowContent(true)
+    }, 800)
 
-    return () => clearTimeout(revealTimer)
+    // Hide line after it completes
+    const hideLineTimer = setTimeout(() => {
+      setShowLine(false)
+    }, 1400)
+
+    return () => {
+      clearTimeout(contentTimer)
+      clearTimeout(hideLineTimer)
+    }
   }, [])
 
-  // Disable scrolling during breathing phase
+  // Disable scrolling during line animation
   useEffect(() => {
-    if (phase === 'breathe') {
+    if (showLine && !showContent) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = ''
@@ -44,26 +51,17 @@ export function MainHero() {
     return () => {
       document.body.style.overflow = ''
     }
-  }, [phase])
-
-  // Alternate breath state
-  useEffect(() => {
-    if (phase !== 'breathe') return
-    const interval = setInterval(() => {
-      setBreathState(prev => prev === 'in' ? 'out' : 'in')
-    }, BREATH_DURATION * 1000)
-    return () => clearInterval(interval)
-  }, [phase])
+  }, [showLine, showContent])
 
   // Rotate words in headline
   useEffect(() => {
-    if (phase !== 'reveal') return
+    if (!showContent) return
     const words = rotatingWords[locale]
     const interval = setInterval(() => {
       setWordIndex(prev => (prev + 1) % words.length)
     }, 3000)
     return () => clearInterval(interval)
-  }, [phase, locale])
+  }, [showContent, locale])
 
   return (
     <section className="relative min-h-screen bg-white dark:bg-neutral-950 overflow-hidden">
@@ -80,68 +78,29 @@ export function MainHero() {
 
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 pt-24 sm:pt-16">
-        <AnimatePresence mode="wait">
-          {/* Breathing Phase */}
-          {phase === 'breathe' && (
+        <AnimatePresence>
+          {/* Line Animation - draws across screen */}
+          {showLine && (
             <motion.div
-              key="breathe"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              key="line"
+              initial={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.8 }}
-              className="flex flex-col items-center"
+              transition={{ duration: 0.5 }}
+              className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
             >
-              {/* Premium breathing ring */}
               <motion.div
-                className="relative w-32 h-32 sm:w-40 sm:h-40 mb-12"
-              >
-                {/* Outer ring */}
-                <motion.div
-                  className="absolute inset-0 rounded-full border border-neutral-300 dark:border-white/20"
-                  animate={{
-                    scale: breathState === 'in' ? [1, 1.2] : [1.2, 1],
-                    opacity: breathState === 'in' ? [0.3, 0.6] : [0.6, 0.3],
-                  }}
-                  transition={{
-                    duration: BREATH_DURATION,
-                    ease: [0.4, 0, 0.2, 1],
-                  }}
-                />
-                {/* Inner dot */}
-                <motion.div
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-neutral-900 dark:bg-white"
-                  animate={{
-                    scale: breathState === 'in' ? [1, 1.5] : [1.5, 1],
-                    opacity: breathState === 'in' ? [0.6, 1] : [1, 0.6],
-                  }}
-                  transition={{
-                    duration: BREATH_DURATION,
-                    ease: [0.4, 0, 0.2, 1],
-                  }}
-                />
-              </motion.div>
-
-              {/* Breathing text */}
-              <motion.p
-                className="text-2xl sm:text-3xl text-neutral-500 dark:text-white/60 font-light tracking-wide"
-                animate={{
-                  opacity: [0.4, 0.8, 0.4],
-                }}
-                transition={{
-                  duration: BREATH_DURATION,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              >
-                {breathState === 'in'
-                  ? (locale === 'fr' ? 'Inspirez' : 'Breathe in')
-                  : (locale === 'fr' ? 'Expirez' : 'Breathe out')}
-              </motion.p>
+                className="h-[2px] bg-gradient-to-r from-lavender-400 via-lavender-500 to-mint-400"
+                initial={{ width: 0, x: '-50vw' }}
+                animate={{ width: '100vw', x: '0vw' }}
+                transition={{ duration: 1.4, ease: [0.25, 0.1, 0.25, 1] }}
+              />
             </motion.div>
           )}
+        </AnimatePresence>
 
-          {/* Reveal Phase */}
-          {phase === 'reveal' && (
+        <AnimatePresence>
+          {/* Main Content - fades up as line passes */}
+          {showContent && (
             <motion.div
               key="reveal"
               initial={{ opacity: 0 }}
@@ -294,21 +253,8 @@ export function MainHero() {
           )}
         </AnimatePresence>
 
-        {/* Skip button during breathing */}
-        {phase === 'breathe' && (
-          <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 3 }}
-            onClick={() => setPhase('reveal')}
-            className="absolute bottom-24 sm:bottom-12 text-neutral-400 dark:text-white/30 text-sm hover:text-neutral-600 dark:hover:text-white/60 transition-colors duration-300 z-50"
-          >
-            {locale === 'fr' ? 'Passer' : 'Skip'}
-          </motion.button>
-        )}
-
-        {/* Scroll indicator - only in reveal phase */}
-        {phase === 'reveal' && (
+        {/* Scroll indicator - only after content revealed */}
+        {showContent && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
