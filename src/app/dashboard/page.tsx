@@ -500,7 +500,7 @@ function DashboardContent() {
                 </Link>
               </div>
 
-              <div className="space-y-2">
+              <div className="flex flex-col gap-4">
                 {recentResources.length === 0 ? (
                   <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-8 text-center">
                     <FolderOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
@@ -517,7 +517,7 @@ function DashboardContent() {
                       transition={{ delay: 0.25 + index * 0.05 }}
                     >
                       <Link href={`/resources/${resource.id}`}>
-                        <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group">
+                        <div className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group">
                           <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
                             <FileText className="w-5 h-5 text-gray-500" />
                           </div>
@@ -546,7 +546,7 @@ function DashboardContent() {
                 {locale === 'fr' ? 'Modèles à explorer' : 'Explore templates'}
               </h2>
 
-              <div className="space-y-2">
+              <div className="flex flex-col gap-4">
                 {featuredTemplates.map((template, index) => {
                   const TemplateIcon = getTemplateIcon(template.type)
                   const colorClass = getTemplateColor(template.type)
@@ -556,7 +556,7 @@ function DashboardContent() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.35 + index * 0.05 }}
-                        className="flex items-center gap-4 bg-white dark:bg-gray-800 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group"
+                        className="flex items-center gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group"
                       >
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass.split(' ')[0]}`}>
                           <TemplateIcon className={`w-5 h-5 ${colorClass.split(' ')[1]}`} />
