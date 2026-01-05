@@ -203,7 +203,7 @@ export default function EditStoryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-lavender-100 via-white to-teal-50">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading story...</p>
@@ -213,7 +213,7 @@ export default function EditStoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50">
+    <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex items-center justify-between mb-8">
           <Button variant="ghost" onClick={() => router.back()}>

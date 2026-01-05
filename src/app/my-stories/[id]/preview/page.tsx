@@ -197,7 +197,7 @@ export default function StoryPreviewPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-lavender-100 via-white to-teal-50">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading preview...</p>
@@ -211,7 +211,7 @@ export default function StoryPreviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50">
+    <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50">
       {/* Top Bar - Mobile Responsive */}
       <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">

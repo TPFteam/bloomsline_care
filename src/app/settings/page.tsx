@@ -249,7 +249,7 @@ function SettingsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50">
+    <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <Link href="/dashboard">
           <Button variant="ghost" className="mb-8">

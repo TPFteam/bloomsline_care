@@ -74,7 +74,7 @@ function SignUpContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50 relative overflow-hidden">
       {/* Cinematic gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-lavender-100/30 via-peach-50/20 to-mint-100/30"></div>
 
@@ -243,7 +243,7 @@ function SignUpContent() {
 export default function SignUpPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-lavender-100 via-white to-teal-50">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-mint-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>

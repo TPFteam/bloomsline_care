@@ -211,7 +211,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50 flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -226,7 +226,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
   if (notFound) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50 flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -261,7 +261,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
     : acceptanceStatusStyles.not_accepting
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50">
+    <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">

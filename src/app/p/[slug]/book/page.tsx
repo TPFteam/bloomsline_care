@@ -240,7 +240,7 @@ export default function BookingPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-lavender-600" />
           <p className="text-gray-600">Loading booking page...</p>
@@ -252,7 +252,7 @@ export default function BookingPage() {
   // Error state
   if (error || !practitioner) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50 flex items-center justify-center">
         <Card className="max-w-md mx-4">
           <CardContent className="pt-6 text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -269,7 +269,7 @@ export default function BookingPage() {
   // Booking complete state
   if (bookingComplete) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -316,7 +316,7 @@ export default function BookingPage() {
   const sessionTypes = practitioner.settings.session_types as SessionType[]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50 py-12 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">

@@ -190,7 +190,7 @@ export default function NewStoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50">
+    <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex items-center justify-between mb-8">
           <Button variant="ghost" onClick={() => router.back()}>

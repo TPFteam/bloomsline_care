@@ -21,7 +21,7 @@ export function CodeEntryModal({ onSubmit, error }: CodeEntryModalProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -52,7 +52,7 @@ export function CodeEntryModal({ onSubmit, error }: CodeEntryModalProps) {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="Enter the secret code"
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-400 focus:ring-0 outline-none transition-colors"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-400 focus:ring-0 outline-none transition-colors text-gray-900 placeholder-gray-400 bg-white"
               autoFocus
             />
             {error && (

@@ -82,9 +82,9 @@ function AnimatedRituals() {
       <motion.div
         animate={{ opacity: showSummary ? 1 : 0, y: showSummary ? 0 : 10 }}
         transition={{ duration: 0.4 }}
-        className="pt-3 border-t border-neutral-100 dark:border-neutral-800"
+        className="pt-3 border-t border-neutral-100"
       >
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center">
+        <p className="text-sm text-neutral-500 text-center">
           10 minutes of presence today
         </p>
       </motion.div>
@@ -130,7 +130,7 @@ function AnimatedMoments() {
               x: visibleMoments.includes(i) ? 0 : -5,
             }}
             transition={{ duration: 0.3 }}
-            className="flex items-center gap-3 p-2.5 bg-neutral-100 dark:bg-neutral-800 rounded-xl"
+            className="flex items-center gap-3 p-2.5 bg-neutral-100 rounded-xl"
           >
             <motion.div
               animate={{
@@ -142,7 +142,7 @@ function AnimatedMoments() {
               {moment.icon}
             </motion.div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-neutral-700 dark:text-neutral-300 truncate">{moment.text}</p>
+              <p className="text-sm text-neutral-700 truncate">{moment.text}</p>
               <p className="text-xs text-neutral-400">{moment.label}</p>
             </div>
             <motion.div
@@ -159,7 +159,7 @@ function AnimatedMoments() {
       </div>
 
       {/* Flow map visualization */}
-      <div className="relative h-20 bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-xl overflow-hidden p-3">
+      <div className="relative h-20 bg-gradient-to-r from-rose-50 to-pink-50  rounded-xl overflow-hidden p-3">
         <svg className="w-full h-full" viewBox="0 0 280 50">
           {/* Connection line */}
           <motion.path
@@ -224,7 +224,7 @@ function AnimatedBalance() {
       {areas.map((item, i) => (
         <div key={item.area}>
           <div className="flex justify-between text-sm mb-1">
-            <span className="text-neutral-600 dark:text-neutral-400">{item.area}</span>
+            <span className="text-neutral-600">{item.area}</span>
             <motion.span
               key={values[i]}
               initial={{ opacity: 0 }}
@@ -234,7 +234,7 @@ function AnimatedBalance() {
               {values[i]}%
             </motion.span>
           </div>
-          <div className="h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+          <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
             <motion.div
               className={`h-full ${item.color} rounded-full`}
               animate={{ width: `${values[i]}%` }}
@@ -248,9 +248,9 @@ function AnimatedBalance() {
       <motion.div
         animate={{ opacity: showInsight ? 1 : 0, y: showInsight ? 0 : 10 }}
         transition={{ duration: 0.4 }}
-        className="pt-3 border-t border-neutral-100 dark:border-neutral-800"
+        className="pt-3 border-t border-neutral-100"
       >
-        <p className="text-sm text-neutral-600 dark:text-neutral-400 text-center">
+        <p className="text-sm text-neutral-600 text-center">
           This month you nurtured <span className="text-rose-500 font-medium">Connection</span> the most
         </p>
         <p className="text-xs text-neutral-400 text-center mt-1">
@@ -289,7 +289,7 @@ function AnimatedProgress() {
       {/* Visual timeline */}
       <div className="relative">
         {/* Connecting line */}
-        <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-neutral-200 dark:bg-neutral-700" />
+        <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-neutral-200" />
         <motion.div
           className="absolute left-4 top-4 w-0.5 bg-emerald-400 origin-top"
           initial={{ height: 0 }}
@@ -330,7 +330,7 @@ function AnimatedProgress() {
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="text-xs text-neutral-500 dark:text-neutral-500 italic mt-1"
+                    className="text-xs text-neutral-500  italic mt-1"
                   >
                     "Did not feel guilty. That is new."
                   </motion.p>
@@ -345,9 +345,9 @@ function AnimatedProgress() {
       <motion.div
         animate={{ opacity: step >= 4 ? 1 : 0 }}
         transition={{ duration: 0.5 }}
-        className="pt-3 border-t border-neutral-100 dark:border-neutral-800 text-center"
+        className="pt-3 border-t border-neutral-100 text-center"
       >
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="text-sm text-neutral-600">
           18 times you chose yourself this month.
         </p>
       </motion.div>
@@ -377,12 +377,12 @@ function AnimatedConnection() {
       <motion.div
         animate={{ opacity: step >= 1 ? 1 : 0 }}
         transition={{ duration: 0.4 }}
-        className="p-3 bg-neutral-100 dark:bg-neutral-800 rounded-xl"
+        className="p-3 bg-neutral-100 rounded-xl"
       >
         <p className="text-xs text-neutral-400 mb-2">Weekly check-in</p>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-neutral-600 dark:text-neutral-400">How are you feeling?</span>
+            <span className="text-sm text-neutral-600">How are you feeling?</span>
             <motion.div
               animate={{ opacity: step >= 1 ? 1 : 0.3 }}
               className="flex gap-1"
@@ -419,7 +419,7 @@ function AnimatedConnection() {
       <motion.div
         animate={{ opacity: step >= 3 ? 1 : 0, y: step >= 3 ? 0 : 10 }}
         transition={{ duration: 0.4 }}
-        className="p-3 bg-teal-50 dark:bg-teal-900/20 rounded-xl"
+        className="p-3 bg-teal-50  rounded-xl"
       >
         <div className="flex items-center gap-2 mb-2">
           <div className="w-5 h-5 bg-teal-500 rounded-full flex items-center justify-center">
@@ -427,7 +427,7 @@ function AnimatedConnection() {
           </div>
           <span className="text-xs text-neutral-500">Left a note</span>
         </div>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400 italic">
+        <p className="text-sm text-neutral-600 italic">
           "Glad to see you feeling better. Let us explore what helped."
         </p>
       </motion.div>
@@ -502,7 +502,7 @@ export function GlimpseSection() {
   ]
 
   return (
-    <section className="py-24 sm:py-32 bg-neutral-50 dark:bg-neutral-900 overflow-hidden">
+    <section className="py-24 sm:py-32 bg-neutral-50 overflow-hidden">
       <div className="container mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -511,13 +511,13 @@ export function GlimpseSection() {
           transition={{ duration: 0.8 }}
           className="text-center mb-20"
         >
-          <p className="text-sm font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-4">
+          <p className="text-sm font-medium uppercase tracking-wider text-neutral-400 mb-4">
             {locale === 'fr' ? 'Ce que nous avons créé' : 'What we built'}
           </p>
-          <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 dark:text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-4">
             {locale === 'fr' ? 'Voici Bloomsline.' : 'This is Bloomsline.'}
           </h2>
-          <p className="text-neutral-500 dark:text-neutral-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-neutral-500 max-w-2xl mx-auto leading-relaxed">
             {locale === 'fr'
               ? 'Une façon de vous reconnecter à vous-même. De donner du sens aux petits gestes. De voir que ce que vous faites compte.'
               : 'A way to reconnect with yourself. To find meaning in the small things. To see that what you do matters.'}
@@ -540,16 +540,16 @@ export function GlimpseSection() {
               <div className={index % 2 === 1 ? 'lg:col-start-2' : ''}>
                 <div className="flex items-center gap-3 mb-4">
                   <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${step.color} flex items-center justify-center`}>
-                    <step.icon className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+                    <step.icon className="w-5 h-5 text-neutral-700" />
                   </div>
-                  <span className="text-sm font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
+                  <span className="text-sm font-medium text-neutral-400 uppercase tracking-wider">
                     {locale === 'fr' ? step.label.fr : step.label.en}
                   </span>
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-light text-neutral-900 dark:text-white mb-4">
+                <h3 className="text-2xl sm:text-3xl font-light text-neutral-900 mb-4">
                   {locale === 'fr' ? step.title.fr : step.title.en}
                 </h3>
-                <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                <p className="text-neutral-600 leading-relaxed">
                   {locale === 'fr' ? step.description.fr : step.description.en}
                 </p>
               </div>
@@ -557,7 +557,7 @@ export function GlimpseSection() {
               {/* Visual */}
               <div className={`${index % 2 === 1 ? 'lg:col-start-1' : ''}`}>
                 <div className={`bg-gradient-to-br ${step.color} rounded-3xl p-6 sm:p-8`}>
-                  <div className="bg-white dark:bg-neutral-900 rounded-2xl p-5 shadow-lg">
+                  <div className="bg-white rounded-2xl p-5 shadow-lg">
                     {step.visual}
                   </div>
                 </div>
@@ -574,12 +574,12 @@ export function GlimpseSection() {
           transition={{ duration: 0.8 }}
           className="max-w-2xl mx-auto text-center mt-32"
         >
-          <p className="text-2xl sm:text-3xl font-light text-neutral-700 dark:text-neutral-300 leading-relaxed mb-6">
+          <p className="text-2xl sm:text-3xl font-light text-neutral-700 leading-relaxed mb-6">
             {locale === 'fr'
               ? 'Ce ne sont pas des tâches. Ce sont de petits actes de présence à soi-même.'
               : 'These are not tasks. They are small acts of showing up for yourself.'}
           </p>
-          <p className="text-neutral-500 dark:text-neutral-400">
+          <p className="text-neutral-500">
             {locale === 'fr'
               ? 'Et avec le temps, ils deviennent la preuve que vous comptez.'
               : 'And over time, they become proof that you matter.'}

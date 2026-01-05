@@ -9,7 +9,7 @@ import { useLanguage } from '@/lib/i18n/context'
 export function Hero() {
   const { t, locale } = useLanguage()
   return (
-    <section className="relative flex items-center justify-center overflow-hidden min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-teal-50/50">
+    <section className="relative flex items-center justify-center overflow-hidden min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50">
       {/* Cinematic gradient background - More subtle */}
       <div className="absolute inset-0 bg-gradient-to-br from-lavender-100/30 via-teal-50/20 to-teal-100/30"></div>
 

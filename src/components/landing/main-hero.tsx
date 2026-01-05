@@ -64,7 +64,7 @@ export function MainHero() {
   }, [showContent, locale])
 
   return (
-    <section className="relative min-h-screen bg-white dark:bg-neutral-950 overflow-hidden">
+    <section className="relative min-h-screen bg-white overflow-hidden">
       {/* Subtle grain texture overlay - only visible in dark mode */}
       <div
         className="absolute inset-0 opacity-0 dark:opacity-[0.015]"
@@ -116,7 +116,7 @@ export function MainHero() {
                 className="text-center mb-6"
               >
                 <LayoutGroup>
-                  <h1 className="text-[clamp(2.5rem,8vw,5rem)] font-light tracking-tight text-neutral-900 dark:text-white leading-[1.15] mb-3 flex items-baseline justify-center flex-wrap gap-x-[0.25em]">
+                  <h1 className="text-[clamp(2.5rem,8vw,5rem)] font-light tracking-tight text-neutral-900 leading-[1.15] mb-3 flex items-baseline justify-center flex-wrap gap-x-[0.25em]">
                     <motion.span layout transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}>
                       {locale === 'fr' ? 'Votre' : 'Your'}
                     </motion.span>
@@ -143,7 +143,7 @@ export function MainHero() {
                     </motion.span>
                   </h1>
                 </LayoutGroup>
-                <p className="text-xl sm:text-2xl text-neutral-500 dark:text-white/50">
+                <p className="text-xl sm:text-2xl text-neutral-500">
                   {locale === 'fr' ? 'On vous facilite la vie.' : 'We make it easier.'}
                 </p>
               </motion.div>
@@ -153,7 +153,7 @@ export function MainHero() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1, delay: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-                className="text-base text-neutral-400 dark:text-white/40 text-center max-w-xl mx-auto mb-12 leading-relaxed"
+                className="text-base text-neutral-400 text-center max-w-xl mx-auto mb-12 leading-relaxed"
               >
                 <p>
                   {locale === 'fr'
@@ -185,28 +185,28 @@ export function MainHero() {
                   }}
                 >
                   <motion.div
-                    className="relative bg-white dark:bg-neutral-900 rounded-3xl p-8 shadow-lg shadow-neutral-200/50 dark:shadow-none border border-neutral-100 dark:border-neutral-800 hover:shadow-xl dark:hover:border-neutral-700 transition-all duration-300 overflow-hidden"
+                    className="relative bg-white rounded-3xl p-8 shadow-lg shadow-neutral-200/50 border border-neutral-100 hover:shadow-xl transition-all duration-300 overflow-hidden"
                     whileHover={{ y: -4 }}
                   >
                     {/* Decorative circle */}
-                    <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-lavender-100 dark:bg-lavender-900/20 opacity-60" />
+                    <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-lavender-100 opacity-60" />
 
                     <div className="relative">
-                      <div className="w-12 h-12 bg-lavender-100 dark:bg-lavender-900/30 rounded-2xl flex items-center justify-center mb-6">
-                        <Heart className="w-6 h-6 text-lavender-600 dark:text-lavender-400" />
+                      <div className="w-12 h-12 bg-lavender-100 rounded-2xl flex items-center justify-center mb-6">
+                        <Heart className="w-6 h-6 text-lavender-600" />
                       </div>
 
-                      <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-3">
+                      <h3 className="text-xl font-semibold text-neutral-900 mb-3">
                         {locale === 'fr' ? 'Pour mon bien-être' : 'For my wellbeing'}
                       </h3>
 
-                      <p className="text-neutral-500 dark:text-neutral-400 text-sm mb-6 leading-relaxed">
+                      <p className="text-neutral-500 text-sm mb-6 leading-relaxed">
                         {locale === 'fr'
                           ? 'Accédez aux rituels, suivez vos progrès et connectez-vous avec votre praticien.'
                           : 'Access rituals, track your progress, and connect with your practitioner.'}
                       </p>
 
-                      <span className="inline-flex items-center text-lavender-600 dark:text-lavender-400 text-sm font-medium group-hover:gap-2 gap-1.5 transition-all">
+                      <span className="inline-flex items-center text-lavender-600 text-sm font-medium group-hover:gap-2 gap-1.5 transition-all">
                         {locale === 'fr' ? 'En savoir plus' : 'Learn more'}
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                       </span>
@@ -220,28 +220,28 @@ export function MainHero() {
                   className="group text-left block"
                 >
                   <motion.div
-                    className="relative bg-white dark:bg-neutral-900 rounded-3xl p-8 shadow-lg shadow-neutral-200/50 dark:shadow-none border border-neutral-100 dark:border-neutral-800 hover:shadow-xl dark:hover:border-neutral-700 transition-all duration-300 overflow-hidden"
+                    className="relative bg-white rounded-3xl p-8 shadow-lg shadow-neutral-200/50 border border-neutral-100 hover:shadow-xl transition-all duration-300 overflow-hidden"
                     whileHover={{ y: -4 }}
                   >
                     {/* Decorative circle */}
-                    <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-mint-100 dark:bg-mint-900/20 opacity-60" />
+                    <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-mint-100 opacity-60" />
 
                     <div className="relative">
-                      <div className="w-12 h-12 bg-mint-100 dark:bg-mint-900/30 rounded-2xl flex items-center justify-center mb-6">
-                        <Users className="w-6 h-6 text-mint-600 dark:text-mint-400" />
+                      <div className="w-12 h-12 bg-mint-100 rounded-2xl flex items-center justify-center mb-6">
+                        <Users className="w-6 h-6 text-mint-600" />
                       </div>
 
-                      <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-3">
+                      <h3 className="text-xl font-semibold text-neutral-900 mb-3">
                         {locale === 'fr' ? 'Je suis praticien' : "I'm a practitioner"}
                       </h3>
 
-                      <p className="text-neutral-500 dark:text-neutral-400 text-sm mb-6 leading-relaxed">
+                      <p className="text-neutral-500 text-sm mb-6 leading-relaxed">
                         {locale === 'fr'
                           ? 'Gérez vos clients, créez des ressources personnalisées et développez votre pratique.'
                           : 'Manage clients, create personalized resources, and grow your practice.'}
                       </p>
 
-                      <span className="inline-flex items-center text-mint-600 dark:text-mint-400 text-sm font-medium group-hover:gap-2 gap-1.5 transition-all">
+                      <span className="inline-flex items-center text-mint-600 text-sm font-medium group-hover:gap-2 gap-1.5 transition-all">
                         {locale === 'fr' ? 'En savoir plus' : 'Learn more'}
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                       </span>
@@ -262,7 +262,7 @@ export function MainHero() {
             className="absolute bottom-12"
           >
             <motion.div
-              className="w-[1px] h-8 bg-gradient-to-b from-neutral-300 dark:from-white/30 to-transparent"
+              className="w-[1px] h-8 bg-gradient-to-b from-neutral-300 to-transparent"
               animate={{ scaleY: [1, 0.5, 1], opacity: [0.3, 0.6, 0.3] }}
               transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
             />

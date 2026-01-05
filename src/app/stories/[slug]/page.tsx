@@ -139,9 +139,9 @@ export default function PublicStoryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-lavender-100 via-white to-teal-50">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading story...</p>
         </div>
       </div>
@@ -150,9 +150,9 @@ export default function PublicStoryPage() {
 
   if (notFound || !story) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-lavender-100 via-white to-teal-50">
         <div className="max-w-md mx-auto text-center">
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-12 border border-gray-200 shadow-xl">
+          <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-12 border border-gray-200 shadow-xl">
             <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
               <span className="text-4xl">🔍</span>
             </div>
@@ -179,12 +179,13 @@ export default function PublicStoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lavender-50/50 via-white to-mint-50/50">
+    <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex items-center justify-between mb-8">
           <Button
             variant="ghost"
             onClick={() => router.push('/')}
+            className="text-gray-700 hover:text-gray-900 hover:bg-white/50"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Home
@@ -197,10 +198,10 @@ export default function PublicStoryPage() {
           transition={{ duration: 0.5 }}
           className="max-w-4xl mx-auto"
         >
-          <article className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 md:p-12 border border-gray-200 shadow-xl">
+          <article className="bg-white rounded-3xl p-8 md:p-12 border border-gray-200 shadow-xl">
             {/* Header */}
             <div className="mb-8">
-              <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
                 {story.title}
               </h1>
               <div className="flex items-center gap-4 text-sm text-gray-500">

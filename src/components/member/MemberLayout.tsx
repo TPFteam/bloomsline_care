@@ -132,7 +132,7 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
   const hideNavigation = isFillingResource || isReflectionPage || isSettingsPage
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50/80 via-white to-teal-50/50">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-teal-50/30 to-white">
       {/* Main Content */}
       <main className={`relative ${hideNavigation ? 'pb-8' : 'pb-24'}`}>
         {children}
