@@ -53,8 +53,8 @@ export function Navbar() {
                 href={item.href}
                 className={`text-sm font-medium transition-colors ${
                   item.active
-                    ? 'text-foreground flex items-center gap-1.5'
-                    : 'text-gray-600 hover:text-foreground'
+                    ? 'text-gray-900 flex items-center gap-1.5'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 {item.active && (
@@ -76,7 +76,7 @@ export function Navbar() {
             <Link href="/sign-in">
               <Button
                 variant="ghost"
-                className="font-semibold text-gray-700 hover:text-foreground rounded-full"
+                className="font-semibold text-gray-700 hover:text-gray-900 rounded-full"
                 suppressHydrationWarning
               >
                 {t.nav.signIn}
@@ -126,7 +126,7 @@ export function Navbar() {
                   href={item.href}
                   onClick={() => setIsOpen(false)}
                   className={`block py-2 text-sm font-medium transition-colors ${
-                    item.active ? 'text-foreground' : 'text-gray-600 hover:text-foreground'
+                    item.active ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   {item.label}

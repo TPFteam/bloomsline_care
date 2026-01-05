@@ -100,7 +100,7 @@ export function ValidationSection() {
   const current = content[audience]
 
   return (
-    <section className="pt-12 pb-20 sm:pt-16 sm:pb-28 bg-white dark:bg-neutral-950">
+    <section className="pt-12 pb-20 sm:pt-16 sm:pb-28 bg-white">
       <div className="container mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -109,10 +109,10 @@ export function ValidationSection() {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <p className="text-sm font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-4">
+          <p className="text-sm font-medium uppercase tracking-wider text-neutral-400 mb-4">
             {locale === 'fr' ? 'Ce n\'est pas vous' : 'It is not you'}
           </p>
-          <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 dark:text-white max-w-2xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 max-w-2xl mx-auto">
             {locale === 'fr'
               ? 'Le système est conçu contre vous.'
               : 'The system is designed against you.'}
@@ -141,14 +141,14 @@ export function ValidationSection() {
                   </span>
                 )}
               </div>
-              <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed mb-3">
+              <p className="text-neutral-600 leading-relaxed mb-3">
                 {locale === 'fr' ? stat.text.fr : stat.text.en}
               </p>
               <a
                 href={stat.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
               >
                 {stat.source}
               </a>

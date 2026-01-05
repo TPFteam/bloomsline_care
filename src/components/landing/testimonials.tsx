@@ -21,7 +21,7 @@ export function Testimonials() {
           transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4 text-foreground" suppressHydrationWarning>
+          <h2 className="text-4xl sm:text-5xl font-bold mb-4 text-gray-900" suppressHydrationWarning>
             {t.testimonials.sectionTitle}
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed" suppressHydrationWarning>
@@ -53,7 +53,7 @@ export function Testimonials() {
 
                 {/* Author */}
                 <div className="border-t border-gray-200 pt-4">
-                  <p className="font-semibold text-foreground" suppressHydrationWarning>{testimonial.author}</p>
+                  <p className="font-semibold text-gray-900" suppressHydrationWarning>{testimonial.author}</p>
                   <p className="text-sm text-gray-600" suppressHydrationWarning>{testimonial.role}</p>
                   <p className="text-xs text-gray-500 mt-1" suppressHydrationWarning>{testimonial.location}</p>
                 </div>

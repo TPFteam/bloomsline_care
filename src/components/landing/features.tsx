@@ -63,7 +63,7 @@ export function Features() {
           transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground via-teal-600 to-lavender-600 bg-clip-text text-transparent" suppressHydrationWarning>
+          <h2 className="text-4xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 via-teal-600 to-lavender-600 bg-clip-text text-transparent" suppressHydrationWarning>
             {t.features.sectionTitle}
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed" suppressHydrationWarning>
@@ -89,7 +89,7 @@ export function Features() {
                   <div className={`w-14 h-14 rounded-2xl ${colors.bg} flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg`}>
                     <Icon className={`w-7 h-7 ${colors.icon}`} />
                   </div>
-                  <h3 className="text-xl font-bold mb-3 text-foreground" suppressHydrationWarning>
+                  <h3 className="text-xl font-bold mb-3 text-gray-900" suppressHydrationWarning>
                     {feature.title}
                   </h3>
                   <p className="text-gray-600 leading-relaxed" suppressHydrationWarning>

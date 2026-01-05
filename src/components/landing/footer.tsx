@@ -21,7 +21,7 @@ const socialLinks = [
 export function Footer() {
   const { t } = useLanguage()
   return (
-    <footer className="bg-gradient-to-b from-background to-teal-50/20 border-t border-border">
+    <footer className="bg-neutral-900 text-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 mb-12">
           {/* Brand Section */}
@@ -33,23 +33,23 @@ export function Footer() {
             className="lg:col-span-2"
           >
             <div className="flex items-center gap-2 mb-4">
-              <Logo size="lg" showText />
+              <Logo size="lg" showText variant="dark" />
             </div>
-            <p className="text-muted-foreground mb-6 max-w-sm" suppressHydrationWarning>
+            <p className="text-neutral-400 mb-6 max-w-sm" suppressHydrationWarning>
               {t.footer.brandDescription}
             </p>
 
             {/* Contact Info */}
-            <div className="space-y-2 text-sm text-muted-foreground">
+            <div className="space-y-2 text-sm text-neutral-400">
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4" />
-                <a href={`mailto:${t.footer.contactEmail}`} className="hover:text-foreground transition-colors" suppressHydrationWarning>
+                <a href={`mailto:${t.footer.contactEmail}`} className="hover:text-white transition-colors" suppressHydrationWarning>
                   {t.footer.contactEmail}
                 </a>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
-                <a href={`tel:${t.footer.contactPhone.replace(/\s/g, '')}`} className="hover:text-foreground transition-colors" suppressHydrationWarning>
+                <a href={`tel:${t.footer.contactPhone.replace(/\s/g, '')}`} className="hover:text-white transition-colors" suppressHydrationWarning>
                   {t.footer.contactPhone}
                 </a>
               </div>
@@ -67,13 +67,13 @@ export function Footer() {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <h3 className="font-semibold text-foreground mb-4" suppressHydrationWarning>{t.footer.sections.product.title}</h3>
+            <h3 className="font-semibold text-white mb-4" suppressHydrationWarning>{t.footer.sections.product.title}</h3>
             <ul className="space-y-3">
               {t.footer.sections.product.links.map((link, index) => (
                 <li key={index}>
                   <a
                     href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-sm text-neutral-400 hover:text-white transition-colors"
                     suppressHydrationWarning
                   >
                     {link.label}
@@ -90,13 +90,13 @@ export function Footer() {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <h3 className="font-semibold text-foreground mb-4" suppressHydrationWarning>{t.footer.sections.company.title}</h3>
+            <h3 className="font-semibold text-white mb-4" suppressHydrationWarning>{t.footer.sections.company.title}</h3>
             <ul className="space-y-3">
               {t.footer.sections.company.links.map((link, index) => (
                 <li key={index}>
                   <a
                     href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-sm text-neutral-400 hover:text-white transition-colors"
                     suppressHydrationWarning
                   >
                     {link.label}
@@ -113,13 +113,13 @@ export function Footer() {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <h3 className="font-semibold text-foreground mb-4" suppressHydrationWarning>{t.footer.sections.resources.title}</h3>
+            <h3 className="font-semibold text-white mb-4" suppressHydrationWarning>{t.footer.sections.resources.title}</h3>
             <ul className="space-y-3">
               {t.footer.sections.resources.links.map((link, index) => (
                 <li key={index}>
                   <a
                     href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-sm text-neutral-400 hover:text-white transition-colors"
                     suppressHydrationWarning
                   >
                     {link.label}
@@ -136,13 +136,13 @@ export function Footer() {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <h3 className="font-semibold text-foreground mb-4" suppressHydrationWarning>{t.footer.sections.legal.title}</h3>
+            <h3 className="font-semibold text-white mb-4" suppressHydrationWarning>{t.footer.sections.legal.title}</h3>
             <ul className="space-y-3">
               {t.footer.sections.legal.links.map((link, index) => (
                 <li key={index}>
                   <a
                     href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-sm text-neutral-400 hover:text-white transition-colors"
                     suppressHydrationWarning
                   >
                     {link.label}
@@ -159,9 +159,9 @@ export function Footer() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.5 }}
-          className="pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4"
+          className="pt-8 border-t border-neutral-800 flex flex-col md:flex-row justify-between items-center gap-4"
         >
-          <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+          <p className="text-sm text-neutral-400" suppressHydrationWarning>
             © {new Date().getFullYear()} {t.footer.copyright}
           </p>
 

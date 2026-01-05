@@ -43,10 +43,10 @@ export function Hero() {
             className="mb-8 leading-tight"
             suppressHydrationWarning
           >
-            <span className="block text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold text-foreground/90 mb-2 tracking-tight" suppressHydrationWarning>
+            <span className="block text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold text-gray-900 mb-2 tracking-tight" suppressHydrationWarning>
               {t.hero.yourCare} <span className="italic text-lavender-600">{t.hero.matters}</span>
             </span>
-            <span className="block text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold text-foreground/90 tracking-tight" suppressHydrationWarning>
+            <span className="block text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold text-gray-900 tracking-tight" suppressHydrationWarning>
               {t.hero.weMakeIt} <span className="italic text-teal-600">{t.hero.easier}</span>
             </span>
           </motion.h1>
@@ -56,7 +56,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.3 }}
-            className="text-base sm:text-lg text-foreground/60 mb-12 max-w-xl mx-auto font-light"
+            className="text-base sm:text-lg text-gray-600 mb-12 max-w-xl mx-auto font-light"
             suppressHydrationWarning
           >
             {t.hero.subtitle}
@@ -73,7 +73,7 @@ export function Hero() {
             <Link href="/sign-up">
               <Button
                 size="lg"
-                className="group px-8 h-12 text-sm font-medium bg-white/80 text-foreground hover:bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 border border-white/60 backdrop-blur-sm"
+                className="group px-8 h-12 text-sm font-medium bg-white/80 text-gray-900 hover:bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 border border-white/60 backdrop-blur-sm"
                 suppressHydrationWarning
               >
                 {t.buttons.tryNow}
@@ -87,7 +87,7 @@ export function Hero() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.7 }}
-            className="mt-12 text-xs text-foreground/40 font-light tracking-wide"
+            className="mt-12 text-xs text-gray-500 font-light tracking-wide"
             suppressHydrationWarning
           >
             {t.hero.trustedBy}

@@ -7,6 +7,7 @@ interface LogoProps {
   size?: 'xs' | 'sm' | 'md' | 'lg'
   className?: string
   showText?: boolean
+  variant?: 'light' | 'dark' // light = dark text for light bg, dark = light text for dark bg
 }
 
 const sizeMap = {
@@ -23,11 +24,16 @@ const textSizeMap = {
   lg: 'text-xl',
 }
 
-export function Logo({ size = 'sm', className, showText = false }: LogoProps) {
+export function Logo({ size = 'sm', className, showText = false, variant = 'light' }: LogoProps) {
   const logoIcon = (
     <div className={cn(sizeMap[size], 'relative flex-shrink-0')}>
       {/* Background circle */}
-      <div className="absolute inset-0 bg-gradient-to-br from-teal-100 to-lavender-100 dark:from-teal-900/30 dark:to-lavender-900/30 rounded-xl" />
+      <div className={cn(
+        "absolute inset-0 rounded-xl",
+        variant === 'light'
+          ? "bg-gradient-to-br from-teal-100 to-lavender-100"
+          : "bg-gradient-to-br from-teal-800/50 to-lavender-800/50"
+      )} />
 
       {/* Animated bloom/flower */}
       <div className="relative w-full h-full flex items-center justify-center">
@@ -71,7 +77,8 @@ export function Logo({ size = 'sm', className, showText = false }: LogoProps) {
       {logoIcon}
       <span className={cn(
         textSizeMap[size],
-        'font-semibold tracking-tight text-gray-900 dark:text-gray-100'
+        'font-semibold tracking-tight',
+        variant === 'light' ? 'text-gray-900' : 'text-white'
       )}>
         Bloomsline
       </span>

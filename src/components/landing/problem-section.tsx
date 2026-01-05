@@ -75,7 +75,7 @@ export function ProblemSection({ selectedAudience: initialAudience }: ProblemSec
   const current = content[audience]
 
   return (
-    <section id="problems" className="pt-20 pb-12 sm:pt-24 sm:pb-16 bg-white dark:bg-neutral-950 scroll-mt-16">
+    <section id="problems" className="pt-20 pb-12 sm:pt-24 sm:pb-16 bg-white scroll-mt-16">
       <div className="container mx-auto px-6">
         {/* Header */}
         <motion.div
@@ -85,23 +85,23 @@ export function ProblemSection({ selectedAudience: initialAudience }: ProblemSec
           transition={{ duration: 0.8 }}
           className="mb-10"
         >
-          <p className="text-sm font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-4">
+          <p className="text-sm font-medium uppercase tracking-wider text-neutral-400 mb-4">
             {locale === 'fr' ? 'Le problème' : 'The problem'}
           </p>
-          <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 dark:text-white">
+          <h2 className="text-3xl sm:text-4xl font-light text-neutral-900">
             {locale === 'fr' ? 'On comprend.' : 'We get it.'}
           </h2>
         </motion.div>
 
         {/* Toggle */}
         <div className="flex mb-8">
-          <div className="inline-flex border-b border-neutral-200 dark:border-neutral-800">
+          <div className="inline-flex border-b border-neutral-200">
             <button
               onClick={() => setAudience('member')}
               className={`px-6 py-3 text-sm font-medium transition-all border-b-2 -mb-[1px] ${
                 audience === 'member'
-                  ? 'border-neutral-900 dark:border-white text-neutral-900 dark:text-white'
-                  : 'border-transparent text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'
+                  ? 'border-neutral-900 text-neutral-900'
+                  : 'border-transparent text-neutral-400 hover:text-neutral-600'
               }`}
             >
               {locale === 'fr' ? 'Pour moi' : 'For me'}
@@ -110,8 +110,8 @@ export function ProblemSection({ selectedAudience: initialAudience }: ProblemSec
               onClick={() => setAudience('practitioner')}
               className={`px-6 py-3 text-sm font-medium transition-all border-b-2 -mb-[1px] ${
                 audience === 'practitioner'
-                  ? 'border-neutral-900 dark:border-white text-neutral-900 dark:text-white'
-                  : 'border-transparent text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'
+                  ? 'border-neutral-900 text-neutral-900'
+                  : 'border-transparent text-neutral-400 hover:text-neutral-600'
               }`}
             >
               {locale === 'fr' ? 'Praticien' : 'Practitioner'}
@@ -139,10 +139,10 @@ export function ProblemSection({ selectedAudience: initialAudience }: ProblemSec
                   transition={{ duration: 0.3, delay: index * 0.1 }}
                   className="flex gap-4"
                 >
-                  <span className="text-neutral-300 dark:text-neutral-600 text-lg font-light">
+                  <span className="text-neutral-300 text-lg font-light">
                     {String(index + 1).padStart(2, '0')}
                   </span>
-                  <p className="text-lg text-neutral-700 dark:text-neutral-300 leading-relaxed">
+                  <p className="text-lg text-neutral-700 leading-relaxed">
                     {locale === 'fr' ? problem.fr : problem.en}
                   </p>
                 </motion.div>
@@ -155,7 +155,7 @@ export function ProblemSection({ selectedAudience: initialAudience }: ProblemSec
                 className="pt-6"
               >
                 <Link href={current.link}>
-                  <button className="group inline-flex items-center gap-2 text-neutral-900 dark:text-white font-medium hover:gap-3 transition-all">
+                  <button className="group inline-flex items-center gap-2 text-neutral-900 font-medium hover:gap-3 transition-all">
                     {locale === 'fr' ? current.cta.fr : current.cta.en}
                     <ArrowRight className="w-4 h-4" />
                   </button>

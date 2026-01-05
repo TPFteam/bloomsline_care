@@ -28,7 +28,7 @@ export function Stakeholders() {
           transition={{ duration: 0.5 }}
           className="text-center mb-20"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4 text-foreground" suppressHydrationWarning>
+          <h2 className="text-4xl sm:text-5xl font-bold mb-4 text-gray-900" suppressHydrationWarning>
             {t.stakeholders.sectionTitle}
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed" suppressHydrationWarning>
@@ -61,7 +61,7 @@ export function Stakeholders() {
                   </div>
 
                   {/* Tagline */}
-                  <h3 className="text-xl font-bold mb-3 text-foreground" suppressHydrationWarning>
+                  <h3 className="text-xl font-bold mb-3 text-gray-900" suppressHydrationWarning>
                     {stakeholder.tagline}
                   </h3>
 

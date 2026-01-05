@@ -91,7 +91,7 @@ const colorClasses = {
 
 export function Pricing() {
   return (
-    <section id="pricing" className="py-24 bg-gradient-to-b from-background via-lavender-50/20 to-background">
+    <section id="pricing" className="py-24 bg-gradient-to-b from-white via-lavender-50/20 to-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <motion.div
@@ -101,10 +101,10 @@ export function Pricing() {
           transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground via-teal-600 to-lavender-600 bg-clip-text text-transparent">
+          <h2 className="text-4xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 via-teal-600 to-lavender-600 bg-clip-text text-transparent">
             Simple, Transparent Pricing
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Choose the plan that fits your needs. All plans include a 14-day free trial with no credit card required.
           </p>
         </motion.div>
@@ -133,7 +133,7 @@ export function Pricing() {
 
                 <Card
                   className={`h-full p-8 bg-white/60 backdrop-blur-sm border-2 ${
-                    plan.popular ? colors.border : 'border-border'
+                    plan.popular ? colors.border : 'border-gray-200'
                   } ${plan.popular ? 'shadow-2xl scale-105' : 'shadow-lg'} transition-all duration-300 hover:shadow-xl`}
                 >
                   {/* Icon */}
@@ -142,20 +142,20 @@ export function Pricing() {
                   </div>
 
                   {/* Plan Name & Description */}
-                  <h3 className="text-2xl font-bold mb-2 text-foreground">
+                  <h3 className="text-2xl font-bold mb-2 text-gray-900">
                     {plan.name}
                   </h3>
-                  <p className="text-muted-foreground mb-6">
+                  <p className="text-gray-600 mb-6">
                     {plan.description}
                   </p>
 
                   {/* Price */}
                   <div className="mb-8">
-                    <span className="text-5xl font-bold text-foreground">
+                    <span className="text-5xl font-bold text-gray-900">
                       {plan.price}
                     </span>
                     {plan.period && (
-                      <span className="text-muted-foreground ml-2">
+                      <span className="text-gray-600 ml-2">
                         {plan.period}
                       </span>
                     )}
@@ -166,7 +166,7 @@ export function Pricing() {
                     className={`w-full mb-8 ${
                       plan.popular
                         ? `bg-gradient-to-r ${colors.button} shadow-lg`
-                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                     }`}
                   >
                     {plan.cta}
@@ -177,7 +177,7 @@ export function Pricing() {
                     {plan.features.map((feature) => (
                       <div key={feature} className="flex items-start gap-3">
                         <Check className={`w-5 h-5 mt-0.5 flex-shrink-0 ${colors.icon}`} />
-                        <span className="text-sm text-foreground">{feature}</span>
+                        <span className="text-sm text-gray-900">{feature}</span>
                       </div>
                     ))}
                   </div>
@@ -195,10 +195,10 @@ export function Pricing() {
           transition={{ duration: 0.5, delay: 0.4 }}
           className="mt-16 text-center"
         >
-          <p className="text-muted-foreground mb-4">
+          <p className="text-gray-600 mb-4">
             All plans include 14-day free trial • No credit card required • Cancel anytime
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-gray-600">
             Need a custom solution?{' '}
             <a href="#" className="text-teal-600 hover:text-teal-700 font-medium underline">
               Contact our sales team
