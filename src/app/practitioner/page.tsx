@@ -7,7 +7,7 @@ import { Footer } from "@/components/landing/footer";
 
 export default function PractitionerLandingPage() {
   return (
-    <>
+    <div className="bg-white text-gray-900">
       <Navbar />
       <main>
         <Hero />
@@ -16,6 +16,6 @@ export default function PractitionerLandingPage() {
         <CommunityNote />
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

@@ -107,9 +107,9 @@ function EarlyAccessContent() {
   ]
 
   return (
-    <>
+    <div className="bg-white text-gray-900">
       <Navbar />
-      <main className="min-h-screen bg-white dark:bg-neutral-950 pt-20">
+      <main className="min-h-screen bg-white pt-20">
         <div className="container mx-auto px-6 py-12 lg:py-20">
           <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center max-w-6xl mx-auto">
 
@@ -122,7 +122,7 @@ function EarlyAccessContent() {
             >
               <div className="relative">
                 {/* Decorative background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-lavender-100/50 to-teal-100/50 dark:from-lavender-900/20 dark:to-teal-900/20 rounded-3xl" />
+                <div className="absolute inset-0 bg-gradient-to-br from-lavender-100/50 to-teal-100/50 rounded-3xl" />
 
                 <div className="relative p-10">
                   {/* Animated journey visualization */}
@@ -149,7 +149,7 @@ function EarlyAccessContent() {
                         </motion.div>
                       </motion.div>
                       <div>
-                        <p className="font-medium text-neutral-800 dark:text-neutral-200">
+                        <p className="font-medium text-neutral-800">
                           {locale === 'fr' ? 'Rejoindre' : 'Join'}
                         </p>
                         <p className="text-sm text-neutral-500">
@@ -183,7 +183,7 @@ function EarlyAccessContent() {
                         </motion.div>
                       </motion.div>
                       <div>
-                        <p className="font-medium text-neutral-800 dark:text-neutral-200">
+                        <p className="font-medium text-neutral-800">
                           {locale === 'fr' ? 'Grandir' : 'Grow'}
                         </p>
                         <p className="text-sm text-neutral-500">
@@ -216,7 +216,7 @@ function EarlyAccessContent() {
                         </motion.div>
                       </motion.div>
                       <div>
-                        <p className="font-medium text-neutral-800 dark:text-neutral-200">
+                        <p className="font-medium text-neutral-800">
                           {locale === 'fr' ? 'Se connecter' : 'Connect'}
                         </p>
                         <p className="text-sm text-neutral-500">
@@ -253,7 +253,7 @@ function EarlyAccessContent() {
                         </motion.div>
                       </motion.div>
                       <div>
-                        <p className="font-medium text-neutral-800 dark:text-neutral-200">
+                        <p className="font-medium text-neutral-800">
                           {locale === 'fr' ? 'S\'épanouir' : 'Flourish'}
                         </p>
                         <p className="text-sm text-neutral-500">
@@ -268,9 +268,9 @@ function EarlyAccessContent() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5 }}
-                    className="mt-10 p-6 bg-white/60 dark:bg-neutral-900/60 rounded-2xl"
+                    className="mt-10 p-6 bg-white/60 rounded-2xl"
                   >
-                    <p className="text-neutral-600 dark:text-neutral-400 italic text-sm leading-relaxed">
+                    <p className="text-neutral-600 italic text-sm leading-relaxed">
                       {locale === 'fr'
                         ? '"Nous ne cherchons pas à ajouter une app de plus dans votre vie. Nous voulons créer un espace qui a du sens."'
                         : '"We are not trying to add another app to your life. We want to create a space that matters."'}
@@ -293,11 +293,11 @@ function EarlyAccessContent() {
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="mb-6 p-4 bg-lavender-50 dark:bg-lavender-900/20 border border-lavender-200 dark:border-lavender-800 rounded-xl"
+                      className="mb-6 p-4 bg-lavender-50 border border-lavender-200 rounded-xl"
                     >
                       <div className="flex items-start gap-3">
-                        <Info className="w-5 h-5 text-lavender-600 dark:text-lavender-400 flex-shrink-0 mt-0.5" />
-                        <p className="text-sm text-lavender-800 dark:text-lavender-200">
+                        <Info className="w-5 h-5 text-lavender-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-lavender-800">
                           {infoMessage}
                         </p>
                       </div>
@@ -306,10 +306,10 @@ function EarlyAccessContent() {
 
                   {/* Header */}
                   <div className="mb-8">
-                    <h1 className="text-3xl sm:text-4xl font-light text-neutral-900 dark:text-white mb-3">
+                    <h1 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-3">
                       {locale === 'fr' ? 'Rejoignez les premiers.' : 'Join the first ones.'}
                     </h1>
-                    <p className="text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                    <p className="text-neutral-500 leading-relaxed">
                       {locale === 'fr'
                         ? 'Nous construisons Bloomsline avec soin. Dites-nous qui vous êtes.'
                         : 'We are building Bloomsline with care. Tell us who you are.'}
@@ -319,7 +319,7 @@ function EarlyAccessContent() {
                   {/* Form */}
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
                         {locale === 'fr' ? 'Votre prénom' : 'Your first name'}
                       </label>
                       <input
@@ -327,13 +327,13 @@ function EarlyAccessContent() {
                         required
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-transparent transition-all"
                         placeholder={locale === 'fr' ? 'Marie' : 'Sarah'}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
                         {locale === 'fr' ? 'Votre email' : 'Your email'}
                       </label>
                       <input
@@ -341,14 +341,14 @@ function EarlyAccessContent() {
                         required
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-transparent transition-all"
                         placeholder={locale === 'fr' ? 'marie@example.com' : 'sarah@example.com'}
                       />
                     </div>
 
                     {/* User Type Selection */}
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+                      <label className="block text-sm font-medium text-neutral-700 mb-3">
                         {locale === 'fr' ? 'Comment voulez-vous utiliser Bloomsline?' : 'How do you want to use Bloomsline?'}
                       </label>
                       <div className="space-y-3">
@@ -356,18 +356,18 @@ function EarlyAccessContent() {
                           const isSelected = formData.userType === option.value
                           const colorStylesMap = {
                             rose: {
-                              selected: 'border-rose-400 bg-rose-50 dark:bg-rose-900/20',
-                              icon: 'bg-rose-100 dark:bg-rose-900/30',
+                              selected: 'border-rose-400 bg-rose-50',
+                              icon: 'bg-rose-100',
                               check: 'border-rose-400 bg-rose-400',
                             },
                             lavender: {
-                              selected: 'border-lavender-400 bg-lavender-50 dark:bg-lavender-900/20',
-                              icon: 'bg-lavender-100 dark:bg-lavender-900/30',
+                              selected: 'border-lavender-400 bg-lavender-50',
+                              icon: 'bg-lavender-100',
                               check: 'border-lavender-400 bg-lavender-400',
                             },
                             teal: {
-                              selected: 'border-teal-400 bg-teal-50 dark:bg-teal-900/20',
-                              icon: 'bg-teal-100 dark:bg-teal-900/30',
+                              selected: 'border-teal-400 bg-teal-50',
+                              icon: 'bg-teal-100',
                               check: 'border-teal-400 bg-teal-400',
                             },
                           }
@@ -383,27 +383,27 @@ function EarlyAccessContent() {
                               className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-200 ${
                                 isSelected
                                   ? colorStyles.selected
-                                  : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
+                                  : 'border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50'
                               }`}
                             >
                               <div className="flex items-center gap-4">
                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all ${
-                                  isSelected ? colorStyles.icon : 'bg-neutral-100 dark:bg-neutral-800'
+                                  isSelected ? colorStyles.icon : 'bg-neutral-100'
                                 }`}>
                                   {option.emoji}
                                 </div>
                                 <div className="flex-1">
-                                  <p className="font-medium text-neutral-800 dark:text-neutral-200">
+                                  <p className="font-medium text-neutral-800">
                                     {locale === 'fr' ? option.label.fr : option.label.en}
                                   </p>
-                                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                  <p className="text-xs text-neutral-500">
                                     {locale === 'fr' ? option.description.fr : option.description.en}
                                   </p>
                                 </div>
                                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
                                   isSelected
                                     ? colorStyles.check
-                                    : 'border-neutral-300 dark:border-neutral-600'
+                                    : 'border-neutral-300'
                                 }`}>
                                   {isSelected && (
                                     <Check className="w-3 h-3 text-white" />
@@ -417,7 +417,7 @@ function EarlyAccessContent() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
                         {locale === 'fr'
                           ? 'Qu\'est-ce qui vous amène ici?'
                           : 'What brings you here?'}
@@ -429,7 +429,7 @@ function EarlyAccessContent() {
                         value={formData.reason}
                         onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                         rows={3}
-                        className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-transparent transition-all resize-none"
+                        className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-transparent transition-all resize-none"
                         placeholder={locale === 'fr'
                           ? 'Un moment difficile, une envie de changement, ou juste de la curiosité...'
                           : 'A hard moment, a desire for change, or just curiosity...'}
@@ -465,13 +465,13 @@ function EarlyAccessContent() {
                   transition={{ duration: 0.5 }}
                   className="text-center py-12"
                 >
-                  <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
                     <Check className="w-8 h-8 text-emerald-500" />
                   </div>
-                  <h2 className="text-2xl font-light text-neutral-900 dark:text-white mb-4">
+                  <h2 className="text-2xl font-light text-neutral-900 mb-4">
                     {locale === 'fr' ? 'Merci, ' + formData.name + '.' : 'Thank you, ' + formData.name + '.'}
                   </h2>
-                  <p className="text-neutral-500 dark:text-neutral-400 leading-relaxed max-w-sm mx-auto">
+                  <p className="text-neutral-500 leading-relaxed max-w-sm mx-auto">
                     {locale === 'fr'
                       ? 'Nous avons reçu votre demande. Nous vous écrirons personnellement quand une place se libère.'
                       : 'We received your request. We will write to you personally when a spot opens up.'}
@@ -483,14 +483,14 @@ function EarlyAccessContent() {
         </div>
       </main>
       <Footer />
-    </>
+    </div>
   )
 }
 
 export default function EarlyAccessPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-neutral-950">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-lavender-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-neutral-500">Loading...</p>

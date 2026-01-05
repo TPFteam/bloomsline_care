@@ -8,7 +8,7 @@ import { Footer } from "@/components/landing/footer";
 
 export default function Home() {
   return (
-    <>
+    <div className="bg-white text-gray-900">
       <Navbar />
       <main>
         <MainHero />
@@ -18,6 +18,6 @@ export default function Home() {
         <GlimpseSection />
       </main>
       <Footer />
-    </>
+    </div>
   );
 }
