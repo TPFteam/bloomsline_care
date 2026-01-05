@@ -1,34 +1,40 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import type { User } from '@/types/user'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Home,
   FileText,
-  TrendingUp,
-  Plus,
-  FolderOpen,
   Table2,
   ChevronRight,
-  Users,
-  CalendarCheck,
   BookOpen,
-  BarChart3,
+  Sparkles,
+  X,
+  Plus,
+  Clock,
+  UserPlus,
+  Edit3,
+  Share2,
+  Calendar,
+  CheckCircle2,
+  Send,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 
-interface RecentResource {
+interface ActivityItem {
   id: string
+  type: 'resource_created' | 'resource_updated' | 'member_added' | 'session_scheduled' | 'session_completed' | 'resource_shared' | 'submission_received'
   title: string
-  type: string
-  created_at: string
+  description: string
+  timestamp: string
+  href?: string
 }
 
 interface TemplateOption {
@@ -40,11 +46,59 @@ interface TemplateOption {
 }
 
 
+type ResourceType = 'worksheet' | 'table' | 'psychoeducation'
+
+interface Template {
+  id: string
+  name: { en: string; fr: string }
+  description: { en: string; fr: string }
+}
+
+const templatesData: Record<ResourceType, Template[]> = {
+  psychoeducation: [
+    {
+      id: 'condition-overview',
+      name: { en: 'Condition Overview', fr: 'Aperçu d\'une condition' },
+      description: { en: 'Explain a mental health topic', fr: 'Expliquer un sujet de santé mentale' },
+    },
+    {
+      id: 'coping-strategy',
+      name: { en: 'Coping Strategy Guide', fr: 'Guide de stratégie' },
+      description: { en: 'Teach a coping technique', fr: 'Enseigner une technique d\'adaptation' },
+    },
+  ],
+  worksheet: [
+    {
+      id: 'thought-record',
+      name: { en: 'Thought Record', fr: 'Journal de pensées' },
+      description: { en: 'Classic CBT thought record', fr: 'Journal de pensées TCC classique' },
+    },
+    {
+      id: 'gratitude',
+      name: { en: 'Daily Gratitude', fr: 'Gratitude quotidienne' },
+      description: { en: 'Daily gratitude reflection', fr: 'Réflexion quotidienne de gratitude' },
+    },
+  ],
+  table: [
+    {
+      id: 'thought-log',
+      name: { en: 'Thought Log', fr: 'Suivi des pensées' },
+      description: { en: 'Track thoughts over time', fr: 'Suivre les pensées' },
+    },
+    {
+      id: 'emotion-tracker',
+      name: { en: 'Emotion Tracker', fr: 'Suivi des émotions' },
+      description: { en: 'Monitor emotions', fr: 'Surveiller les émotions' },
+    },
+  ],
+}
+
 function DashboardContent() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
-  const [recentResources, setRecentResources] = useState<RecentResource[]>([])
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
+  const [selectedType, setSelectedType] = useState<ResourceType | null>(null)
 
   // Featured templates - one from each type
   const featuredTemplates: TemplateOption[] = [
@@ -75,20 +129,155 @@ function DashboardContent() {
   const supabase = createClient()
   const { t, locale, setLocale } = useLanguage()
 
-  useEffect(() => {
-    const fetchRecentData = async (userId: string) => {
-      const { data: resources } = await supabase
+  // Fetch activity data
+  const fetchRecentActivity = useCallback(async (userId: string, currentLocale: string) => {
+    try {
+      const activities: ActivityItem[] = []
+
+      // Fetch resources created
+      const { data: resources, error: resourcesError } = await supabase
         .from('resources')
         .select('id, title, type, created_at')
         .eq('practitioner_id', userId)
         .order('created_at', { ascending: false })
+        .limit(5)
+
+      if (!resourcesError && resources) {
+        resources.forEach((resource) => {
+          activities.push({
+            id: `resource-${resource.id}`,
+            type: 'resource_created',
+            title: resource.title || (currentLocale === 'fr' ? 'Sans titre' : 'Untitled'),
+            description: currentLocale === 'fr'
+              ? `Créé un ${resource.type === 'worksheet' ? 'exercice' : resource.type === 'table' ? 'tableau' : 'psychoéducation'}`
+              : `Created a ${resource.type}`,
+            timestamp: resource.created_at,
+            href: `/resources/${resource.id}`,
+          })
+        })
+      }
+
+      // Fetch members added
+      const { data: members, error: membersError } = await supabase
+        .from('members')
+        .select('id, full_name, created_at')
+        .eq('practitioner_id', userId)
+        .order('created_at', { ascending: false })
         .limit(3)
 
-      if (resources && resources.length > 0) {
-        setRecentResources(resources)
+      if (!membersError && members) {
+        members.forEach((member) => {
+          activities.push({
+            id: `member-${member.id}`,
+            type: 'member_added',
+            title: member.full_name || (currentLocale === 'fr' ? 'Nouveau patient' : 'New member'),
+            description: currentLocale === 'fr' ? 'Patient ajouté' : 'Member added',
+            timestamp: member.created_at,
+            href: `/members/${member.id}`,
+          })
+        })
       }
-    }
 
+      // Fetch shared resources
+      const { data: sharedResources, error: sharedError } = await supabase
+        .from('member_shared_resources')
+        .select(`
+          id,
+          shared_at,
+          resource:resources(id, title, type),
+          member:members(id, full_name)
+        `)
+        .eq('practitioner_id', userId)
+        .order('shared_at', { ascending: false })
+        .limit(5)
+
+      if (!sharedError && sharedResources) {
+        sharedResources.forEach((share) => {
+          const resource = Array.isArray(share.resource) ? share.resource[0] : share.resource
+          const member = Array.isArray(share.member) ? share.member[0] : share.member
+          if (resource && member) {
+            activities.push({
+              id: `share-${share.id}`,
+              type: 'resource_shared',
+              title: resource.title || (currentLocale === 'fr' ? 'Sans titre' : 'Untitled'),
+              description: currentLocale === 'fr'
+                ? `Partagé avec ${member.full_name}`
+                : `Shared with ${member.full_name}`,
+              timestamp: share.shared_at,
+              href: `/members/${member.id}`,
+            })
+          }
+        })
+      }
+
+      // Fetch bookings/sessions
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('id, client_name, session_type, status, start_time, created_at, member_id')
+        .eq('practitioner_id', userId)
+        .in('status', ['confirmed', 'completed', 'pending'])
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      if (!bookingsError && bookings) {
+        bookings.forEach((booking) => {
+          const isCompleted = booking.status === 'completed'
+          activities.push({
+            id: `booking-${booking.id}`,
+            type: isCompleted ? 'session_completed' : 'session_scheduled',
+            title: booking.client_name,
+            description: isCompleted
+              ? (currentLocale === 'fr' ? 'Séance terminée' : 'Session completed')
+              : (currentLocale === 'fr' ? 'Séance programmée' : 'Session scheduled'),
+            timestamp: booking.created_at,
+            href: booking.member_id ? `/members/${booking.member_id}` : undefined,
+          })
+        })
+      }
+
+      // Fetch member submissions
+      const { data: submissions, error: submissionsError } = await supabase
+        .from('resource_submissions')
+        .select(`
+          id,
+          submitted_at,
+          status,
+          resource:resources(id, title, type),
+          member:members(id, full_name)
+        `)
+        .eq('practitioner_id', userId)
+        .eq('status', 'submitted')
+        .order('submitted_at', { ascending: false })
+        .limit(5)
+
+      if (!submissionsError && submissions) {
+        submissions.forEach((sub) => {
+          const resource = Array.isArray(sub.resource) ? sub.resource[0] : sub.resource
+          const member = Array.isArray(sub.member) ? sub.member[0] : sub.member
+          if (resource && member) {
+            activities.push({
+              id: `submission-${sub.id}`,
+              type: 'submission_received',
+              title: resource.title || (currentLocale === 'fr' ? 'Sans titre' : 'Untitled'),
+              description: currentLocale === 'fr'
+                ? `Réponse de ${member.full_name}`
+                : `Response from ${member.full_name}`,
+              timestamp: sub.submitted_at,
+              href: `/members/${member.id}`,
+            })
+          }
+        })
+      }
+
+      // Sort by timestamp and take top 3
+      activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      setRecentActivity(activities.slice(0, 3))
+    } catch (error) {
+      console.error('Error fetching activity:', error)
+    }
+  }, [supabase])
+
+  useEffect(() => {
     const getUser = async () => {
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
 
@@ -140,11 +329,12 @@ function DashboardContent() {
         toast.success(`Welcome to Bloomsline, ${authUser.user_metadata?.full_name || 'there'}!`)
       }
 
-      await fetchRecentData(authUser.id)
+      await fetchRecentActivity(authUser.id, locale)
     }
 
     getUser()
-  }, [router, searchParams, supabase, setLocale])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, searchParams, supabase, setLocale, locale])
 
   const getGreeting = () => {
     const hour = new Date().getHours()
@@ -180,56 +370,91 @@ function DashboardContent() {
     }
   }
 
+  const getActivityIcon = (type: ActivityItem['type']) => {
+    switch (type) {
+      case 'resource_created': return FileText
+      case 'resource_updated': return Edit3
+      case 'member_added': return UserPlus
+      case 'session_scheduled': return Calendar
+      case 'session_completed': return CheckCircle2
+      case 'resource_shared': return Share2
+      case 'submission_received': return Send
+      default: return FileText
+    }
+  }
+
+  const getActivityColor = (type: ActivityItem['type']) => {
+    switch (type) {
+      case 'resource_created': return 'bg-blue-50 text-blue-600'
+      case 'resource_updated': return 'bg-purple-50 text-purple-600'
+      case 'member_added': return 'bg-emerald-50 text-emerald-600'
+      case 'session_scheduled': return 'bg-amber-50 text-amber-600'
+      case 'session_completed': return 'bg-green-50 text-green-600'
+      case 'resource_shared': return 'bg-indigo-50 text-indigo-600'
+      case 'submission_received': return 'bg-pink-50 text-pink-600'
+      default: return 'bg-gray-50 text-gray-600'
+    }
+  }
+
+  const formatTimeAgo = (timestamp: string) => {
+    const now = new Date()
+    const date = new Date(timestamp)
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 1) return locale === 'fr' ? 'À l\'instant' : 'Just now'
+    if (diffMins < 60) return locale === 'fr' ? `Il y a ${diffMins} min` : `${diffMins}m ago`
+    if (diffHours < 24) return locale === 'fr' ? `Il y a ${diffHours}h` : `${diffHours}h ago`
+    if (diffDays < 7) return locale === 'fr' ? `Il y a ${diffDays}j` : `${diffDays}d ago`
+    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })
+  }
+
   const quickActions = [
     {
-      id: 'worksheet',
-      title: locale === 'fr' ? 'Exercice' : 'Worksheet',
-      icon: FileText,
-      color: 'from-blue-400 to-blue-500',
-      bgColor: 'bg-blue-50',
-      href: '/resources/create?type=worksheet',
-    },
-    {
-      id: 'table',
-      title: locale === 'fr' ? 'Tableau' : 'Table',
-      icon: Table2,
-      color: 'from-emerald-400 to-emerald-500',
-      bgColor: 'bg-emerald-50',
-      href: '/resources/create?type=table',
-    },
-    {
       id: 'education',
+      type: 'psychoeducation' as ResourceType,
       title: locale === 'fr' ? 'Psychoéducation' : 'Psychoeducation',
       icon: BookOpen,
       color: 'from-purple-400 to-purple-500',
       bgColor: 'bg-purple-50',
-      href: '/resources/create?type=psychoeducation',
     },
     {
-      id: 'members',
-      title: locale === 'fr' ? 'Patients' : 'Members',
-      icon: Users,
-      color: 'from-pink-400 to-pink-500',
-      bgColor: 'bg-pink-50',
-      href: '/members',
+      id: 'worksheet',
+      type: 'worksheet' as ResourceType,
+      title: locale === 'fr' ? 'Exercice' : 'Worksheet',
+      icon: FileText,
+      color: 'from-blue-400 to-blue-500',
+      bgColor: 'bg-blue-50',
     },
     {
-      id: 'bookings',
-      title: locale === 'fr' ? 'Séances' : 'Sessions',
-      icon: CalendarCheck,
+      id: 'table',
+      type: 'table' as ResourceType,
+      title: locale === 'fr' ? 'Tableau' : 'Table',
+      icon: Table2,
+      color: 'from-emerald-400 to-emerald-500',
+      bgColor: 'bg-emerald-50',
+    },
+    {
+      id: 'activity',
+      type: null,
+      title: locale === 'fr' ? 'Activité' : 'Activity',
+      icon: Sparkles,
       color: 'from-amber-400 to-amber-500',
       bgColor: 'bg-amber-50',
-      href: '/bookings',
-    },
-    {
-      id: 'analytics',
-      title: locale === 'fr' ? 'Statistiques' : 'Analytics',
-      icon: BarChart3,
-      color: 'from-teal-400 to-teal-500',
-      bgColor: 'bg-teal-50',
-      href: '/analytics',
+      comingSoon: true,
     },
   ]
+
+  const getTypeLabel = (type: ResourceType) => {
+    const labels: Record<ResourceType, { en: string; fr: string }> = {
+      psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
+      worksheet: { en: 'Worksheet', fr: 'Exercice' },
+      table: { en: 'Table', fr: 'Tableau' },
+    }
+    return labels[type][locale]
+  }
 
   if (loading) {
     return (
@@ -283,14 +508,15 @@ function DashboardContent() {
           >
             <div className="grid grid-cols-6 gap-4">
               {quickActions.map((action, index) => (
-                <Link key={action.id} href={action.href}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 + index * 0.05 }}
-                    whileHover={{ y: -2, scale: 1.02 }}
-                    className="flex flex-col items-center cursor-pointer group"
-                  >
+                <motion.div
+                  key={action.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + index * 0.05 }}
+                  whileHover={action.comingSoon ? {} : { y: -2, scale: 1.02 }}
+                  onClick={() => !action.comingSoon && action.type && setSelectedType(action.type)}
+                  className={`flex flex-col items-center group ${action.comingSoon ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+                >
                     <div className="w-full aspect-square bg-gray-100 rounded-2xl flex items-center justify-center mb-3 group-hover:bg-gray-200/80 transition-colors relative overflow-hidden p-4 isolate">
                       {/* Custom illustrations for each card */}
                       {action.id === 'worksheet' && (
@@ -373,118 +599,54 @@ function DashboardContent() {
                         </div>
                       )}
 
-                      {action.id === 'members' && (
-                        <div className="relative flex items-center justify-center w-full h-full">
-                          {/* Profile cards - stacked horizontally */}
-                          <div className="flex items-center -space-x-2">
-                            <motion.div
-                              className="w-9 h-11 bg-white rounded-lg shadow-md flex flex-col items-center justify-center z-10"
-                              animate={{ x: [0, 1, 0] }}
-                              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                            >
-                              <div className="w-4 h-4 bg-pink-200 rounded-full mb-1" />
-                              <div className="w-5 h-1 bg-pink-100 rounded" />
-                            </motion.div>
-                            <motion.div
-                              className="w-9 h-11 bg-white rounded-lg shadow-md flex flex-col items-center justify-center z-20"
-                              animate={{ x: [0, -1, 0] }}
-                              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-                            >
-                              <div className="w-4 h-4 bg-pink-300 rounded-full mb-1" />
-                              <div className="w-5 h-1 bg-pink-200 rounded" />
-                            </motion.div>
-                            <motion.div
-                              className="w-9 h-11 bg-white rounded-lg shadow-md flex flex-col items-center justify-center z-30 relative"
-                              animate={{ x: [0, 1, 0] }}
-                              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
-                            >
-                              <div className="w-4 h-4 bg-pink-400 rounded-full mb-1" />
-                              <div className="w-5 h-1 bg-pink-300 rounded" />
-                              {/* Plus badge - bottom right */}
-                              <motion.div
-                                className="absolute -right-1.5 -bottom-1.5 w-5 h-5 bg-gradient-to-br from-pink-400 to-pink-600 rounded-full flex items-center justify-center shadow-lg z-40"
-                                animate={{ scale: [1, 1.1, 1] }}
-                                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                              >
-                                <Plus className="w-2.5 h-2.5 text-white" />
-                              </motion.div>
-                            </motion.div>
-                          </div>
-                        </div>
-                      )}
-
-                      {action.id === 'bookings' && (
+                      {action.id === 'activity' && (
                         <div className="relative">
-                          {/* Calendar */}
+                          {/* Activity/breathing visualization */}
                           <motion.div
-                            className="w-16 h-16 bg-white rounded-lg shadow-md overflow-hidden"
-                            animate={{ y: [0, -2, 0] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                            className="relative w-16 h-16 flex items-center justify-center"
+                            animate={{ scale: [1, 1.05, 1] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                           >
-                            <div className="h-4 bg-amber-400 flex items-center justify-center">
-                              <div className="w-8 h-1 bg-white/50 rounded" />
-                            </div>
-                            <div className="p-1.5 grid grid-cols-4 gap-0.5">
-                              {[...Array(12)].map((_, i) => (
-                                <motion.div
-                                  key={i}
-                                  className={`w-2.5 h-2.5 rounded-sm ${i === 5 ? 'bg-amber-400' : 'bg-gray-100'}`}
-                                  animate={i === 5 ? { scale: [1, 1.2, 1] } : {}}
-                                  transition={{ duration: 1.5, repeat: Infinity }}
-                                />
-                              ))}
-                            </div>
-                          </motion.div>
-                          {/* Clock */}
-                          <motion.div
-                            className="absolute -right-2 -bottom-1 w-7 h-7 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg"
-                            animate={{ rotate: [0, 10, 0] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <CalendarCheck className="w-3.5 h-3.5 text-white" />
+                            {/* Outer ring */}
+                            <motion.div
+                              className="absolute w-16 h-16 rounded-full border-4 border-amber-200"
+                              animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.8, 0.5] }}
+                              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            />
+                            {/* Middle ring */}
+                            <motion.div
+                              className="absolute w-12 h-12 rounded-full bg-amber-100"
+                              animate={{ scale: [1, 1.1, 1] }}
+                              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+                            />
+                            {/* Inner circle */}
+                            <motion.div
+                              className="absolute w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-md"
+                              animate={{ y: [0, -2, 0] }}
+                              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                            >
+                              <Sparkles className="w-4 h-4 text-white" />
+                            </motion.div>
                           </motion.div>
                         </div>
                       )}
 
-                      {action.id === 'analytics' && (
-                        <div className="relative">
-                          {/* Chart */}
-                          <motion.div
-                            className="flex items-end gap-1.5 h-16"
-                            animate={{ y: [0, -2, 0] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            {[40, 65, 45, 80, 55].map((height, i) => (
-                              <motion.div
-                                key={i}
-                                className="w-3 bg-gradient-to-t from-teal-500 to-teal-300 rounded-t"
-                                style={{ height: `${height}%` }}
-                                animate={{ scaleY: [0.9, 1, 0.9] }}
-                                transition={{ duration: 2, repeat: Infinity, delay: i * 0.15 }}
-                              />
-                            ))}
-                          </motion.div>
-                          {/* Trend line */}
-                          <motion.div
-                            className="absolute -right-1 top-1 w-6 h-6 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center shadow-lg"
-                            animate={{ y: [0, -3, 0] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <TrendingUp className="w-3 h-3 text-white" />
-                          </motion.div>
+                      {/* Coming Soon badge */}
+                      {action.comingSoon && (
+                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-semibold rounded-full">
+                          {locale === 'fr' ? 'Bientôt' : 'Soon'}
                         </div>
                       )}
                     </div>
                     <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900 text-center">{action.title}</p>
                   </motion.div>
-                </Link>
               ))}
             </div>
           </motion.div>
 
           {/* Two Column Layout */}
           <div className="grid grid-cols-2 gap-8">
-            {/* Latest Resources */}
+            {/* Latest Activity */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -492,46 +654,53 @@ function DashboardContent() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {locale === 'fr' ? 'Dernières ressources' : 'Latest resources'}
+                  {locale === 'fr' ? 'Activité récente' : 'Latest activity'}
                 </h2>
-                <Link href="/resources" className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1">
-                  {locale === 'fr' ? 'Voir tout' : 'View all'}
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
               </div>
 
-              <div className="flex flex-col gap-4">
-                {recentResources.length === 0 ? (
+              <div className="flex flex-col gap-3">
+                {recentActivity.length === 0 ? (
                   <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-8 text-center">
-                    <FolderOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                    <Clock className="w-10 h-10 text-gray-300 mx-auto mb-3" />
                     <p className="text-sm text-gray-500">
-                      {locale === 'fr' ? 'Aucune ressource créée' : 'No resources yet'}
+                      {locale === 'fr' ? 'Aucune activité récente' : 'No recent activity'}
                     </p>
                   </div>
                 ) : (
-                  recentResources.map((resource, index) => (
-                    <motion.div
-                      key={resource.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.25 + index * 0.05 }}
-                    >
-                      <Link href={`/resources/${resource.id}`}>
-                        <div className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group">
-                          <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                            <FileText className="w-5 h-5 text-gray-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-teal-600">
-                              {resource.title}
-                            </p>
-                            <p className="text-xs text-gray-500 capitalize">{resource.type}</p>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
+                  recentActivity.map((activity, index) => {
+                    const ActivityIcon = getActivityIcon(activity.type)
+                    const colorClass = getActivityColor(activity.type)
+                    const content = (
+                      <div className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass.split(' ')[0]}`}>
+                          <ActivityIcon className={`w-5 h-5 ${colorClass.split(' ')[1]}`} />
                         </div>
-                      </Link>
-                    </motion.div>
-                  ))
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-gray-700">
+                            {activity.title}
+                          </p>
+                          <p className="text-xs text-gray-500">{activity.description}</p>
+                        </div>
+                        <span className="text-xs text-gray-400 whitespace-nowrap">
+                          {formatTimeAgo(activity.timestamp)}
+                        </span>
+                      </div>
+                    )
+                    return (
+                      <motion.div
+                        key={activity.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.25 + index * 0.05 }}
+                      >
+                        {activity.href ? (
+                          <Link href={activity.href}>{content}</Link>
+                        ) : (
+                          content
+                        )}
+                      </motion.div>
+                    )
+                  })
                 )}
               </div>
             </motion.div>
@@ -587,6 +756,101 @@ function DashboardContent() {
         onClose={() => setShowScheduleModal(false)}
         onSuccess={() => setShowScheduleModal(false)}
       />
+
+      {/* Template Selection Modal */}
+      <AnimatePresence>
+        {selectedType && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedType(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-5 border-b border-gray-100">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {locale === 'fr' ? 'Choisir un modèle' : 'Choose a template'}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {getTypeLabel(selectedType)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedType(null)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Templates List */}
+              <div className="p-4 space-y-2">
+                {templatesData[selectedType].map((template, index) => (
+                  <motion.button
+                    key={template.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => {
+                      router.push(`/resources/create/${selectedType}?template=${template.id}`)
+                      setSelectedType(null)
+                    }}
+                    className="w-full flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-left group"
+                  >
+                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                      <FileText className="w-5 h-5 text-gray-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 group-hover:text-gray-700">
+                        {template.name[locale]}
+                      </p>
+                      <p className="text-sm text-gray-500 truncate">
+                        {template.description[locale]}
+                      </p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
+                  </motion.button>
+                ))}
+
+                {/* Blank Option */}
+                <motion.button
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: templatesData[selectedType].length * 0.05 }}
+                  onClick={() => {
+                    router.push(`/resources/create/${selectedType}?template=blank`)
+                    setSelectedType(null)
+                  }}
+                  className="w-full flex items-center gap-3 p-4 border-2 border-dashed border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-xl transition-colors text-left group"
+                >
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <Plus className="w-5 h-5 text-gray-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">
+                      {locale === 'fr' ? 'Commencer vierge' : 'Start blank'}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {locale === 'fr' ? 'Créer à partir de zéro' : 'Create from scratch'}
+                    </p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

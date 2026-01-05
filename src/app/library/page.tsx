@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { getCollections, addResourceToCollection, createCollection, getSavedResources } from '@/lib/services/collections'
+import { getCollections, addResourceToCollection, createCollection, getSavedResources, removeResourceFromAllCollections } from '@/lib/services/collections'
 import { notifyResourceShared } from '@/lib/notifications'
 import type { Collection } from '@/types/collection'
 import { useLanguage } from '@/lib/i18n/context'
@@ -287,17 +287,25 @@ export default function LibraryPage() {
     }
   }
 
-  // Handle quick bookmark
+  // Handle quick bookmark (toggle add/remove)
   const handleBookmark = async (resourceId: string) => {
     if (isBookmarking) return
 
     setIsBookmarking(resourceId)
     try {
+      // If already bookmarked, remove it
       if (bookmarkedIds.has(resourceId)) {
-        toast.info(locale === 'fr' ? 'Déjà enregistré' : 'Already saved')
+        await removeResourceFromAllCollections(resourceId)
+        setBookmarkedIds(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(resourceId)
+          return newSet
+        })
+        toast.success(locale === 'fr' ? 'Retiré des favoris' : 'Removed from favorites')
         return
       }
 
+      // Otherwise, add it
       let targetCollectionId: string
 
       if (collections.length > 0) {
@@ -316,7 +324,7 @@ export default function LibraryPage() {
       try {
         await addResourceToCollection(targetCollectionId, resourceId)
         setBookmarkedIds(prev => new Set([...prev, resourceId]))
-        toast.success(locale === 'fr' ? 'Ressource enregistrée!' : 'Resource saved!')
+        toast.success(locale === 'fr' ? 'Ajouté aux favoris!' : 'Added to favorites!')
       } catch (addError: any) {
         if (addError?.code === '23505') {
           setBookmarkedIds(prev => new Set([...prev, resourceId]))
@@ -327,7 +335,7 @@ export default function LibraryPage() {
       }
     } catch (error) {
       console.error('Error bookmarking resource:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors de l\'enregistrement' : 'Error saving resource')
+      toast.error(locale === 'fr' ? 'Erreur' : 'Error')
     } finally {
       setIsBookmarking(null)
     }
@@ -581,7 +589,7 @@ export default function LibraryPage() {
                       onShareWithMember={handleShareWithMember}
                       onBookmark={handleBookmark}
                       isBookmarked={bookmarkedIds.has(resource.id)}
-                      showCuratedBadge
+                      showCuratedBadge={resource.is_curated === true}
                     />
                   ) : (
                     <ResourceCardList
@@ -592,7 +600,7 @@ export default function LibraryPage() {
                       index={index}
                       onBookmark={handleBookmark}
                       isBookmarked={bookmarkedIds.has(resource.id)}
-                      showCuratedBadge
+                      showCuratedBadge={resource.is_curated === true}
                     />
                   )
                 ))}

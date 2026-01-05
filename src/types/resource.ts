@@ -431,6 +431,7 @@ export interface Resource {
   published_to_library_at?: string
   times_assigned: number
   times_completed: number
+  is_curated?: boolean
   created_at: string
   updated_at: string
   // Extended creator info (populated when fetching)

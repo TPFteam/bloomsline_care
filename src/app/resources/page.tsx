@@ -572,7 +572,7 @@ export default function MyResourcesPage() {
                     <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
                   </div>
                 ) : createdResources.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                  <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5' : 'flex flex-col gap-3'}>
                     {createdResources.map((resource, index) => (
                       <ResourceCard
                         key={resource.id}
@@ -580,6 +580,7 @@ export default function MyResourcesPage() {
                         locale={locale}
                         variant="owned"
                         index={index}
+                        viewMode={viewMode}
                         onEdit={() => router.push(`/resources/create/${resource.type}?edit=${resource.id}`)}
                         onPreview={() => router.push(`/resources/${resource.id}`)}
                         onDelete={() => handleDelete(resource.id)}
@@ -618,7 +619,7 @@ export default function MyResourcesPage() {
                     <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
                   </div>
                 ) : savedResources.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                  <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5' : 'flex flex-col gap-3'}>
                     {savedResources.map((resource, index) => (
                       <ResourceCard
                         key={resource.id}
@@ -626,6 +627,7 @@ export default function MyResourcesPage() {
                         locale={locale}
                         variant="saved"
                         index={index}
+                        viewMode={viewMode}
                         onPreview={() => router.push(`/resources/${resource.id}`)}
                         onRemove={() => handleRemoveFromLibrary(resource.id)}
                         onShare={() => handleOpenShareModal(resource)}

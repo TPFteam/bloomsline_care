@@ -6,10 +6,8 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users,
-  Clock,
   Plus,
   Search,
-  Calendar,
   Mail,
   Edit,
   Trash2,
@@ -17,9 +15,12 @@ import {
   List,
   Loader2,
   CalendarCheck,
+  Calendar,
   Phone,
   X,
   Save,
+  FileText,
+  Share2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -28,7 +29,38 @@ import type { User } from '@/types/user'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { Member, MemberFilter, MemberHubStats, Session } from '@/types/member'
-import { getMemberFullName, getMemberInitials, formatDate } from '@/types/member'
+import { getMemberFullName, getMemberInitials } from '@/types/member'
+
+// Helper function for relative time
+function getRelativeTime(dateString: string, locale: 'en' | 'fr'): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  const diffWeeks = Math.floor(diffDays / 7)
+  const diffMonths = Math.floor(diffDays / 30)
+  const diffYears = Math.floor(diffDays / 365)
+
+  if (diffDays === 0) {
+    return locale === 'fr' ? "Aujourd'hui" : 'Today'
+  } else if (diffDays === 1) {
+    return locale === 'fr' ? 'Hier' : 'Yesterday'
+  } else if (diffDays < 7) {
+    return locale === 'fr' ? `Il y a ${diffDays} jours` : `${diffDays} days ago`
+  } else if (diffWeeks === 1) {
+    return locale === 'fr' ? 'Il y a 1 semaine' : '1 week ago'
+  } else if (diffWeeks < 4) {
+    return locale === 'fr' ? `Il y a ${diffWeeks} semaines` : `${diffWeeks} weeks ago`
+  } else if (diffMonths === 1) {
+    return locale === 'fr' ? 'Il y a 1 mois' : '1 month ago'
+  } else if (diffMonths < 12) {
+    return locale === 'fr' ? `Il y a ${diffMonths} mois` : `${diffMonths} months ago`
+  } else if (diffYears === 1) {
+    return locale === 'fr' ? 'Il y a 1 an' : '1 year ago'
+  } else {
+    return locale === 'fr' ? `Il y a ${diffYears} ans` : `${diffYears} years ago`
+  }
+}
 
 export default function MembersPage() {
   const { t, locale } = useLanguage()
@@ -37,6 +69,7 @@ export default function MembersPage() {
 
   const [members, setMembers] = useState<Member[]>([])
   const [nextSessions, setNextSessions] = useState<Record<string, Session | null>>({})
+  const [lastSharedResources, setLastSharedResources] = useState<Record<string, { title: string; type: string; sharedAt: string } | null>>({})
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<MemberFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -111,11 +144,12 @@ export default function MembersPage() {
       setMembers(data || [])
       calculateStats(data || [])
 
-      // Fetch next scheduled sessions for all members
+      // Fetch next scheduled sessions and last shared resources for all members
       if (data && data.length > 0) {
         const memberIds = data.map(m => m.id)
         const now = new Date().toISOString()
 
+        // Fetch next sessions
         const { data: sessions } = await supabase
           .from('sessions')
           .select('*')
@@ -124,7 +158,6 @@ export default function MembersPage() {
           .gte('scheduled_at', now)
           .order('scheduled_at', { ascending: true })
 
-        // Group by member_id and get the earliest session for each
         const sessionsMap: Record<string, Session | null> = {}
         memberIds.forEach(id => { sessionsMap[id] = null })
 
@@ -135,6 +168,31 @@ export default function MembersPage() {
         })
 
         setNextSessions(sessionsMap)
+
+        // Fetch last shared resource for each member
+        const { data: sharedResources } = await supabase
+          .from('member_shared_resources')
+          .select(`
+            member_id,
+            shared_at,
+            resource:resources(title, type)
+          `)
+          .in('member_id', memberIds)
+          .order('shared_at', { ascending: false })
+
+        const sharedMap: Record<string, { title: string; type: string; sharedAt: string } | null> = {}
+        memberIds.forEach(id => { sharedMap[id] = null })
+
+        sharedResources?.forEach((share: { member_id: string; shared_at: string; resource: { title: string; type: string }[] | { title: string; type: string } | null }) => {
+          if (!sharedMap[share.member_id] && share.resource) {
+            const resource = Array.isArray(share.resource) ? share.resource[0] : share.resource
+            if (resource) {
+              sharedMap[share.member_id] = { title: resource.title, type: resource.type, sharedAt: share.shared_at }
+            }
+          }
+        })
+
+        setLastSharedResources(sharedMap)
       }
     } catch (error) {
       console.error('Error fetching members:', error)
@@ -455,6 +513,7 @@ export default function MembersPage() {
                       t={t}
                       locale={locale}
                       nextSession={nextSessions[member.id] || null}
+                      lastSharedResource={lastSharedResources[member.id] || null}
                     />
                   ) : (
                     <MemberListItem
@@ -465,6 +524,7 @@ export default function MembersPage() {
                       t={t}
                       locale={locale}
                       nextSession={nextSessions[member.id] || null}
+                      lastSharedResource={lastSharedResources[member.id] || null}
                     />
                   )
                 ))}
@@ -616,6 +676,7 @@ function MemberCard({
   t,
   locale,
   nextSession,
+  lastSharedResource,
 }: {
   member: Member
   index: number
@@ -623,6 +684,7 @@ function MemberCard({
   t: ReturnType<typeof useLanguage>['t']
   locale: 'en' | 'fr'
   nextSession: Session | null
+  lastSharedResource: { title: string; type: string; sharedAt: string } | null
 }) {
   const router = useRouter()
 
@@ -649,85 +711,102 @@ function MemberCard({
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2, delay: index * 0.03 }}
       onClick={() => router.push(`/members/${member.id}`)}
-      className="group bg-white rounded-2xl p-5 cursor-pointer transition-all border border-gray-200 hover:border-gray-300 hover:shadow-md"
+      className="group bg-white rounded-2xl p-5 cursor-pointer transition-all border border-gray-200 hover:border-gray-300 hover:shadow-lg"
     >
-      {/* Header */}
-      <div className="flex items-start gap-4 mb-4">
-        {/* Avatar */}
+      {/* Header with Avatar & Name */}
+      <div className="flex items-center gap-3 mb-4">
         <div className="relative">
-          <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-sm">
+          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 font-semibold text-lg">
             {member.avatar_url ? (
-              <img src={member.avatar_url} alt="" className="w-full h-full rounded-xl object-cover" />
+              <img src={member.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
             ) : (
               getMemberInitials(member)
             )}
           </div>
-          <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full ${status.dot} border-2 border-white`} />
+          <div className={`absolute bottom-0 right-0 w-4 h-4 rounded-full ${status.dot} border-2 border-white`} />
         </div>
 
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 truncate group-hover:text-gray-700 transition-colors">
+          <h3 className="font-semibold text-gray-900 truncate text-base">
             {getMemberFullName(member)}
           </h3>
-          <div className="flex items-center gap-2 mt-1">
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${status.bg} ${status.text}`}>
+          <div className="flex items-center gap-1.5 mt-1">
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
               {t.members.status[member.status]}
             </span>
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${engagement.bg} ${engagement.text}`}>
-              {engagement.label}
-            </span>
+            <span className="text-base">{engagement.label}</span>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => router.push(`/members/${member.id}/edit`)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           >
             <Edit className="w-4 h-4" />
           </button>
           <button
             onClick={() => onDelete(member.id)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+            className="p-2 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Contact Info */}
-      <div className="space-y-2 mb-4">
-        {member.email && (
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Mail className="w-4 h-4" />
-            <span className="truncate">{member.email}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="pt-4 border-t border-gray-100 space-y-2">
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <Calendar className="w-3.5 h-3.5" />
-          <span>
-            {locale === 'fr' ? 'Dernière' : 'Last'}: {formatDate(member.last_session_at, locale)}
-          </span>
-        </div>
-        {nextSession ? (
-          <div className="flex items-center gap-2 text-xs text-emerald-600">
-            <Clock className="w-3.5 h-3.5" />
-            <span className="font-medium">
-              {locale === 'fr' ? 'Prochaine' : 'Next'}: {formatDate(nextSession.scheduled_at, locale)}
+      {/* Info Section */}
+      <div className="bg-gray-50 rounded-xl p-3 space-y-2.5">
+        {/* Last Shared Resource */}
+        {lastSharedResource ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span className="text-sm text-gray-600 truncate">{lastSharedResource.title}</span>
+            </div>
+            <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
+              {getRelativeTime(lastSharedResource.sharedAt, locale)}
             </span>
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <Clock className="w-3.5 h-3.5" />
-            <span>{locale === 'fr' ? 'Pas de séance planifiée' : 'No session scheduled'}</span>
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-gray-300 flex-shrink-0" />
+            <span className="text-sm text-gray-400">{locale === 'fr' ? 'Aucune ressource partagée' : 'No resource shared'}</span>
           </div>
         )}
+
+        {/* Next Session */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <span className="text-sm text-gray-600">{locale === 'fr' ? 'Prochaine séance' : 'Next session'}</span>
+          </div>
+          {nextSession ? (
+            <span className="text-sm text-gray-900 font-medium">
+              {new Date(nextSession.scheduled_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </span>
+          ) : (
+            <span className="text-xs text-gray-400">{locale === 'fr' ? 'Non planifiée' : 'Not scheduled'}</span>
+          )}
+        </div>
       </div>
+
+      {/* Share Resource Button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          router.push(`/resources?share=${member.id}`)
+        }}
+        className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors"
+      >
+        <Share2 className="w-4 h-4" />
+        {locale === 'fr' ? 'Partager une ressource' : 'Share resource'}
+      </button>
     </motion.div>
   )
 }
@@ -740,6 +819,7 @@ function MemberListItem({
   t,
   locale,
   nextSession,
+  lastSharedResource,
 }: {
   member: Member
   index: number
@@ -747,6 +827,7 @@ function MemberListItem({
   t: ReturnType<typeof useLanguage>['t']
   locale: 'en' | 'fr'
   nextSession: Session | null
+  lastSharedResource: { title: string; type: string; sharedAt: string } | null
 }) {
   const router = useRouter()
 
@@ -790,27 +871,46 @@ function MemberListItem({
             {t.members.status[member.status]}
           </span>
         </div>
-        <p className="text-sm text-gray-500 truncate">
-          {member.email || (locale === 'fr' ? 'Pas de contact' : 'No contact')}
-        </p>
-      </div>
-
-      {/* Session Info */}
-      <div className="hidden lg:flex items-center gap-4 text-sm text-gray-500 flex-shrink-0">
-        <div className="flex items-center gap-1.5">
-          <Calendar className="w-4 h-4" />
-          <span>{formatDate(member.last_session_at, locale)}</span>
         </div>
-        {nextSession && (
-          <div className="flex items-center gap-1.5 text-emerald-600">
-            <Clock className="w-4 h-4" />
-            <span>{formatDate(nextSession.scheduled_at, locale)}</span>
-          </div>
+
+      {/* Last Shared Resource */}
+      {lastSharedResource && (
+        <div className="hidden lg:flex items-center gap-1.5 text-sm text-gray-500 flex-shrink-0">
+          <FileText className="w-4 h-4 text-gray-400" />
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-900">
+            {lastSharedResource.title}
+          </span>
+          <span className="text-gray-500 text-xs">{getRelativeTime(lastSharedResource.sharedAt, locale)}</span>
+        </div>
+      )}
+
+      {/* Next Session */}
+      <div className="hidden lg:flex items-center gap-1.5 text-sm flex-shrink-0">
+        <Calendar className="w-4 h-4 text-emerald-500" />
+        {nextSession ? (
+          <span className="text-gray-900 font-medium">
+            {new Date(nextSession.scheduled_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </span>
+        ) : (
+          <span className="text-gray-400 text-xs">{locale === 'fr' ? 'Non planifiée' : 'Not scheduled'}</span>
         )}
       </div>
 
       {/* Actions */}
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        <button
+          onClick={() => router.push(`/resources?share=${member.id}`)}
+          className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+          title={locale === 'fr' ? 'Partager une ressource' : 'Share resource'}
+        >
+          <Share2 className="w-4 h-4" />
+        </button>
         <button
           onClick={() => router.push(`/members/${member.id}/edit`)}
           className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"

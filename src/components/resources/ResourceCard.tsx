@@ -17,7 +17,7 @@ import {
   Sparkles,
   Lock,
   Globe,
-  Bookmark,
+  Heart,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -97,6 +97,7 @@ interface ResourceCardProps {
   locale: 'en' | 'fr'
   variant?: 'owned' | 'library' | 'saved'
   index?: number
+  viewMode?: 'grid' | 'list'
   onPreview?: () => void
   onEdit?: () => void
   onDelete?: () => void
@@ -117,6 +118,7 @@ export function ResourceCard({
   locale,
   variant = 'owned',
   index = 0,
+  viewMode = 'grid',
   onPreview,
   onEdit,
   onDelete,
@@ -149,6 +151,135 @@ export function ResourceCard({
     e.stopPropagation()
   }
 
+  // List View
+  if (viewMode === 'list') {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15, delay: index * 0.02 }}
+        onClick={handleClick}
+        className={`
+          group bg-white rounded-xl p-4
+          cursor-pointer transition-all duration-200
+          border border-gray-200 hover:border-gray-300 hover:shadow-sm
+          flex items-center gap-4
+          ${isDeleting || isRemoving ? 'opacity-50 pointer-events-none' : ''}
+        `}
+      >
+        {/* Icon */}
+        <div className={`w-10 h-10 ${styles.iconBg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+          <TypeIcon className={`w-5 h-5 ${styles.iconColor}`} />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className={`text-xs font-semibold ${styles.labelColor}`}>
+              {typeLabels[resource.type]?.[locale]}
+            </span>
+            {resource.category && (
+              <>
+                <span className="text-gray-300">·</span>
+                <span className="text-xs text-gray-400">{resource.category}</span>
+              </>
+            )}
+          </div>
+          <h3 className="font-medium text-gray-900 truncate">
+            {resource.title}
+          </h3>
+        </div>
+
+        {/* Badges */}
+        <div className="flex items-center gap-2 flex-shrink-0" onClick={handleMenuClick}>
+          <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${
+            resource.language === 'fr'
+              ? 'bg-blue-50 text-blue-600'
+              : 'bg-orange-50 text-orange-600'
+          }`}>
+            {resource.language?.toUpperCase()}
+          </span>
+
+          <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded-lg">
+            {resource.visibility === 'public' ? (
+              <>
+                <Globe className="w-3 h-3" />
+                {locale === 'fr' ? 'Public' : 'Public'}
+              </>
+            ) : (
+              <>
+                <Lock className="w-3 h-3" />
+                {locale === 'fr' ? 'Privé' : 'Private'}
+              </>
+            )}
+          </span>
+
+          {variant === 'owned' && (
+            <span className={`text-xs font-medium px-2 py-1 rounded-lg ${
+              resource.status === 'published'
+                ? 'bg-emerald-50 text-emerald-600'
+                : resource.status === 'draft'
+                  ? 'bg-amber-50 text-amber-600'
+                  : 'bg-gray-100 text-gray-500'
+            }`}>
+              {statusLabel[locale]}
+            </span>
+          )}
+
+          <span className="text-xs text-gray-400">
+            {resource.blocks?.length || 0} {locale === 'fr' ? 'blocs' : 'blocks'}
+          </span>
+
+          {/* Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100">
+                <MoreHorizontal className="w-5 h-5 text-gray-400" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 rounded-xl">
+              <DropdownMenuItem onClick={handleClick}>
+                <Eye className="w-4 h-4 mr-2 text-gray-400" />
+                {locale === 'fr' ? 'Aperçu' : 'Preview'}
+              </DropdownMenuItem>
+              {variant === 'owned' && isOwner && onEdit && (
+                <DropdownMenuItem onClick={onEdit}>
+                  <Pencil className="w-4 h-4 mr-2 text-gray-400" />
+                  {locale === 'fr' ? 'Modifier' : 'Edit'}
+                </DropdownMenuItem>
+              )}
+              {(variant === 'owned' || variant === 'saved') && onShare && (
+                <DropdownMenuItem onClick={onShare} className="text-purple-600">
+                  <Users className="w-4 h-4 mr-2" />
+                  {locale === 'fr' ? 'Partager' : 'Share'}
+                </DropdownMenuItem>
+              )}
+              {(onDelete || onRemove) && (
+                <>
+                  <DropdownMenuSeparator />
+                  {isOwner && onDelete ? (
+                    <DropdownMenuItem onClick={onDelete} className="text-red-500">
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                    </DropdownMenuItem>
+                  ) : onRemove ? (
+                    <DropdownMenuItem onClick={onRemove} className="text-amber-500">
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      {locale === 'fr' ? 'Retirer' : 'Remove'}
+                    </DropdownMenuItem>
+                  ) : null}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Grid View (default)
   return (
     <motion.div
       layout
@@ -193,12 +324,12 @@ export function ResourceCard({
               }}
               className={`p-1.5 rounded-lg transition-all duration-200 ${
                 isBookmarked
-                  ? 'bg-amber-100 text-amber-600'
-                  : 'hover:bg-white text-gray-400 hover:text-amber-500 opacity-0 group-hover:opacity-100'
+                  ? 'bg-red-50 text-red-500'
+                  : 'hover:bg-red-50 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100'
               }`}
-              title={locale === 'fr' ? (isBookmarked ? 'Retirer des favoris' : 'Ajouter aux favoris') : (isBookmarked ? 'Remove bookmark' : 'Bookmark')}
+              title={locale === 'fr' ? (isBookmarked ? 'Retirer des favoris' : 'Ajouter aux favoris') : (isBookmarked ? 'Remove from favorites' : 'Add to favorites')}
             >
-              <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-amber-500' : ''}`} />
+              <Heart className={`w-5 h-5 ${isBookmarked ? 'fill-red-500' : ''}`} />
             </button>
           )}
 
@@ -318,7 +449,7 @@ export function ResourceCard({
         {showCuratedBadge && (
           <span className="flex items-center gap-1 text-xs font-medium bg-emerald-50 text-emerald-600 px-2 py-1 rounded-lg">
             <Sparkles className="w-3 h-3" />
-            {locale === 'fr' ? 'Vérifié' : 'Curated'}
+            {locale === 'fr' ? 'Recommandé' : 'Curated'}
           </span>
         )}
 
@@ -438,12 +569,12 @@ export function ResourceCardList({
             }}
             className={`p-1.5 rounded-lg transition-all duration-200 ${
               isBookmarked
-                ? 'bg-amber-100 text-amber-600'
-                : 'hover:bg-white text-gray-400 hover:text-amber-500 opacity-0 group-hover:opacity-100'
+                ? 'bg-red-50 text-red-500'
+                : 'hover:bg-red-50 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100'
             }`}
-            title={locale === 'fr' ? (isBookmarked ? 'Retirer des favoris' : 'Ajouter aux favoris') : (isBookmarked ? 'Remove bookmark' : 'Bookmark')}
+            title={locale === 'fr' ? (isBookmarked ? 'Retirer des favoris' : 'Ajouter aux favoris') : (isBookmarked ? 'Remove from favorites' : 'Add to favorites')}
           >
-            <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-amber-500' : ''}`} />
+            <Heart className={`w-4 h-4 ${isBookmarked ? 'fill-red-500' : ''}`} />
           </button>
         )}
 
