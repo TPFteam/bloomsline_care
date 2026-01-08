@@ -96,7 +96,7 @@
 
   "profile": {
     "title": "Profil du Client",
-    "overview": "Aperçu et Notes",
+    "overview": "Aperçu",
     "sessions": "Historique des Séances",
     "progress": "Progrès et Croissance",
     "files": "Fichiers",
@@ -109,8 +109,8 @@
   },
 
   "overview": {
-    "aboutClient": "À Propos de ce Client",
-    "preferences": "Préférences",
+    "aboutClient": "Contexte",
+    "preferences": "Points d'attention",
     "communicationStyle": "Style de Communication",
     "keyStrengths": "Points Forts",
     "areasOfSensitivity": "Zones de Sensibilité",

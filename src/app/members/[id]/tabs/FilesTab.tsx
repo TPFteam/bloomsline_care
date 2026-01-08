@@ -15,18 +15,25 @@ import {
   X,
   Info,
   Eye,
+  Shield,
+  Phone,
+  Mail,
+  Edit3,
+  Plus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
-import type { MemberFile, FileCategory } from '@/types/member'
+import type { MemberFile, FileCategory, Member, EmergencyContact } from '@/types/member'
 
 interface FilesTabProps {
   memberId: string
+  member: Member
+  onMemberUpdate: () => void
 }
 
-export default function FilesTab({ memberId }: FilesTabProps) {
+export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabProps) {
   const { t } = useLanguage()
   const supabase = createClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -41,6 +48,15 @@ export default function FilesTab({ memberId }: FilesTabProps) {
   const [fileTitle, setFileTitle] = useState('')
   const [fileDescription, setFileDescription] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<FileCategory>('general')
+
+  // Emergency contact edit states
+  const [editingEmergency, setEditingEmergency] = useState(false)
+  const [savingEmergency, setSavingEmergency] = useState(false)
+  const [emergencyName, setEmergencyName] = useState(member.emergency_contact.name || '')
+  const [emergencyRelationship, setEmergencyRelationship] = useState(member.emergency_contact.relationship || '')
+  const [emergencyPhone, setEmergencyPhone] = useState(member.emergency_contact.phone || '')
+  const [emergencyEmail, setEmergencyEmail] = useState(member.emergency_contact.email || '')
+  const [emergencyNotes, setEmergencyNotes] = useState(member.emergency_contact.notes || '')
 
   useEffect(() => {
     fetchFiles()
@@ -227,6 +243,41 @@ export default function FilesTab({ memberId }: FilesTabProps) {
     insurance: { bg: 'bg-amber-50', text: 'text-amber-700', gradient: 'from-amber-100 to-amber-50' },
     correspondence: { bg: 'bg-coral-50', text: 'text-coral-700', gradient: 'from-coral-100 to-coral-50' },
     other: { bg: 'bg-gray-100', text: 'text-gray-700', gradient: 'from-gray-100 to-gray-50' },
+  }
+
+  // Check if emergency contact has any data
+  const hasEmergencyData =
+    member.emergency_contact.name ||
+    member.emergency_contact.phone ||
+    member.emergency_contact.email
+
+  const handleSaveEmergency = async () => {
+    setSavingEmergency(true)
+    try {
+      const emergency_contact: EmergencyContact = {
+        name: emergencyName.trim() || null,
+        relationship: emergencyRelationship.trim() || null,
+        phone: emergencyPhone.trim() || null,
+        email: emergencyEmail.trim() || null,
+        notes: emergencyNotes.trim() || null,
+      }
+
+      const { error } = await supabase
+        .from('members')
+        .update({ emergency_contact })
+        .eq('id', member.id)
+
+      if (error) throw error
+
+      toast.success('Emergency contact updated')
+      setEditingEmergency(false)
+      onMemberUpdate()
+    } catch (error) {
+      console.error('Error updating emergency contact:', error)
+      toast.error('Failed to update')
+    } finally {
+      setSavingEmergency(false)
+    }
   }
 
   if (loading) {
@@ -510,6 +561,194 @@ export default function FilesTab({ memberId }: FilesTabProps) {
             })}
           </div>
         )}
+      </motion.div>
+
+      {/* Emergency Contact Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white rounded-2xl p-6 border border-gray-200"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-gray-900 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center">
+              <Shield className="w-4 h-4 text-teal-600" />
+            </div>
+            {t.members.overview.emergencyContact}
+          </h3>
+          {!editingEmergency && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditingEmergency(true)}
+              className="text-gray-500 hover:text-gray-700 rounded-lg"
+            >
+              <Edit3 className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+
+        <AnimatePresence mode="wait">
+          {editingEmergency ? (
+            <motion.div
+              key="editing"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-4"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t.members.form.emergencyName}
+                  </label>
+                  <input
+                    type="text"
+                    value={emergencyName}
+                    onChange={(e) => setEmergencyName(e.target.value)}
+                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t.members.form.emergencyRelationship}
+                  </label>
+                  <input
+                    type="text"
+                    value={emergencyRelationship}
+                    onChange={(e) => setEmergencyRelationship(e.target.value)}
+                    placeholder="e.g., Spouse, Parent"
+                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t.members.form.emergencyPhone}
+                  </label>
+                  <input
+                    type="tel"
+                    value={emergencyPhone}
+                    onChange={(e) => setEmergencyPhone(e.target.value)}
+                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t.members.form.emergencyEmail}
+                  </label>
+                  <input
+                    type="email"
+                    value={emergencyEmail}
+                    onChange={(e) => setEmergencyEmail(e.target.value)}
+                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {t.members.form.emergencyNotes}
+                </label>
+                <textarea
+                  value={emergencyNotes}
+                  onChange={(e) => setEmergencyNotes(e.target.value)}
+                  placeholder="Any additional notes..."
+                  rows={2}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all resize-none text-sm"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEmergencyName(member.emergency_contact.name || '')
+                    setEmergencyRelationship(member.emergency_contact.relationship || '')
+                    setEmergencyPhone(member.emergency_contact.phone || '')
+                    setEmergencyEmail(member.emergency_contact.email || '')
+                    setEmergencyNotes(member.emergency_contact.notes || '')
+                    setEditingEmergency(false)
+                  }}
+                  className="rounded-lg"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSaveEmergency}
+                  disabled={savingEmergency}
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+                >
+                  {savingEmergency ? 'Saving...' : 'Save'}
+                </Button>
+              </div>
+            </motion.div>
+          ) : hasEmergencyData ? (
+            <motion.div
+              key="content"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  {member.emergency_contact.name && (
+                    <p className="font-medium text-gray-900">{member.emergency_contact.name}</p>
+                  )}
+                  {member.emergency_contact.relationship && (
+                    <p className="text-sm text-gray-500">{member.emergency_contact.relationship}</p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  {member.emergency_contact.phone && (
+                    <a
+                      href={`tel:${member.emergency_contact.phone}`}
+                      className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                    >
+                      <Phone className="w-4 h-4" />
+                      {member.emergency_contact.phone}
+                    </a>
+                  )}
+                  {member.emergency_contact.email && (
+                    <a
+                      href={`mailto:${member.emergency_contact.email}`}
+                      className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                    >
+                      <Mail className="w-4 h-4" />
+                      {member.emergency_contact.email}
+                    </a>
+                  )}
+                </div>
+              </div>
+              {member.emergency_contact.notes && (
+                <p className="text-sm text-gray-500 mt-3 pt-3 border-t border-gray-100">
+                  {member.emergency_contact.notes}
+                </p>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-8"
+            >
+              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <Shield className="w-6 h-6 text-gray-400" />
+              </div>
+              <p className="text-sm text-gray-500 mb-3">No emergency contact added</p>
+              <Button
+                size="sm"
+                onClick={() => setEditingEmergency(true)}
+                className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Contact
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   )

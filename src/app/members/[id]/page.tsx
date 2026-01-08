@@ -8,7 +8,6 @@ import {
   User,
   Mail,
   Phone,
-  Calendar,
   FileText,
   TrendingUp,
   Clock,
@@ -18,6 +17,7 @@ import {
   ChevronRight,
   Edit,
   Loader2,
+  Copy,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -26,7 +26,7 @@ import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { Member, ProgressNote, Session as MemberSession } from '@/types/member'
 import type { User as UserType } from '@/types/user'
-import { getMemberFullName, getMemberInitials, formatRelativeTime } from '@/types/member'
+import { getMemberFullName, getMemberInitials } from '@/types/member'
 
 // Tab Components
 import OverviewTab from './tabs/OverviewTab'
@@ -50,7 +50,6 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
   const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [notes, setNotes] = useState<ProgressNote[]>([])
   const [sessions, setSessions] = useState<MemberSession[]>([])
-  const [totalSessions, setTotalSessions] = useState(0)
 
   useEffect(() => {
     fetchMember()
@@ -135,15 +134,14 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
       if (notesData) setNotes(notesData)
 
       // Fetch sessions
-      const { data: sessionsData, count } = await supabase
+      const { data: sessionsData } = await supabase
         .from('sessions')
-        .select('*', { count: 'exact' })
+        .select('*')
         .eq('member_id', resolvedParams.id)
         .eq('practitioner_id', user.id)
         .order('scheduled_at', { ascending: false })
 
       if (sessionsData) setSessions(sessionsData)
-      if (count !== null) setTotalSessions(count)
     } catch (error) {
       console.error('Error fetching related data:', error)
     }
@@ -242,59 +240,58 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                     </Link>
                   </div>
 
-                  <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap mb-4">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${status.bg} ${status.text}`}>
-                      <span className={`w-1.5 h-1.5 ${status.dot} rounded-full mr-1.5`} />
-                      {t.members.status[member.status]}
-                    </span>
-                    {member.date_of_birth && (
-                      <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(member.date_of_birth).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-
                   {/* Contact Info */}
-                  <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                  <div className="flex flex-wrap justify-center md:justify-start gap-2">
                     {member.email && (
-                      <a
-                        href={`mailto:${member.email}`}
-                        className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                      >
-                        <Mail className="w-4 h-4" />
-                        <span>{member.email}</span>
-                      </a>
+                      <div className="group h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center text-gray-600 hover:text-gray-900 transition-all duration-200 overflow-hidden">
+                        <a
+                          href={`mailto:${member.email}`}
+                          className="w-8 h-8 flex items-center justify-center flex-shrink-0"
+                        >
+                          <Mail className="w-4 h-4" />
+                        </a>
+                        <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap text-sm transition-all duration-200 flex items-center">
+                          <a href={`mailto:${member.email}`} className="hover:underline">
+                            {member.email}
+                          </a>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              navigator.clipboard.writeText(member.email!)
+                              toast.success('Email copied')
+                            }}
+                            className="ml-2 mr-2 p-1 rounded hover:bg-gray-300 transition-colors"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </span>
+                      </div>
                     )}
                     {member.phone && (
-                      <a
-                        href={`tel:${member.phone}`}
-                        className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                      >
-                        <Phone className="w-4 h-4" />
-                        <span>{member.phone}</span>
-                      </a>
+                      <div className="group h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center text-gray-600 hover:text-gray-900 transition-all duration-200 overflow-hidden">
+                        <a
+                          href={`tel:${member.phone}`}
+                          className="w-8 h-8 flex items-center justify-center flex-shrink-0"
+                        >
+                          <Phone className="w-4 h-4" />
+                        </a>
+                        <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap text-sm transition-all duration-200 flex items-center">
+                          <a href={`tel:${member.phone}`} className="hover:underline">
+                            {member.phone}
+                          </a>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              navigator.clipboard.writeText(member.phone!)
+                              toast.success('Phone copied')
+                            }}
+                            className="ml-2 mr-2 p-1 rounded hover:bg-gray-300 transition-colors"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </span>
+                      </div>
                     )}
-                  </div>
-                </div>
-
-                {/* Stats */}
-                <div className="flex md:flex-col gap-4 md:gap-2 justify-center md:justify-start md:border-l md:border-gray-100 md:pl-6">
-                  <div className="text-center md:text-right">
-                    <p className="text-xs text-gray-400 uppercase tracking-wider">{t.members.profile.memberSince}</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {new Date(member.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                    </p>
-                  </div>
-                  <div className="text-center md:text-right">
-                    <p className="text-xs text-gray-400 uppercase tracking-wider">{t.members.profile.lastSession}</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {formatRelativeTime(member.last_session_at)}
-                    </p>
-                  </div>
-                  <div className="text-center md:text-right">
-                    <p className="text-xs text-gray-400 uppercase tracking-wider">{t.members.profile.totalSessions}</p>
-                    <p className="text-sm font-medium text-gray-900">{totalSessions}</p>
                   </div>
                 </div>
               </div>
@@ -341,7 +338,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                 <OverviewTab
                   member={member}
                   notes={notes}
-                  onNotesUpdate={fetchRelatedData}
+                  sessions={sessions}
                   onMemberUpdate={fetchMember}
                 />
               )}
@@ -354,13 +351,13 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                 />
               )}
               {activeTab === 'progress' && (
-                <ProgressTab memberId={member.id} />
+                <ProgressTab memberId={member.id} notes={notes} onNotesUpdate={fetchRelatedData} />
               )}
               {activeTab === 'submissions' && (
                 <SubmissionsTab member={member} />
               )}
               {activeTab === 'files' && (
-                <FilesTab memberId={member.id} />
+                <FilesTab memberId={member.id} member={member} onMemberUpdate={fetchMember} />
               )}
               {activeTab === 'shared' && (
                 <SharedTab memberId={member.id} />

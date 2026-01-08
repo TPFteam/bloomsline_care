@@ -16,15 +16,20 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  MessageSquare,
+  Lock,
+  ChevronRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
-import type { Milestone, MilestoneCategory, MilestoneStatus } from '@/types/member'
+import type { Milestone, MilestoneCategory, MilestoneStatus, ProgressNote, NoteType } from '@/types/member'
 
 interface ProgressTabProps {
   memberId: string
+  notes: ProgressNote[]
+  onNotesUpdate: () => void
 }
 
 // Move categoryColors outside to prevent recreation on each render
@@ -188,7 +193,17 @@ const MilestoneCard = memo(function MilestoneCard({
   )
 })
 
-export default function ProgressTab({ memberId }: ProgressTabProps) {
+// Note type colors
+const noteTypeColors: Record<NoteType, { bg: string; text: string }> = {
+  general: { bg: 'bg-gray-100', text: 'text-gray-700' },
+  assessment: { bg: 'bg-blue-50', text: 'text-blue-700' },
+  treatment_plan: { bg: 'bg-purple-50', text: 'text-purple-700' },
+  milestone: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
+  concern: { bg: 'bg-red-50', text: 'text-red-700' },
+  observation: { bg: 'bg-amber-50', text: 'text-amber-700' },
+}
+
+export default function ProgressTab({ memberId, notes, onNotesUpdate }: ProgressTabProps) {
   const { t } = useLanguage()
   const supabase = createClient()
 
@@ -202,6 +217,14 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
   const [initialStatus, setInitialStatus] = useState<MilestoneStatus>('planned')
   const [shareWithMember, setShareWithMember] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  // Notes state
+  const [showAddNote, setShowAddNote] = useState(false)
+  const [noteTitle, setNoteTitle] = useState('')
+  const [noteContent, setNoteContent] = useState('')
+  const [noteType, setNoteType] = useState<NoteType>('general')
+  const [isPrivate, setIsPrivate] = useState(true)
+  const [savingNote, setSavingNote] = useState(false)
 
   useEffect(() => {
     fetchMilestones()
@@ -351,6 +374,44 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
       toast.error('Failed to update sharing')
     }
   }, [supabase])
+
+  const handleAddNote = async () => {
+    if (!noteContent.trim()) {
+      toast.error('Note content is required')
+      return
+    }
+
+    setSavingNote(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { error } = await supabase
+        .from('progress_notes')
+        .insert({
+          member_id: memberId,
+          practitioner_id: user.id,
+          title: noteTitle.trim() || null,
+          content: noteContent.trim(),
+          note_type: noteType,
+          is_private: isPrivate,
+        })
+
+      if (error) throw error
+
+      toast.success(t.members.success.noteAdded)
+      setShowAddNote(false)
+      setNoteTitle('')
+      setNoteContent('')
+      setNoteType('general')
+      onNotesUpdate()
+    } catch (error) {
+      console.error('Error adding note:', error)
+      toast.error(t.members.errors.noteFailed)
+    } finally {
+      setSavingNote(false)
+    }
+  }
 
   // Group milestones by status
   const plannedMilestones = milestones.filter(m => m.status === 'planned')
@@ -697,6 +758,157 @@ export default function ProgressTab({ memberId }: ProgressTabProps) {
           })}
         </div>
       )}
+
+      {/* Recent Notes Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-white rounded-2xl p-6 border border-gray-200"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-gray-900 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center">
+              <MessageSquare className="w-4 h-4 text-violet-600" />
+            </div>
+            {t.members.overview.recentNotes}
+          </h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAddNote(!showAddNote)}
+            className="text-gray-500 hover:text-gray-700 rounded-lg"
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* Add Note Form */}
+        <AnimatePresence>
+          {showAddNote && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-4 overflow-hidden"
+            >
+              <div className="bg-gray-50 rounded-xl p-4">
+                <input
+                  type="text"
+                  placeholder={t.members.notes.noteTitle}
+                  value={noteTitle}
+                  onChange={(e) => setNoteTitle(e.target.value)}
+                  className="w-full px-3 py-2 mb-3 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none text-sm bg-white"
+                />
+                <textarea
+                  placeholder={t.members.notes.noteContent}
+                  value={noteContent}
+                  onChange={(e) => setNoteContent(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 mb-3 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none text-sm resize-none bg-white"
+                />
+                <div className="flex items-center gap-3 mb-3">
+                  <select
+                    value={noteType}
+                    onChange={(e) => setNoteType(e.target.value as NoteType)}
+                    className="flex-1 px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none text-sm bg-white"
+                  >
+                    <option value="general">{t.members.noteTypes.general}</option>
+                    <option value="assessment">{t.members.noteTypes.assessment}</option>
+                    <option value="treatment_plan">{t.members.noteTypes.treatment_plan}</option>
+                    <option value="milestone">{t.members.noteTypes.milestone}</option>
+                    <option value="concern">{t.members.noteTypes.concern}</option>
+                    <option value="observation">{t.members.noteTypes.observation}</option>
+                  </select>
+                </div>
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isPrivate}
+                      onChange={(e) => setIsPrivate(e.target.checked)}
+                      className="rounded border-gray-300 text-gray-900 focus:ring-gray-500"
+                    />
+                    <Lock className="w-3 h-3" />
+                    {t.members.notes.private}
+                  </label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAddNote(false)}
+                      className="rounded-lg"
+                    >
+                      {t.members.form.cancel}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={savingNote}
+                      onClick={handleAddNote}
+                      className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+                    >
+                      {savingNote ? t.members.form.saving : t.members.notes.save}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Notes List */}
+        {notes.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <MessageSquare className="w-6 h-6 text-gray-400" />
+            </div>
+            <p className="text-sm text-gray-500">{t.members.overview.noNotes}</p>
+            <p className="text-xs text-gray-400 mt-1">{t.members.overview.noNotesDescription}</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {notes.map((note, index) => {
+              const typeStyle = noteTypeColors[note.note_type]
+              return (
+                <motion.div
+                  key={note.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 * index }}
+                  className="p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${typeStyle.bg} ${typeStyle.text}`}>
+                        {t.members.noteTypes[note.note_type]}
+                      </span>
+                      {note.is_private && (
+                        <Lock className="w-3 h-3 text-gray-400" />
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-400">
+                      {new Date(note.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  {note.title && (
+                    <h4 className="font-medium text-gray-900 text-sm mb-1">{note.title}</h4>
+                  )}
+                  <p className="text-sm text-gray-600 line-clamp-2">{note.content}</p>
+                </motion.div>
+              )
+            })}
+
+            {notes.length >= 5 && (
+              <button className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1 rounded-lg hover:bg-gray-50 transition-colors">
+                {t.members.overview.allNotes}
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        )}
+      </motion.div>
     </div>
   )
 }

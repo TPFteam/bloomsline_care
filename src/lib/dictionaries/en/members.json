@@ -96,7 +96,7 @@
 
   "profile": {
     "title": "Member Profile",
-    "overview": "Overview & Notes",
+    "overview": "Overview",
     "sessions": "Session History",
     "progress": "Progress & Growth",
     "files": "Files",
@@ -109,8 +109,8 @@
   },
 
   "overview": {
-    "aboutClient": "About This Client",
-    "preferences": "Preferences",
+    "aboutClient": "Context",
+    "preferences": "Key Considerations",
     "communicationStyle": "Communication Style",
     "keyStrengths": "Key Strengths",
     "areasOfSensitivity": "Areas of Sensitivity",

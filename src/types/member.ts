@@ -27,7 +27,7 @@ export type MilestoneStatus = 'planned' | 'in_progress' | 'achieved'
 // ============================================
 
 export interface MemberPreferences {
-  communication_style: string | null
+  communication_style: string | string[] | null
   key_strengths: string[]
   areas_of_sensitivity: string[]
   therapeutic_context: string | null
