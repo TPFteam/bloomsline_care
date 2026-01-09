@@ -9,14 +9,14 @@ import { useLanguage } from '@/lib/i18n/context'
 export function Hero() {
   const { t, locale } = useLanguage()
   return (
-    <section className="relative flex items-center justify-center overflow-hidden min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50">
+    <section className="relative flex items-center justify-center overflow-hidden min-h-screen" style={{ background: 'linear-gradient(to bottom right, rgba(255, 181, 167, 0.25), white, rgba(131, 197, 190, 0.15))' }}>
       {/* Cinematic gradient background - More subtle */}
-      <div className="absolute inset-0 bg-gradient-to-br from-lavender-100/30 via-teal-50/20 to-teal-100/30"></div>
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom right, rgba(255, 181, 167, 0.15), rgba(131, 197, 190, 0.08), rgba(131, 197, 190, 0.15))' }}></div>
 
       {/* Large organic blobs - Softer, more elegant */}
-      <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-gradient-to-br from-lavender-200/40 to-lavender-300/40 rounded-full mix-blend-multiply filter blur-[160px] animate-blob"></div>
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-teal-200/30 to-teal-300/30 rounded-full mix-blend-multiply filter blur-[140px] animate-blob animation-delay-2000"></div>
-      <div className="absolute bottom-0 left-1/3 w-[900px] h-[900px] bg-gradient-to-br from-teal-200/30 to-teal-300/30 rounded-full mix-blend-multiply filter blur-[180px] animate-blob animation-delay-4000"></div>
+      <div className="absolute top-0 left-0 w-[800px] h-[800px] rounded-full mix-blend-multiply filter blur-[160px] animate-blob" style={{ background: 'linear-gradient(to bottom right, rgba(255, 181, 167, 0.4), rgba(255, 181, 167, 0.5))' }}></div>
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full mix-blend-multiply filter blur-[140px] animate-blob animation-delay-2000" style={{ background: 'linear-gradient(to bottom right, rgba(131, 197, 190, 0.35), rgba(131, 197, 190, 0.4))' }}></div>
+      <div className="absolute bottom-0 left-1/3 w-[900px] h-[900px] rounded-full mix-blend-multiply filter blur-[180px] animate-blob animation-delay-4000" style={{ background: 'linear-gradient(to bottom right, rgba(131, 197, 190, 0.35), rgba(131, 197, 190, 0.4))' }}></div>
 
       {/* Abstract organic shapes - Multiple layers like Luma */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 sm:w-[500px] sm:h-[500px]">
@@ -28,8 +28,8 @@ export function Hero() {
           className="absolute inset-0"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-white/10 rounded-full backdrop-blur-md"></div>
-          <div className="absolute inset-12 bg-gradient-to-tl from-lavender-100/50 to-transparent rounded-full"></div>
-          <div className="absolute inset-24 bg-gradient-to-br from-teal-100/40 to-transparent rounded-full"></div>
+          <div className="absolute inset-12 rounded-full" style={{ background: 'linear-gradient(to top left, rgba(255, 181, 167, 0.3), transparent)' }}></div>
+          <div className="absolute inset-24 rounded-full" style={{ background: 'linear-gradient(to bottom right, rgba(131, 197, 190, 0.25), transparent)' }}></div>
         </motion.div>
       </div>
 
@@ -44,10 +44,10 @@ export function Hero() {
             suppressHydrationWarning
           >
             <span className="block text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold text-gray-900 mb-2 tracking-tight" suppressHydrationWarning>
-              {t.hero.yourCare} <span className="italic text-lavender-600">{t.hero.matters}</span>
+              {t.hero.yourCare} <span className="italic" style={{ color: '#ffb5a7' }}>{t.hero.matters}</span>
             </span>
             <span className="block text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold text-gray-900 tracking-tight" suppressHydrationWarning>
-              {t.hero.weMakeIt} <span className="italic text-teal-600">{t.hero.easier}</span>
+              {t.hero.weMakeIt} <span className="italic" style={{ color: '#83c5be' }}>{t.hero.easier}</span>
             </span>
           </motion.h1>
 
@@ -73,7 +73,8 @@ export function Hero() {
             <Link href="/sign-up">
               <Button
                 size="lg"
-                className="group px-8 h-12 text-sm font-medium bg-white/80 text-gray-900 hover:bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 border border-white/60 backdrop-blur-sm"
+                className="group px-8 h-12 text-sm font-medium text-white hover:opacity-90 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 border-0"
+                style={{ backgroundColor: '#ffb5a7' }}
                 suppressHydrationWarning
               >
                 {t.buttons.tryNow}

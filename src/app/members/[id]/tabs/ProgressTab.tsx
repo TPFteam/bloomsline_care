@@ -3,22 +3,18 @@
 import { useState, useEffect, useCallback, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  TrendingUp,
   Plus,
   Target,
   CheckCircle,
   Clock,
-  Calendar,
   Sparkles,
-  ArrowRight,
   Play,
   X,
   Trash2,
-  Eye,
-  EyeOff,
   MessageSquare,
   Lock,
   ChevronRight,
+  ImagePlus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -61,51 +57,37 @@ const MilestoneCard = memo(function MilestoneCard({
   categoryLabel,
 }: MilestoneCardProps) {
   const catStyle = categoryColors[milestone.category]
-  const isOverdue = milestone.target_date && new Date(milestone.target_date) < new Date() && columnId !== 'achieved'
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    e.dataTransfer.setData('milestoneId', milestone.id)
+    e.dataTransfer.setData('sourceColumn', columnId)
+    e.dataTransfer.effectAllowed = 'move'
+  }
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="bg-white rounded-xl p-4  border border-gray-100 hover:shadow-md transition-all group"
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      className="cursor-grab active:cursor-grabbing"
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className={`w-2 h-2 rounded-full ${catStyle.dot}`} />
-            <span className={`text-xs font-medium ${catStyle.text}`}>
-              {categoryLabel}
-            </span>
-            {milestone.shared_with_member && (
-              <span className="flex items-center gap-1 text-xs text-blue-600 bg-lavender-50 px-1.5 py-0.5 rounded-full">
-                <Eye className="w-3 h-3" />
-                Shared
-              </span>
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white rounded-xl p-4 border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all group"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium text-gray-900 text-sm leading-snug">
+              {milestone.title}
+            </h4>
+            {milestone.description && (
+              <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                {milestone.description}
+              </p>
             )}
           </div>
-          <h4 className="font-medium text-gray-900 text-sm leading-snug">
-            {milestone.title}
-          </h4>
-          {milestone.description && (
-            <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-              {milestone.description}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => onToggleShare(milestone.id, milestone.shared_with_member)}
-            className={`p-1.5 rounded-lg transition-all ${
-              milestone.shared_with_member
-                ? 'text-blue-600 bg-lavender-50 hover:bg-lavender-100'
-                : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-600 hover:bg-gray-50'
-            }`}
-            title={milestone.shared_with_member ? 'Hide from member' : 'Share with member'}
-          >
-            {milestone.shared_with_member ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-          </button>
           <button
             onClick={() => onDelete(milestone.id)}
             className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
@@ -113,83 +95,21 @@ const MilestoneCard = memo(function MilestoneCard({
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
-      </div>
 
-      {/* Target Date */}
-      {milestone.target_date && (
-        <div className={`flex items-center gap-1.5 mt-3 text-xs ${isOverdue ? 'text-red-500' : 'text-gray-400'}`}>
-          <Calendar className="w-3 h-3" />
-          <span>{isOverdue ? 'Overdue: ' : ''}{new Date(milestone.target_date).toLocaleDateString()}</span>
+        {/* Independent Date */}
+        {columnId === 'independent' && milestone.achieved_at && (
+          <div className="flex items-center gap-1.5 mt-3 text-xs text-violet-600">
+            <Sparkles className="w-3 h-3" />
+            <span>Validated {new Date(milestone.achieved_at).toLocaleDateString()}</span>
+          </div>
+        )}
+
+        {/* Drag hint */}
+        <div className="mt-3 pt-2 border-t border-gray-50 text-center">
+          <span className="text-[10px] text-gray-400 uppercase tracking-wider">Drag to move</span>
         </div>
-      )}
-
-      {/* Achieved Date */}
-      {columnId === 'achieved' && milestone.achieved_at && (
-        <div className="flex items-center gap-1.5 mt-3 text-xs text-emerald-600">
-          <Sparkles className="w-3 h-3" />
-          <span>Achieved {new Date(milestone.achieved_at).toLocaleDateString()}</span>
-        </div>
-      )}
-
-      {/* Action Buttons */}
-      <div className="flex items-center gap-1 mt-3 pt-3 border-t border-gray-50">
-        {columnId === 'planned' && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onUpdateStatus(milestone.id, 'in_progress')}
-            className="h-7 text-xs text-amber-600 hover:bg-amber-50 rounded-lg flex-1"
-          >
-            <Play className="w-3 h-3 mr-1" />
-            Start
-          </Button>
-        )}
-        {columnId === 'planned' && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onUpdateStatus(milestone.id, 'achieved')}
-            className="h-7 text-xs text-emerald-600 hover:bg-emerald-50 rounded-lg flex-1"
-          >
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Done
-          </Button>
-        )}
-        {columnId === 'in_progress' && (
-          <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onUpdateStatus(milestone.id, 'planned')}
-              className="h-7 text-xs text-gray-500 hover:bg-gray-50 rounded-lg"
-            >
-              <ArrowRight className="w-3 h-3 mr-1 rotate-180" />
-              Back
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onUpdateStatus(milestone.id, 'achieved')}
-              className="h-7 text-xs text-emerald-600 hover:bg-emerald-50 rounded-lg flex-1"
-            >
-              <CheckCircle className="w-3 h-3 mr-1" />
-              Complete
-            </Button>
-          </>
-        )}
-        {columnId === 'achieved' && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onUpdateStatus(milestone.id, 'in_progress')}
-            className="h-7 text-xs text-gray-500 hover:bg-gray-50 rounded-lg flex-1"
-          >
-            <ArrowRight className="w-3 h-3 mr-1 rotate-180" />
-            Reopen
-          </Button>
-        )}
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   )
 })
 
@@ -204,7 +124,7 @@ const noteTypeColors: Record<NoteType, { bg: string; text: string }> = {
 }
 
 export default function ProgressTab({ memberId, notes, onNotesUpdate }: ProgressTabProps) {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const supabase = createClient()
 
   const [milestones, setMilestones] = useState<Milestone[]>([])
@@ -212,11 +132,9 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
   const [showAddMilestone, setShowAddMilestone] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [category, setCategory] = useState<MilestoneCategory>('general')
-  const [targetDate, setTargetDate] = useState('')
-  const [initialStatus, setInitialStatus] = useState<MilestoneStatus>('planned')
-  const [shareWithMember, setShareWithMember] = useState(false)
+  const [initialStatus, setInitialStatus] = useState<MilestoneStatus>('discovery')
   const [saving, setSaving] = useState(false)
+  const [dragOverColumn, setDragOverColumn] = useState<MilestoneStatus | null>(null)
 
   // Notes state
   const [showAddNote, setShowAddNote] = useState(false)
@@ -225,6 +143,9 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
   const [noteType, setNoteType] = useState<NoteType>('general')
   const [isPrivate, setIsPrivate] = useState(true)
   const [savingNote, setSavingNote] = useState(false)
+  const [noteImages, setNoteImages] = useState<File[]>([])
+  const [noteImagePreviews, setNoteImagePreviews] = useState<string[]>([])
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null)
 
   useEffect(() => {
     fetchMilestones()
@@ -245,11 +166,22 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
       if (error && error.code !== '42P01') throw error
 
       // Map old data format to new format (backwards compatibility)
-      const mappedData = (data || []).map(m => ({
-        ...m,
-        status: m.status || (m.achieved ? 'achieved' : 'planned') as MilestoneStatus,
-        shared_with_member: m.shared_with_member ?? false
-      }))
+      const mappedData = (data || []).map(m => {
+        // Map old status values to new ones
+        const rawStatus = m.status as string
+        let status: MilestoneStatus
+        if (rawStatus === 'planned') status = 'discovery'
+        else if (rawStatus === 'in_progress') status = 'building'
+        else if (rawStatus === 'achieved') status = 'independent'
+        else if (['discovery', 'building', 'thriving', 'independent'].includes(rawStatus)) status = rawStatus as MilestoneStatus
+        else status = m.achieved ? 'independent' : 'discovery'
+
+        return {
+          ...m,
+          status,
+          shared_with_member: m.shared_with_member ?? false
+        }
+      })
 
       setMilestones(mappedData)
     } catch (error) {
@@ -277,28 +209,25 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
           practitioner_id: user.id,
           title: title.trim(),
           description: description.trim() || null,
-          category,
-          target_date: targetDate || null,
+          category: 'general',
+          target_date: null,
           status: initialStatus,
-          achieved: initialStatus === 'achieved',
-          achieved_at: initialStatus === 'achieved' ? new Date().toISOString() : null,
-          shared_with_member: shareWithMember,
+          achieved: initialStatus === 'independent',
+          achieved_at: initialStatus === 'independent' ? new Date().toISOString() : null,
+          shared_with_member: false,
         })
 
       if (error) throw error
 
-      toast.success('Goal added')
+      toast.success('Hypothesis added')
       setShowAddMilestone(false)
       setTitle('')
       setDescription('')
-      setCategory('general')
-      setTargetDate('')
-      setInitialStatus('planned')
-      setShareWithMember(false)
+      setInitialStatus('discovery')
       fetchMilestones()
     } catch (error) {
       console.error('Error adding milestone:', error)
-      toast.error('Failed to add goal')
+      toast.error('Failed to add hypothesis')
     } finally {
       setSaving(false)
     }
@@ -309,10 +238,10 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
       const updateData: Record<string, unknown> = {
         status: newStatus,
         updated_at: new Date().toISOString(),
-        achieved: newStatus === 'achieved',
+        achieved: newStatus === 'independent',
       }
 
-      if (newStatus === 'achieved') {
+      if (newStatus === 'independent') {
         updateData.achieved_at = new Date().toISOString()
       }
 
@@ -323,21 +252,22 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
 
       if (error) throw error
 
-      const statusMessages = {
-        planned: 'Moved to Planned',
-        in_progress: 'Started working on goal',
-        achieved: 'Goal achieved! 🎉',
+      const statusMessages: Record<MilestoneStatus, string> = {
+        discovery: 'Moved to Discovery',
+        building: 'Moved to Building',
+        thriving: 'Moved to Thriving',
+        independent: 'Hypothesis validated! 🎉',
       }
       toast.success(statusMessages[newStatus])
       fetchMilestones()
     } catch (error) {
       console.error('Error updating milestone:', error)
-      toast.error('Failed to update goal')
+      toast.error('Failed to update hypothesis')
     }
   }, [supabase])
 
   const handleDelete = useCallback(async (milestoneId: string) => {
-    if (!confirm('Are you sure you want to delete this goal?')) return
+    if (!confirm('Are you sure you want to delete this hypothesis?')) return
 
     try {
       const { error } = await supabase
@@ -347,11 +277,11 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
 
       if (error) throw error
 
-      toast.success('Goal deleted')
+      toast.success('Hypothesis deleted')
       fetchMilestones()
     } catch (error) {
       console.error('Error deleting milestone:', error)
-      toast.error('Failed to delete goal')
+      toast.error('Failed to delete hypothesis')
     }
   }, [supabase])
 
@@ -367,13 +297,63 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
 
       if (error) throw error
 
-      toast.success(currentlyShared ? 'Goal hidden from member' : 'Goal shared with member')
+      toast.success(currentlyShared ? 'Hypothesis hidden from member' : 'Hypothesis shared with member')
       fetchMilestones()
     } catch (error) {
       console.error('Error toggling share:', error)
       toast.error('Failed to update sharing')
     }
   }, [supabase])
+
+  // Drag and drop handlers
+  const handleDragOver = useCallback((e: React.DragEvent, columnId: MilestoneStatus) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverColumn(columnId)
+  }, [])
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverColumn(null)
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent, targetColumn: MilestoneStatus) => {
+    e.preventDefault()
+    setDragOverColumn(null)
+
+    const milestoneId = e.dataTransfer.getData('milestoneId')
+    const sourceColumn = e.dataTransfer.getData('sourceColumn')
+
+    if (sourceColumn !== targetColumn && milestoneId) {
+      handleUpdateStatus(milestoneId, targetColumn)
+    }
+  }, [handleUpdateStatus])
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length > 0) {
+      setNoteImages(prev => [...prev, ...files])
+
+      files.forEach(file => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setNoteImagePreviews(prev => [...prev, reader.result as string])
+        }
+        reader.readAsDataURL(file)
+      })
+    }
+    // Reset input so same file can be selected again
+    e.target.value = ''
+  }
+
+  const removeImage = (index: number) => {
+    setNoteImages(prev => prev.filter((_, i) => i !== index))
+    setNoteImagePreviews(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const clearAllImages = () => {
+    setNoteImages([])
+    setNoteImagePreviews([])
+  }
 
   const handleAddNote = async () => {
     if (!noteContent.trim()) {
@@ -386,6 +366,27 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      const imageUrls: string[] = []
+
+      // Upload all images
+      for (const image of noteImages) {
+        const fileExt = image.name.split('.').pop()
+        const fileName = `${user.id}/${memberId}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('note-images')
+          .upload(fileName, image)
+
+        if (uploadError) {
+          console.error('Error uploading image:', uploadError)
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('note-images')
+            .getPublicUrl(fileName)
+          imageUrls.push(publicUrl)
+        }
+      }
+
       const { error } = await supabase
         .from('progress_notes')
         .insert({
@@ -395,6 +396,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
           content: noteContent.trim(),
           note_type: noteType,
           is_private: isPrivate,
+          image_urls: imageUrls.length > 0 ? imageUrls : null,
         })
 
       if (error) throw error
@@ -404,6 +406,8 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
       setNoteTitle('')
       setNoteContent('')
       setNoteType('general')
+      setNoteImages([])
+      setNoteImagePreviews([])
       onNotesUpdate()
     } catch (error) {
       console.error('Error adding note:', error)
@@ -413,38 +417,60 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
     }
   }
 
-  // Group milestones by status
-  const plannedMilestones = milestones.filter(m => m.status === 'planned')
-  const inProgressMilestones = milestones.filter(m => m.status === 'in_progress')
-  const achievedMilestones = milestones.filter(m => m.status === 'achieved')
+  // Group milestones by status (4 journey stages)
+  const discoveryMilestones = milestones.filter(m => m.status === 'discovery')
+  const buildingMilestones = milestones.filter(m => m.status === 'building')
+  const thrivingMilestones = milestones.filter(m => m.status === 'thriving')
+  const independentMilestones = milestones.filter(m => m.status === 'independent')
 
-  const columns: { id: MilestoneStatus; title: string; icon: typeof Clock; color: string; bgColor: string; borderColor: string; items: Milestone[] }[] = [
+  const columns: { id: MilestoneStatus; title: string; titleFr: string; description: string; descriptionFr: string; icon: typeof Clock; color: string; bgColor: string; borderColor: string; items: Milestone[] }[] = [
     {
-      id: 'planned',
-      title: t.members.progress.planned || 'Planned',
+      id: 'discovery',
+      title: 'Discovery',
+      titleFr: 'Découverte',
+      description: 'Understanding needs, building trust, and identifying areas for growth together.',
+      descriptionFr: 'Comprendre les besoins, établir la confiance et identifier les domaines de croissance.',
       icon: Target,
       color: 'text-blue-600',
       bgColor: 'from-blue-50 to-blue-100/50',
       borderColor: 'border-blue-200',
-      items: plannedMilestones,
+      items: discoveryMilestones,
     },
     {
-      id: 'in_progress',
-      title: t.members.progress.inProgress || 'In Progress',
+      id: 'building',
+      title: 'Building',
+      titleFr: 'Construction',
+      description: 'Actively working through challenges and developing new skills and coping strategies.',
+      descriptionFr: 'Travailler activement sur les défis et développer de nouvelles compétences.',
       icon: Play,
       color: 'text-amber-600',
       bgColor: 'from-amber-50 to-amber-100/50',
       borderColor: 'border-amber-200',
-      items: inProgressMilestones,
+      items: buildingMilestones,
     },
     {
-      id: 'achieved',
-      title: t.members.progress.achieved || 'Achieved',
+      id: 'thriving',
+      title: 'Thriving',
+      titleFr: 'Épanouissement',
+      description: 'Maintaining progress and consistently applying learned strategies in daily life.',
+      descriptionFr: 'Maintenir les progrès et appliquer les stratégies apprises au quotidien.',
       icon: CheckCircle,
       color: 'text-emerald-600',
       bgColor: 'from-emerald-50 to-emerald-100/50',
       borderColor: 'border-emerald-200',
-      items: achievedMilestones,
+      items: thrivingMilestones,
+    },
+    {
+      id: 'independent',
+      title: 'Independent',
+      titleFr: 'Autonome',
+      description: 'Confidently self-managing with minimal guidance, ready to continue the journey solo.',
+      descriptionFr: 'Gérer avec confiance de manière autonome, prêt à continuer seul.',
+      icon: Sparkles,
+      color: 'text-violet-600',
+      bgColor: 'from-violet-50 to-violet-100/50',
+      borderColor: 'border-violet-200',
+      items: independentMilestones,
     },
   ]
 
@@ -453,7 +479,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
       <div className="flex items-center justify-center py-16">
         <div className="bg-white rounded-2xl  border border-gray-200 p-8 text-center">
           <div className="w-12 h-12 border-4 border-lavender-500 border-t-transparent rounded-full animate-spin mx-auto mb-4 animate-pulse-glow"></div>
-          <p className="text-gray-500 font-medium">Loading goals...</p>
+          <p className="text-gray-500 font-medium">Loading hypotheses...</p>
         </div>
       </div>
     )
@@ -461,70 +487,6 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center ">
-            <TrendingUp className="w-5 h-5 text-blue-600" />
-          </div>
-          {t.members.progress.title}
-        </h2>
-        <Button
-          onClick={() => setShowAddMilestone(!showAddMilestone)}
-          className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Goal
-        </Button>
-      </div>
-
-      {/* Progress Summary */}
-      {milestones.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-4 gap-3"
-        >
-          {/* Total Goals Card */}
-          <div className="bg-white rounded-2xl p-4  border border-gray-200">
-            <p className="text-xs text-gray-500 mb-1">Total Goals</p>
-            <p className="text-2xl font-bold text-gray-900">{milestones.length}</p>
-          </div>
-
-          {/* Planned Card */}
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl p-4 border border-blue-200/50">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <p className="text-xs text-blue-600 font-medium">Planned</p>
-            </div>
-            <p className="text-2xl font-bold text-blue-700">{plannedMilestones.length}</p>
-          </div>
-
-          {/* In Progress Card */}
-          <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-2xl p-4 border border-amber-200/50">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full bg-amber-500" />
-              <p className="text-xs text-amber-600 font-medium">In Progress</p>
-            </div>
-            <p className="text-2xl font-bold text-amber-700">{inProgressMilestones.length}</p>
-          </div>
-
-          {/* Achieved Card */}
-          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl p-4 border border-emerald-200/50">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              <p className="text-xs text-emerald-600 font-medium">Achieved</p>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-bold text-emerald-700">{achievedMilestones.length}</p>
-              <p className="text-sm text-emerald-600">
-                ({Math.round((achievedMilestones.length / milestones.length) * 100)}%)
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
       {/* Add Milestone Form */}
       <AnimatePresence>
         {showAddMilestone && (
@@ -538,7 +500,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
               <div className="flex items-center justify-between mb-5">
                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                   <Target className="w-5 h-5 text-lavender-500" />
-                  Add New Goal
+                  Add New Hypothesis
                 </h3>
                 <button
                   onClick={() => setShowAddMilestone(false)}
@@ -551,14 +513,15 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Goal Title *
+                    Hypothesis Title *
                   </label>
                   <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g., Practice breathing exercises daily"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white "
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
+                    autoFocus
                   />
                 </div>
 
@@ -569,90 +532,26 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Additional details about this goal..."
+                    placeholder="Additional details about this hypothesis..."
                     rows={2}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none resize-none bg-white "
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Category
-                    </label>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value as MilestoneCategory)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white "
-                    >
-                      <option value="general">{t.members.milestoneCategories.general}</option>
-                      <option value="therapy_goal">{t.members.milestoneCategories.therapy_goal}</option>
-                      <option value="behavioral">{t.members.milestoneCategories.behavioral}</option>
-                      <option value="emotional">{t.members.milestoneCategories.emotional}</option>
-                      <option value="social">{t.members.milestoneCategories.social}</option>
-                      <option value="other">{t.members.milestoneCategories.other}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Initial Status
-                    </label>
-                    <select
-                      value={initialStatus}
-                      onChange={(e) => setInitialStatus(e.target.value as MilestoneStatus)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white "
-                    >
-                      <option value="planned">Planned</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="achieved">Achieved</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-lavender-500" />
-                      Target Date
-                    </label>
-                    <input
-                      type="date"
-                      value={targetDate}
-                      onChange={(e) => setTargetDate(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white "
-                    />
-                  </div>
-                </div>
-
-                {/* Share with member toggle */}
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <label className="flex items-center justify-between cursor-pointer group">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                        shareWithMember ? 'bg-lavender-100' : 'bg-gray-100 group-hover:bg-gray-200'
-                      }`}>
-                        {shareWithMember ? (
-                          <Eye className="w-5 h-5 text-blue-600" />
-                        ) : (
-                          <EyeOff className="w-5 h-5 text-gray-400" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Share with member</p>
-                        <p className="text-xs text-gray-500">Member can see this goal in their portal</p>
-                      </div>
-                    </div>
-                    <div
-                      className={`relative w-11 h-6 rounded-full transition-colors ${
-                        shareWithMember ? 'bg-lavender-500' : 'bg-gray-300'
-                      }`}
-                      onClick={() => setShareWithMember(!shareWithMember)}
-                    >
-                      <div
-                        className={`absolute top-0.5 w-5 h-5 bg-white rounded-full  transition-transform ${
-                          shareWithMember ? 'translate-x-5.5 left-0.5' : 'left-0.5'
-                        }`}
-                        style={{ transform: shareWithMember ? 'translateX(22px)' : 'translateX(0)' }}
-                      />
-                    </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Initial Status
                   </label>
+                  <select
+                    value={initialStatus}
+                    onChange={(e) => setInitialStatus(e.target.value as MilestoneStatus)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white "
+                  >
+                    <option value="discovery">{locale === 'fr' ? 'Découverte' : 'Discovery'}</option>
+                    <option value="building">{locale === 'fr' ? 'Construction' : 'Building'}</option>
+                    <option value="thriving">{locale === 'fr' ? 'Épanouissement' : 'Thriving'}</option>
+                    <option value="independent">{locale === 'fr' ? 'Autonome' : 'Independent'}</option>
+                  </select>
                 </div>
               </div>
 
@@ -665,13 +564,26 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                   disabled={saving}
                   className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50"
                 >
-                  {saving ? 'Adding...' : 'Add Goal'}
+                  {saving ? 'Adding...' : 'Add Hypothesis'}
                 </Button>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Add Hypothesis Button */}
+      {milestones.length > 0 && (
+        <div className="flex items-center justify-end">
+          <Button
+            onClick={() => setShowAddMilestone(!showAddMilestone)}
+            className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Hypothesis
+          </Button>
+        </div>
+      )}
 
       {/* Empty State */}
       {milestones.length === 0 && !showAddMilestone ? (
@@ -697,12 +609,12 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
             className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 px-6 transition-colors hover-lift"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add First Goal
+            Add First Hypothesis
           </Button>
         </motion.div>
       ) : milestones.length > 0 && (
         /* Kanban Board */
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {columns.map((column) => {
             const Icon = column.icon
             return (
@@ -714,21 +626,31 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
               >
                 {/* Column Header */}
                 <div className="p-4 border-b border-white/50">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <div className={`w-8 h-8 rounded-lg bg-white flex items-center justify-center `}>
                         <Icon className={`w-4 h-4 ${column.color}`} />
                       </div>
-                      <h3 className="font-semibold text-gray-900">{column.title}</h3>
+                      <h3 className="font-semibold text-gray-900">{locale === 'fr' ? column.titleFr : column.title}</h3>
                     </div>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold bg-white ${column.color}`}>
                       {column.items.length}
                     </span>
                   </div>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    {locale === 'fr' ? column.descriptionFr : column.description}
+                  </p>
                 </div>
 
-                {/* Column Content */}
-                <div className="flex-1 p-3 space-y-3 overflow-y-auto">
+                {/* Column Content - Drop Zone */}
+                <div
+                  className={`flex-1 p-3 space-y-3 overflow-y-auto transition-all ${
+                    dragOverColumn === column.id ? 'bg-white/30 ring-2 ring-inset ring-gray-300 ring-dashed' : ''
+                  }`}
+                  onDragOver={(e) => handleDragOver(e, column.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, column.id)}
+                >
                   <AnimatePresence>
                     {column.items.map((milestone) => (
                       <MilestoneCard
@@ -749,7 +671,9 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                       <div className={`w-12 h-12 rounded-xl bg-white/60 flex items-center justify-center mx-auto mb-3`}>
                         <Icon className={`w-6 h-6 ${column.color} opacity-50`} />
                       </div>
-                      <p className="text-sm text-gray-400">No goals here yet</p>
+                      <p className="text-sm text-gray-400">
+                        {dragOverColumn === column.id ? 'Drop here' : 'No hypotheses here yet'}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -757,6 +681,57 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
             )
           })}
         </div>
+      )}
+
+      {/* Progress Summary */}
+      {milestones.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-5 gap-3"
+        >
+          {/* Total Hypotheses Card */}
+          <div className="bg-white rounded-2xl p-4 border border-gray-200">
+            <p className="text-xs text-gray-500 mb-1">Total Hypotheses</p>
+            <p className="text-2xl font-bold text-gray-900">{milestones.length}</p>
+          </div>
+
+          {/* Discovery Card */}
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl p-4 border border-blue-200/50">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-blue-500" />
+              <p className="text-xs text-blue-600 font-medium">{locale === 'fr' ? 'Découverte' : 'Discovery'}</p>
+            </div>
+            <p className="text-2xl font-bold text-blue-700">{discoveryMilestones.length}</p>
+          </div>
+
+          {/* Building Card */}
+          <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-2xl p-4 border border-amber-200/50">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-amber-500" />
+              <p className="text-xs text-amber-600 font-medium">{locale === 'fr' ? 'Construction' : 'Building'}</p>
+            </div>
+            <p className="text-2xl font-bold text-amber-700">{buildingMilestones.length}</p>
+          </div>
+
+          {/* Thriving Card */}
+          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl p-4 border border-emerald-200/50">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <p className="text-xs text-emerald-600 font-medium">{locale === 'fr' ? 'Épanouissement' : 'Thriving'}</p>
+            </div>
+            <p className="text-2xl font-bold text-emerald-700">{thrivingMilestones.length}</p>
+          </div>
+
+          {/* Independent Card */}
+          <div className="bg-gradient-to-br from-violet-50 to-violet-100/50 rounded-2xl p-4 border border-violet-200/50">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-violet-500" />
+              <p className="text-xs text-violet-600 font-medium">{locale === 'fr' ? 'Autonome' : 'Independent'}</p>
+            </div>
+            <p className="text-2xl font-bold text-violet-700">{independentMilestones.length}</p>
+          </div>
+        </motion.div>
       )}
 
       {/* Recent Notes Section */}
@@ -807,6 +782,44 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                   rows={3}
                   className="w-full px-3 py-2 mb-3 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none text-sm resize-none bg-white"
                 />
+
+                {/* Image Upload */}
+                <div className="mb-3">
+                  {noteImagePreviews.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {noteImagePreviews.map((preview, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={preview}
+                            alt={`Preview ${index + 1}`}
+                            className="h-20 w-20 object-cover rounded-lg border border-gray-200"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <label className="inline-flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 hover:bg-gray-50 transition-colors">
+                    <ImagePlus className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-500">
+                      {noteImagePreviews.length > 0 ? 'Add more' : 'Add images'}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
                 <div className="flex items-center gap-3 mb-3">
                   <select
                     value={noteType}
@@ -821,17 +834,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                     <option value="observation">{t.members.noteTypes.observation}</option>
                   </select>
                 </div>
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isPrivate}
-                      onChange={(e) => setIsPrivate(e.target.checked)}
-                      className="rounded border-gray-300 text-gray-900 focus:ring-gray-500"
-                    />
-                    <Lock className="w-3 h-3" />
-                    {t.members.notes.private}
-                  </label>
+                <div className="flex items-center justify-end">
                   <div className="flex gap-2">
                     <Button
                       type="button"
@@ -896,6 +899,19 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                     <h4 className="font-medium text-gray-900 text-sm mb-1">{note.title}</h4>
                   )}
                   <p className="text-sm text-gray-600 line-clamp-2">{note.content}</p>
+                  {note.image_urls && note.image_urls.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {note.image_urls.map((url, imgIndex) => (
+                        <img
+                          key={imgIndex}
+                          src={url}
+                          alt={`Attachment ${imgIndex + 1}`}
+                          className="h-16 w-16 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setLightboxImage(url)}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </motion.div>
               )
             })}
@@ -909,6 +925,39 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
           </div>
         )}
       </motion.div>
+
+      {/* Image Lightbox */}
+      <AnimatePresence>
+        {lightboxImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            onClick={() => setLightboxImage(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-4xl max-h-[90vh] p-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setLightboxImage(null)}
+                className="absolute -top-2 -right-2 z-10 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-600" />
+              </button>
+              <img
+                src={lightboxImage}
+                alt="Full size"
+                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

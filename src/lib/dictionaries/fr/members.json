@@ -99,7 +99,7 @@
     "overview": "Aperçu",
     "sessions": "Historique des Séances",
     "progress": "Progrès et Croissance",
-    "files": "Fichiers",
+    "files": "Informations",
     "sharedResources": "Ressources Partagées",
     "submissions": "Soumissions",
     "memberSince": "Client depuis",
@@ -173,10 +173,10 @@
 
   "progress": {
     "title": "Progrès et Croissance",
-    "milestones": "Jalons",
-    "addMilestone": "Ajouter un Jalon",
-    "noMilestones": "Aucun objectif pour le moment",
-    "noMilestonesDescription": "Suivez les progrès de votre client en ajoutant des objectifs et jalons",
+    "milestones": "Hypothèses",
+    "addMilestone": "Ajouter une Hypothèse",
+    "noMilestones": "Aucune hypothèse pour le moment",
+    "noMilestonesDescription": "Suivez les progrès de votre client en ajoutant des hypothèses à explorer",
     "planned": "Planifié",
     "inProgress": "En Cours",
     "achieved": "Atteint",
@@ -191,7 +191,7 @@
 
   "milestoneCategories": {
     "general": "Général",
-    "therapy_goal": "Objectif Thérapeutique",
+    "therapy_goal": "Thérapeutique",
     "behavioral": "Comportemental",
     "emotional": "Émotionnel",
     "social": "Social",

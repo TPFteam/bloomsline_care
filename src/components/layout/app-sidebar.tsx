@@ -64,21 +64,7 @@ export function AppSidebar({ activeItem }: AppSidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
         {navItems.map(renderNavItem)}
-
-        <div className="pt-4 pb-2">
-          <p className="px-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-            {locale === 'fr' ? 'Ressources' : 'Resources'}
-          </p>
-        </div>
-
         {resourceItems.map(renderNavItem)}
-
-        <div className="pt-4 pb-2">
-          <p className="px-3 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-            {locale === 'fr' ? 'Gestion' : 'Management'}
-          </p>
-        </div>
-
         {managementItems.map(renderNavItem)}
       </nav>
     </aside>

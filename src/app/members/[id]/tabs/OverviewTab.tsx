@@ -83,7 +83,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
           .select('*')
           .eq('member_id', member.id)
           .eq('practitioner_id', user.id)
-          .eq('status', 'in_progress')
+          .in('status', ['discovery', 'building', 'thriving'])
           .order('created_at', { ascending: false })
           .limit(3)
 

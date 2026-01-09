@@ -20,7 +20,7 @@ export type FileCategory = 'general' | 'intake' | 'assessment' | 'consent' | 'in
 
 export type MilestoneCategory = 'general' | 'therapy_goal' | 'behavioral' | 'emotional' | 'social' | 'other'
 
-export type MilestoneStatus = 'planned' | 'in_progress' | 'achieved'
+export type MilestoneStatus = 'discovery' | 'building' | 'thriving' | 'independent'
 
 // ============================================
 // INTERFACES
@@ -154,6 +154,7 @@ export interface ProgressNote {
   title: string | null
   content: string
   note_type: NoteType
+  image_urls: string[] | null
 
   // Visibility
   is_private: boolean

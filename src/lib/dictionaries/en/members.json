@@ -99,7 +99,7 @@
     "overview": "Overview",
     "sessions": "Session History",
     "progress": "Progress & Growth",
-    "files": "Files",
+    "files": "Information",
     "sharedResources": "Shared Resources",
     "submissions": "Submissions",
     "memberSince": "Member since",
@@ -173,10 +173,10 @@
 
   "progress": {
     "title": "Progress & Growth",
-    "milestones": "Milestones",
-    "addMilestone": "Add Milestone",
-    "noMilestones": "No goals yet",
-    "noMilestonesDescription": "Track your client's progress by adding goals and milestones",
+    "milestones": "Hypotheses",
+    "addMilestone": "Add Hypothesis",
+    "noMilestones": "No hypotheses yet",
+    "noMilestonesDescription": "Track your client's progress by adding hypotheses to explore",
     "planned": "Planned",
     "inProgress": "In Progress",
     "achieved": "Achieved",
@@ -191,7 +191,7 @@
 
   "milestoneCategories": {
     "general": "General",
-    "therapy_goal": "Therapy Goal",
+    "therapy_goal": "Therapeutic",
     "behavioral": "Behavioral",
     "emotional": "Emotional",
     "social": "Social",
