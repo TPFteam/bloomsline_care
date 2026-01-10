@@ -24,7 +24,7 @@ export function AppSidebar({ activeItem }: AppSidebarProps) {
   ]
 
   const resourceItems = [
-    { id: 'library' as NavItem, href: '/library', icon: BookOpen, label: locale === 'fr' ? 'Bibliothèque' : 'Library' },
+    { id: 'library' as NavItem, href: '/library', icon: BookOpen, label: locale === 'fr' ? 'Resources' : 'Library' },
   ]
 
   const managementItems = [
