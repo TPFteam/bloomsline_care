@@ -857,56 +857,6 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
       </div>
 
       {/* Progress Summary */}
-      {milestones.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-5 gap-3"
-        >
-          {/* Total Journeys Card */}
-          <div className="bg-white rounded-2xl p-4 border border-gray-200">
-            <p className="text-xs text-gray-500 mb-1">Total Journeys</p>
-            <p className="text-2xl font-bold text-gray-900">{milestones.length}</p>
-          </div>
-
-          {/* Discovery Card */}
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl p-4 border border-blue-200/50">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <p className="text-xs text-blue-600 font-medium">{locale === 'fr' ? 'Découverte' : 'Discovery'}</p>
-            </div>
-            <p className="text-2xl font-bold text-blue-700">{discoveryMilestones.length}</p>
-          </div>
-
-          {/* Building Card */}
-          <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-2xl p-4 border border-amber-200/50">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full bg-amber-500" />
-              <p className="text-xs text-amber-600 font-medium">{locale === 'fr' ? 'Construction' : 'Building'}</p>
-            </div>
-            <p className="text-2xl font-bold text-amber-700">{buildingMilestones.length}</p>
-          </div>
-
-          {/* Thriving Card */}
-          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl p-4 border border-emerald-200/50">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              <p className="text-xs text-emerald-600 font-medium">{locale === 'fr' ? 'Épanouissement' : 'Thriving'}</p>
-            </div>
-            <p className="text-2xl font-bold text-emerald-700">{thrivingMilestones.length}</p>
-          </div>
-
-          {/* Independent Card */}
-          <div className="bg-gradient-to-br from-violet-50 to-violet-100/50 rounded-2xl p-4 border border-violet-200/50">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full bg-violet-500" />
-              <p className="text-xs text-violet-600 font-medium">{locale === 'fr' ? 'Autonome' : 'Independent'}</p>
-            </div>
-            <p className="text-2xl font-bold text-violet-700">{independentMilestones.length}</p>
-          </div>
-        </motion.div>
-      )}
-
       {/* Recent Notes Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
