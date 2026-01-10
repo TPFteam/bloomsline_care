@@ -848,7 +848,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-500 hover:bg-white/50 hover:text-gray-700 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>{locale === 'fr' ? 'Ajouter une carte' : 'Add a card'}</span>
+                    <span>{locale === 'fr' ? 'Ajouter un objectif' : 'Add a goal'}</span>
                   </button>
                 </div>
               </motion.div>
