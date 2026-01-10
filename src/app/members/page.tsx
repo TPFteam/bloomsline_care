@@ -694,14 +694,7 @@ function MemberCard({
     pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
   }
 
-  const engagementConfig = {
-    high: { bg: 'bg-emerald-50', text: 'text-emerald-700', label: '🔥' },
-    medium: { bg: 'bg-amber-50', text: 'text-amber-700', label: '⚡' },
-    low: { bg: 'bg-gray-100', text: 'text-gray-600', label: '💤' },
-  }
-
   const status = statusConfig[member.status]
-  const engagement = engagementConfig[member.engagement_level]
 
   return (
     <motion.div
@@ -734,7 +727,6 @@ function MemberCard({
             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
               {t.members.status[member.status]}
             </span>
-            <span className="text-base">{engagement.label}</span>
           </div>
         </div>
 
