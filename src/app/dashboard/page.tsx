@@ -64,33 +64,28 @@ interface Template {
 const templatesData: Record<ResourceType, Template[]> = {
   psychoeducation: [
     {
-      id: 'condition-overview',
-      name: { en: 'Condition Overview', fr: 'Aperçu d\'une condition' },
-      description: { en: 'Explain a mental health topic', fr: 'Expliquer un sujet de santé mentale' },
+      id: 'self-esteem',
+      name: { en: 'Understanding Self-Esteem', fr: 'Comprendre l\'estime de soi' },
+      description: { en: 'Guide to building healthy self-esteem', fr: 'Guide pour une estime de soi saine' },
     },
     {
-      id: 'coping-strategy',
-      name: { en: 'Coping Strategy Guide', fr: 'Guide de stratégie' },
-      description: { en: 'Teach a coping technique', fr: 'Enseigner une technique d\'adaptation' },
+      id: 'cbt-introduction',
+      name: { en: 'CBT Introduction', fr: 'Introduction à la TCC' },
+      description: { en: 'Simple introduction to CBT', fr: 'Introduction simple à la TCC' },
     },
   ],
   worksheet: [
     {
-      id: 'thought-record',
-      name: { en: 'Thought Record', fr: 'Journal de pensées' },
-      description: { en: 'Classic CBT thought record', fr: 'Journal de pensées TCC classique' },
-    },
-    {
       id: 'gratitude',
-      name: { en: 'Daily Gratitude', fr: 'Gratitude quotidienne' },
-      description: { en: 'Daily gratitude reflection', fr: 'Réflexion quotidienne de gratitude' },
+      name: { en: 'Gratitude Journal', fr: 'Journal de gratitude' },
+      description: { en: 'Daily gratitude reflection practice', fr: 'Pratique quotidienne de réflexion de gratitude' },
     },
   ],
   table: [
     {
-      id: 'thought-log',
-      name: { en: 'Thought Log', fr: 'Suivi des pensées' },
-      description: { en: 'Track thoughts over time', fr: 'Suivre les pensées' },
+      id: 'cognitive-restructuring',
+      name: { en: 'Cognitive Restructuring Chart', fr: 'Tableau de restructuration cognitive' },
+      description: { en: 'Challenge negative thoughts', fr: 'Remettre en question les pensées négatives' },
     },
     {
       id: 'emotion-tracker',
@@ -429,7 +424,7 @@ function DashboardContent() {
 
   const getTemplateTypeLabel = (type: TemplateOption['type']) => {
     switch (type) {
-      case 'worksheet': return locale === 'fr' ? 'Exercice' : 'Worksheet'
+      case 'worksheet': return locale === 'fr' ? 'Fiche' : 'Worksheet'
       case 'table': return locale === 'fr' ? 'Tableau' : 'Table'
       case 'psychoeducation': return locale === 'fr' ? 'Psychoéducation' : 'Psychoeducation'
       default: return ''
@@ -514,7 +509,7 @@ function DashboardContent() {
     {
       id: 'add-patient',
       type: null,
-      title: locale === 'fr' ? 'Patient' : 'Patient',
+      title: locale === 'fr' ? 'Nouveau suivi' : 'New Follow-up',
       icon: HeartHandshake,
       color: 'from-rose-400 to-rose-500',
       bgColor: 'bg-rose-50',
@@ -525,7 +520,7 @@ function DashboardContent() {
   const getTypeLabel = (type: ResourceType) => {
     const labels: Record<ResourceType, { en: string; fr: string }> = {
       psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
-      worksheet: { en: 'Worksheet', fr: 'Exercice' },
+      worksheet: { en: 'Worksheet', fr: 'Fiche' },
       table: { en: 'Table', fr: 'Tableau' },
     }
     return labels[type][locale]
@@ -685,60 +680,73 @@ function DashboardContent() {
 
                       {action.id === 'activity' && (
                         <div className="relative">
-                          {/* Activity/breathing visualization */}
+                          {/* Activity checklist card */}
                           <motion.div
-                            className="relative w-16 h-16 flex items-center justify-center"
-                            animate={{ scale: [1, 1.05, 1] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            className="w-16 h-20 bg-white rounded-lg shadow-md flex flex-col p-2 gap-1.5"
+                            animate={{ y: [0, -2, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                           >
-                            {/* Outer ring */}
-                            <motion.div
-                              className="absolute w-16 h-16 rounded-full border-4 border-amber-200"
-                              animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.8, 0.5] }}
-                              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                            />
-                            {/* Middle ring */}
-                            <motion.div
-                              className="absolute w-12 h-12 rounded-full bg-amber-100"
-                              animate={{ scale: [1, 1.1, 1] }}
-                              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
-                            />
-                            {/* Inner circle */}
-                            <motion.div
-                              className="absolute w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-md"
-                              animate={{ y: [0, -2, 0] }}
-                              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                            >
-                              <Puzzle className="w-4 h-4 text-white" />
-                            </motion.div>
+                            <div className="flex items-center gap-1.5">
+                              <motion.div
+                                className="w-3 h-3 rounded bg-amber-400"
+                                animate={{ scale: [1, 1.2, 1] }}
+                                transition={{ duration: 2, repeat: Infinity, delay: 0 }}
+                              />
+                              <div className="flex-1 h-1.5 bg-amber-200 rounded-full" />
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <motion.div
+                                className="w-3 h-3 rounded bg-amber-300"
+                                animate={{ scale: [1, 1.2, 1] }}
+                                transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
+                              />
+                              <div className="flex-1 h-1.5 bg-amber-100 rounded-full" />
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <motion.div
+                                className="w-3 h-3 rounded bg-amber-200"
+                                animate={{ scale: [1, 1.2, 1] }}
+                                transition={{ duration: 2, repeat: Infinity, delay: 0.6 }}
+                              />
+                              <div className="flex-1 h-1.5 bg-amber-100 rounded-full" />
+                            </div>
+                          </motion.div>
+                          {/* Floating badge */}
+                          <motion.div
+                            className="absolute -right-2 -top-2 w-7 h-7 bg-gradient-to-br from-amber-400 to-amber-500 rounded-full flex items-center justify-center shadow-lg"
+                            animate={{ scale: [1, 1.1, 1], rotate: [0, 5, 0] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <Puzzle className="w-3.5 h-3.5 text-white" />
                           </motion.div>
                         </div>
                       )}
 
                       {action.id === 'add-patient' && (
                         <div className="relative">
-                          {/* Person with plus */}
+                          {/* Patient profile card */}
                           <motion.div
-                            className="relative w-16 h-16 flex items-center justify-center"
-                            animate={{ scale: [1, 1.05, 1] }}
+                            className="w-16 h-20 bg-white rounded-lg shadow-md flex flex-col items-center pt-3 gap-1"
+                            animate={{ y: [0, -2, 0] }}
                             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                           >
-                            {/* Person silhouette */}
+                            {/* Avatar placeholder */}
                             <motion.div
-                              className="w-12 h-12 bg-gradient-to-br from-rose-400 to-rose-500 rounded-full flex items-center justify-center shadow-md"
-                              animate={{ y: [0, -2, 0] }}
-                              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                            >
-                              <HeartHandshake className="w-6 h-6 text-white" />
-                            </motion.div>
-                            {/* Plus badge */}
-                            <motion.div
-                              className="absolute -right-1 -bottom-1 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-md border-2 border-rose-100"
-                              animate={{ scale: [1, 1.15, 1] }}
-                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-                            >
-                              <Plus className="w-3.5 h-3.5 text-rose-500" />
-                            </motion.div>
+                              className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-300 to-rose-400"
+                              animate={{ scale: [1, 1.05, 1] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                            />
+                            {/* Name lines */}
+                            <div className="w-10 h-1.5 bg-rose-200 rounded-full mt-1" />
+                            <div className="w-6 h-1 bg-rose-100 rounded-full" />
+                          </motion.div>
+                          {/* Plus badge */}
+                          <motion.div
+                            className="absolute -right-2 -bottom-2 w-7 h-7 bg-gradient-to-br from-rose-400 to-rose-500 rounded-full flex items-center justify-center shadow-lg"
+                            animate={{ scale: [1, 1.1, 1] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                          >
+                            <Plus className="w-3.5 h-3.5 text-white" />
                           </motion.div>
                         </div>
                       )}
@@ -950,10 +958,13 @@ function DashboardContent() {
                   </div>
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">
-                      {locale === 'fr' ? 'Commencer vierge' : 'Start blank'}
+                      {locale === 'fr'
+                        ? (selectedType === 'worksheet' ? 'Nouvel exercice' : selectedType === 'table' ? 'Nouveau tableau' : 'Nouvelle fiche')
+                        : (selectedType === 'worksheet' ? 'New Worksheet' : selectedType === 'table' ? 'New Table' : 'New Psychoeducation')
+                      }
                     </p>
                     <p className="text-sm text-gray-500">
-                      {locale === 'fr' ? 'Créer à partir de zéro' : 'Create from scratch'}
+                      {locale === 'fr' ? 'Créez sans modèle' : 'Start from scratch'}
                     </p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />

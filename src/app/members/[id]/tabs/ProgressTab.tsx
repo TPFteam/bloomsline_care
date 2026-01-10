@@ -15,6 +15,8 @@ import {
   Lock,
   ChevronRight,
   ImagePlus,
+  Calendar,
+  Pencil,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -26,6 +28,7 @@ interface ProgressTabProps {
   memberId: string
   notes: ProgressNote[]
   onNotesUpdate: () => void
+  highlightMilestoneId?: string
 }
 
 // Move categoryColors outside to prevent recreation on each render
@@ -38,35 +41,53 @@ const categoryColors: Record<MilestoneCategory, { bg: string; text: string; dot:
   other: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400' },
 }
 
+// Session-linked note interface
+interface SessionLinkedNote {
+  id: string
+  content: string
+  created_at: string
+  session_id: string | null
+  session_date?: string
+  session_type?: string
+}
+
 // Memoized MilestoneCard component to prevent re-renders
 interface MilestoneCardProps {
   milestone: Milestone
   columnId: MilestoneStatus
   comments: MilestoneComment[]
+  sessionNotes: SessionLinkedNote[]
   onToggleShare: (id: string, shared: boolean) => void
   onDelete: (id: string) => void
   onUpdateStatus: (id: string, status: MilestoneStatus) => void
   onAddComment: (milestoneId: string, content: string) => Promise<void>
+  onUpdateComment: (commentId: string, content: string) => Promise<void>
   onDeleteComment: (commentId: string) => Promise<void>
   categoryLabel: string
   locale: string
+  isHighlighted?: boolean
 }
 
 const MilestoneCard = memo(function MilestoneCard({
   milestone,
   columnId,
   comments,
+  sessionNotes,
   onToggleShare,
   onDelete,
   onUpdateStatus,
   onAddComment,
+  onUpdateComment,
   onDeleteComment,
   categoryLabel,
   locale,
+  isHighlighted,
 }: MilestoneCardProps) {
   const [showComments, setShowComments] = useState(false)
   const [newComment, setNewComment] = useState('')
   const [savingComment, setSavingComment] = useState(false)
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
+  const [editCommentContent, setEditCommentContent] = useState('')
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.dataTransfer.setData('milestoneId', milestone.id)
@@ -82,6 +103,15 @@ const MilestoneCard = memo(function MilestoneCard({
     setSavingComment(false)
   }
 
+  const handleSaveEdit = async () => {
+    if (!editCommentContent.trim() || !editingCommentId) return
+    setSavingComment(true)
+    await onUpdateComment(editingCommentId, editCommentContent.trim())
+    setEditingCommentId(null)
+    setEditCommentContent('')
+    setSavingComment(false)
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -91,6 +121,7 @@ const MilestoneCard = memo(function MilestoneCard({
 
   return (
     <div
+      id={`milestone-${milestone.id}`}
       draggable
       onDragStart={handleDragStart}
       className="cursor-grab active:cursor-grabbing"
@@ -98,9 +129,20 @@ const MilestoneCard = memo(function MilestoneCard({
       <motion.div
         layout
         initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+        animate={{
+          opacity: 1,
+          y: 0,
+          boxShadow: isHighlighted
+            ? ['0 0 0 0 rgba(139, 92, 246, 0)', '0 0 20px 8px rgba(139, 92, 246, 0.4)', '0 0 0 0 rgba(139, 92, 246, 0)']
+            : '0 0 0 0 rgba(0, 0, 0, 0)'
+        }}
+        transition={{
+          boxShadow: isHighlighted ? { duration: 1.5, repeat: 2 } : {}
+        }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-xl p-4 border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all group"
+        className={`bg-white rounded-xl p-4 border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all group ${
+          isHighlighted ? 'ring-2 ring-violet-400 ring-offset-2' : ''
+        }`}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
@@ -177,18 +219,65 @@ const MilestoneCard = memo(function MilestoneCard({
               <div className="space-y-2 max-h-32 overflow-y-auto">
                 {comments.map((comment) => (
                   <div key={comment.id} className="group/comment p-2 bg-gray-50 rounded-lg">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-xs text-gray-700 flex-1">{comment.content}</p>
-                      <button
-                        onClick={() => onDeleteComment(comment.id)}
-                        className="opacity-0 group-hover/comment:opacity-100 p-1 text-gray-400 hover:text-red-500 rounded transition-all shrink-0"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-gray-400 mt-1">
-                      {new Date(comment.created_at).toLocaleDateString()}
-                    </p>
+                    {editingCommentId === comment.id ? (
+                      // Edit mode
+                      <div className="space-y-2">
+                        <textarea
+                          value={editCommentContent}
+                          onChange={(e) => setEditCommentContent(e.target.value)}
+                          rows={2}
+                          autoFocus
+                          className="w-full px-2 py-1.5 text-xs rounded-lg border border-blue-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none resize-none"
+                        />
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => {
+                              setEditingCommentId(null)
+                              setEditCommentContent('')
+                            }}
+                            className="px-2 py-1 text-[10px] text-gray-500 hover:text-gray-700 rounded"
+                          >
+                            {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                          </button>
+                          <button
+                            onClick={handleSaveEdit}
+                            disabled={savingComment || !editCommentContent.trim()}
+                            className="px-2 py-1 text-[10px] bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                          >
+                            {savingComment ? '...' : (locale === 'fr' ? 'Enregistrer' : 'Save')}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      // View mode
+                      <>
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-xs text-gray-700 flex-1">{comment.content}</p>
+                          <div className="flex items-center gap-0.5 opacity-0 group-hover/comment:opacity-100 transition-all shrink-0">
+                            <button
+                              onClick={() => {
+                                setEditingCommentId(comment.id)
+                                setEditCommentContent(comment.content)
+                              }}
+                              className="p-1 text-gray-400 hover:text-blue-500 rounded"
+                              title={locale === 'fr' ? 'Modifier' : 'Edit'}
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => onDeleteComment(comment.id)}
+                              className="p-1 text-gray-400 hover:text-red-500 rounded"
+                              title={locale === 'fr' ? 'Supprimer' : 'Delete'}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          {new Date(comment.created_at).toLocaleDateString()}
+                        </p>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
@@ -223,6 +312,40 @@ const MilestoneCard = memo(function MilestoneCard({
                 }
               </button>
             </div>
+
+            {/* Session-linked notes */}
+            {sessionNotes.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {locale === 'fr' ? 'Notes de séances' : 'Session notes'}
+                </p>
+                <div className="space-y-2 max-h-24 overflow-y-auto">
+                  {sessionNotes.map((note) => (
+                    <div key={note.id} className="p-2 bg-amber-50 rounded-lg border border-amber-100">
+                      <p className="text-xs text-gray-700 line-clamp-2">{note.content}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-amber-600 flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5" />
+                          {note.session_date ? new Date(note.session_date).toLocaleDateString() : new Date(note.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Session-linked notes preview (when comments collapsed) */}
+        {sessionNotes.length > 0 && !showComments && (
+          <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-100">
+            <p className="text-[10px] font-medium text-amber-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {locale === 'fr' ? 'Notes de séances' : 'Session notes'} ({sessionNotes.length})
+            </p>
+            <p className="text-xs text-gray-700 line-clamp-2">{sessionNotes[0].content}</p>
           </div>
         )}
 
@@ -257,12 +380,13 @@ const noteTypeColors: Record<NoteType, { bg: string; text: string }> = {
   observation: { bg: 'bg-amber-50', text: 'text-amber-700' },
 }
 
-export default function ProgressTab({ memberId, notes, onNotesUpdate }: ProgressTabProps) {
+export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightMilestoneId }: ProgressTabProps) {
   const { t, locale } = useLanguage()
   const supabase = createClient()
 
   const [milestones, setMilestones] = useState<Milestone[]>([])
   const [milestoneComments, setMilestoneComments] = useState<Record<string, MilestoneComment[]>>({})
+  const [milestoneSessionNotes, setMilestoneSessionNotes] = useState<Record<string, SessionLinkedNote[]>>({})
   const [loading, setLoading] = useState(true)
   const [showAddMilestone, setShowAddMilestone] = useState(false)
   const [title, setTitle] = useState('')
@@ -285,6 +409,19 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
   useEffect(() => {
     fetchMilestones()
   }, [memberId])
+
+  // Scroll to highlighted milestone
+  useEffect(() => {
+    if (highlightMilestoneId) {
+      // Wait for the DOM to update
+      setTimeout(() => {
+        const element = document.getElementById(`milestone-${highlightMilestoneId}`)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 100)
+    }
+  }, [highlightMilestoneId])
 
   const fetchMilestones = async () => {
     try {
@@ -320,9 +457,11 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
 
       setMilestones(mappedData)
 
-      // Fetch comments for all milestones
+      // Fetch comments and session-linked notes for all milestones
       if (mappedData.length > 0) {
         const milestoneIds = mappedData.map(m => m.id)
+
+        // Fetch comments
         const { data: commentsData, error: commentsError } = await supabase
           .from('milestone_comments')
           .select('*')
@@ -339,6 +478,38 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
             groupedComments[comment.milestone_id].push(comment)
           })
           setMilestoneComments(groupedComments)
+        }
+
+        // Fetch session-linked notes (notes with milestone_id and session_id)
+        const { data: sessionNotesData, error: sessionNotesError } = await supabase
+          .from('progress_notes')
+          .select('id, content, created_at, session_id, milestone_id, sessions(scheduled_at, session_type)')
+          .in('milestone_id', milestoneIds)
+          .not('session_id', 'is', null)
+          .order('created_at', { ascending: false })
+
+        if (!sessionNotesError && sessionNotesData) {
+          // Group notes by milestone_id
+          const groupedNotes: Record<string, SessionLinkedNote[]> = {}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          sessionNotesData.forEach((note: any) => {
+            if (note.milestone_id) {
+              if (!groupedNotes[note.milestone_id]) {
+                groupedNotes[note.milestone_id] = []
+              }
+              // Handle sessions relation - it may be an array or single object
+              const sessionData = Array.isArray(note.sessions) ? note.sessions[0] : note.sessions
+              groupedNotes[note.milestone_id].push({
+                id: note.id,
+                content: note.content,
+                created_at: note.created_at,
+                session_id: note.session_id,
+                session_date: sessionData?.scheduled_at,
+                session_type: sessionData?.session_type,
+              })
+            }
+          })
+          setMilestoneSessionNotes(groupedNotes)
         }
       }
     } catch (error) {
@@ -482,6 +653,23 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
     } catch (error) {
       console.error('Error adding comment:', error)
       toast.error(locale === 'fr' ? 'Échec de l\'ajout' : 'Failed to add comment')
+    }
+  }, [supabase, locale])
+
+  const handleUpdateComment = useCallback(async (commentId: string, content: string) => {
+    try {
+      const { error } = await supabase
+        .from('milestone_comments')
+        .update({ content, updated_at: new Date().toISOString() })
+        .eq('id', commentId)
+
+      if (error) throw error
+
+      toast.success(locale === 'fr' ? 'Commentaire mis à jour' : 'Comment updated')
+      fetchMilestones()
+    } catch (error) {
+      console.error('Error updating comment:', error)
+      toast.error(locale === 'fr' ? 'Échec de la mise à jour' : 'Failed to update comment')
     }
   }, [supabase, locale])
 
@@ -865,13 +1053,16 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                         milestone={milestone}
                         columnId={column.id}
                         comments={milestoneComments[milestone.id] || []}
+                        sessionNotes={milestoneSessionNotes[milestone.id] || []}
                         onToggleShare={handleToggleShare}
                         onDelete={handleDelete}
                         onUpdateStatus={handleUpdateStatus}
                         onAddComment={handleAddComment}
+                        onUpdateComment={handleUpdateComment}
                         onDeleteComment={handleDeleteComment}
                         categoryLabel={t.members.milestoneCategories[milestone.category]}
                         locale={locale}
+                        isHighlighted={highlightMilestoneId === milestone.id}
                       />
                     ))}
                   </AnimatePresence>
@@ -914,8 +1105,8 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
       </div>
 
       {/* Progress Summary */}
-      {/* Recent Notes Section */}
-      <motion.div
+      {/* Recent Notes Section - Hidden for now */}
+      {false && <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
@@ -1104,7 +1295,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
             )}
           </div>
         )}
-      </motion.div>
+      </motion.div>}
 
       {/* Image Lightbox */}
       <AnimatePresence>

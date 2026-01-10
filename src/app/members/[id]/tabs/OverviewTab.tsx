@@ -29,11 +29,14 @@ import type { Member, ProgressNote, NoteType, MemberPreferences, Milestone, Mile
 import { formatRelativeTime, getSessionTypeLabel, getSessionFormatLabel } from '@/types/member'
 import { getUserPreferences, updateUserPreferences, DEFAULT_CARD_LAYOUT, type CardLayoutItem } from '@/lib/services/preferences'
 
+type TabId = 'overview' | 'sessions' | 'progress' | 'files' | 'shared'
+
 interface OverviewTabProps {
   member: Member
   notes: ProgressNote[]
   sessions: MemberSession[]
   onMemberUpdate: () => void
+  onNavigateToTab?: (tab: TabId, highlightId?: string) => void
 }
 
 // Debounce helper
@@ -45,7 +48,7 @@ function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
   }
 }
 
-export default function OverviewTab({ member, notes, sessions, onMemberUpdate }: OverviewTabProps) {
+export default function OverviewTab({ member, notes, sessions, onMemberUpdate, onNavigateToTab }: OverviewTabProps) {
   const { t, locale } = useLanguage()
   const supabase = createClient()
 
@@ -86,6 +89,22 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
 
   // Shared Resources state
   const [sharedResources, setSharedResources] = useState<any[]>([])
+
+  // Combined recent notes (from sessions, session notes, milestone comments)
+  interface CombinedNote {
+    id: string
+    content: string
+    created_at: string
+    type: 'session_summary' | 'session_note' | 'milestone_comment'
+    source_label: string
+    milestone_title?: string
+    session_date?: string
+    session_id?: string
+    milestone_id?: string
+  }
+  const [combinedNotes, setCombinedNotes] = useState<CombinedNote[]>([])
+  const [allNotes, setAllNotes] = useState<CombinedNote[]>([])
+  const [showAllNotesModal, setShowAllNotesModal] = useState(false)
 
   // Load card layout from preferences
   useEffect(() => {
@@ -223,7 +242,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
           .select('*')
           .eq('member_id', member.id)
           .eq('practitioner_id', user.id)
-          .in('status', ['discovery', 'building', 'thriving'])
+          .in('status', ['building', 'thriving'])
           .order('created_at', { ascending: false })
           .limit(3)
 
@@ -262,9 +281,97 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
       }
     }
 
+    const fetchCombinedNotes = async () => {
+      try {
+        const combined: CombinedNote[] = []
+
+        // 1. Fetch session summaries (sessions with notes)
+        const sessionsWithNotes = sessions.filter(s => s.notes && s.notes.trim())
+        sessionsWithNotes.forEach(session => {
+          combined.push({
+            id: `session-${session.id}`,
+            content: session.notes!,
+            created_at: session.scheduled_at,
+            type: 'session_summary',
+            source_label: locale === 'fr' ? 'Résumé de séance' : 'Session Summary',
+            session_date: session.scheduled_at,
+            session_id: session.id,
+          })
+        })
+
+        // 2. Fetch session notes (progress_notes with session_id)
+        const { data: sessionNotes } = await supabase
+          .from('progress_notes')
+          .select('id, content, created_at, session_id, milestone_id, milestones(title), sessions(scheduled_at)')
+          .eq('member_id', member.id)
+          .not('session_id', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(10)
+
+        if (sessionNotes) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          sessionNotes.forEach((note: any) => {
+            const milestoneData = Array.isArray(note.milestones) ? note.milestones[0] : note.milestones
+            const sessionData = Array.isArray(note.sessions) ? note.sessions[0] : note.sessions
+            combined.push({
+              id: `note-${note.id}`,
+              content: note.content,
+              created_at: note.created_at,
+              type: 'session_note',
+              source_label: locale === 'fr' ? 'Note de séance' : 'Session Note',
+              milestone_title: milestoneData?.title,
+              session_date: sessionData?.scheduled_at,
+              session_id: note.session_id,
+              milestone_id: note.milestone_id,
+            })
+          })
+        }
+
+        // 3. Fetch milestone comments (first get milestones for this member, then get their comments)
+        const { data: memberMilestones } = await supabase
+          .from('milestones')
+          .select('id, title')
+          .eq('member_id', member.id)
+
+        if (memberMilestones && memberMilestones.length > 0) {
+          const milestoneIds = memberMilestones.map(m => m.id)
+          const milestoneMap = new Map(memberMilestones.map(m => [m.id, m.title]))
+
+          const { data: milestoneComments } = await supabase
+            .from('milestone_comments')
+            .select('id, content, created_at, milestone_id')
+            .in('milestone_id', milestoneIds)
+            .order('created_at', { ascending: false })
+            .limit(10)
+
+          if (milestoneComments) {
+            milestoneComments.forEach((comment) => {
+              combined.push({
+                id: `comment-${comment.id}`,
+                content: comment.content,
+                created_at: comment.created_at,
+                type: 'milestone_comment',
+                source_label: locale === 'fr' ? 'Note d\'objectif' : 'Goal Note',
+                milestone_title: milestoneMap.get(comment.milestone_id),
+                milestone_id: comment.milestone_id,
+              })
+            })
+          }
+        }
+
+        // Sort by created_at descending
+        combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        setAllNotes(combined)
+        setCombinedNotes(combined.slice(0, 3))
+      } catch (error) {
+        console.error('Error fetching combined notes:', error)
+      }
+    }
+
     fetchActiveGoals()
     fetchSharedResources()
-  }, [member.id, supabase])
+    fetchCombinedNotes()
+  }, [member.id, sessions, supabase, locale])
 
   // Helper functions
   const handleAddCommStyle = () => {
@@ -517,17 +624,21 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.05 * index }}
-                  className="p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                  className="group p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  onClick={() => onNavigateToTab?.('progress', goal.id)}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${catStyle.bg} ${catStyle.text}`}>
                       {goal.category.replace('_', ' ')}
                     </span>
-                    {goal.target_date && (
-                      <span className="text-xs text-gray-400">
-                        Target: {new Date(goal.target_date).toLocaleDateString()}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {goal.target_date && (
+                        <span className="text-xs text-gray-400">
+                          {locale === 'fr' ? 'Cible:' : 'Target:'} {new Date(goal.target_date).toLocaleDateString()}
+                        </span>
+                      )}
+                      <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+                    </div>
                   </div>
                   <h4 className="font-medium text-gray-900 text-sm mb-1">{goal.title}</h4>
                   {goal.description && (
@@ -536,6 +647,15 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
                 </motion.div>
               )
             })}
+
+            {/* View All Goals button */}
+            <button
+              onClick={() => onNavigateToTab?.('progress')}
+              className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              {locale === 'fr' ? `Voir tous les objectifs (${activeGoals.length})` : `View All Goals (${activeGoals.length})`}
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         )
 
@@ -556,7 +676,8 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 * index }}
-                className="p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                className="group p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                onClick={() => onNavigateToTab?.('sessions', session.id)}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -573,18 +694,21 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
                       {session.status}
                     </span>
                   </div>
+                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
                 </div>
                 <p className="font-medium text-gray-900 text-sm mb-1">{getSessionTypeLabel(session.session_type)}</p>
                 <p className="text-xs text-gray-500">{formatRelativeTime(session.scheduled_at)}</p>
               </motion.div>
             ))}
 
-            {sessions.length > 3 && (
-              <button className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1 rounded-lg hover:bg-gray-50 transition-colors">
-                {locale === 'fr' ? 'Voir toutes les séances' : 'View all sessions'}
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
+            {/* View All Sessions button - always show to navigate to sessions tab */}
+            <button
+              onClick={() => onNavigateToTab?.('sessions', 'past-sessions-section')}
+              className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              {locale === 'fr' ? `Voir toutes les séances (${sessions.length})` : `View All Sessions (${sessions.length})`}
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         )
 
@@ -869,53 +993,73 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
         )
 
       case 'recent_notes':
-        return notes.length === 0 ? (
+        const noteTypeStyles: Record<string, { bg: string; text: string; icon: React.ReactNode; tab: TabId }> = {
+          session_summary: { bg: 'bg-blue-50', text: 'text-blue-700', icon: <FileText className="w-3 h-3" />, tab: 'sessions' },
+          session_note: { bg: 'bg-emerald-50', text: 'text-emerald-700', icon: <MessageSquare className="w-3 h-3" />, tab: 'sessions' },
+          milestone_comment: { bg: 'bg-violet-50', text: 'text-violet-700', icon: <Target className="w-3 h-3" />, tab: 'progress' },
+        }
+        const handleNoteClick = (note: CombinedNote) => {
+          const style = noteTypeStyles[note.type]
+          if (onNavigateToTab) {
+            // Pass the appropriate ID for highlighting
+            const highlightId = note.type === 'milestone_comment' ? note.milestone_id : note.session_id
+            onNavigateToTab(style.tab, highlightId)
+          }
+        }
+        return combinedNotes.length === 0 ? (
           <div className="text-center py-8">
             <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
               <MessageSquare className="w-6 h-6 text-gray-400" />
             </div>
             <p className="text-sm text-gray-500">{t.members.overview.noNotes}</p>
-            <p className="text-xs text-gray-400 mt-1">{t.members.overview.noNotesDescription}</p>
+            <p className="text-xs text-gray-400 mt-1">{locale === 'fr' ? 'Les notes de séances et objectifs apparaîtront ici' : 'Session and goal notes will appear here'}</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {notes.slice(0, 3).map((note, index) => {
-              const typeStyle = noteTypeColors[note.note_type]
+            {combinedNotes.map((note, index) => {
+              const typeStyle = noteTypeStyles[note.type]
               return (
                 <motion.div
                   key={note.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.05 * index }}
-                  className="p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  className="group p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  onClick={() => handleNoteClick(note)}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${typeStyle.bg} ${typeStyle.text}`}>
-                        {t.members.noteTypes[note.note_type]}
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${typeStyle.bg} ${typeStyle.text}`}>
+                        {typeStyle.icon}
+                        {note.source_label}
                       </span>
-                      {note.is_private && (
-                        <Lock className="w-3 h-3 text-gray-400" />
-                      )}
                     </div>
-                    <span className="text-xs text-gray-400">
-                      {formatRelativeTime(note.created_at)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400">
+                        {formatRelativeTime(note.created_at)}
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+                    </div>
                   </div>
-                  {note.title && (
-                    <h4 className="font-medium text-gray-900 text-sm mb-1">{note.title}</h4>
+                  {note.milestone_title && (
+                    <div className="flex items-center gap-1 mb-1">
+                      <Target className="w-3 h-3 text-gray-400" />
+                      <span className="text-xs text-gray-500">{note.milestone_title}</span>
+                    </div>
                   )}
                   <p className="text-sm text-gray-600 line-clamp-2">{note.content}</p>
                 </motion.div>
               )
             })}
 
-            {notes.length > 3 && (
-              <button className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1 rounded-lg hover:bg-gray-50 transition-colors">
-                {t.members.overview.allNotes}
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
+            {/* View All Notes button */}
+            <button
+              onClick={() => setShowAllNotesModal(true)}
+              className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              {locale === 'fr' ? `Voir toutes les notes (${allNotes.length})` : `View All Notes (${allNotes.length})`}
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         )
 
@@ -936,17 +1080,21 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 * index }}
-                className="p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                className="group p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                onClick={() => onNavigateToTab?.('shared', resource.id)}
               >
                 <div className="flex items-start justify-between mb-2">
                   <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${
                     resource.viewed_at ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'
                   }`}>
-                    {resource.viewed_at ? 'Viewed' : 'Not viewed'}
+                    {resource.viewed_at ? (locale === 'fr' ? 'Vu' : 'Viewed') : (locale === 'fr' ? 'Non vu' : 'Not viewed')}
                   </span>
-                  <span className="text-xs text-gray-400">
-                    {formatRelativeTime(resource.shared_at)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400">
+                      {formatRelativeTime(resource.shared_at)}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+                  </div>
                 </div>
                 <h4 className="font-medium text-gray-900 text-sm mb-1">{resource.resource?.title}</h4>
                 {resource.resource?.type && (
@@ -955,12 +1103,14 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
               </motion.div>
             ))}
 
-            {sharedResources.length > 3 && (
-              <button className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1 rounded-lg hover:bg-gray-50 transition-colors">
-                {locale === 'fr' ? 'Voir toutes les ressources' : 'View all resources'}
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
+            {/* View All Resources button */}
+            <button
+              onClick={() => onNavigateToTab?.('shared', 'shared-resources-section')}
+              className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              {locale === 'fr' ? `Voir toutes les ressources (${sharedResources.length})` : `View All Resources (${sharedResources.length})`}
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         )
 
@@ -1108,6 +1258,100 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
           {renderColumnDropZone(1, rightColumnCards)}
         </div>
       </div>
+
+      {/* All Notes Modal */}
+      <AnimatePresence>
+        {showAllNotesModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={() => setShowAllNotesModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-5 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center">
+                    <MessageSquare className="w-5 h-5 text-violet-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      {locale === 'fr' ? 'Toutes les notes' : 'All Notes'}
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      {locale === 'fr' ? `${allNotes.length} notes trouvées` : `${allNotes.length} notes found`}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAllNotesModal(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-5 overflow-y-auto max-h-[60vh]">
+                <div className="space-y-3">
+                  {allNotes.map((note, index) => {
+                    const noteStyles: Record<string, { bg: string; text: string; icon: React.ReactNode; tab: TabId }> = {
+                      session_summary: { bg: 'bg-blue-50', text: 'text-blue-700', icon: <FileText className="w-3 h-3" />, tab: 'sessions' },
+                      session_note: { bg: 'bg-emerald-50', text: 'text-emerald-700', icon: <MessageSquare className="w-3 h-3" />, tab: 'sessions' },
+                      milestone_comment: { bg: 'bg-violet-50', text: 'text-violet-700', icon: <Target className="w-3 h-3" />, tab: 'progress' },
+                    }
+                    const style = noteStyles[note.type]
+                    return (
+                      <motion.div
+                        key={note.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.03 * index }}
+                        className="group p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                        onClick={() => {
+                          setShowAllNotesModal(false)
+                          const highlightId = note.type === 'milestone_comment' ? note.milestone_id : note.session_id
+                          onNavigateToTab?.(style.tab, highlightId)
+                        }}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${style.bg} ${style.text}`}>
+                              {style.icon}
+                              {note.source_label}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-400">
+                              {formatRelativeTime(note.created_at)}
+                            </span>
+                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+                          </div>
+                        </div>
+                        {note.milestone_title && (
+                          <div className="flex items-center gap-1 mb-1">
+                            <Target className="w-3 h-3 text-gray-400" />
+                            <span className="text-xs text-gray-500">{note.milestone_title}</span>
+                          </div>
+                        )}
+                        <p className="text-sm text-gray-600 line-clamp-2">{note.content}</p>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

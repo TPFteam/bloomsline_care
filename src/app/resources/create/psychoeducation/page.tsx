@@ -167,49 +167,44 @@ const generateId = () => Math.random().toString(36).substring(2, 9)
 // Psychoeducation templates for quick start
 const educationTemplates = [
   {
-    id: 'condition-overview',
-    name: { en: 'Condition Overview', fr: 'Aperçu d\'une condition' },
-    description: { en: 'Explain a mental health condition', fr: 'Expliquer une condition de santé mentale' },
+    id: 'self-esteem',
+    name: { en: 'Understanding Self-Esteem', fr: 'Comprendre l\'estime de soi' },
+    description: { en: 'Guide to building healthy self-esteem', fr: 'Guide pour développer une estime de soi saine' },
     blocks: [
-      { id: '1', type: 'heading' as ContentBlockType, content: 'What is [Condition]?' },
-      { id: '2', type: 'paragraph' as ContentBlockType, content: 'Provide a clear, accessible explanation of the condition here.' },
-      { id: '3', type: 'heading' as ContentBlockType, content: 'Common Symptoms' },
-      { id: '4', type: 'key_points' as ContentBlockType, content: 'Symptoms', points: ['Symptom 1', 'Symptom 2', 'Symptom 3'] },
-      { id: '5', type: 'heading' as ContentBlockType, content: 'Causes & Risk Factors' },
-      { id: '6', type: 'paragraph' as ContentBlockType, content: 'Explain what causes this condition and who may be at risk.' },
-      { id: '7', type: 'callout' as ContentBlockType, content: 'Remember: This condition is treatable. You are not alone.', calloutType: 'tip' as const },
+      { id: '1', type: 'heading' as ContentBlockType, content: 'Understanding Self-Esteem' },
+      { id: '2', type: 'paragraph' as ContentBlockType, content: 'Self-esteem is how we value and perceive ourselves. It affects nearly every aspect of our lives—from our relationships to our career choices, and even our mental health. The good news is that self-esteem can be developed and strengthened over time.' },
+      { id: '3', type: 'heading' as ContentBlockType, content: 'What is Healthy Self-Esteem?' },
+      { id: '4', type: 'paragraph' as ContentBlockType, content: 'Healthy self-esteem means having a balanced, realistic view of yourself. It\'s not about being perfect or better than others—it\'s about accepting yourself, recognizing your worth, and treating yourself with kindness.' },
+      { id: '5', type: 'callout' as ContentBlockType, content: 'Self-esteem isn\'t about thinking you\'re perfect. It\'s about knowing you\'re worthy of respect and kindness—including from yourself.', calloutType: 'tip' as const },
+      { id: '6', type: 'heading' as ContentBlockType, content: 'Signs of Low Self-Esteem' },
+      { id: '7', type: 'key_points' as ContentBlockType, content: 'You might notice:', points: ['Negative self-talk and harsh self-criticism', 'Difficulty accepting compliments', 'Fear of failure or trying new things', 'Comparing yourself unfavorably to others', 'Putting others\' needs before your own'] },
+      { id: '8', type: 'heading' as ContentBlockType, content: 'Building Healthier Self-Esteem' },
+      { id: '9', type: 'key_points' as ContentBlockType, content: 'Strategies that help:', points: ['Practice self-compassion—treat yourself as you would a friend', 'Challenge negative thoughts about yourself', 'Celebrate small wins and achievements', 'Set boundaries and honor your needs', 'Focus on growth, not perfection'] },
+      { id: '10', type: 'heading' as ContentBlockType, content: 'Your Journey Forward' },
+      { id: '11', type: 'paragraph' as ContentBlockType, content: 'Building self-esteem is a gradual process. It takes time and practice, but every small step matters. Together, we will work on understanding your unique patterns and developing strategies that help you see yourself more clearly and kindly.' },
+      { id: '12', type: 'callout' as ContentBlockType, content: 'Remember: You are worthy of love and respect, exactly as you are. Growth is about becoming more of who you truly are, not becoming someone else.', calloutType: 'info' as const },
     ],
-    learningObjectives: ['Understand what this condition is', 'Recognize common symptoms', 'Know that treatment is available'],
+    learningObjectives: ['Understand what self-esteem is', 'Recognize signs of low self-esteem', 'Learn strategies for building healthier self-esteem'],
   },
   {
-    id: 'coping-strategy',
-    name: { en: 'Coping Strategy Guide', fr: 'Guide de stratégie d\'adaptation' },
-    description: { en: 'Teach a specific coping technique', fr: 'Enseigner une technique d\'adaptation spécifique' },
+    id: 'cbt-introduction',
+    name: { en: 'CBT Introduction', fr: 'Introduction à la TCC' },
+    description: { en: 'Simple introduction to Cognitive Behavioral Therapy', fr: 'Introduction simple à la Thérapie Cognitivo-Comportementale' },
     blocks: [
-      { id: '1', type: 'heading' as ContentBlockType, content: '[Strategy Name]' },
-      { id: '2', type: 'paragraph' as ContentBlockType, content: 'Introduce the coping strategy and explain why it\'s helpful.' },
-      { id: '3', type: 'heading' as ContentBlockType, content: 'When to Use This Strategy' },
-      { id: '4', type: 'key_points' as ContentBlockType, content: 'Use this when:', points: ['Situation 1', 'Situation 2', 'Situation 3'] },
-      { id: '5', type: 'heading' as ContentBlockType, content: 'Step-by-Step Guide' },
-      { id: '6', type: 'key_points' as ContentBlockType, content: 'Steps:', points: ['Step 1: ...', 'Step 2: ...', 'Step 3: ...'] },
-      { id: '7', type: 'callout' as ContentBlockType, content: 'Practice makes progress! Start with short sessions.', calloutType: 'tip' as const },
+      { id: '1', type: 'heading' as ContentBlockType, content: 'Understanding Cognitive Behavioral Therapy (CBT)' },
+      { id: '2', type: 'paragraph' as ContentBlockType, content: 'Cognitive Behavioral Therapy, or CBT, is one of the most effective and widely-used forms of therapy. It helps you understand how your thoughts, feelings, and behaviors are connected—and gives you practical tools to create positive change in your life.' },
+      { id: '3', type: 'heading' as ContentBlockType, content: 'The Core Idea' },
+      { id: '4', type: 'paragraph' as ContentBlockType, content: 'CBT is based on a simple but powerful idea: the way we think affects how we feel, and how we feel affects what we do. By learning to recognize and change unhelpful thought patterns, we can improve our emotional well-being and behavior.' },
+      { id: '5', type: 'callout' as ContentBlockType, content: 'Thoughts → Feelings → Behaviors: These three are always connected. Change one, and you can change the others.', calloutType: 'tip' as const },
+      { id: '6', type: 'heading' as ContentBlockType, content: 'How CBT Works' },
+      { id: '7', type: 'key_points' as ContentBlockType, content: 'In CBT, you will learn to:', points: ['Identify negative or unhelpful thought patterns', 'Challenge and reframe these thoughts', 'Develop healthier ways of thinking', 'Practice new behaviors that support your well-being'] },
+      { id: '8', type: 'heading' as ContentBlockType, content: 'What CBT Can Help With' },
+      { id: '9', type: 'key_points' as ContentBlockType, content: 'CBT is effective for:', points: ['Anxiety and worry', 'Depression and low mood', 'Stress management', 'Sleep difficulties', 'Building self-confidence'] },
+      { id: '10', type: 'heading' as ContentBlockType, content: 'What to Expect' },
+      { id: '11', type: 'paragraph' as ContentBlockType, content: 'CBT is a collaborative process. Together, we will work on understanding your unique patterns and developing personalized strategies that work for you. You will also practice skills between sessions—small steps that lead to meaningful change.' },
+      { id: '12', type: 'callout' as ContentBlockType, content: 'Remember: CBT is a skill-building approach. Like any skill, it gets easier with practice. Be patient with yourself as you learn.', calloutType: 'info' as const },
     ],
-    learningObjectives: ['Understand what this strategy is', 'Know when to use it', 'Be able to practice the technique'],
-  },
-  {
-    id: 'treatment-explainer',
-    name: { en: 'Treatment Explainer', fr: 'Explication de traitement' },
-    description: { en: 'Explain a therapy or treatment approach', fr: 'Expliquer une approche thérapeutique' },
-    blocks: [
-      { id: '1', type: 'heading' as ContentBlockType, content: 'Understanding [Treatment Name]' },
-      { id: '2', type: 'paragraph' as ContentBlockType, content: 'Provide an overview of this treatment approach.' },
-      { id: '3', type: 'heading' as ContentBlockType, content: 'How It Works' },
-      { id: '4', type: 'paragraph' as ContentBlockType, content: 'Explain the mechanism or theory behind this treatment.' },
-      { id: '5', type: 'heading' as ContentBlockType, content: 'What to Expect' },
-      { id: '6', type: 'key_points' as ContentBlockType, content: 'During treatment:', points: ['What happens in sessions', 'How long it typically takes', 'What you might experience'] },
-      { id: '7', type: 'callout' as ContentBlockType, content: 'Every person\'s journey is different. Be patient with yourself.', calloutType: 'info' as const },
-    ],
-    learningObjectives: ['Understand what this treatment involves', 'Know what to expect', 'Feel more prepared for treatment'],
+    learningObjectives: ['Understand what CBT is and how it works', 'Learn the connection between thoughts, feelings, and behaviors', 'Know what to expect from CBT treatment'],
   },
   {
     id: 'blank',
@@ -2189,12 +2184,12 @@ function CreatePsychoeducationContent() {
                   </div>
                 </motion.div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                  {locale === 'fr' ? 'Créer un document éducatif' : 'Create Educational Content'}
+                  {locale === 'fr' ? 'Nouveau document' : 'New Psychoeducation'}
                 </h1>
                 <p className="text-gray-600 max-w-md mx-auto">
                   {locale === 'fr'
-                    ? 'Personnalisez un modèle existant ou créez votre document à partir de zéro'
-                    : 'Start with a template or create from scratch'}
+                    ? 'Créez sans modèle ou personnalisez un modèle existant'
+                    : 'Start from scratch or customize an existing template'}
                 </p>
               </div>
 

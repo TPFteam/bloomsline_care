@@ -353,37 +353,27 @@ const defaultScoredMoodOptions = [
 // Worksheet templates for quick start
 const worksheetTemplates = [
   {
-    id: 'thought-record',
-    name: { en: 'Thought Record', fr: 'Journal de pensées' },
-    description: { en: 'Classic CBT thought record template', fr: 'Modèle classique de journal de pensées TCC' },
-    blocks: [
-      { id: '1', type: 'heading' as BlockType, content: 'Thought Record' },
-      { id: '2', type: 'paragraph' as BlockType, content: 'Use this worksheet to identify and challenge negative thoughts. Fill it out when you notice a shift in your mood.' },
-      { id: '3', type: 'prompt' as BlockType, content: 'Situation: What happened? Where were you? Who were you with?', placeholder: 'Describe the situation...', lines: 3 },
-      { id: '4', type: 'prompt' as BlockType, content: 'Emotions: What emotions did you feel? (Rate intensity 0-100%)', placeholder: 'e.g., Anxious (70%), Sad (40%)', lines: 2 },
-      { id: '5', type: 'prompt' as BlockType, content: 'Automatic Thought: What went through your mind?', placeholder: 'Write the thought exactly as it occurred...', lines: 3 },
-      { id: '6', type: 'prompt' as BlockType, content: 'Evidence For: What supports this thought?', placeholder: 'List facts that support the thought...', lines: 3 },
-      { id: '7', type: 'prompt' as BlockType, content: 'Evidence Against: What contradicts this thought?', placeholder: 'List facts that contradict the thought...', lines: 3 },
-      { id: '8', type: 'prompt' as BlockType, content: 'Balanced Thought: What\'s a more balanced way to think about this?', placeholder: 'Write a more balanced perspective...', lines: 3 },
-      { id: '9', type: 'scale' as BlockType, content: 'How much do you believe the balanced thought?', scaleMin: 0, scaleMax: 100, scaleMinLabel: 'Not at all', scaleMaxLabel: 'Completely' },
-    ],
-  },
-  {
     id: 'gratitude',
     name: { en: 'Gratitude Journal', fr: 'Journal de gratitude' },
-    description: { en: 'Daily gratitude reflection', fr: 'Réflexion quotidienne de gratitude' },
+    description: { en: 'Daily gratitude reflection practice', fr: 'Pratique quotidienne de réflexion de gratitude' },
     blocks: [
-      { id: '1', type: 'heading' as BlockType, content: 'Daily Gratitude' },
-      { id: '2', type: 'paragraph' as BlockType, content: 'Take a moment to reflect on the positive aspects of your day. Research shows that practicing gratitude can improve well-being and mood.' },
-      { id: '3', type: 'prompt' as BlockType, content: 'Three things I\'m grateful for today:', placeholder: '1.\n2.\n3.', lines: 4 },
-      { id: '4', type: 'prompt' as BlockType, content: 'Something good that happened today:', placeholder: 'Describe a positive moment...', lines: 3 },
-      { id: '5', type: 'prompt' as BlockType, content: 'Someone I appreciate and why:', placeholder: 'Think of someone who made a difference...', lines: 3 },
-      { id: '6', type: 'scale' as BlockType, content: 'Overall mood today:', scaleMin: 1, scaleMax: 10, scaleMinLabel: 'Very low', scaleMaxLabel: 'Excellent' },
+      { id: '1', type: 'heading' as BlockType, content: 'Gratitude Journal' },
+      { id: '2', type: 'paragraph' as BlockType, content: 'Taking time to notice and appreciate the good in your life can boost happiness, reduce stress, and improve overall well-being. Use this journal to cultivate a grateful mindset.' },
+      { id: '3', type: 'divider' as BlockType, content: '' },
+      { id: '4', type: 'prompt' as BlockType, content: '🌅 Morning Intention: What are you looking forward to today?', placeholder: 'Set a positive intention for your day...', lines: 2 },
+      { id: '5', type: 'prompt' as BlockType, content: '🙏 Three things I\'m grateful for:', placeholder: '1. \n2. \n3. ', lines: 4 },
+      { id: '6', type: 'prompt' as BlockType, content: '✨ A small moment of joy today:', placeholder: 'Describe a simple pleasure or happy moment...', lines: 3 },
+      { id: '7', type: 'prompt' as BlockType, content: '💪 Something I did well or a personal strength I used:', placeholder: 'Acknowledge your accomplishments, big or small...', lines: 3 },
+      { id: '8', type: 'prompt' as BlockType, content: '❤️ Someone who made a positive impact on my day:', placeholder: 'Who helped, supported, or inspired you? How?', lines: 3 },
+      { id: '9', type: 'prompt' as BlockType, content: '🌱 One thing I learned or a way I grew today:', placeholder: 'Reflect on any insights or personal growth...', lines: 3 },
+      { id: '10', type: 'divider' as BlockType, content: '' },
+      { id: '11', type: 'scale' as BlockType, content: 'How grateful do I feel right now?', scaleMin: 1, scaleMax: 10, scaleMinLabel: 'Not at all', scaleMaxLabel: 'Very grateful' },
+      { id: '12', type: 'prompt' as BlockType, content: '🌙 Evening reflection: What made today meaningful?', placeholder: 'End your day by reflecting on what truly mattered...', lines: 3 },
     ],
   },
   {
     id: 'blank',
-    name: { en: 'Blank Worksheet', fr: 'Nouvel exercice' },
+    name: { en: 'Blank Worksheet', fr: 'Fiche vierge' },
     description: { en: 'Start from scratch', fr: 'Créez sans modèle' },
     blocks: [],
   },
@@ -4131,11 +4121,11 @@ function CreateWorksheetContent() {
                   </div>
                 </motion.div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                  {isEditMode ? (locale === 'fr' ? 'Modifier l\'exercice' : 'Edit Worksheet') : (locale === 'fr' ? 'Créer un exercice' : 'Create a Worksheet')}
+                  {isEditMode ? (locale === 'fr' ? 'Modifier la fiche' : 'Edit Worksheet') : (locale === 'fr' ? 'Nouvelle fiche' : 'New Worksheet')}
                 </h1>
                 <p className="text-gray-600 max-w-md mx-auto">
                   {locale === 'fr'
-                    ? 'Personnalisez un modèle existant ou créez votre exercice à partir de zéro'
+                    ? 'Créez sans modèle ou personnalisez un modèle existant'
                     : 'Start with a template or create from scratch'}
                 </p>
               </div>

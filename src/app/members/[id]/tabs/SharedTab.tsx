@@ -37,6 +37,7 @@ import type { Resource, ResourceBlock, ResourceResponse } from '@/types/resource
 interface SharedTabProps {
   memberId: string
   member?: Member
+  highlightResourceId?: string
 }
 
 interface Story {
@@ -85,7 +86,7 @@ const resourceTypeConfig: Record<string, { bg: string; text: string; iconBg: str
   table: { bg: 'bg-emerald-50', text: 'text-emerald-700', iconBg: 'bg-emerald-100' },
 }
 
-export default function SharedTab({ memberId, member }: SharedTabProps) {
+export default function SharedTab({ memberId, member, highlightResourceId }: SharedTabProps) {
   const { t, locale } = useLanguage()
   const supabase = createClient()
 
@@ -107,6 +108,23 @@ export default function SharedTab({ memberId, member }: SharedTabProps) {
   const [submissionsLoading, setSubmissionsLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [submissionFilter, setSubmissionFilter] = useState<'all' | 'submitted' | 'reviewed'>('all')
+
+  // Scroll to highlighted resource or section
+  useEffect(() => {
+    if (highlightResourceId) {
+      // Wait for the DOM to update
+      setTimeout(() => {
+        // Handle special case for shared-resources-section
+        const elementId = highlightResourceId === 'shared-resources-section'
+          ? 'shared-resources-section'
+          : `resource-${highlightResourceId}`
+        const element = document.getElementById(elementId)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 100)
+    }
+  }, [highlightResourceId])
 
   useEffect(() => {
     fetchData()
@@ -515,9 +533,21 @@ export default function SharedTab({ memberId, member }: SharedTabProps) {
           {/* Shared Library Resources */}
           {sharedLibraryResources.length > 0 && (
             <motion.div
+              id="shared-resources-section"
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
+              animate={{
+                opacity: 1,
+                y: 0,
+                boxShadow: highlightResourceId === 'shared-resources-section'
+                  ? ['0 0 0 0 rgba(99, 102, 241, 0)', '0 0 20px 8px rgba(99, 102, 241, 0.4)', '0 0 0 0 rgba(99, 102, 241, 0)']
+                  : '0 0 0 0 rgba(0, 0, 0, 0)'
+              }}
+              transition={{
+                boxShadow: highlightResourceId === 'shared-resources-section' ? { duration: 1.5, repeat: 2 } : {}
+              }}
+              className={`bg-white rounded-2xl border border-gray-200 overflow-hidden ${
+                highlightResourceId === 'shared-resources-section' ? 'ring-2 ring-indigo-400 ring-offset-2' : ''
+              }`}
             >
               <div className="p-4 border-b border-gray-100/50 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-teal-600" />
@@ -528,62 +558,114 @@ export default function SharedTab({ memberId, member }: SharedTabProps) {
                   {sharedLibraryResources.length}
                 </span>
               </div>
-              <div className="divide-y divide-gray-100/50">
+              <div className="grid gap-4">
                 {sharedLibraryResources.map((resource, index) => {
                   const TypeIcon = resourceTypeIcons[resource.resource.type] || FileText
                   const config = resourceTypeConfig[resource.resource.type] || resourceTypeConfig.worksheet
+                  const isHighlighted = highlightResourceId === resource.id
                   return (
                     <motion.div
                       key={resource.id}
+                      id={`resource-${resource.id}`}
                       initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.05 * index }}
-                      className="p-5 hover:bg-white/60 transition-all group"
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                        boxShadow: isHighlighted
+                          ? ['0 0 0 0 rgba(99, 102, 241, 0)', '0 0 20px 8px rgba(99, 102, 241, 0.4)', '0 0 0 0 rgba(99, 102, 241, 0)']
+                          : '0 0 0 0 rgba(0, 0, 0, 0)'
+                      }}
+                      transition={{
+                        delay: 0.05 * index,
+                        boxShadow: isHighlighted ? { duration: 1.5, repeat: 2 } : {}
+                      }}
+                      className={`bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-md hover:border-gray-200 transition-all group ${
+                        isHighlighted ? 'ring-2 ring-indigo-400 ring-offset-2' : ''
+                      }`}
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-4">
-                          <div className={`w-14 h-14 rounded-2xl ${config.iconBg} flex items-center justify-center flex-shrink-0 group-hover:shadow-md group-hover:scale-105 transition-all`}>
-                            <TypeIcon className={`w-7 h-7 ${config.text}`} />
+                        <div className="flex items-start gap-4 flex-1 min-w-0">
+                          <div className={`w-12 h-12 rounded-xl ${config.iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                            <TypeIcon className={`w-6 h-6 ${config.text}`} />
                           </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900">{resource.resource.title}</h4>
-                            {resource.resource.description && (
-                              <p className="text-sm text-gray-500 mt-1 line-clamp-1">{resource.resource.description}</p>
-                            )}
-                            <div className="flex items-center gap-3 mt-2 flex-wrap">
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <h4 className="font-semibold text-gray-900 truncate">{resource.resource.title}</h4>
+                                {resource.resource.description && (
+                                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">{resource.resource.description}</p>
+                                )}
+                              </div>
+                              <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${config.bg} ${config.text} flex-shrink-0`}>
                                 {resource.resource.type}
                               </span>
-                              <span className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
+                            </div>
+                            <div className="flex items-center gap-2 mt-3 flex-wrap">
+                              <span className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-2.5 py-1 rounded-lg">
                                 <Calendar className="w-3 h-3" />
                                 {locale === 'fr' ? 'Partagé le' : 'Shared on'} {new Date(resource.shared_at).toLocaleDateString()}
                               </span>
-                              {resource.viewed_at ? (
-                                <span className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-                                  <Eye className="w-3 h-3" />
-                                  {locale === 'fr' ? 'Vu le' : 'Viewed on'} {new Date(resource.viewed_at).toLocaleDateString()}
-                                </span>
-                              ) : (
-                                <span className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
-                                  <EyeOff className="w-3 h-3" />
-                                  {locale === 'fr' ? 'Non vu' : 'Not viewed'}
-                                </span>
-                              )}
+                              {(() => {
+                                const isPsychoeducation = resource.resource.type === 'psychoeducation'
+                                const submission = submissions.find(s => s.resource_id === resource.resource_id)
+
+                                // Check for submission first
+                                if (submission) {
+                                  // For psychoeducation, show "Read on" instead of "Submitted on"
+                                  if (isPsychoeducation) {
+                                    return (
+                                      <span className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
+                                        <Eye className="w-3 h-3" />
+                                        {locale === 'fr' ? 'Lu le' : 'Read on'} {new Date(submission.submitted_at || submission.created_at).toLocaleDateString()}
+                                      </span>
+                                    )
+                                  }
+                                  return (
+                                    <span className="flex items-center gap-1.5 text-xs text-teal-600 bg-teal-50 px-2.5 py-1 rounded-lg">
+                                      <CheckCircle className="w-3 h-3" />
+                                      {locale === 'fr' ? 'Soumis le' : 'Submitted on'} {new Date(submission.submitted_at || submission.created_at).toLocaleDateString()}
+                                    </span>
+                                  )
+                                }
+
+                                // Then check viewed status
+                                if (resource.viewed_at) {
+                                  return (
+                                    <span className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
+                                      <Eye className="w-3 h-3" />
+                                      {isPsychoeducation
+                                        ? (locale === 'fr' ? 'Lu le' : 'Read on')
+                                        : (locale === 'fr' ? 'Vu le' : 'Viewed on')
+                                      } {new Date(resource.viewed_at).toLocaleDateString()}
+                                    </span>
+                                  )
+                                }
+
+                                // Not viewed/read
+                                return (
+                                  <span className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
+                                    <EyeOff className="w-3 h-3" />
+                                    {isPsychoeducation
+                                      ? (locale === 'fr' ? 'Non lu' : 'Not read')
+                                      : (locale === 'fr' ? 'Non vu' : 'Not viewed')
+                                    }
+                                  </span>
+                                )
+                              })()}
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <Link href={`/resources/${resource.resource_id}`}>
-                            <Button variant="ghost" size="sm" className="text-teal-600 hover:bg-gray-50 rounded-xl transition-colors">
-                              <ExternalLink className="w-4 h-4 mr-1" />
-                              {locale === 'fr' ? 'Voir' : 'View'}
+                            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-colors h-9 w-9 p-0">
+                              <ExternalLink className="w-4 h-4" />
                             </Button>
                           </Link>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleUnshareLibraryResource(resource.id)}
-                            className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                            className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors h-9 w-9 p-0"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -753,6 +835,9 @@ export default function SharedTab({ memberId, member }: SharedTabProps) {
                 const StatusIcon = statusConfig.icon
                 const isExpanded = expandedId === submission.id
                 const resourceTitle = typeof submission.resource?.title === 'string' ? submission.resource.title : 'Untitled Resource'
+                const resourceType = submission.resource?.type || 'worksheet'
+                const TypeIcon = resourceTypeIcons[resourceType] || FileText
+                const typeConfig = resourceTypeConfig[resourceType] || resourceTypeConfig.worksheet
                 const blocks = (submission.resource?.blocks || []) as ResourceBlock[]
                 const questionBlocks = blocks.filter(b =>
                   ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert', 'numeric', 'slider', 'matrix_rating', 'mood', 'date_picker', 'time_input', 'list_input'].includes(b.type)
@@ -770,8 +855,8 @@ export default function SharedTab({ memberId, member }: SharedTabProps) {
                     <div onClick={() => toggleExpand(submission.id)} className="p-5 cursor-pointer hover:bg-gray-50/50 transition-colors">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shadow-lg flex-shrink-0">
-                            <FileText className="w-6 h-6 text-white" />
+                          <div className={`w-12 h-12 rounded-xl ${typeConfig.iconBg} flex items-center justify-center flex-shrink-0`}>
+                            <TypeIcon className={`w-6 h-6 ${typeConfig.text}`} />
                           </div>
                           <div>
                             <h3 className="font-semibold text-gray-900 mb-1">{resourceTitle}</h3>

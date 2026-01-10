@@ -39,15 +39,15 @@ interface Template {
 
 // 4 main resource types
 const resourceTypes: ResourceTypeOption[] = [
+  { id: 'psychoeducation' },
   { id: 'worksheet' },
   { id: 'table' },
-  { id: 'psychoeducation' },
   { id: 'exercise', comingSoon: true },
 ]
 
 const typeLabels: Record<PractitionerResourceType, { en: string; fr: string }> = {
   worksheet: { en: 'Worksheet', fr: 'Exercice' },
-  table: { en: 'Table Exercise', fr: 'Tableau' },
+  table: { en: 'Table', fr: 'Tableau' },
   psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
   exercise: { en: 'Exercise / Activity', fr: 'Exercice / Activité' },
 }
@@ -78,11 +78,11 @@ const typeExamples: Record<PractitionerResourceType, { en: string[]; fr: string[
   },
   table: {
     en: ['Automatic thoughts', 'Anxiety tracking'],
-    fr: ['Pensées automatiques', 'Suivi anxiété'],
+    fr: ['Automatiques', 'Anxiété'],
   },
   psychoeducation: {
-    en: ['Fact sheets', 'Guides', 'Explanations'],
-    fr: ['Fiches explicatives', 'Guides', 'Explications'],
+    en: ['Fact sheets', 'Guides'],
+    fr: ['Fiches explicatives', 'Guides'],
   },
   exercise: {
     en: ['Breathing', 'Grounding', 'Mindfulness'],
@@ -94,24 +94,18 @@ const typeExamples: Record<PractitionerResourceType, { en: string[]; fr: string[
 const templates: Record<PractitionerResourceType, Template[]> = {
   worksheet: [
     {
-      id: 'thought-record',
-      name: { en: 'Thought Record', fr: 'Journal de pensées' },
-      description: { en: 'Classic CBT thought record template', fr: 'Modèle classique de journal de pensées TCC' },
-      blocks: 9,
-    },
-    {
       id: 'gratitude',
-      name: { en: 'Daily Gratitude', fr: 'Gratitude quotidienne' },
-      description: { en: 'Daily gratitude reflection', fr: 'Réflexion quotidienne de gratitude' },
-      blocks: 6,
+      name: { en: 'Gratitude Journal', fr: 'Journal de gratitude' },
+      description: { en: 'Daily gratitude reflection practice', fr: 'Pratique quotidienne de réflexion de gratitude' },
+      blocks: 12,
     },
   ],
   table: [
     {
-      id: 'thought-log',
-      name: { en: 'Thought Log', fr: 'Journal de pensées' },
-      description: { en: 'Track thoughts and emotions over time', fr: 'Suivre les pensées et émotions au fil du temps' },
-      blocks: 4,
+      id: 'cognitive-restructuring',
+      name: { en: 'Cognitive Restructuring Chart', fr: 'Tableau de restructuration cognitive' },
+      description: { en: 'Challenge and reframe negative thoughts', fr: 'Remettre en question les pensées négatives' },
+      blocks: 7,
     },
     {
       id: 'emotion-tracker',
@@ -122,16 +116,16 @@ const templates: Record<PractitionerResourceType, Template[]> = {
   ],
   psychoeducation: [
     {
-      id: 'condition-overview',
-      name: { en: 'Condition Overview', fr: 'Aperçu d\'une condition' },
-      description: { en: 'Explain a mental health condition', fr: 'Expliquer une condition de santé mentale' },
-      blocks: 7,
+      id: 'self-esteem',
+      name: { en: 'Understanding Self-Esteem', fr: 'Comprendre l\'estime de soi' },
+      description: { en: 'Guide to building healthy self-esteem', fr: 'Guide pour développer une estime de soi saine' },
+      blocks: 12,
     },
     {
-      id: 'coping-strategy',
-      name: { en: 'Coping Strategy Guide', fr: 'Guide de stratégie d\'adaptation' },
-      description: { en: 'Teach a specific coping technique', fr: 'Enseigner une technique d\'adaptation spécifique' },
-      blocks: 7,
+      id: 'cbt-introduction',
+      name: { en: 'CBT Introduction', fr: 'Introduction à la TCC' },
+      description: { en: 'Simple introduction to Cognitive Behavioral Therapy', fr: 'Introduction simple à la TCC' },
+      blocks: 12,
     },
   ],
   exercise: [],
@@ -551,10 +545,13 @@ export default function CreateResourcePage() {
                       <Plus className="w-5 h-5 text-gray-500" />
                     </div>
                     <h3 className="font-medium text-gray-900 mb-1">
-                      {locale === 'fr' ? `${typeLabels[selectedResourceType][locale]} vierge` : `Blank ${typeLabels[selectedResourceType][locale]}`}
+                      {locale === 'fr'
+                        ? (selectedResourceType === 'worksheet' ? 'Nouvel exercice' : selectedResourceType === 'table' ? 'Nouveau tableau' : 'Nouvelle fiche')
+                        : (selectedResourceType === 'worksheet' ? 'New Worksheet' : selectedResourceType === 'table' ? 'New Table' : 'New Psychoeducation')
+                      }
                     </h3>
                     <p className="text-sm text-gray-500">
-                      {locale === 'fr' ? 'Commencer à partir de zéro' : 'Start from scratch'}
+                      {locale === 'fr' ? 'Créez sans modèle' : 'Start from scratch'}
                     </p>
                   </motion.button>
                 </div>

@@ -49,18 +49,6 @@ const generateId = () => Math.random().toString(36).substring(2, 9)
 // Table exercise templates for quick start
 const tableTemplates = [
   {
-    id: 'thought-log',
-    name: { en: 'Thought Log', fr: 'Journal de pensées' },
-    description: { en: 'Track thoughts and emotions over time', fr: 'Suivre les pensées et émotions au fil du temps' },
-    columns: [
-      { id: '1', header: 'Date/Time', description: 'When did this happen?' },
-      { id: '2', header: 'Situation', description: 'What was happening?' },
-      { id: '3', header: 'Thought', description: 'What went through your mind?' },
-      { id: '4', header: 'Emotion', description: 'How did you feel? (0-100%)' },
-    ],
-    instructions: 'Use this log to track your thoughts throughout the day. Notice patterns in your thinking.',
-  },
-  {
     id: 'emotion-tracker',
     name: { en: 'Emotion Tracker', fr: 'Suivi des émotions' },
     description: { en: 'Monitor emotions and coping strategies', fr: 'Surveiller les émotions et stratégies d\'adaptation' },
@@ -83,6 +71,21 @@ const tableTemplates = [
       { id: '3', header: 'Why it matters', description: 'Why is this meaningful?' },
     ],
     instructions: 'Each day, add at least one thing you\'re grateful for. Reflect on why it matters to you.',
+  },
+  {
+    id: 'cognitive-restructuring',
+    name: { en: 'Cognitive Restructuring Chart', fr: 'Tableau de restructuration cognitive' },
+    description: { en: 'Challenge and reframe negative thoughts', fr: 'Remettre en question et reformuler les pensées négatives' },
+    columns: [
+      { id: '1', header: 'Situation', description: 'What happened? Where were you?' },
+      { id: '2', header: 'Automatic Thought', description: 'What went through your mind?' },
+      { id: '3', header: 'Emotion (0-100%)', description: 'How did you feel? Rate intensity' },
+      { id: '4', header: 'Evidence For', description: 'Facts that support the thought' },
+      { id: '5', header: 'Evidence Against', description: 'Facts that contradict it' },
+      { id: '6', header: 'Balanced Thought', description: 'A more realistic perspective' },
+      { id: '7', header: 'New Emotion (0-100%)', description: 'How do you feel now?' },
+    ],
+    instructions: 'Use this chart to identify negative automatic thoughts and develop more balanced perspectives. Start by describing the situation, then work through each column to challenge unhelpful thinking patterns.',
   },
   {
     id: 'blank',
@@ -614,12 +617,12 @@ function CreateTableExerciseContent() {
                   </div>
                 </motion.div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                  {locale === 'fr' ? 'Créer un tableau' : 'Create a Table Exercise'}
+                  {locale === 'fr' ? 'Nouveau tableau' : 'New Table'}
                 </h1>
                 <p className="text-gray-600 max-w-md mx-auto">
                   {locale === 'fr'
-                    ? 'Personnalisez un modèle existant ou créez votre tableau à partir de zéro'
-                    : 'Start with a template or create from scratch'}
+                    ? 'Créez sans modèle ou personnalisez un modèle existant'
+                    : 'Start from scratch or customize an existing template'}
                 </p>
               </div>
 
@@ -837,8 +840,8 @@ function CreateTableExerciseContent() {
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900">
                       {editId
-                        ? (locale === 'fr' ? 'Modifier l\'exercice tableau' : 'Edit Table Exercise')
-                        : (locale === 'fr' ? 'Nouvel exercice tableau' : 'New Table Exercise')
+                        ? (locale === 'fr' ? 'Modifier le tableau' : 'Edit Table')
+                        : (locale === 'fr' ? 'Nouveau tableau' : 'New Table')
                       }
                     </h1>
                     <p className="text-gray-600 text-sm">

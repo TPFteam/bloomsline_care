@@ -293,7 +293,7 @@ export default function AnalyticsPage() {
           leftContent={
             <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <Activity className="w-4 h-4" />
-              <span>{locale === 'fr' ? 'Votre pratique' : 'Your practice'}</span>
+              <span>Engagement</span>
             </div>
           }
         />

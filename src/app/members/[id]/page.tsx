@@ -46,6 +46,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
   const [user, setUser] = useState<UserType | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>('overview')
+  const [highlightId, setHighlightId] = useState<string | undefined>(undefined)
   const [notes, setNotes] = useState<ProgressNote[]>([])
   const [sessions, setSessions] = useState<MemberSession[]>([])
 
@@ -142,6 +143,16 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
       if (sessionsData) setSessions(sessionsData)
     } catch (error) {
       console.error('Error fetching related data:', error)
+    }
+  }
+
+  // Handler for navigating to tabs with optional highlight
+  const handleNavigateToTab = (tab: TabId, id?: string) => {
+    setActiveTab(tab)
+    setHighlightId(id)
+    // Clear highlight after 3 seconds
+    if (id) {
+      setTimeout(() => setHighlightId(undefined), 3000)
     }
   }
 
@@ -334,6 +345,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                   notes={notes}
                   sessions={sessions}
                   onMemberUpdate={fetchMember}
+                  onNavigateToTab={handleNavigateToTab}
                 />
               )}
               {activeTab === 'sessions' && (
@@ -342,16 +354,17 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                   member={member}
                   sessions={sessions}
                   onSessionsUpdate={fetchRelatedData}
+                  highlightSessionId={highlightId}
                 />
               )}
               {activeTab === 'progress' && (
-                <ProgressTab memberId={member.id} notes={notes} onNotesUpdate={fetchRelatedData} />
+                <ProgressTab memberId={member.id} notes={notes} onNotesUpdate={fetchRelatedData} highlightMilestoneId={highlightId} />
               )}
               {activeTab === 'files' && (
                 <FilesTab memberId={member.id} member={member} onMemberUpdate={fetchMember} />
               )}
               {activeTab === 'shared' && (
-                <SharedTab memberId={member.id} member={member} />
+                <SharedTab memberId={member.id} member={member} highlightResourceId={highlightId} />
               )}
             </motion.div>
           </AnimatePresence>
