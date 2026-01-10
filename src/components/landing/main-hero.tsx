@@ -340,10 +340,10 @@ export function MainHero() {
                     <button
                       key={tab.id}
                       onClick={() => setPersonalSubTab(tab.id)}
-                      className={`inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-xs sm:text-sm transition-all whitespace-nowrap ${
+                      className={`inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-2.5 py-1 rounded-full text-xs sm:text-sm transition-all whitespace-nowrap ${
                         personalSubTab === tab.id
-                          ? 'bg-[#4A9A86]/10 text-[#4A9A86] font-medium'
-                          : 'text-neutral-400 hover:text-neutral-600'
+                          ? 'bg-[#4A9A86]/15 text-[#4A9A86] font-medium'
+                          : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700'
                       }`}
                     >
                       <tab.Icon className="w-3 h-3" />
@@ -1531,10 +1531,10 @@ export function MainHero() {
                     <button
                       key={tab.id}
                       onClick={() => setPractitionerSubTab(tab.id)}
-                      className={`inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-xs sm:text-sm transition-all whitespace-nowrap ${
+                      className={`inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-2.5 py-1 rounded-full text-xs sm:text-sm transition-all whitespace-nowrap ${
                         practitionerSubTab === tab.id
-                          ? 'bg-[#D4856A]/10 text-[#D4856A] font-medium'
-                          : 'text-neutral-400 hover:text-neutral-600'
+                          ? 'bg-[#D4856A]/15 text-[#D4856A] font-medium'
+                          : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700'
                       }`}
                     >
                       <tab.Icon className="w-3 h-3" />
