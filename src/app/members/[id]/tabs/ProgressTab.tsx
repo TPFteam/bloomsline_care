@@ -624,7 +624,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
     {
       id: 'discovery',
       title: 'Discovery',
-      titleFr: 'Comprendre',
+      titleFr: 'Compréhension',
       description: 'Understanding needs, building trust, and identifying areas for growth together.',
       descriptionFr: 'Mettre des mots sur ce qui se joue et comprendre ses mécanismes.',
       icon: Target,
@@ -750,7 +750,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                       }`}
                     >
                       {initialStatus === 'discovery' && <CheckCircle className="w-4 h-4" />}
-                      {locale === 'fr' ? 'Comprendre' : 'Discovery'}
+                      {locale === 'fr' ? 'Compréhension' : 'Discovery'}
                     </button>
                     <button
                       type="button"
