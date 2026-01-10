@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
-import type { Milestone, MilestoneCategory, MilestoneStatus, ProgressNote, NoteType } from '@/types/member'
+import type { Milestone, MilestoneCategory, MilestoneStatus, MilestoneComment, ProgressNote, NoteType } from '@/types/member'
 
 interface ProgressTabProps {
   memberId: string
@@ -42,26 +42,51 @@ const categoryColors: Record<MilestoneCategory, { bg: string; text: string; dot:
 interface MilestoneCardProps {
   milestone: Milestone
   columnId: MilestoneStatus
+  comments: MilestoneComment[]
   onToggleShare: (id: string, shared: boolean) => void
   onDelete: (id: string) => void
   onUpdateStatus: (id: string, status: MilestoneStatus) => void
+  onAddComment: (milestoneId: string, content: string) => Promise<void>
+  onDeleteComment: (commentId: string) => Promise<void>
   categoryLabel: string
+  locale: string
 }
 
 const MilestoneCard = memo(function MilestoneCard({
   milestone,
   columnId,
+  comments,
   onToggleShare,
   onDelete,
   onUpdateStatus,
+  onAddComment,
+  onDeleteComment,
   categoryLabel,
+  locale,
 }: MilestoneCardProps) {
-  const catStyle = categoryColors[milestone.category]
+  const [showComments, setShowComments] = useState(false)
+  const [newComment, setNewComment] = useState('')
+  const [savingComment, setSavingComment] = useState(false)
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.dataTransfer.setData('milestoneId', milestone.id)
     e.dataTransfer.setData('sourceColumn', columnId)
     e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return
+    setSavingComment(true)
+    await onAddComment(milestone.id, newComment.trim())
+    setNewComment('')
+    setSavingComment(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleAddComment()
+    }
   }
 
   return (
@@ -88,26 +113,118 @@ const MilestoneCard = memo(function MilestoneCard({
               </p>
             )}
           </div>
-          <button
-            onClick={() => onDelete(milestone.id)}
-            className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowComments(!showComments)}
+              className={`p-1.5 rounded-lg transition-all flex items-center gap-1 ${
+                comments.length > 0
+                  ? 'text-blue-500 bg-blue-50'
+                  : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-500 hover:bg-blue-50'
+              }`}
+              title={locale === 'fr' ? 'Commentaires' : 'Comments'}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              {comments.length > 0 && (
+                <span className="text-[10px] font-medium">{comments.length}</span>
+              )}
+            </button>
+            <button
+              onClick={() => onDelete(milestone.id)}
+              className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
+        {/* Comments Preview (show latest comment when collapsed) */}
+        {comments.length > 0 && !showComments && (
+          <div
+            onClick={() => setShowComments(true)}
+            className="mt-2 p-2 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors"
+          >
+            <p className="text-xs text-blue-700 line-clamp-2">{comments[0].content}</p>
+            {comments.length > 1 && (
+              <p className="text-[10px] text-blue-500 mt-1">
+                +{comments.length - 1} {locale === 'fr' ? 'autre(s)' : 'more'}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Comments Section */}
+        {showComments && (
+          <div className="mt-3 space-y-2">
+            {/* Existing Comments */}
+            {comments.length > 0 && (
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="group/comment p-2 bg-gray-50 rounded-lg">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-xs text-gray-700 flex-1">{comment.content}</p>
+                      <button
+                        onClick={() => onDeleteComment(comment.id)}
+                        className="opacity-0 group-hover/comment:opacity-100 p-1 text-gray-400 hover:text-red-500 rounded transition-all shrink-0"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-1">
+                      {new Date(comment.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add New Comment */}
+            <div className="flex gap-2">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={locale === 'fr' ? 'Ajouter un commentaire...' : 'Add a comment...'}
+                className="flex-1 px-3 py-2 text-xs rounded-lg border border-gray-200 focus:border-blue-300 focus:ring-1 focus:ring-blue-100 outline-none resize-none"
+                rows={2}
+              />
+            </div>
+            <div className="flex justify-between items-center">
+              <button
+                onClick={() => setShowComments(false)}
+                className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+              >
+                {locale === 'fr' ? 'Fermer' : 'Close'}
+              </button>
+              <button
+                onClick={handleAddComment}
+                disabled={savingComment || !newComment.trim()}
+                className="px-3 py-1.5 text-xs bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50"
+              >
+                {savingComment
+                  ? (locale === 'fr' ? 'Ajout...' : 'Adding...')
+                  : (locale === 'fr' ? 'Ajouter' : 'Add')
+                }
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Independent Date */}
-        {columnId === 'independent' && milestone.achieved_at && (
+        {columnId === 'independent' && milestone.achieved_at && !showComments && (
           <div className="flex items-center gap-1.5 mt-3 text-xs text-violet-600">
             <Sparkles className="w-3 h-3" />
-            <span>Validated {new Date(milestone.achieved_at).toLocaleDateString()}</span>
+            <span>{locale === 'fr' ? 'Validé le' : 'Validated'} {new Date(milestone.achieved_at).toLocaleDateString()}</span>
           </div>
         )}
 
         {/* Drag hint */}
-        <div className="mt-3 pt-2 border-t border-gray-50 text-center">
-          <span className="text-[10px] text-gray-400 uppercase tracking-wider">Drag to move</span>
-        </div>
+        {!showComments && (
+          <div className="mt-3 pt-2 border-t border-gray-50 text-center">
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider">
+              {locale === 'fr' ? 'Glisser pour déplacer' : 'Drag to move'}
+            </span>
+          </div>
+        )}
       </motion.div>
     </div>
   )
@@ -128,6 +245,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
   const supabase = createClient()
 
   const [milestones, setMilestones] = useState<Milestone[]>([])
+  const [milestoneComments, setMilestoneComments] = useState<Record<string, MilestoneComment[]>>({})
   const [loading, setLoading] = useState(true)
   const [showAddMilestone, setShowAddMilestone] = useState(false)
   const [title, setTitle] = useState('')
@@ -184,6 +302,28 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
       })
 
       setMilestones(mappedData)
+
+      // Fetch comments for all milestones
+      if (mappedData.length > 0) {
+        const milestoneIds = mappedData.map(m => m.id)
+        const { data: commentsData, error: commentsError } = await supabase
+          .from('milestone_comments')
+          .select('*')
+          .in('milestone_id', milestoneIds)
+          .order('created_at', { ascending: false })
+
+        if (!commentsError && commentsData) {
+          // Group comments by milestone_id
+          const groupedComments: Record<string, MilestoneComment[]> = {}
+          commentsData.forEach(comment => {
+            if (!groupedComments[comment.milestone_id]) {
+              groupedComments[comment.milestone_id] = []
+            }
+            groupedComments[comment.milestone_id].push(comment)
+          })
+          setMilestoneComments(groupedComments)
+        }
+      }
     } catch (error) {
       console.error('Error fetching milestones:', error)
     } finally {
@@ -219,7 +359,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
 
       if (error) throw error
 
-      toast.success('Hypothesis added')
+      toast.success('Journey added')
       setShowAddMilestone(false)
       setTitle('')
       setDescription('')
@@ -227,7 +367,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
       fetchMilestones()
     } catch (error) {
       console.error('Error adding milestone:', error)
-      toast.error('Failed to add hypothesis')
+      toast.error('Failed to add journey')
     } finally {
       setSaving(false)
     }
@@ -256,18 +396,18 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
         discovery: 'Moved to Discovery',
         building: 'Moved to Building',
         thriving: 'Moved to Thriving',
-        independent: 'Hypothesis validated! 🎉',
+        independent: 'Journey completed! 🎉',
       }
       toast.success(statusMessages[newStatus])
       fetchMilestones()
     } catch (error) {
       console.error('Error updating milestone:', error)
-      toast.error('Failed to update hypothesis')
+      toast.error('Failed to update journey')
     }
   }, [supabase])
 
   const handleDelete = useCallback(async (milestoneId: string) => {
-    if (!confirm('Are you sure you want to delete this hypothesis?')) return
+    if (!confirm('Are you sure you want to delete this journey?')) return
 
     try {
       const { error } = await supabase
@@ -277,11 +417,11 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
 
       if (error) throw error
 
-      toast.success('Hypothesis deleted')
+      toast.success('Journey deleted')
       fetchMilestones()
     } catch (error) {
       console.error('Error deleting milestone:', error)
-      toast.error('Failed to delete hypothesis')
+      toast.error('Failed to delete journey')
     }
   }, [supabase])
 
@@ -297,13 +437,53 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
 
       if (error) throw error
 
-      toast.success(currentlyShared ? 'Hypothesis hidden from member' : 'Hypothesis shared with member')
+      toast.success(currentlyShared ? 'Journey hidden from member' : 'Journey shared with member')
       fetchMilestones()
     } catch (error) {
       console.error('Error toggling share:', error)
       toast.error('Failed to update sharing')
     }
   }, [supabase])
+
+  const handleAddComment = useCallback(async (milestoneId: string, content: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { error } = await supabase
+        .from('milestone_comments')
+        .insert({
+          milestone_id: milestoneId,
+          practitioner_id: user.id,
+          content: content,
+        })
+
+      if (error) throw error
+
+      toast.success(locale === 'fr' ? 'Commentaire ajouté' : 'Comment added')
+      fetchMilestones()
+    } catch (error) {
+      console.error('Error adding comment:', error)
+      toast.error(locale === 'fr' ? 'Échec de l\'ajout' : 'Failed to add comment')
+    }
+  }, [supabase, locale])
+
+  const handleDeleteComment = useCallback(async (commentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('milestone_comments')
+        .delete()
+        .eq('id', commentId)
+
+      if (error) throw error
+
+      toast.success(locale === 'fr' ? 'Commentaire supprimé' : 'Comment deleted')
+      fetchMilestones()
+    } catch (error) {
+      console.error('Error deleting comment:', error)
+      toast.error(locale === 'fr' ? 'Échec de la suppression' : 'Failed to delete comment')
+    }
+  }, [supabase, locale])
 
   // Drag and drop handlers
   const handleDragOver = useCallback((e: React.DragEvent, columnId: MilestoneStatus) => {
@@ -479,7 +659,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
       <div className="flex items-center justify-center py-16">
         <div className="bg-white rounded-2xl  border border-gray-200 p-8 text-center">
           <div className="w-12 h-12 border-4 border-lavender-500 border-t-transparent rounded-full animate-spin mx-auto mb-4 animate-pulse-glow"></div>
-          <p className="text-gray-500 font-medium">Loading hypotheses...</p>
+          <p className="text-gray-500 font-medium">Loading journeys...</p>
         </div>
       </div>
     )
@@ -500,7 +680,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
               <div className="flex items-center justify-between mb-5">
                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                   <Target className="w-5 h-5 text-lavender-500" />
-                  Add New Hypothesis
+                  {locale === 'fr' ? 'Nouvelle trajectoire' : 'Add New Journey'}
                 </h3>
                 <button
                   onClick={() => setShowAddMilestone(false)}
@@ -513,13 +693,13 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Hypothesis Title *
+                    {locale === 'fr' ? 'Titre de la trajectoire *' : 'Journey Title *'}
                   </label>
                   <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g., Practice breathing exercises daily"
+                    placeholder={locale === 'fr' ? 'ex: Pratiquer des exercices de respiration' : 'e.g., Practice breathing exercises daily'}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
                     autoFocus
                   />
@@ -527,12 +707,12 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description (optional)
+                    {locale === 'fr' ? 'Description (optionnel)' : 'Description (optional)'}
                   </label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Additional details about this hypothesis..."
+                    placeholder={locale === 'fr' ? 'Détails supplémentaires sur cette trajectoire...' : 'Additional details about this journey...'}
                     rows={2}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none resize-none bg-white "
                   />
@@ -540,7 +720,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Initial Status
+                    {locale === 'fr' ? 'Statut initial' : 'Initial Status'}
                   </label>
                   <select
                     value={initialStatus}
@@ -557,14 +737,14 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
 
               <div className="flex justify-end gap-3 mt-6">
                 <Button variant="ghost" onClick={() => setShowAddMilestone(false)} className="rounded-xl">
-                  Cancel
+                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
                 </Button>
                 <Button
                   onClick={handleAddMilestone}
                   disabled={saving}
                   className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50"
                 >
-                  {saving ? 'Adding...' : 'Add Hypothesis'}
+                  {saving ? (locale === 'fr' ? 'Ajout...' : 'Adding...') : (locale === 'fr' ? 'Ajouter' : 'Add Journey')}
                 </Button>
               </div>
             </div>
@@ -572,49 +752,19 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
         )}
       </AnimatePresence>
 
-      {/* Add Hypothesis Button */}
-      {milestones.length > 0 && (
-        <div className="flex items-center justify-end">
-          <Button
-            onClick={() => setShowAddMilestone(!showAddMilestone)}
-            className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Hypothesis
-          </Button>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {milestones.length === 0 && !showAddMilestone ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl  border border-gray-200 p-16 text-center"
+      {/* Add Journey Button */}
+      <div className="flex items-center justify-end">
+        <Button
+          onClick={() => setShowAddMilestone(!showAddMilestone)}
+          className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
         >
-          <div className="relative inline-block">
-            <div className="absolute inset-0 bg-gradient-to-br from-lavender-400/30 to-mint-400/30 rounded-3xl blur-xl" />
-            <div className="relative w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-              <Target className="w-10 h-10 text-blue-600" />
-            </div>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-3">
-            {t.members.progress.noMilestones}
-          </h3>
-          <p className="text-gray-500 mb-8 max-w-md mx-auto">
-            {t.members.progress.noMilestonesDescription}
-          </p>
-          <Button
-            onClick={() => setShowAddMilestone(true)}
-            className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 px-6 transition-colors hover-lift"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add First Hypothesis
-          </Button>
-        </motion.div>
-      ) : milestones.length > 0 && (
-        /* Kanban Board */
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Plus className="w-4 h-4 mr-2" />
+          {locale === 'fr' ? 'Ajouter une trajectoire' : 'Add Journey'}
+        </Button>
+      </div>
+
+      {/* Kanban Board */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
           {columns.map((column) => {
             const Icon = column.icon
             return (
@@ -622,13 +772,13 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                 key={column.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`bg-gradient-to-b ${column.bgColor} rounded-2xl border ${column.borderColor} min-h-[400px] flex flex-col`}
+                className={`bg-gradient-to-b ${column.bgColor} rounded-2xl border ${column.borderColor} flex flex-col`}
               >
                 {/* Column Header */}
                 <div className="p-4 border-b border-white/50">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <div className={`w-8 h-8 rounded-lg bg-white flex items-center justify-center `}>
+                      <div className={`w-8 h-8 rounded-lg bg-white flex items-center justify-center`}>
                         <Icon className={`w-4 h-4 ${column.color}`} />
                       </div>
                       <h3 className="font-semibold text-gray-900">{locale === 'fr' ? column.titleFr : column.title}</h3>
@@ -644,7 +794,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
 
                 {/* Column Content - Drop Zone */}
                 <div
-                  className={`flex-1 p-3 space-y-3 overflow-y-auto transition-all ${
+                  className={`p-3 space-y-3 transition-all min-h-[100px] ${
                     dragOverColumn === column.id ? 'bg-white/30 ring-2 ring-inset ring-gray-300 ring-dashed' : ''
                   }`}
                   onDragOver={(e) => handleDragOver(e, column.id)}
@@ -657,31 +807,54 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                         key={milestone.id}
                         milestone={milestone}
                         columnId={column.id}
+                        comments={milestoneComments[milestone.id] || []}
                         onToggleShare={handleToggleShare}
                         onDelete={handleDelete}
                         onUpdateStatus={handleUpdateStatus}
+                        onAddComment={handleAddComment}
+                        onDeleteComment={handleDeleteComment}
                         categoryLabel={t.members.milestoneCategories[milestone.category]}
+                        locale={locale}
                       />
                     ))}
                   </AnimatePresence>
 
                   {/* Empty Column State */}
-                  {column.items.length === 0 && (
-                    <div className="text-center py-8">
-                      <div className={`w-12 h-12 rounded-xl bg-white/60 flex items-center justify-center mx-auto mb-3`}>
-                        <Icon className={`w-6 h-6 ${column.color} opacity-50`} />
-                      </div>
+                  {column.items.length === 0 && dragOverColumn !== column.id && (
+                    <div className="text-center py-4">
                       <p className="text-sm text-gray-400">
-                        {dragOverColumn === column.id ? 'Drop here' : 'No hypotheses here yet'}
+                        {locale === 'fr' ? 'Aucune trajectoire' : 'No journeys'}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Drop indicator */}
+                  {dragOverColumn === column.id && column.items.length === 0 && (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-gray-500 font-medium">
+                        {locale === 'fr' ? 'Déposez ici' : 'Drop here'}
                       </p>
                     </div>
                   )}
                 </div>
+
+                {/* Add Card Button */}
+                <div className="p-3 pt-0">
+                  <button
+                    onClick={() => {
+                      setInitialStatus(column.id)
+                      setShowAddMilestone(true)
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-500 hover:bg-white/50 hover:text-gray-700 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{locale === 'fr' ? 'Ajouter une carte' : 'Add a card'}</span>
+                  </button>
+                </div>
               </motion.div>
             )
           })}
-        </div>
-      )}
+      </div>
 
       {/* Progress Summary */}
       {milestones.length > 0 && (
@@ -690,9 +863,9 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
           animate={{ opacity: 1, y: 0 }}
           className="grid grid-cols-5 gap-3"
         >
-          {/* Total Hypotheses Card */}
+          {/* Total Journeys Card */}
           <div className="bg-white rounded-2xl p-4 border border-gray-200">
-            <p className="text-xs text-gray-500 mb-1">Total Hypotheses</p>
+            <p className="text-xs text-gray-500 mb-1">Total Journeys</p>
             <p className="text-2xl font-bold text-gray-900">{milestones.length}</p>
           </div>
 

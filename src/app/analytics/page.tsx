@@ -42,7 +42,7 @@ interface AnalyticsData {
   sessionsThisMonth: number
   newMembersThisMonth: number
 
-  // Journey stages (hypotheses)
+  // Journey stages
   discoveryCount: number
   buildingCount: number
   thrivingCount: number
@@ -157,7 +157,7 @@ export default function AnalyticsPage() {
           .select('id, status, scheduled_at')
           .eq('practitioner_id', user.id),
 
-        // Milestones (hypotheses)
+        // Journeys
         supabase
           .from('milestones')
           .select('id, status')
@@ -281,7 +281,7 @@ export default function AnalyticsPage() {
     ? Math.round((data.completedSessions / data.totalSessions) * 100)
     : 0
 
-  const totalHypotheses = data.discoveryCount + data.buildingCount + data.thrivingCount + data.independentCount
+  const totalJourneys = data.discoveryCount + data.buildingCount + data.thrivingCount + data.independentCount
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -431,7 +431,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Journey Progress */}
-          {totalHypotheses > 0 && (
+          {totalJourneys > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -444,12 +444,12 @@ export default function AnalyticsPage() {
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-900">
-                    {locale === 'fr' ? 'Parcours des hypothèses' : 'Hypothesis journey'}
+                    {locale === 'fr' ? 'Parcours des trajectoires' : 'Journey progress'}
                   </h3>
                   <p className="text-sm text-gray-500">
                     {locale === 'fr'
-                      ? `${totalHypotheses} hypothèses suivies au total`
-                      : `${totalHypotheses} hypotheses tracked in total`
+                      ? `${totalJourneys} trajectoires suivies au total`
+                      : `${totalJourneys} journeys tracked in total`
                     }
                   </p>
                 </div>

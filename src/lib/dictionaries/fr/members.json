@@ -173,10 +173,10 @@
 
   "progress": {
     "title": "Progrès et Croissance",
-    "milestones": "Hypothèses",
-    "addMilestone": "Ajouter une Hypothèse",
-    "noMilestones": "Aucune hypothèse pour le moment",
-    "noMilestonesDescription": "Suivez les progrès de votre client en ajoutant des hypothèses à explorer",
+    "milestones": "Trajectoires",
+    "addMilestone": "Ajouter une Trajectoire",
+    "noMilestones": "Aucune trajectoire pour le moment",
+    "noMilestonesDescription": "Suivez les progrès de votre client en ajoutant des trajectoires à explorer",
     "planned": "Planifié",
     "inProgress": "En Cours",
     "achieved": "Atteint",

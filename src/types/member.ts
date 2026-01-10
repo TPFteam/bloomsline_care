@@ -228,7 +228,19 @@ export interface Milestone {
   // Sharing
   shared_with_member: boolean
 
+  // Notes/Comments (legacy single note)
+  notes: string | null
+
   // Metadata
+  created_at: string
+  updated_at: string
+}
+
+export interface MilestoneComment {
+  id: string
+  milestone_id: string
+  practitioner_id: string
+  content: string
   created_at: string
   updated_at: string
 }
