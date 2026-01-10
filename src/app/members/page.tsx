@@ -341,7 +341,7 @@ export default function MembersPage() {
           leftContent={
             <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <Users className="w-4 h-4" strokeWidth={2.5} />
-              <span>{locale === 'fr' ? 'Personnes suivies' : 'Members'}</span>
+              <span>{locale === 'fr' ? 'Personnes suivies' : 'People'}</span>
             </div>
           }
         />
