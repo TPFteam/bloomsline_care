@@ -624,9 +624,9 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
     {
       id: 'discovery',
       title: 'Discovery',
-      titleFr: 'Découverte',
+      titleFr: 'Comprendre',
       description: 'Understanding needs, building trust, and identifying areas for growth together.',
-      descriptionFr: 'Comprendre les besoins, établir la confiance et identifier les domaines de croissance.',
+      descriptionFr: 'Mettre des mots sur ce qui se joue et comprendre ses mécanismes.',
       icon: Target,
       color: 'text-emerald-500',
       bgColor: 'from-emerald-50/50 to-emerald-100/30',
@@ -636,9 +636,9 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
     {
       id: 'building',
       title: 'Building',
-      titleFr: 'Construction',
+      titleFr: 'Ancrage',
       description: 'Actively working through challenges and developing new skills and coping strategies.',
-      descriptionFr: 'Travailler activement sur les défis et développer de nouvelles compétences.',
+      descriptionFr: 'Installer des repères stables pour mieux traverser les situations.',
       icon: Play,
       color: 'text-emerald-600',
       bgColor: 'from-emerald-100/50 to-emerald-200/30',
@@ -648,9 +648,9 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
     {
       id: 'thriving',
       title: 'Thriving',
-      titleFr: 'Épanouissement',
+      titleFr: 'Évolution',
       description: 'Maintaining progress and consistently applying learned strategies in daily life.',
-      descriptionFr: 'Maintenir les progrès et appliquer les stratégies apprises au quotidien.',
+      descriptionFr: 'Expérimenter de nouvelles façons de penser, d\'agir et de réagir.',
       icon: CheckCircle,
       color: 'text-emerald-700',
       bgColor: 'from-emerald-200/50 to-emerald-300/30',
@@ -660,9 +660,9 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
     {
       id: 'independent',
       title: 'Independent',
-      titleFr: 'Autonome',
+      titleFr: 'Autonomie',
       description: 'Confidently self-managing with minimal guidance, ready to continue the journey solo.',
-      descriptionFr: 'Gérer avec confiance de manière autonome, prêt à continuer seul.',
+      descriptionFr: 'Mobiliser ses ressources de manière durable et indépendante.',
       icon: Sparkles,
       color: 'text-emerald-800',
       bgColor: 'from-emerald-300/50 to-emerald-400/30',
@@ -749,7 +749,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                           : 'bg-emerald-50/50 text-emerald-600 hover:bg-emerald-100/50 border border-emerald-200/50'
                       }`}
                     >
-                      {locale === 'fr' ? 'Découverte' : 'Discovery'}
+                      {locale === 'fr' ? 'Comprendre' : 'Discovery'}
                     </button>
                     <button
                       type="button"
@@ -760,7 +760,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                           : 'bg-emerald-100/50 text-emerald-700 hover:bg-emerald-200/50 border border-emerald-300/50'
                       }`}
                     >
-                      {locale === 'fr' ? 'Construction' : 'Building'}
+                      {locale === 'fr' ? 'Ancrage' : 'Building'}
                     </button>
                     <button
                       type="button"
@@ -771,7 +771,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                           : 'bg-emerald-200/50 text-emerald-800 hover:bg-emerald-300/50 border border-emerald-400/50'
                       }`}
                     >
-                      {locale === 'fr' ? 'Épanouissement' : 'Thriving'}
+                      {locale === 'fr' ? 'Évolution' : 'Thriving'}
                     </button>
                     <button
                       type="button"
@@ -782,7 +782,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                           : 'bg-emerald-300/50 text-emerald-900 hover:bg-emerald-400/50 border border-emerald-500/50'
                       }`}
                     >
-                      {locale === 'fr' ? 'Autonome' : 'Independent'}
+                      {locale === 'fr' ? 'Autonomie' : 'Independent'}
                     </button>
                   </div>
                 </div>
