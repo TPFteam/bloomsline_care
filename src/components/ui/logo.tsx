@@ -31,24 +31,24 @@ export function Logo({ size = 'sm', className, showText = false, variant = 'ligh
       <div className={cn(
         "absolute inset-0 rounded-xl",
         variant === 'light'
-          ? "bg-gradient-to-br from-teal-100 to-lavender-100"
-          : "bg-gradient-to-br from-teal-800/50 to-lavender-800/50"
+          ? "bg-gradient-to-br from-[#4A9A86]/20 to-[#D4856A]/20"
+          : "bg-gradient-to-br from-[#4A9A86]/30 to-[#D4856A]/30"
       )} />
 
       {/* Animated bloom/flower */}
       <div className="relative w-full h-full flex items-center justify-center">
-        {/* Center circle */}
+        {/* Center circle - Teal */}
         <motion.div
-          className="absolute w-2/5 h-2/5 bg-gradient-to-br from-teal-400 to-teal-500 rounded-full z-10"
+          className="absolute w-2/5 h-2/5 bg-gradient-to-br from-[#4A9A86] to-[#5AB39C] rounded-full z-10"
           animate={{ scale: [1, 1.1, 1] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         />
 
-        {/* Petals */}
+        {/* Petals - Coral */}
         {[0, 60, 120, 180, 240, 300].map((rotation, i) => (
           <motion.div
             key={i}
-            className="absolute w-1/4 h-2/5 bg-gradient-to-t from-lavender-400 to-lavender-300 rounded-full origin-bottom"
+            className="absolute w-1/4 h-2/5 bg-gradient-to-t from-[#D4856A] to-[#E8A87C] rounded-full origin-bottom"
             style={{
               transform: `rotate(${rotation}deg) translateY(-35%)`,
             }}
