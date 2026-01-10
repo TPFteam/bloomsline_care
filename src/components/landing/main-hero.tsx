@@ -315,17 +315,17 @@ export function MainHero() {
                   <Search className="w-4 h-4 text-neutral-400 shrink-0" />
                   <AnimatePresence mode="wait">
                     {personalSubTab === 'moments' && (
-                      <motion.span key="moments-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-neutral-700 text-sm">
+                      <motion.span key="moments-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="hidden sm:inline text-neutral-700 text-sm">
                         {locale === 'fr' ? 'Capturer ce' : 'Capture this'}
                       </motion.span>
                     )}
                     {personalSubTab === 'rituals' && (
-                      <motion.span key="rituals-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-neutral-700 text-sm">
+                      <motion.span key="rituals-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="hidden sm:inline text-neutral-700 text-sm">
                         {locale === 'fr' ? 'Commencer mon' : 'Start my'}
                       </motion.span>
                     )}
                     {personalSubTab === 'balance' && (
-                      <motion.span key="balance-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-neutral-700 text-sm">
+                      <motion.span key="balance-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="hidden sm:inline text-neutral-700 text-sm">
                         {locale === 'fr' ? 'Comment va mon' : 'How is my'}
                       </motion.span>
                     )}
@@ -1506,17 +1506,17 @@ export function MainHero() {
                   <Search className="w-4 h-4 text-neutral-400 shrink-0" />
                   <AnimatePresence mode="wait">
                     {practitionerSubTab === 'members' && (
-                      <motion.span key="members-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-neutral-700 text-sm">
+                      <motion.span key="members-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="hidden sm:inline text-neutral-700 text-sm">
                         {locale === 'fr' ? 'Voir mes' : 'View my'}
                       </motion.span>
                     )}
                     {practitionerSubTab === 'journeys' && (
-                      <motion.span key="journeys-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-neutral-700 text-sm">
+                      <motion.span key="journeys-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="hidden sm:inline text-neutral-700 text-sm">
                         {locale === 'fr' ? 'Suivre les' : 'Track client'}
                       </motion.span>
                     )}
                     {practitionerSubTab === 'resources' && (
-                      <motion.span key="resources-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-neutral-700 text-sm">
+                      <motion.span key="resources-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="hidden sm:inline text-neutral-700 text-sm">
                         {locale === 'fr' ? 'Partager une' : 'Share a'}
                       </motion.span>
                     )}
