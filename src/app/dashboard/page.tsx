@@ -715,7 +715,7 @@ function DashboardContent() {
                 {locale === 'fr' ? 'Modèles à explorer' : 'Explore templates'}
               </h2>
 
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
                 {featuredTemplates.map((template, index) => {
                   const TemplateIcon = getTemplateIcon(template.type)
                   const colorClass = getTemplateColor(template.type)
