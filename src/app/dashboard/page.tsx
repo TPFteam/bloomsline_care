@@ -22,7 +22,12 @@ import {
   Calendar,
   CheckCircle2,
   Send,
+  Mail,
+  Phone,
+  Save,
+  Loader2,
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
@@ -99,6 +104,11 @@ function DashboardContent() {
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
   const [selectedType, setSelectedType] = useState<ResourceType | null>(null)
+
+  // Add Member Modal
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false)
+  const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '' })
+  const [savingMember, setSavingMember] = useState(false)
 
   // Featured templates - one from each type
   const featuredTemplates: TemplateOption[] = [
@@ -277,6 +287,59 @@ function DashboardContent() {
     }
   }, [supabase])
 
+  // Handle Add Member
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!newMember.firstName.trim() || !newMember.lastName.trim() || !newMember.email.trim()) {
+      toast.error(locale === 'fr'
+        ? 'Le prénom, le nom et l\'email sont requis'
+        : 'First name, last name, and email are required')
+      return
+    }
+
+    setSavingMember(true)
+
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) {
+        router.push('/sign-in')
+        return
+      }
+
+      const memberData = {
+        practitioner_id: authUser.id,
+        first_name: newMember.firstName.trim(),
+        last_name: newMember.lastName.trim(),
+        email: newMember.email.trim(),
+        phone: newMember.phone.trim() || null,
+        status: 'pending' as const,
+        engagement_level: 'medium' as const,
+      }
+
+      const { error } = await supabase
+        .from('members')
+        .insert(memberData)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Reset form and close modal
+      setNewMember({ firstName: '', lastName: '', email: '', phone: '' })
+      setShowAddMemberModal(false)
+      toast.success(locale === 'fr' ? 'Patient créé avec succès!' : 'Member created successfully!')
+
+      // Refresh activity
+      await fetchRecentActivity(authUser.id, locale)
+    } catch (error) {
+      console.error('Error creating member:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors de la création' : 'Error creating member')
+    } finally {
+      setSavingMember(false)
+    }
+  }
+
   useEffect(() => {
     const getUser = async () => {
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
@@ -445,6 +508,15 @@ function DashboardContent() {
       bgColor: 'bg-amber-50',
       comingSoon: true,
     },
+    {
+      id: 'add-patient',
+      type: null,
+      title: locale === 'fr' ? 'Patient' : 'Patient',
+      icon: UserPlus,
+      color: 'from-rose-400 to-rose-500',
+      bgColor: 'bg-rose-50',
+      isAddPatient: true,
+    },
   ]
 
   const getTypeLabel = (type: ResourceType) => {
@@ -499,16 +571,15 @@ function DashboardContent() {
                 {getGreeting()}, {user?.full_name?.split(' ')[0] || 'there'}
               </h1>
             </div>
-            <Link href="/members/new">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
-              >
-                <UserPlus className="w-4 h-4" />
-                {locale === 'fr' ? 'Ajouter un patient' : 'Add patient'}
-              </motion.button>
-            </Link>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowAddMemberModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+            >
+              <UserPlus className="w-4 h-4" />
+              {locale === 'fr' ? 'Ajouter un patient' : 'Add patient'}
+            </motion.button>
           </motion.div>
 
           {/* Quick Actions */}
@@ -526,7 +597,14 @@ function DashboardContent() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 + index * 0.05 }}
                   whileHover={action.comingSoon ? {} : { y: -2, scale: 1.02 }}
-                  onClick={() => !action.comingSoon && action.type && setSelectedType(action.type)}
+                  onClick={() => {
+                    if (action.comingSoon) return
+                    if ('isAddPatient' in action && action.isAddPatient) {
+                      setShowAddMemberModal(true)
+                    } else if (action.type) {
+                      setSelectedType(action.type)
+                    }
+                  }}
                   className={`flex flex-col items-center group ${action.comingSoon ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                 >
                     <div className="w-full aspect-square bg-gray-100 rounded-2xl flex items-center justify-center mb-3 group-hover:bg-gray-200/80 transition-colors relative overflow-hidden p-4 isolate">
@@ -638,6 +716,34 @@ function DashboardContent() {
                               transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                             >
                               <Sparkles className="w-4 h-4 text-white" />
+                            </motion.div>
+                          </motion.div>
+                        </div>
+                      )}
+
+                      {action.id === 'add-patient' && (
+                        <div className="relative">
+                          {/* Person with plus */}
+                          <motion.div
+                            className="relative w-16 h-16 flex items-center justify-center"
+                            animate={{ scale: [1, 1.05, 1] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            {/* Person silhouette */}
+                            <motion.div
+                              className="w-12 h-12 bg-gradient-to-br from-rose-400 to-rose-500 rounded-full flex items-center justify-center shadow-md"
+                              animate={{ y: [0, -2, 0] }}
+                              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                            >
+                              <UserPlus className="w-6 h-6 text-white" />
+                            </motion.div>
+                            {/* Plus badge */}
+                            <motion.div
+                              className="absolute -right-1 -bottom-1 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-md border-2 border-rose-100"
+                              animate={{ scale: [1, 1.15, 1] }}
+                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                            >
+                              <Plus className="w-3.5 h-3.5 text-rose-500" />
                             </motion.div>
                           </motion.div>
                         </div>
@@ -859,6 +965,137 @@ function DashboardContent() {
                   <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
                 </motion.button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Member Modal */}
+      <AnimatePresence>
+        {showAddMemberModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowAddMemberModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-xl w-full max-w-md shadow-xl"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {locale === 'fr' ? 'Nouveau Patient' : 'New Patient'}
+                </h2>
+                <button
+                  onClick={() => setShowAddMemberModal(false)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleAddMember} className="p-5">
+                <div className="space-y-4">
+                  {/* Name Row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Prénom' : 'First Name'} *
+                      </label>
+                      <input
+                        type="text"
+                        value={newMember.firstName}
+                        onChange={(e) => setNewMember({ ...newMember, firstName: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                        placeholder={locale === 'fr' ? 'Jean' : 'John'}
+                        required
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Nom' : 'Last Name'} *
+                      </label>
+                      <input
+                        type="text"
+                        value={newMember.lastName}
+                        onChange={(e) => setNewMember({ ...newMember, lastName: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                        placeholder={locale === 'fr' ? 'Dupont' : 'Doe'}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-gray-400" />
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={newMember.email}
+                      onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                      placeholder={locale === 'fr' ? 'jean@exemple.com' : 'john@example.com'}
+                      required
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-gray-400" />
+                      {locale === 'fr' ? 'Téléphone' : 'Phone'}
+                      <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={newMember.phone}
+                      onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                      placeholder={locale === 'fr' ? '+33 6 12 34 56 78' : '+1 (555) 123-4567'}
+                    />
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setShowAddMemberModal(false)}
+                    className="text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+                  >
+                    {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={savingMember}
+                    className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg px-4 text-sm"
+                  >
+                    {savingMember ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {locale === 'fr' ? 'Création...' : 'Creating...'}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        {locale === 'fr' ? 'Créer' : 'Create'}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}
