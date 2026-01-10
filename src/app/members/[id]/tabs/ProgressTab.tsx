@@ -152,6 +152,17 @@ const MilestoneCard = memo(function MilestoneCard({
           </div>
         )}
 
+        {/* Add Comment Button (when no comments and collapsed) */}
+        {comments.length === 0 && !showComments && (
+          <button
+            onClick={() => setShowComments(true)}
+            className="mt-2 w-full flex items-center justify-center gap-1.5 py-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>{locale === 'fr' ? 'Ajouter un commentaire' : 'Add comment'}</span>
+          </button>
+        )}
+
         {/* Comments Section */}
         {showComments && (
           <div className="mt-3 space-y-2">
