@@ -199,7 +199,7 @@
   },
 
   "files": {
-    "title": "Files & Documents",
+    "title": "Files",
     "uploadFile": "Upload File",
     "noFiles": "No files yet",
     "noFilesDescription": "Upload documents, forms, or other files",
@@ -223,7 +223,7 @@
 
   "shared": {
     "title": "Shared Resources",
-    "shareStory": "Share a Story",
+    "shareStory": "Share a resource",
     "noShared": "No shared resources yet",
     "noSharedDescription": "Share stories and resources with this client",
     "sharedOn": "Shared on",

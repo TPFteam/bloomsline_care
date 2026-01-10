@@ -435,235 +435,6 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
         )}
       </motion.div>
 
-      {/* Emergency Contact Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="bg-white rounded-2xl p-6 border border-gray-200"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-gray-900 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center">
-              <Shield className="w-4 h-4 text-teal-600" />
-            </div>
-            {t.members.overview.emergencyContact}
-          </h3>
-          {!editingEmergency && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setEditingEmergency(true)}
-              className="text-gray-500 hover:text-gray-700 rounded-lg"
-            >
-              <Edit3 className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-
-        <AnimatePresence mode="wait">
-          {editingEmergency ? (
-            <motion.div
-              key="editing"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="space-y-4"
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t.members.form.emergencyName}
-                  </label>
-                  <input
-                    type="text"
-                    value={emergencyName}
-                    onChange={(e) => setEmergencyName(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t.members.form.emergencyRelationship}
-                  </label>
-                  <input
-                    type="text"
-                    value={emergencyRelationship}
-                    onChange={(e) => setEmergencyRelationship(e.target.value)}
-                    placeholder="e.g., Spouse, Parent"
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t.members.form.emergencyPhone}
-                  </label>
-                  <input
-                    type="tel"
-                    value={emergencyPhone}
-                    onChange={(e) => setEmergencyPhone(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t.members.form.emergencyEmail}
-                  </label>
-                  <input
-                    type="email"
-                    value={emergencyEmail}
-                    onChange={(e) => setEmergencyEmail(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t.members.form.emergencyNotes}
-                </label>
-                <textarea
-                  value={emergencyNotes}
-                  onChange={(e) => setEmergencyNotes(e.target.value)}
-                  placeholder="Any additional notes..."
-                  rows={2}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all resize-none text-sm"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setEmergencyName(member.emergency_contact.name || '')
-                    setEmergencyRelationship(member.emergency_contact.relationship || '')
-                    setEmergencyPhone(member.emergency_contact.phone || '')
-                    setEmergencyEmail(member.emergency_contact.email || '')
-                    setEmergencyNotes(member.emergency_contact.notes || '')
-                    setEditingEmergency(false)
-                  }}
-                  className="rounded-lg"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSaveEmergency}
-                  disabled={savingEmergency}
-                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
-                >
-                  {savingEmergency ? 'Saving...' : 'Save'}
-                </Button>
-              </div>
-            </motion.div>
-          ) : hasEmergencyData ? (
-            <motion.div
-              key="content"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Name & Relationship */}
-                {member.emergency_contact.name && (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
-                    <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
-                      <User className="w-5 h-5 text-gray-500" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wider">{locale === 'fr' ? 'Nom' : 'Name'}</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {member.emergency_contact.name}
-                        {member.emergency_contact.relationship && (
-                          <span className="text-gray-500 font-normal"> · {member.emergency_contact.relationship}</span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Phone */}
-                {member.emergency_contact.phone && (
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors group">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
-                        <Phone className="w-5 h-5 text-gray-500" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wider">{locale === 'fr' ? 'Téléphone' : 'Phone'}</p>
-                        <a href={`tel:${member.emergency_contact.phone}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
-                          {member.emergency_contact.phone}
-                        </a>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(member.emergency_contact.phone!)
-                        toast.success(locale === 'fr' ? 'Téléphone copié' : 'Phone copied')
-                      }}
-                      className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-
-                {/* Email */}
-                {member.emergency_contact.email && (
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors group">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
-                        <Mail className="w-5 h-5 text-gray-500" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wider">Email</p>
-                        <a href={`mailto:${member.emergency_contact.email}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
-                          {member.emergency_contact.email}
-                        </a>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(member.emergency_contact.email!)
-                        toast.success(locale === 'fr' ? 'Email copié' : 'Email copied')
-                      }}
-                      className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-              </div>
-              {member.emergency_contact.notes && (
-                <p className="text-sm text-gray-500 mt-4 p-3 rounded-xl bg-gray-50">
-                  {member.emergency_contact.notes}
-                </p>
-              )}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-8"
-            >
-              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <Shield className="w-6 h-6 text-gray-400" />
-              </div>
-              <p className="text-sm text-gray-500 mb-3">No emergency contact added</p>
-              <Button
-                size="sm"
-                onClick={() => setEditingEmergency(true)}
-                className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add Contact
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-
       {/* Header with Upload */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-3">
@@ -924,6 +695,235 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
             })}
           </div>
         )}
+      </motion.div>
+
+      {/* Emergency Contact Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white rounded-2xl p-6 border border-gray-200"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-gray-900 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center">
+              <Shield className="w-4 h-4 text-teal-600" />
+            </div>
+            {t.members.overview.emergencyContact}
+          </h3>
+          {!editingEmergency && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditingEmergency(true)}
+              className="text-gray-500 hover:text-gray-700 rounded-lg"
+            >
+              <Edit3 className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+
+        <AnimatePresence mode="wait">
+          {editingEmergency ? (
+            <motion.div
+              key="editing"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-4"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t.members.form.emergencyName}
+                  </label>
+                  <input
+                    type="text"
+                    value={emergencyName}
+                    onChange={(e) => setEmergencyName(e.target.value)}
+                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t.members.form.emergencyRelationship}
+                  </label>
+                  <input
+                    type="text"
+                    value={emergencyRelationship}
+                    onChange={(e) => setEmergencyRelationship(e.target.value)}
+                    placeholder="e.g., Spouse, Parent"
+                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t.members.form.emergencyPhone}
+                  </label>
+                  <input
+                    type="tel"
+                    value={emergencyPhone}
+                    onChange={(e) => setEmergencyPhone(e.target.value)}
+                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t.members.form.emergencyEmail}
+                  </label>
+                  <input
+                    type="email"
+                    value={emergencyEmail}
+                    onChange={(e) => setEmergencyEmail(e.target.value)}
+                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {t.members.form.emergencyNotes}
+                </label>
+                <textarea
+                  value={emergencyNotes}
+                  onChange={(e) => setEmergencyNotes(e.target.value)}
+                  placeholder="Any additional notes..."
+                  rows={2}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all resize-none text-sm"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEmergencyName(member.emergency_contact.name || '')
+                    setEmergencyRelationship(member.emergency_contact.relationship || '')
+                    setEmergencyPhone(member.emergency_contact.phone || '')
+                    setEmergencyEmail(member.emergency_contact.email || '')
+                    setEmergencyNotes(member.emergency_contact.notes || '')
+                    setEditingEmergency(false)
+                  }}
+                  className="rounded-lg"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSaveEmergency}
+                  disabled={savingEmergency}
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+                >
+                  {savingEmergency ? 'Saving...' : 'Save'}
+                </Button>
+              </div>
+            </motion.div>
+          ) : hasEmergencyData ? (
+            <motion.div
+              key="content"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Name & Relationship */}
+                {member.emergency_contact.name && (
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
+                    <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
+                      <User className="w-5 h-5 text-gray-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wider">{locale === 'fr' ? 'Nom' : 'Name'}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {member.emergency_contact.name}
+                        {member.emergency_contact.relationship && (
+                          <span className="text-gray-500 font-normal"> · {member.emergency_contact.relationship}</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Phone */}
+                {member.emergency_contact.phone && (
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
+                        <Phone className="w-5 h-5 text-gray-500" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wider">{locale === 'fr' ? 'Téléphone' : 'Phone'}</p>
+                        <a href={`tel:${member.emergency_contact.phone}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
+                          {member.emergency_contact.phone}
+                        </a>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(member.emergency_contact.phone!)
+                        toast.success(locale === 'fr' ? 'Téléphone copié' : 'Phone copied')
+                      }}
+                      className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Email */}
+                {member.emergency_contact.email && (
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
+                        <Mail className="w-5 h-5 text-gray-500" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wider">Email</p>
+                        <a href={`mailto:${member.emergency_contact.email}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
+                          {member.emergency_contact.email}
+                        </a>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(member.emergency_contact.email!)
+                        toast.success(locale === 'fr' ? 'Email copié' : 'Email copied')
+                      }}
+                      className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              {member.emergency_contact.notes && (
+                <p className="text-sm text-gray-500 mt-4 p-3 rounded-xl bg-gray-50">
+                  {member.emergency_contact.notes}
+                </p>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-8"
+            >
+              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <Shield className="w-6 h-6 text-gray-400" />
+              </div>
+              <p className="text-sm text-gray-500 mb-3">No emergency contact added</p>
+              <Button
+                size="sm"
+                onClick={() => setEditingEmergency(true)}
+                className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Contact
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   )

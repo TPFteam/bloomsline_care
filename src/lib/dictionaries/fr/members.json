@@ -199,7 +199,7 @@
   },
 
   "files": {
-    "title": "Fichiers et Documents",
+    "title": "Fichiers",
     "uploadFile": "Télécharger un Fichier",
     "noFiles": "Aucun fichier pour le moment",
     "noFilesDescription": "Téléchargez des documents, formulaires ou autres fichiers",
@@ -223,7 +223,7 @@
 
   "shared": {
     "title": "Ressources Partagées",
-    "shareStory": "Partager une Histoire",
+    "shareStory": "Partager une ressource",
     "noShared": "Aucune ressource partagée pour le moment",
     "noSharedDescription": "Partagez des histoires et ressources avec ce client",
     "sharedOn": "Partagé le",

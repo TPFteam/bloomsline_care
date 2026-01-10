@@ -432,14 +432,14 @@ export default function SharedTab({ memberId, member }: SharedTabProps) {
         </div>
 
         {activeSection === 'shared' && (
-          <Button
-            onClick={() => setShowShareModal(true)}
-            disabled={availableStories.length === 0}
-            className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift disabled:opacity-50"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {t.members.shared.shareStory}
-          </Button>
+          <Link href="/resources">
+            <Button
+              className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {t.members.shared.shareStory}
+            </Button>
+          </Link>
         )}
       </div>
 
@@ -612,12 +612,12 @@ export default function SharedTab({ memberId, member }: SharedTabProps) {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">{t.members.shared.noShared}</h3>
                 <p className="text-gray-500 mb-8 max-w-md mx-auto">{t.members.shared.noSharedDescription}</p>
-                {availableStories.length > 0 && (
-                  <Button onClick={() => setShowShareModal(true)} className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 px-6 transition-colors hover-lift">
+                <Link href="/resources">
+                  <Button className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 px-6 transition-colors hover-lift">
                     <Plus className="w-4 h-4 mr-2" />
                     {t.members.shared.shareStory}
                   </Button>
-                )}
+                </Link>
               </div>
             ) : sharedResources.length > 0 ? (
               <>

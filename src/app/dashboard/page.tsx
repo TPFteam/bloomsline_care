@@ -12,10 +12,12 @@ import {
   Table2,
   ChevronRight,
   BookOpen,
+  Puzzle,
   Sparkles,
   X,
   Plus,
   Clock,
+  HeartHandshake,
   UserPlus,
   Edit3,
   Share2,
@@ -402,8 +404,9 @@ function DashboardContent() {
   const getGreeting = () => {
     const hour = new Date().getHours()
     if (hour < 12) return locale === 'fr' ? 'Bonjour' : 'Good morning'
-    if (hour < 18) return locale === 'fr' ? 'Bon après-midi' : 'Good afternoon'
-    return locale === 'fr' ? 'Bonsoir' : 'Good evening'
+    if (hour < 18) return locale === 'fr' ? 'Bonjour' : 'Good afternoon'
+    if (hour < 22) return locale === 'fr' ? 'Bonsoir' : 'Good evening'
+    return locale === 'fr' ? 'Bonne nuit' : 'Good night'
   }
 
   const getTemplateIcon = (type: TemplateOption['type']) => {
@@ -503,7 +506,7 @@ function DashboardContent() {
       id: 'activity',
       type: null,
       title: locale === 'fr' ? 'Activité' : 'Activity',
-      icon: Sparkles,
+      icon: Puzzle,
       color: 'from-amber-400 to-amber-500',
       bgColor: 'bg-amber-50',
       comingSoon: true,
@@ -512,7 +515,7 @@ function DashboardContent() {
       id: 'add-patient',
       type: null,
       title: locale === 'fr' ? 'Patient' : 'Patient',
-      icon: UserPlus,
+      icon: HeartHandshake,
       color: 'from-rose-400 to-rose-500',
       bgColor: 'bg-rose-50',
       isAddPatient: true,
@@ -571,15 +574,6 @@ function DashboardContent() {
                 {getGreeting()}, {user?.full_name?.split(' ')[0] || 'there'}
               </h1>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setShowAddMemberModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
-            >
-              <UserPlus className="w-4 h-4" />
-              {locale === 'fr' ? 'Ajouter un patient' : 'Add patient'}
-            </motion.button>
           </motion.div>
 
           {/* Quick Actions */}
@@ -715,7 +709,7 @@ function DashboardContent() {
                               animate={{ y: [0, -2, 0] }}
                               transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                             >
-                              <Sparkles className="w-4 h-4 text-white" />
+                              <Puzzle className="w-4 h-4 text-white" />
                             </motion.div>
                           </motion.div>
                         </div>
@@ -735,7 +729,7 @@ function DashboardContent() {
                               animate={{ y: [0, -2, 0] }}
                               transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                             >
-                              <UserPlus className="w-6 h-6 text-white" />
+                              <HeartHandshake className="w-6 h-6 text-white" />
                             </motion.div>
                             {/* Plus badge */}
                             <motion.div
