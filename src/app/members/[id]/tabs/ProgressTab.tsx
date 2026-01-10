@@ -144,11 +144,17 @@ const MilestoneCard = memo(function MilestoneCard({
             className="mt-2 p-2 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors"
           >
             <p className="text-xs text-blue-700 line-clamp-2">{comments[0].content}</p>
-            {comments.length > 1 && (
-              <p className="text-[10px] text-blue-500 mt-1">
-                +{comments.length - 1} {locale === 'fr' ? 'autre(s)' : 'more'}
+            <div className="flex items-center justify-between mt-1">
+              {comments.length > 1 ? (
+                <p className="text-[10px] text-blue-500">
+                  +{comments.length - 1} {locale === 'fr' ? 'autre(s)' : 'more'}
+                </p>
+              ) : <span />}
+              <p className="text-[10px] text-blue-600 font-medium flex items-center gap-1">
+                <Plus className="w-3 h-3" />
+                {locale === 'fr' ? 'Ajouter' : 'Add'}
               </p>
-            )}
+            </div>
           </div>
         )}
 
