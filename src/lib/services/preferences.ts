@@ -1,13 +1,30 @@
 import { createClient } from '@/lib/supabase/browser-client'
 
+export interface CardLayoutItem {
+  id: string
+  column: 0 | 1
+  order: number
+}
+
+export const DEFAULT_CARD_LAYOUT: CardLayoutItem[] = [
+  { id: 'about', column: 0, order: 0 },
+  { id: 'active_goals', column: 0, order: 1 },
+  { id: 'past_sessions', column: 0, order: 2 },
+  { id: 'preferences', column: 1, order: 0 },
+  { id: 'recent_notes', column: 1, order: 1 },
+  { id: 'shared_resources', column: 1, order: 2 },
+]
+
 export interface UserPreferences {
   moments_theme: 'dark' | 'light'
   moments_view: 'grid' | 'list'
+  overview_card_layout?: CardLayoutItem[]
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
   moments_theme: 'dark',
   moments_view: 'grid',
+  overview_card_layout: DEFAULT_CARD_LAYOUT,
 }
 
 export async function getUserPreferences(): Promise<UserPreferences> {
@@ -18,7 +35,7 @@ export async function getUserPreferences(): Promise<UserPreferences> {
 
   const { data, error } = await supabase
     .from('user_preferences')
-    .select('moments_theme, moments_view')
+    .select('moments_theme, moments_view, overview_card_layout')
     .eq('user_id', user.id)
     .single()
 
@@ -30,6 +47,7 @@ export async function getUserPreferences(): Promise<UserPreferences> {
   return {
     moments_theme: data.moments_theme || 'dark',
     moments_view: data.moments_view || 'grid',
+    overview_card_layout: data.overview_card_layout || DEFAULT_CARD_LAYOUT,
   }
 }
 
