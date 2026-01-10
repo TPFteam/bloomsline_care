@@ -308,7 +308,7 @@ export function MainHero() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-neutral-200/30 p-3 sm:p-4 overflow-hidden"
+                className="bg-white/80 backdrop-blur-sm rounded-none sm:rounded-2xl shadow-lg shadow-neutral-200/30 p-2 sm:p-4 overflow-hidden"
               >
                 {/* Prompt text + Pills row */}
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
@@ -1499,7 +1499,7 @@ export function MainHero() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-neutral-200/30 p-3 sm:p-4 overflow-hidden"
+                className="bg-white/80 backdrop-blur-sm rounded-none sm:rounded-2xl shadow-lg shadow-neutral-200/30 p-2 sm:p-4 overflow-hidden"
               >
                 {/* Prompt text + Pills row */}
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
