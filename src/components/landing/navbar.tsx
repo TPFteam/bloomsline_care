@@ -7,11 +7,15 @@ import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n/context'
+import { useTab } from '@/lib/landing/tab-context'
 import { LanguageSwitcher } from '@/components/language-switcher'
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const { t, locale } = useLanguage()
+  const { activeTab } = useTab()
+
+  const isPractitioner = activeTab === 'practitioner'
 
   const navItems = [
     { label: t.nav.home, href: '/', active: true },
@@ -51,10 +55,10 @@ export function Navbar() {
               <a
                 key={item.label}
                 href={item.href}
-                className={`text-sm font-medium transition-colors ${
+                className={`text-sm font-normal transition-colors ${
                   item.active
                     ? 'text-gray-900 flex items-center gap-1.5'
-                    : 'text-gray-600 hover:text-gray-900'
+                    : 'text-gray-500 hover:text-gray-900'
                 }`}
               >
                 {item.active && (
@@ -76,7 +80,7 @@ export function Navbar() {
             <Link href="/sign-in">
               <Button
                 variant="ghost"
-                className="font-semibold text-gray-700 hover:text-gray-900 rounded-full"
+                className="font-normal text-gray-600 hover:text-gray-900 rounded-full"
                 suppressHydrationWarning
               >
                 {t.nav.signIn}
@@ -84,7 +88,11 @@ export function Navbar() {
             </Link>
             <Link href="/early-access">
               <Button
-                className="font-semibold bg-gradient-to-r from-lavender-500 to-lavender-600 text-white hover:from-lavender-600 hover:to-lavender-700 rounded-full px-6 shadow-lg shadow-lavender-500/30 hover:shadow-xl transition-all duration-300"
+                className={`font-medium text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300 ${
+                  isPractitioner
+                    ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C] shadow-[#D4856A]/30 hover:from-[#c27459] hover:to-[#d4946b]'
+                    : 'bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] shadow-[#4A9A86]/30 hover:from-[#3d8a76] hover:to-[#4da38c]'
+                }`}
                 suppressHydrationWarning
               >
                 {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
@@ -125,8 +133,8 @@ export function Navbar() {
                   key={item.label}
                   href={item.href}
                   onClick={() => setIsOpen(false)}
-                  className={`block py-2 text-sm font-medium transition-colors ${
-                    item.active ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'
+                  className={`block py-2 text-sm font-normal transition-colors ${
+                    item.active ? 'text-gray-900' : 'text-gray-500 hover:text-gray-900'
                   }`}
                 >
                   {item.label}
@@ -135,12 +143,19 @@ export function Navbar() {
               <div className="flex flex-col gap-2 pt-4 border-t border-white/60">
                 <LanguageSwitcher />
                 <Link href="/sign-in" className="w-full">
-                  <Button variant="ghost" className="w-full font-semibold rounded-full" suppressHydrationWarning>
+                  <Button variant="ghost" className="w-full font-normal rounded-full" suppressHydrationWarning>
                     {t.nav.signIn}
                   </Button>
                 </Link>
                 <Link href="/early-access" className="w-full">
-                  <Button className="w-full font-semibold bg-gradient-to-r from-lavender-500 to-lavender-600 text-white hover:from-lavender-600 hover:to-lavender-700 rounded-full shadow-lg" suppressHydrationWarning>
+                  <Button
+                    className={`w-full font-medium text-white rounded-full shadow-lg ${
+                      isPractitioner
+                        ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C] hover:from-[#c27459] hover:to-[#d4946b]'
+                        : 'bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] hover:from-[#3d8a76] hover:to-[#4da38c]'
+                    }`}
+                    suppressHydrationWarning
+                  >
                     {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
                   </Button>
                 </Link>

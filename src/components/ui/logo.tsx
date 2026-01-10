@@ -77,7 +77,7 @@ export function Logo({ size = 'sm', className, showText = false, variant = 'ligh
       {logoIcon}
       <span className={cn(
         textSizeMap[size],
-        'font-semibold tracking-tight',
+        'font-bold tracking-tight',
         variant === 'light' ? 'text-gray-900' : 'text-white'
       )}>
         Bloomsline
