@@ -395,7 +395,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
                 <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
                   <Target className="w-4 h-4 text-amber-600" />
                 </div>
-                Active Goals
+                {locale === 'fr' ? 'Objectifs actifs' : 'Active Goals'}
               </h3>
             </div>
 
@@ -404,8 +404,8 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
                 <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
                   <Target className="w-6 h-6 text-gray-400" />
                 </div>
-                <p className="text-sm text-gray-500">No active goals</p>
-                <p className="text-xs text-gray-400 mt-1">Goals in progress will appear here</p>
+                <p className="text-sm text-gray-500">{locale === 'fr' ? 'Aucun objectif actif' : 'No active goals'}</p>
+                <p className="text-xs text-gray-400 mt-1">{locale === 'fr' ? 'Les objectifs en cours apparaîtront ici' : 'Goals in progress will appear here'}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -452,7 +452,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
                 <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
                   <Clock className="w-4 h-4 text-blue-600" />
                 </div>
-                Past Sessions
+                {locale === 'fr' ? 'Séances passées' : 'Past Sessions'}
               </h3>
             </div>
 
@@ -461,8 +461,8 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
                 <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
                   <Clock className="w-6 h-6 text-gray-400" />
                 </div>
-                <p className="text-sm text-gray-500">No sessions yet</p>
-                <p className="text-xs text-gray-400 mt-1">Past sessions will appear here</p>
+                <p className="text-sm text-gray-500">{locale === 'fr' ? 'Aucune séance' : 'No sessions yet'}</p>
+                <p className="text-xs text-gray-400 mt-1">{locale === 'fr' ? 'Les séances passées apparaîtront ici' : 'Past sessions will appear here'}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -497,7 +497,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
 
                 {sessions.length > 3 && (
                   <button className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1 rounded-lg hover:bg-gray-50 transition-colors">
-                    View all sessions
+                    {locale === 'fr' ? 'Voir toutes les séances' : 'View all sessions'}
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 )}
@@ -892,7 +892,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
               <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
                 <Share2 className="w-4 h-4 text-indigo-600" />
               </div>
-              Shared Resources
+              {locale === 'fr' ? 'Ressources partagées' : 'Shared Resources'}
             </h3>
           </div>
 
@@ -901,8 +901,8 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
               <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
                 <BookOpen className="w-6 h-6 text-gray-400" />
               </div>
-              <p className="text-sm text-gray-500">No shared resources</p>
-              <p className="text-xs text-gray-400 mt-1">Resources you've shared with this client will appear here</p>
+              <p className="text-sm text-gray-500">{locale === 'fr' ? 'Aucune ressource partagée' : 'No shared resources'}</p>
+              <p className="text-xs text-gray-400 mt-1">{locale === 'fr' ? 'Les ressources partagées avec ce client apparaîtront ici' : 'Resources you\'ve shared with this client will appear here'}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -933,7 +933,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate }:
 
               {sharedResources.length > 3 && (
                 <button className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1 rounded-lg hover:bg-gray-50 transition-colors">
-                  View all resources
+                  {locale === 'fr' ? 'Voir toutes les ressources' : 'View all resources'}
                   <ChevronRight className="w-4 h-4" />
                 </button>
               )}
