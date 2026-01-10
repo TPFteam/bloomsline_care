@@ -185,7 +185,7 @@ export function MainHero() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6">
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 pt-24 md:pt-16">
         <div className="max-w-4xl mx-auto text-center">
           {/* Tagline */}
           <motion.p
