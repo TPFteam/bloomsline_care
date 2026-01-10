@@ -298,7 +298,7 @@ export function MainHero() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.8 }}
-          className="w-full max-w-2xl mx-auto mt-10 px-4 sm:px-6"
+          className="w-full max-w-2xl mx-auto mt-10 px-2 sm:px-6"
         >
           <AnimatePresence mode="wait">
             {activeTab === 'personal' ? (
