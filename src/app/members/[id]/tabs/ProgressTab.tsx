@@ -743,45 +743,49 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                     <button
                       type="button"
                       onClick={() => setInitialStatus('discovery')}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
                         initialStatus === 'discovery'
-                          ? 'bg-emerald-100 text-emerald-700 ring-2 ring-emerald-500 ring-offset-1'
-                          : 'bg-emerald-50/50 text-emerald-600 hover:bg-emerald-100/50 border border-emerald-200/50'
+                          ? 'bg-emerald-500 text-white shadow-md'
+                          : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200'
                       }`}
                     >
+                      {initialStatus === 'discovery' && <CheckCircle className="w-4 h-4" />}
                       {locale === 'fr' ? 'Comprendre' : 'Discovery'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setInitialStatus('building')}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
                         initialStatus === 'building'
-                          ? 'bg-emerald-200 text-emerald-800 ring-2 ring-emerald-600 ring-offset-1'
-                          : 'bg-emerald-100/50 text-emerald-700 hover:bg-emerald-200/50 border border-emerald-300/50'
+                          ? 'bg-emerald-600 text-white shadow-md'
+                          : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-300'
                       }`}
                     >
+                      {initialStatus === 'building' && <CheckCircle className="w-4 h-4" />}
                       {locale === 'fr' ? 'Ancrage' : 'Building'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setInitialStatus('thriving')}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
                         initialStatus === 'thriving'
-                          ? 'bg-emerald-300 text-emerald-900 ring-2 ring-emerald-700 ring-offset-1'
-                          : 'bg-emerald-200/50 text-emerald-800 hover:bg-emerald-300/50 border border-emerald-400/50'
+                          ? 'bg-emerald-700 text-white shadow-md'
+                          : 'bg-emerald-200 text-emerald-800 hover:bg-emerald-300 border border-emerald-400'
                       }`}
                     >
+                      {initialStatus === 'thriving' && <CheckCircle className="w-4 h-4" />}
                       {locale === 'fr' ? 'Évolution' : 'Thriving'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setInitialStatus('independent')}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
                         initialStatus === 'independent'
-                          ? 'bg-emerald-400 text-emerald-950 ring-2 ring-emerald-800 ring-offset-1'
-                          : 'bg-emerald-300/50 text-emerald-900 hover:bg-emerald-400/50 border border-emerald-500/50'
+                          ? 'bg-emerald-800 text-white shadow-md'
+                          : 'bg-emerald-300 text-emerald-900 hover:bg-emerald-400 border border-emerald-500'
                       }`}
                     >
+                      {initialStatus === 'independent' && <CheckCircle className="w-4 h-4" />}
                       {locale === 'fr' ? 'Autonomie' : 'Independent'}
                     </button>
                   </div>
