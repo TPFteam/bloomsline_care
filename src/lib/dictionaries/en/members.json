@@ -173,10 +173,10 @@
 
   "progress": {
     "title": "Progress & Growth",
-    "milestones": "Journeys",
-    "addMilestone": "Add Journey",
-    "noMilestones": "No journeys yet",
-    "noMilestonesDescription": "Track your client's progress by adding journeys to explore",
+    "milestones": "Goals",
+    "addMilestone": "Add Goal",
+    "noMilestones": "No goals yet",
+    "noMilestonesDescription": "Track your client's progress by adding goals to explore",
     "planned": "Planned",
     "inProgress": "In Progress",
     "achieved": "Achieved",

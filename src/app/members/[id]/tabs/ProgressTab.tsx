@@ -680,7 +680,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
               <div className="flex items-center justify-between mb-5">
                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                   <Target className="w-5 h-5 text-lavender-500" />
-                  {locale === 'fr' ? 'Nouvelle trajectoire' : 'Add New Journey'}
+                  {locale === 'fr' ? 'Nouvel objectif' : 'Add New Goal'}
                 </h3>
                 <button
                   onClick={() => setShowAddMilestone(false)}
@@ -693,7 +693,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {locale === 'fr' ? 'Titre de la trajectoire *' : 'Journey Title *'}
+                    {locale === 'fr' ? 'Titre de l\'objectif *' : 'Goal Title *'}
                   </label>
                   <input
                     type="text"
@@ -712,7 +712,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder={locale === 'fr' ? 'Détails supplémentaires sur cette trajectoire...' : 'Additional details about this journey...'}
+                    placeholder={locale === 'fr' ? 'Détails supplémentaires sur cet objectif...' : 'Additional details about this goal...'}
                     rows={2}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none resize-none bg-white "
                   />
@@ -759,7 +759,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
           className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
         >
           <Plus className="w-4 h-4 mr-2" />
-          {locale === 'fr' ? 'Ajouter une trajectoire' : 'Add Journey'}
+          {locale === 'fr' ? 'Ajouter un objectif' : 'Add Goal'}
         </Button>
       </div>
 
@@ -823,7 +823,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                   {column.items.length === 0 && dragOverColumn !== column.id && (
                     <div className="text-center py-4">
                       <p className="text-sm text-gray-400">
-                        {locale === 'fr' ? 'Aucune trajectoire' : 'No journeys'}
+                        {locale === 'fr' ? 'Aucun objectif' : 'No goals'}
                       </p>
                     </div>
                   )}

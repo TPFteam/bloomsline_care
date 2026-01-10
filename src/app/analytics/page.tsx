@@ -444,12 +444,12 @@ export default function AnalyticsPage() {
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-900">
-                    {locale === 'fr' ? 'Parcours des trajectoires' : 'Journey progress'}
+                    {locale === 'fr' ? 'Progrès des objectifs' : 'Goal progress'}
                   </h3>
                   <p className="text-sm text-gray-500">
                     {locale === 'fr'
-                      ? `${totalJourneys} trajectoires suivies au total`
-                      : `${totalJourneys} journeys tracked in total`
+                      ? `${totalJourneys} objectifs suivis au total`
+                      : `${totalJourneys} goals tracked in total`
                     }
                   </p>
                 </div>
