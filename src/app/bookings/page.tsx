@@ -39,6 +39,7 @@ import {
   saveBookingSettings,
 } from '@/lib/services/calendar'
 import type { CalendarConnection, BookingSettings, DayOfWeek, SessionType } from '@/types/calendar'
+import type { User as UserType } from '@/types/user'
 
 interface Booking {
   id: string
@@ -145,6 +146,9 @@ export default function BookingsPage() {
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
+  // User state
+  const [user, setUser] = useState<UserType | null>(null)
+
   // Settings state
   const [userId, setUserId] = useState<string | null>(null)
   const [practitionerSlug, setPractitionerSlug] = useState<string | null>(null)
@@ -163,17 +167,39 @@ export default function BookingsPage() {
   useEffect(() => {
     async function loadData() {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user: authUser } } = await supabase.auth.getUser()
 
-      if (!user) return
+      if (!authUser) return
 
-      setUserId(user.id)
+      setUserId(authUser.id)
+
+      // Load user profile
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .single()
+
+      if (userProfile) {
+        setUser(userProfile)
+      } else {
+        setUser({
+          id: authUser.id,
+          email: authUser.email!,
+          full_name: authUser.user_metadata?.full_name || null,
+          avatar_url: authUser.user_metadata?.avatar_url || null,
+          user_type: authUser.user_metadata?.user_type || 'mentor',
+          preferred_language: 'en',
+          created_at: authUser.created_at,
+          updated_at: authUser.updated_at || authUser.created_at,
+        })
+      }
 
       // Load practitioner profile to get slug
       const { data: profile } = await supabase
         .from('practitioner_profiles')
         .select('slug')
-        .eq('user_id', user.id)
+        .eq('user_id', authUser.id)
         .single()
 
       if (profile?.slug) {
@@ -184,7 +210,7 @@ export default function BookingsPage() {
       const { data: settings } = await supabase
         .from('booking_settings')
         .select('session_types')
-        .eq('user_id', user.id)
+        .eq('user_id', authUser.id)
         .single()
 
       if (settings?.session_types) {
@@ -195,7 +221,7 @@ export default function BookingsPage() {
       const { data: bookingsData, error } = await supabase
         .from('bookings')
         .select('*')
-        .eq('practitioner_id', user.id)
+        .eq('practitioner_id', authUser.id)
         .order('start_time', { ascending: true })
 
       if (error) {
@@ -479,7 +505,7 @@ export default function BookingsPage() {
       {/* Main Content */}
       <main className="flex-1 ml-64">
         <AppHeader
-          user={null}
+          user={user}
           leftContent={
             <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <CalendarCheck className="w-4 h-4" />
