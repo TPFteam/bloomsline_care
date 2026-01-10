@@ -489,14 +489,26 @@ function DashboardContent() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            className="mb-8 flex items-end justify-between"
           >
-            <p className="text-sm text-gray-500 mb-1">
-              {locale === 'fr' ? 'Mon espace de travail' : 'My Workspace'}
-            </p>
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-              {getGreeting()}, {user?.full_name?.split(' ')[0] || 'there'}
-            </h1>
+            <div>
+              <p className="text-sm text-gray-500 mb-1">
+                {locale === 'fr' ? 'Mon espace de travail' : 'My Workspace'}
+              </p>
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                {getGreeting()}, {user?.full_name?.split(' ')[0] || 'there'}
+              </h1>
+            </div>
+            <Link href="/members/new">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+              >
+                <UserPlus className="w-4 h-4" />
+                {locale === 'fr' ? 'Ajouter un patient' : 'Add patient'}
+              </motion.button>
+            </Link>
           </motion.div>
 
           {/* Quick Actions */}
