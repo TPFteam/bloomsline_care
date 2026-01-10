@@ -12,7 +12,6 @@ import {
   TrendingUp,
   Clock,
   Share2,
-  Sparkles,
   Users,
   ChevronRight,
   Edit,
@@ -228,9 +227,6 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                     <h1 className="text-xl font-semibold text-gray-900">
                       {getMemberFullName(member)}
                     </h1>
-                    {member.engagement_level === 'high' && (
-                      <Sparkles className="w-4 h-4 text-amber-500" />
-                    )}
                     <Link href={`/members/${member.id}/edit`}>
                       <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
                         <Edit className="w-4 h-4" />
