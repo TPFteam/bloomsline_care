@@ -311,8 +311,8 @@ export function MainHero() {
                 className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-neutral-200/30 p-2 sm:p-4 overflow-hidden"
               >
                 {/* Prompt text + Pills row */}
-                <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  <Search className="w-4 h-4 text-neutral-400 shrink-0" />
+                <div className="flex items-center gap-1 sm:gap-2 mb-3">
+                  <Search className="w-4 h-4 text-neutral-400 shrink-0 hidden sm:block" />
                   <AnimatePresence mode="wait">
                     {personalSubTab === 'moments' && (
                       <motion.span key="moments-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="hidden sm:inline text-neutral-700 text-sm">
@@ -340,7 +340,7 @@ export function MainHero() {
                     <button
                       key={tab.id}
                       onClick={() => setPersonalSubTab(tab.id)}
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-sm transition-all ${
+                      className={`inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-xs sm:text-sm transition-all whitespace-nowrap ${
                         personalSubTab === tab.id
                           ? 'bg-[#4A9A86]/10 text-[#4A9A86] font-medium'
                           : 'text-neutral-400 hover:text-neutral-600'
@@ -1502,8 +1502,8 @@ export function MainHero() {
                 className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-neutral-200/30 p-2 sm:p-4 overflow-hidden"
               >
                 {/* Prompt text + Pills row */}
-                <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  <Search className="w-4 h-4 text-neutral-400 shrink-0" />
+                <div className="flex items-center gap-1 sm:gap-2 mb-3">
+                  <Search className="w-4 h-4 text-neutral-400 shrink-0 hidden sm:block" />
                   <AnimatePresence mode="wait">
                     {practitionerSubTab === 'members' && (
                       <motion.span key="members-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="hidden sm:inline text-neutral-700 text-sm">
@@ -1531,7 +1531,7 @@ export function MainHero() {
                     <button
                       key={tab.id}
                       onClick={() => setPractitionerSubTab(tab.id)}
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-sm transition-all ${
+                      className={`inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-xs sm:text-sm transition-all whitespace-nowrap ${
                         practitionerSubTab === tab.id
                           ? 'bg-[#D4856A]/10 text-[#D4856A] font-medium'
                           : 'text-neutral-400 hover:text-neutral-600'
