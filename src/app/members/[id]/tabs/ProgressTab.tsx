@@ -746,7 +746,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
                         initialStatus === 'discovery'
                           ? 'bg-emerald-500 text-white shadow-md'
-                          : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
                       }`}
                     >
                       {initialStatus === 'discovery' && <CheckCircle className="w-4 h-4" />}
@@ -758,7 +758,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
                         initialStatus === 'building'
                           ? 'bg-emerald-600 text-white shadow-md'
-                          : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-300'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
                       }`}
                     >
                       {initialStatus === 'building' && <CheckCircle className="w-4 h-4" />}
@@ -770,7 +770,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
                         initialStatus === 'thriving'
                           ? 'bg-emerald-700 text-white shadow-md'
-                          : 'bg-emerald-200 text-emerald-800 hover:bg-emerald-300 border border-emerald-400'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
                       }`}
                     >
                       {initialStatus === 'thriving' && <CheckCircle className="w-4 h-4" />}
@@ -782,7 +782,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
                         initialStatus === 'independent'
                           ? 'bg-emerald-800 text-white shadow-md'
-                          : 'bg-emerald-300 text-emerald-900 hover:bg-emerald-400 border border-emerald-500'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
                       }`}
                     >
                       {initialStatus === 'independent' && <CheckCircle className="w-4 h-4" />}
