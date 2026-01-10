@@ -745,7 +745,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                       onClick={() => setInitialStatus('discovery')}
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
                         initialStatus === 'discovery'
-                          ? 'bg-emerald-500 text-white shadow-md'
+                          ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-400 shadow-sm'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
                       }`}
                     >
@@ -757,7 +757,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                       onClick={() => setInitialStatus('building')}
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
                         initialStatus === 'building'
-                          ? 'bg-emerald-600 text-white shadow-md'
+                          ? 'bg-emerald-200 text-emerald-800 border-2 border-emerald-500 shadow-sm'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
                       }`}
                     >
@@ -769,7 +769,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                       onClick={() => setInitialStatus('thriving')}
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
                         initialStatus === 'thriving'
-                          ? 'bg-emerald-700 text-white shadow-md'
+                          ? 'bg-emerald-300 text-emerald-900 border-2 border-emerald-600 shadow-sm'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
                       }`}
                     >
@@ -781,7 +781,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                       onClick={() => setInitialStatus('independent')}
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
                         initialStatus === 'independent'
-                          ? 'bg-emerald-800 text-white shadow-md'
+                          ? 'bg-emerald-400 text-emerald-950 border-2 border-emerald-700 shadow-sm'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
                       }`}
                     >
