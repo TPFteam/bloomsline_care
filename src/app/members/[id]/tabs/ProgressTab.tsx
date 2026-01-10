@@ -165,7 +165,7 @@ const MilestoneCard = memo(function MilestoneCard({
             className="mt-2 w-full flex items-center justify-center gap-1.5 py-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
           >
             <MessageSquare className="w-3.5 h-3.5" />
-            <span>{locale === 'fr' ? 'Ajouter un commentaire' : 'Add comment'}</span>
+            <span>{locale === 'fr' ? 'Ajouter une note' : 'Add note'}</span>
           </button>
         )}
 
@@ -200,7 +200,7 @@ const MilestoneCard = memo(function MilestoneCard({
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={locale === 'fr' ? 'Ajouter un commentaire...' : 'Add a comment...'}
+                placeholder={locale === 'fr' ? 'Ajouter une note...' : 'Add a note...'}
                 className="flex-1 px-3 py-2 text-xs rounded-lg border border-gray-200 focus:border-blue-300 focus:ring-1 focus:ring-blue-100 outline-none resize-none"
                 rows={2}
               />
