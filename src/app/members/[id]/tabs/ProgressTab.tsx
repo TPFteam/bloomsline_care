@@ -710,7 +710,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {locale === 'fr' ? 'Titre de l\'objectif *' : 'Goal Title *'}
+                    {locale === 'fr' ? 'Titre *' : 'Title *'}
                   </label>
                   <input
                     type="text"
