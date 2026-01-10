@@ -739,16 +739,52 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate }: Progress
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {locale === 'fr' ? 'Statut initial' : 'Initial Status'}
                   </label>
-                  <select
-                    value={initialStatus}
-                    onChange={(e) => setInitialStatus(e.target.value as MilestoneStatus)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white "
-                  >
-                    <option value="discovery">{locale === 'fr' ? 'Découverte' : 'Discovery'}</option>
-                    <option value="building">{locale === 'fr' ? 'Construction' : 'Building'}</option>
-                    <option value="thriving">{locale === 'fr' ? 'Épanouissement' : 'Thriving'}</option>
-                    <option value="independent">{locale === 'fr' ? 'Autonome' : 'Independent'}</option>
-                  </select>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setInitialStatus('discovery')}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                        initialStatus === 'discovery'
+                          ? 'bg-emerald-100 text-emerald-700 ring-2 ring-emerald-500 ring-offset-1'
+                          : 'bg-emerald-50/50 text-emerald-600 hover:bg-emerald-100/50 border border-emerald-200/50'
+                      }`}
+                    >
+                      {locale === 'fr' ? 'Découverte' : 'Discovery'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInitialStatus('building')}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                        initialStatus === 'building'
+                          ? 'bg-emerald-200 text-emerald-800 ring-2 ring-emerald-600 ring-offset-1'
+                          : 'bg-emerald-100/50 text-emerald-700 hover:bg-emerald-200/50 border border-emerald-300/50'
+                      }`}
+                    >
+                      {locale === 'fr' ? 'Construction' : 'Building'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInitialStatus('thriving')}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                        initialStatus === 'thriving'
+                          ? 'bg-emerald-300 text-emerald-900 ring-2 ring-emerald-700 ring-offset-1'
+                          : 'bg-emerald-200/50 text-emerald-800 hover:bg-emerald-300/50 border border-emerald-400/50'
+                      }`}
+                    >
+                      {locale === 'fr' ? 'Épanouissement' : 'Thriving'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInitialStatus('independent')}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                        initialStatus === 'independent'
+                          ? 'bg-emerald-400 text-emerald-950 ring-2 ring-emerald-800 ring-offset-1'
+                          : 'bg-emerald-300/50 text-emerald-900 hover:bg-emerald-400/50 border border-emerald-500/50'
+                      }`}
+                    >
+                      {locale === 'fr' ? 'Autonome' : 'Independent'}
+                    </button>
+                  </div>
                 </div>
               </div>
 
