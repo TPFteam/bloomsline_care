@@ -11,9 +11,9 @@ function AnimatedOverview({ locale = 'en' }: { locale?: string }) {
   const [showInsight, setShowInsight] = useState(false)
 
   const clients = [
-    { name: 'Sarah M.', initials: 'SM', status: 'active', engagement: 85, color: 'from-emerald-400 to-teal-500', statusColor: 'bg-emerald-500' },
-    { name: 'Marc D.', initials: 'MD', status: 'attention', engagement: 40, color: 'from-amber-400 to-orange-500', statusColor: 'bg-amber-500' },
-    { name: 'Julie L.', initials: 'JL', status: 'active', engagement: 72, color: 'from-blue-400 to-indigo-500', statusColor: 'bg-emerald-500' },
+    { name: 'Sarah M.', initials: 'SM', status: 'active', engagement: 85, color: 'from-rose-200 to-rose-300', statusColor: 'bg-teal-400' },
+    { name: 'Marc D.', initials: 'MD', status: 'attention', engagement: 40, color: 'from-amber-200 to-amber-300', statusColor: 'bg-amber-400' },
+    { name: 'Julie L.', initials: 'JL', status: 'active', engagement: 72, color: 'from-teal-200 to-teal-300', statusColor: 'bg-teal-400' },
   ]
 
   const texts = {
@@ -22,8 +22,8 @@ function AnimatedOverview({ locale = 'en' }: { locale?: string }) {
       insight: 'Marc may need a check-in',
     },
     fr: {
-      title: 'Engagement des clients cette semaine',
-      insight: 'Marc pourrait avoir besoin d\'un suivi',
+      title: 'Dynamiques observées ce trimestre',
+      insight: 'Marc a peut-être besoin d\'une attention particulière.',
     },
   }
   const t = texts[locale as keyof typeof texts] || texts.en
@@ -60,7 +60,7 @@ function AnimatedOverview({ locale = 'en' }: { locale?: string }) {
             className="flex items-center gap-3 p-3 rounded-xl"
           >
             <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${client.color} flex items-center justify-center`}>
-              <span className="text-white text-xs font-medium">{client.initials}</span>
+              <span className="text-neutral-600 text-xs font-medium">{client.initials}</span>
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
@@ -73,10 +73,9 @@ function AnimatedOverview({ locale = 'en' }: { locale?: string }) {
                     initial={{ width: 0 }}
                     animate={{ width: `${client.engagement}%` }}
                     transition={{ duration: 0.8, delay: i * 0.2 }}
-                    className={`h-full rounded-full ${needsAttention ? 'bg-amber-400' : 'bg-emerald-400'}`}
+                    className={`h-full rounded-full ${needsAttention ? 'bg-amber-300' : 'bg-teal-300'}`}
                   />
                 </div>
-                <span className="text-xs text-neutral-400">{client.engagement}%</span>
               </div>
             </div>
           </motion.div>
@@ -95,7 +94,7 @@ function AnimatedOverview({ locale = 'en' }: { locale?: string }) {
               <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
                 <span className="text-amber-600 text-xs">!</span>
               </div>
-              <p className="text-sm text-amber-800">{t.insight}</p>
+              <p className="text-sm text-amber-800 whitespace-nowrap">{t.insight}</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -124,9 +123,9 @@ function AnimatedSessions({ locale = 'en' }: { locale?: string }) {
       nextSession: 'Prochaine séance : Demain, 14h',
       keyNotes: 'Notes clés des dernières séances',
       notes: [
-        { text: 'Anxiété liée aux échéances', tag: 'Point d\'attention' },
-        { text: 'Exercices de respiration aidants', tag: 'Progrès' },
-        { text: 'Essayer le journal cette semaine', tag: 'Action' },
+        { text: 'Anxiété élevée, discours rapide, agitation corporelle.', tag: 'Séance 1' },
+        { text: 'Anxiété présente, meilleure verbalisation, tension fluctuante.', tag: 'Séance 2' },
+        { text: 'Anxiété modérée, respiration plus stable, début d\'apaisement.', tag: 'Séance 3' },
       ],
       ready: 'Prêt pour la séance de demain',
     },
@@ -178,16 +177,16 @@ function AnimatedSessions({ locale = 'en' }: { locale?: string }) {
             <motion.div
               key={i}
               animate={{
-                backgroundColor: isHighlighted ? 'rgb(254 249 195)' : 'rgb(250 250 250)',
+                backgroundColor: isHighlighted ? 'rgb(219 234 254)' : 'rgb(250 250 250)',
                 scale: isHighlighted ? [1, 1.02, 1] : 1,
               }}
               transition={{ duration: 0.3 }}
               className="flex items-start gap-2 p-2 rounded-lg"
             >
-              <Tag className={`w-3 h-3 mt-0.5 ${isHighlighted ? 'text-amber-600' : 'text-neutral-300'}`} />
+              <Tag className={`w-3 h-3 mt-0.5 ${isHighlighted ? 'text-blue-600' : 'text-neutral-300'}`} />
               <div className="flex-1">
                 <p className="text-sm text-neutral-700">{note.text}</p>
-                <span className={`text-xs ${isHighlighted ? 'text-amber-600' : 'text-neutral-400'}`}>{note.tag}</span>
+                <span className={`text-xs ${isHighlighted ? 'text-blue-600' : 'text-neutral-400'}`}>{note.tag}</span>
               </div>
             </motion.div>
           )
@@ -766,7 +765,7 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
       title: { en: 'Share your resources', fr: 'Partagez vos supports' },
       description: {
         en: 'Create and organize your questionnaires, exercises, and therapeutic resources in one place.',
-        fr: 'Créez et regroupez vos questionnaires, exercices et ressources thérapeutiques.',
+        fr: 'Créez et regroupez vos questionnaires, exercices et ressources éducatives.',
       },
       visual: <AnimatedResources locale={locale} />,
       color: 'from-amber-500/10 to-orange-500/10',
@@ -778,7 +777,7 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
       title: { en: 'Prepare your sessions effortlessly', fr: 'Préparez vos séances sans effort' },
       description: {
         en: 'Clinical elements discussed throughout sessions are accessible without digging through your notes.',
-        fr: 'Les éléments abordés au fil des séances sont accessibles sans parcourir vos notes.',
+        fr: 'Les éléments abordés au fil des séances sont accessibles sans parcourir l\'ensemble de vos notes.',
       },
       visual: <AnimatedSessions locale={locale} />,
       color: 'from-rose-500/10 to-pink-500/10',
@@ -794,6 +793,7 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
       },
       visual: <AnimatedOverview locale={locale} />,
       color: 'from-emerald-500/10 to-teal-500/10',
+      cta: { en: 'Try Bloomsline for free', fr: 'Tester Bloomsline gratuitement' },
     },
   ]
 
@@ -877,7 +877,7 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
           </p>
           <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-4">
             {isPractitionerPage
-              ? (locale === 'fr' ? 'Tout ce dont vous avez besoin.' : 'Everything you need.')
+              ? (locale === 'fr' ? 'Parce que certains signaux doivent être vus à temps.' : 'Because some signals need to be seen in time.')
               : (locale === 'fr' ? 'Voici Bloomsline.' : 'This is Bloomsline.')}
           </h2>
           <p className="text-neutral-500 max-w-2xl mx-auto leading-relaxed">
@@ -916,6 +916,14 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
                 <p className="text-neutral-600 leading-relaxed">
                   {locale === 'fr' ? step.description.fr : step.description.en}
                 </p>
+                {'cta' in step && (step as { cta?: { en: string; fr: string } }).cta && (
+                  <a
+                    href="/early-access"
+                    className="inline-block mt-6 px-6 py-3 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300"
+                  >
+                    {locale === 'fr' ? (step as { cta: { en: string; fr: string } }).cta.fr : (step as { cta: { en: string; fr: string } }).cta.en}
+                  </a>
+                )}
               </div>
 
               {/* Visual */}

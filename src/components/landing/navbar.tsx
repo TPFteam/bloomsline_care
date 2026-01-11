@@ -18,8 +18,8 @@ export function Navbar() {
   const isPractitioner = activeTab === 'practitioner'
 
   const navItems = [
-    { label: t.nav.home, href: '/', active: true },
-    { label: t.nav.forPractitioners, href: '/practitioner' },
+    { label: t.nav.home, href: '/', active: !isPractitioner },
+    { label: t.nav.forPractitioners, href: '/practitioner', active: isPractitioner },
   ]
 
   return (

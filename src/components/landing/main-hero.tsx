@@ -13,8 +13,8 @@ const rotatingWords = {
     fr: ['Grandissez', 'Guérissez', 'Reposez-vous', 'Réfléchissez'],
   },
   practitioner: {
-    en: ['continues', 'is tracked', 'prepares'],
-    fr: ['continue', 'se suit', 'se prépare'],
+    en: ['Create', 'Share', 'Track engagement'],
+    fr: ['Créez', 'Partagez', 'Suivez les rythmes'],
   },
 }
 
@@ -199,17 +199,17 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 pt-24 md:pt-16">
         <div className="max-w-4xl mx-auto text-center">
-          {/* Tagline */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-lg sm:text-xl text-neutral-500 mb-6"
-          >
-            {isPractitionerPage
-              ? (locale === 'fr' ? 'L\'espace entre les séances, rempli de soin' : 'The space between sessions, filled with care')
-              : (locale === 'fr' ? 'Un soin qui vous rejoint là où vous êtes' : 'Care that meets you where you are')}
-          </motion.p>
+          {/* Tagline - only show on personal page */}
+          {!isPractitionerPage && (
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="text-lg sm:text-xl text-neutral-500 mb-6"
+            >
+              {locale === 'fr' ? 'Un soin qui vous rejoint là où vous êtes' : 'Care that meets you where you are'}
+            </motion.p>
+          )}
 
           {/* Main rotating headline */}
           <motion.div
@@ -221,10 +221,6 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-light tracking-tight text-neutral-900 leading-[1.1]">
               {isPractitionerPage ? (
                 <>
-                  <span className="text-neutral-900">
-                    {locale === 'fr' ? 'Après la séance, le travail' : 'After the session, the work'}
-                  </span>
-                  {' '}
                   <AnimatePresence mode="wait">
                     <motion.span
                       key={`${wordIndex}-practitioner`}
@@ -232,11 +228,15 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                       animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                       exit={{ opacity: 0, y: -20, filter: 'blur(8px)' }}
                       transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-                      className={`inline-block bg-gradient-to-r ${currentColors.text} bg-clip-text text-transparent`}
+                      className="inline-block bg-gradient-to-r from-[#D4856A] to-[#E8A87C] bg-clip-text text-transparent"
                     >
                       {rotatingWords.practitioner[locale][wordIndex % rotatingWords.practitioner[locale].length]}
                     </motion.span>
                   </AnimatePresence>
+                  <br />
+                  <span className="text-neutral-900">
+                    {locale === 'fr' ? 'sans effort' : 'effortlessly'}
+                  </span>
                 </>
               ) : (
                 <>
@@ -298,7 +298,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.7 }}
-            className="text-sm text-neutral-400 mt-4 text-center"
+            className={`text-neutral-500 mt-4 text-center max-w-xl mx-auto ${isPractitionerPage ? 'text-base sm:text-lg' : 'text-sm'}`}
           >
             <AnimatePresence mode="wait">
               {activeTab === 'personal' ? (
@@ -322,15 +322,16 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                   transition={{ duration: 0.2 }}
                 >
                   {locale === 'fr'
-                    ? 'Nous savons que vous mettez tout votre cœur dans votre pratique. Laissez Bloomsline gérer l\'organisation, pour que vous puissiez vous concentrer sur le travail qui compte.'
-                    : 'We know you pour your heart into your practice. Let Bloomsline handle the organization, so you can focus on the meaningful work that drew you to this profession.'}
+                    ? <>Mesurez l'engagement de vos patients en temps réel.<br />Créez et partagez du contenu pour un suivi fiable entre les séances.</>
+                    : <>Measure patient engagement in real-time.<br />Create and share content for reliable follow-up between sessions.</>}
                 </motion.span>
               )}
             </AnimatePresence>
           </motion.p>
         </div>
 
-        {/* Mock Preview - Minimal Input Style like Dia */}
+        {/* Mock Preview - Minimal Input Style like Dia - hidden on practitioner page */}
+        {!isPractitionerPage && (
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
@@ -2397,6 +2398,47 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
             )}
           </AnimatePresence>
         </motion.div>
+        )}
+
+        {/* Practitioner Early Access Form */}
+        {isPractitionerPage && (
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="w-full max-w-3xl mx-auto mt-10 px-4 sm:px-6"
+          >
+            <div className="bg-white/80 backdrop-blur-sm rounded-full shadow-lg shadow-neutral-200/30 p-2">
+              <form
+                className="flex items-center gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  window.location.href = '/early-access'
+                }}
+              >
+                <input
+                  type="text"
+                  placeholder={locale === 'fr' ? 'Votre nom' : 'Your name'}
+                  className="flex-1 px-4 py-3 bg-transparent border-none text-neutral-900 placeholder-neutral-400 focus:outline-none"
+                />
+                <div className="w-px h-8 bg-neutral-200" />
+                <input
+                  type="email"
+                  placeholder={locale === 'fr' ? 'Votre email' : 'Your email'}
+                  className="flex-1 px-4 py-3 bg-transparent border-none text-neutral-900 placeholder-neutral-400 focus:outline-none"
+                />
+                <Link href="/early-access">
+                  <button
+                    type="button"
+                    className="px-6 py-3 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300 whitespace-nowrap"
+                  >
+                    {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
+                  </button>
+                </Link>
+              </form>
+            </div>
+          </motion.div>
+        )}
 
         {/* Scroll indicator */}
         <motion.div
