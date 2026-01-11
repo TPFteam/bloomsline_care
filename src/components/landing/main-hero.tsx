@@ -131,6 +131,55 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
     setSessionNote('')
   }
 
+  // Early access form state
+  const [earlyAccessName, setEarlyAccessName] = useState('')
+  const [earlyAccessEmail, setEarlyAccessEmail] = useState('')
+  const [earlyAccessLoading, setEarlyAccessLoading] = useState(false)
+  const [earlyAccessSuccess, setEarlyAccessSuccess] = useState(false)
+  const [earlyAccessError, setEarlyAccessError] = useState('')
+
+  const handleEarlyAccessSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!earlyAccessName.trim() || !earlyAccessEmail.trim()) {
+      setEarlyAccessError(locale === 'fr' ? 'Veuillez remplir tous les champs' : 'Please fill in all fields')
+      return
+    }
+
+    setEarlyAccessLoading(true)
+    setEarlyAccessError('')
+
+    try {
+      const response = await fetch('/api/early-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: earlyAccessName,
+          email: earlyAccessEmail,
+          userType: 'practitioner',
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (data.code === 'DUPLICATE') {
+          setEarlyAccessError(locale === 'fr' ? 'Cet email est déjà inscrit' : 'This email is already registered')
+        } else {
+          setEarlyAccessError(data.error || (locale === 'fr' ? 'Une erreur est survenue' : 'An error occurred'))
+        }
+        return
+      }
+
+      setEarlyAccessSuccess(true)
+      setEarlyAccessName('')
+      setEarlyAccessEmail('')
+    } catch {
+      setEarlyAccessError(locale === 'fr' ? 'Une erreur est survenue' : 'An error occurred')
+    } finally {
+      setEarlyAccessLoading(false)
+    }
+  }
+
   // Toggle category selection
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev =>
@@ -2408,63 +2457,90 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
             transition={{ duration: 0.8, delay: 0.8 }}
             className="w-full max-w-3xl mx-auto mt-10 px-4 sm:px-6"
           >
-            {/* Desktop: pill shape */}
-            <div className="hidden sm:block bg-white/80 backdrop-blur-sm rounded-full shadow-lg shadow-neutral-200/30 p-2">
-              <form
-                className="flex items-center gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  window.location.href = '/early-access'
-                }}
-              >
-                <input
-                  type="text"
-                  placeholder={locale === 'fr' ? 'Votre nom' : 'Your name'}
-                  className="flex-1 px-4 py-3 bg-transparent border-none text-neutral-900 placeholder-neutral-400 focus:outline-none"
-                />
-                <div className="w-px h-8 bg-neutral-200" />
-                <input
-                  type="email"
-                  placeholder={locale === 'fr' ? 'Votre email' : 'Your email'}
-                  className="flex-1 px-4 py-3 bg-transparent border-none text-neutral-900 placeholder-neutral-400 focus:outline-none"
-                />
-                <Link href="/early-access">
-                  <button
-                    type="button"
-                    className="px-6 py-3 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300 whitespace-nowrap"
+            {earlyAccessSuccess ? (
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-neutral-200/30 p-6 text-center">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Check className="w-6 h-6 text-green-600" />
+                </div>
+                <p className="text-neutral-900 font-medium">
+                  {locale === 'fr' ? 'Merci pour votre inscription !' : 'Thank you for signing up!'}
+                </p>
+                <p className="text-neutral-500 text-sm mt-1">
+                  {locale === 'fr' ? 'Nous vous contacterons bientôt.' : 'We\'ll be in touch soon.'}
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Desktop: pill shape */}
+                <div className="hidden sm:block bg-white/80 backdrop-blur-sm rounded-full shadow-lg shadow-neutral-200/30 p-2">
+                  <form
+                    className="flex items-center gap-2"
+                    onSubmit={handleEarlyAccessSubmit}
                   >
-                    {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
-                  </button>
-                </Link>
-              </form>
-            </div>
-            {/* Mobile: stacked */}
-            <form
-              className="sm:hidden flex flex-col gap-3"
-              onSubmit={(e) => {
-                e.preventDefault()
-                window.location.href = '/early-access'
-              }}
-            >
-              <input
-                type="text"
-                placeholder={locale === 'fr' ? 'Votre nom' : 'Your name'}
-                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm rounded-full border border-neutral-200 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#D4856A]/30"
-              />
-              <input
-                type="email"
-                placeholder={locale === 'fr' ? 'Votre email' : 'Your email'}
-                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm rounded-full border border-neutral-200 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#D4856A]/30"
-              />
-              <Link href="/early-access" className="w-full">
-                <button
-                  type="button"
-                  className="w-full px-6 py-3 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300"
+                    <input
+                      type="text"
+                      value={earlyAccessName}
+                      onChange={(e) => setEarlyAccessName(e.target.value)}
+                      placeholder={locale === 'fr' ? 'Votre nom' : 'Your name'}
+                      className="flex-1 px-4 py-3 bg-transparent border-none text-neutral-900 placeholder-neutral-400 focus:outline-none"
+                      disabled={earlyAccessLoading}
+                    />
+                    <div className="w-px h-8 bg-neutral-200" />
+                    <input
+                      type="email"
+                      value={earlyAccessEmail}
+                      onChange={(e) => setEarlyAccessEmail(e.target.value)}
+                      placeholder={locale === 'fr' ? 'Votre email' : 'Your email'}
+                      className="flex-1 px-4 py-3 bg-transparent border-none text-neutral-900 placeholder-neutral-400 focus:outline-none"
+                      disabled={earlyAccessLoading}
+                    />
+                    <button
+                      type="submit"
+                      disabled={earlyAccessLoading}
+                      className="px-6 py-3 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300 whitespace-nowrap disabled:opacity-50"
+                    >
+                      {earlyAccessLoading
+                        ? (locale === 'fr' ? 'Envoi...' : 'Sending...')
+                        : (locale === 'fr' ? 'Accès anticipé' : 'Early Access')}
+                    </button>
+                  </form>
+                </div>
+                {/* Mobile: stacked */}
+                <form
+                  className="sm:hidden flex flex-col gap-3"
+                  onSubmit={handleEarlyAccessSubmit}
                 >
-                  {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
-                </button>
-              </Link>
-            </form>
+                  <input
+                    type="text"
+                    value={earlyAccessName}
+                    onChange={(e) => setEarlyAccessName(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Votre nom' : 'Your name'}
+                    className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm rounded-full border border-neutral-200 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#D4856A]/30"
+                    disabled={earlyAccessLoading}
+                  />
+                  <input
+                    type="email"
+                    value={earlyAccessEmail}
+                    onChange={(e) => setEarlyAccessEmail(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Votre email' : 'Your email'}
+                    className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm rounded-full border border-neutral-200 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#D4856A]/30"
+                    disabled={earlyAccessLoading}
+                  />
+                  <button
+                    type="submit"
+                    disabled={earlyAccessLoading}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300 disabled:opacity-50"
+                  >
+                    {earlyAccessLoading
+                      ? (locale === 'fr' ? 'Envoi...' : 'Sending...')
+                      : (locale === 'fr' ? 'Accès anticipé' : 'Early Access')}
+                  </button>
+                </form>
+                {earlyAccessError && (
+                  <p className="text-red-500 text-sm text-center mt-2">{earlyAccessError}</p>
+                )}
+              </>
+            )}
           </motion.div>
         )}
 
