@@ -259,18 +259,6 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 pt-24 md:pt-16">
         <div className="max-w-4xl mx-auto text-center">
-          {/* Tagline - only show on personal page */}
-          {!isPractitionerPage && (
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="text-lg sm:text-xl text-neutral-500 mb-6"
-            >
-              {locale === 'fr' ? 'Un soin qui vous rejoint là où vous êtes' : 'Care that meets you where you are'}
-            </motion.p>
-          )}
-
           {/* Main rotating headline */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
