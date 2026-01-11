@@ -1,8 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ArrowLeft, Rocket, Shield, Zap } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ArrowLeft } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -22,7 +21,7 @@ import {
 import { useLanguage } from '@/lib/i18n/context'
 
 function SignUpContent() {
-  const { t } = useLanguage()
+  const { locale } = useLanguage()
   const searchParams = useSearchParams()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
@@ -35,16 +34,12 @@ function SignUpContent() {
     const error = searchParams.get('error')
     const info = searchParams.get('info')
 
-    console.log('Sign-up page params:', { error, info })
-
     if (error) {
-      console.log('Showing error toast:', decodeURIComponent(error))
       toast.error(decodeURIComponent(error))
     }
 
     if (info) {
       const message = decodeURIComponent(info)
-      console.log('Showing info dialog:', message)
       setDialogMessage(message)
       setShowDialog(true)
     }
@@ -74,164 +69,128 @@ function SignUpContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50 relative overflow-hidden">
-      {/* Cinematic gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-lavender-100/30 via-peach-50/20 to-mint-100/30"></div>
-
-      {/* Large organic blobs */}
-      <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-gradient-to-br from-lavender-200/40 to-lavender-300/40 rounded-full mix-blend-multiply filter blur-[160px] animate-blob"></div>
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-peach-200/30 to-coral-200/30 rounded-full mix-blend-multiply filter blur-[140px] animate-blob animation-delay-2000"></div>
-      <div className="absolute bottom-0 left-1/3 w-[700px] h-[700px] bg-gradient-to-br from-mint-200/30 to-mint-300/30 rounded-full mix-blend-multiply filter blur-[180px] animate-blob animation-delay-4000"></div>
+    <div className="min-h-screen bg-white relative overflow-hidden">
+      {/* Soft gradient background */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="w-[800px] h-[800px] rounded-full bg-gradient-to-br from-teal-100/40 via-emerald-50/30 to-cyan-100/40 blur-3xl" />
+      </div>
 
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             <Link href="/">
               <Logo size="md" showText />
             </Link>
             <Link
               href="/"
-              className="flex items-center gap-2 text-sm text-gray-600 hover:text-foreground transition-colors"
+              className="flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span suppressHydrationWarning>{t.nav.home}</span>
+              <span>{locale === 'fr' ? 'Accueil' : 'Home'}</span>
             </Link>
           </div>
         </div>
       </header>
 
-      <div className="min-h-screen grid lg:grid-cols-2 relative z-10">
-        {/* Left Side - Welcome Section */}
+      {/* Main content */}
+      <div className="min-h-screen flex items-center justify-center px-6 relative z-10">
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="hidden lg:flex flex-col justify-center px-12 xl:px-20"
+          className="w-full max-w-sm"
         >
-          <div className="max-w-md">
-            <h1 className="text-4xl xl:text-5xl font-bold text-foreground mb-4" suppressHydrationWarning>
-              {t.auth.signUp.title}
+          {/* Welcome text */}
+          <div className="text-center mb-10">
+            <h1 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-3">
+              {locale === 'fr' ? 'Commencez ici' : 'Start here'}
             </h1>
-            <p className="text-lg text-gray-600 mb-12 leading-relaxed" suppressHydrationWarning>
-              {t.auth.signUp.description}
+            <p className="text-neutral-500">
+              {locale === 'fr'
+                ? 'Créez votre compte en quelques secondes.'
+                : 'Create your account in seconds.'}
             </p>
-
-            {/* Feature highlights */}
-            <div className="space-y-6">
-              {[
-                {
-                  icon: Rocket,
-                  feature: t.auth.signUp.features.quickSetup,
-                },
-                {
-                  icon: Shield,
-                  feature: t.auth.signUp.features.hipaaCompliant,
-                },
-                {
-                  icon: Zap,
-                  feature: t.auth.signUp.features.instantAccess,
-                },
-              ].map((item, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.2 + index * 0.1 }}
-                  className="flex items-start gap-4"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center flex-shrink-0">
-                    <item.icon className="w-5 h-5 text-lavender-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1" suppressHydrationWarning>{item.feature.title}</h3>
-                    <p className="text-sm text-gray-600" suppressHydrationWarning>{item.feature.description}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
           </div>
-        </motion.div>
 
-        {/* Right Side - Sign Up Form */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
-          className="flex items-center justify-center px-4 sm:px-6 lg:px-12 xl:px-20 py-20"
-        >
-          <div className="w-full max-w-md">
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-foreground mb-2" suppressHydrationWarning>
-                {t.auth.signUp.createAccount}
-              </h2>
-              <p className="text-gray-600">
-                <span suppressHydrationWarning>{t.auth.signUp.alreadyHaveAccount}</span>{' '}
-                <Link href="/sign-in" className="text-mint-600 hover:text-mint-700 font-medium" suppressHydrationWarning>
-                  {t.auth.signUp.signIn}
-                </Link>
-              </p>
-            </div>
-
+          {/* Minimal card */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-neutral-200/50 shadow-sm">
             {/* Google Sign Up */}
-            <Button
+            <button
               onClick={handleGoogleSignUp}
               disabled={isLoading}
-              className="w-full h-14 bg-foreground text-background hover:bg-foreground/90 rounded-lg text-base mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-neutral-900 text-white rounded-full font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-              </svg>
-              <span suppressHydrationWarning>{isLoading ? t.auth.signUp.creatingAccount : t.auth.signUp.continueWithGoogle}</span>
-            </Button>
+              {isLoading ? (
+                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path
+                      fill="currentColor"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  {locale === 'fr' ? 'Continuer avec Google' : 'Continue with Google'}
+                </>
+              )}
+            </button>
 
-            <p className="text-xs text-center text-gray-500">
-              <span suppressHydrationWarning>{t.auth.signUp.termsPrefix}</span>{' '}
-              <a href="#" className="text-mint-600 hover:text-mint-700" suppressHydrationWarning>
-                {t.auth.signUp.termsOfService}
-              </a>{' '}
-              <span suppressHydrationWarning>{t.auth.signUp.and}</span>{' '}
-              <a href="#" className="text-mint-600 hover:text-mint-700" suppressHydrationWarning>
-                {t.auth.signUp.privacyPolicy}
-              </a>
+            {/* Sign in link */}
+            <p className="text-center text-neutral-500 mt-6 text-sm">
+              {locale === 'fr' ? 'Déjà un compte ?' : 'Already have an account?'}{' '}
+              <Link href="/sign-in" className="text-teal-600 hover:text-teal-700 font-medium">
+                {locale === 'fr' ? 'Se connecter' : 'Sign in'}
+              </Link>
             </p>
           </div>
+
+          {/* Terms */}
+          <p className="text-center text-xs text-neutral-400 mt-6">
+            {locale === 'fr' ? 'En continuant, vous acceptez nos' : 'By continuing, you agree to our'}{' '}
+            <Link href="/terms" className="text-neutral-500 hover:text-neutral-700">
+              {locale === 'fr' ? 'Conditions' : 'Terms'}
+            </Link>{' '}
+            {locale === 'fr' ? 'et' : 'and'}{' '}
+            <Link href="/privacy" className="text-neutral-500 hover:text-neutral-700">
+              {locale === 'fr' ? 'Confidentialité' : 'Privacy'}
+            </Link>
+          </p>
         </motion.div>
       </div>
 
       {/* Info Dialog */}
       <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Account Not Found</AlertDialogTitle>
+            <AlertDialogTitle>
+              {locale === 'fr' ? 'Compte non trouvé' : 'Account Not Found'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {dialogMessage}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => router.push('/')}>
-              Go to Home
+            <AlertDialogCancel onClick={() => router.push('/')} className="rounded-xl">
+              {locale === 'fr' ? 'Accueil' : 'Go to Home'}
             </AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              setShowDialog(false)
-              // User can now click "Continue with Google" to sign up
-            }}>
-              Sign Up
+            <AlertDialogAction
+              onClick={() => setShowDialog(false)}
+              className="rounded-xl bg-neutral-900 hover:bg-neutral-800"
+            >
+              {locale === 'fr' ? "S'inscrire" : 'Sign Up'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -243,10 +202,10 @@ function SignUpContent() {
 export default function SignUpPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-lavender-100 via-white to-teal-50">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-mint-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="w-10 h-10 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-neutral-400">Loading...</p>
         </div>
       </div>
     }>
