@@ -2408,7 +2408,8 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
             transition={{ duration: 0.8, delay: 0.8 }}
             className="w-full max-w-3xl mx-auto mt-10 px-4 sm:px-6"
           >
-            <div className="bg-white/80 backdrop-blur-sm rounded-full shadow-lg shadow-neutral-200/30 p-2">
+            {/* Desktop: pill shape */}
+            <div className="hidden sm:block bg-white/80 backdrop-blur-sm rounded-full shadow-lg shadow-neutral-200/30 p-2">
               <form
                 className="flex items-center gap-2"
                 onSubmit={(e) => {
@@ -2437,6 +2438,33 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                 </Link>
               </form>
             </div>
+            {/* Mobile: stacked */}
+            <form
+              className="sm:hidden flex flex-col gap-3"
+              onSubmit={(e) => {
+                e.preventDefault()
+                window.location.href = '/early-access'
+              }}
+            >
+              <input
+                type="text"
+                placeholder={locale === 'fr' ? 'Votre nom' : 'Your name'}
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm rounded-full border border-neutral-200 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#D4856A]/30"
+              />
+              <input
+                type="email"
+                placeholder={locale === 'fr' ? 'Votre email' : 'Your email'}
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm rounded-full border border-neutral-200 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#D4856A]/30"
+              />
+              <Link href="/early-access" className="w-full">
+                <button
+                  type="button"
+                  className="w-full px-6 py-3 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300"
+                >
+                  {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
+                </button>
+              </Link>
+            </form>
           </motion.div>
         )}
 
