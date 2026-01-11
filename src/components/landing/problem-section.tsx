@@ -110,8 +110,8 @@ export function ProblemSection() {
       fr: "Vous n'êtes pas seul. Ce sont ces moments qui passent entre les mailles du filet—ceux qu'aucune notification ne peut résoudre.",
     },
     practitioner: {
-      en: "You're not alone. These gaps in care aren't your fault—they're a limitation of the tools we've had until now.",
-      fr: "Vous n'êtes pas seul. Ces lacunes dans l'accompagnement ne sont pas de votre faute—ce sont les limites des outils dont nous disposions.",
+      en: "You're not alone. The space between sessions doesn't have to feel empty.",
+      fr: "Vous n'êtes pas seul. L'espace entre les séances ne doit pas rester vide.",
     },
   }
 
