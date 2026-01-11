@@ -9,7 +9,7 @@ import Link from 'next/link'
 
 const rotatingWords = {
   personal: {
-    en: ['grows', 'shifts', 'moves'],
+    en: ['is growing', 'is shifting', 'is moving'],
     fr: ['grandit', 'évolue', 'avance'],
   },
   practitioner: {
