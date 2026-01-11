@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -76,8 +76,10 @@ export default function MyResourcesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [languageFilter, setLanguageFilter] = useState<'all' | 'en' | 'fr'>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'worksheet' | 'psychoeducation' | 'exercise' | 'table'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>('all')
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const filterRef = useRef<HTMLDivElement>(null)
 
   // Resources state
   const [dbResources, setDbResources] = useState<Resource[]>([])
@@ -180,6 +182,23 @@ export default function MyResourcesPage() {
     }
     fetchCollections()
   }, [])
+
+  // Close filter dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setShowFilters(false)
+      }
+    }
+
+    if (showFilters) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showFilters])
 
   // Handle create collection
   const handleCreateCollection = async () => {
@@ -353,25 +372,27 @@ export default function MyResourcesPage() {
     let filtered = savedDbResources
     if (languageFilter !== 'all') filtered = filtered.filter(r => r.language === languageFilter)
     if (typeFilter !== 'all') filtered = filtered.filter(r => r.type === typeFilter)
+    if (statusFilter !== 'all') filtered = filtered.filter(r => r.status === statusFilter)
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(r => r.title.toLowerCase().includes(query) || (r.description || '').toLowerCase().includes(query))
     }
     return filtered
-  }, [savedDbResources, searchQuery, languageFilter, typeFilter])
+  }, [savedDbResources, searchQuery, languageFilter, typeFilter, statusFilter])
 
   const createdResources = useMemo(() => {
     let filtered = dbResources
     if (languageFilter !== 'all') filtered = filtered.filter(r => r.language === languageFilter)
     if (typeFilter !== 'all') filtered = filtered.filter(r => r.type === typeFilter)
+    if (statusFilter !== 'all') filtered = filtered.filter(r => r.status === statusFilter)
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(r => r.title.toLowerCase().includes(query) || (r.description || '').toLowerCase().includes(query))
     }
     return filtered
-  }, [dbResources, searchQuery, languageFilter, typeFilter])
+  }, [dbResources, searchQuery, languageFilter, typeFilter, statusFilter])
 
-  const hasActiveFilters = searchQuery || typeFilter !== 'all' || languageFilter !== 'all'
+  const hasActiveFilters = searchQuery || typeFilter !== 'all' || languageFilter !== 'all' || statusFilter !== 'all'
 
   if (loading) {
     return (
@@ -465,7 +486,7 @@ export default function MyResourcesPage() {
               )}
             </div>
 
-            <div className="relative">
+            <div className="relative" ref={filterRef}>
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all border ${
@@ -527,9 +548,30 @@ export default function MyResourcesPage() {
                         ))}
                       </div>
                     </div>
+                    <div className="mb-4">
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">{locale === 'fr' ? 'Statut' : 'Status'}</label>
+                      <div className="space-y-1">
+                        {[
+                          { value: 'all', label: locale === 'fr' ? 'Tous' : 'All' },
+                          { value: 'draft', label: locale === 'fr' ? 'Brouillon' : 'Draft' },
+                          { value: 'published', label: locale === 'fr' ? 'Publié' : 'Published' },
+                        ].map((item) => (
+                          <button
+                            key={item.value}
+                            onClick={() => setStatusFilter(item.value as any)}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                              statusFilter === item.value ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span className="flex-1 text-left">{item.label}</span>
+                            {statusFilter === item.value && <Check className="w-4 h-4" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     {hasActiveFilters && (
                       <button
-                        onClick={() => { setTypeFilter('all'); setLanguageFilter('all') }}
+                        onClick={() => { setTypeFilter('all'); setLanguageFilter('all'); setStatusFilter('all') }}
                         className="w-full px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg"
                       >
                         {locale === 'fr' ? 'Effacer' : 'Clear'}

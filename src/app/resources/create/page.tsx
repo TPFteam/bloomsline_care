@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Sparkles,
   Plus,
+  Puzzle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -49,7 +50,7 @@ const typeLabels: Record<PractitionerResourceType, { en: string; fr: string }> =
   worksheet: { en: 'Worksheet', fr: 'Exercice' },
   table: { en: 'Table', fr: 'Tableau' },
   psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
-  exercise: { en: 'Exercise / Activity', fr: 'Exercice / Activité' },
+  exercise: { en: 'Activity', fr: 'Activité' },
 }
 
 const typeDescriptions: Record<PractitionerResourceType, { en: string; fr: string }> = {
@@ -73,20 +74,20 @@ const typeDescriptions: Record<PractitionerResourceType, { en: string; fr: strin
 
 const typeExamples: Record<PractitionerResourceType, { en: string[]; fr: string[] }> = {
   worksheet: {
-    en: ['Self-esteem', 'Relationships', 'Regulation'],
-    fr: ['Estime de soi', 'Relations', 'Régulation'],
+    en: ['Self-esteem', 'Relationships'],
+    fr: ['Estime de soi', 'Relations'],
   },
   table: {
-    en: ['Automatic thoughts', 'Anxiety tracking'],
-    fr: ['Automatiques', 'Anxiété'],
+    en: ['Automatic thoughts'],
+    fr: ['Pensées automatiques'],
   },
   psychoeducation: {
     en: ['Fact sheets', 'Guides'],
     fr: ['Fiches explicatives', 'Guides'],
   },
   exercise: {
-    en: ['Breathing', 'Grounding', 'Mindfulness'],
-    fr: ['Respiration', 'Ancrage', 'Pleine conscience'],
+    en: ['Mindfulness'],
+    fr: ['Pleine conscience'],
   },
 }
 
@@ -208,6 +209,16 @@ export default function CreateResourcePage() {
   }
 
   const currentTemplates = selectedResourceType ? templates[selectedResourceType] : []
+
+  // Color theme based on selected resource type
+  const typeColors: Record<PractitionerResourceType, { bg: string; text: string }> = {
+    psychoeducation: { bg: 'bg-purple-50', text: 'text-purple-600' },
+    worksheet: { bg: 'bg-blue-50', text: 'text-blue-600' },
+    table: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
+    exercise: { bg: 'bg-amber-50', text: 'text-amber-600' },
+  }
+
+  const currentColors = selectedResourceType ? typeColors[selectedResourceType] : typeColors.worksheet
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -424,7 +435,7 @@ export default function CreateResourcePage() {
                           animate={{ rotate: [0, 10, 0] }}
                           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                         >
-                          <Lightbulb className="w-3.5 h-3.5 text-white" />
+                          <Puzzle className="w-3.5 h-3.5 text-white" />
                         </motion.div>
                       </div>
                     )}
@@ -504,8 +515,8 @@ export default function CreateResourcePage() {
                             <Check className="w-3 h-3 text-white" />
                           </motion.span>
                         )}
-                        <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mb-3">
-                          <FileText className="w-5 h-5 text-blue-600" />
+                        <div className={`w-10 h-10 ${currentColors.bg} rounded-lg flex items-center justify-center mb-3`}>
+                          <FileText className={`w-5 h-5 ${currentColors.text}`} />
                         </div>
                         <h3 className="font-medium text-gray-900 mb-1">
                           {template.name[locale]}
@@ -513,7 +524,7 @@ export default function CreateResourcePage() {
                         <p className="text-sm text-gray-500 mb-2">
                           {template.description[locale]}
                         </p>
-                        <span className="text-xs text-blue-600 font-medium">
+                        <span className={`text-xs ${currentColors.text} font-medium`}>
                           {template.blocks} {locale === 'fr' ? 'blocs' : 'blocks'}
                         </span>
                       </motion.button>

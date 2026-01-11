@@ -578,8 +578,8 @@ function DashboardContent() {
             transition={{ delay: 0.1 }}
             className="mb-10"
           >
-            <div className="grid grid-cols-6 gap-4">
-              {quickActions.map((action, index) => (
+            <div className="grid grid-cols-5 gap-4">
+              {quickActions.filter(action => action.id !== 'activity').map((action, index) => (
                 <motion.div
                   key={action.id}
                   initial={{ opacity: 0, y: 10 }}

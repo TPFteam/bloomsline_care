@@ -1,6 +1,7 @@
 import { Navbar } from "@/components/landing/navbar";
 import { MainHero } from "@/components/landing/main-hero";
 import { ProblemSection } from "@/components/landing/problem-section";
+import { HopeSection } from "@/components/landing/hope-section";
 import { ValidationSection } from "@/components/landing/validation-section";
 import { BeliefSection } from "@/components/landing/belief-section";
 import { GlimpseSection } from "@/components/landing/glimpse-section";
@@ -15,8 +16,9 @@ export default function Home() {
         <main>
           <MainHero />
           <ProblemSection />
-          <ValidationSection />
+          <HopeSection />
           <BeliefSection />
+          <ValidationSection />
           <GlimpseSection />
         </main>
         <Footer />

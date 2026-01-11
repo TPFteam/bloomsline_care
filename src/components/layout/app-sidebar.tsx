@@ -5,7 +5,7 @@ import {
   Home,
   BookOpen,
   Users,
-  BarChart3,
+  Activity,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { useLanguage } from '@/lib/i18n/context'
@@ -29,7 +29,7 @@ export function AppSidebar({ activeItem }: AppSidebarProps) {
 
   const managementItems = [
     { id: 'members' as NavItem, href: '/members', icon: Users, label: locale === 'fr' ? 'Personnes suivies' : 'People' },
-    { id: 'analytics' as NavItem, href: '/analytics', icon: BarChart3, label: 'Engagement' },
+    { id: 'analytics' as NavItem, href: '/analytics', icon: Activity, label: locale === 'fr' ? 'Rythme' : 'Your Flow' },
   ]
 
   const renderNavItem = (item: { id: NavItem; href: string; icon: typeof Home; label: string }) => {

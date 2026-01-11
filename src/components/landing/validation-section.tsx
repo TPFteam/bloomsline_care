@@ -129,11 +129,7 @@ export function ValidationSection() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className="text-center"
             >
-              <div className={`text-5xl sm:text-6xl font-light mb-4 ${
-                audience === 'member'
-                  ? 'text-lavender-500'
-                  : 'text-teal-500'
-              }`}>
+              <div className="text-5xl sm:text-6xl font-light mb-4 text-neutral-900">
                 {stat.number}
                 {stat.suffix && (
                   <span className="text-2xl sm:text-3xl ml-1">
