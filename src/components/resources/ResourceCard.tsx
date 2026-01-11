@@ -75,7 +75,7 @@ const typeLabels: Record<string, { en: string; fr: string }> = {
   worksheet: { en: 'Worksheet', fr: 'Exercice' },
   assessment: { en: 'Assessment', fr: 'Évaluation' },
   exercise: { en: 'Exercise', fr: 'Exercice' },
-  psychoeducation: { en: 'Education', fr: 'Éducation' },
+  psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
   table: { en: 'Table', fr: 'Tableau' },
 }
 
