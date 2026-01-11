@@ -70,9 +70,38 @@ export function Testimonials() {
           transition={{ duration: 0.5, delay: 0.4 }}
           className="text-center mt-16"
         >
-          <p className="text-lg text-gray-600 max-w-xl mx-auto leading-relaxed" suppressHydrationWarning>
+          <p className="text-lg text-gray-600 max-w-xl mx-auto leading-relaxed mb-8" suppressHydrationWarning>
             {t.testimonials.communityNote}
           </p>
+
+          {/* Early Access Form */}
+          <form
+            action="/early-access"
+            method="GET"
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-xl mx-auto"
+          >
+            <input
+              type="text"
+              name="name"
+              placeholder={(t.testimonials as { formNamePlaceholder?: string }).formNamePlaceholder || 'Votre nom'}
+              className="w-full sm:w-auto px-4 py-3 rounded-full border border-gray-200 bg-white/80 backdrop-blur-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4856A]/30 focus:border-[#D4856A]"
+              suppressHydrationWarning
+            />
+            <input
+              type="email"
+              name="email"
+              placeholder={(t.testimonials as { formEmailPlaceholder?: string }).formEmailPlaceholder || 'Votre email'}
+              className="w-full sm:w-auto px-4 py-3 rounded-full border border-gray-200 bg-white/80 backdrop-blur-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4856A]/30 focus:border-[#D4856A]"
+              suppressHydrationWarning
+            />
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300 whitespace-nowrap"
+              suppressHydrationWarning
+            >
+              {(t.testimonials as { formButton?: string }).formButton || 'Accès anticipé'}
+            </button>
+          </form>
         </motion.div>
       </div>
     </section>

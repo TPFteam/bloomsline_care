@@ -21,5 +21,8 @@
       "location": "Toronto, ON"
     }
   ],
-  "communityNote": "Rejoignez ceux qui ont choisi de se simplifier la vie pour mieux améliorer celle des autres."
+  "communityNote": "Rejoignez ceux qui ont choisi de se simplifier la vie pour mieux améliorer celle des autres.",
+  "formNamePlaceholder": "Votre nom",
+  "formEmailPlaceholder": "Votre email",
+  "formButton": "Accès anticipé"
 }

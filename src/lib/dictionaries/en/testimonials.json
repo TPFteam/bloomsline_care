@@ -21,5 +21,8 @@
       "location": "Toronto, ON"
     }
   ],
-  "communityNote": "Join a growing community of practitioners who are spending less time organizing and more time doing the work that matters."
+  "communityNote": "Join a growing community of practitioners who are spending less time organizing and more time doing the work that matters.",
+  "formNamePlaceholder": "Your name",
+  "formEmailPlaceholder": "Your email",
+  "formButton": "Early Access"
 }
