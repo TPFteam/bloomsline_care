@@ -59,23 +59,23 @@ const typeConfig: Record<ResourceType | 'assessment', {
   lightBg: string
 }> = {
   worksheet: {
-    gradient: 'from-emerald-400 to-emerald-600',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    border: 'border-emerald-200',
-    iconBg: 'bg-emerald-100/80',
-    glow: 'shadow-emerald-200/50',
-    lightBg: 'from-emerald-50 to-emerald-100/50',
+    gradient: 'from-blue-400 to-blue-600',
+    bg: 'bg-blue-50',
+    text: 'text-blue-700',
+    border: 'border-blue-200',
+    iconBg: 'bg-blue-100/80',
+    glow: 'shadow-blue-200/50',
+    lightBg: 'from-blue-50 to-blue-100/50',
   },
   assessment: {
     // Legacy - displays same as worksheet
-    gradient: 'from-emerald-400 to-emerald-600',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    border: 'border-emerald-200',
-    iconBg: 'bg-emerald-100/80',
-    glow: 'shadow-emerald-200/50',
-    lightBg: 'from-emerald-50 to-emerald-100/50',
+    gradient: 'from-blue-400 to-blue-600',
+    bg: 'bg-blue-50',
+    text: 'text-blue-700',
+    border: 'border-blue-200',
+    iconBg: 'bg-blue-100/80',
+    glow: 'shadow-blue-200/50',
+    lightBg: 'from-blue-50 to-blue-100/50',
   },
   exercise: {
     gradient: 'from-amber-400 to-amber-600',
