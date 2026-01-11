@@ -324,12 +324,12 @@ export function ResourceCard({
               }}
               className={`p-1.5 rounded-lg transition-all duration-200 ${
                 isBookmarked
-                  ? 'bg-red-50 text-red-500'
+                  ? 'bg-rose-50 text-rose-400'
                   : 'hover:bg-red-50 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100'
               }`}
               title={locale === 'fr' ? (isBookmarked ? 'Retirer des favoris' : 'Ajouter aux favoris') : (isBookmarked ? 'Remove from favorites' : 'Add to favorites')}
             >
-              <Heart className={`w-5 h-5 ${isBookmarked ? 'fill-red-500' : ''}`} />
+              <Heart className={`w-5 h-5 ${isBookmarked ? 'fill-rose-400' : ''}`} />
             </button>
           )}
 
@@ -569,12 +569,12 @@ export function ResourceCardList({
             }}
             className={`p-1.5 rounded-lg transition-all duration-200 ${
               isBookmarked
-                ? 'bg-red-50 text-red-500'
+                ? 'bg-rose-50 text-rose-400'
                 : 'hover:bg-red-50 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100'
             }`}
             title={locale === 'fr' ? (isBookmarked ? 'Retirer des favoris' : 'Ajouter aux favoris') : (isBookmarked ? 'Remove from favorites' : 'Add to favorites')}
           >
-            <Heart className={`w-4 h-4 ${isBookmarked ? 'fill-red-500' : ''}`} />
+            <Heart className={`w-4 h-4 ${isBookmarked ? 'fill-rose-400' : ''}`} />
           </button>
         )}
 
