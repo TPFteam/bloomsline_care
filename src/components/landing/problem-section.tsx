@@ -274,7 +274,7 @@ export function ProblemSection() {
                       </p>
                       {/* Relate button */}
                       <button className="text-xs text-white/50 hover:text-white/80 transition-colors border border-white/20 hover:border-white/40 rounded-full px-3 py-1">
-                        {locale === 'fr' ? 'Ça me parle' : 'Same here'}
+                        {locale === 'fr' ? 'Je ressens ça' : 'I feel this'}
                       </button>
                     </div>
                   </motion.div>
