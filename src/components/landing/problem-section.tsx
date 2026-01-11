@@ -208,7 +208,7 @@ export function ProblemSection({ selectedAudience: initialAudience }: ProblemSec
                   : 'text-neutral-500 hover:text-neutral-700'
               }`}
             >
-              {locale === 'fr' ? 'Praticien' : 'Practitioner'}
+              {locale === 'fr' ? "J'accompagne" : "I guide others"}
             </button>
           </div>
         </motion.div>

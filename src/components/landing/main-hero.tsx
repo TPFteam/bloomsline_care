@@ -251,7 +251,7 @@ export function MainHero() {
                     : 'text-neutral-600 hover:text-neutral-900'
                 }`}
               >
-                {locale === 'fr' ? 'Je suis praticien' : "I'm a practitioner"}
+                {locale === 'fr' ? "J'accompagne" : "I guide others"}
               </button>
             </div>
           </motion.div>
