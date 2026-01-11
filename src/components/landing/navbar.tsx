@@ -19,8 +19,6 @@ export function Navbar() {
 
   const navItems = [
     { label: t.nav.home, href: '/', active: true },
-    { label: locale === 'fr' ? 'Accès anticipé' : 'Early Access', href: '/early-access' },
-    { label: t.nav.forPractitioners, href: '/practitioner' },
   ]
 
   return (
