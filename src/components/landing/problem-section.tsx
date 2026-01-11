@@ -269,9 +269,13 @@ export function ProblemSection() {
                         </div>
                       </div>
                       {/* Text content */}
-                      <p className="text-sm sm:text-base leading-relaxed font-light text-white/90">
+                      <p className="text-sm sm:text-base leading-relaxed font-light text-white/90 mb-4">
                         {locale === 'fr' ? card.text.fr : card.text.en}
                       </p>
+                      {/* Relate button */}
+                      <button className="text-xs text-white/50 hover:text-white/80 transition-colors border border-white/20 hover:border-white/40 rounded-full px-3 py-1">
+                        {locale === 'fr' ? 'Ça me parle' : 'Same here'}
+                      </button>
                     </div>
                   </motion.div>
                 )
