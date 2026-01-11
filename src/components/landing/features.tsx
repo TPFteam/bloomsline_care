@@ -63,10 +63,10 @@ export function Features() {
           transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 via-teal-600 to-lavender-600 bg-clip-text text-transparent" suppressHydrationWarning>
+          <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-4" suppressHydrationWarning>
             {t.features.sectionTitle}
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed" suppressHydrationWarning>
+          <p className="text-neutral-500 max-w-2xl mx-auto leading-relaxed" suppressHydrationWarning>
             {t.features.sectionSubtitle}
           </p>
         </motion.div>

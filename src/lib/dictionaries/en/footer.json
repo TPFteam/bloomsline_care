@@ -1,7 +1,6 @@
 {
   "brandDescription": "Empowering mental health practitioners with comprehensive tools to organize, create, and share therapeutic content with confidence.",
-  "contactEmail": "support@bloomsline.com",
-  "contactPhone": "+1 (234) 567-890",
+  "contactEmail": "hi@bloomsline.com",
   "location": "Available Worldwide",
   "sections": {
     "product": {
@@ -18,10 +17,7 @@
       "title": "Company",
       "links": [
         { "label": "About Bloomsline", "href": "#about" },
-        { "label": "Our Mission", "href": "#" },
-        { "label": "Blog", "href": "#" },
-        { "label": "Testimonials", "href": "#" },
-        { "label": "Contact", "href": "#" }
+        { "label": "Our Mission", "href": "#" }
       ]
     },
     "resources": {
@@ -37,18 +33,16 @@
     "legal": {
       "title": "Legal",
       "links": [
-        { "label": "Privacy Policy", "href": "#" },
-        { "label": "Terms of Service", "href": "#" },
-        { "label": "HIPAA Compliance", "href": "#" },
-        { "label": "Security", "href": "#" },
-        { "label": "Data Protection", "href": "#" }
+        { "label": "Privacy Policy", "href": "/privacy" },
+        { "label": "Terms of Service", "href": "/terms" },
+        { "label": "Security", "href": "/security" },
+        { "label": "Data Protection", "href": "/data-protection" }
       ]
     }
   },
   "copyright": "Bloomsline. All rights reserved.",
   "socialLabels": {
-    "twitter": "Twitter",
     "linkedin": "LinkedIn",
-    "github": "GitHub"
+    "instagram": "Instagram"
   }
 }

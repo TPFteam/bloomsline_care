@@ -1,7 +1,6 @@
 {
   "brandDescription": "Donner aux praticiens de la santé mentale des outils complets pour organiser, créer et partager du contenu thérapeutique en toute confiance.",
-  "contactEmail": "support@bloomsline.com",
-  "contactPhone": "+1 (234) 567-890",
+  "contactEmail": "hi@bloomsline.com",
   "location": "Disponible dans le monde entier",
   "sections": {
     "product": {
@@ -18,10 +17,7 @@
       "title": "Entreprise",
       "links": [
         { "label": "À propos de Bloomsline", "href": "#about" },
-        { "label": "Notre mission", "href": "#" },
-        { "label": "Blog", "href": "#" },
-        { "label": "Témoignages", "href": "#" },
-        { "label": "Contact", "href": "#" }
+        { "label": "Notre mission", "href": "#" }
       ]
     },
     "resources": {
@@ -37,18 +33,16 @@
     "legal": {
       "title": "Légal",
       "links": [
-        { "label": "Politique de confidentialité", "href": "#" },
-        { "label": "Conditions d'utilisation", "href": "#" },
-        { "label": "Conformité HIPAA", "href": "#" },
-        { "label": "Sécurité", "href": "#" },
-        { "label": "Protection des données", "href": "#" }
+        { "label": "Politique de confidentialité", "href": "/privacy" },
+        { "label": "Conditions d'utilisation", "href": "/terms" },
+        { "label": "Sécurité", "href": "/security" },
+        { "label": "Protection des données", "href": "/data-protection" }
       ]
     }
   },
   "copyright": "Bloomsline. Tous droits réservés.",
   "socialLabels": {
-    "twitter": "Twitter",
     "linkedin": "LinkedIn",
-    "github": "GitHub"
+    "instagram": "Instagram"
   }
 }

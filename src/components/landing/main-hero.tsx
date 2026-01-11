@@ -8,14 +8,24 @@ import { useTab } from '@/lib/landing/tab-context'
 import Link from 'next/link'
 
 const rotatingWords = {
-  en: ['Grow', 'Heal', 'Rest', 'Reflect'],
-  fr: ['Grandissez', 'Guérissez', 'Reposez-vous', 'Réfléchissez'],
+  personal: {
+    en: ['Grow', 'Heal', 'Rest', 'Reflect'],
+    fr: ['Grandissez', 'Guérissez', 'Reposez-vous', 'Réfléchissez'],
+  },
+  practitioner: {
+    en: ['continues', 'is tracked', 'prepares'],
+    fr: ['continue', 'se suit', 'se prépare'],
+  },
 }
 
 type PersonalSubTab = 'rituals' | 'moments' | 'balance'
 type PractitionerSubTab = 'members' | 'journeys' | 'resources'
 
-export function MainHero() {
+interface MainHeroProps {
+  isPractitionerPage?: boolean
+}
+
+export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
   const { locale } = useLanguage()
   const { activeTab, setActiveTab } = useTab()
   const [wordIndex, setWordIndex] = useState(0)
@@ -42,11 +52,12 @@ export function MainHero() {
 
   // Rotate words - slower like Dia
   useEffect(() => {
+    const wordsArray = isPractitionerPage ? rotatingWords.practitioner[locale] : rotatingWords.personal[locale]
     const interval = setInterval(() => {
-      setWordIndex((prev) => (prev + 1) % rotatingWords[locale].length)
+      setWordIndex((prev) => (prev + 1) % wordsArray.length)
     }, 3500)
     return () => clearInterval(interval)
-  }, [locale])
+  }, [locale, isPractitionerPage])
 
   // Auto-advance demo steps - slower for better storytelling (only when not interactive)
   useEffect(() => {
@@ -60,10 +71,11 @@ export function MainHero() {
   // Reset demo step and interactive mode when tab changes
   useEffect(() => {
     setDemoStep(0)
+    setWordIndex(0)
     setPractitionerInteractive(false)
     setPractitionerStep(0)
     setPractitionerExplanation(false)
-  }, [personalSubTab, practitionerSubTab])
+  }, [personalSubTab, practitionerSubTab, activeTab])
 
   // Reset interactive mode
   const resetInteractive = () => {
@@ -194,9 +206,9 @@ export function MainHero() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-lg sm:text-xl text-neutral-500 mb-6"
           >
-            {locale === 'fr'
-              ? 'Un soin qui vous rejoint là où vous êtes'
-              : 'Care that meets you where you are'}
+            {isPractitionerPage
+              ? (locale === 'fr' ? 'L\'espace entre les séances, rempli de soin' : 'The space between sessions, filled with care')
+              : (locale === 'fr' ? 'Un soin qui vous rejoint là où vous êtes' : 'Care that meets you where you are')}
           </motion.p>
 
           {/* Main rotating headline */}
@@ -207,54 +219,79 @@ export function MainHero() {
             className="mb-12"
           >
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-light tracking-tight text-neutral-900 leading-[1.1]">
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={`${wordIndex}-${activeTab}`}
-                  initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
-                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                  exit={{ opacity: 0, y: -20, filter: 'blur(8px)' }}
-                  transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-                  className={`inline-block bg-gradient-to-r ${currentColors.text} bg-clip-text text-transparent`}
-                >
-                  {rotatingWords[locale][wordIndex]}
-                </motion.span>
-              </AnimatePresence>
-              <span className="text-neutral-900">
-                {' '}{locale === 'fr' ? 'à votre rythme' : 'at your pace'}
-              </span>
+              {isPractitionerPage ? (
+                <>
+                  <span className="text-neutral-900">
+                    {locale === 'fr' ? 'Après la séance, le travail' : 'After the session, the work'}
+                  </span>
+                  {' '}
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={`${wordIndex}-practitioner`}
+                      initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
+                      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                      exit={{ opacity: 0, y: -20, filter: 'blur(8px)' }}
+                      transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+                      className={`inline-block bg-gradient-to-r ${currentColors.text} bg-clip-text text-transparent`}
+                    >
+                      {rotatingWords.practitioner[locale][wordIndex % rotatingWords.practitioner[locale].length]}
+                    </motion.span>
+                  </AnimatePresence>
+                </>
+              ) : (
+                <>
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={`${wordIndex}-${activeTab}`}
+                      initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
+                      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                      exit={{ opacity: 0, y: -20, filter: 'blur(8px)' }}
+                      transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+                      className={`inline-block bg-gradient-to-r ${currentColors.text} bg-clip-text text-transparent`}
+                    >
+                      {rotatingWords.personal[locale][wordIndex % rotatingWords.personal[locale].length]}
+                    </motion.span>
+                  </AnimatePresence>
+                  <span className="text-neutral-900">
+                    {' '}{locale === 'fr' ? 'à votre rythme' : 'at your pace'}
+                  </span>
+                </>
+              )}
             </h1>
           </motion.div>
 
-          {/* Tab Toggle */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="flex items-center justify-center"
-          >
-            <div className="inline-flex items-center bg-neutral-100 rounded-full p-1">
-              <button
-                onClick={() => setActiveTab('personal')}
-                className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${
-                  activeTab === 'personal'
-                    ? 'bg-[#4A9A86] text-white shadow-md'
-                    : 'text-neutral-600 hover:text-neutral-900'
-                }`}
-              >
-                {locale === 'fr' ? 'Pour moi' : 'For me'}
-              </button>
-              <button
-                onClick={() => setActiveTab('practitioner')}
-                className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${
-                  activeTab === 'practitioner'
-                    ? 'bg-[#D4856A] text-white shadow-md'
-                    : 'text-neutral-600 hover:text-neutral-900'
-                }`}
-              >
-                {locale === 'fr' ? "J'accompagne" : "I guide others"}
-              </button>
-            </div>
-          </motion.div>
+          {/* Tab Toggle - hidden on practitioner page */}
+          {!isPractitionerPage && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="flex items-center justify-center"
+            >
+              <div className="inline-flex items-center bg-neutral-100 rounded-full p-1">
+                <button
+                  onClick={() => setActiveTab('personal')}
+                  className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${
+                    activeTab === 'personal'
+                      ? 'bg-[#4A9A86] text-white shadow-md'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
+                >
+                  {locale === 'fr' ? 'Pour moi' : 'For me'}
+                </button>
+                <button
+                  onClick={() => setActiveTab('practitioner')}
+                  className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${
+                    activeTab === 'practitioner'
+                      ? 'bg-[#D4856A] text-white shadow-md'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
+                >
+                  {locale === 'fr' ? "J'accompagne" : "I guide others"}
+                </button>
+              </div>
+            </motion.div>
+          )}
 
           {/* Tab description */}
           <motion.p
@@ -285,8 +322,8 @@ export function MainHero() {
                   transition={{ duration: 0.2 }}
                 >
                   {locale === 'fr'
-                    ? 'Accompagnez vos clients, guidez leurs parcours, partagez vos ressources'
-                    : 'Support your clients, guide their journeys, share your resources'}
+                    ? 'Nous savons que vous mettez tout votre cœur dans votre pratique. Laissez Bloomsline gérer l\'organisation, pour que vous puissiez vous concentrer sur le travail qui compte.'
+                    : 'We know you pour your heart into your practice. Let Bloomsline handle the organization, so you can focus on the meaningful work that drew you to this profession.'}
                 </motion.span>
               )}
             </AnimatePresence>
@@ -310,36 +347,38 @@ export function MainHero() {
                 transition={{ duration: 0.3 }}
                 className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-neutral-200/30 p-2 sm:p-4 overflow-hidden"
               >
-                {/* Prompt text + Pills row */}
-                <div className="flex items-center gap-1 sm:gap-2 mb-3 flex-wrap">
-                  <span className="text-neutral-700 text-sm">
-                    {locale === 'fr' ? 'Quel' : 'What'}
-                  </span>
+                {/* Prompt text + Pills row - hidden when interactive */}
+                {!isInteractive && (
+                  <div className="flex items-center gap-1 sm:gap-2 mb-3 flex-wrap">
+                    <span className="text-neutral-700 text-sm">
+                      {locale === 'fr' ? 'Quel' : 'What'}
+                    </span>
 
-                  {/* Pill tabs inline - rituals and balance hidden for now */}
-                  {[
-                    { id: 'moments' as PersonalSubTab, label: locale === 'fr' ? 'moment' : 'moment', Icon: Sun },
-                    // { id: 'rituals' as PersonalSubTab, label: locale === 'fr' ? 'rituel' : 'ritual', Icon: Circle },
-                    // { id: 'balance' as PersonalSubTab, label: locale === 'fr' ? 'équilibre' : 'balance', Icon: Smile },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setPersonalSubTab(tab.id)}
-                      className={`inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-2.5 py-1 rounded-full text-xs sm:text-sm transition-all whitespace-nowrap ${
-                        personalSubTab === tab.id
-                          ? 'bg-[#4A9A86]/15 text-[#4A9A86] font-medium'
-                          : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700'
-                      }`}
-                    >
-                      <tab.Icon className="w-3 h-3" />
-                      {tab.label}
-                    </button>
-                  ))}
+                    {/* Pill tabs inline - rituals and balance hidden for now */}
+                    {[
+                      { id: 'moments' as PersonalSubTab, label: locale === 'fr' ? 'moment' : 'moment', Icon: Sun },
+                      // { id: 'rituals' as PersonalSubTab, label: locale === 'fr' ? 'rituel' : 'ritual', Icon: Circle },
+                      // { id: 'balance' as PersonalSubTab, label: locale === 'fr' ? 'équilibre' : 'balance', Icon: Smile },
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setPersonalSubTab(tab.id)}
+                        className={`inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-2.5 py-1 rounded-full text-xs sm:text-sm transition-all whitespace-nowrap ${
+                          personalSubTab === tab.id
+                            ? 'bg-[#4A9A86]/15 text-[#4A9A86] font-medium'
+                            : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700'
+                        }`}
+                      >
+                        <tab.Icon className="w-3 h-3" />
+                        {tab.label}
+                      </button>
+                    ))}
 
-                  <span className="text-neutral-700 text-sm">
-                    {locale === 'fr' ? "a compté aujourd'hui ?" : 'mattered today?'}
-                  </span>
-                </div>
+                    <span className="text-neutral-700 text-sm">
+                      {locale === 'fr' ? "a compté aujourd'hui ?" : 'mattered today?'}
+                    </span>
+                  </div>
+                )}
 
                 {/* Feature Preview - Visual-forward minimal cards OR Interactive mode */}
                 <div className="mb-3 min-h-[160px]">
@@ -357,13 +396,19 @@ export function MainHero() {
                           {/* Step 0: Choose an image */}
                           {interactiveStep === 0 && (
                             <motion.div key="int-step0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
-                              <p className="text-sm text-neutral-600">{locale === 'fr' ? 'Choisissez un moment' : 'Pick a moment'}</p>
+                              <p className="text-sm text-neutral-600 flex items-center gap-1.5">
+                                {locale === 'fr' ? 'Choisissez un' : 'Pick a'}
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#4A9A86]/15 text-[#4A9A86] text-sm font-medium rounded-full">
+                                  <Sun className="w-3 h-3" />
+                                  moment
+                                </span>
+                              </p>
                               <div className="flex gap-3">
                                 {[
-                                  { src: '/images/morning-walk.jpg', label: locale === 'fr' ? 'Balade' : 'Walk' },
+                                  { src: '/images/activity.jpg', label: locale === 'fr' ? 'Activité' : 'Activity' },
                                   { src: '/images/cat.jpg', label: locale === 'fr' ? 'Mon chat' : 'My cat' },
-                                  { src: '/images/sunset.jpg', label: locale === 'fr' ? 'Coucher' : 'Sunset' },
-                                  { src: '/images/coffee.jpg', label: locale === 'fr' ? 'Café' : 'Coffee' },
+                                  { src: '/images/friends.jpg', label: locale === 'fr' ? 'Amis' : 'Friends' },
+                                  { src: '/images/family.jpg', label: locale === 'fr' ? 'Famille' : 'Family' },
                                 ].map((img) => (
                                   <button
                                     key={img.src}
@@ -381,75 +426,59 @@ export function MainHero() {
                             </motion.div>
                           )}
 
-                          {/* Step 1: Select feelings */}
+                          {/* Step 1: Select feelings + Add note (combined) */}
                           {interactiveStep === 1 && (
                             <motion.div key="int-step1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
                               <div className="flex gap-3 items-start">
                                 {selectedImage && <img src={selectedImage} alt="" className="w-12 h-12 rounded-lg object-cover shadow-sm" />}
-                                <div>
-                                  <p className="text-sm text-neutral-600">{locale === 'fr' ? 'Comment vous sentez-vous?' : 'How do you feel?'}</p>
-                                  <div className="flex flex-wrap gap-2 mt-2">
-                                    {[
-                                      { icon: Smile, label: locale === 'fr' ? 'Paisible' : 'Peaceful' },
-                                      { icon: Heart, label: locale === 'fr' ? 'Reconnaissant' : 'Grateful' },
-                                      { icon: Sparkles, label: locale === 'fr' ? 'Inspiré' : 'Inspired' },
-                                      { icon: Sun, label: locale === 'fr' ? 'Énergique' : 'Energized' },
-                                    ].map((f) => (
-                                      <button
-                                        key={f.label}
-                                        onClick={() => toggleFeeling(f.label)}
-                                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-all ${
-                                          selectedFeelings.includes(f.label)
-                                            ? 'bg-[#4A9A86] text-white'
-                                            : 'bg-neutral-100 text-neutral-600 hover:bg-[#4A9A86]/10'
-                                        }`}
-                                      >
-                                        <f.icon className="w-3 h-3" /> {f.label}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                              {selectedFeelings.length > 0 && (
-                                <motion.button
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  onClick={() => setInteractiveStep(2)}
-                                  className="text-xs text-[#4A9A86] font-medium"
-                                >
-                                  {locale === 'fr' ? 'Continuer →' : 'Continue →'}
-                                </motion.button>
-                              )}
-                            </motion.div>
-                          )}
-
-                          {/* Step 2: Add a note */}
-                          {interactiveStep === 2 && (
-                            <motion.div key="int-step2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
-                              <div className="flex gap-3 items-start">
-                                {selectedImage && <img src={selectedImage} alt="" className="w-10 h-10 rounded-lg object-cover shadow-sm" />}
                                 <div className="flex-1">
-                                  <div className="flex gap-1 mb-2">
-                                    {selectedFeelings.map(f => (
-                                      <span key={f} className="text-xs bg-[#4A9A86]/10 text-[#4A9A86] px-2 py-0.5 rounded-full">{f}</span>
-                                    ))}
+                                  <p className="text-sm text-neutral-600">{locale === 'fr' ? "Qu'est-ce qui a rendu ce moment spécial ?" : 'What made this moment special?'}</p>
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                  {[
+                                    { icon: Smile, label: locale === 'fr' ? 'Soulagement' : 'Peaceful' },
+                                    { icon: Heart, label: locale === 'fr' ? 'Joie' : 'Grateful' },
+                                    { icon: Sparkles, label: locale === 'fr' ? 'Amour' : 'Inspired' },
+                                    { icon: Sun, label: locale === 'fr' ? 'Bienveillance' : 'Energized' },
+                                  ].map((f) => (
+                                    <button
+                                      key={f.label}
+                                      onClick={() => toggleFeeling(f.label)}
+                                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-all ${
+                                        selectedFeelings.includes(f.label)
+                                          ? 'bg-[#4A9A86] text-white'
+                                          : 'bg-neutral-100 text-neutral-600 hover:bg-[#4A9A86]/10'
+                                      }`}
+                                    >
+                                      <f.icon className="w-3 h-3" /> {f.label}
+                                    </button>
+                                  ))}
                                   </div>
-                                  <input
-                                    type="text"
-                                    placeholder={locale === 'fr' ? 'Ajoutez une note...' : 'Add a note...'}
-                                    value={userNote}
-                                    onChange={(e) => setUserNote(e.target.value)}
-                                    className="w-full text-sm border-0 border-b border-neutral-200 pb-2 focus:outline-none focus:border-[#4A9A86] bg-transparent"
-                                    autoFocus
-                                  />
+
+                                  {/* Note input appears when a feeling is selected */}
+                                  {selectedFeelings.length > 0 && (
+                                    <motion.div
+                                      initial={{ opacity: 0, height: 0 }}
+                                      animate={{ opacity: 1, height: 'auto' }}
+                                      className="mt-3 space-y-3"
+                                    >
+                                      <input
+                                        type="text"
+                                        placeholder={locale === 'fr' ? 'Ce que vous ressentez compte...' : 'What you feel matters...'}
+                                        value={userNote}
+                                        onChange={(e) => setUserNote(e.target.value)}
+                                        className="w-full text-sm border-0 border-b border-neutral-200 pb-2 focus:outline-none focus:border-[#4A9A86] bg-transparent"
+                                        autoFocus
+                                      />
+                                      <button
+                                        onClick={() => setInteractiveStep(3)}
+                                        className="text-xs text-[#4A9A86] font-medium"
+                                      >
+                                        {locale === 'fr' ? 'Voir mon parcours →' : 'See my journey →'}
+                                      </button>
+                                    </motion.div>
+                                  )}
                                 </div>
                               </div>
-                              <button
-                                onClick={() => setInteractiveStep(3)}
-                                className="text-xs text-[#4A9A86] font-medium"
-                              >
-                                {locale === 'fr' ? 'Voir votre flow →' : 'See your flow →'}
-                              </button>
                             </motion.div>
                           )}
 
@@ -620,7 +649,7 @@ export function MainHero() {
                               {/* Hint */}
                               <p className="text-xs text-neutral-400 flex items-center gap-1.5">
                                 <Plus className="w-3 h-3" />
-                                {locale === 'fr' ? 'Comment vous sentez-vous?' : 'How do you feel?'}
+                                {locale === 'fr' ? "Qu'est-ce qui a rendu ce moment spécial ?" : 'What made this moment special?'}
                               </p>
                             </motion.div>
                           )}
@@ -1423,17 +1452,15 @@ export function MainHero() {
 
                 {/* Bottom bar - CTA */}
                 {isInteractive && interactiveStep === 3 ? (
-                  <Link
-                    href="/early-access"
-                    className="flex items-center justify-between group"
-                  >
-                    <span className="text-sm text-[#4A9A86] font-medium group-hover:text-[#3d8a76] transition-colors">
+                  <div className="flex justify-end">
+                    <Link
+                      href="/early-access"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#4A9A86] text-white text-sm font-medium rounded-full hover:bg-[#3d8a76] transition-colors"
+                    >
                       {locale === 'fr' ? 'Commencer gratuitement' : 'Start free'}
-                    </span>
-                    <div className="w-8 h-8 bg-[#4A9A86] rounded-full flex items-center justify-center group-hover:bg-[#3d8a76] transition-colors">
-                      <ArrowUp className="w-4 h-4 text-white" />
-                    </div>
-                  </Link>
+                      <ArrowUp className="w-4 h-4" />
+                    </Link>
+                  </div>
                 ) : isInteractive ? (
                   <button
                     onClick={
@@ -1448,35 +1475,17 @@ export function MainHero() {
                     </span>
                   </button>
                 ) : (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => {
-                          setIsInteractive(true)
-                          setInteractiveStep(0)
-                          setShowExplanation(false)
-                        }}
-                        className="text-sm text-[#4A9A86] font-medium hover:text-[#3d8a76] transition-colors"
-                      >
-                        {locale === 'fr' ? 'À votre tour' : 'Your turn'}
-                      </button>
-                      <span className="text-neutral-300">·</span>
-                      <button
-                        onClick={() => setShowExplanation(!showExplanation)}
-                        className="text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
-                      >
-                        {locale === 'fr' ? 'Pourquoi ?' : 'Why this?'}
-                      </button>
-                    </div>
+                  <div className="flex items-center justify-end">
                     <button
                       onClick={() => {
                         setIsInteractive(true)
                         setInteractiveStep(0)
                         setShowExplanation(false)
                       }}
-                      className="w-8 h-8 bg-[#4A9A86] rounded-full flex items-center justify-center hover:bg-[#3d8a76] transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 bg-[#4A9A86] text-white text-sm font-medium rounded-full hover:bg-[#3d8a76] transition-colors"
                     >
-                      <ArrowUp className="w-4 h-4 text-white" />
+                      {locale === 'fr' ? 'À vous' : 'Your turn'}
+                      <ArrowUp className="w-4 h-4" />
                     </button>
                   </div>
                 )}
@@ -2370,35 +2379,17 @@ export function MainHero() {
                     </span>
                   </button>
                 ) : (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => {
-                          setPractitionerInteractive(true)
-                          setPractitionerStep(0)
-                          setPractitionerExplanation(false)
-                        }}
-                        className="text-sm text-[#D4856A] font-medium hover:text-[#c27459] transition-colors"
-                      >
-                        {locale === 'fr' ? 'À votre tour' : 'Your turn'}
-                      </button>
-                      <span className="text-neutral-300">·</span>
-                      <button
-                        onClick={() => setPractitionerExplanation(!practitionerExplanation)}
-                        className="text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
-                      >
-                        {locale === 'fr' ? 'Pourquoi ?' : 'Why this?'}
-                      </button>
-                    </div>
+                  <div className="flex items-center justify-end">
                     <button
                       onClick={() => {
                         setPractitionerInteractive(true)
                         setPractitionerStep(0)
                         setPractitionerExplanation(false)
                       }}
-                      className="w-8 h-8 bg-[#D4856A] rounded-full flex items-center justify-center hover:bg-[#c27459] transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 bg-[#D4856A] text-white text-sm font-medium rounded-full hover:bg-[#c27459] transition-colors"
                     >
-                      <ArrowUp className="w-4 h-4 text-white" />
+                      {locale === 'fr' ? 'À vous' : 'Your turn'}
+                      <ArrowUp className="w-4 h-4" />
                     </button>
                   </div>
                 )}

@@ -1,21 +1,24 @@
 import { Navbar } from "@/components/landing/navbar";
-import { Hero } from "@/components/landing/hero";
-import { Features } from "@/components/landing/features";
+import { MainHero } from "@/components/landing/main-hero";
+import { GlimpseSection } from "@/components/landing/glimpse-section";
 import { Personas } from "@/components/landing/personas";
 import { CommunityNote } from "@/components/landing/community-note";
 import { Footer } from "@/components/landing/footer";
+import { TabProvider } from "@/lib/landing/tab-context";
 
 export default function PractitionerLandingPage() {
   return (
-    <div className="bg-white text-gray-900">
-      <Navbar />
-      <main>
-        <Hero />
-        <Features />
-        <Personas />
-        <CommunityNote />
-      </main>
-      <Footer />
-    </div>
+    <TabProvider defaultTab="practitioner">
+      <div className="bg-white text-gray-900">
+        <Navbar />
+        <main>
+          <MainHero isPractitionerPage />
+          <GlimpseSection isPractitionerPage />
+          <Personas />
+          <CommunityNote />
+        </main>
+        <Footer />
+      </div>
+    </TabProvider>
   );
 }

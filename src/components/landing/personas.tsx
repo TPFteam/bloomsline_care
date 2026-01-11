@@ -15,11 +15,8 @@ export function Personas() {
   ]
 
   return (
-    <section className="py-16 sm:py-20 relative overflow-hidden">
-      {/* Subtle background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-gray-50/50 via-white to-white" />
-
-      <div className="container mx-auto px-4 sm:px-6 relative z-10">
+    <section className="py-16 sm:py-20 bg-white">
+      <div className="container mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -27,12 +24,12 @@ export function Personas() {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-foreground via-teal-600 to-lavender-600 bg-clip-text text-transparent">
+          <h2 className="text-3xl sm:text-4xl font-light text-neutral-900">
             {t.personas?.title || 'Who thrives with Bloomsline'}
           </h2>
         </motion.div>
 
-        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-5 max-w-4xl mx-auto">
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 max-w-4xl mx-auto">
           {personas.map((persona, index) => (
             <motion.span
               key={persona}
@@ -40,7 +37,7 @@ export function Personas() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.3, delay: index * 0.06 }}
-              className="px-6 py-3 bg-teal-50 hover:bg-teal-100 text-teal-600 text-base sm:text-lg font-medium rounded-full transition-colors cursor-default"
+              className="px-5 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 text-sm sm:text-base font-medium rounded-full transition-colors cursor-default"
             >
               {persona}
             </motion.span>

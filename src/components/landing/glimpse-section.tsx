@@ -3,7 +3,322 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/i18n/context'
-import { Sun, Coffee, Heart, Moon, Scale, TrendingUp, MessageCircle, Check, Plus } from 'lucide-react'
+import { Sun, Coffee, Heart, Moon, Scale, TrendingUp, MessageCircle, Check, Plus, Share2, FolderOpen, BarChart3, FileText, ClipboardList, Dumbbell, User, Calendar, Tag } from 'lucide-react'
+
+// Animated Overview Component (for practitioners - analytics view)
+function AnimatedOverview({ locale = 'en' }: { locale?: string }) {
+  const [activeClient, setActiveClient] = useState<number | null>(null)
+  const [showInsight, setShowInsight] = useState(false)
+
+  const clients = [
+    { name: 'Sarah M.', initials: 'SM', status: 'active', engagement: 85, color: 'from-emerald-400 to-teal-500', statusColor: 'bg-emerald-500' },
+    { name: 'Marc D.', initials: 'MD', status: 'attention', engagement: 40, color: 'from-amber-400 to-orange-500', statusColor: 'bg-amber-500' },
+    { name: 'Julie L.', initials: 'JL', status: 'active', engagement: 72, color: 'from-blue-400 to-indigo-500', statusColor: 'bg-emerald-500' },
+  ]
+
+  const texts = {
+    en: {
+      title: 'Client engagement this week',
+      insight: 'Marc may need a check-in',
+    },
+    fr: {
+      title: 'Engagement des clients cette semaine',
+      insight: 'Marc pourrait avoir besoin d\'un suivi',
+    },
+  }
+  const t = texts[locale as keyof typeof texts] || texts.en
+
+  useEffect(() => {
+    const animate = () => {
+      setActiveClient(null)
+      setShowInsight(false)
+      setTimeout(() => setActiveClient(0), 600)
+      setTimeout(() => setActiveClient(1), 1400)
+      setTimeout(() => setShowInsight(true), 2200)
+      setTimeout(() => setActiveClient(2), 3000)
+    }
+    animate()
+    const interval = setInterval(animate, 6500)
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-neutral-500 uppercase tracking-wide mb-2">{t.title}</p>
+
+      {clients.map((client, i) => {
+        const isActive = activeClient === i
+        const needsAttention = client.status === 'attention'
+        return (
+          <motion.div
+            key={client.name}
+            animate={{
+              scale: isActive ? 1.02 : 1,
+              backgroundColor: isActive && needsAttention ? 'rgb(254 243 199)' : isActive ? 'rgb(240 253 244)' : 'rgb(250 250 250)',
+            }}
+            transition={{ duration: 0.3 }}
+            className="flex items-center gap-3 p-3 rounded-xl"
+          >
+            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${client.color} flex items-center justify-center`}>
+              <span className="text-white text-xs font-medium">{client.initials}</span>
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium text-neutral-700">{client.name}</p>
+                <div className={`w-2 h-2 rounded-full ${client.statusColor}`} />
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="flex-1 h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${client.engagement}%` }}
+                    transition={{ duration: 0.8, delay: i * 0.2 }}
+                    className={`h-full rounded-full ${needsAttention ? 'bg-amber-400' : 'bg-emerald-400'}`}
+                  />
+                </div>
+                <span className="text-xs text-neutral-400">{client.engagement}%</span>
+              </div>
+            </div>
+          </motion.div>
+        )
+      })}
+
+      {/* Reserved space for insight */}
+      <div className="h-12">
+        <AnimatePresence>
+          {showInsight && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center gap-2 p-3 bg-amber-50 rounded-xl border border-amber-200"
+            >
+              <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
+                <span className="text-amber-600 text-xs">!</span>
+              </div>
+              <p className="text-sm text-amber-800">{t.insight}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}
+
+// Animated Sessions Component (for practitioners - CRM view)
+function AnimatedSessions({ locale = 'en' }: { locale?: string }) {
+  const [activeSection, setActiveSection] = useState(0)
+  const [highlightedNotes, setHighlightedNotes] = useState<number[]>([])
+
+  const texts = {
+    en: {
+      nextSession: 'Next session: Tomorrow, 2pm',
+      keyNotes: 'Key notes from last sessions',
+      notes: [
+        { text: 'Anxiety around work deadlines', tag: 'Focus area' },
+        { text: 'Breathing exercises helping', tag: 'Progress' },
+        { text: 'Try journaling this week', tag: 'Action item' },
+      ],
+      ready: 'Ready for tomorrow\'s session',
+    },
+    fr: {
+      nextSession: 'Prochaine séance : Demain, 14h',
+      keyNotes: 'Notes clés des dernières séances',
+      notes: [
+        { text: 'Anxiété liée aux échéances', tag: 'Point d\'attention' },
+        { text: 'Exercices de respiration aidants', tag: 'Progrès' },
+        { text: 'Essayer le journal cette semaine', tag: 'Action' },
+      ],
+      ready: 'Prêt pour la séance de demain',
+    },
+  }
+  const t = texts[locale as keyof typeof texts] || texts.en
+
+  useEffect(() => {
+    const animate = () => {
+      setActiveSection(0)
+      setHighlightedNotes([])
+      setTimeout(() => setActiveSection(1), 600)
+      setTimeout(() => setHighlightedNotes([0]), 1200)
+      setTimeout(() => setHighlightedNotes([0, 1]), 1800)
+      setTimeout(() => setHighlightedNotes([0, 1, 2]), 2400)
+      setTimeout(() => setActiveSection(2), 3200)
+    }
+    animate()
+    const interval = setInterval(animate, 6500)
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <div className="space-y-4">
+      {/* Client Header */}
+      <motion.div
+        animate={{ opacity: activeSection >= 0 ? 1 : 0 }}
+        className="flex items-center gap-3 pb-3 border-b border-neutral-100"
+      >
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center">
+          <span className="text-white text-sm font-medium">SM</span>
+        </div>
+        <div>
+          <p className="text-sm font-medium text-neutral-800">Sarah M.</p>
+          <p className="text-xs text-neutral-400 flex items-center gap-1">
+            <Calendar className="w-3 h-3" /> {t.nextSession}
+          </p>
+        </div>
+      </motion.div>
+
+      {/* Key Notes */}
+      <motion.div
+        animate={{ opacity: activeSection >= 1 ? 1 : 0.3 }}
+        className="space-y-2"
+      >
+        <p className="text-xs text-neutral-500 uppercase tracking-wide">{t.keyNotes}</p>
+        {t.notes.map((note, i) => {
+          const isHighlighted = highlightedNotes.includes(i)
+          return (
+            <motion.div
+              key={i}
+              animate={{
+                backgroundColor: isHighlighted ? 'rgb(254 249 195)' : 'rgb(250 250 250)',
+                scale: isHighlighted ? [1, 1.02, 1] : 1,
+              }}
+              transition={{ duration: 0.3 }}
+              className="flex items-start gap-2 p-2 rounded-lg"
+            >
+              <Tag className={`w-3 h-3 mt-0.5 ${isHighlighted ? 'text-amber-600' : 'text-neutral-300'}`} />
+              <div className="flex-1">
+                <p className="text-sm text-neutral-700">{note.text}</p>
+                <span className={`text-xs ${isHighlighted ? 'text-amber-600' : 'text-neutral-400'}`}>{note.tag}</span>
+              </div>
+            </motion.div>
+          )
+        })}
+      </motion.div>
+
+      {/* Reserved space for ready indicator */}
+      <div className="h-8">
+        <AnimatePresence>
+          {activeSection >= 2 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center justify-center gap-2 pt-2 text-emerald-600"
+            >
+              <Check className="w-4 h-4" />
+              <span className="text-sm">{t.ready}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}
+
+// Animated Resources Component (for practitioners)
+function AnimatedResources({ locale = 'en' }: { locale?: string }) {
+  const [activeStep, setActiveStep] = useState(0)
+  const [sharedItems, setSharedItems] = useState<number[]>([])
+
+  const texts = {
+    en: {
+      resources: [
+        { name: 'Anxiety Worksheet', type: 'Worksheet', icon: FileText, color: 'text-blue-500' },
+        { name: 'Weekly Check-in', type: 'Questionnaire', icon: ClipboardList, color: 'text-purple-500' },
+        { name: 'Breathing Exercise', type: 'Exercise', icon: Dumbbell, color: 'text-emerald-500' },
+      ],
+      shared: 'Shared',
+      sharedMessage: '3 resources shared with Sarah M.',
+    },
+    fr: {
+      resources: [
+        { name: 'Fiche sur l\'anxiété', type: 'Fiche', icon: FileText, color: 'text-blue-500' },
+        { name: 'Bilan hebdomadaire', type: 'Questionnaire', icon: ClipboardList, color: 'text-purple-500' },
+        { name: 'Exercice de respiration', type: 'Exercice', icon: Dumbbell, color: 'text-emerald-500' },
+      ],
+      shared: 'Partagé',
+      sharedMessage: '3 ressources partagées avec Sarah M.',
+    },
+  }
+  const t = texts[locale as keyof typeof texts] || texts.en
+
+  useEffect(() => {
+    const animate = () => {
+      setActiveStep(0)
+      setSharedItems([])
+      setTimeout(() => setActiveStep(1), 800)
+      setTimeout(() => setSharedItems([0]), 1500)
+      setTimeout(() => setSharedItems([0, 1]), 2300)
+      setTimeout(() => setSharedItems([0, 1, 2]), 3100)
+      setTimeout(() => setActiveStep(2), 3800)
+    }
+    animate()
+    const interval = setInterval(animate, 7000)
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <div className="space-y-3">
+      {t.resources.map((resource, i) => {
+        const isShared = sharedItems.includes(i)
+        return (
+          <motion.div
+            key={resource.name}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{
+              opacity: 1,
+              x: 0,
+              backgroundColor: isShared ? 'rgb(240 253 244)' : 'rgb(250 250 250)',
+            }}
+            transition={{ duration: 0.3, delay: i * 0.1 }}
+            className="flex items-center justify-between p-3 rounded-xl border border-neutral-100"
+          >
+            <div className="flex items-center gap-3">
+              <div className={`w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center`}>
+                <resource.icon className={`w-4 h-4 ${resource.color}`} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-neutral-700">{resource.name}</p>
+                <p className="text-xs text-neutral-400">{resource.type}</p>
+              </div>
+            </div>
+            <AnimatePresence>
+              {isShared ? (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="flex items-center gap-1 text-emerald-500"
+                >
+                  <Check className="w-4 h-4" />
+                  <span className="text-xs">{t.shared}</span>
+                </motion.div>
+              ) : (
+                <motion.div
+                  animate={{ opacity: activeStep >= 1 ? 1 : 0.3 }}
+                  className="text-neutral-400"
+                >
+                  <Share2 className="w-4 h-4" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )
+      })}
+      {/* Reserved space for shared message */}
+      <div className="h-8">
+        <AnimatePresence>
+          {activeStep >= 2 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center pt-2 text-sm text-emerald-600"
+            >
+              {t.sharedMessage}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}
 
 // Animated Rituals Component
 function AnimatedRituals() {
@@ -435,18 +750,62 @@ function AnimatedConnection() {
   )
 }
 
-export function GlimpseSection() {
+interface GlimpseSectionProps {
+  isPractitionerPage?: boolean
+}
+
+export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionProps) {
   const { locale } = useLanguage()
+
+  // Practitioner-specific journey items
+  const practitionerJourney = [
+    {
+      id: 'resources',
+      icon: Share2,
+      label: { en: 'Resources', fr: 'Ressources' },
+      title: { en: 'Share your resources', fr: 'Partagez vos supports' },
+      description: {
+        en: 'Create and organize your questionnaires, exercises, and therapeutic resources in one place.',
+        fr: 'Créez et regroupez vos questionnaires, exercices et ressources thérapeutiques.',
+      },
+      visual: <AnimatedResources locale={locale} />,
+      color: 'from-amber-500/10 to-orange-500/10',
+    },
+    {
+      id: 'sessions',
+      icon: FolderOpen,
+      label: { en: 'Sessions', fr: 'Séances' },
+      title: { en: 'Prepare your sessions effortlessly', fr: 'Préparez vos séances sans effort' },
+      description: {
+        en: 'Clinical elements discussed throughout sessions are accessible without digging through your notes.',
+        fr: 'Les éléments abordés au fil des séances sont accessibles sans parcourir vos notes.',
+      },
+      visual: <AnimatedSessions locale={locale} />,
+      color: 'from-rose-500/10 to-pink-500/10',
+    },
+    {
+      id: 'overview',
+      icon: BarChart3,
+      label: { en: 'Overview', fr: 'Vue d\'ensemble' },
+      title: { en: 'See the full picture', fr: 'Vue d\'ensemble' },
+      description: {
+        en: 'Rhythm variations and journey continuity become readable, guiding your attention where it\'s needed.',
+        fr: 'Les variations de rythme et la continuité des parcours deviennent lisibles, pour orienter votre attention là où elle est nécessaire.',
+      },
+      visual: <AnimatedOverview locale={locale} />,
+      color: 'from-emerald-500/10 to-teal-500/10',
+    },
+  ]
 
   const journey = [
     {
       id: 'rituals',
       icon: Sun,
       label: { en: 'Rituals', fr: 'Rituels' },
-      title: { en: 'Your rituals, your pace', fr: 'Vos rituels, votre rythme' },
+      title: { en: 'Move forward without guilt', fr: 'Avancer sans culpabilité' },
       description: {
-        en: 'Pick from gentle rituals or create your own. A 2-minute morning pause. A first sip moment. Whatever feels right for you.',
-        fr: 'Choisissez parmi des rituels doux ou créez les vôtres. Une pause matinale de 2 minutes. Un moment de première gorgée. Ce qui vous convient.',
+        en: 'Adjust what you had planned when the energy isn\'t there. A 2-minute pause instead of 20. A gentle stretch instead of a workout. Whatever feels right today.',
+        fr: 'Adapter ce que vous aviez prévu quand l\'énergie n\'est plus là. Une pause de 2 minutes au lieu de 20. Un étirement doux au lieu d\'un entraînement. Ce qui vous convient aujourd\'hui.',
       },
       visual: <AnimatedRituals />,
       color: 'from-amber-500/10 to-orange-500/10',
@@ -455,10 +814,10 @@ export function GlimpseSection() {
       id: 'moments',
       icon: Heart,
       label: { en: 'Moments', fr: 'Moments' },
-      title: { en: 'Capture what matters', fr: 'Capturez ce qui compte' },
+      title: { en: 'Capture what matters', fr: 'Exprimer ce que vous vivez' },
       description: {
         en: 'A kind word someone said. A small win. A hard day. Moments become part of your story, mapped in your flow.',
-        fr: 'Un mot gentil. Une petite victoire. Un jour difficile. Les moments font partie de votre histoire, cartographiés dans votre flux.',
+        fr: 'Déposer ce qui vous traverse et garder une trace de ce qui compte vraiment.',
       },
       visual: <AnimatedMoments />,
       color: 'from-rose-500/10 to-pink-500/10',
@@ -467,10 +826,10 @@ export function GlimpseSection() {
       id: 'balance',
       icon: Scale,
       label: { en: 'Balance', fr: 'Équilibre' },
-      title: { en: 'Find your balance', fr: 'Trouvez votre équilibre' },
+      title: { en: 'Find your balance', fr: 'Explorer vos repères à vous' },
       description: {
         en: 'See where you are spending your energy. Not to judge, but to understand. Small adjustments, not big overhauls.',
-        fr: 'Voyez où vous dépensez votre énergie. Pas pour juger, mais pour comprendre. Petits ajustements, pas de grands changements.',
+        fr: 'Prendre conscience de son rythme au quotidien pour mieux comprendre ce qui vous fait du bien.',
       },
       visual: <AnimatedBalance />,
       color: 'from-indigo-500/10 to-violet-500/10',
@@ -482,7 +841,7 @@ export function GlimpseSection() {
       title: { en: 'Progress that feels human', fr: 'Des progrès qui restent humains' },
       description: {
         en: 'Not streaks or points. Just a gentle look back. "Last month you showed up 18 times. That is 18 times you chose yourself."',
-        fr: 'Pas de séries ou de points. Juste un regard doux en arrière. "Le mois dernier, vous étiez présent 18 fois. C\'est 18 fois où vous vous êtes choisi."',
+        fr: 'Ici, il n\'y a pas de compétition. Juste un regard bienveillant en arrière. Le mois dernier, vous étiez présent 18 fois. C\'est 18 moments où vous vous êtes choisi.',
       },
       visual: <AnimatedProgress />,
       color: 'from-emerald-500/10 to-teal-500/10',
@@ -491,10 +850,10 @@ export function GlimpseSection() {
       id: 'connection',
       icon: MessageCircle,
       label: { en: 'Connection', fr: 'Connexion' },
-      title: { en: 'Someone who sees your journey', fr: 'Quelqu\'un qui voit votre parcours' },
+      title: { en: 'Someone who sees your journey', fr: 'Quelqu\'un qui vous voit' },
       description: {
         en: 'Only if you choose to share. Your practitioner sees not just your hard days, but the full picture. The effort, the small wins, the patterns over time.',
-        fr: 'Seulement si vous choisissez de partager. Votre praticien voit non seulement vos jours difficiles, mais l\'ensemble. L\'effort, les petites victoires, les tendances.',
+        fr: 'Vous pouvez partager votre parcours avec la personne qui vous accompagne. Elle ne verra pas seulement les moments difficiles, mais l\'ensemble de votre chemin. Les moments qui comptent, les petites victoires et ce qui prend forme avec le temps.',
       },
       visual: <AnimatedConnection />,
       color: 'from-teal-500/10 to-cyan-500/10',
@@ -512,20 +871,28 @@ export function GlimpseSection() {
           className="text-center mb-20"
         >
           <p className="text-sm font-medium uppercase tracking-wider text-neutral-400 mb-4">
-            {locale === 'fr' ? 'Ce que nous avons créé' : 'What we built'}
+            {isPractitionerPage
+              ? (locale === 'fr' ? 'Pour votre pratique' : 'For your practice')
+              : (locale === 'fr' ? 'Ce que nous avons créé' : 'What we built')}
           </p>
           <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-4">
-            {locale === 'fr' ? 'Voici Bloomsline.' : 'This is Bloomsline.'}
+            {isPractitionerPage
+              ? (locale === 'fr' ? 'Tout ce dont vous avez besoin.' : 'Everything you need.')
+              : (locale === 'fr' ? 'Voici Bloomsline.' : 'This is Bloomsline.')}
           </h2>
           <p className="text-neutral-500 max-w-2xl mx-auto leading-relaxed">
-            {locale === 'fr'
-              ? 'Une façon de vous reconnecter à vous-même. De donner du sens aux petits gestes. De voir que ce que vous faites compte.'
-              : 'A way to reconnect with yourself. To find meaning in the small things. To see that what you do matters.'}
+            {isPractitionerPage
+              ? (locale === 'fr'
+                ? 'Des outils pensés pour accompagner vos clients entre les séances, sans alourdir votre quotidien.'
+                : 'Tools designed to support your clients between sessions, without adding to your daily workload.')
+              : (locale === 'fr'
+                ? 'Une façon de vous reconnecter à vous-même. De donner du sens aux petits gestes. De voir que ce que vous faites compte.'
+                : 'A way to reconnect with yourself. To find meaning in the small things. To see that what you do matters.')}
           </p>
         </motion.div>
 
         <div className="max-w-5xl mx-auto space-y-24">
-          {journey.map((step, index) => (
+          {(isPractitionerPage ? practitionerJourney : journey).map((step, index) => (
             <motion.div
               key={step.id}
               initial={{ opacity: 0, y: 40 }}
@@ -539,16 +906,13 @@ export function GlimpseSection() {
               {/* Content */}
               <div className={index % 2 === 1 ? 'lg:col-start-2' : ''}>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${step.color} flex items-center justify-center`}>
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${step.color} flex items-center justify-center shrink-0`}>
                     <step.icon className="w-5 h-5 text-neutral-700" />
                   </div>
-                  <span className="text-sm font-medium text-neutral-400 uppercase tracking-wider">
-                    {locale === 'fr' ? step.label.fr : step.label.en}
-                  </span>
+                  <h3 className="text-xl sm:text-2xl font-light text-neutral-900">
+                    {locale === 'fr' ? step.title.fr : step.title.en}
+                  </h3>
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-light text-neutral-900 mb-4">
-                  {locale === 'fr' ? step.title.fr : step.title.en}
-                </h3>
                 <p className="text-neutral-600 leading-relaxed">
                   {locale === 'fr' ? step.description.fr : step.description.en}
                 </p>
@@ -566,25 +930,27 @@ export function GlimpseSection() {
           ))}
         </div>
 
-        {/* Closing reflection */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="max-w-2xl mx-auto text-center mt-32"
-        >
-          <p className="text-2xl sm:text-3xl font-light text-neutral-700 leading-relaxed mb-6">
-            {locale === 'fr'
-              ? 'Ce ne sont pas des tâches. Ce sont de petits actes de présence à soi-même.'
-              : 'These are not tasks. They are small acts of showing up for yourself.'}
-          </p>
-          <p className="text-neutral-500">
-            {locale === 'fr'
-              ? 'Et avec le temps, ils deviennent la preuve que vous comptez.'
-              : 'And over time, they become proof that you matter.'}
-          </p>
-        </motion.div>
+        {/* Closing reflection - hidden on practitioner page */}
+        {!isPractitionerPage && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="max-w-2xl mx-auto text-center mt-32"
+          >
+            <p className="text-2xl sm:text-3xl font-light text-neutral-700 leading-relaxed mb-6">
+              {locale === 'fr'
+                ? 'Le bien-être n\'est pas une liste de tâches à cocher. C\'est avant tout prendre soin de soi sans se forcer.'
+                : 'These are not tasks. They are small acts of showing up for yourself.'}
+            </p>
+            {locale !== 'fr' && (
+              <p className="text-neutral-500">
+                And over time, they become proof that you matter.
+              </p>
+            )}
+          </motion.div>
+        )}
       </div>
     </section>
   )

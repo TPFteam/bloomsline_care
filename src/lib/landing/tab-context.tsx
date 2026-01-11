@@ -11,8 +11,8 @@ interface TabContextType {
 
 const TabContext = createContext<TabContextType | undefined>(undefined)
 
-export function TabProvider({ children }: { children: ReactNode }) {
-  const [activeTab, setActiveTab] = useState<TabType>('personal')
+export function TabProvider({ children, defaultTab = 'personal' }: { children: ReactNode; defaultTab?: TabType }) {
+  const [activeTab, setActiveTab] = useState<TabType>(defaultTab)
 
   return (
     <TabContext.Provider value={{ activeTab, setActiveTab }}>
