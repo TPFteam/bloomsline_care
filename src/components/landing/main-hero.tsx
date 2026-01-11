@@ -273,8 +273,8 @@ export function MainHero() {
                   transition={{ duration: 0.2 }}
                 >
                   {locale === 'fr'
-                    ? 'Un espace personnel pour ralentir, réfléchir et grandir'
-                    : 'A personal space to slow down, reflect, and grow'}
+                    ? 'Un espace pour les moments où tout devient flou'
+                    : 'A space for when everything feels unclear'}
                 </motion.span>
               ) : (
                 <motion.span
