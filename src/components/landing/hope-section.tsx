@@ -180,7 +180,7 @@ export function HopeSection() {
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <p className="text-lg sm:text-xl text-neutral-600 mb-8">
-              {locale === 'fr' ? "Que faites-vous d'habitude ?" : 'What do you usually do?'}
+              {locale === 'fr' ? "Que faites-vous d'habitude quand vous perdez l'élan ?" : 'What do you usually do when you lose momentum?'}
             </p>
 
             {/* Pattern Options - Clickable - 2x2 grid */}
