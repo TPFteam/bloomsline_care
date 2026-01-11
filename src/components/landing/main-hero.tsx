@@ -331,11 +331,11 @@ export function MainHero() {
                     )}
                   </AnimatePresence>
 
-                  {/* Pill tabs inline */}
+                  {/* Pill tabs inline - rituals and balance hidden for now */}
                   {[
                     { id: 'moments' as PersonalSubTab, label: locale === 'fr' ? 'moment' : 'moment', Icon: Sun },
-                    { id: 'rituals' as PersonalSubTab, label: locale === 'fr' ? 'rituel' : 'ritual', Icon: Circle },
-                    { id: 'balance' as PersonalSubTab, label: locale === 'fr' ? 'équilibre' : 'balance', Icon: Smile },
+                    // { id: 'rituals' as PersonalSubTab, label: locale === 'fr' ? 'rituel' : 'ritual', Icon: Circle },
+                    // { id: 'balance' as PersonalSubTab, label: locale === 'fr' ? 'équilibre' : 'balance', Icon: Smile },
                   ].map((tab) => (
                     <button
                       key={tab.id}
