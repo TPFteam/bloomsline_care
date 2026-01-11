@@ -9,11 +9,25 @@ import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n/context'
 import { useTab } from '@/lib/landing/tab-context'
 import { LanguageSwitcher } from '@/components/language-switcher'
+import { useEarlyAccessModal } from '@/lib/landing/early-access-modal-context'
 
-export function Navbar() {
+interface NavbarProps {
+  isPractitionerPage?: boolean
+}
+
+export function Navbar({ isPractitionerPage = false }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { t, locale } = useLanguage()
   const { activeTab } = useTab()
+
+  // Only use the modal hook if on practitioner page (where provider exists)
+  let openModal: (() => void) | null = null
+  try {
+    const modalContext = useEarlyAccessModal()
+    openModal = modalContext.openModal
+  } catch {
+    // Not within provider, openModal stays null
+  }
 
   const isPractitioner = activeTab === 'practitioner'
 
@@ -85,18 +99,28 @@ export function Navbar() {
                 {t.nav.signIn}
               </Button>
             </Link>
-            <Link href="/early-access">
+            {isPractitionerPage && openModal ? (
               <Button
-                className={`font-medium text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300 ${
-                  isPractitioner
-                    ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C] shadow-[#D4856A]/30 hover:from-[#c27459] hover:to-[#d4946b]'
-                    : 'bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] shadow-[#4A9A86]/30 hover:from-[#3d8a76] hover:to-[#4da38c]'
-                }`}
+                onClick={openModal}
+                className={`font-medium text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] shadow-[#D4856A]/30 hover:from-[#c27459] hover:to-[#d4946b]`}
                 suppressHydrationWarning
               >
                 {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
               </Button>
-            </Link>
+            ) : (
+              <Link href="/early-access">
+                <Button
+                  className={`font-medium text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300 ${
+                    isPractitioner
+                      ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C] shadow-[#D4856A]/30 hover:from-[#c27459] hover:to-[#d4946b]'
+                      : 'bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] shadow-[#4A9A86]/30 hover:from-[#3d8a76] hover:to-[#4da38c]'
+                  }`}
+                  suppressHydrationWarning
+                >
+                  {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
+                </Button>
+              </Link>
+            )}
           </motion.div>
 
           {/* Mobile menu button */}
@@ -146,18 +170,31 @@ export function Navbar() {
                     {t.nav.signIn}
                   </Button>
                 </Link>
-                <Link href="/early-access" className="w-full">
+                {isPractitionerPage && openModal ? (
                   <Button
-                    className={`w-full font-medium text-white rounded-full shadow-lg ${
-                      isPractitioner
-                        ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C] hover:from-[#c27459] hover:to-[#d4946b]'
-                        : 'bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] hover:from-[#3d8a76] hover:to-[#4da38c]'
-                    }`}
+                    onClick={() => {
+                      setIsOpen(false)
+                      openModal()
+                    }}
+                    className="w-full font-medium text-white rounded-full shadow-lg bg-gradient-to-r from-[#D4856A] to-[#E8A87C] hover:from-[#c27459] hover:to-[#d4946b]"
                     suppressHydrationWarning
                   >
                     {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
                   </Button>
-                </Link>
+                ) : (
+                  <Link href="/early-access" className="w-full">
+                    <Button
+                      className={`w-full font-medium text-white rounded-full shadow-lg ${
+                        isPractitioner
+                          ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C] hover:from-[#c27459] hover:to-[#d4946b]'
+                          : 'bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] hover:from-[#3d8a76] hover:to-[#4da38c]'
+                      }`}
+                      suppressHydrationWarning
+                    >
+                      {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </motion.div>
