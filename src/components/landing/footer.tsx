@@ -20,36 +20,35 @@ export function Footer() {
   return (
     <footer className="bg-neutral-900 text-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
-        {/* Brand Section - Compact on mobile */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="mb-8 sm:mb-12"
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <Logo size="lg" showText variant="dark" />
-          </div>
-          <p className="text-neutral-400 text-sm sm:text-base mb-4 max-w-md" suppressHydrationWarning>
-            {t.footer.brandDescription}
-          </p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 mb-8 sm:mb-12">
+          {/* Brand Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="col-span-2"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Logo size="lg" showText variant="dark" />
+            </div>
+            <p className="text-neutral-400 text-sm sm:text-base mb-4 max-w-sm" suppressHydrationWarning>
+              {t.footer.brandDescription}
+            </p>
 
-          {/* Contact Info - Inline on mobile */}
-          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-neutral-400">
-            <a href={`mailto:${t.footer.contactEmail}`} className="flex items-center gap-2 hover:text-white transition-colors" suppressHydrationWarning>
-              <Mail className="w-4 h-4" />
-              {t.footer.contactEmail}
-            </a>
-            <span className="flex items-center gap-2" suppressHydrationWarning>
-              <MapPin className="w-4 h-4" />
-              {t.footer.location}
-            </span>
-          </div>
-        </motion.div>
+            {/* Contact Info */}
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-neutral-400">
+              <a href={`mailto:${t.footer.contactEmail}`} className="flex items-center gap-2 hover:text-white transition-colors" suppressHydrationWarning>
+                <Mail className="w-4 h-4" />
+                {t.footer.contactEmail}
+              </a>
+              <span className="flex items-center gap-2" suppressHydrationWarning>
+                <MapPin className="w-4 h-4" />
+                {t.footer.location}
+              </span>
+            </div>
+          </motion.div>
 
-        {/* Links Section - 2 columns on mobile */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-8 sm:mb-12">
           {/* Company Links */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
