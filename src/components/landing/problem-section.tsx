@@ -3,12 +3,9 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/i18n/context'
+import { useTab } from '@/lib/landing/tab-context'
 
 type AudienceType = 'member' | 'practitioner'
-
-interface ProblemSectionProps {
-  selectedAudience?: AudienceType
-}
 
 interface StoryCard {
   id: string
@@ -19,27 +16,17 @@ interface StoryCard {
   }
 }
 
-export function ProblemSection({ selectedAudience: initialAudience }: ProblemSectionProps) {
+export function ProblemSection() {
   const { locale } = useLanguage()
-  const [audience, setAudience] = useState<AudienceType>(initialAudience || 'member')
+  const { activeTab, setActiveTab } = useTab()
   const [activeIndex, setActiveIndex] = useState(0)
 
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash
-      if (hash === '#for-me' || hash === '#for-practitioners') {
-        const newAudience = hash === '#for-me' ? 'member' : 'practitioner'
-        setAudience(newAudience)
-        const element = document.getElementById('problems')
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        }
-      }
-    }
-    handleHashChange()
-    window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
-  }, [])
+  // Map tab context to audience type
+  const audience: AudienceType = activeTab === 'practitioner' ? 'practitioner' : 'member'
+
+  const setAudience = (newAudience: AudienceType) => {
+    setActiveTab(newAudience === 'practitioner' ? 'practitioner' : 'personal')
+  }
 
   // Reset active index when audience changes
   useEffect(() => {
