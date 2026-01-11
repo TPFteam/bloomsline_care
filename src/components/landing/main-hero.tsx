@@ -278,7 +278,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="mb-12"
           >
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-light tracking-tight text-neutral-900 leading-[1.1]">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight text-neutral-900 leading-[1.1]">
               {isPractitionerPage ? (
                 <>
                   <AnimatePresence mode="wait">
@@ -301,9 +301,8 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
               ) : (
                 <>
                   <span className="text-neutral-900">
-                    {fixedHeadline.personal[locale]}
+                    {fixedHeadline.personal[locale]}{' '}
                   </span>
-                  <br />
                   <AnimatePresence mode="wait">
                     <motion.span
                       key={`${wordIndex}-${activeTab}`}
