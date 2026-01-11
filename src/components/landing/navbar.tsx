@@ -19,6 +19,7 @@ export function Navbar() {
 
   const navItems = [
     { label: t.nav.home, href: '/', active: true },
+    { label: t.nav.forPractitioners, href: '/practitioner' },
   ]
 
   return (
