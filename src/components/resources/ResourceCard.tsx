@@ -60,9 +60,9 @@ const resourceTypeStyles: Record<string, {
     labelColor: 'text-emerald-600',
   },
   psychoeducation: {
-    iconBg: 'bg-amber-100',
-    iconColor: 'text-amber-600',
-    labelColor: 'text-amber-600',
+    iconBg: 'bg-purple-100',
+    iconColor: 'text-purple-600',
+    labelColor: 'text-purple-600',
   },
   table: {
     iconBg: 'bg-emerald-100',
