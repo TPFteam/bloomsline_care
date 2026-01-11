@@ -311,25 +311,10 @@ export function MainHero() {
                 className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-neutral-200/30 p-2 sm:p-4 overflow-hidden"
               >
                 {/* Prompt text + Pills row */}
-                <div className="flex items-center gap-1 sm:gap-2 mb-3">
-                  <Search className="w-4 h-4 text-neutral-400 shrink-0 hidden sm:block" />
-                  <AnimatePresence mode="wait">
-                    {personalSubTab === 'moments' && (
-                      <motion.span key="moments-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="hidden sm:inline text-neutral-700 text-sm">
-                        {locale === 'fr' ? 'Capturer ce' : 'Capture this'}
-                      </motion.span>
-                    )}
-                    {personalSubTab === 'rituals' && (
-                      <motion.span key="rituals-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="hidden sm:inline text-neutral-700 text-sm">
-                        {locale === 'fr' ? 'Commencer mon' : 'Start my'}
-                      </motion.span>
-                    )}
-                    {personalSubTab === 'balance' && (
-                      <motion.span key="balance-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="hidden sm:inline text-neutral-700 text-sm">
-                        {locale === 'fr' ? 'Comment va mon' : 'How is my'}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
+                <div className="flex items-center gap-1 sm:gap-2 mb-3 flex-wrap">
+                  <span className="text-neutral-700 text-sm">
+                    {locale === 'fr' ? 'Quel' : 'What'}
+                  </span>
 
                   {/* Pill tabs inline - rituals and balance hidden for now */}
                   {[
@@ -350,6 +335,10 @@ export function MainHero() {
                       {tab.label}
                     </button>
                   ))}
+
+                  <span className="text-neutral-700 text-sm">
+                    {locale === 'fr' ? "a compté aujourd'hui ?" : 'mattered today?'}
+                  </span>
                 </div>
 
                 {/* Feature Preview - Visual-forward minimal cards OR Interactive mode */}
