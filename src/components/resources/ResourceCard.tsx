@@ -329,7 +329,7 @@ export function ResourceCard({
               }`}
               title={locale === 'fr' ? (isBookmarked ? 'Retirer des favoris' : 'Ajouter aux favoris') : (isBookmarked ? 'Remove from favorites' : 'Add to favorites')}
             >
-              <Heart className={`w-5 h-5 ${isBookmarked ? 'fill-rose-400' : ''}`} />
+              <Heart className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-rose-300' : ''}`} />
             </button>
           )}
 
@@ -574,7 +574,7 @@ export function ResourceCardList({
             }`}
             title={locale === 'fr' ? (isBookmarked ? 'Retirer des favoris' : 'Ajouter aux favoris') : (isBookmarked ? 'Remove from favorites' : 'Add to favorites')}
           >
-            <Heart className={`w-4 h-4 ${isBookmarked ? 'fill-rose-400' : ''}`} />
+            <Heart className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-rose-300' : ''}`} />
           </button>
         )}
 
