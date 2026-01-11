@@ -793,7 +793,6 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
       },
       visual: <AnimatedOverview locale={locale} />,
       color: 'from-emerald-500/10 to-teal-500/10',
-      cta: { en: 'Try Bloomsline for free', fr: 'Tester Bloomsline gratuitement' },
     },
   ]
 
@@ -916,14 +915,6 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
                 <p className="text-neutral-600 leading-relaxed">
                   {locale === 'fr' ? step.description.fr : step.description.en}
                 </p>
-                {'cta' in step && (step as { cta?: { en: string; fr: string } }).cta && (
-                  <a
-                    href="/early-access"
-                    className="inline-block mt-6 px-6 py-3 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300"
-                  >
-                    {locale === 'fr' ? (step as { cta: { en: string; fr: string } }).cta.fr : (step as { cta: { en: string; fr: string } }).cta.en}
-                  </a>
-                )}
               </div>
 
               {/* Visual */}
@@ -937,6 +928,24 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
             </motion.div>
           ))}
         </div>
+
+        {/* CTA for practitioner page */}
+        {isPractitionerPage && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="text-center mt-20"
+          >
+            <a
+              href="/early-access"
+              className="inline-block px-8 py-4 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300"
+            >
+              {locale === 'fr' ? 'Tester Bloomsline gratuitement' : 'Try Bloomsline for free'}
+            </a>
+          </motion.div>
+        )}
 
         {/* Closing reflection - hidden on practitioner page */}
         {!isPractitionerPage && (
