@@ -9,12 +9,23 @@ import Link from 'next/link'
 
 const rotatingWords = {
   personal: {
-    en: ['Grow', 'Heal', 'Rest', 'Reflect'],
-    fr: ['Grandissez', 'Guérissez', 'Reposez-vous', 'Réfléchissez'],
+    en: ['grows', 'shifts', 'moves'],
+    fr: ['grandit', 'évolue', 'avance'],
   },
   practitioner: {
     en: ['Create', 'Share', 'Track engagement'],
     fr: ['Créez', 'Partagez', 'Suivez les rythmes'],
+  },
+}
+
+const fixedHeadline = {
+  personal: {
+    en: 'Quietly, something',
+    fr: 'Doucement, quelque chose',
+  },
+  practitioner: {
+    en: 'effortlessly',
+    fr: 'sans effort',
   },
 }
 
@@ -289,6 +300,10 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                 </>
               ) : (
                 <>
+                  <span className="text-neutral-900">
+                    {fixedHeadline.personal[locale]}
+                  </span>
+                  <br />
                   <AnimatePresence mode="wait">
                     <motion.span
                       key={`${wordIndex}-${activeTab}`}
@@ -301,9 +316,6 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                       {rotatingWords.personal[locale][wordIndex % rotatingWords.personal[locale].length]}
                     </motion.span>
                   </AnimatePresence>
-                  <span className="text-neutral-900">
-                    {' '}{locale === 'fr' ? 'à votre rythme' : 'at your pace'}
-                  </span>
                 </>
               )}
             </h1>
