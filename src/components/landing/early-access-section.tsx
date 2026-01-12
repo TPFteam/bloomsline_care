@@ -202,7 +202,7 @@ export function EarlyAccessSection() {
                         <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       ) : (
                         <>
-                          {locale === 'fr' ? 'Rejoindre la liste' : 'Join the waitlist'}
+                          {locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access'}
                           <ArrowRight className="w-4 h-4" />
                         </>
                       )}
