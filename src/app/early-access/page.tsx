@@ -82,24 +82,21 @@ function EarlyAccessContent() {
   const userTypeOptions = [
     {
       value: 'member' as UserType,
-      icon: Heart,
-      emoji: '🌱',
+      Icon: Leaf,
       label: { en: 'For myself', fr: 'Pour moi' },
       description: { en: 'I want support for my own wellbeing', fr: 'Je cherche du soutien pour mon bien-être' },
       color: 'rose',
     },
     {
       value: 'practitioner' as UserType,
-      icon: Users,
-      emoji: '💜',
+      Icon: Heart,
       label: { en: 'I help others', fr: 'J\'accompagne les autres' },
       description: { en: 'I\'m a therapist, coach, or practitioner', fr: 'Je suis thérapeute, coach ou praticien' },
       color: 'lavender',
     },
     {
       value: 'both' as UserType,
-      icon: Sparkles,
-      emoji: '✨',
+      Icon: Sparkles,
       label: { en: 'Both', fr: 'Les deux' },
       description: { en: 'I care for myself and support others', fr: 'Je prends soin de moi et j\'accompagne les autres' },
       color: 'teal',
@@ -358,16 +355,19 @@ function EarlyAccessContent() {
                             rose: {
                               selected: 'border-rose-400 bg-rose-50',
                               icon: 'bg-rose-100',
+                              iconColor: 'text-rose-500',
                               check: 'border-rose-400 bg-rose-400',
                             },
                             lavender: {
                               selected: 'border-lavender-400 bg-lavender-50',
                               icon: 'bg-lavender-100',
+                              iconColor: 'text-lavender-500',
                               check: 'border-lavender-400 bg-lavender-400',
                             },
                             teal: {
                               selected: 'border-teal-400 bg-teal-50',
                               icon: 'bg-teal-100',
+                              iconColor: 'text-teal-500',
                               check: 'border-teal-400 bg-teal-400',
                             },
                           }
@@ -387,10 +387,10 @@ function EarlyAccessContent() {
                               }`}
                             >
                               <div className="flex items-center gap-4">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all ${
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                                   isSelected ? colorStyles.icon : 'bg-neutral-100'
                                 }`}>
-                                  {option.emoji}
+                                  <option.Icon className={`w-5 h-5 ${isSelected ? colorStyles.iconColor : 'text-neutral-400'}`} />
                                 </div>
                                 <div className="flex-1">
                                   <p className="font-medium text-neutral-800">
@@ -443,11 +443,11 @@ function EarlyAccessContent() {
                     <Button
                       type="submit"
                       disabled={isSubmitting || !formData.userType}
-                      className="w-full py-6 bg-gradient-to-r from-lavender-500 to-lavender-600 text-white hover:from-lavender-600 hover:to-lavender-700 rounded-xl font-medium shadow-lg shadow-lavender-500/30 hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full py-6 bg-neutral-900 text-white hover:bg-neutral-800 rounded-xl font-medium shadow-lg shadow-neutral-900/20 hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting
                         ? (locale === 'fr' ? 'Envoi...' : 'Sending...')
-                        : (locale === 'fr' ? 'Demander un accès' : 'Request access')}
+                        : (locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access')}
                     </Button>
                   </form>
 
