@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { sendMessage, getActiveConversation, getConversationMessages } from '@/lib/services/bloom'
+import { sendMessage } from '@/lib/services/bloom'
 import type { BloomMessage, BloomState, ContentBlock } from '@/types/bloom'
 
 export type BloomEntryPoint = 'home' | 'balance' | 'moments' | 'rituals' | 'progress' | 'reflect' | 'general'
@@ -35,34 +35,16 @@ export function useBloomChat(options: UseBloomChatOptions = {}): UseBloomChatRet
   const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([])
   const initRef = useRef(false)
 
-  // Initialize chat: Load existing conversation OR fetch greeting
+  // Initialize chat: Always start fresh with a greeting
+  // Note: We don't restore old conversations because it causes Bloom to reference
+  // old messages as if they're from "today", leading to confusing responses
   useEffect(() => {
     if (initRef.current) return
     initRef.current = true
 
     async function initializeChat() {
       try {
-        // First, try to load existing conversation
-        const activeConv = await getActiveConversation()
-
-        if (activeConv) {
-          // Check if conversation is from today (within last 24 hours)
-          const lastMessageTime = new Date(activeConv.last_message_at || activeConv.created_at)
-          const now = new Date()
-          const hoursSinceLastMessage = (now.getTime() - lastMessageTime.getTime()) / (1000 * 60 * 60)
-
-          // If conversation is recent (within 4 hours), restore it
-          if (hoursSinceLastMessage < 4) {
-            setConversationId(activeConv.id)
-            const existingMessages = await getConversationMessages(activeConv.id)
-            if (existingMessages.length > 0) {
-              setMessages(existingMessages)
-              return // Don't fetch greeting if we have existing messages
-            }
-          }
-        }
-
-        // No recent conversation - fetch fresh greeting
+        // Always fetch fresh greeting - no conversation restoration
         const response = await fetch('/api/bloom/greeting', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -203,7 +185,7 @@ export function useBloomChat(options: UseBloomChatOptions = {}): UseBloomChatRet
     setMessages([])
     setConversationId(null)
     setError(null)
-    setInitialized(false)
+    initRef.current = false
   }, [])
 
   return {
