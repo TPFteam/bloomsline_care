@@ -77,17 +77,23 @@ interface DetectedPattern {
 
 /**
  * Fetch all user insights from database
+ * Only returns insights confirmed within the last 14 days to avoid stale data
  */
 export async function getUserInsights(
   supabase: SupabaseClient,
   userId: string
 ): Promise<StoredInsight[]> {
+  // Only fetch insights confirmed within the last 14 days
+  const twoWeeksAgo = new Date()
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
+
   const { data, error } = await supabase
     .from('bloom_user_insights')
     .select('*')
     .eq('user_id', userId)
     .eq('is_active', true)
     .eq('is_dismissed', false)
+    .gte('last_confirmed_at', twoWeeksAgo.toISOString())
     .order('confidence', { ascending: false })
 
   if (error) {
@@ -629,9 +635,15 @@ export function formatInsightsForPrompt(
   insights: StoredInsight[],
   locale: 'en' | 'fr' = 'en'
 ): string {
-  if (insights.length === 0) return ''
+  if (insights.length === 0) {
+    return locale === 'fr'
+      ? '\n*** Pas de patterns récents détectés (utilisateur peu actif récemment) ***'
+      : '\n*** No recent patterns detected (user has not been active recently) ***'
+  }
 
-  const header = locale === 'fr' ? '\nPATTERNS LONG-TERME:' : '\nLONG-TERM PATTERNS:'
+  const header = locale === 'fr'
+    ? '\nPATTERNS RÉCENTS (confirmés dans les 2 dernières semaines):'
+    : '\nRECENT PATTERNS (confirmed in last 2 weeks):'
 
   const formattedInsights = insights
     .slice(0, 5) // Top 5 most confident

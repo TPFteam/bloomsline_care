@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { sendMessage, getActiveConversation, getConversationMessages } from '@/lib/services/bloom'
 import type { BloomMessage, BloomState, ContentBlock } from '@/types/bloom'
 
@@ -33,60 +33,68 @@ export function useBloomChat(options: UseBloomChatOptions = {}): UseBloomChatRet
   const [error, setError] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([])
-  const [initialized, setInitialized] = useState(false)
-  const [greetingLoading, setGreetingLoading] = useState(false)
+  const initRef = useRef(false)
 
-  // Fetch context-aware greeting from API
+  // Initialize chat: Load existing conversation OR fetch greeting
   useEffect(() => {
-    if (initialized || greetingLoading) return
+    if (initRef.current) return
+    initRef.current = true
 
-    async function fetchGreeting() {
-      setGreetingLoading(true)
+    async function initializeChat() {
       try {
+        // First, try to load existing conversation
+        const activeConv = await getActiveConversation()
+
+        if (activeConv) {
+          // Check if conversation is from today (within last 24 hours)
+          const lastMessageTime = new Date(activeConv.last_message_at || activeConv.created_at)
+          const now = new Date()
+          const hoursSinceLastMessage = (now.getTime() - lastMessageTime.getTime()) / (1000 * 60 * 60)
+
+          // If conversation is recent (within 4 hours), restore it
+          if (hoursSinceLastMessage < 4) {
+            setConversationId(activeConv.id)
+            const existingMessages = await getConversationMessages(activeConv.id)
+            if (existingMessages.length > 0) {
+              setMessages(existingMessages)
+              return // Don't fetch greeting if we have existing messages
+            }
+          }
+        }
+
+        // No recent conversation - fetch fresh greeting
         const response = await fetch('/api/bloom/greeting', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ locale, entryPoint }),
         })
 
+        let greeting: string
         if (response.ok) {
           const data = await response.json()
-          const greetingMessage: BloomMessage = {
-            id: 'greeting',
-            conversation_id: '',
-            user_id: '',
-            role: 'assistant',
-            content: data.greeting,
-            is_voice_message: false,
-            audio_url: null,
-            audio_duration_seconds: null,
-            tokens_used: null,
-            model_version: null,
-            created_at: new Date().toISOString(),
-          }
-          setMessages([greetingMessage])
+          greeting = data.greeting
         } else {
           // Fallback to simple greeting
           const hour = new Date().getHours()
-          const greeting = locale === 'fr'
+          greeting = locale === 'fr'
             ? (hour < 12 ? 'Bonjour. Comment vas-tu ?' : 'Bonsoir. Comment vas-tu ?')
             : (hour < 12 ? 'Good morning. How are you?' : 'Good evening. How are you?')
-
-          const greetingMessage: BloomMessage = {
-            id: 'greeting',
-            conversation_id: '',
-            user_id: '',
-            role: 'assistant',
-            content: greeting,
-            is_voice_message: false,
-            audio_url: null,
-            audio_duration_seconds: null,
-            tokens_used: null,
-            model_version: null,
-            created_at: new Date().toISOString(),
-          }
-          setMessages([greetingMessage])
         }
+
+        const greetingMessage: BloomMessage = {
+          id: 'greeting',
+          conversation_id: '',
+          user_id: '',
+          role: 'assistant',
+          content: greeting,
+          is_voice_message: false,
+          audio_url: null,
+          audio_duration_seconds: null,
+          tokens_used: null,
+          model_version: null,
+          created_at: new Date().toISOString(),
+        }
+        setMessages([greetingMessage])
       } catch {
         // Fallback greeting on error
         const greeting = locale === 'fr' ? 'Bonjour. Comment vas-tu ?' : 'Hey. How are you?'
@@ -105,34 +113,12 @@ export function useBloomChat(options: UseBloomChatOptions = {}): UseBloomChatRet
         }
         setMessages([greetingMessage])
       } finally {
-        setGreetingLoading(false)
-        setInitialized(true)
+        // Chat initialized
       }
     }
 
-    fetchGreeting()
-  }, [locale, entryPoint, initialized, greetingLoading])
-
-  // Load existing conversation if available
-  useEffect(() => {
-    async function loadConversation() {
-      try {
-        const activeConv = await getActiveConversation()
-        if (activeConv) {
-          setConversationId(activeConv.id)
-          const existingMessages = await getConversationMessages(activeConv.id)
-          if (existingMessages.length > 0) {
-            setMessages(existingMessages)
-          }
-        }
-      } catch (err) {
-        // Silent fail - just start fresh
-        console.log('No existing conversation')
-      }
-    }
-
-    loadConversation()
-  }, [])
+    initializeChat()
+  }, [locale, entryPoint])
 
   const sendUserMessage = useCallback(async (message: string) => {
     if (!message.trim()) return

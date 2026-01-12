@@ -438,6 +438,10 @@ export function formatContextForPrompt(context: BloomContext, locale: 'en' | 'fr
 
   const formatHours = (mins: number) => `${Math.round(mins / 60 * 10) / 10}h`
 
+  // Check if user has been active this week
+  const hasWeeklyData = thisWeek.momentsCount > 0 || thisWeek.balance.avgSleep > 0 || thisWeek.rituals.completionRate > 0
+  const hasTodayData = today.balance.hasLogged || today.moments.count > 0 || today.rituals.completed > 0
+
   // Today section
   const todaySection = locale === 'fr' ? `
 AUJOURD'HUI:
@@ -446,6 +450,7 @@ AUJOURD'HUI:
 - Vie perso: ${today.balance.hasLogged ? formatHours(today.balance.life) : 'non enregistré'} (objectif: ${formatHours(today.balance.targets.life)})
 - Moments capturés: ${today.moments.count}${today.moments.moods.length > 0 ? ` (humeurs: ${today.moments.moods.join(', ')})` : ''}
 - Rituels: ${today.rituals.completed}/${today.rituals.total} complétés${today.rituals.missedNames.length > 0 ? ` (manqués: ${today.rituals.missedNames.join(', ')})` : ''}
+${!hasTodayData ? '*** L\'utilisateur n\'a rien enregistré aujourd\'hui ***' : ''}
 ` : `
 TODAY:
 - Sleep: ${today.balance.hasLogged ? formatHours(today.balance.sleep) : 'not logged'} (target: ${formatHours(today.balance.targets.sleep)})
@@ -453,11 +458,13 @@ TODAY:
 - Life: ${today.balance.hasLogged ? formatHours(today.balance.life) : 'not logged'} (target: ${formatHours(today.balance.targets.life)})
 - Moments captured: ${today.moments.count}${today.moments.moods.length > 0 ? ` (moods: ${today.moments.moods.join(', ')})` : ''}
 - Rituals: ${today.rituals.completed}/${today.rituals.total} done${today.rituals.missedNames.length > 0 ? ` (missed: ${today.rituals.missedNames.join(', ')})` : ''}
+${!hasTodayData ? '*** User has not logged anything today ***' : ''}
 `
 
   // This week section
   const weekSection = locale === 'fr' ? `
 CETTE SEMAINE:
+${!hasWeeklyData ? '*** L\'utilisateur n\'a pas utilisé Bloomsline cette semaine - pas de données récentes ***\n' : ''}
 - Sommeil moyen: ${thisWeek.balance.avgSleep}h/nuit (${thisWeek.balance.sleepTrend === 'improving' ? 'en amélioration' : thisWeek.balance.sleepTrend === 'declining' ? 'en baisse' : 'stable'})
 - Travail moyen: ${thisWeek.balance.avgWork}h/jour (${thisWeek.balance.workTrend === 'increasing' ? 'en hausse' : thisWeek.balance.workTrend === 'decreasing' ? 'en baisse' : 'stable'})
 - Vie perso moyenne: ${thisWeek.balance.avgLife}h/jour
@@ -466,6 +473,7 @@ CETTE SEMAINE:
 - Moments cette semaine: ${thisWeek.momentsCount}
 ` : `
 THIS WEEK:
+${!hasWeeklyData ? '*** User has NOT used Bloomsline this week - no recent data available ***\n' : ''}
 - Avg sleep: ${thisWeek.balance.avgSleep}h/night (${thisWeek.balance.sleepTrend})
 - Avg work: ${thisWeek.balance.avgWork}h/day (${thisWeek.balance.workTrend})
 - Avg life: ${thisWeek.balance.avgLife}h/day
