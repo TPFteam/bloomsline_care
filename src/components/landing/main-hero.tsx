@@ -32,6 +32,82 @@ const fixedHeadline = {
 type PersonalSubTab = 'rituals' | 'moments' | 'balance'
 type PractitionerSubTab = 'members' | 'journeys' | 'resources'
 
+// Demo scenarios - defined outside component to prevent recreation
+const DEMO_SCENARIOS = [
+  {
+    id: 'morning',
+    image: '/images/morning-walk.jpg',
+    title: { en: 'Morning walk', fr: 'Balade matinale' },
+    caption: { en: 'The calm before the day...', fr: 'Le calme avant la journée...' },
+    moods: [
+      { iconName: 'Smile' as const, label: { en: 'Peaceful', fr: 'Paisible' }, selected: true },
+      { iconName: 'Heart' as const, label: { en: 'Grateful', fr: 'Reconnaissant' }, selected: false },
+      { iconName: 'Sparkles' as const, label: { en: 'Inspired', fr: 'Inspiré' }, selected: true },
+    ],
+    insight: {
+      title: { en: 'Your mornings = better days', fr: 'Vos matins = meilleure journée' },
+      subtitle: { en: 'On days with morning walks, you feel', fr: 'Les jours avec balades matinales, vous êtes' },
+      percent: 73,
+      metric: { en: 'calmer', fr: 'plus calme' },
+    },
+    secondImage: '/images/coffee.jpg',
+  },
+  {
+    id: 'coffee',
+    image: '/images/coffee.jpg',
+    title: { en: 'Morning coffee', fr: 'Café du matin' },
+    caption: { en: 'A quiet ritual to start the day...', fr: 'Un rituel calme pour commencer...' },
+    moods: [
+      { iconName: 'Sun' as const, label: { en: 'Cozy', fr: 'Cosy' }, selected: true },
+      { iconName: 'Smile' as const, label: { en: 'Content', fr: 'Content' }, selected: true },
+      { iconName: 'Heart' as const, label: { en: 'Present', fr: 'Présent' }, selected: false },
+    ],
+    insight: {
+      title: { en: 'Rituals ground you', fr: 'Les rituels vous ancrent' },
+      subtitle: { en: 'Days with mindful mornings, you are', fr: 'Les jours avec matins conscients, vous êtes' },
+      percent: 68,
+      metric: { en: 'more focused', fr: 'plus concentré' },
+    },
+    secondImage: '/images/sunset.jpg',
+  },
+  {
+    id: 'sunset',
+    image: '/images/sunset.jpg',
+    title: { en: 'Evening sunset', fr: 'Coucher de soleil' },
+    caption: { en: 'Taking a moment to breathe...', fr: 'Prendre un moment pour respirer...' },
+    moods: [
+      { iconName: 'Heart' as const, label: { en: 'Grateful', fr: 'Reconnaissant' }, selected: true },
+      { iconName: 'Sparkles' as const, label: { en: 'Reflective', fr: 'Réflexif' }, selected: true },
+      { iconName: 'Smile' as const, label: { en: 'Calm', fr: 'Calme' }, selected: false },
+    ],
+    insight: {
+      title: { en: 'Pauses restore you', fr: 'Les pauses vous ressourcent' },
+      subtitle: { en: 'When you take evening breaks, you sleep', fr: 'Quand vous prenez des pauses le soir, vous dormez' },
+      percent: 81,
+      metric: { en: 'better', fr: 'mieux' },
+    },
+    secondImage: '/images/morning-walk.jpg',
+  },
+  {
+    id: 'pet',
+    image: '/images/cat.jpg',
+    title: { en: 'Cuddle time', fr: 'Moment câlin' },
+    caption: { en: 'My little companion...', fr: 'Mon petit compagnon...' },
+    moods: [
+      { iconName: 'Heart' as const, label: { en: 'Loved', fr: 'Aimé' }, selected: true },
+      { iconName: 'Smile' as const, label: { en: 'Joyful', fr: 'Joyeux' }, selected: true },
+      { iconName: 'Sparkles' as const, label: { en: 'Present', fr: 'Présent' }, selected: false },
+    ],
+    insight: {
+      title: { en: 'Pets brighten your days', fr: 'Les animaux illuminent vos jours' },
+      subtitle: { en: 'Moments with your companion make you', fr: 'Les moments avec votre compagnon vous rendent' },
+      percent: 79,
+      metric: { en: 'happier', fr: 'plus heureux' },
+    },
+    secondImage: '/images/coffee.jpg',
+  },
+]
+
 interface MainHeroProps {
   isPractitionerPage?: boolean
 }
@@ -43,90 +119,20 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
   const [personalSubTab, setPersonalSubTab] = useState<PersonalSubTab>('moments')
   const [practitionerSubTab, setPractitionerSubTab] = useState<PractitionerSubTab>('members')
   const [demoStep, setDemoStep] = useState(0)
-
-  // Demo scenarios - randomly selected on mount
-  const demoScenarios = [
-    {
-      id: 'morning',
-      image: '/images/morning-walk.jpg',
-      title: { en: 'Morning walk', fr: 'Balade matinale' },
-      caption: { en: 'The calm before the day...', fr: 'Le calme avant la journée...' },
-      moods: [
-        { icon: Smile, label: { en: 'Peaceful', fr: 'Paisible' }, selected: true },
-        { icon: Heart, label: { en: 'Grateful', fr: 'Reconnaissant' }, selected: false },
-        { icon: Sparkles, label: { en: 'Inspired', fr: 'Inspiré' }, selected: true },
-      ],
-      insight: {
-        title: { en: 'Your mornings = better days', fr: 'Vos matins = meilleure journée' },
-        subtitle: { en: 'On days with morning walks, you feel', fr: 'Les jours avec balades matinales, vous êtes' },
-        percent: 73,
-        metric: { en: 'calmer', fr: 'plus calme' },
-      },
-      secondImage: '/images/coffee.jpg',
-    },
-    {
-      id: 'coffee',
-      image: '/images/coffee.jpg',
-      title: { en: 'Morning coffee', fr: 'Café du matin' },
-      caption: { en: 'A quiet ritual to start the day...', fr: 'Un rituel calme pour commencer...' },
-      moods: [
-        { icon: Sun, label: { en: 'Cozy', fr: 'Cosy' }, selected: true },
-        { icon: Smile, label: { en: 'Content', fr: 'Content' }, selected: true },
-        { icon: Heart, label: { en: 'Present', fr: 'Présent' }, selected: false },
-      ],
-      insight: {
-        title: { en: 'Rituals ground you', fr: 'Les rituels vous ancrent' },
-        subtitle: { en: 'Days with mindful mornings, you are', fr: 'Les jours avec matins conscients, vous êtes' },
-        percent: 68,
-        metric: { en: 'more focused', fr: 'plus concentré' },
-      },
-      secondImage: '/images/sunset.jpg',
-    },
-    {
-      id: 'sunset',
-      image: '/images/sunset.jpg',
-      title: { en: 'Evening sunset', fr: 'Coucher de soleil' },
-      caption: { en: 'Taking a moment to breathe...', fr: 'Prendre un moment pour respirer...' },
-      moods: [
-        { icon: Heart, label: { en: 'Grateful', fr: 'Reconnaissant' }, selected: true },
-        { icon: Sparkles, label: { en: 'Reflective', fr: 'Réflexif' }, selected: true },
-        { icon: Smile, label: { en: 'Calm', fr: 'Calme' }, selected: false },
-      ],
-      insight: {
-        title: { en: 'Pauses restore you', fr: 'Les pauses vous ressourcent' },
-        subtitle: { en: 'When you take evening breaks, you sleep', fr: 'Quand vous prenez des pauses le soir, vous dormez' },
-        percent: 81,
-        metric: { en: 'better', fr: 'mieux' },
-      },
-      secondImage: '/images/morning-walk.jpg',
-    },
-    {
-      id: 'pet',
-      image: '/images/cat.jpg',
-      title: { en: 'Cuddle time', fr: 'Moment câlin' },
-      caption: { en: 'My little companion...', fr: 'Mon petit compagnon...' },
-      moods: [
-        { icon: Heart, label: { en: 'Loved', fr: 'Aimé' }, selected: true },
-        { icon: Smile, label: { en: 'Joyful', fr: 'Joyeux' }, selected: true },
-        { icon: Sparkles, label: { en: 'Present', fr: 'Présent' }, selected: false },
-      ],
-      insight: {
-        title: { en: 'Pets brighten your days', fr: 'Les animaux illuminent vos jours' },
-        subtitle: { en: 'Moments with your companion make you', fr: 'Les moments avec votre compagnon vous rendent' },
-        percent: 79,
-        metric: { en: 'happier', fr: 'plus heureux' },
-      },
-      secondImage: '/images/coffee.jpg',
-    },
-  ]
   const [demoScenarioIndex, setDemoScenarioIndex] = useState(0)
 
-  // Randomize demo scenario on client-side mount
-  useEffect(() => {
-    setDemoScenarioIndex(Math.floor(Math.random() * demoScenarios.length))
-  }, [demoScenarios.length])
+  // Icon map for demo scenarios
+  const iconMap = { Smile, Heart, Sparkles, Sun }
 
-  const currentDemo = demoScenarios[demoScenarioIndex]
+  // Randomize demo scenario on client-side mount using timestamp for true randomness
+  useEffect(() => {
+    const randomIndex = Math.floor((Date.now() % 10000) / 10000 * DEMO_SCENARIOS.length)
+    // Add extra randomness
+    const finalIndex = (randomIndex + Math.floor(Math.random() * DEMO_SCENARIOS.length)) % DEMO_SCENARIOS.length
+    setDemoScenarioIndex(finalIndex)
+  }, [])
+
+  const currentDemo = DEMO_SCENARIOS[demoScenarioIndex]
 
   // Interactive mode state
   const [isInteractive, setIsInteractive] = useState(false)
@@ -158,7 +164,14 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
   useEffect(() => {
     if (isInteractive || practitionerInteractive) return
     const interval = setInterval(() => {
-      setDemoStep((prev) => (prev + 1) % 4)
+      setDemoStep((prev) => {
+        const nextStep = (prev + 1) % 4
+        // When cycle restarts (step goes back to 0), pick a new random scenario
+        if (nextStep === 0) {
+          setDemoScenarioIndex(Math.floor(Math.random() * DEMO_SCENARIOS.length))
+        }
+        return nextStep
+      })
     }, 6000)
     return () => clearInterval(interval)
   }, [personalSubTab, practitionerSubTab, isInteractive, practitionerInteractive])
@@ -823,27 +836,30 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 transition={{ delay: 1.8 }}
                                 className="flex gap-2"
                               >
-                                {currentDemo.moods.map((f, i) => (
-                                  <motion.span
-                                    key={f.label.en}
-                                    initial={{ opacity: 0, scale: 0.8, backgroundColor: 'rgb(245, 245, 245)' }}
-                                    animate={{
-                                      opacity: 1,
-                                      scale: f.selected ? [1, 1.05, 1] : 1,
-                                      backgroundColor: f.selected ? 'rgba(74, 154, 134, 0.1)' : 'rgb(245, 245, 245)'
-                                    }}
-                                    transition={{
-                                      delay: 2 + i * 0.1,
-                                      backgroundColor: { delay: f.selected ? 2.5 + i * 0.15 : 0 },
-                                      scale: { delay: f.selected ? 2.5 + i * 0.15 : 0, duration: 0.2 }
-                                    }}
-                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs cursor-pointer transition-colors ${
-                                      f.selected ? 'text-[#4A9A86]' : 'text-neutral-600'
-                                    }`}
-                                  >
-                                    <f.icon className="w-3 h-3" /> {locale === 'fr' ? f.label.fr : f.label.en}
-                                  </motion.span>
-                                ))}
+                                {currentDemo.moods.map((f, i) => {
+                                  const Icon = iconMap[f.iconName]
+                                  return (
+                                    <motion.span
+                                      key={f.label.en}
+                                      initial={{ opacity: 0, scale: 0.8, backgroundColor: 'rgb(245, 245, 245)' }}
+                                      animate={{
+                                        opacity: 1,
+                                        scale: f.selected ? [1, 1.05, 1] : 1,
+                                        backgroundColor: f.selected ? 'rgba(74, 154, 134, 0.1)' : 'rgb(245, 245, 245)'
+                                      }}
+                                      transition={{
+                                        delay: 2 + i * 0.1,
+                                        backgroundColor: { delay: f.selected ? 2.5 + i * 0.15 : 0 },
+                                        scale: { delay: f.selected ? 2.5 + i * 0.15 : 0, duration: 0.2 }
+                                      }}
+                                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs cursor-pointer transition-colors ${
+                                        f.selected ? 'text-[#4A9A86]' : 'text-neutral-600'
+                                      }`}
+                                    >
+                                      <Icon className="w-3 h-3" /> {locale === 'fr' ? f.label.fr : f.label.en}
+                                    </motion.span>
+                                  )
+                                })}
                               </motion.div>
                             </motion.div>
                           )}
