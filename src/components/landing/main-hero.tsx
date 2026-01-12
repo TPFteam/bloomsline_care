@@ -66,7 +66,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
     const wordsArray = isPractitionerPage ? rotatingWords.practitioner[locale] : rotatingWords.personal[locale]
     const interval = setInterval(() => {
       setWordIndex((prev) => (prev + 1) % wordsArray.length)
-    }, 3500)
+    }, 5000)
     return () => clearInterval(interval)
   }, [locale, isPractitionerPage])
 
@@ -75,7 +75,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
     if (isInteractive || practitionerInteractive) return
     const interval = setInterval(() => {
       setDemoStep((prev) => (prev + 1) % 4)
-    }, 4000)
+    }, 6000)
     return () => clearInterval(interval)
   }, [personalSubTab, practitionerSubTab, isInteractive, practitionerInteractive])
 
@@ -770,45 +770,47 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                           {demoStep === 2 && (
                             <motion.div key="step2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="space-y-2">
                               {/* Flow visualization - natural curve ending high */}
-                              <div className="relative h-32 overflow-visible">
-                                {/* Connecting line - passes through node centers */}
-                                <svg className="absolute inset-0 w-full h-full overflow-visible" style={{ width: '100%', height: '100%' }}>
-                                  <motion.path
-                                    d="M 28 85 C 60 85, 70 50, 100 50 C 130 50, 150 70, 180 65 C 210 60, 240 25, 280 25"
-                                    fill="none"
-                                    stroke="#4A9A86"
-                                    strokeWidth="2.5"
-                                    strokeLinecap="round"
-                                    initial={{ pathLength: 0 }}
-                                    animate={{ pathLength: 1 }}
-                                    transition={{ duration: 1.5, ease: "easeOut" }}
-                                  />
-                                </svg>
-                                {/* Moment nodes - centered on the line */}
-                                {[
-                                  { left: 8, top: 65, color: 'bg-[#4A9A86]/80', icon: Sun, delay: 0.3 },
-                                  { left: 80, top: 30, color: 'bg-[#a78bfa]', icon: Heart, delay: 0.6 },
-                                  { left: 160, top: 45, color: 'bg-[#4A9A86]', icon: Sparkles, delay: 0.9 },
-                                  { left: 260, top: 5, color: 'bg-[#4A9A86]', icon: Sun, delay: 1.2 },
-                                ].map((node, i) => (
-                                  <motion.div
-                                    key={i}
-                                    initial={{ scale: 0, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    transition={{ delay: node.delay, type: 'spring', stiffness: 400, damping: 15 }}
-                                    style={{ left: node.left, top: node.top }}
-                                    className={`absolute w-10 h-10 ${node.color} rounded-full flex items-center justify-center shadow-lg border-[3px] border-white`}
-                                  >
-                                    <node.icon className="w-4 h-4 text-white" />
-                                  </motion.div>
-                                ))}
+                              <div className="flex justify-center">
+                                <div className="relative h-32 w-[300px] overflow-visible">
+                                  {/* Connecting line - passes through node centers */}
+                                  <svg className="absolute inset-0 w-full h-full overflow-visible">
+                                    <motion.path
+                                      d="M 28 85 C 60 85, 70 50, 100 50 C 130 50, 150 70, 180 65 C 210 60, 240 25, 280 25"
+                                      fill="none"
+                                      stroke="#4A9A86"
+                                      strokeWidth="2.5"
+                                      strokeLinecap="round"
+                                      initial={{ pathLength: 0 }}
+                                      animate={{ pathLength: 1 }}
+                                      transition={{ duration: 1.5, ease: "easeOut" }}
+                                    />
+                                  </svg>
+                                  {/* Moment nodes - centered on the line */}
+                                  {[
+                                    { left: 8, top: 65, color: 'bg-[#4A9A86]/80', icon: Sun, delay: 0.3 },
+                                    { left: 80, top: 30, color: 'bg-[#a78bfa]', icon: Heart, delay: 0.6 },
+                                    { left: 160, top: 45, color: 'bg-[#4A9A86]', icon: Sparkles, delay: 0.9 },
+                                    { left: 260, top: 5, color: 'bg-[#4A9A86]', icon: Sun, delay: 1.2 },
+                                  ].map((node, i) => (
+                                    <motion.div
+                                      key={i}
+                                      initial={{ scale: 0, opacity: 0 }}
+                                      animate={{ scale: 1, opacity: 1 }}
+                                      transition={{ delay: node.delay, type: 'spring', stiffness: 400, damping: 15 }}
+                                      style={{ left: node.left, top: node.top }}
+                                      className={`absolute w-10 h-10 ${node.color} rounded-full flex items-center justify-center shadow-lg border-[3px] border-white`}
+                                    >
+                                      <node.icon className="w-4 h-4 text-white" />
+                                    </motion.div>
+                                  ))}
+                                </div>
                               </div>
                               {/* Label */}
                               <motion.p
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 1.3 }}
-                                className="text-xs text-neutral-500 text-right pr-2"
+                                className="text-xs text-neutral-500 text-center"
                               >
                                 {locale === 'fr' ? 'Votre flow cette semaine' : 'Your flow this week'}
                               </motion.p>

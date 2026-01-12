@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/i18n/context'
-import { RotateCcw, Ban, Download, Frown, Sun, TrendingDown, TrendingUp, RefreshCw, User, Infinity } from 'lucide-react'
+import { RotateCcw, Ban, Download, Frown, Sun, TrendingDown, TrendingUp, RefreshCw, User, Infinity as InfinityIcon } from 'lucide-react'
 
 export function HopeSection() {
   const { locale } = useLanguage()
@@ -166,7 +166,7 @@ export function HopeSection() {
 
               {/* Center - infinity icon */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <Infinity className="w-6 h-6 text-neutral-300" />
+                <InfinityIcon className="w-6 h-6 text-neutral-300" />
               </div>
 
               {/* Chat bubble with current message and phase label */}
