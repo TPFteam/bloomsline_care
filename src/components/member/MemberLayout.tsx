@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -113,6 +113,11 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
   const { locale } = useLanguage()
   const [showMore, setShowMore] = useState(false)
 
+  // Force light mode for member pages (B2C should always be light/calming)
+  useEffect(() => {
+    document.documentElement.classList.remove('dark')
+  }, [])
+
   const isActive = (href: string) => {
     if (href === '/home') {
       return pathname === '/home'
@@ -132,7 +137,11 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
   const hideNavigation = isFillingResource || isReflectionPage || isSettingsPage
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-teal-50/30 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50/50 relative overflow-hidden">
+      {/* Soft gradient orbs for visual interest */}
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-br from-teal-200/30 to-emerald-200/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+      <div className="absolute bottom-1/3 left-0 w-[300px] h-[300px] bg-gradient-to-br from-cyan-200/20 to-teal-100/30 rounded-full blur-3xl -translate-x-1/3 pointer-events-none" />
+
       {/* Main Content */}
       <main className={`relative ${hideNavigation ? 'pb-8' : 'pb-24'}`}>
         {children}
