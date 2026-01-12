@@ -676,24 +676,62 @@ export default function RitualsPage() {
     setSaving(true)
 
     const supabase = createClient()
-    const { data, error } = await supabase
+
+    // First check if this ritual was previously added (and possibly soft-deleted)
+    const { data: existingRitual } = await supabase
       .from('member_rituals')
-      .insert({
-        member_id: memberId,
-        ritual_id: ritualId,
-        tracking_type: 'checkbox',
-        is_active: true,
-        planned_time: plannedTime,
-      })
-      .select(`
-        id,
-        ritual_id,
-        tracking_type,
-        is_active,
-        planned_time,
-        ritual:rituals(*)
-      `)
+      .select('id, is_active')
+      .eq('member_id', memberId)
+      .eq('ritual_id', ritualId)
       .single()
+
+    let data, error
+
+    if (existingRitual) {
+      // Reactivate the existing record
+      const result = await supabase
+        .from('member_rituals')
+        .update({
+          is_active: true,
+          planned_time: plannedTime,
+          removed_at: null,
+          added_at: new Date().toISOString(),
+        })
+        .eq('id', existingRitual.id)
+        .select(`
+          id,
+          ritual_id,
+          tracking_type,
+          is_active,
+          planned_time,
+          ritual:rituals(*)
+        `)
+        .single()
+      data = result.data
+      error = result.error
+    } else {
+      // Insert new record
+      const result = await supabase
+        .from('member_rituals')
+        .insert({
+          member_id: memberId,
+          ritual_id: ritualId,
+          tracking_type: 'checkbox',
+          is_active: true,
+          planned_time: plannedTime,
+        })
+        .select(`
+          id,
+          ritual_id,
+          tracking_type,
+          is_active,
+          planned_time,
+          ritual:rituals(*)
+        `)
+        .single()
+      data = result.data
+      error = result.error
+    }
 
     if (!error && data) {
       setMemberRituals(prev => [...prev, data as unknown as MemberRitual].sort((a, b) => {

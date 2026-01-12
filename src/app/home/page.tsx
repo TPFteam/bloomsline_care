@@ -645,7 +645,7 @@ export default function MyResourcesPage() {
           </div>
 
           {/* Header Icons */}
-          <div className="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-sm">
+          <div className="w-10 h-10 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-full shadow-md shadow-emerald-100/30 border border-white/60">
             <NotificationBell />
           </div>
         </div>
@@ -711,7 +711,7 @@ export default function MyResourcesPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-3xl p-5 border border-gray-100 overflow-hidden"
+          className="bg-white/80 backdrop-blur-sm rounded-3xl p-5 border border-white/60 shadow-lg shadow-emerald-100/30 overflow-hidden"
         >
           {/* Header with date navigation and zoom controls */}
           <div className="flex items-center justify-between mb-2">
@@ -1143,7 +1143,7 @@ export default function MyResourcesPage() {
               )}
 
               {/* Zoom controls */}
-              <div className="flex items-center gap-0.5 bg-gray-50 rounded-full px-1.5 py-0.5">
+              <div className="flex items-center gap-0.5 bg-emerald-50/50 rounded-full px-1.5 py-0.5">
                 <button
                   onClick={handleZoomOut}
                   disabled={zoomLevel <= 1}
@@ -1196,7 +1196,7 @@ export default function MyResourcesPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white rounded-3xl p-5 border border-gray-100"
+              className="bg-white/80 backdrop-blur-sm rounded-3xl p-5 border border-white/60 shadow-lg shadow-emerald-100/30"
             >
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
@@ -1213,7 +1213,7 @@ export default function MyResourcesPage() {
                     {locale === 'fr' ? 'Rituels à venir' : 'Upcoming Rituals'}
                   </h3>
                 </div>
-                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
                   {getCategoryLabel(currentCategory, locale)}
                 </span>
               </div>
@@ -1232,7 +1232,7 @@ export default function MyResourcesPage() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.1 + index * 0.05 }}
                         onClick={() => router.push('/rituals')}
-                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl cursor-pointer hover:bg-gray-100 transition-colors active:scale-[0.98]"
+                        className="flex items-center gap-3 p-3 bg-emerald-50/50 rounded-2xl cursor-pointer hover:bg-emerald-50 transition-colors active:scale-[0.98]"
                       >
                         <div
                           className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -1297,7 +1297,7 @@ export default function MyResourcesPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-3xl p-8 text-center border border-gray-100"
+            className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 text-center border border-white/60 shadow-lg shadow-emerald-100/30"
           >
             <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <Leaf className="w-10 h-10 text-emerald-300" />
