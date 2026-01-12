@@ -44,6 +44,90 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
   const [practitionerSubTab, setPractitionerSubTab] = useState<PractitionerSubTab>('members')
   const [demoStep, setDemoStep] = useState(0)
 
+  // Demo scenarios - randomly selected on mount
+  const demoScenarios = [
+    {
+      id: 'morning',
+      image: '/images/morning-walk.jpg',
+      title: { en: 'Morning walk', fr: 'Balade matinale' },
+      caption: { en: 'The calm before the day...', fr: 'Le calme avant la journée...' },
+      moods: [
+        { icon: Smile, label: { en: 'Peaceful', fr: 'Paisible' }, selected: true },
+        { icon: Heart, label: { en: 'Grateful', fr: 'Reconnaissant' }, selected: false },
+        { icon: Sparkles, label: { en: 'Inspired', fr: 'Inspiré' }, selected: true },
+      ],
+      insight: {
+        title: { en: 'Your mornings = better days', fr: 'Vos matins = meilleure journée' },
+        subtitle: { en: 'On days with morning walks, you feel', fr: 'Les jours avec balades matinales, vous êtes' },
+        percent: 73,
+        metric: { en: 'calmer', fr: 'plus calme' },
+      },
+      secondImage: '/images/coffee.jpg',
+    },
+    {
+      id: 'coffee',
+      image: '/images/coffee.jpg',
+      title: { en: 'Morning coffee', fr: 'Café du matin' },
+      caption: { en: 'A quiet ritual to start the day...', fr: 'Un rituel calme pour commencer...' },
+      moods: [
+        { icon: Sun, label: { en: 'Cozy', fr: 'Cosy' }, selected: true },
+        { icon: Smile, label: { en: 'Content', fr: 'Content' }, selected: true },
+        { icon: Heart, label: { en: 'Present', fr: 'Présent' }, selected: false },
+      ],
+      insight: {
+        title: { en: 'Rituals ground you', fr: 'Les rituels vous ancrent' },
+        subtitle: { en: 'Days with mindful mornings, you are', fr: 'Les jours avec matins conscients, vous êtes' },
+        percent: 68,
+        metric: { en: 'more focused', fr: 'plus concentré' },
+      },
+      secondImage: '/images/sunset.jpg',
+    },
+    {
+      id: 'sunset',
+      image: '/images/sunset.jpg',
+      title: { en: 'Evening sunset', fr: 'Coucher de soleil' },
+      caption: { en: 'Taking a moment to breathe...', fr: 'Prendre un moment pour respirer...' },
+      moods: [
+        { icon: Heart, label: { en: 'Grateful', fr: 'Reconnaissant' }, selected: true },
+        { icon: Sparkles, label: { en: 'Reflective', fr: 'Réflexif' }, selected: true },
+        { icon: Smile, label: { en: 'Calm', fr: 'Calme' }, selected: false },
+      ],
+      insight: {
+        title: { en: 'Pauses restore you', fr: 'Les pauses vous ressourcent' },
+        subtitle: { en: 'When you take evening breaks, you sleep', fr: 'Quand vous prenez des pauses le soir, vous dormez' },
+        percent: 81,
+        metric: { en: 'better', fr: 'mieux' },
+      },
+      secondImage: '/images/morning-walk.jpg',
+    },
+    {
+      id: 'pet',
+      image: '/images/cat.jpg',
+      title: { en: 'Cuddle time', fr: 'Moment câlin' },
+      caption: { en: 'My little companion...', fr: 'Mon petit compagnon...' },
+      moods: [
+        { icon: Heart, label: { en: 'Loved', fr: 'Aimé' }, selected: true },
+        { icon: Smile, label: { en: 'Joyful', fr: 'Joyeux' }, selected: true },
+        { icon: Sparkles, label: { en: 'Present', fr: 'Présent' }, selected: false },
+      ],
+      insight: {
+        title: { en: 'Pets brighten your days', fr: 'Les animaux illuminent vos jours' },
+        subtitle: { en: 'Moments with your companion make you', fr: 'Les moments avec votre compagnon vous rendent' },
+        percent: 79,
+        metric: { en: 'happier', fr: 'plus heureux' },
+      },
+      secondImage: '/images/coffee.jpg',
+    },
+  ]
+  const [demoScenarioIndex, setDemoScenarioIndex] = useState(0)
+
+  // Randomize demo scenario on client-side mount
+  useEffect(() => {
+    setDemoScenarioIndex(Math.floor(Math.random() * demoScenarios.length))
+  }, [demoScenarios.length])
+
+  const currentDemo = demoScenarios[demoScenarioIndex]
+
   // Interactive mode state
   const [isInteractive, setIsInteractive] = useState(false)
   const [interactiveStep, setInteractiveStep] = useState(0)
@@ -658,7 +742,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                         <AnimatePresence mode="wait">
                           {demoStep === 0 && (
                             <motion.div key="step0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="space-y-3">
-                              {/* Morning walk - capture photo */}
+                              {/* Capture photo - using current demo scenario */}
                               <div className="flex gap-4">
                                 <motion.div
                                   initial={{ opacity: 0, scale: 0.9 }}
@@ -668,8 +752,8 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 >
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
                                   <img
-                                    src="/images/morning-walk.jpg"
-                                    alt="Morning walk"
+                                    src={currentDemo.image}
+                                    alt={currentDemo.title.en}
                                     className="w-24 h-24 rounded-2xl shadow-lg object-cover"
                                   />
                                   <motion.div
@@ -682,7 +766,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   </motion.div>
                                 </motion.div>
                                 <div className="flex-1 flex flex-col justify-center">
-                                  <p className="text-sm text-neutral-800 font-medium">{locale === 'fr' ? 'Balade matinale' : 'Morning walk'}</p>
+                                  <p className="text-sm text-neutral-800 font-medium">{locale === 'fr' ? currentDemo.title.fr : currentDemo.title.en}</p>
                                   <p className="text-xs text-neutral-400 mt-0.5">{locale === 'fr' ? 'Maintenant' : 'Just now'}</p>
                                   <div className="flex gap-1.5 mt-2">
                                     <motion.span
@@ -708,12 +792,12 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               <div className="flex gap-4">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                  src="/images/morning-walk.jpg"
-                                  alt="Morning walk"
+                                  src={currentDemo.image}
+                                  alt={currentDemo.title.en}
                                   className="w-14 h-14 rounded-xl shadow-md shrink-0 object-cover"
                                 />
                                 <div className="flex-1">
-                                  <p className="text-sm text-neutral-800 font-medium">{locale === 'fr' ? 'Balade matinale' : 'Morning walk'}</p>
+                                  <p className="text-sm text-neutral-800 font-medium">{locale === 'fr' ? currentDemo.title.fr : currentDemo.title.en}</p>
                                   {/* Typing animation */}
                                   <div className="mt-2 flex items-center gap-1">
                                     <motion.p
@@ -722,7 +806,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                       transition={{ duration: 1.5, ease: 'easeOut' }}
                                       className="text-sm text-neutral-600 overflow-hidden whitespace-nowrap"
                                     >
-                                      {locale === 'fr' ? 'Le calme avant la journée...' : 'The calm before the day...'}
+                                      {locale === 'fr' ? currentDemo.caption.fr : currentDemo.caption.en}
                                     </motion.p>
                                     <motion.span
                                       animate={{ opacity: [1, 0, 1] }}
@@ -739,13 +823,9 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 transition={{ delay: 1.8 }}
                                 className="flex gap-2"
                               >
-                                {[
-                                  { icon: Smile, label: locale === 'fr' ? 'Paisible' : 'Peaceful', selected: true },
-                                  { icon: Heart, label: locale === 'fr' ? 'Reconnaissant' : 'Grateful', selected: false },
-                                  { icon: Sparkles, label: locale === 'fr' ? 'Inspiré' : 'Inspired', selected: true },
-                                ].map((f, i) => (
+                                {currentDemo.moods.map((f, i) => (
                                   <motion.span
-                                    key={f.label}
+                                    key={f.label.en}
                                     initial={{ opacity: 0, scale: 0.8, backgroundColor: 'rgb(245, 245, 245)' }}
                                     animate={{
                                       opacity: 1,
@@ -761,7 +841,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                       f.selected ? 'text-[#4A9A86]' : 'text-neutral-600'
                                     }`}
                                   >
-                                    <f.icon className="w-3 h-3" /> {f.label}
+                                    <f.icon className="w-3 h-3" /> {locale === 'fr' ? f.label.fr : f.label.en}
                                   </motion.span>
                                 ))}
                               </motion.div>
@@ -840,13 +920,13 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 <div className="flex items-start gap-3">
                                   {/* Mini moments */}
                                   <div className="flex -space-x-1">
-                                    {['/images/morning-walk.jpg', '/images/coffee.jpg'].map((src, i) => (
+                                    {[currentDemo.image, currentDemo.secondImage].map((src, i) => (
                                       <img key={i} src={src} alt="" className="w-8 h-8 rounded-lg border-2 border-white object-cover" />
                                     ))}
                                   </div>
                                   <div className="flex-1">
-                                    <p className="text-sm text-neutral-800 font-medium">{locale === 'fr' ? 'Vos matins = meilleure journée' : 'Your mornings = better days'}</p>
-                                    <p className="text-xs text-neutral-500 mt-0.5">{locale === 'fr' ? 'Les jours avec balades matinales, vous êtes' : 'On days with morning walks, you feel'}</p>
+                                    <p className="text-sm text-neutral-800 font-medium">{locale === 'fr' ? currentDemo.insight.title.fr : currentDemo.insight.title.en}</p>
+                                    <p className="text-xs text-neutral-500 mt-0.5">{locale === 'fr' ? currentDemo.insight.subtitle.fr : currentDemo.insight.subtitle.en}</p>
                                   </div>
                                 </div>
                                 {/* The value - clear metric */}
@@ -859,13 +939,13 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   <div className="flex-1 h-2 bg-neutral-100 rounded-full overflow-hidden">
                                     <motion.div
                                       initial={{ width: 0 }}
-                                      animate={{ width: '73%' }}
+                                      animate={{ width: `${currentDemo.insight.percent}%` }}
                                       transition={{ delay: 1.2, duration: 0.6 }}
                                       className="h-full bg-[#4A9A86] rounded-full"
                                     />
                                   </div>
-                                  <span className="text-sm font-semibold text-[#4A9A86]">73%</span>
-                                  <span className="text-xs text-neutral-500">{locale === 'fr' ? 'plus calme' : 'calmer'}</span>
+                                  <span className="text-sm font-semibold text-[#4A9A86]">{currentDemo.insight.percent}%</span>
+                                  <span className="text-xs text-neutral-500">{locale === 'fr' ? currentDemo.insight.metric.fr : currentDemo.insight.metric.en}</span>
                                 </motion.div>
                               </motion.div>
                             </motion.div>
