@@ -540,7 +540,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               </div>
 
                               {/* Flow visualization */}
-                              <div className="relative h-20">
+                              <div className="relative h-20 max-w-[300px] mx-auto">
                                 <svg className="absolute inset-0 w-full h-full overflow-visible">
                                   <motion.path
                                     d="M 20 50 C 50 50, 60 30, 90 30 C 120 30, 140 45, 170 40 C 200 35, 230 15, 270 15"
@@ -1508,7 +1508,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                       href="/early-access"
                       className="inline-flex items-center gap-2 px-4 py-2 bg-[#4A9A86] text-white text-sm font-medium rounded-full hover:bg-[#3d8a76] transition-colors"
                     >
-                      {locale === 'fr' ? 'Commencer gratuitement' : 'Start free'}
+                      {locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access'}
                       <ArrowUp className="w-4 h-4" />
                     </Link>
                   </div>
@@ -2414,7 +2414,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                     className="flex items-center justify-between group"
                   >
                     <span className="text-sm text-[#D4856A] font-medium group-hover:text-[#c27459] transition-colors">
-                      {locale === 'fr' ? 'Commencer gratuitement' : 'Start free'}
+                      {locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access'}
                     </span>
                     <div className="w-8 h-8 bg-[#D4856A] rounded-full flex items-center justify-center group-hover:bg-[#c27459] transition-colors">
                       <ArrowUp className="w-4 h-4 text-white" />
