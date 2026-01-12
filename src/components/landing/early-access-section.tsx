@@ -80,7 +80,7 @@ export function EarlyAccessSection() {
               onClick={() => setShowModal(true)}
               className="px-8 py-4 rounded-full bg-neutral-900 text-white font-medium inline-flex items-center gap-2 hover:bg-neutral-800 transition-colors"
             >
-              {locale === 'fr' ? 'Rejoindre' : 'Join'}
+              {locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access'}
               <ArrowRight className="w-4 h-4" />
             </button>
           </motion.div>
