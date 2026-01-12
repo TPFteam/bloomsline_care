@@ -61,12 +61,12 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
   const [clientName, setClientName] = useState('')
   const [sessionNote, setSessionNote] = useState('')
 
-  // Rotate words - slower like Dia
+  // Rotate words
   useEffect(() => {
     const wordsArray = isPractitionerPage ? rotatingWords.practitioner[locale] : rotatingWords.personal[locale]
     const interval = setInterval(() => {
       setWordIndex((prev) => (prev + 1) % wordsArray.length)
-    }, 5000)
+    }, 3500)
     return () => clearInterval(interval)
   }, [locale, isPractitionerPage])
 

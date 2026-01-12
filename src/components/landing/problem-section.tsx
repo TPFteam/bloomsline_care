@@ -153,7 +153,7 @@ export function ProblemSection() {
   }
 
   return (
-    <section id="problems" className="pt-16 pb-24 sm:pt-20 sm:pb-32 bg-neutral-50 scroll-mt-16">
+    <section id="problems" className="pt-16 pb-24 sm:pt-20 sm:pb-32 bg-neutral-50 scroll-mt-16 overflow-hidden">
       <div className="container mx-auto px-6">
         {/* Header */}
         <motion.div
@@ -210,7 +210,7 @@ export function ProblemSection() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
-              className="relative h-[320px] sm:h-[280px] flex items-center justify-center cursor-pointer"
+              className="relative h-[320px] sm:h-[280px] flex items-center justify-center cursor-pointer px-12"
               onClick={handleCardClick}
             >
               {cards.map((card, index) => {

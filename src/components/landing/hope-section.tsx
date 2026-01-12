@@ -112,7 +112,7 @@ export function HopeSection() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="flex flex-col items-center justify-center"
+            className="flex flex-col items-center justify-center pb-28 lg:pb-0"
           >
             <div className="relative w-56 h-56 sm:w-64 sm:h-64">
               {/* Main circle track */}
@@ -235,17 +235,17 @@ export function HopeSection() {
             </div>
 
             {/* Response Message - From Bloom */}
-            <div className="h-24 flex items-start">
-              <AnimatePresence mode="wait">
-                {selectedPattern !== null && (
-                  <motion.div
-                    key={selectedPattern}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex items-start gap-3"
-                  >
+            <AnimatePresence mode="wait">
+              {selectedPattern !== null && (
+                <motion.div
+                  key={selectedPattern}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex items-start gap-3 pt-2">
                     {/* Bloom avatar */}
                     <div className="w-8 h-8 rounded-full bg-neutral-900 flex items-center justify-center shrink-0">
                       <span className="text-white text-xs font-medium">B</span>
@@ -258,10 +258,10 @@ export function HopeSection() {
                           : patterns[selectedPattern].response.en}
                       </p>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </div>
 
