@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/i18n/context'
-import { ArrowRight, Check, X } from 'lucide-react'
+import { ArrowRight, Check, X, Calendar } from 'lucide-react'
+
+const DEMO_BOOKING_URL = 'https://calendar.app.google/DwruLrgYZ6TEegL58'
 
 export function EarlyAccessSection() {
   const { locale } = useLanguage()
@@ -76,13 +78,24 @@ export function EarlyAccessSection() {
                 : 'Join our waitlist and be among the first to experience Bloomsline.'}
             </p>
 
-            <button
-              onClick={() => setShowModal(true)}
-              className="px-8 py-4 rounded-full bg-neutral-900 text-white font-medium inline-flex items-center gap-2 hover:bg-neutral-800 transition-colors"
-            >
-              {locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access'}
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                onClick={() => setShowModal(true)}
+                className="px-8 py-4 rounded-full bg-neutral-900 text-white font-medium inline-flex items-center gap-2 hover:bg-neutral-800 transition-colors"
+              >
+                {locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access'}
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <a
+                href={DEMO_BOOKING_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-8 py-4 rounded-full border-2 border-neutral-300 text-neutral-700 font-medium inline-flex items-center gap-2 hover:border-neutral-400 hover:text-neutral-900 transition-colors"
+              >
+                <Calendar className="w-4 h-4" />
+                {locale === 'fr' ? 'Réserver une démo' : 'Book a Demo'}
+              </a>
+            </div>
           </motion.div>
         </div>
       </section>
