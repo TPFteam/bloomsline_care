@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/i18n/context'
-import { Sun, Coffee, Heart, Moon, Scale, TrendingUp, MessageCircle, Check, Plus, Share2, FolderOpen, BarChart3, FileText, ClipboardList, Dumbbell, User, Calendar, Tag } from 'lucide-react'
+import { Sun, Coffee, Heart, Moon, Sparkles, TrendingUp, MessageCircle, Check, Plus, Share2, FolderOpen, BarChart3, FileText, ClipboardList, Dumbbell, User, Calendar, Tag } from 'lucide-react'
 import { useEarlyAccessModal } from '@/lib/landing/early-access-modal-context'
 
 // Animated Overview Component (for practitioners - analytics view)
@@ -833,7 +833,7 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
     },
     {
       id: 'balance',
-      icon: Scale,
+      icon: Sparkles,
       label: { en: 'Balance', fr: 'Équilibre' },
       title: { en: 'Find your balance', fr: 'Explorer vos repères à vous' },
       description: {
