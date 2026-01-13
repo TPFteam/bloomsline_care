@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
 import Link from 'next/link'
@@ -30,6 +30,8 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
   }
 
   const isPractitioner = activeTab === 'practitioner'
+
+  const DEMO_BOOKING_URL = 'https://calendar.app.google/DwruLrgYZ6TEegL58'
 
   const navItems = [
     { label: t.nav.home, href: '/', active: !isPractitioner },
@@ -90,6 +92,20 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
             className="hidden md:flex items-center gap-3"
           >
             <LanguageSwitcher />
+            <a
+              href={DEMO_BOOKING_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button
+                variant="outline"
+                className="font-medium text-gray-700 hover:text-gray-900 rounded-full border-gray-300 hover:border-gray-400 gap-2"
+                suppressHydrationWarning
+              >
+                <Calendar className="w-4 h-4" />
+                {locale === 'fr' ? 'Réserver une démo' : 'Book a Demo'}
+              </Button>
+            </a>
             <Link href="/sign-in">
               <Button
                 variant="ghost"
@@ -165,6 +181,22 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-white/60">
                 <LanguageSwitcher />
+                <a
+                  href={DEMO_BOOKING_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Button
+                    variant="outline"
+                    className="w-full font-medium text-gray-700 rounded-full border-gray-300 gap-2"
+                    suppressHydrationWarning
+                  >
+                    <Calendar className="w-4 h-4" />
+                    {locale === 'fr' ? 'Réserver une démo' : 'Book a Demo'}
+                  </Button>
+                </a>
                 <Link href="/sign-in" className="w-full">
                   <Button variant="ghost" className="w-full font-normal rounded-full" suppressHydrationWarning>
                     {t.nav.signIn}
