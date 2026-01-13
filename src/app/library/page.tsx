@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -16,6 +16,9 @@ import {
   Loader2,
   Table2,
   Check,
+  Mail,
+  Phone,
+  Save,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
@@ -64,6 +67,7 @@ export default function LibraryPage() {
   const [typeFilter, setTypeFilter] = useState<'all' | 'worksheet' | 'psychoeducation' | 'exercise' | 'table'>('all')
   const [languageFilter, setLanguageFilter] = useState<'all' | 'en' | 'fr'>('all')
   const [showDbFilters, setShowDbFilters] = useState(false)
+  const filterRef = useRef<HTMLDivElement>(null)
 
   // Public resources from database
   const [publicResources, setPublicResources] = useState<Resource[]>([])
@@ -78,6 +82,11 @@ export default function LibraryPage() {
   // Bookmarked resources tracking
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
   const [isBookmarking, setIsBookmarking] = useState<string | null>(null)
+
+  // Add Member Modal state
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false)
+  const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '' })
+  const [savingMember, setSavingMember] = useState(false)
 
 
   // Fetch user
@@ -150,32 +159,102 @@ export default function LibraryPage() {
     fetchSavedResourceIds()
   }, [])
 
-  // Fetch members
+  // Close filter dropdown when clicking outside
   useEffect(() => {
-    const fetchMembers = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
-        const { data, error } = await supabase
-          .from('members')
-          .select('id, first_name, last_name, email, avatar_url, status')
-          .eq('practitioner_id', user.id)
-          .eq('status', 'active')
-          .order('first_name', { ascending: true })
-
-        if (error) {
-          if (error.code === '42P01') return
-          throw error
-        }
-
-        setMembers(data || [])
-      } catch (error) {
-        console.error('Error fetching members:', error)
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setShowDbFilters(false)
       }
     }
+    if (showDbFilters) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showDbFilters])
+
+  // Fetch members function
+  const fetchMembers = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from('members')
+        .select('id, first_name, last_name, email, avatar_url, status')
+        .eq('practitioner_id', user.id)
+        .eq('status', 'active')
+        .order('first_name', { ascending: true })
+
+      if (error) {
+        if (error.code === '42P01') return
+        throw error
+      }
+
+      setMembers(data || [])
+    } catch (error) {
+      console.error('Error fetching members:', error)
+    }
+  }
+
+  // Fetch members on mount
+  useEffect(() => {
     fetchMembers()
   }, [supabase])
+
+  // Handle Add Member
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!newMember.firstName.trim() || !newMember.lastName.trim() || !newMember.email.trim()) {
+      toast.error(locale === 'fr'
+        ? 'Le prénom, le nom et l\'email sont requis'
+        : 'First name, last name, and email are required')
+      return
+    }
+
+    setSavingMember(true)
+
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) {
+        router.push('/sign-in')
+        return
+      }
+
+      const memberData = {
+        practitioner_id: authUser.id,
+        first_name: newMember.firstName.trim(),
+        last_name: newMember.lastName.trim(),
+        email: newMember.email.trim(),
+        phone: newMember.phone.trim() || null,
+        status: 'active' as const,
+        engagement_level: 'medium' as const,
+      }
+
+      const { error } = await supabase
+        .from('members')
+        .insert(memberData)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Reset form and close modal
+      setNewMember({ firstName: '', lastName: '', email: '', phone: '' })
+      setShowAddMemberModal(false)
+      toast.success(locale === 'fr' ? 'Patient créé avec succès!' : 'Member created successfully!')
+
+      // Refresh members list
+      await fetchMembers()
+    } catch (error) {
+      console.error('Error creating member:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors de la création' : 'Error creating member')
+    } finally {
+      setSavingMember(false)
+    }
+  }
 
   // Filter public database resources
   const filteredPublicResources = useMemo(() => {
@@ -227,60 +306,90 @@ export default function LibraryPage() {
     }
   }
 
-  // Handle share with specific member
-  const handleShareWithMember = async (resourceId: string, memberId: string, memberName: string) => {
+  // Handle share with multiple members
+  const handleShareWithMembers = async (resourceId: string, memberIds: string[], message?: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { error } = await supabase
-        .from('member_shared_resources')
-        .insert({
-          member_id: memberId,
-          resource_id: resourceId,
-          practitioner_id: user.id,
-          shared_at: new Date().toISOString(),
-        })
+      // Get resource info for notifications
+      const { data: resourceData } = await supabase
+        .from('resources')
+        .select('title, type')
+        .eq('id', resourceId)
+        .single()
 
-      if (error) {
-        if (error.code === '23505') {
-          toast.info(
-            locale === 'fr'
-              ? `Cette ressource a déjà été partagée avec ${memberName}`
-              : `This resource has already been shared with ${memberName}`
-          )
-          return
-        }
-        throw error
-      }
+      // Get practitioner name for notifications
+      const { data: practitionerData } = await supabase
+        .from('users')
+        .select('full_name')
+        .eq('id', user.id)
+        .single()
 
-      // Send notification
-      try {
-        const [memberResult, resourceResult, practitionerResult] = await Promise.all([
-          supabase.from('members').select('user_id').eq('id', memberId).single(),
-          supabase.from('resources').select('title, type').eq('id', resourceId).single(),
-          supabase.from('users').select('full_name').eq('id', user.id).single(),
-        ])
+      let successCount = 0
+      let alreadySharedCount = 0
 
-        if (memberResult.data?.user_id && resourceResult.data) {
-          await notifyResourceShared(supabase, {
-            memberId,
-            memberUserId: memberResult.data.user_id,
-            resourceId,
-            resourceTitle: resourceResult.data.title,
-            resourceType: resourceResult.data.type,
-            practitionerName: practitionerResult.data?.full_name || 'Your practitioner',
+      // Share with each member
+      for (const memberId of memberIds) {
+        const { error } = await supabase
+          .from('member_shared_resources')
+          .insert({
+            member_id: memberId,
+            resource_id: resourceId,
+            practitioner_id: user.id,
+            shared_at: new Date().toISOString(),
+            message: message || null,
           })
+
+        if (error) {
+          if (error.code === '23505') {
+            alreadySharedCount++
+            continue
+          }
+          console.error('Error sharing with member:', error)
+          continue
         }
-      } catch (notifyError) {
-        console.error('Error sending notification:', notifyError)
+
+        successCount++
+
+        // Send notification for each successful share
+        try {
+          const { data: memberResult } = await supabase
+            .from('members')
+            .select('user_id')
+            .eq('id', memberId)
+            .single()
+
+          if (memberResult?.user_id && resourceData) {
+            await notifyResourceShared(supabase, {
+              memberId,
+              memberUserId: memberResult.user_id,
+              resourceId,
+              resourceTitle: resourceData.title,
+              resourceType: resourceData.type,
+              practitionerName: practitionerData?.full_name || 'Your practitioner',
+            })
+          }
+        } catch (notifyError) {
+          console.error('Error sending notification:', notifyError)
+        }
       }
 
-      toast.success(
-        locale === 'fr'
-          ? `Ressource partagée avec ${memberName}`
-          : `Resource shared with ${memberName}`
-      )
+      // Show appropriate toast
+      if (successCount > 0) {
+        toast.success(
+          locale === 'fr'
+            ? `Ressource partagée avec ${successCount} patient${successCount > 1 ? 's' : ''}`
+            : `Resource shared with ${successCount} member${successCount > 1 ? 's' : ''}`
+        )
+      }
+      if (alreadySharedCount > 0) {
+        toast.info(
+          locale === 'fr'
+            ? `Déjà partagée avec ${alreadySharedCount} patient${alreadySharedCount > 1 ? 's' : ''}`
+            : `Already shared with ${alreadySharedCount} member${alreadySharedCount > 1 ? 's' : ''}`
+        )
+      }
     } catch (error) {
       console.error('Error sharing resource:', error)
       toast.error(locale === 'fr' ? 'Erreur lors du partage' : 'Error sharing resource')
@@ -423,7 +532,7 @@ export default function LibraryPage() {
             </div>
 
             {/* Filters */}
-            <div className="relative">
+            <div ref={filterRef} className="relative">
               <button
                 onClick={() => setShowDbFilters(!showDbFilters)}
                 className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all border ${
@@ -586,7 +695,8 @@ export default function LibraryPage() {
                       variant="library"
                       index={index}
                       members={members}
-                      onShareWithMember={handleShareWithMember}
+                      onShareWithMembers={handleShareWithMembers}
+                      onAddMember={() => setShowAddMemberModal(true)}
                       onBookmark={handleBookmark}
                       isBookmarked={bookmarkedIds.has(resource.id)}
                       showCuratedBadge={resource.is_curated === true}
@@ -633,6 +743,137 @@ export default function LibraryPage() {
           )}
         </div>
       </main>
+
+      {/* Add Member Modal */}
+      <AnimatePresence>
+        {showAddMemberModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4"
+            onClick={() => setShowAddMemberModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-xl w-full max-w-md shadow-xl"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {locale === 'fr' ? 'Nouveau Patient' : 'New Member'}
+                </h2>
+                <button
+                  onClick={() => setShowAddMemberModal(false)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleAddMember} className="p-5">
+                <div className="space-y-4">
+                  {/* Name Row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Prénom' : 'First Name'} *
+                      </label>
+                      <input
+                        type="text"
+                        value={newMember.firstName}
+                        onChange={(e) => setNewMember({ ...newMember, firstName: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                        placeholder={locale === 'fr' ? 'Jean' : 'John'}
+                        required
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Nom' : 'Last Name'} *
+                      </label>
+                      <input
+                        type="text"
+                        value={newMember.lastName}
+                        onChange={(e) => setNewMember({ ...newMember, lastName: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                        placeholder={locale === 'fr' ? 'Dupont' : 'Doe'}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-gray-400" />
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={newMember.email}
+                      onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                      placeholder={locale === 'fr' ? 'jean@exemple.com' : 'john@example.com'}
+                      required
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-gray-400" />
+                      {locale === 'fr' ? 'Téléphone' : 'Phone'}
+                      <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={newMember.phone}
+                      onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                      placeholder={locale === 'fr' ? '+33 6 12 34 56 78' : '+1 (555) 123-4567'}
+                    />
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setShowAddMemberModal(false)}
+                    className="text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+                  >
+                    {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={savingMember}
+                    className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg px-4 text-sm"
+                  >
+                    {savingMember ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {locale === 'fr' ? 'Création...' : 'Creating...'}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        {locale === 'fr' ? 'Créer' : 'Create'}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -66,28 +66,37 @@ export async function POST(request: NextRequest) {
 
     // Check if caller is a practitioner with a relationship to the target user
     if (userId !== user.id) {
-      // Get caller's practitioner profile
-      const { data: practitionerProfile } = await supabaseAdmin
-        .from('practitioner_profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!practitionerProfile) {
-        // Caller is not a practitioner, cannot send to others
-        return NextResponse.json({ error: 'Unauthorized: Cannot send notifications to other users' }, { status: 403 })
-      }
-
-      // Verify target user is a member linked to this practitioner
+      // Verify target user is a member linked to this practitioner (using auth user id)
       const { data: memberLink } = await supabaseAdmin
         .from('members')
         .select('id')
         .eq('user_id', userId)
-        .eq('practitioner_id', practitionerProfile.id)
+        .eq('practitioner_id', user.id)
         .single()
 
       if (!memberLink) {
-        return NextResponse.json({ error: 'Unauthorized: No relationship with target user' }, { status: 403 })
+        // Also check if user is in the users table as a practitioner
+        const { data: callerProfile } = await supabaseAdmin
+          .from('users')
+          .select('user_type')
+          .eq('id', user.id)
+          .single()
+
+        if (!callerProfile || (callerProfile.user_type !== 'mentor' && callerProfile.user_type !== 'practitioner')) {
+          return NextResponse.json({ error: 'Unauthorized: Cannot send notifications to other users' }, { status: 403 })
+        }
+
+        // Final check - maybe member doesn't have user_id linked yet
+        const { data: memberByPractitioner } = await supabaseAdmin
+          .from('members')
+          .select('id')
+          .eq('practitioner_id', user.id)
+          .limit(1)
+          .single()
+
+        if (!memberByPractitioner) {
+          return NextResponse.json({ error: 'Unauthorized: No relationship with target user' }, { status: 403 })
+        }
       }
     }
 

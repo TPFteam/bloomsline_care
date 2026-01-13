@@ -19,10 +19,11 @@ import {
   SlidersHorizontal,
   Check,
   Star,
-  Users,
-  Share2,
   LayoutGrid,
   List,
+  Mail,
+  Phone,
+  Save,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -31,12 +32,21 @@ import { getResources, deleteResource } from '@/lib/services/resources'
 import { getCollections, createCollection, removeResourceFromAllCollections, getSavedResources, addResourceToCollection } from '@/lib/services/collections'
 import type { Resource } from '@/types/resource'
 import type { Collection, CollectionColor, CollectionIcon, collectionColorConfig } from '@/types/collection'
-import type { Member } from '@/types/member'
 import type { User } from '@/types/user'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/browser-client'
 import { notifyResourceShared } from '@/lib/notifications'
 import { ResourceCard } from '@/components/resources/ResourceCard'
+import { ShareResourceModal } from '@/components/resources/ShareResourceModal'
+
+// Simple member type for sharing
+interface SimpleMember {
+  id: string
+  first_name: string
+  last_name: string
+  email: string | null
+  avatar_url?: string | null
+}
 
 // Collection icon mapping
 const collectionIcons: Record<CollectionIcon, React.ElementType> = {
@@ -102,12 +112,12 @@ export default function MyResourcesPage() {
   // Share state
   const [showShareModal, setShowShareModal] = useState(false)
   const [selectedResourceToShare, setSelectedResourceToShare] = useState<Resource | null>(null)
-  const [members, setMembers] = useState<Member[]>([])
-  const [isLoadingMembers, setIsLoadingMembers] = useState(false)
-  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
-  const [shareMessage, setShareMessage] = useState('')
-  const [isSharing, setIsSharing] = useState(false)
-  const [memberSearchQuery, setMemberSearchQuery] = useState('')
+  const [members, setMembers] = useState<SimpleMember[]>([])
+
+  // Add Member Modal state
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false)
+  const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '' })
+  const [savingMember, setSavingMember] = useState(false)
 
 
   // Fetch user
@@ -273,99 +283,176 @@ export default function MyResourcesPage() {
     }
   }
 
-  // Handle share modal
-  const handleOpenShareModal = async (resource: Resource) => {
-    setSelectedResourceToShare(resource)
-    setShowShareModal(true)
-    setSelectedMemberId(null)
-    setShareMessage('')
-    setMemberSearchQuery('')
-
-    if (members.length === 0) {
-      setIsLoadingMembers(true)
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        const { data } = await supabase
-          .from('members')
-          .select('*')
-          .eq('practitioner_id', user.id)
-          .order('first_name', { ascending: true })
-        setMembers(data || [])
-      } catch (error) {
-        console.error('Error fetching members:', error)
-      } finally {
-        setIsLoadingMembers(false)
-      }
+  // Fetch members function
+  const fetchMembers = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from('members')
+        .select('id, first_name, last_name, email, avatar_url')
+        .eq('practitioner_id', user.id)
+        .eq('status', 'active')
+        .order('first_name', { ascending: true })
+      setMembers(data || [])
+    } catch (error) {
+      console.error('Error fetching members:', error)
     }
   }
 
-  // Handle share resource
-  const handleShareResource = async () => {
-    if (!selectedResourceToShare || !selectedMemberId) return
-    setIsSharing(true)
+  // Fetch members on mount
+  useEffect(() => {
+    fetchMembers()
+  }, [supabase])
+
+  // Handle Add Member
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!newMember.firstName.trim() || !newMember.lastName.trim() || !newMember.email.trim()) {
+      toast.error(locale === 'fr'
+        ? 'Le prénom, le nom et l\'email sont requis'
+        : 'First name, last name, and email are required')
+      return
+    }
+
+    setSavingMember(true)
+
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) {
+        router.push('/sign-in')
+        return
+      }
+
+      const memberData = {
+        practitioner_id: authUser.id,
+        first_name: newMember.firstName.trim(),
+        last_name: newMember.lastName.trim(),
+        email: newMember.email.trim(),
+        phone: newMember.phone.trim() || null,
+        status: 'active' as const,
+        engagement_level: 'medium' as const,
+      }
+
+      const { error } = await supabase
+        .from('members')
+        .insert(memberData)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Reset form and close modal
+      setNewMember({ firstName: '', lastName: '', email: '', phone: '' })
+      setShowAddMemberModal(false)
+      toast.success(locale === 'fr' ? 'Patient créé avec succès!' : 'Member created successfully!')
+
+      // Refresh members list
+      await fetchMembers()
+    } catch (error) {
+      console.error('Error creating member:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors de la création' : 'Error creating member')
+    } finally {
+      setSavingMember(false)
+    }
+  }
+
+  // Handle share modal
+  const handleOpenShareModal = (resource: Resource) => {
+    setSelectedResourceToShare(resource)
+    setShowShareModal(true)
+  }
+
+  // Handle share with multiple members
+  const handleShareWithMembers = async (resourceId: string, memberIds: string[], message?: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { error } = await supabase
-        .from('member_shared_resources')
-        .insert({
-          member_id: selectedMemberId,
-          resource_id: selectedResourceToShare.id,
-          practitioner_id: user.id,
-          message: shareMessage.trim() || null,
-        })
+      // Get resource info for notifications
+      const { data: resourceData } = await supabase
+        .from('resources')
+        .select('title, type')
+        .eq('id', resourceId)
+        .single()
 
-      if (error) {
-        if (error.code === '23505') {
-          toast.error(locale === 'fr' ? 'Déjà partagé' : 'Already shared')
-        } else {
-          throw error
-        }
-        return
-      }
+      // Get practitioner name for notifications
+      const { data: practitionerData } = await supabase
+        .from('users')
+        .select('full_name')
+        .eq('id', user.id)
+        .single()
 
-      // Send notification
-      try {
-        const [memberResult, practitionerResult] = await Promise.all([
-          supabase.from('members').select('user_id').eq('id', selectedMemberId).single(),
-          supabase.from('users').select('full_name').eq('id', user.id).single(),
-        ])
-        if (memberResult.data?.user_id) {
-          await notifyResourceShared(supabase, {
-            memberId: selectedMemberId,
-            memberUserId: memberResult.data.user_id,
-            resourceId: selectedResourceToShare.id,
-            resourceTitle: selectedResourceToShare.title,
-            resourceType: selectedResourceToShare.type,
-            practitionerName: practitionerResult.data?.full_name || 'Your practitioner',
-            message: shareMessage.trim() || undefined,
+      let successCount = 0
+      let alreadySharedCount = 0
+
+      // Share with each member
+      for (const memberId of memberIds) {
+        const { error } = await supabase
+          .from('member_shared_resources')
+          .insert({
+            member_id: memberId,
+            resource_id: resourceId,
+            practitioner_id: user.id,
+            shared_at: new Date().toISOString(),
+            message: message || null,
           })
+
+        if (error) {
+          if (error.code === '23505') {
+            alreadySharedCount++
+            continue
+          }
+          console.error('Error sharing with member:', error)
+          continue
         }
-      } catch (notifyError) {
-        console.error('Error sending notification:', notifyError)
+
+        successCount++
+
+        // Send notification for each successful share
+        try {
+          const { data: memberResult } = await supabase
+            .from('members')
+            .select('user_id')
+            .eq('id', memberId)
+            .single()
+
+          if (memberResult?.user_id && resourceData) {
+            await notifyResourceShared(supabase, {
+              memberId,
+              memberUserId: memberResult.user_id,
+              resourceId,
+              resourceTitle: resourceData.title,
+              resourceType: resourceData.type,
+              practitionerName: practitionerData?.full_name || 'Your practitioner',
+            })
+          }
+        } catch (notifyError) {
+          console.error('Error sending notification:', notifyError)
+        }
       }
 
-      toast.success(locale === 'fr' ? 'Ressource partagée' : 'Resource shared')
-      setShowShareModal(false)
+      // Show appropriate toast
+      if (successCount > 0) {
+        toast.success(
+          locale === 'fr'
+            ? `Ressource partagée avec ${successCount} patient${successCount > 1 ? 's' : ''}`
+            : `Resource shared with ${successCount} member${successCount > 1 ? 's' : ''}`
+        )
+      }
+      if (alreadySharedCount > 0) {
+        toast.info(
+          locale === 'fr'
+            ? `Déjà partagée avec ${alreadySharedCount} patient${alreadySharedCount > 1 ? 's' : ''}`
+            : `Already shared with ${alreadySharedCount} member${alreadySharedCount > 1 ? 's' : ''}`
+        )
+      }
     } catch (error) {
       console.error('Error sharing resource:', error)
-      toast.error(locale === 'fr' ? 'Erreur' : 'Error')
-    } finally {
-      setIsSharing(false)
+      toast.error(locale === 'fr' ? 'Erreur lors du partage' : 'Error sharing resource')
     }
   }
-
-  // Filter members
-  const filteredMembers = useMemo(() => {
-    if (!memberSearchQuery) return members
-    const query = memberSearchQuery.toLowerCase()
-    return members.filter(m =>
-      m.first_name.toLowerCase().includes(query) ||
-      m.last_name.toLowerCase().includes(query)
-    )
-  }, [members, memberSearchQuery])
 
   // Filter resources
   const savedResources = useMemo(() => {
@@ -788,96 +875,144 @@ export default function MyResourcesPage() {
       </AnimatePresence>
 
       {/* Share Modal */}
+      {selectedResourceToShare && (
+        <ShareResourceModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          resource={selectedResourceToShare}
+          members={members}
+          locale={locale}
+          onShare={handleShareWithMembers}
+          onAddMember={() => setShowAddMemberModal(true)}
+        />
+      )}
+
+      {/* Add Member Modal */}
       <AnimatePresence>
-        {showShareModal && selectedResourceToShare && (
+        {showAddMemberModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowShareModal(false)}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4"
+            onClick={() => setShowAddMemberModal(false)}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg"
+              className="bg-white rounded-xl w-full max-w-md shadow-xl"
             >
-              <div className="flex items-center justify-between p-6 border-b">
-                <div>
-                  <h2 className="text-xl font-semibold">{locale === 'fr' ? 'Partager' : 'Share'}</h2>
-                  <p className="text-sm text-gray-500 mt-1">{selectedResourceToShare.title}</p>
-                </div>
-                <button onClick={() => setShowShareModal(false)} className="p-2 rounded-lg hover:bg-gray-100">
-                  <X className="w-5 h-5 text-gray-400" />
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {locale === 'fr' ? 'Nouveau Patient' : 'New Member'}
+                </h2>
+                <button
+                  onClick={() => setShowAddMemberModal(false)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-              <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={memberSearchQuery}
-                    onChange={(e) => setMemberSearchQuery(e.target.value)}
-                    placeholder={locale === 'fr' ? 'Rechercher...' : 'Search...'}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl"
-                  />
+
+              {/* Form */}
+              <form onSubmit={handleAddMember} className="p-5">
+                <div className="space-y-4">
+                  {/* Name Row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Prénom' : 'First Name'} *
+                      </label>
+                      <input
+                        type="text"
+                        value={newMember.firstName}
+                        onChange={(e) => setNewMember({ ...newMember, firstName: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                        placeholder={locale === 'fr' ? 'Jean' : 'John'}
+                        required
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Nom' : 'Last Name'} *
+                      </label>
+                      <input
+                        type="text"
+                        value={newMember.lastName}
+                        onChange={(e) => setNewMember({ ...newMember, lastName: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                        placeholder={locale === 'fr' ? 'Dupont' : 'Doe'}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-gray-400" />
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={newMember.email}
+                      onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                      placeholder={locale === 'fr' ? 'jean@exemple.com' : 'john@example.com'}
+                      required
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-gray-400" />
+                      {locale === 'fr' ? 'Téléphone' : 'Phone'}
+                      <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={newMember.phone}
+                      onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                      placeholder={locale === 'fr' ? '+33 6 12 34 56 78' : '+1 (555) 123-4567'}
+                    />
+                  </div>
                 </div>
-                {isLoadingMembers ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                  </div>
-                ) : filteredMembers.length > 0 ? (
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {filteredMembers.map((member) => (
-                      <button
-                        key={member.id}
-                        onClick={() => setSelectedMemberId(member.id)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 ${
-                          selectedMemberId === member.id ? 'border-gray-900 bg-gray-50' : 'border-gray-100 hover:border-gray-200'
-                        }`}
-                      >
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
-                          selectedMemberId === member.id ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {member.first_name[0]}{member.last_name[0]}
-                        </div>
-                        <div className="text-left flex-1">
-                          <p className="font-medium">{member.first_name} {member.last_name}</p>
-                          {member.email && <p className="text-xs text-gray-500">{member.email}</p>}
-                        </div>
-                        {selectedMemberId === member.id && <Check className="w-5 h-5" />}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 bg-gray-50 rounded-xl">
-                    <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">{locale === 'fr' ? 'Aucun membre' : 'No members'}</p>
-                  </div>
-                )}
-                <textarea
-                  value={shareMessage}
-                  onChange={(e) => setShareMessage(e.target.value)}
-                  placeholder={locale === 'fr' ? 'Message (optionnel)' : 'Message (optional)'}
-                  rows={3}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl resize-none"
-                />
-              </div>
-              <div className="flex gap-3 p-6 border-t bg-gray-50 rounded-b-2xl">
-                <Button variant="outline" onClick={() => setShowShareModal(false)} className="flex-1 rounded-xl">
-                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
-                </Button>
-                <Button
-                  onClick={handleShareResource}
-                  disabled={!selectedMemberId || isSharing}
-                  className="flex-1 bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
-                >
-                  {isSharing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
-                  {locale === 'fr' ? 'Partager' : 'Share'}
-                </Button>
-              </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setShowAddMemberModal(false)}
+                    className="text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+                  >
+                    {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={savingMember}
+                    className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg px-4 text-sm"
+                  >
+                    {savingMember ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {locale === 'fr' ? 'Création...' : 'Creating...'}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        {locale === 'fr' ? 'Créer' : 'Create'}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}

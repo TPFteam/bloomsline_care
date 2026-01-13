@@ -167,17 +167,18 @@ function DashboardContent() {
       // Fetch members added
       const { data: members, error: membersError } = await supabase
         .from('members')
-        .select('id, full_name, created_at')
+        .select('id, first_name, last_name, created_at')
         .eq('practitioner_id', userId)
         .order('created_at', { ascending: false })
         .limit(3)
 
       if (!membersError && members) {
         members.forEach((member) => {
+          const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || (currentLocale === 'fr' ? 'Nouveau patient' : 'New member')
           activities.push({
             id: `member-${member.id}`,
             type: 'member_added',
-            title: member.full_name || (currentLocale === 'fr' ? 'Nouveau patient' : 'New member'),
+            title: memberName,
             description: currentLocale === 'fr' ? 'Patient ajouté' : 'Member added',
             timestamp: member.created_at,
             href: `/members/${member.id}`,
@@ -192,7 +193,7 @@ function DashboardContent() {
           id,
           shared_at,
           resource:resources(id, title, type),
-          member:members(id, full_name)
+          member:members(id, first_name, last_name)
         `)
         .eq('practitioner_id', userId)
         .order('shared_at', { ascending: false })
@@ -203,13 +204,14 @@ function DashboardContent() {
           const resource = Array.isArray(share.resource) ? share.resource[0] : share.resource
           const member = Array.isArray(share.member) ? share.member[0] : share.member
           if (resource && member) {
+            const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || (currentLocale === 'fr' ? 'Patient' : 'Member')
             activities.push({
               id: `share-${share.id}`,
               type: 'resource_shared',
               title: resource.title || (currentLocale === 'fr' ? 'Sans titre' : 'Untitled'),
               description: currentLocale === 'fr'
-                ? `Partagé avec ${member.full_name}`
-                : `Shared with ${member.full_name}`,
+                ? `Partagé avec ${memberName}`
+                : `Shared with ${memberName}`,
               timestamp: share.shared_at,
               href: `/members/${member.id}`,
             })
@@ -250,7 +252,7 @@ function DashboardContent() {
           submitted_at,
           status,
           resource:resources(id, title, type),
-          member:members(id, full_name)
+          member:members(id, first_name, last_name)
         `)
         .eq('practitioner_id', userId)
         .eq('status', 'submitted')
@@ -262,13 +264,14 @@ function DashboardContent() {
           const resource = Array.isArray(sub.resource) ? sub.resource[0] : sub.resource
           const member = Array.isArray(sub.member) ? sub.member[0] : sub.member
           if (resource && member) {
+            const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || (currentLocale === 'fr' ? 'Patient' : 'Member')
             activities.push({
               id: `submission-${sub.id}`,
               type: 'submission_received',
               title: resource.title || (currentLocale === 'fr' ? 'Sans titre' : 'Untitled'),
               description: currentLocale === 'fr'
-                ? `Réponse de ${member.full_name}`
-                : `Response from ${member.full_name}`,
+                ? `Réponse de ${memberName}`
+                : `Response from ${memberName}`,
               timestamp: sub.submitted_at,
               href: `/members/${member.id}`,
             })
@@ -276,9 +279,43 @@ function DashboardContent() {
         })
       }
 
-      // Sort by timestamp and take top 3
+      // Ensure variety in activities - take most recent from different types first
       activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      setRecentActivity(activities.slice(0, 3))
+
+      // Group activities by type and take most recent from each
+      const byType = new Map<string, ActivityItem[]>()
+      activities.forEach(activity => {
+        const existing = byType.get(activity.type) || []
+        existing.push(activity)
+        byType.set(activity.type, existing)
+      })
+
+      // Priority order for variety: member_added, resource_shared, session_*, submission, resource_created
+      const priorityTypes = ['member_added', 'resource_shared', 'session_completed', 'session_scheduled', 'submission_received', 'resource_created', 'resource_updated']
+
+      const diverseActivities: ActivityItem[] = []
+
+      // First pass: take one from each type in priority order
+      for (const type of priorityTypes) {
+        const typeActivities = byType.get(type)
+        if (typeActivities && typeActivities.length > 0 && diverseActivities.length < 3) {
+          diverseActivities.push(typeActivities[0])
+        }
+      }
+
+      // If we still have slots, fill with most recent overall (avoiding duplicates)
+      if (diverseActivities.length < 3) {
+        for (const activity of activities) {
+          if (!diverseActivities.find(a => a.id === activity.id) && diverseActivities.length < 3) {
+            diverseActivities.push(activity)
+          }
+        }
+      }
+
+      // Sort the final selection by timestamp (most recent first)
+      diverseActivities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+
+      setRecentActivity(diverseActivities)
     } catch (error) {
       console.error('Error fetching activity:', error)
     }

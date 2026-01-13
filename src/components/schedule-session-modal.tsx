@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Search, Calendar, Clock, Users, Check, ChevronRight, ArrowLeft } from 'lucide-react'
+import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video } from 'lucide-react'
+import { CalendarPicker } from '@/components/ui/calendar-picker'
+import { TimePicker } from '@/components/ui/time-picker'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import { notifySessionScheduled } from '@/lib/notifications'
-import { format, addDays, startOfDay, isSameDay } from 'date-fns'
+import { format, addDays, startOfDay, isSameDay, isPast, isToday } from 'date-fns'
 import type { Member } from '@/types/member'
 
 interface SessionType {
@@ -50,14 +52,38 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
   // Manual scheduling (without calendar)
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>('calendar')
-  const [manualSessionName, setManualSessionName] = useState('Follow-up Session')
+  const [manualSessionType, setManualSessionType] = useState<string>('follow_up')
+  const [manualSessionFormat, setManualSessionFormat] = useState<'in_person' | 'virtual'>('in_person')
   const [manualDuration, setManualDuration] = useState(60)
   const [manualTime, setManualTime] = useState('10:00')
 
+  // Ref for scrolling to today's date
+  const todayButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Session type options for manual mode (must match database enum)
+  const sessionTypeOptions = [
+    { value: 'initial_consultation', label: 'Initial Consultation', labelFr: 'Consultation initiale' },
+    { value: 'follow_up', label: 'Follow-up', labelFr: 'Suivi' },
+    { value: 'check_in', label: 'Check-in', labelFr: 'Point de situation' },
+    { value: 'crisis', label: 'Crisis Intervention', labelFr: 'Intervention de crise' },
+    { value: 'group', label: 'Group Session', labelFr: 'Séance de groupe' },
+    { value: 'other', label: 'Other', labelFr: 'Autre' },
+  ]
+
+  const getSessionTypeLabel = (value: string) => {
+    return sessionTypeOptions.find(opt => opt.value === value)?.label || value
+  }
+
+  // Session format options
+  const sessionFormatOptions = [
+    { value: 'in_person', label: 'In Person', Icon: Building2 },
+    { value: 'virtual', label: 'Virtual', Icon: Video },
+  ]
+
   const supabase = createClient()
 
-  // Generate next 14 days for date selection
-  const dateOptions = Array.from({ length: 14 }, (_, i) => addDays(startOfDay(new Date()), i))
+  // Generate date options: past 7 days + next 14 days (21 days total)
+  const dateOptions = Array.from({ length: 21 }, (_, i) => addDays(startOfDay(new Date()), i - 7))
 
   // Fetch members and session types on open
   useEffect(() => {
@@ -81,7 +107,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       setNotes('')
       setSearchQuery('')
       setScheduleMode('calendar')
-      setManualSessionName('Follow-up Session')
+      setManualSessionType('follow_up')
+      setManualSessionFormat('in_person')
       setManualDuration(60)
       setManualTime('10:00')
     }
@@ -93,6 +120,13 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       fetchAvailableSlots()
     }
   }, [selectedDate, selectedSessionType, userId])
+
+  // Scroll to today's date when datetime step is shown
+  useEffect(() => {
+    if (step === 'datetime' && todayButtonRef.current) {
+      todayButtonRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    }
+  }, [step])
 
   const fetchInitialData = async () => {
     setLoading(true)
@@ -156,8 +190,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
     // For calendar mode, require selectedSessionType and selectedTime
     if (scheduleMode === 'calendar' && (!selectedSessionType || !selectedTime)) return
 
-    // For manual mode, require manualSessionName and manualTime
-    if (scheduleMode === 'manual' && (!manualSessionName || !manualTime)) return
+    // For manual mode, require manualSessionType and manualTime
+    if (scheduleMode === 'manual' && (!manualSessionType || !manualTime)) return
 
     setLoading(true)
     try {
@@ -173,31 +207,58 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       endTime.setMinutes(endTime.getMinutes() + durationToUse)
 
       if (scheduleMode === 'manual') {
-        // Save to sessions table (without calendar integration)
+        // Save to sessions table for member tracking
+        const sessionTypeLabel = getSessionTypeLabel(manualSessionType)
         const sessionData = {
           practitioner_id: userId,
           member_id: selectedMember.id,
-          session_type: 'follow_up' as const,
-          session_format: 'in_person' as const,
+          session_type: manualSessionType as 'initial_consultation' | 'follow_up' | 'check_in' | 'crisis' | 'group' | 'other',
+          session_format: manualSessionFormat,
           scheduled_at: startTime.toISOString(),
           duration_minutes: durationToUse,
           status: 'scheduled',
-          notes: notes ? `${manualSessionName}\n\n${notes}` : manualSessionName,
+          notes: notes ? `${sessionTypeLabel}\n\n${notes}` : sessionTypeLabel,
         }
 
         console.log('Creating session with data:', sessionData)
 
-        const { error } = await supabase
+        const { data: sessionResult, error: sessionError } = await supabase
           .from('sessions')
           .insert(sessionData)
+          .select('id')
+          .single()
 
-        if (error) {
-          console.error('Supabase error:', error)
-          throw new Error(error.message || 'Failed to create session')
+        if (sessionError) {
+          console.error('Supabase session error:', sessionError)
+          throw new Error(sessionError.message || 'Failed to create session')
+        }
+
+        // Also create a booking entry so it shows in the bookings page
+        const bookingData = {
+          practitioner_id: userId,
+          client_name: `${selectedMember.first_name} ${selectedMember.last_name}`,
+          client_email: selectedMember.email || '',
+          client_phone: selectedMember.phone || null,
+          session_type: sessionTypeLabel,
+          start_time: startTime.toISOString(),
+          end_time: endTime.toISOString(),
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          notes: notes || null,
+          status: 'confirmed',
+          member_id: selectedMember.id,
+        }
+
+        const { error: bookingError } = await supabase
+          .from('bookings')
+          .insert(bookingData)
+
+        if (bookingError) {
+          console.warn('Could not create booking entry:', bookingError)
+          // Don't fail - session was created successfully
         }
 
         // Send notification to member
-        if (selectedMember.user_id) {
+        if (selectedMember.user_id && sessionResult?.id) {
           try {
             const { data: practitioner } = await supabase
               .from('users')
@@ -207,7 +268,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
             await notifySessionScheduled(supabase, {
               memberUserId: selectedMember.user_id,
-              sessionId: selectedMember.id, // We don't have session ID in manual mode
+              sessionId: sessionResult.id,
               scheduledAt: startTime.toISOString(),
               practitionerName: practitioner?.full_name || 'Your practitioner',
             })
@@ -324,7 +385,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const canProceed = () => {
     if (step === 'member') return !!selectedMember
     if (step === 'session') {
-      if (scheduleMode === 'manual') return !!manualSessionName && manualDuration > 0
+      if (scheduleMode === 'manual') return !!manualSessionType && manualDuration > 0
       return !!selectedSessionType
     }
     if (step === 'datetime') {
@@ -533,14 +594,22 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                   /* Manual Mode */
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">Session Name</label>
-                      <input
-                        type="text"
-                        value={manualSessionName}
-                        onChange={(e) => setManualSessionName(e.target.value)}
-                        placeholder="e.g., Follow-up Session"
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-mint-500 focus:ring-2 focus:ring-mint-500/20 outline-none transition-all"
-                      />
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">Session Type</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {sessionTypeOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => setManualSessionType(option.value)}
+                            className={`px-3 py-2.5 rounded-xl border text-sm font-medium transition-all text-left ${
+                              manualSessionType === option.value
+                                ? 'border-mint-500 bg-mint-50 text-mint-700'
+                                : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-700 mb-2 block">Duration (minutes)</label>
@@ -560,6 +629,28 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                         ))}
                       </div>
                     </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">Session Format</label>
+                      <div className="flex gap-2">
+                        {sessionFormatOptions.map((option) => {
+                          const IconComponent = option.Icon
+                          return (
+                            <button
+                              key={option.value}
+                              onClick={() => setManualSessionFormat(option.value as 'in_person' | 'virtual')}
+                              className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                                manualSessionFormat === option.value
+                                  ? 'border-mint-500 bg-mint-50 text-mint-700'
+                                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                              }`}
+                            >
+                              <IconComponent className="w-4 h-4" />
+                              <span>{option.label}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -570,26 +661,60 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               <div className="space-y-4">
                 {/* Date Selection */}
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">Select Date</label>
-                  <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-                    {dateOptions.map((date) => (
-                      <button
-                        key={date.toISOString()}
-                        onClick={() => {
-                          setSelectedDate(date)
-                          setSelectedTime(null)
-                        }}
-                        className={`flex-shrink-0 px-3 py-2 rounded-xl border text-center min-w-[70px] transition-all ${
-                          isSameDay(selectedDate, date)
-                            ? 'border-mint-500 bg-mint-50 text-mint-700'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <p className="text-xs text-gray-500">{format(date, 'EEE')}</p>
-                        <p className="font-semibold">{format(date, 'd')}</p>
-                        <p className="text-xs text-gray-500">{format(date, 'MMM')}</p>
-                      </button>
-                    ))}
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">
+                    Select Date
+                    <span className="text-xs text-gray-400 ml-2 font-normal">(Past dates available for logging)</span>
+                  </label>
+
+                  {/* Quick date picker - scrollable days */}
+                  <style>{`.date-scroll::-webkit-scrollbar { display: none; }`}</style>
+                  <div
+                    className="date-scroll flex gap-2 overflow-x-auto pb-2 -mx-1 px-1"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  >
+                    {dateOptions.map((date) => {
+                      const dateIsPast = isPast(date) && !isToday(date)
+                      const dateIsToday = isToday(date)
+                      return (
+                        <button
+                          key={date.toISOString()}
+                          ref={dateIsToday ? todayButtonRef : null}
+                          onClick={() => {
+                            setSelectedDate(date)
+                            setSelectedTime(null)
+                          }}
+                          className={`flex-shrink-0 px-3 py-2 rounded-xl border text-center min-w-[70px] transition-all ${
+                            isSameDay(selectedDate, date)
+                              ? 'border-mint-500 bg-mint-50 text-mint-700'
+                              : dateIsPast
+                              ? 'border-amber-200 bg-amber-50/50 hover:border-amber-300'
+                              : dateIsToday
+                              ? 'border-blue-200 bg-blue-50/50 hover:border-blue-300'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <p className={`text-xs ${dateIsPast ? 'text-amber-600' : dateIsToday ? 'text-blue-600' : 'text-gray-500'}`}>
+                            {dateIsToday ? 'Today' : format(date, 'EEE')}
+                          </p>
+                          <p className="font-semibold">{format(date, 'd')}</p>
+                          <p className={`text-xs ${dateIsPast ? 'text-amber-500' : 'text-gray-500'}`}>{format(date, 'MMM')}</p>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* Advanced date picker for booking up to 6 months ahead */}
+                  <div className="mt-3">
+                    <p className="text-xs text-gray-500 mb-2">Or pick a specific date:</p>
+                    <CalendarPicker
+                      selectedDate={selectedDate}
+                      onDateSelect={(date) => {
+                        setSelectedDate(startOfDay(date))
+                        setSelectedTime(null)
+                      }}
+                      minDate={addDays(new Date(), -7)}
+                      maxDate={addDays(new Date(), 180)}
+                    />
                   </div>
                 </div>
 
@@ -597,12 +722,10 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-2 block">Select Time</label>
                   {scheduleMode === 'manual' ? (
-                    /* Manual time input */
-                    <input
-                      type="time"
+                    /* Manual time input - themed picker */
+                    <TimePicker
                       value={manualTime}
-                      onChange={(e) => setManualTime(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mint-500 focus:ring-2 focus:ring-mint-500/20 outline-none transition-all text-lg"
+                      onChange={(time) => setManualTime(time)}
                     />
                   ) : availableSlots.length === 0 ? (
                     <div className="py-6 text-center text-gray-500">
@@ -655,7 +778,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Session Type</span>
                       <span className="font-medium text-gray-900">
-                        {scheduleMode === 'manual' ? manualSessionName : selectedSessionType?.name}
+                        {scheduleMode === 'manual' ? getSessionTypeLabel(manualSessionType) : selectedSessionType?.name}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -664,6 +787,18 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                         {scheduleMode === 'manual' ? manualDuration : selectedSessionType?.duration} min
                       </span>
                     </div>
+                    {scheduleMode === 'manual' && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Format</span>
+                        <span className="font-medium text-gray-900 flex items-center gap-1.5">
+                          {manualSessionFormat === 'virtual' ? (
+                            <><Video className="w-4 h-4" /> Virtual</>
+                          ) : (
+                            <><Building2 className="w-4 h-4" /> In Person</>
+                          )}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Date</span>
                       <span className="font-medium text-gray-900">{format(selectedDate, 'EEEE, MMMM d, yyyy')}</span>

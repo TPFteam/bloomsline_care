@@ -12,12 +12,12 @@ import {
   Eye,
   Pencil,
   Trash2,
-  Share2,
   Users,
   Sparkles,
   Lock,
   Globe,
   Heart,
+  Send,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -25,11 +25,9 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu'
 import type { Resource } from '@/types/resource'
+import { ShareResourceModal } from './ShareResourceModal'
 
 const resourceTypeIcons: Record<string, React.ElementType> = {
   worksheet: FileText,
@@ -90,6 +88,7 @@ interface SimpleMember {
   first_name: string
   last_name: string
   email: string | null
+  avatar_url?: string | null
 }
 
 interface ResourceCardProps {
@@ -105,7 +104,8 @@ interface ResourceCardProps {
   onShare?: () => void
   onBookmark?: (resourceId: string) => void
   members?: SimpleMember[]
-  onShareWithMember?: (resourceId: string, memberId: string, memberName: string) => void
+  onShareWithMembers?: (resourceId: string, memberIds: string[], message?: string) => Promise<void>
+  onAddMember?: () => void
   isDeleting?: boolean
   isRemoving?: boolean
   isOwner?: boolean
@@ -126,7 +126,8 @@ export function ResourceCard({
   onShare,
   onBookmark,
   members = [],
-  onShareWithMember,
+  onShareWithMembers,
+  onAddMember,
   isDeleting = false,
   isRemoving = false,
   isOwner = true,
@@ -134,6 +135,7 @@ export function ResourceCard({
   isBookmarked = false,
 }: ResourceCardProps) {
   const router = useRouter()
+  const [showShareModal, setShowShareModal] = useState(false)
 
   const TypeIcon = resourceTypeIcons[resource.type] || FileText
   const styles = resourceTypeStyles[resource.type] || resourceTypeStyles.worksheet
@@ -253,7 +255,7 @@ export function ResourceCard({
               {(variant === 'owned' || variant === 'saved') && onShare && (
                 <DropdownMenuItem onClick={onShare} className="text-purple-600">
                   <Users className="w-4 h-4 mr-2" />
-                  {locale === 'fr' ? 'Partager' : 'Share'}
+                  {locale === 'fr' ? 'Envoyer' : 'Send'}
                 </DropdownMenuItem>
               )}
               {(onDelete || onRemove) && (
@@ -281,6 +283,7 @@ export function ResourceCard({
 
   // Grid View (default)
   return (
+  <>
     <motion.div
       layout
       initial={{ opacity: 0, y: 10 }}
@@ -354,26 +357,14 @@ export function ResourceCard({
               {(variant === 'owned' || variant === 'saved') && onShare && (
                 <DropdownMenuItem onClick={onShare} className="text-purple-600">
                   <Users className="w-4 h-4 mr-2" />
-                  {locale === 'fr' ? 'Partager' : 'Share'}
+                  {locale === 'fr' ? 'Envoyer' : 'Send'}
                 </DropdownMenuItem>
               )}
-              {variant === 'library' && members.length > 0 && onShareWithMember && (
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <Share2 className="w-4 h-4 mr-2 text-gray-400" />
-                    {locale === 'fr' ? 'Envoyer' : 'Send'}
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-48 max-h-48 overflow-y-auto">
-                    {members.map((member) => (
-                      <DropdownMenuItem
-                        key={member.id}
-                        onClick={() => onShareWithMember(resource.id, member.id, `${member.first_name} ${member.last_name}`)}
-                      >
-                        {member.first_name} {member.last_name}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
+              {variant === 'library' && members.length > 0 && onShareWithMembers && (
+                <DropdownMenuItem onClick={() => setShowShareModal(true)}>
+                  <Send className="w-4 h-4 mr-2 text-gray-400" />
+                  {locale === 'fr' ? 'Envoyer' : 'Send'}
+                </DropdownMenuItem>
               )}
               {(onDelete || onRemove) && (
                 <>
@@ -458,7 +449,22 @@ export function ResourceCard({
           {resource.blocks?.length || 0} {locale === 'fr' ? 'blocs' : 'blocks'}
         </span>
       </div>
+
     </motion.div>
+
+    {/* Share Modal */}
+    {onShareWithMembers && (
+      <ShareResourceModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        resource={resource}
+        members={members}
+        locale={locale}
+        onShare={onShareWithMembers}
+        onAddMember={onAddMember}
+      />
+    )}
+  </>
   )
 }
 
@@ -599,7 +605,7 @@ export function ResourceCardList({
             {variant === 'owned' && onShare && (
               <DropdownMenuItem onClick={onShare} className="text-purple-600">
                 <Users className="w-4 h-4 mr-2" />
-                {locale === 'fr' ? 'Partager' : 'Share'}
+                {locale === 'fr' ? 'Envoyer' : 'Send'}
               </DropdownMenuItem>
             )}
             {onDelete && (
