@@ -3024,30 +3024,24 @@ function CreatePsychoeducationContent() {
                             </p>
                           </motion.button>
 
-                          <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setVisibility('public')}
-                            className={`p-4 rounded-xl border-2 text-left transition-all ${
-                              visibility === 'public'
-                                ? 'border-blue-400 bg-blue-50'
-                                : 'border-gray-200 hover:border-gray-300'
-                            }`}
+                          <div
+                            className="p-4 rounded-xl border-2 text-left border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
                           >
                             <div className="flex items-center gap-3 mb-2">
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                visibility === 'public' ? 'bg-blue-200' : 'bg-gray-100'
-                              }`}>
-                                <Globe className={`w-4 h-4 ${visibility === 'public' ? 'text-blue-700' : 'text-gray-500'}`} />
+                              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100">
+                                <Globe className="w-4 h-4 text-gray-400" />
                               </div>
-                              <span className={`font-medium ${visibility === 'public' ? 'text-blue-900' : 'text-gray-700'}`}>
+                              <span className="font-medium text-gray-500">
                                 {locale === 'fr' ? 'Public' : 'Public'}
                               </span>
+                              <span className="ml-auto text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
+                                {locale === 'fr' ? 'Bientôt' : 'Coming Soon'}
+                              </span>
                             </div>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-400">
                               {locale === 'fr' ? 'Bibliothèque numérique' : 'Digital Library'}
                             </p>
-                          </motion.button>
+                          </div>
                         </div>
 
                         {/* External link toggle - only show for private */}
