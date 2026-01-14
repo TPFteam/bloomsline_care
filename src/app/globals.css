@@ -200,6 +200,20 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Fix for Safari/WebKit cursor positioning in text inputs */
+  textarea,
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="search"],
+  input[type="url"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    transform: translateZ(0);
+  }
 }
 
 @keyframes blob {
