@@ -24,6 +24,8 @@ import {
   Mail,
   Phone,
   Save,
+  ArrowUpDown,
+  ChevronDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -71,6 +73,7 @@ const colorConfig: typeof collectionColorConfig = {
 }
 
 type SubTab = 'created' | 'saved' | 'collections'
+type SortOption = 'recent_edited' | 'recent_created' | 'title_asc' | 'title_desc'
 
 export default function MyResourcesPage() {
   const { t, locale } = useLanguage()
@@ -89,7 +92,10 @@ export default function MyResourcesPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>('all')
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [sortBy, setSortBy] = useState<SortOption>('recent_edited')
+  const [showSortDropdown, setShowSortDropdown] = useState(false)
   const filterRef = useRef<HTMLDivElement>(null)
+  const sortRef = useRef<HTMLDivElement>(null)
 
   // Resources state
   const [dbResources, setDbResources] = useState<Resource[]>([])
@@ -193,22 +199,25 @@ export default function MyResourcesPage() {
     fetchCollections()
   }, [])
 
-  // Close filter dropdown when clicking outside
+  // Close filter and sort dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
         setShowFilters(false)
       }
+      if (sortRef.current && !sortRef.current.contains(event.target as Node)) {
+        setShowSortDropdown(false)
+      }
     }
 
-    if (showFilters) {
+    if (showFilters || showSortDropdown) {
       document.addEventListener('mousedown', handleClickOutside)
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showFilters])
+  }, [showFilters, showSortDropdown])
 
   // Handle create collection
   const handleCreateCollection = async () => {
@@ -454,6 +463,24 @@ export default function MyResourcesPage() {
     }
   }
 
+  // Sort function
+  const sortResources = (resources: Resource[]) => {
+    return [...resources].sort((a, b) => {
+      switch (sortBy) {
+        case 'recent_edited':
+          return new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
+        case 'recent_created':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        case 'title_asc':
+          return a.title.localeCompare(b.title)
+        case 'title_desc':
+          return b.title.localeCompare(a.title)
+        default:
+          return 0
+      }
+    })
+  }
+
   // Filter resources
   const savedResources = useMemo(() => {
     let filtered = savedDbResources
@@ -464,8 +491,8 @@ export default function MyResourcesPage() {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(r => r.title.toLowerCase().includes(query) || (r.description || '').toLowerCase().includes(query))
     }
-    return filtered
-  }, [savedDbResources, searchQuery, languageFilter, typeFilter, statusFilter])
+    return sortResources(filtered)
+  }, [savedDbResources, searchQuery, languageFilter, typeFilter, statusFilter, sortBy])
 
   const createdResources = useMemo(() => {
     let filtered = dbResources
@@ -476,8 +503,8 @@ export default function MyResourcesPage() {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(r => r.title.toLowerCase().includes(query) || (r.description || '').toLowerCase().includes(query))
     }
-    return filtered
-  }, [dbResources, searchQuery, languageFilter, typeFilter, statusFilter])
+    return sortResources(filtered)
+  }, [dbResources, searchQuery, languageFilter, typeFilter, statusFilter, sortBy])
 
   const hasActiveFilters = searchQuery || typeFilter !== 'all' || languageFilter !== 'all' || statusFilter !== 'all'
 
@@ -571,6 +598,58 @@ export default function MyResourcesPage() {
                   <X className="w-4 h-4" />
                 </button>
               )}
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="relative" ref={sortRef}>
+              <button
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all border bg-white text-gray-600 hover:bg-gray-50 border-gray-200"
+              >
+                <ArrowUpDown className="w-4 h-4" />
+                <span className="hidden sm:inline">
+                  {sortBy === 'recent_edited' && (locale === 'fr' ? 'Récemment modifié' : 'Recently edited')}
+                  {sortBy === 'recent_created' && (locale === 'fr' ? 'Récemment créé' : 'Recently created')}
+                  {sortBy === 'title_asc' && (locale === 'fr' ? 'Titre A-Z' : 'Title A-Z')}
+                  {sortBy === 'title_desc' && (locale === 'fr' ? 'Titre Z-A' : 'Title Z-A')}
+                </span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {showSortDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50"
+                  >
+                    <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase">
+                      {locale === 'fr' ? 'Trier par' : 'Sort by'}
+                    </div>
+                    {[
+                      { value: 'recent_edited', label: locale === 'fr' ? 'Récemment modifié' : 'Recently edited' },
+                      { value: 'recent_created', label: locale === 'fr' ? 'Récemment créé' : 'Recently created' },
+                      { value: 'title_asc', label: locale === 'fr' ? 'Titre A-Z' : 'Title A-Z' },
+                      { value: 'title_desc', label: locale === 'fr' ? 'Titre Z-A' : 'Title Z-A' },
+                    ].map((item) => (
+                      <button
+                        key={item.value}
+                        onClick={() => {
+                          setSortBy(item.value as SortOption)
+                          setShowSortDropdown(false)
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm ${
+                          sortBy === item.value ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="flex-1 text-left">{item.label}</span>
+                        {sortBy === item.value && <Check className="w-4 h-4" />}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="relative" ref={filterRef}>

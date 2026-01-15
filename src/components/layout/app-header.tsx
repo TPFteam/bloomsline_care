@@ -5,8 +5,6 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Bell,
-  Moon,
-  Sun,
   MessageCircle,
   User,
   Settings,
@@ -14,7 +12,6 @@ import {
   Globe,
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
-import { useTheme } from '@/lib/theme/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useRouter } from 'next/navigation'
 import type { User as UserType } from '@/types/user'
@@ -26,7 +23,6 @@ interface AppHeaderProps {
 
 export function AppHeader({ user, leftContent }: AppHeaderProps) {
   const { locale, setLocale } = useLanguage()
-  const { theme, toggleTheme } = useTheme()
   const router = useRouter()
   const supabase = createClient()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
@@ -52,13 +48,13 @@ export function AppHeader({ user, leftContent }: AppHeaderProps) {
             </div>
           </Link>
 
-          {/* Dark mode toggle */}
-          <button
+          {/* Dark mode toggle - hidden for now */}
+          {/* <button
             onClick={toggleTheme}
             className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
           >
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
+          </button> */}
 
           <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors">
             <Bell className="w-5 h-5" />

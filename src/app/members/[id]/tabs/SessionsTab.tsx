@@ -874,6 +874,15 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => handleStartEdit(session)}
+                        className="h-10 w-10 p-0 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                        title="Edit session"
+                      >
+                        <Pencil className="w-5 h-5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleUpdateStatus(session.id, 'completed')}
                         className="h-10 w-10 p-0 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
                         title={t.members.sessions.markComplete}

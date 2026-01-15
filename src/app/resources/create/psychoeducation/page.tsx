@@ -48,8 +48,17 @@ import { createResource, getResourceById, updateResource } from '@/lib/services/
 import { uploadResourceFile, validateFile, formatFileSize } from '@/lib/services/resource-storage'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
+import { ShareResourceModal } from '@/components/resources/ShareResourceModal'
 import type { ResourceCategory } from '@/types/library'
-import type { ResourceBlock, PsychoeducationSettings } from '@/types/resource'
+import type { ResourceBlock, PsychoeducationSettings, Resource } from '@/types/resource'
+
+interface SimpleMember {
+  id: string
+  first_name: string
+  last_name: string
+  email: string | null
+  avatar_url?: string | null
+}
 
 // Content block types for psychoeducation
 type ContentBlockType = 'heading' | 'paragraph' | 'key_points' | 'callout' | 'quote' | 'image' | 'audio' | 'video' | 'link'
@@ -292,6 +301,12 @@ function CreatePsychoeducationContent() {
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+
+  // Share after save state
+  const [showShareAfterSave, setShowShareAfterSave] = useState(false)
+  const [savedResourceForShare, setSavedResourceForShare] = useState<Resource | null>(null)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [members, setMembers] = useState<SimpleMember[]>([])
 
   // Get user ID on mount
   useEffect(() => {
@@ -959,6 +974,8 @@ function CreatePsychoeducationContent() {
       // Check if we have an existing resource to update (either from edit mode or auto-saved draft)
       const existingResourceId = editId || autoSaveDraftId
 
+      let savedResourceId: string | null = null
+
       if (existingResourceId) {
         // Update existing resource (either editing or updating auto-saved draft)
         await updateResource(existingResourceId, {
@@ -971,10 +988,11 @@ function CreatePsychoeducationContent() {
           status: saveAs,
           visibility,
         })
+        savedResourceId = existingResourceId
         toast.success(locale === 'fr' ? 'Ressource mise à jour avec succès!' : 'Resource updated successfully!')
       } else {
         // Create new resource
-        await createResource({
+        const newResource = await createResource({
           type: 'psychoeducation',
           title,
           description: description || undefined,
@@ -985,7 +1003,32 @@ function CreatePsychoeducationContent() {
           status: saveAs,
           visibility,
         })
+        savedResourceId = newResource?.id || null
         toast.success(locale === 'fr' ? 'Ressource créée avec succès!' : 'Resource created successfully!')
+      }
+
+      // If resource was saved successfully and published, show share option
+      if (savedResourceId && saveAs === 'published') {
+        // Fetch the resource data
+        const resourceData = await getResourceById(savedResourceId)
+        if (resourceData) {
+          // Fetch members for sharing
+          const supabaseClient = createClient()
+          const { data: membersData } = await supabaseClient
+            .from('members')
+            .select('id, first_name, last_name, email, avatar_url')
+            .eq('practitioner_id', userId)
+            .eq('status', 'active')
+            .order('first_name')
+
+          if (membersData && membersData.length > 0) {
+            setSavedResourceForShare(resourceData)
+            setMembers(membersData)
+            setShowShareAfterSave(true)
+            setIsSaving(false)
+            return // Don't redirect yet
+          }
+        }
       }
 
       router.push('/resources')
@@ -994,6 +1037,48 @@ function CreatePsychoeducationContent() {
       toast.error(locale === 'fr' ? 'Erreur lors de la sauvegarde' : 'Error saving resource')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  // Handle sharing with members
+  const handleShareWithMembers = async (resourceId: string, memberIds: string[], message?: string) => {
+    try {
+      const supabaseClient = createClient()
+      const { data: { user } } = await supabaseClient.auth.getUser()
+      if (!user) return
+
+      let successCount = 0
+
+      for (const memberId of memberIds) {
+        const { error } = await supabaseClient
+          .from('member_shared_resources')
+          .insert({
+            member_id: memberId,
+            resource_id: resourceId,
+            practitioner_id: user.id,
+            shared_at: new Date().toISOString(),
+            message: message || null,
+          })
+
+        if (!error) {
+          successCount++
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(
+          locale === 'fr'
+            ? `Ressource partagée avec ${successCount} patient(s)`
+            : `Resource shared with ${successCount} member(s)`
+        )
+      }
+
+      setShowShareModal(false)
+      setShowShareAfterSave(false)
+      router.push('/resources')
+    } catch (error) {
+      console.error('Error sharing resource:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors du partage' : 'Error sharing resource')
     }
   }
 
@@ -3127,6 +3212,89 @@ function CreatePsychoeducationContent() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Share After Save Confirmation Modal */}
+      <AnimatePresence>
+        {showShareAfterSave && savedResourceForShare && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={() => {
+              setShowShareAfterSave(false)
+              router.push('/resources')
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            >
+              {/* Success Header */}
+              <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-8 text-center text-white">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h2 className="text-xl font-bold mb-2">
+                  {locale === 'fr' ? 'Ressource publiée!' : 'Resource Published!'}
+                </h2>
+                <p className="text-emerald-100 text-sm">
+                  {savedResourceForShare.title}
+                </p>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                <p className="text-center text-gray-600 mb-6">
+                  {locale === 'fr'
+                    ? 'Voulez-vous partager cette ressource avec vos patients maintenant?'
+                    : 'Would you like to share this resource with your members now?'}
+                </p>
+
+                <div className="flex flex-col gap-3">
+                  <Button
+                    onClick={() => {
+                      setShowShareAfterSave(false)
+                      setShowShareModal(true)
+                    }}
+                    className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-xl py-3"
+                  >
+                    {locale === 'fr' ? 'Partager avec des patients' : 'Share with Members'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setShowShareAfterSave(false)
+                      router.push('/resources')
+                    }}
+                    className="w-full text-gray-500 rounded-xl py-3"
+                  >
+                    {locale === 'fr' ? 'Plus tard' : 'Maybe Later'}
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Share Resource Modal */}
+      {savedResourceForShare && (
+        <ShareResourceModal
+          isOpen={showShareModal}
+          onClose={() => {
+            setShowShareModal(false)
+            router.push('/resources')
+          }}
+          resource={savedResourceForShare}
+          members={members}
+          locale={locale}
+          onShare={handleShareWithMembers}
+        />
+      )}
     </div>
   )
 }

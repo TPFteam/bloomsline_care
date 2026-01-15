@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video } from 'lucide-react'
 import { CalendarPicker } from '@/components/ui/calendar-picker'
@@ -8,7 +8,7 @@ import { TimePicker } from '@/components/ui/time-picker'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import { notifySessionScheduled } from '@/lib/notifications'
-import { format, addDays, startOfDay, isSameDay, isPast, isToday } from 'date-fns'
+import { format, startOfDay } from 'date-fns'
 import type { Member } from '@/types/member'
 
 interface SessionType {
@@ -57,9 +57,6 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [manualDuration, setManualDuration] = useState(60)
   const [manualTime, setManualTime] = useState('10:00')
 
-  // Ref for scrolling to today's date
-  const todayButtonRef = useRef<HTMLButtonElement>(null)
-
   // Session type options for manual mode (must match database enum)
   const sessionTypeOptions = [
     { value: 'initial_consultation', label: 'Initial Consultation', labelFr: 'Consultation initiale' },
@@ -81,9 +78,6 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   ]
 
   const supabase = createClient()
-
-  // Generate date options: past 7 days + next 14 days (21 days total)
-  const dateOptions = Array.from({ length: 21 }, (_, i) => addDays(startOfDay(new Date()), i - 7))
 
   // Fetch members and session types on open
   useEffect(() => {
@@ -120,13 +114,6 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       fetchAvailableSlots()
     }
   }, [selectedDate, selectedSessionType, userId])
-
-  // Scroll to today's date when datetime step is shown
-  useEffect(() => {
-    if (step === 'datetime' && todayButtonRef.current) {
-      todayButtonRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-    }
-  }, [step])
 
   const fetchInitialData = async () => {
     setLoading(true)
@@ -661,61 +648,18 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               <div className="space-y-4">
                 {/* Date Selection */}
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  <label className="text-sm font-medium text-gray-700 mb-3 block">
                     Select Date
-                    <span className="text-xs text-gray-400 ml-2 font-normal">(Past dates available for logging)</span>
                   </label>
 
-                  {/* Quick date picker - scrollable days */}
-                  <style>{`.date-scroll::-webkit-scrollbar { display: none; }`}</style>
-                  <div
-                    className="date-scroll flex gap-2 overflow-x-auto pb-2 -mx-1 px-1"
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                  >
-                    {dateOptions.map((date) => {
-                      const dateIsPast = isPast(date) && !isToday(date)
-                      const dateIsToday = isToday(date)
-                      return (
-                        <button
-                          key={date.toISOString()}
-                          ref={dateIsToday ? todayButtonRef : null}
-                          onClick={() => {
-                            setSelectedDate(date)
-                            setSelectedTime(null)
-                          }}
-                          className={`flex-shrink-0 px-3 py-2 rounded-xl border text-center min-w-[70px] transition-all ${
-                            isSameDay(selectedDate, date)
-                              ? 'border-mint-500 bg-mint-50 text-mint-700'
-                              : dateIsPast
-                              ? 'border-amber-200 bg-amber-50/50 hover:border-amber-300'
-                              : dateIsToday
-                              ? 'border-blue-200 bg-blue-50/50 hover:border-blue-300'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          <p className={`text-xs ${dateIsPast ? 'text-amber-600' : dateIsToday ? 'text-blue-600' : 'text-gray-500'}`}>
-                            {dateIsToday ? 'Today' : format(date, 'EEE')}
-                          </p>
-                          <p className="font-semibold">{format(date, 'd')}</p>
-                          <p className={`text-xs ${dateIsPast ? 'text-amber-500' : 'text-gray-500'}`}>{format(date, 'MMM')}</p>
-                        </button>
-                      )
-                    })}
-                  </div>
-
-                  {/* Advanced date picker for booking up to 6 months ahead */}
-                  <div className="mt-3">
-                    <p className="text-xs text-gray-500 mb-2">Or pick a specific date:</p>
-                    <CalendarPicker
-                      selectedDate={selectedDate}
-                      onDateSelect={(date) => {
-                        setSelectedDate(startOfDay(date))
-                        setSelectedTime(null)
-                      }}
-                      minDate={addDays(new Date(), -7)}
-                      maxDate={addDays(new Date(), 180)}
-                    />
-                  </div>
+                  {/* Calendar picker - allows any date */}
+                  <CalendarPicker
+                    selectedDate={selectedDate}
+                    onDateSelect={(date) => {
+                      setSelectedDate(startOfDay(date))
+                      setSelectedTime(null)
+                    }}
+                  />
                 </div>
 
                 {/* Time Selection */}

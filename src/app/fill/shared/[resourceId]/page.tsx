@@ -22,6 +22,11 @@ import {
   Eye,
   Save,
   BookOpen,
+  Sparkles,
+  Heart,
+  Lightbulb,
+  ThumbsUp,
+  Meh,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -188,6 +193,126 @@ function SubmissionConfirmation({
   )
 }
 
+// Reading feedback modal - subtle feeling-based feedback
+type ReadingFeedback = 'inspiring' | 'helpful' | 'interesting' | 'touched' | 'okay'
+
+const feedbackOptions: {
+  value: ReadingFeedback
+  icon: React.ElementType
+  label: { en: string; fr: string }
+  color: string
+  bg: string
+}[] = [
+  { value: 'inspiring', icon: Sparkles, label: { en: 'Inspiring', fr: 'Inspirant' }, color: 'text-amber-500', bg: 'bg-amber-50 hover:bg-amber-100 border-amber-200' },
+  { value: 'helpful', icon: ThumbsUp, label: { en: 'Helpful', fr: 'Utile' }, color: 'text-emerald-500', bg: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' },
+  { value: 'interesting', icon: Lightbulb, label: { en: 'Interesting', fr: 'Intéressant' }, color: 'text-blue-500', bg: 'bg-blue-50 hover:bg-blue-100 border-blue-200' },
+  { value: 'touched', icon: Heart, label: { en: 'Touched me', fr: 'Touchant' }, color: 'text-pink-500', bg: 'bg-pink-50 hover:bg-pink-100 border-pink-200' },
+  { value: 'okay', icon: Meh, label: { en: 'It was okay', fr: 'Correct' }, color: 'text-gray-400', bg: 'bg-gray-50 hover:bg-gray-100 border-gray-200' },
+]
+
+function ReadingFeedbackModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  isSubmitting,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  onSubmit: (feedback: ReadingFeedback | null) => void
+  isSubmitting: boolean
+}) {
+  const { locale } = useLanguage()
+  const [selected, setSelected] = useState<ReadingFeedback | null>(null)
+
+  if (!isOpen) return null
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center"
+        onClick={() => !isSubmitting && onClose()}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 50 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-white rounded-t-[2rem] sm:rounded-[2rem] p-6 sm:p-8 w-full sm:max-w-md shadow-2xl"
+        >
+          {/* Header */}
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
+              <BookOpen className="w-8 h-8 text-purple-500" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              {locale === 'fr' ? 'Comment était cette lecture ?' : 'How was this read?'}
+            </h2>
+            <p className="text-sm text-gray-500">
+              {locale === 'fr'
+                ? 'Partagez votre ressenti (optionnel)'
+                : 'Share how you felt (optional)'}
+            </p>
+          </div>
+
+          {/* Feedback Options */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {feedbackOptions.map((option) => {
+              const Icon = option.icon
+              const isSelected = selected === option.value
+              return (
+                <motion.button
+                  key={option.value}
+                  onClick={() => setSelected(isSelected ? null : option.value)}
+                  whileTap={{ scale: 0.95 }}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
+                    isSelected
+                      ? `${option.bg} border-current ring-2 ring-offset-2 ${option.color.replace('text-', 'ring-')}`
+                      : `${option.bg} border-transparent`
+                  }`}
+                >
+                  <Icon className={`w-7 h-7 ${option.color}`} />
+                  <span className={`text-sm font-medium ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>
+                    {locale === 'fr' ? option.label.fr : option.label.en}
+                  </span>
+                </motion.button>
+              )
+            })}
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => onSubmit(null)}
+              disabled={isSubmitting}
+              className="flex-1 rounded-full text-gray-500"
+            >
+              {locale === 'fr' ? 'Passer' : 'Skip'}
+            </Button>
+            <Button
+              onClick={() => onSubmit(selected)}
+              disabled={isSubmitting}
+              className="flex-1 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 text-white"
+            >
+              {isSubmitting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <CheckCircle className="w-5 h-5 mr-2" />
+                  {locale === 'fr' ? 'Terminer' : 'Done'}
+                </>
+              )}
+            </Button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
 export default function FillSharedResourcePage() {
   const router = useRouter()
   const params = useParams()
@@ -205,6 +330,7 @@ export default function FillSharedResourcePage() {
   const [submissionScores, setSubmissionScores] = useState<ScoreResult | null>(null)
   const [highlightedUnanswered, setHighlightedUnanswered] = useState<Set<string>>(new Set())
   const [showTableView, setShowTableView] = useState(false)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
 
   // Check if this is a table exercise
   const isTableExercise = resource?.type === 'table'
@@ -566,8 +692,14 @@ export default function FillSharedResourcePage() {
     }
   }
 
-  // Handle mark as read for psychoeducation
-  const handleMarkAsRead = async () => {
+  // Handle mark as read for psychoeducation - shows feedback modal first
+  const handleMarkAsRead = () => {
+    if (!response || !resource) return
+    setShowFeedbackModal(true)
+  }
+
+  // Handle the actual submission with optional feedback
+  const handleSubmitWithFeedback = async (feedback: ReadingFeedback | null) => {
     if (!response || !resource) return
 
     setSubmitting(true)
@@ -580,11 +712,16 @@ export default function FillSharedResourcePage() {
         type: resource.type,
       }
 
-      // Submit with empty responses (no questions to answer)
+      // Store feedback in responses with a special key
+      const responsesWithFeedback = feedback
+        ? { _reading_feedback: feedback, _feedback_at: new Date().toISOString() }
+        : {}
+
+      // Submit with feedback
       const { error } = await supabase
         .from('resource_responses')
         .update({
-          responses: {},
+          responses: responsesWithFeedback,
           scores: {},
           status: 'submitted',
           submitted_at: new Date().toISOString(),
@@ -595,6 +732,7 @@ export default function FillSharedResourcePage() {
 
       if (error) throw error
 
+      setShowFeedbackModal(false)
       setShowConfirmation(true)
       toast.success(
         locale === 'fr'
@@ -1355,6 +1493,14 @@ export default function FillSharedResourcePage() {
           )
         })()}
       </AnimatePresence>
+
+      {/* Reading Feedback Modal for Psychoeducation */}
+      <ReadingFeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        onSubmit={handleSubmitWithFeedback}
+        isSubmitting={submitting}
+      />
 
       {/* Submission Confirmation Modal */}
       <SubmissionConfirmation
