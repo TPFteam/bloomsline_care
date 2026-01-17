@@ -151,7 +151,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
   }
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative z-[100] ${className}`}>
       {/* Bell Button */}
       <button
         ref={buttonRef}
@@ -182,7 +182,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white dark:bg-[#1a1a1c] rounded-2xl shadow-xl border border-gray-200 dark:border-white/10 overflow-hidden z-50"
+            className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white dark:bg-[#1a1a1c] rounded-2xl shadow-xl border border-gray-200 dark:border-white/10 overflow-hidden z-[100]"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">

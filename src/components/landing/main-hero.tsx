@@ -467,8 +467,8 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                   transition={{ duration: 0.2 }}
                 >
                   {locale === 'fr'
-                    ? <>Mesurez l'engagement de vos patients en temps réel.<br />Créez et partagez du contenu pour un suivi fiable entre les séances.</>
-                    : <>Measure patient engagement in real-time.<br />Create and share content for reliable follow-up between sessions.</>}
+                    ? <>Accompagnez dans la durée, sans alourdir votre pratique.</>
+                    : <>Long-term support, without adding to your workload.</>}
                 </motion.span>
               )}
             </AnimatePresence>

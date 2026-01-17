@@ -544,7 +544,7 @@ function CaptureMomentContent() {
                   placeholder={locale === 'fr'
                     ? 'Écrivez vos pensées, sentiments, ou ce que vous voulez capturer...'
                     : 'Write your thoughts, feelings, or whatever you want to capture...'}
-                  className="flex-1 w-full p-6 bg-white/10 backdrop-blur-lg rounded-3xl border border-white/10 text-white placeholder-white/40 resize-none text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-transparent"
+                  className="flex-1 w-full p-6 bg-white/10 backdrop-blur-lg rounded-3xl border border-white/10 text-white placeholder-white/40 resize-none text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-transparent caret-white"
                   autoFocus
                 />
 
@@ -728,7 +728,7 @@ function CaptureMomentContent() {
                       value={caption}
                       onChange={(e) => setCaption(e.target.value)}
                       placeholder={locale === 'fr' ? 'Décrivez ce moment...' : 'Describe this moment...'}
-                      className="w-full p-4 bg-gray-50 rounded-2xl border-0 focus:ring-2 focus:ring-emerald-500 resize-none text-sm"
+                      className="w-full p-4 bg-gray-50 rounded-2xl border-0 focus:ring-2 focus:ring-emerald-500 resize-none text-sm text-gray-900 caret-gray-900"
                       rows={3}
                     />
                   </div>

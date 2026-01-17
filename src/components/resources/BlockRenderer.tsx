@@ -229,16 +229,15 @@ export function BlockRenderer({
         <motion.div
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50/50 border border-blue-100 rounded-2xl"
         >
-          <p className="font-medium text-blue-800 mb-3">
-            {locale === 'fr' ? '📌 Points clés' : '📌 Key Points'}
-          </p>
+          {typeof block.content === 'string' && block.content && (
+            <p className="font-medium text-gray-900 mb-2">{block.content}</p>
+          )}
           <ul className="space-y-2">
             {keyPoints.map((point, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-blue-700 text-[15px]">
-                <span className="text-blue-400 mt-1">•</span>
-                <span>{typeof point === 'string' ? point : ''}</span>
+              <li key={idx} className="flex items-start gap-3">
+                <span className="w-2 h-2 rounded-full bg-purple-500 mt-2 flex-shrink-0" />
+                <span className="text-gray-700 text-[15px]">{typeof point === 'string' ? point : ''}</span>
               </li>
             ))}
           </ul>
@@ -247,21 +246,21 @@ export function BlockRenderer({
 
     case 'callout':
       const calloutType = ('calloutType' in block && typeof block.calloutType === 'string') ? block.calloutType : 'info'
-      const calloutStyles: Record<string, { bg: string; border: string; text: string; icon: string }> = {
-        info: { bg: 'from-blue-50 to-sky-50', border: 'border-blue-200', text: 'text-blue-700', icon: 'ℹ️' },
-        warning: { bg: 'from-amber-50 to-yellow-50', border: 'border-amber-200', text: 'text-amber-700', icon: '⚠️' },
-        success: { bg: 'from-emerald-50 to-green-50', border: 'border-emerald-200', text: 'text-emerald-700', icon: '✅' },
-        tip: { bg: 'from-purple-50 to-violet-50', border: 'border-purple-200', text: 'text-purple-700', icon: '💡' },
+      const calloutStyles: Record<string, { bg: string; borderColor: string; text: string }> = {
+        info: { bg: 'bg-blue-50', borderColor: 'border-blue-500', text: 'text-blue-800' },
+        warning: { bg: 'bg-amber-50', borderColor: 'border-amber-500', text: 'text-amber-800' },
+        success: { bg: 'bg-emerald-50', borderColor: 'border-emerald-500', text: 'text-emerald-800' },
+        tip: { bg: 'bg-green-50', borderColor: 'border-green-500', text: 'text-green-800' },
+        example: { bg: 'bg-purple-50', borderColor: 'border-purple-500', text: 'text-purple-800' },
       }
       const style = calloutStyles[calloutType] || calloutStyles.info
       return (
         <motion.div
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`p-4 bg-gradient-to-br ${style.bg} border ${style.border} rounded-2xl`}
+          className={`p-4 rounded-xl border-l-4 ${style.bg} ${style.borderColor}`}
         >
-          <p className={`${style.text} text-[15px]`}>
-            <span className="mr-2">{style.icon}</span>
+          <p className={`${style.text} text-[15px] leading-relaxed`}>
             {typeof block.content === 'string' ? block.content : ''}
           </p>
         </motion.div>
