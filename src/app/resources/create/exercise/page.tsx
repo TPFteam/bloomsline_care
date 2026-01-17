@@ -30,6 +30,14 @@ import {
   CloudOff,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+} from '@/components/ui/alert-dialog'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -210,6 +218,13 @@ export default function CreateExercisePage() {
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isAutoSavingRef = useRef(false)
 
+  // Template modification tracking using ref for reliable synchronous access
+  const originalTemplateContentRef = useRef<{
+    title: string
+    steps: ExerciseStep[]
+  } | null>(null)
+  const [showTemplateWarningDialog, setShowTemplateWarningDialog] = useState(false)
+
   // Generate unique ID
   const generateId = () => Math.random().toString(36).substr(2, 9)
 
@@ -221,12 +236,58 @@ export default function CreateExercisePage() {
       if (template.id === 'blank') {
         setSteps([])
         setTitle('')
+        originalTemplateContentRef.current = null
       } else {
-        setSteps(template.steps.map(s => ({ ...s, id: generateId() })))
+        const stepsWithIds = template.steps.map(s => ({ ...s, id: generateId() }))
+        setSteps(stepsWithIds)
         setTitle(template.name[locale])
+        // Track template for modification check - deep copy to compare against original values
+        originalTemplateContentRef.current = {
+          title: template.name[locale],
+          steps: stepsWithIds.map(s => ({ ...s }))
+        }
       }
       setStep('build')
     }
+  }
+
+  // Check if template content has been modified
+  const hasModifiedTemplate = (): boolean => {
+    if (!selectedTemplate || selectedTemplate === 'blank' || !originalTemplateContentRef.current) return true // No template = can proceed
+
+    // Check if title changed
+    if (title !== originalTemplateContentRef.current.title) return true
+
+    // Check if steps count changed
+    if (steps.length !== originalTemplateContentRef.current.steps.length) return true
+
+    // Check if any step content was modified
+    for (let i = 0; i < steps.length; i++) {
+      const currentStep = steps[i]
+      const originalStep = originalTemplateContentRef.current.steps[i]
+      if (!originalStep) return true
+      if (currentStep.title !== originalStep.title) return true
+      if (currentStep.content !== originalStep.content) return true
+      if (currentStep.type !== originalStep.type) return true
+    }
+
+    return false
+  }
+
+  // Handle continue to details with template modification check
+  const handleContinueToDetails = () => {
+    if (!hasModifiedTemplate()) {
+      setShowTemplateWarningDialog(true)
+      return
+    }
+    setStep('details')
+  }
+
+  // Handle going back to resource creation page (discard current resource)
+  const handleGoBackToTemplates = () => {
+    setShowTemplateWarningDialog(false)
+    // Navigate back to resource creation page
+    router.push('/resources/create')
   }
 
   // Add new step
@@ -966,7 +1027,7 @@ export default function CreateExercisePage() {
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button
                       size="sm"
-                      onClick={() => setStep('details')}
+                      onClick={handleContinueToDetails}
                       disabled={!canProceedToDetails}
                       className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-lg shadow-amber-200/50 rounded-xl"
                     >
@@ -1381,6 +1442,37 @@ export default function CreateExercisePage() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Template Modification Warning Dialog */}
+      <AlertDialog open={showTemplateWarningDialog} onOpenChange={setShowTemplateWarningDialog}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {locale === 'fr' ? 'Modèle non personnalisé' : 'Template Not Customized'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {locale === 'fr'
+                ? 'Vous n\'avez pas encore personnalisé ce modèle. Veuillez modifier le contenu avant de continuer ou retourner à la sélection de modèle.'
+                : 'You haven\'t customized this template yet. Please modify the content before continuing or go back to template selection.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={handleGoBackToTemplates}
+              className="flex-1 sm:flex-none"
+            >
+              {locale === 'fr' ? 'Retour' : 'Go Back'}
+            </Button>
+            <Button
+              onClick={() => setShowTemplateWarningDialog(false)}
+              className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-600"
+            >
+              {locale === 'fr' ? 'Modifier' : 'Modify'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -109,6 +109,9 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [submissionFilter, setSubmissionFilter] = useState<'all' | 'submitted' | 'reviewed'>('all')
 
+  // Resource completion filter
+  const [resourceFilter, setResourceFilter] = useState<'all' | 'completed' | 'not_completed'>('all')
+
   // Scroll to highlighted resource or section
   useEffect(() => {
     if (highlightResourceId) {
@@ -301,6 +304,15 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
       toast.error(locale === 'fr' ? 'Échec de l\'annulation du partage' : 'Failed to unshare resource')
     }
   }
+
+  // Resource filter helper
+  const filteredLibraryResources = sharedLibraryResources.filter(resource => {
+    if (resourceFilter === 'all') return true
+    const hasSubmission = submissions.some(s => s.resource_id === resource.resource_id)
+    const isCompleted = hasSubmission || !!resource.viewed_at
+    if (resourceFilter === 'completed') return isCompleted
+    return !isCompleted // not_completed
+  })
 
   // Submissions helpers
   const filteredSubmissions = submissions.filter(sub => {
@@ -549,17 +561,61 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                 highlightResourceId === 'shared-resources-section' ? 'ring-2 ring-indigo-400 ring-offset-2' : ''
               }`}
             >
-              <div className="p-4 border-b border-gray-100/50 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-teal-600" />
-                <h3 className="font-semibold text-gray-900">
-                  {locale === 'fr' ? 'Ressources de la Bibliothèque' : 'Library Resources'}
-                </h3>
-                <span className="text-xs bg-mint-100 text-mint-700 px-2 py-0.5 rounded-full">
-                  {sharedLibraryResources.length}
-                </span>
+              <div className="p-4 border-b border-gray-100/50">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-teal-600" />
+                    <h3 className="font-semibold text-gray-900">
+                      {locale === 'fr' ? 'Ressources' : 'Resources'}
+                    </h3>
+                    <span className="text-xs bg-mint-100 text-mint-700 px-2 py-0.5 rounded-full">
+                      {sharedLibraryResources.length}
+                    </span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => setResourceFilter('all')}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                        resourceFilter === 'all'
+                          ? 'bg-gray-900 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {locale === 'fr' ? 'Tous' : 'All'}
+                    </button>
+                    <button
+                      onClick={() => setResourceFilter('completed')}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                        resourceFilter === 'completed'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {locale === 'fr' ? 'Complété' : 'Completed'}
+                    </button>
+                    <button
+                      onClick={() => setResourceFilter('not_completed')}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                        resourceFilter === 'not_completed'
+                          ? 'bg-amber-500 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {locale === 'fr' ? 'Non complété' : 'Not Completed'}
+                    </button>
+                  </div>
+                </div>
               </div>
               <div className="grid gap-4">
-                {sharedLibraryResources.map((resource, index) => {
+                {filteredLibraryResources.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500">
+                    <p className="text-sm">
+                      {resourceFilter === 'completed'
+                        ? (locale === 'fr' ? 'Aucune ressource complétée' : 'No completed resources')
+                        : (locale === 'fr' ? 'Aucune ressource non complétée' : 'No uncompleted resources')}
+                    </p>
+                  </div>
+                ) : filteredLibraryResources.map((resource, index) => {
                   const TypeIcon = resourceTypeIcons[resource.resource.type] || FileText
                   const config = resourceTypeConfig[resource.resource.type] || resourceTypeConfig.worksheet
                   const isHighlighted = highlightResourceId === resource.id

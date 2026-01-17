@@ -27,6 +27,14 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+} from '@/components/ui/alert-dialog'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -166,6 +174,14 @@ function CreateTableExerciseContent() {
   const isInitialLoadRef = useRef(true)
   const justAutoSavedRef = useRef(false)
 
+  // Template modification tracking using refs for reliable synchronous access
+  const selectedTemplateIdRef = useRef<string | null>(null)
+  const originalTemplateContentRef = useRef<{
+    columns: typeof columns
+    instructions: string
+  } | null>(null)
+  const [showTemplateWarningDialog, setShowTemplateWarningDialog] = useState(false)
+
   // Load existing resource when editing
   useEffect(() => {
     async function loadResource() {
@@ -245,10 +261,18 @@ function CreateTableExerciseContent() {
           ])
           setTitle('')
           setInstructions('')
+          selectedTemplateIdRef.current = null
+          originalTemplateContentRef.current = null
         } else {
-          setColumns(template.columns.map(c => ({ ...c, id: generateId() })))
+          const columnsWithIds = template.columns.map(c => ({ ...c, id: generateId() }))
+          setColumns(columnsWithIds)
           setTitle(template.name[locale])
           setInstructions(template.instructions || '')
+          selectedTemplateIdRef.current = templateParam
+          originalTemplateContentRef.current = {
+            columns: columnsWithIds.map(c => ({ ...c })),
+            instructions: template.instructions || ''
+          }
         }
       }
     }
@@ -334,8 +358,60 @@ function CreateTableExerciseContent() {
       }))
       setColumns(columnsWithIds)
       setInstructions(template.instructions)
+      setTitle(template.name[locale]) // Set title from template
       setStep('build')
+
+      // Track template for modification check (skip for blank template)
+      if (templateId !== 'blank') {
+        selectedTemplateIdRef.current = templateId
+        // Deep copy to ensure we're comparing against the original values
+        originalTemplateContentRef.current = {
+          columns: columnsWithIds.map(c => ({ ...c })),
+          instructions: template.instructions
+        }
+      } else {
+        selectedTemplateIdRef.current = null
+        originalTemplateContentRef.current = null
+      }
     }
+  }
+
+  // Check if template content has been modified
+  const hasModifiedTemplate = (): boolean => {
+    if (!selectedTemplateIdRef.current || !originalTemplateContentRef.current) return true // No template = can proceed
+
+    // Check if instructions changed
+    if (instructions !== originalTemplateContentRef.current.instructions) return true
+
+    // Check if columns count changed
+    if (columns.length !== originalTemplateContentRef.current.columns.length) return true
+
+    // Check if any column content was modified
+    for (let i = 0; i < columns.length; i++) {
+      const currentCol = columns[i]
+      const originalCol = originalTemplateContentRef.current.columns[i]
+      if (!originalCol) return true
+      if (currentCol.header !== originalCol.header) return true
+      if (currentCol.description !== originalCol.description) return true
+    }
+
+    return false
+  }
+
+  // Handle continue to details with template modification check
+  const handleContinueToDetails = () => {
+    if (!hasModifiedTemplate()) {
+      setShowTemplateWarningDialog(true)
+      return
+    }
+    setStep('details')
+  }
+
+  // Handle going back to resource creation page (discard current resource)
+  const handleGoBackToTemplates = () => {
+    setShowTemplateWarningDialog(false)
+    // Navigate back to resource creation page
+    router.push('/resources/create')
   }
 
   // Save resource
@@ -768,7 +844,7 @@ function CreateTableExerciseContent() {
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button
                       size="sm"
-                      onClick={() => setStep('details')}
+                      onClick={handleContinueToDetails}
                       disabled={!canProceedToDetails}
                       className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-200/50 rounded-xl"
                     >
@@ -1587,7 +1663,7 @@ function CreateTableExerciseContent() {
                               </span>
                             </div>
                             <p className="text-xs text-gray-500">
-                              {locale === 'fr' ? 'Vous + vos membres' : 'You + your members'}
+                              {locale === 'fr' ? 'Vous + membres partagés' : 'You + shared members'}
                             </p>
                           </motion.button>
 
@@ -1784,6 +1860,37 @@ function CreateTableExerciseContent() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Template Modification Warning Dialog */}
+      <AlertDialog open={showTemplateWarningDialog} onOpenChange={setShowTemplateWarningDialog}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {locale === 'fr' ? 'Modèle non personnalisé' : 'Template Not Customized'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {locale === 'fr'
+                ? 'Vous n\'avez pas encore personnalisé ce modèle. Veuillez modifier le contenu avant de continuer ou retourner à la sélection de modèle.'
+                : 'You haven\'t customized this template yet. Please modify the content before continuing or go back to template selection.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={handleGoBackToTemplates}
+              className="flex-1 sm:flex-none"
+            >
+              {locale === 'fr' ? 'Retour' : 'Go Back'}
+            </Button>
+            <Button
+              onClick={() => setShowTemplateWarningDialog(false)}
+              className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-600"
+            >
+              {locale === 'fr' ? 'Modifier' : 'Modify'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

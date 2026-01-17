@@ -28,7 +28,7 @@ import type { Collection } from '@/types/collection'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import type { ResourceCategory } from '@/types/library'
-import { getResources } from '@/lib/services/resources'
+import { getResources, createResource } from '@/lib/services/resources'
 import type { Resource } from '@/types/resource'
 import { createClient } from '@/lib/supabase/browser-client'
 import { ResourceCard, ResourceCardList } from '@/components/resources/ResourceCard'
@@ -82,6 +82,7 @@ export default function LibraryPage() {
   // Bookmarked resources tracking
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
   const [isBookmarking, setIsBookmarking] = useState<string | null>(null)
+  const [isDuplicating, setIsDuplicating] = useState<string | null>(null)
 
   // Add Member Modal state
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
@@ -450,6 +451,47 @@ export default function LibraryPage() {
     }
   }
 
+  // Generate duplicate title
+  const generateDuplicateTitle = (originalTitle: string): string => {
+    const copyLabel = locale === 'fr' ? 'Copie' : 'Copy'
+    const copyPattern = locale === 'fr' ? /\(Copie(?: (\d+))?\)$/ : /\(Copy(?: (\d+))?\)$/
+
+    const match = originalTitle.match(copyPattern)
+    if (match) {
+      const currentNum = match[1] ? parseInt(match[1]) : 1
+      const newNum = currentNum + 1
+      return originalTitle.replace(copyPattern, `(${copyLabel} ${newNum})`)
+    } else {
+      return `${originalTitle} (${copyLabel})`
+    }
+  }
+
+  // Handle duplicate resource from library
+  const handleDuplicate = async (resource: Resource) => {
+    setIsDuplicating(resource.id)
+    try {
+      await createResource({
+        type: resource.type,
+        title: generateDuplicateTitle(resource.title),
+        description: resource.description,
+        category: resource.category,
+        tags: resource.tags,
+        blocks: resource.blocks,
+        settings: resource.settings,
+        status: 'draft',
+        visibility: 'private',
+        language: resource.language,
+      })
+
+      toast.success(locale === 'fr' ? 'Ressource dupliquée dans vos ressources' : 'Resource duplicated to your resources')
+    } catch (error) {
+      console.error('Error duplicating resource:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors de la duplication' : 'Error duplicating resource')
+    } finally {
+      setIsDuplicating(null)
+    }
+  }
+
 
   if (loading) {
     return (
@@ -698,7 +740,9 @@ export default function LibraryPage() {
                       onShareWithMembers={handleShareWithMembers}
                       onAddMember={() => setShowAddMemberModal(true)}
                       onBookmark={handleBookmark}
+                      onDuplicate={() => handleDuplicate(resource)}
                       isBookmarked={bookmarkedIds.has(resource.id)}
+                      isDuplicating={isDuplicating === resource.id}
                       showCuratedBadge={resource.is_curated === true}
                     />
                   ) : (
@@ -709,7 +753,9 @@ export default function LibraryPage() {
                       variant="library"
                       index={index}
                       onBookmark={handleBookmark}
+                      onDuplicate={() => handleDuplicate(resource)}
                       isBookmarked={bookmarkedIds.has(resource.id)}
+                      isDuplicating={isDuplicating === resource.id}
                       showCuratedBadge={resource.is_curated === true}
                     />
                   )

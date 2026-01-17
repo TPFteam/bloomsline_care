@@ -18,6 +18,7 @@ import {
   Globe,
   Heart,
   Send,
+  Copy,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -102,12 +103,14 @@ interface ResourceCardProps {
   onDelete?: () => void
   onRemove?: () => void
   onShare?: () => void
+  onDuplicate?: () => void
   onBookmark?: (resourceId: string) => void
   members?: SimpleMember[]
   onShareWithMembers?: (resourceId: string, memberIds: string[], message?: string) => Promise<void>
   onAddMember?: () => void
   isDeleting?: boolean
   isRemoving?: boolean
+  isDuplicating?: boolean
   isOwner?: boolean
   showCuratedBadge?: boolean
   isBookmarked?: boolean
@@ -124,12 +127,14 @@ export function ResourceCard({
   onDelete,
   onRemove,
   onShare,
+  onDuplicate,
   onBookmark,
   members = [],
   onShareWithMembers,
   onAddMember,
   isDeleting = false,
   isRemoving = false,
+  isDuplicating = false,
   isOwner = true,
   showCuratedBadge = false,
   isBookmarked = false,
@@ -168,7 +173,7 @@ export function ResourceCard({
           cursor-pointer transition-all duration-200
           border border-gray-200 hover:border-gray-300 hover:shadow-sm
           flex items-center gap-4
-          ${isDeleting || isRemoving ? 'opacity-50 pointer-events-none' : ''}
+          ${isDeleting || isRemoving || isDuplicating ? 'opacity-50 pointer-events-none' : ''}
         `}
       >
         {/* Icon */}
@@ -252,6 +257,12 @@ export function ResourceCard({
                   {locale === 'fr' ? 'Modifier' : 'Edit'}
                 </DropdownMenuItem>
               )}
+              {onDuplicate && (
+                <DropdownMenuItem onClick={onDuplicate}>
+                  <Copy className="w-4 h-4 mr-2 text-gray-400" />
+                  {locale === 'fr' ? 'Dupliquer' : 'Duplicate'}
+                </DropdownMenuItem>
+              )}
               {(variant === 'owned' || variant === 'saved') && onShare && (
                 <DropdownMenuItem onClick={onShare} className="text-purple-600">
                   <Users className="w-4 h-4 mr-2" />
@@ -295,7 +306,7 @@ export function ResourceCard({
         group bg-white rounded-2xl p-5
         cursor-pointer transition-all duration-200
         border border-gray-200 hover:border-gray-300 hover:shadow-sm
-        ${isDeleting || isRemoving ? 'opacity-50 pointer-events-none' : ''}
+        ${isDeleting || isRemoving || isDuplicating ? 'opacity-50 pointer-events-none' : ''}
       `}
     >
       {/* Header: Icon + Type + Menu */}
@@ -352,6 +363,12 @@ export function ResourceCard({
                 <DropdownMenuItem onClick={onEdit}>
                   <Pencil className="w-4 h-4 mr-2 text-gray-400" />
                   {locale === 'fr' ? 'Modifier' : 'Edit'}
+                </DropdownMenuItem>
+              )}
+              {onDuplicate && (
+                <DropdownMenuItem onClick={onDuplicate}>
+                  <Copy className="w-4 h-4 mr-2 text-gray-400" />
+                  {locale === 'fr' ? 'Dupliquer' : 'Duplicate'}
                 </DropdownMenuItem>
               )}
               {(variant === 'owned' || variant === 'saved') && onShare && (
@@ -477,8 +494,10 @@ export function ResourceCardList({
   onEdit,
   onDelete,
   onShare,
+  onDuplicate,
   onBookmark,
   isDeleting = false,
+  isDuplicating = false,
   isOwner = true,
   showCuratedBadge = false,
   isBookmarked = false,
@@ -514,7 +533,7 @@ export function ResourceCardList({
         cursor-pointer transition-all duration-200
         border border-gray-200 hover:border-gray-300 hover:shadow-sm
         flex items-center gap-4
-        ${isDeleting ? 'opacity-50 pointer-events-none' : ''}
+        ${isDeleting || isDuplicating ? 'opacity-50 pointer-events-none' : ''}
       `}
     >
       {/* Icon */}
@@ -600,6 +619,12 @@ export function ResourceCardList({
               <DropdownMenuItem onClick={onEdit}>
                 <Pencil className="w-4 h-4 mr-2 text-gray-400" />
                 {locale === 'fr' ? 'Modifier' : 'Edit'}
+              </DropdownMenuItem>
+            )}
+            {onDuplicate && (
+              <DropdownMenuItem onClick={onDuplicate}>
+                <Copy className="w-4 h-4 mr-2 text-gray-400" />
+                {locale === 'fr' ? 'Dupliquer' : 'Duplicate'}
               </DropdownMenuItem>
             )}
             {variant === 'owned' && onShare && (

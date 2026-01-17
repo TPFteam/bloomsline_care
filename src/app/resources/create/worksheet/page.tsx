@@ -61,6 +61,14 @@ import {
   CloudOff,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+} from '@/components/ui/alert-dialog'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { useLanguage } from '@/lib/i18n/context'
 import { createResource, getResourceById, updateResource } from '@/lib/services/resources'
@@ -463,6 +471,11 @@ function CreateWorksheetContent() {
   const isInitialLoadRef = useRef(true)
   const justAutoSavedRef = useRef(false)
 
+  // Template modification tracking using refs for reliable synchronous access
+  const selectedTemplateIdRef = useRef<string | null>(null)
+  const hasModifiedContentRef = useRef(false)
+  const [showTemplateWarningDialog, setShowTemplateWarningDialog] = useState(false)
+
   // Get user ID on mount
   useEffect(() => {
     const getUser = async () => {
@@ -482,11 +495,15 @@ function CreateWorksheetContent() {
       if (templateParam === 'blank') {
         setBlocks([])
         setTitle('')
+        selectedTemplateIdRef.current = null
+        hasModifiedContentRef.current = true // Blank = can proceed
       } else {
         const template = worksheetTemplates.find(t => t.id === templateParam)
         if (template && template.id !== 'blank') {
           setBlocks(template.blocks.map(b => ({ ...b, id: generateId() })))
           setTitle(template.name[locale])
+          selectedTemplateIdRef.current = templateParam
+          hasModifiedContentRef.current = false // Using template = must modify before proceeding
         }
       }
       setSelectedTemplate(templateParam)
@@ -647,12 +664,39 @@ function CreateWorksheetContent() {
       if (template.id === 'blank') {
         setBlocks([])
         setTitle('')
+        selectedTemplateIdRef.current = null
+        hasModifiedContentRef.current = true // Blank = can proceed
       } else {
         setBlocks(template.blocks.map(b => ({ ...b, id: generateId() })))
         setTitle(template.name[locale])
+        selectedTemplateIdRef.current = templateId
+        hasModifiedContentRef.current = false // Using template = must modify before proceeding
       }
       setStep('build')
     }
+  }
+
+  // Helper to mark content as modified
+  const markAsModified = () => {
+    if (selectedTemplateIdRef.current && !hasModifiedContentRef.current) {
+      hasModifiedContentRef.current = true
+    }
+  }
+
+  // Handle continue to details with template modification check
+  const handleContinueToDetails = () => {
+    if (selectedTemplateIdRef.current && !hasModifiedContentRef.current) {
+      setShowTemplateWarningDialog(true)
+      return
+    }
+    setStep('details')
+  }
+
+  // Handle going back to resource creation page (discard current resource)
+  const handleGoBackToTemplates = () => {
+    setShowTemplateWarningDialog(false)
+    // Navigate back to resource creation page
+    router.push('/resources/create')
   }
 
   // Default mood options - nature/wellness themed
@@ -726,6 +770,7 @@ function CreateWorksheetContent() {
     setBlocks([...blocks, newBlock])
     setExpandedBlock(newBlock.id)
     setShowBlockPicker(false)
+    markAsModified()
   }
 
   // Apply likert preset to a block
@@ -912,11 +957,13 @@ function CreateWorksheetContent() {
   // Update block
   const updateBlock = (id: string, updates: Partial<WorksheetBlock>) => {
     setBlocks(blocks.map(b => b.id === id ? { ...b, ...updates } : b))
+    markAsModified()
   }
 
   // Delete block
   const deleteBlock = (id: string) => {
     setBlocks(blocks.filter(b => b.id !== id))
+    markAsModified()
   }
 
   // Duplicate block
@@ -927,6 +974,7 @@ function CreateWorksheetContent() {
       const newBlock = { ...block, id: newBlockId }
       const index = blocks.findIndex(b => b.id === id)
       const newBlocks = [...blocks]
+      markAsModified()
       newBlocks.splice(index + 1, 0, newBlock)
       setBlocks(newBlocks)
 
@@ -4291,7 +4339,7 @@ function CreateWorksheetContent() {
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button
                       size="sm"
-                      onClick={() => setStep('details')}
+                      onClick={handleContinueToDetails}
                       disabled={!canProceedToDetails}
                       className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-200/50 rounded-xl"
                     >
@@ -4367,7 +4415,7 @@ function CreateWorksheetContent() {
                         <input
                           type="text"
                           value={title}
-                          onChange={(e) => setTitle(e.target.value)}
+                          onChange={(e) => { setTitle(e.target.value); markAsModified(); }}
                           placeholder={locale === 'fr' ? 'Titre de l\'exercice...' : 'Worksheet title...'}
                           className="w-full text-2xl font-bold text-gray-900 bg-transparent border-none focus:outline-none placeholder-gray-400"
                         />
@@ -4375,7 +4423,7 @@ function CreateWorksheetContent() {
 
                       {/* Blocks */}
                       <div className="space-y-1">
-                        <Reorder.Group axis="y" values={blocks} onReorder={setBlocks} className="space-y-1">
+                        <Reorder.Group axis="y" values={blocks} onReorder={(newBlocks) => { setBlocks(newBlocks); markAsModified(); }} className="space-y-1">
                           {blocks.map((block) => (
                             <SortableBlockItem key={block.id} block={block}>
                               {(dragControls) => renderBlockEditor(block, dragControls)}
@@ -5357,7 +5405,7 @@ function CreateWorksheetContent() {
                               </span>
                             </div>
                             <p className="text-xs text-gray-500">
-                              {locale === 'fr' ? 'Vous + vos membres' : 'You + your members'}
+                              {locale === 'fr' ? 'Vous + membres partagés' : 'You + shared members'}
                             </p>
                           </motion.button>
 
@@ -5495,6 +5543,37 @@ function CreateWorksheetContent() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Template Modification Warning Dialog */}
+      <AlertDialog open={showTemplateWarningDialog} onOpenChange={setShowTemplateWarningDialog}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {locale === 'fr' ? 'Modèle non personnalisé' : 'Template Not Customized'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {locale === 'fr'
+                ? 'Vous n\'avez pas encore personnalisé ce modèle. Veuillez modifier le contenu avant de continuer ou retourner à la sélection de modèle.'
+                : 'You haven\'t customized this template yet. Please modify the content before continuing or go back to template selection.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={handleGoBackToTemplates}
+              className="flex-1 sm:flex-none"
+            >
+              {locale === 'fr' ? 'Retour' : 'Go Back'}
+            </Button>
+            <Button
+              onClick={() => setShowTemplateWarningDialog(false)}
+              className="flex-1 sm:flex-none bg-blue-500 hover:bg-blue-600"
+            >
+              {locale === 'fr' ? 'Modifier' : 'Modify'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

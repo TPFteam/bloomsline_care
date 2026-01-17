@@ -30,7 +30,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
-import { getResources, deleteResource } from '@/lib/services/resources'
+import { getResources, deleteResource, createResource } from '@/lib/services/resources'
 import { getCollections, createCollection, removeResourceFromAllCollections, getSavedResources, addResourceToCollection } from '@/lib/services/collections'
 import type { Resource } from '@/types/resource'
 import type { Collection, CollectionColor, CollectionIcon, collectionColorConfig } from '@/types/collection'
@@ -104,6 +104,7 @@ export default function MyResourcesPage() {
   const [isLoadingSaved, setIsLoadingSaved] = useState(true)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const [isRemoving, setIsRemoving] = useState<string | null>(null)
+  const [isDuplicating, setIsDuplicating] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   // Collections state
@@ -259,6 +260,51 @@ export default function MyResourcesPage() {
       toast.error(locale === 'fr' ? 'Erreur' : 'Error')
     } finally {
       setIsDeleting(null)
+    }
+  }
+
+  // Generate duplicate title
+  const generateDuplicateTitle = (originalTitle: string): string => {
+    const copyLabel = locale === 'fr' ? 'Copie' : 'Copy'
+    const copyPattern = locale === 'fr' ? /\(Copie(?: (\d+))?\)$/ : /\(Copy(?: (\d+))?\)$/
+
+    const match = originalTitle.match(copyPattern)
+    if (match) {
+      // Already has (Copy) or (Copy N) - increment the number
+      const currentNum = match[1] ? parseInt(match[1]) : 1
+      const newNum = currentNum + 1
+      return originalTitle.replace(copyPattern, `(${copyLabel} ${newNum})`)
+    } else {
+      // No copy suffix - add (Copy)
+      return `${originalTitle} (${copyLabel})`
+    }
+  }
+
+  // Handle duplicate resource
+  const handleDuplicate = async (resource: Resource) => {
+    setIsDuplicating(resource.id)
+    try {
+      const duplicatedResource = await createResource({
+        type: resource.type,
+        title: generateDuplicateTitle(resource.title),
+        description: resource.description,
+        category: resource.category,
+        tags: resource.tags,
+        blocks: resource.blocks,
+        settings: resource.settings,
+        status: 'draft', // Always start as draft
+        visibility: 'private', // Always start as private
+        language: resource.language,
+      })
+
+      // Add the new resource to the list
+      setDbResources(prev => [duplicatedResource, ...prev])
+      toast.success(locale === 'fr' ? 'Ressource dupliquée' : 'Resource duplicated')
+    } catch (error) {
+      console.error('Error duplicating resource:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors de la duplication' : 'Error duplicating resource')
+    } finally {
+      setIsDuplicating(null)
     }
   }
 
@@ -792,8 +838,10 @@ export default function MyResourcesPage() {
                         onEdit={() => router.push(`/resources/create/${resource.type}?edit=${resource.id}`)}
                         onPreview={() => router.push(`/resources/${resource.id}`)}
                         onDelete={() => handleDelete(resource.id)}
+                        onDuplicate={() => handleDuplicate(resource)}
                         onShare={() => handleOpenShareModal(resource)}
                         isDeleting={isDeleting === resource.id}
+                        isDuplicating={isDuplicating === resource.id}
                         isOwner={currentUserId === resource.practitioner_id}
                       />
                     ))}
@@ -838,8 +886,10 @@ export default function MyResourcesPage() {
                         viewMode={viewMode}
                         onPreview={() => router.push(`/resources/${resource.id}`)}
                         onRemove={() => handleRemoveFromLibrary(resource.id)}
+                        onDuplicate={() => handleDuplicate(resource)}
                         onShare={() => handleOpenShareModal(resource)}
                         isRemoving={isRemoving === resource.id}
+                        isDuplicating={isDuplicating === resource.id}
                         isOwner={false}
                       />
                     ))}

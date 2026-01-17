@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, use } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -40,12 +40,18 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
   const resolvedParams = use(params)
   const { t } = useLanguage()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+
+  // Get initial tab from URL or default to 'overview'
+  const tabFromUrl = searchParams.get('tab') as TabId | null
+  const validTabs: TabId[] = ['overview', 'sessions', 'progress', 'files', 'shared']
+  const initialTab = tabFromUrl && validTabs.includes(tabFromUrl) ? tabFromUrl : 'overview'
 
   const [member, setMember] = useState<Member | null>(null)
   const [user, setUser] = useState<UserType | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<TabId>('overview')
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab)
   const [highlightId, setHighlightId] = useState<string | undefined>(undefined)
   const [notes, setNotes] = useState<ProgressNote[]>([])
   const [sessions, setSessions] = useState<MemberSession[]>([])
@@ -146,14 +152,33 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
     }
   }
 
+  // Helper to update URL with tab parameter
+  const updateTabInUrl = (tab: TabId) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (tab === 'overview') {
+      params.delete('tab')
+    } else {
+      params.set('tab', tab)
+    }
+    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname
+    router.replace(newUrl, { scroll: false })
+  }
+
   // Handler for navigating to tabs with optional highlight
   const handleNavigateToTab = (tab: TabId, id?: string) => {
     setActiveTab(tab)
+    updateTabInUrl(tab)
     setHighlightId(id)
     // Clear highlight after 3 seconds
     if (id) {
       setTimeout(() => setHighlightId(undefined), 3000)
     }
+  }
+
+  // Handler for tab button clicks
+  const handleTabClick = (tab: TabId) => {
+    setActiveTab(tab)
+    updateTabInUrl(tab)
   }
 
   const tabs: { id: TabId; label: string; icon: typeof FileText }[] = [
@@ -316,7 +341,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => handleTabClick(tab.id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                     isActive
                       ? 'bg-gray-900 text-white'

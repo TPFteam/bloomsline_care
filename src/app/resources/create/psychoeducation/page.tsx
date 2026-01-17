@@ -43,6 +43,14 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+} from '@/components/ui/alert-dialog'
 import { useLanguage } from '@/lib/i18n/context'
 import { createResource, getResourceById, updateResource } from '@/lib/services/resources'
 import { uploadResourceFile, validateFile, formatFileSize } from '@/lib/services/resource-storage'
@@ -308,6 +316,12 @@ function CreatePsychoeducationContent() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [members, setMembers] = useState<SimpleMember[]>([])
 
+  // Template modification tracking using refs for reliable synchronous access
+  // Using refs to avoid closure issues with state
+  const selectedTemplateIdRef = useRef<string | null>(null)
+  const hasModifiedContentRef = useRef(false)
+  const [showTemplateWarningDialog, setShowTemplateWarningDialog] = useState(false)
+
   // Get user ID on mount
   useEffect(() => {
     const getUser = async () => {
@@ -412,6 +426,8 @@ function CreatePsychoeducationContent() {
           setBlocks([])
           setLearningObjectives([''])
           setTitle('')
+          selectedTemplateIdRef.current = null
+          hasModifiedContentRef.current = true // Blank = can proceed
         } else {
           const blocksWithIds = template.blocks.map(block => ({
             ...block,
@@ -420,6 +436,9 @@ function CreatePsychoeducationContent() {
           setBlocks(blocksWithIds as ContentBlock[])
           setLearningObjectives(template.learningObjectives)
           setTitle(template.name[locale])
+          // Track template for modification check
+          selectedTemplateIdRef.current = templateParam
+          hasModifiedContentRef.current = false // Using template = must modify before proceeding
         }
       }
     }
@@ -481,8 +500,42 @@ function CreatePsychoeducationContent() {
         id: generateId(),
       }))
       setBlocks(blocksWithIds as ContentBlock[])
-      setLearningObjectives(template.learningObjectives)
+      setLearningObjectives([...template.learningObjectives])
+      setTitle(template.name[locale]) // Set title from template
       setStep('build')
+
+      // Track if using a template (not blank)
+      if (templateId !== 'blank') {
+        selectedTemplateIdRef.current = templateId
+        hasModifiedContentRef.current = false // Reset modification flag
+      } else {
+        selectedTemplateIdRef.current = null
+        hasModifiedContentRef.current = true // Blank template = user must create from scratch, allow proceed
+      }
+    }
+  }
+
+  // Handle continue to details with template modification check
+  const handleContinueToDetails = () => {
+    // If using a template and hasn't made any modifications, show warning dialog
+    if (selectedTemplateIdRef.current && !hasModifiedContentRef.current) {
+      setShowTemplateWarningDialog(true)
+      return
+    }
+    setStep('details')
+  }
+
+  // Handle going back to resource creation page (discard current resource)
+  const handleGoBackToTemplates = () => {
+    setShowTemplateWarningDialog(false)
+    // Navigate back to resource creation page
+    router.push('/resources/create')
+  }
+
+  // Helper to mark content as modified (call this in any edit handler)
+  const markAsModified = () => {
+    if (selectedTemplateIdRef.current && !hasModifiedContentRef.current) {
+      hasModifiedContentRef.current = true
     }
   }
 
@@ -502,16 +555,19 @@ function CreatePsychoeducationContent() {
     setBlocks([...blocks, newBlock])
     setExpandedBlock(newBlock.id)
     setShowBlockPicker(false)
+    markAsModified()
   }
 
   // Update block
   const updateBlock = (id: string, updates: Partial<ContentBlock>) => {
     setBlocks(blocks.map(b => b.id === id ? { ...b, ...updates } : b))
+    markAsModified()
   }
 
   // Delete block
   const deleteBlock = (id: string) => {
     setBlocks(blocks.filter(b => b.id !== id))
+    markAsModified()
   }
 
   // Handle file upload for media blocks
@@ -870,17 +926,20 @@ function CreatePsychoeducationContent() {
   // Learning objectives
   const addLearningObjective = () => {
     setLearningObjectives([...learningObjectives, ''])
+    markAsModified()
   }
 
   const updateLearningObjective = (index: number, value: string) => {
     const newObjectives = [...learningObjectives]
     newObjectives[index] = value
     setLearningObjectives(newObjectives)
+    markAsModified()
   }
 
   const deleteLearningObjective = (index: number) => {
     if (learningObjectives.length > 1) {
       setLearningObjectives(learningObjectives.filter((_, i) => i !== index))
+      markAsModified()
     }
   }
 
@@ -2435,7 +2494,7 @@ function CreatePsychoeducationContent() {
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button
                       size="sm"
-                      onClick={() => setStep('details')}
+                      onClick={handleContinueToDetails}
                       disabled={!canProceedToDetails}
                       className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-lg shadow-purple-200/50 rounded-xl"
                     >
@@ -2511,7 +2570,7 @@ function CreatePsychoeducationContent() {
                         <input
                           type="text"
                           value={title}
-                          onChange={(e) => setTitle(e.target.value)}
+                          onChange={(e) => { setTitle(e.target.value); markAsModified(); }}
                           placeholder={locale === 'fr' ? 'Titre du document...' : 'Document title...'}
                           className="w-full text-2xl font-bold text-gray-900 bg-transparent border-none focus:outline-none placeholder-gray-400"
                         />
@@ -2519,7 +2578,7 @@ function CreatePsychoeducationContent() {
 
                       {/* Content Blocks */}
                       <div className="space-y-3">
-                        <Reorder.Group axis="y" values={blocks} onReorder={setBlocks}>
+                        <Reorder.Group axis="y" values={blocks} onReorder={(newBlocks) => { setBlocks(newBlocks); markAsModified(); }}>
                           {blocks.map((block) => (
                             <DraggableBlockWrapper key={block.id} block={block}>
                               {(dragControls) => renderBlockEditor(block, dragControls)}
@@ -3105,7 +3164,7 @@ function CreatePsychoeducationContent() {
                               </span>
                             </div>
                             <p className="text-xs text-gray-500">
-                              {locale === 'fr' ? 'Vous + vos membres' : 'You + your members'}
+                              {locale === 'fr' ? 'Vous + membres partagés' : 'You + shared members'}
                             </p>
                           </motion.button>
 
@@ -3248,12 +3307,6 @@ function CreatePsychoeducationContent() {
 
               {/* Content */}
               <div className="p-6">
-                <p className="text-center text-gray-600 mb-6">
-                  {locale === 'fr'
-                    ? 'Voulez-vous partager cette ressource avec vos patients maintenant?'
-                    : 'Would you like to share this resource with your members now?'}
-                </p>
-
                 <div className="flex flex-col gap-3">
                   <Button
                     onClick={() => {
@@ -3295,6 +3348,37 @@ function CreatePsychoeducationContent() {
           onShare={handleShareWithMembers}
         />
       )}
+
+      {/* Template Modification Warning Dialog */}
+      <AlertDialog open={showTemplateWarningDialog} onOpenChange={setShowTemplateWarningDialog}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {locale === 'fr' ? 'Modèle non personnalisé' : 'Template Not Customized'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {locale === 'fr'
+                ? 'Vous n\'avez pas encore personnalisé ce modèle. Veuillez modifier le contenu avant de continuer ou retourner à la sélection de modèle.'
+                : 'You haven\'t customized this template yet. Please modify the content before continuing or go back to template selection.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={handleGoBackToTemplates}
+              className="flex-1 sm:flex-none"
+            >
+              {locale === 'fr' ? 'Retour' : 'Go Back'}
+            </Button>
+            <Button
+              onClick={() => setShowTemplateWarningDialog(false)}
+              className="flex-1 sm:flex-none bg-purple-500 hover:bg-purple-600"
+            >
+              {locale === 'fr' ? 'Modifier' : 'Modify'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
