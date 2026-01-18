@@ -1,11 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/i18n/context'
-import { useTab } from '@/lib/landing/tab-context'
-
-type AudienceType = 'member' | 'practitioner'
 
 interface StoryCard {
   id: string
@@ -18,20 +15,7 @@ interface StoryCard {
 
 export function ProblemSection() {
   const { locale } = useLanguage()
-  const { activeTab, setActiveTab } = useTab()
   const [activeIndex, setActiveIndex] = useState(0)
-
-  // Map tab context to audience type
-  const audience: AudienceType = activeTab === 'practitioner' ? 'practitioner' : 'member'
-
-  const setAudience = (newAudience: AudienceType) => {
-    setActiveTab(newAudience === 'practitioner' ? 'practitioner' : 'personal')
-  }
-
-  // Reset active index when audience changes
-  useEffect(() => {
-    setActiveIndex(0)
-  }, [audience])
 
   const memberCards: StoryCard[] = [
     {
@@ -60,59 +44,20 @@ export function ProblemSection() {
     },
   ]
 
-  const practitionerCards: StoryCard[] = [
-    {
-      id: 'practitioner-1',
-      text: {
-        en: "My client had a real breakthrough on Tuesday. We were both so hopeful. By our next session on Monday, they'd forgotten half of what we discussed. I wish I could be there for them in between.",
-        fr: "Mon client a eu une vraie percée mardi. On était tous les deux si pleins d'espoir. À notre séance suivante lundi, il avait oublié la moitié de ce qu'on avait discuté.",
-      },
-      avatar: { color: 'bg-teal-500', initials: 'DR' },
-    },
-    {
-      id: 'practitioner-2',
-      text: {
-        en: "I spend hours creating worksheets and resources that get used exactly once. I know there has to be a better way, but finding it takes time I don't have. So I keep reinventing the wheel.",
-        fr: "Je passe des heures à créer des fiches et des ressources qui sont utilisées exactement une fois. Je sais qu'il doit y avoir un meilleur moyen, mais le trouver prend du temps que je n'ai pas.",
-      },
-      avatar: { color: 'bg-rose-500', initials: 'AP' },
-    },
-    {
-      id: 'practitioner-3',
-      text: {
-        en: "They tell me they 'did okay' this week. But what does that really mean? I'm working with snapshots, trying to piece together a picture I can't fully see.",
-        fr: "Ils me disent qu'ils ont 'plutôt bien été' cette semaine. Mais qu'est-ce que ça veut vraiment dire ? Je travaille avec des instantanés, essayant de reconstituer une image que je ne peux pas voir.",
-      },
-      avatar: { color: 'bg-blue-500', initials: 'LM' },
-    },
-  ]
-
-  const cards = audience === 'member' ? memberCards : practitionerCards
+  const cards = memberCards
 
   const handleCardClick = () => {
     setActiveIndex((prev) => (prev + 1) % cards.length)
   }
 
-  const headlines = {
-    member: {
-      en: 'Sound familiar?',
-      fr: 'Ça vous parle ?',
-    },
-    practitioner: {
-      en: 'Sound familiar?',
-      fr: 'Ça vous parle ?',
-    },
+  const headline = {
+    en: 'Sound familiar?',
+    fr: 'Ça vous parle ?',
   }
 
-  const subheadlines = {
-    member: {
-      en: "You're not alone. These are the moments that slip through the cracks—the ones no app notification can fix.",
-      fr: "Vous n'êtes pas seul. Ce sont ces moments qui passent entre les mailles du filet—ceux qu'aucune notification ne peut résoudre.",
-    },
-    practitioner: {
-      en: "You're not alone. The space between sessions doesn't have to feel empty—the tools to bridge it just hadn't been built yet.",
-      fr: "Vous n'êtes pas seul. L'espace entre les séances ne doit pas rester vide—les outils pour le combler n'existaient tout simplement pas encore.",
-    },
+  const subheadline = {
+    en: "You're not alone. These are the moments that slip through the cracks—the ones no app notification can fix.",
+    fr: "Vous n'êtes pas seul. Ce sont ces moments qui passent entre les mailles du filet—ceux qu'aucune notification ne peut résoudre.",
   }
 
   // Card positions for the stacked effect
@@ -168,51 +113,17 @@ export function ProblemSection() {
           </p>
         </motion.div>
 
-        {/* Toggle - centered, subtle */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="flex justify-center mb-10"
-        >
-          <div className="inline-flex bg-white rounded-full p-1 shadow-sm">
-            <button
-              onClick={() => setAudience('member')}
-              className={`px-6 py-2 text-sm font-medium transition-all rounded-full ${
-                audience === 'member'
-                  ? 'bg-neutral-900 text-white'
-                  : 'text-neutral-500 hover:text-neutral-700'
-              }`}
-            >
-              {locale === 'fr' ? 'Pour moi' : 'For me'}
-            </button>
-            <button
-              onClick={() => setAudience('practitioner')}
-              className={`px-6 py-2 text-sm font-medium transition-all rounded-full ${
-                audience === 'practitioner'
-                  ? 'bg-neutral-900 text-white'
-                  : 'text-neutral-500 hover:text-neutral-700'
-              }`}
-            >
-              {locale === 'fr' ? "J'accompagne" : "I guide others"}
-            </button>
-          </div>
-        </motion.div>
-
         {/* Main content - Cards on left, text on right */}
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center max-w-6xl mx-auto">
           {/* Left - Stacked Cards */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={audience}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              className="relative h-[320px] sm:h-[280px] flex items-center justify-center cursor-pointer px-12"
-              onClick={handleCardClick}
-            >
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="relative h-[320px] sm:h-[280px] flex items-center justify-center cursor-pointer px-12"
+            onClick={handleCardClick}
+          >
               {cards.map((card, index) => {
                 const style = getCardStyle(index)
                 return (
@@ -286,57 +197,56 @@ export function ProblemSection() {
                 {locale === 'fr' ? 'Cliquez pour voir plus' : 'Click to see more'}
               </div>
             </motion.div>
-          </AnimatePresence>
 
           {/* Right - Headline and context */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={audience}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="lg:pl-8"
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="lg:pl-8"
+          >
+            <motion.h2
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              className="text-3xl sm:text-4xl md:text-5xl font-light text-neutral-900 mb-6"
             >
-              <motion.h2
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.3 }}
-                className="text-3xl sm:text-4xl md:text-5xl font-light text-neutral-900 mb-6"
-              >
-                {locale === 'fr' ? headlines[audience].fr : headlines[audience].en}
-              </motion.h2>
+              {locale === 'fr' ? headline.fr : headline.en}
+            </motion.h2>
 
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.4 }}
-                className="text-lg text-neutral-600 leading-relaxed mb-8"
-              >
-                {locale === 'fr' ? subheadlines[audience].fr : subheadlines[audience].en}
-              </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className="text-lg text-neutral-600 leading-relaxed mb-8"
+            >
+              {locale === 'fr' ? subheadline.fr : subheadline.en}
+            </motion.p>
 
-              {/* Card indicators */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4, delay: 0.5 }}
-                className="flex gap-2"
-              >
-                {cards.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setActiveIndex(index)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      index === activeIndex
-                        ? 'bg-neutral-900 w-6'
-                        : 'bg-neutral-300 hover:bg-neutral-400'
-                    }`}
-                  />
-                ))}
-              </motion.div>
+            {/* Card indicators */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: 0.5 }}
+              className="flex gap-2"
+            >
+              {cards.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setActiveIndex(index)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    index === activeIndex
+                      ? 'bg-neutral-900 w-6'
+                      : 'bg-neutral-300 hover:bg-neutral-400'
+                  }`}
+                />
+              ))}
             </motion.div>
-          </AnimatePresence>
+          </motion.div>
         </div>
       </div>
     </section>

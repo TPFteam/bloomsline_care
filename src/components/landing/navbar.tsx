@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n/context'
-import { useTab } from '@/lib/landing/tab-context'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { useEarlyAccessModal } from '@/lib/landing/early-access-modal-context'
 
@@ -18,7 +17,6 @@ interface NavbarProps {
 export function Navbar({ isPractitionerPage = false }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { t, locale } = useLanguage()
-  const { activeTab } = useTab()
 
   // Only use the modal hook if on practitioner page (where provider exists)
   let openModal: (() => void) | null = null
@@ -29,13 +27,11 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
     // Not within provider, openModal stays null
   }
 
-  const isPractitioner = activeTab === 'practitioner'
-
   const DEMO_BOOKING_URL = 'https://calendar.app.google/DwruLrgYZ6TEegL58'
 
   const navItems = [
-    { label: t.nav.home, href: '/', active: !isPractitioner },
-    { label: t.nav.forPractitioners, href: '/practitioner', active: isPractitioner },
+    { label: t.nav.home, href: '/', active: !isPractitionerPage },
+    { label: t.nav.forPractitioners, href: '/practitioner', active: isPractitionerPage },
   ]
 
   return (
@@ -127,7 +123,7 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
               <Link href="/early-access">
                 <Button
                   className={`font-medium text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300 ${
-                    isPractitioner
+                    isPractitionerPage
                       ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C] shadow-[#D4856A]/30 hover:from-[#c27459] hover:to-[#d4946b]'
                       : 'bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] shadow-[#4A9A86]/30 hover:from-[#3d8a76] hover:to-[#4da38c]'
                   }`}
@@ -217,7 +213,7 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
                   <Link href="/early-access" className="w-full">
                     <Button
                       className={`w-full font-medium text-white rounded-full shadow-lg ${
-                        isPractitioner
+                        isPractitionerPage
                           ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C] hover:from-[#c27459] hover:to-[#d4946b]'
                           : 'bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] hover:from-[#3d8a76] hover:to-[#4da38c]'
                       }`}

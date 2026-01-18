@@ -9,8 +9,8 @@ import Link from 'next/link'
 
 const rotatingWords = {
   personal: {
-    en: ['is growing', 'is shifting', 'is moving'],
-    fr: ['grandit', 'évolue', 'avance'],
+    en: ['growing', 'healing', 'changing'],
+    fr: ['grandissez', 'guérissez', 'évoluez'],
   },
   practitioner: {
     en: ['Create', 'Share', 'Track engagement'],
@@ -20,8 +20,8 @@ const rotatingWords = {
 
 const fixedHeadline = {
   personal: {
-    en: 'Quietly, something',
-    fr: 'Doucement, quelque chose',
+    en: "Quietly, you're",
+    fr: 'Doucement, vous',
   },
   practitioner: {
     en: 'effortlessly',
@@ -313,7 +313,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
     },
   }
 
-  const currentColors = colors[activeTab]
+  const currentColors = colors[isPractitionerPage ? 'practitioner' : 'personal']
 
   return (
     <section className="relative min-h-screen overflow-hidden">
@@ -322,7 +322,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
         className={`absolute inset-0 bg-gradient-to-br ${currentColors.bg}`}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        key={activeTab + '-bg'}
+        key={(isPractitionerPage ? 'practitioner' : 'personal') + '-bg'}
       />
 
       {/* Subtle animated gradient orbs */}
@@ -390,7 +390,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                   </span>
                   <AnimatePresence mode="wait">
                     <motion.span
-                      key={`${wordIndex}-${activeTab}`}
+                      key={`${wordIndex}-personal`}
                       initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
                       animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                       exit={{ opacity: 0, y: -20, filter: 'blur(8px)' }}
@@ -405,74 +405,39 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
             </h1>
           </motion.div>
 
-          {/* Tab Toggle - hidden on practitioner page */}
-          {!isPractitionerPage && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="flex items-center justify-center"
-            >
-              <div className="inline-flex items-center bg-neutral-100 rounded-full p-1">
-                <button
-                  onClick={() => setActiveTab('personal')}
-                  className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${
-                    activeTab === 'personal'
-                      ? 'bg-[#4A9A86] text-white shadow-md'
-                      : 'text-neutral-600 hover:text-neutral-900'
-                  }`}
-                >
-                  {locale === 'fr' ? 'Pour moi' : 'For me'}
-                </button>
-                <button
-                  onClick={() => setActiveTab('practitioner')}
-                  className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${
-                    activeTab === 'practitioner'
-                      ? 'bg-[#D4856A] text-white shadow-md'
-                      : 'text-neutral-600 hover:text-neutral-900'
-                  }`}
-                >
-                  {locale === 'fr' ? "J'accompagne" : "I guide others"}
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Tab description */}
+          {/* Page description */}
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
             className={`text-neutral-500 mt-4 text-center max-w-xl mx-auto ${isPractitionerPage ? 'text-base sm:text-lg' : 'text-sm'}`}
           >
-            <AnimatePresence mode="wait">
-              {activeTab === 'personal' ? (
-                <motion.span
-                  key="personal-desc"
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {locale === 'fr'
-                    ? 'Un espace pour les moments où tout devient flou'
-                    : 'A space for when everything feels unclear'}
-                </motion.span>
-              ) : (
-                <motion.span
-                  key="practitioner-desc"
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {locale === 'fr'
-                    ? <>Accompagnez dans la durée, sans alourdir votre pratique.</>
-                    : <>Long-term support, without adding to your workload.</>}
-                </motion.span>
-              )}
-            </AnimatePresence>
+            {isPractitionerPage ? (
+              locale === 'fr'
+                ? 'Accompagnez dans la durée, sans alourdir votre pratique.'
+                : 'Long-term support, without adding to your workload.'
+            ) : (
+              locale === 'fr'
+                ? 'Comprenez vos émotions. Construisez de douces habitudes. Grandissez à votre rythme.'
+                : 'Understand your emotions. Build gentle habits. Grow at your own pace.'
+            )}
           </motion.p>
+
+          {/* CTA Button - only on member homepage */}
+          {!isPractitionerPage && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.7 }}
+              className="mt-6 flex justify-center"
+            >
+              <Link href="/early-access">
+                <button className="px-8 py-3 bg-[#4A9A86] hover:bg-[#3d8a76] text-white font-medium rounded-full shadow-lg shadow-[#4A9A86]/30 hover:shadow-xl transition-all duration-300">
+                  {locale === 'fr' ? 'Commencer gratuitement' : 'Get started free'}
+                </button>
+              </Link>
+            </motion.div>
+          )}
         </div>
 
         {/* Mock Preview - Minimal Input Style like Dia - hidden on practitioner page */}
@@ -483,6 +448,10 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
           transition={{ duration: 0.8, delay: 0.8 }}
           className="w-full max-w-2xl mx-auto mt-10 px-0 sm:px-6"
         >
+          {/* Context label */}
+          <p className="text-center text-xs text-neutral-400 mb-3">
+            {locale === 'fr' ? 'Découvrez comment ça marche' : 'See how it works'}
+          </p>
           <AnimatePresence mode="wait">
             {activeTab === 'personal' ? (
               <motion.div
