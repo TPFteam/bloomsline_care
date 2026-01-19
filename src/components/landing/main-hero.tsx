@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowUp, Plus, Search, Sun, Circle, Smile, Users, Target, BookOpen, Check, Sparkles, Share2, FileText, Camera, Heart } from 'lucide-react'
+import { ArrowUp, Plus, Search, Sun, Circle, Smile, Users, Check, Sparkles, Camera, Heart, Share2, FileText } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 import { useTab } from '@/lib/landing/tab-context'
 import Link from 'next/link'
 
 const rotatingWords = {
   personal: {
-    en: ['growing', 'healing', 'changing'],
-    fr: ['grandissez', 'guérissez', 'évoluez'],
+    en: ['existing', 'moving', 'growing'],
+    fr: ['existez', 'avancez', 'grandissez'],
   },
   practitioner: {
     en: ['Create', 'Share', 'Track engagement'],
@@ -30,7 +30,7 @@ const fixedHeadline = {
 }
 
 type PersonalSubTab = 'rituals' | 'moments' | 'balance'
-type PractitionerSubTab = 'members' | 'journeys' | 'resources'
+type PractitionerSubTab = 'members'
 
 // Demo scenarios - defined outside component to prevent recreation
 const DEMO_SCENARIOS = [
@@ -134,15 +134,15 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
 
   const currentDemo = DEMO_SCENARIOS[demoScenarioIndex]
 
-  // Interactive mode state
-  const [isInteractive, setIsInteractive] = useState(false)
+  // Interactive mode state - start with interactive by default on global page
+  const [isInteractive, setIsInteractive] = useState(true)
   const [interactiveStep, setInteractiveStep] = useState(0)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [selectedFeelings, setSelectedFeelings] = useState<string[]>([])
   const [userNote, setUserNote] = useState('')
 
   // Practitioner interactive mode state
-  const [practitionerInteractive, setPractitionerInteractive] = useState(false)
+  const [practitionerInteractive, setPractitionerInteractive] = useState(true)
   const [practitionerStep, setPractitionerStep] = useState(0)
   const [practitionerExplanation, setPractitionerExplanation] = useState(false)
 
@@ -162,25 +162,29 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
 
   // Auto-advance demo steps - slower for better storytelling (only when not interactive)
   useEffect(() => {
-    if (isInteractive || practitionerInteractive) return
+    // Check the appropriate interactive state based on which page we're on
+    const isInInteractiveMode = isPractitionerPage ? practitionerInteractive : isInteractive
+    if (isInInteractiveMode) return
+
+    const maxSteps = isPractitionerPage ? 8 : 4 // Practitioner demo has 8 steps, personal has 4
     const interval = setInterval(() => {
       setDemoStep((prev) => {
-        const nextStep = (prev + 1) % 4
-        // When cycle restarts (step goes back to 0), pick a new random scenario
-        if (nextStep === 0) {
+        const nextStep = (prev + 1) % maxSteps
+        // When cycle restarts (step goes back to 0), pick a new random scenario (personal demo only)
+        if (nextStep === 0 && !isPractitionerPage) {
           setDemoScenarioIndex(Math.floor(Math.random() * DEMO_SCENARIOS.length))
         }
         return nextStep
       })
-    }, 6000)
+    }, 4000) // 4 seconds per step
     return () => clearInterval(interval)
-  }, [personalSubTab, practitionerSubTab, isInteractive, practitionerInteractive])
+  }, [personalSubTab, practitionerSubTab, isInteractive, practitionerInteractive, isPractitionerPage])
 
-  // Reset demo step and interactive mode when tab changes
+  // Reset demo step when tab changes (keep interactive mode as default)
   useEffect(() => {
     setDemoStep(0)
     setWordIndex(0)
-    setPractitionerInteractive(false)
+    setPractitionerInteractive(true) // Keep interactive as default
     setPractitionerStep(0)
     setPractitionerExplanation(false)
   }, [personalSubTab, practitionerSubTab, activeTab])
@@ -418,30 +422,14 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                 : 'Long-term support, without adding to your workload.'
             ) : (
               locale === 'fr'
-                ? 'Comprenez vos émotions. Construisez de douces habitudes. Grandissez à votre rythme.'
-                : 'Understand your emotions. Build gentle habits. Grow at your own pace.'
+                ? 'Un espace pour y voir plus clair quand tout devient flou.'
+                : 'A space to find clarity when everything feels unclear.'
             )}
           </motion.p>
 
-          {/* CTA Button - only on member homepage */}
-          {!isPractitionerPage && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.7 }}
-              className="mt-6 flex justify-center"
-            >
-              <Link href="/early-access">
-                <button className="px-8 py-3 bg-[#4A9A86] hover:bg-[#3d8a76] text-white font-medium rounded-full shadow-lg shadow-[#4A9A86]/30 hover:shadow-xl transition-all duration-300">
-                  {locale === 'fr' ? 'Commencer gratuitement' : 'Get started free'}
-                </button>
-              </Link>
-            </motion.div>
-          )}
         </div>
 
-        {/* Mock Preview - Minimal Input Style like Dia - hidden on practitioner page */}
-        {!isPractitionerPage && (
+        {/* Mock Preview - Minimal Input Style like Dia */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
@@ -453,7 +441,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
             {locale === 'fr' ? 'Découvrez comment ça marche' : 'See how it works'}
           </p>
           <AnimatePresence mode="wait">
-            {activeTab === 'personal' ? (
+            {!isPractitionerPage ? (
               <motion.div
                 key="personal"
                 initial={{ opacity: 0, y: 10 }}
@@ -1578,18 +1566,29 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                     </Link>
                   </div>
                 ) : isInteractive ? (
-                  <button
-                    onClick={
-                      personalSubTab === 'rituals' ? resetRitualsInteractive
-                        : personalSubTab === 'balance' ? resetBalanceInteractive
-                        : resetInteractive
-                    }
-                    className="flex items-center justify-between group w-full"
-                  >
-                    <span className="text-xs text-neutral-400 group-hover:text-neutral-600 transition-colors">
-                      {locale === 'fr' ? '← Recommencer' : '← Start over'}
-                    </span>
-                  </button>
+                  <div className={`flex items-center w-full ${interactiveStep > 0 ? 'justify-between' : 'justify-end'}`}>
+                    {interactiveStep > 0 && (
+                      <button
+                        onClick={
+                          personalSubTab === 'rituals' ? resetRitualsInteractive
+                            : personalSubTab === 'balance' ? resetBalanceInteractive
+                            : resetInteractive
+                        }
+                        className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+                      >
+                        {locale === 'fr' ? '← Recommencer' : '← Start over'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setIsInteractive(false)
+                        setDemoStep(0)
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 border border-neutral-300 text-neutral-500 bg-transparent text-xs font-medium rounded-full hover:bg-neutral-100 transition-colors"
+                    >
+                      {locale === 'fr' ? 'Voir un exemple' : 'View example'}
+                    </button>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-end">
                     <button
@@ -1598,7 +1597,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                         setInteractiveStep(0)
                         setShowExplanation(false)
                       }}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#4A9A86] text-white text-sm font-medium rounded-full hover:bg-[#3d8a76] transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 border border-[#4A9A86] text-[#4A9A86] bg-transparent text-sm font-medium rounded-full hover:bg-[#4A9A86]/10 transition-colors"
                     >
                       {locale === 'fr' ? 'À vous' : 'Your turn'}
                       <ArrowUp className="w-4 h-4" />
@@ -1618,677 +1617,200 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                 {/* Prompt text + Pills row */}
                 <div className="flex items-center gap-1 sm:gap-2 mb-3">
                   <Search className="w-4 h-4 text-neutral-400 shrink-0 hidden sm:block" />
-                  <AnimatePresence mode="wait">
-                    {practitionerSubTab === 'members' && (
-                      <motion.span key="members-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="hidden sm:inline text-neutral-700 text-sm">
-                        {locale === 'fr' ? 'Voir mes' : 'View my'}
-                      </motion.span>
-                    )}
-                    {practitionerSubTab === 'journeys' && (
-                      <motion.span key="journeys-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="hidden sm:inline text-neutral-700 text-sm">
-                        {locale === 'fr' ? 'Suivre les' : 'Track client'}
-                      </motion.span>
-                    )}
-                    {practitionerSubTab === 'resources' && (
-                      <motion.span key="resources-text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="hidden sm:inline text-neutral-700 text-sm">
-                        {locale === 'fr' ? 'Partager une' : 'Share a'}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
+                  <span className="hidden sm:inline text-neutral-700 text-sm">
+                    {locale === 'fr' ? 'Voir mes' : 'View my'}
+                  </span>
 
-                  {/* Pill tabs inline */}
-                  {[
-                    { id: 'members' as PractitionerSubTab, label: locale === 'fr' ? 'clients' : 'members', Icon: Users },
-                    { id: 'journeys' as PractitionerSubTab, label: locale === 'fr' ? 'parcours' : 'journeys', Icon: Target },
-                    { id: 'resources' as PractitionerSubTab, label: locale === 'fr' ? 'ressource' : 'resource', Icon: BookOpen },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setPractitionerSubTab(tab.id)}
-                      className={`inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-2.5 py-1 rounded-full text-xs sm:text-sm transition-all whitespace-nowrap ${
-                        practitionerSubTab === tab.id
-                          ? 'bg-[#D4856A]/15 text-[#D4856A] font-medium'
-                          : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700'
-                      }`}
-                    >
-                      <tab.Icon className="w-3 h-3" />
-                      {tab.label}
-                    </button>
-                  ))}
+                  {/* Members pill tab */}
+                  <div className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-2.5 py-1 rounded-full text-xs sm:text-sm transition-all whitespace-nowrap cursor-default bg-[#D4856A]/15 text-[#D4856A] font-medium">
+                    <Users className="w-3 h-3" />
+                    {locale === 'fr' ? 'clients' : 'members'}
+                  </div>
                 </div>
 
                 {/* Feature Trailer - Step by step demo */}
                 <div className="bg-neutral-50 rounded-xl p-4 mb-3 min-h-[140px]">
-                  {/* Step indicators */}
-                  <div className="flex items-center gap-1 mb-3">
-                    {[0, 1, 2, 3].map((step) => {
-                      const currentStep = practitionerInteractive ? practitionerStep : demoStep
-                      return (
-                        <button
-                          key={step}
-                          onClick={() => practitionerInteractive ? setPractitionerStep(step) : setDemoStep(step)}
-                          className={`h-1 flex-1 rounded-full transition-all ${
-                            step === currentStep ? 'bg-[#D4856A]' : step < currentStep ? 'bg-[#D4856A]/40' : 'bg-neutral-200'
-                          }`}
-                        />
-                      )
-                    })}
-                  </div>
-
                   <AnimatePresence mode="wait">
                     {/* Members Demo Mode */}
                     {!practitionerInteractive && practitionerSubTab === 'members' && (
                       <motion.div key="members-trailer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                         <AnimatePresence mode="wait">
+                          {/* Step 0: Client List with Add Button - Compact Row */}
                           {demoStep === 0 && (
                             <motion.div key="step0" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Vos clients' : 'Your clients'}</p>
+                                <span className="text-[10px] text-neutral-400">4 {locale === 'fr' ? 'actifs' : 'active'}</span>
+                              </div>
+                              {/* Client avatars in a row */}
                               <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Tous vos clients, organisés...' : 'All your clients, organized...'}</p>
-                              </div>
-                              <div className="flex items-center gap-4">
-                                <div className="flex -space-x-2">
-                                  {['SL', 'MD', 'JT'].map((initials, i) => (
-                                    <motion.div
-                                      key={initials}
-                                      initial={{ scale: 0, x: -10 }}
-                                      animate={{ scale: 1, x: 0 }}
-                                      transition={{ delay: i * 0.12, duration: 0.3 }}
-                                      className="w-11 h-11 rounded-full bg-gradient-to-br from-[#D4856A] to-[#E8A87C] border-2 border-white flex items-center justify-center text-white text-xs font-medium shadow-sm"
-                                    >
-                                      {initials}
-                                    </motion.div>
-                                  ))}
-                                </div>
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium text-neutral-800">{locale === 'fr' ? 'Profils complets' : 'Complete profiles'}</p>
-                                  <p className="text-xs text-neutral-400 mt-0.5">{locale === 'fr' ? 'Notes, sessions, progrès - tout en un lieu' : 'Notes, sessions, progress - all in one place'}</p>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                          {demoStep === 1 && (
-                            <motion.div key="step1" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Gérez votre agenda facilement...' : 'Manage your schedule easily...'}</p>
-                              </div>
-                              <div className="space-y-2">
                                 {[
-                                  { name: 'Sarah L.', time: locale === 'fr' ? 'Aujourd\'hui 14h' : 'Today 2pm', status: 'upcoming' },
-                                  { name: 'Marc D.', time: locale === 'fr' ? 'Hier' : 'Yesterday', status: 'done' },
-                                ].map((session, i) => (
-                                  <motion.div
-                                    key={session.name}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.15, duration: 0.3 }}
-                                    className={`flex items-center gap-3 p-2.5 rounded-lg ${session.status === 'upcoming' ? 'bg-white shadow-sm border border-[#D4856A]/10' : 'bg-white/50'}`}
-                                  >
-                                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#D4856A] to-[#E8A87C] flex items-center justify-center text-white text-[9px] font-medium">
-                                      {session.name.split(' ').map(n => n[0]).join('')}
-                                    </div>
-                                    <span className="text-sm text-neutral-700 flex-1">{session.name}</span>
-                                    <span className={`text-xs font-medium ${session.status === 'upcoming' ? 'text-[#D4856A]' : 'text-neutral-400'}`}>{session.time}</span>
-                                  </motion.div>
-                                ))}
-                              </div>
-                            </motion.div>
-                          )}
-                          {demoStep === 2 && (
-                            <motion.div key="step2" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Documentez chaque session...' : 'Document each session...'}</p>
-                              </div>
-                              <motion.div
-                                initial={{ scale: 0.95, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ duration: 0.4 }}
-                                className="bg-white rounded-xl p-3 shadow-sm"
-                              >
-                                <div className="flex items-start gap-3">
-                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#D4856A] to-[#E8A87C] flex items-center justify-center text-white text-[9px] font-medium shrink-0">SL</div>
-                                  <div className="flex-1">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Session du 10 janvier' : 'January 10 session'}</p>
-                                      <span className="text-[10px] text-[#D4856A] font-medium">{locale === 'fr' ? '50 min' : '50 min'}</span>
-                                    </div>
-                                    <p className="text-sm text-neutral-700">{locale === 'fr' ? 'Progrès notable sur la gestion de l\'anxiété. A pratiqué les exercices de respiration...' : 'Notable progress on anxiety management. Practiced breathing exercises...'}</p>
-                                  </div>
-                                </div>
-                              </motion.div>
-                            </motion.div>
-                          )}
-                          {demoStep === 3 && (
-                            <motion.div key="step3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Suivez votre pratique d\'un coup d\'œil...' : 'Track your practice at a glance...'}</p>
-                              </div>
-                              <div className="flex items-center justify-between bg-white rounded-xl p-3 shadow-sm">
-                                <div className="text-center flex-1">
-                                  <motion.p
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    transition={{ delay: 0.1, type: "spring" }}
-                                    className="text-2xl font-semibold text-[#D4856A]"
-                                  >12</motion.p>
-                                  <p className="text-[10px] text-neutral-500">{locale === 'fr' ? 'Clients actifs' : 'Active clients'}</p>
-                                </div>
-                                <div className="w-px h-10 bg-neutral-100" />
-                                <div className="text-center flex-1">
-                                  <motion.p
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    transition={{ delay: 0.2, type: "spring" }}
-                                    className="text-2xl font-semibold text-[#D4856A]"
-                                  >8</motion.p>
-                                  <p className="text-[10px] text-neutral-500">{locale === 'fr' ? 'Cette semaine' : 'This week'}</p>
-                                </div>
-                                <div className="w-px h-10 bg-neutral-100" />
-                                <div className="text-center flex-1">
-                                  <motion.p
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    transition={{ delay: 0.3, type: "spring" }}
-                                    className="text-2xl font-semibold text-green-500"
-                                  >+15%</motion.p>
-                                  <p className="text-[10px] text-neutral-500">{locale === 'fr' ? 'Engagement' : 'Engagement'}</p>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.div>
-                    )}
-
-                    {/* Members Interactive Mode */}
-                    {practitionerInteractive && practitionerSubTab === 'members' && (
-                      <motion.div key="members-interactive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                        <AnimatePresence mode="wait">
-                          {practitionerStep === 0 && (
-                            <motion.div key="int-step0" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Choisissez un client...' : 'Choose a client...'}</p>
-                              </div>
-                              <div className="space-y-2">
-                                {[
-                                  { id: 'sarah', name: 'Sarah L.', status: locale === 'fr' ? 'Session bientôt' : 'Session soon', initials: 'SL' },
-                                  { id: 'marc', name: 'Marc D.', status: locale === 'fr' ? 'Stable' : 'Stable', initials: 'MD' },
-                                  { id: 'julie', name: 'Julie T.', status: locale === 'fr' ? 'Nouveau' : 'New', initials: 'JT' },
+                                  { initials: 'SL', name: 'Sarah L.', color: 'from-[#D4856A] to-[#E8A87C]' },
+                                  { initials: 'MD', name: 'Marc D.', color: 'from-violet-500 to-violet-400' },
+                                  { initials: 'JT', name: 'Julie T.', color: 'from-emerald-500 to-emerald-400' },
+                                  { initials: 'AR', name: 'Alex R.', color: 'from-blue-500 to-blue-400' },
                                 ].map((client, i) => (
-                                  <motion.button
-                                    key={client.id}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.1 }}
-                                    onClick={() => {
-                                      setSelectedClient(client.id)
-                                      setClientName(client.name)
-                                      setPractitionerStep(1)
-                                    }}
-                                    className={`w-full flex items-center gap-3 p-2.5 rounded-lg transition-all ${
-                                      selectedClient === client.id
-                                        ? 'bg-[#D4856A]/10 border border-[#D4856A]/30'
-                                        : 'bg-white hover:bg-[#D4856A]/5 border border-transparent'
-                                    }`}
+                                  <motion.div
+                                    key={client.initials}
+                                    initial={{ opacity: 0, scale: 0 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: i * 0.08, type: "spring" }}
+                                    className="flex flex-col items-center gap-1 cursor-pointer group"
                                   >
-                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#D4856A] to-[#E8A87C] flex items-center justify-center text-white text-xs font-medium">
+                                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${client.color} flex items-center justify-center text-white text-[10px] font-medium shadow-sm group-hover:scale-110 transition-transform`}>
                                       {client.initials}
                                     </div>
-                                    <div className="flex-1 text-left">
-                                      <p className="text-sm font-medium text-neutral-700">{client.name}</p>
-                                      <p className="text-xs text-neutral-400">{client.status}</p>
-                                    </div>
-                                  </motion.button>
-                                ))}
-                              </div>
-                            </motion.div>
-                          )}
-                          {practitionerStep === 1 && (
-                            <motion.div key="int-step1" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? `Profil de ${clientName}` : `${clientName}'s profile`}</p>
-                              </div>
-                              <div className="bg-white rounded-xl p-3 shadow-sm space-y-3">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#D4856A] to-[#E8A87C] flex items-center justify-center text-white text-sm font-medium">
-                                    {clientName.split(' ').map(n => n[0]).join('')}
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-medium text-neutral-800">{clientName}</p>
-                                    <p className="text-xs text-neutral-400">{locale === 'fr' ? '8 sessions' : '8 sessions'}</p>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2">
-                                  {[
-                                    { label: locale === 'fr' ? 'Notes' : 'Notes', icon: FileText },
-                                    { label: locale === 'fr' ? 'Agenda' : 'Schedule', icon: Target },
-                                  ].map((action) => (
-                                    <button
-                                      key={action.label}
-                                      onClick={() => setPractitionerStep(2)}
-                                      className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-neutral-50 rounded-lg text-xs text-neutral-600 hover:bg-[#D4856A]/10 hover:text-[#D4856A] transition-all"
-                                    >
-                                      <action.icon className="w-3 h-3" />
-                                      {action.label}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                          {practitionerStep === 2 && (
-                            <motion.div key="int-step2" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Ajoutez une note de session...' : 'Add a session note...'}</p>
-                              </div>
-                              <div className="bg-white rounded-xl p-3 shadow-sm space-y-2">
-                                <textarea
-                                  value={sessionNote}
-                                  onChange={(e) => setSessionNote(e.target.value)}
-                                  placeholder={locale === 'fr' ? 'Notes de la session...' : 'Session notes...'}
-                                  className="w-full h-16 text-sm text-neutral-700 placeholder:text-neutral-300 bg-transparent resize-none focus:outline-none"
-                                />
-                                <button
-                                  onClick={() => setPractitionerStep(3)}
-                                  className="w-full py-2 bg-[#D4856A] text-white text-sm font-medium rounded-lg hover:bg-[#c27459] transition-colors"
-                                >
-                                  {locale === 'fr' ? 'Enregistrer' : 'Save note'}
-                                </button>
-                              </div>
-                            </motion.div>
-                          )}
-                          {practitionerStep === 3 && (
-                            <motion.div key="int-step3" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-3">
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ type: "spring", delay: 0.1 }}
-                                className="w-12 h-12 mx-auto rounded-full bg-[#D4856A]/10 flex items-center justify-center"
-                              >
-                                <Check className="w-6 h-6 text-[#D4856A]" />
-                              </motion.div>
-                              <div className="text-center">
-                                <p className="text-sm font-medium text-neutral-800">
-                                  {locale === 'fr' ? 'Note enregistrée!' : 'Note saved!'}
-                                </p>
-                                <p className="text-xs text-neutral-500 mt-1">
-                                  {locale === 'fr'
-                                    ? `Profil de ${clientName} mis à jour`
-                                    : `${clientName}'s profile updated`}
-                                </p>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.div>
-                    )}
-
-                    {/* Journeys Demo Mode */}
-                    {!practitionerInteractive && practitionerSubTab === 'journeys' && (
-                      <motion.div key="journeys-trailer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                        <AnimatePresence mode="wait">
-                          {demoStep === 0 && (
-                            <motion.div key="step0" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Définissez le chemin de guérison...' : 'Define the path to growth...'}</p>
-                              </div>
-                              <div className="flex items-center gap-4">
-                                <motion.div
-                                  animate={{ scale: [1, 1.05, 1] }}
-                                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                                  className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#D4856A] to-[#E8A87C] flex items-center justify-center shadow-lg shadow-[#D4856A]/20"
-                                >
-                                  <Target className="w-7 h-7 text-white" />
-                                </motion.div>
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium text-neutral-800">{locale === 'fr' ? 'Parcours personnalisés' : 'Personalized journeys'}</p>
-                                  <p className="text-xs text-neutral-400 mt-0.5">{locale === 'fr' ? 'Des objectifs adaptés à chaque client' : 'Milestones tailored to each client'}</p>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                          {demoStep === 1 && (
-                            <motion.div key="step1" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Visualisez leur progression...' : 'Visualize their progress...'}</p>
-                              </div>
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-1">
-                                  {[
-                                    { label: locale === 'fr' ? 'Découverte' : 'Discovery', done: true },
-                                    { label: locale === 'fr' ? 'Construction' : 'Building', done: true },
-                                    { label: locale === 'fr' ? 'Épanouissement' : 'Thriving', done: false, current: true },
-                                    { label: locale === 'fr' ? 'Autonomie' : 'Independent', done: false },
-                                  ].map((stage, i) => (
-                                    <motion.div
-                                      key={stage.label}
-                                      initial={{ scale: 0, opacity: 0 }}
-                                      animate={{ scale: 1, opacity: 1 }}
-                                      transition={{ delay: i * 0.12, duration: 0.3 }}
-                                      className="flex-1 text-center"
-                                    >
-                                      <div className={`h-2.5 rounded-full mb-1.5 ${stage.done ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C]' : stage.current ? 'bg-[#D4856A]/30' : 'bg-neutral-200'}`} />
-                                      <p className={`text-[9px] ${stage.current ? 'text-[#D4856A] font-semibold' : stage.done ? 'text-neutral-600' : 'text-neutral-400'}`}>{stage.label}</p>
-                                    </motion.div>
-                                  ))}
-                                </div>
-                                <p className="text-xs text-center text-neutral-500">{locale === 'fr' ? 'Sarah est en phase d\'Épanouissement' : 'Sarah is in the Thriving phase'}</p>
-                              </div>
-                            </motion.div>
-                          )}
-                          {demoStep === 2 && (
-                            <motion.div key="step2" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Célébrez chaque étape...' : 'Celebrate each milestone...'}</p>
-                              </div>
-                              <motion.div
-                                initial={{ scale: 0.95, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ duration: 0.4 }}
-                                className="bg-white rounded-xl p-3 shadow-sm border border-[#D4856A]/10"
-                              >
-                                <div className="flex items-start gap-3">
-                                  <div className="w-8 h-8 rounded-lg bg-[#D4856A]/10 flex items-center justify-center shrink-0">
-                                    <Target className="w-4 h-4 text-[#D4856A]" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="text-sm text-neutral-700 font-medium">{locale === 'fr' ? 'Gestion de l\'anxiété' : 'Anxiety management'}</p>
-                                    <p className="text-xs text-neutral-500 mt-1">{locale === 'fr' ? '"Excellente progression cette semaine! Continue comme ça."' : '"Excellent progress this week! Keep it up."'}</p>
-                                  </div>
-                                </div>
-                              </motion.div>
-                            </motion.div>
-                          )}
-                          {demoStep === 3 && (
-                            <motion.div key="step3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Gardez-les engagés dans leur parcours...' : 'Keep them engaged in their journey...'}</p>
-                              </div>
-                              <motion.div
-                                initial={{ scale: 0.95, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ duration: 0.4 }}
-                                className="flex items-center gap-3 bg-white rounded-xl p-3 shadow-sm"
-                              >
-                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#D4856A] to-[#E8A87C] flex items-center justify-center text-white text-xs font-medium">SL</div>
-                                <div className="flex-1">
-                                  <p className="text-sm text-neutral-700 font-medium">{locale === 'fr' ? 'Sarah voit son parcours' : 'Sarah sees her journey'}</p>
-                                  <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Partagé avec elle' : 'Shared with her'}</p>
-                                </div>
-                                <motion.div
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  transition={{ delay: 0.3, type: "spring" }}
-                                >
-                                  <Check className="w-5 h-5 text-green-500" />
-                                </motion.div>
-                              </motion.div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.div>
-                    )}
-
-                    {/* Journeys Interactive Mode */}
-                    {practitionerInteractive && practitionerSubTab === 'journeys' && (
-                      <motion.div key="journeys-interactive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                        <AnimatePresence mode="wait">
-                          {practitionerStep === 0 && (
-                            <motion.div key="int-step0" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Choisissez un client...' : 'Choose a client...'}</p>
-                              </div>
-                              <div className="space-y-2">
-                                {[
-                                  { id: 'sarah', name: 'Sarah L.', phase: locale === 'fr' ? 'Épanouissement' : 'Thriving', initials: 'SL' },
-                                  { id: 'marc', name: 'Marc D.', phase: locale === 'fr' ? 'Construction' : 'Building', initials: 'MD' },
-                                ].map((client, i) => (
-                                  <motion.button
-                                    key={client.id}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.1 }}
-                                    onClick={() => {
-                                      setSelectedClient(client.id)
-                                      setClientName(client.name)
-                                      setPractitionerStep(1)
-                                    }}
-                                    className="w-full flex items-center gap-3 p-2.5 rounded-lg bg-white hover:bg-[#D4856A]/5 border border-transparent hover:border-[#D4856A]/20 transition-all"
-                                  >
-                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#D4856A] to-[#E8A87C] flex items-center justify-center text-white text-xs font-medium">
-                                      {client.initials}
-                                    </div>
-                                    <div className="flex-1 text-left">
-                                      <p className="text-sm font-medium text-neutral-700">{client.name}</p>
-                                      <p className="text-xs text-neutral-400">{client.phase}</p>
-                                    </div>
-                                    <Target className="w-4 h-4 text-neutral-300" />
-                                  </motion.button>
-                                ))}
-                              </div>
-                            </motion.div>
-                          )}
-                          {practitionerStep === 1 && (
-                            <motion.div key="int-step1" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? `Parcours de ${clientName}` : `${clientName}'s journey`}</p>
-                              </div>
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-1">
-                                  {[
-                                    { label: locale === 'fr' ? 'Découverte' : 'Discovery', done: true },
-                                    { label: locale === 'fr' ? 'Construction' : 'Building', done: true },
-                                    { label: locale === 'fr' ? 'Épanouissement' : 'Thriving', done: false, current: true },
-                                    { label: locale === 'fr' ? 'Autonomie' : 'Independent', done: false },
-                                  ].map((stage, i) => (
-                                    <motion.div
-                                      key={stage.label}
-                                      initial={{ scale: 0 }}
-                                      animate={{ scale: 1 }}
-                                      transition={{ delay: i * 0.1 }}
-                                      className="flex-1 text-center"
-                                    >
-                                      <div className={`h-2 rounded-full mb-1 ${stage.done ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C]' : stage.current ? 'bg-[#D4856A]/30' : 'bg-neutral-200'}`} />
-                                      <p className={`text-[8px] ${stage.current ? 'text-[#D4856A] font-semibold' : stage.done ? 'text-neutral-600' : 'text-neutral-400'}`}>{stage.label}</p>
-                                    </motion.div>
-                                  ))}
-                                </div>
-                                <button
-                                  onClick={() => setPractitionerStep(2)}
-                                  className="w-full py-2 mt-2 bg-[#D4856A]/10 text-[#D4856A] text-sm font-medium rounded-lg hover:bg-[#D4856A]/20 transition-colors"
-                                >
-                                  {locale === 'fr' ? 'Ajouter un jalon' : 'Add milestone'}
-                                </button>
-                              </div>
-                            </motion.div>
-                          )}
-                          {practitionerStep === 2 && (
-                            <motion.div key="int-step2" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Créez un jalon...' : 'Create a milestone...'}</p>
-                              </div>
-                              <div className="bg-white rounded-xl p-3 shadow-sm space-y-2">
-                                <div className="space-y-1">
-                                  {[
-                                    { label: locale === 'fr' ? 'Gestion du stress' : 'Stress management' },
-                                    { label: locale === 'fr' ? 'Communication' : 'Communication' },
-                                    { label: locale === 'fr' ? 'Confiance en soi' : 'Self-confidence' },
-                                  ].map((milestone, i) => (
-                                    <button
-                                      key={milestone.label}
-                                      onClick={() => setPractitionerStep(3)}
-                                      className="w-full text-left px-3 py-2 text-sm text-neutral-600 hover:bg-[#D4856A]/10 hover:text-[#D4856A] rounded-lg transition-all"
-                                    >
-                                      {milestone.label}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                          {practitionerStep === 3 && (
-                            <motion.div key="int-step3" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-3">
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ type: "spring", delay: 0.1 }}
-                                className="w-12 h-12 mx-auto rounded-full bg-[#D4856A]/10 flex items-center justify-center"
-                              >
-                                <Target className="w-6 h-6 text-[#D4856A]" />
-                              </motion.div>
-                              <div className="text-center">
-                                <p className="text-sm font-medium text-neutral-800">
-                                  {locale === 'fr' ? 'Jalon ajouté!' : 'Milestone added!'}
-                                </p>
-                                <p className="text-xs text-neutral-500 mt-1">
-                                  {locale === 'fr'
-                                    ? `Parcours de ${clientName} mis à jour`
-                                    : `${clientName}'s journey updated`}
-                                </p>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.div>
-                    )}
-
-                    {!practitionerInteractive && practitionerSubTab === 'resources' && (
-                      <motion.div key="resources-trailer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                        {/* Resources: Sharing valuable content */}
-                        <AnimatePresence mode="wait">
-                          {demoStep === 0 && (
-                            <motion.div key="step0" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Tout votre contenu, organisé...' : 'All your content, organized...'}</p>
-                              </div>
-                              <div className="flex items-center gap-4">
-                                <motion.div
-                                  animate={{ rotate: [0, -3, 3, 0] }}
-                                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                                  className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#D4856A] to-[#E8A87C] flex items-center justify-center shadow-lg shadow-[#D4856A]/20"
-                                >
-                                  <BookOpen className="w-7 h-7 text-white" />
-                                </motion.div>
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium text-neutral-800">{locale === 'fr' ? 'Votre bibliothèque' : 'Your library'}</p>
-                                  <p className="text-xs text-neutral-400 mt-0.5">{locale === 'fr' ? 'PDFs, exercices, articles - prêts à partager' : 'PDFs, exercises, articles - ready to share'}</p>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                          {demoStep === 1 && (
-                            <motion.div key="step1" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Trouvez la ressource parfaite...' : 'Find the perfect resource...'}</p>
-                              </div>
-                              <div className="space-y-2">
-                                {[
-                                  { name: locale === 'fr' ? 'Exercice de respiration' : 'Breathing exercise', selected: true, type: 'PDF' },
-                                  { name: locale === 'fr' ? 'Journal de gratitude' : 'Gratitude journal', selected: false, type: 'Guide' },
-                                ].map((resource, i) => (
-                                  <motion.div
-                                    key={resource.name}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.12, duration: 0.3 }}
-                                    className={`flex items-center gap-3 p-2.5 rounded-lg ${resource.selected ? 'bg-[#D4856A]/10 border border-[#D4856A]/20' : 'bg-white'}`}
-                                  >
-                                    <FileText className={`w-4 h-4 ${resource.selected ? 'text-[#D4856A]' : 'text-neutral-400'}`} />
-                                    <span className={`text-sm flex-1 ${resource.selected ? 'text-[#D4856A] font-medium' : 'text-neutral-600'}`}>{resource.name}</span>
-                                    <span className="text-[10px] text-neutral-400">{resource.type}</span>
-                                    {resource.selected && <Check className="w-4 h-4 text-[#D4856A]" />}
+                                    <p className="text-[9px] text-neutral-500 group-hover:text-neutral-700">{client.name.split(' ')[0]}</p>
                                   </motion.div>
                                 ))}
-                              </div>
-                            </motion.div>
-                          )}
-                          {demoStep === 2 && (
-                            <motion.div key="step2" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Partagez en un instant...' : 'Share in an instant...'}</p>
-                              </div>
-                              <div className="flex items-center justify-center gap-4 py-2">
-                                <motion.div
-                                  initial={{ x: 0 }}
-                                  animate={{ x: 20 }}
-                                  transition={{ duration: 0.8, ease: "easeInOut" }}
-                                  className="w-12 h-12 rounded-lg bg-[#D4856A]/10 flex items-center justify-center"
-                                >
-                                  <FileText className="w-5 h-5 text-[#D4856A]" />
-                                </motion.div>
+                                {/* Add button */}
                                 <motion.div
                                   initial={{ opacity: 0, scale: 0 }}
                                   animate={{ opacity: 1, scale: 1 }}
-                                  transition={{ delay: 0.5, duration: 0.3 }}
-                                  className="text-[#D4856A]"
+                                  transition={{ delay: 0.35, type: "spring" }}
+                                  className="flex flex-col items-center gap-1 cursor-pointer group"
                                 >
-                                  <Share2 className="w-5 h-5" />
+                                  <div className="w-10 h-10 rounded-full bg-neutral-100 border-2 border-dashed border-neutral-300 flex items-center justify-center text-neutral-400 group-hover:border-[#D4856A] group-hover:text-[#D4856A] transition-colors">
+                                    <Plus className="w-4 h-4" />
+                                  </div>
+                                  <p className="text-[9px] text-neutral-400 group-hover:text-[#D4856A]">{locale === 'fr' ? 'Ajouter' : 'Add'}</p>
                                 </motion.div>
-                                <motion.div
-                                  initial={{ x: 0 }}
-                                  animate={{ x: -20 }}
-                                  transition={{ duration: 0.8, ease: "easeInOut" }}
-                                  className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4856A] to-[#E8A87C] flex items-center justify-center text-white text-sm font-medium"
-                                >SL</motion.div>
                               </div>
-                              <p className="text-xs text-center text-neutral-500">{locale === 'fr' ? 'Envoi à Sarah L.' : 'Sending to Sarah L.'}</p>
                             </motion.div>
                           )}
-                          {demoStep === 3 && (
-                            <motion.div key="step3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Votre client reçoit immédiatement...' : 'Your client receives instantly...'}</p>
-                              </div>
-                              <motion.div
-                                initial={{ scale: 0.95, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ duration: 0.4 }}
-                                className="bg-white rounded-xl p-3 shadow-sm border border-[#D4856A]/10"
-                              >
-                                <div className="flex items-start gap-3">
-                                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#D4856A]/20 to-[#E8A87C]/20 flex items-center justify-center">
-                                    <Heart className="w-4 h-4 text-[#D4856A]" />
-                                  </div>
+                          {/* Step 1: Client Detail View - Compact Header */}
+                          {demoStep === 1 && (
+                            <motion.div key="step1" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-2">
+                              <div className="bg-white rounded-xl p-3 shadow-sm">
+                                <div className="flex items-center gap-3">
+                                  <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ type: "spring" }}
+                                    className="w-10 h-10 rounded-full bg-gradient-to-br from-[#D4856A] to-[#E8A87C] flex items-center justify-center text-white text-xs font-medium"
+                                  >
+                                    SL
+                                  </motion.div>
                                   <div className="flex-1">
-                                    <p className="text-sm text-neutral-700 font-medium">{locale === 'fr' ? 'Nouvelle ressource!' : 'New resource!'}</p>
-                                    <p className="text-xs text-neutral-500 mt-0.5">{locale === 'fr' ? 'Dr. Martin vous a partagé "Exercice de respiration"' : 'Dr. Martin shared "Breathing exercise" with you'}</p>
+                                    <p className="text-sm font-medium text-neutral-800">Sarah L.</p>
+                                    <p className="text-[10px] text-neutral-400">{locale === 'fr' ? '12 sessions • Depuis mars' : '12 sessions • Since Mar'}</p>
+                                  </div>
+                                  {/* Inline stats */}
+                                  <div className="flex items-center gap-3 text-center">
+                                    <div>
+                                      <p className="text-sm font-semibold text-[#D4856A]">12</p>
+                                      <p className="text-[8px] text-neutral-400">{locale === 'fr' ? 'sess.' : 'sess.'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-semibold text-green-500">↑</p>
+                                      <p className="text-[8px] text-neutral-400">{locale === 'fr' ? 'prog.' : 'prog.'}</p>
+                                    </div>
                                   </div>
                                 </div>
-                              </motion.div>
+                              </div>
                             </motion.div>
                           )}
-                        </AnimatePresence>
-                      </motion.div>
-                    )}
-
-                    {/* Resources Interactive Mode */}
-                    {practitionerInteractive && practitionerSubTab === 'resources' && (
-                      <motion.div key="resources-interactive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                        <AnimatePresence mode="wait">
-                          {practitionerStep === 0 && (
-                            <motion.div key="int-step0" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Choisissez une ressource...' : 'Choose a resource...'}</p>
+                          {/* Step 2: Key Considerations & Objectives - Compact */}
+                          {demoStep === 2 && (
+                            <motion.div key="step2" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }}>
+                              <div className="bg-white rounded-xl p-3 shadow-sm">
+                                <div className="grid grid-cols-2 gap-3">
+                                  {/* Key Considerations */}
+                                  <div>
+                                    <p className="text-[9px] uppercase tracking-wider text-neutral-400 mb-1.5">{locale === 'fr' ? 'Points clés' : 'Key points'}</p>
+                                    <div className="space-y-1">
+                                      {[
+                                        locale === 'fr' ? 'Anxiété sociale' : 'Social anxiety',
+                                        locale === 'fr' ? 'Besoin structure' : 'Needs structure',
+                                      ].map((item, i) => (
+                                        <motion.div
+                                          key={i}
+                                          initial={{ opacity: 0 }}
+                                          animate={{ opacity: 1 }}
+                                          transition={{ delay: i * 0.1 }}
+                                          className="flex items-center gap-1.5 text-[10px] text-neutral-600"
+                                        >
+                                          <div className="w-1 h-1 rounded-full bg-[#D4856A]" />
+                                          {item}
+                                        </motion.div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  {/* Objectives */}
+                                  <div>
+                                    <p className="text-[9px] uppercase tracking-wider text-neutral-400 mb-1.5">{locale === 'fr' ? 'Objectifs' : 'Goals'}</p>
+                                    <div className="space-y-1">
+                                      {[
+                                        { text: locale === 'fr' ? 'Respiration' : 'Breathing', done: true },
+                                        { text: locale === 'fr' ? 'Gestion stress' : 'Stress mgmt', done: true },
+                                        { text: locale === 'fr' ? 'Affirmation' : 'Assertion', done: false },
+                                      ].map((obj, i) => (
+                                        <motion.div
+                                          key={i}
+                                          initial={{ opacity: 0 }}
+                                          animate={{ opacity: 1 }}
+                                          transition={{ delay: i * 0.1 }}
+                                          className="flex items-center gap-1.5 text-[10px]"
+                                        >
+                                          <div className={`w-3 h-3 rounded-full border flex items-center justify-center ${obj.done ? 'bg-[#D4856A] border-[#D4856A]' : 'border-neutral-300'}`}>
+                                            {obj.done && <Check className="w-2 h-2 text-white" />}
+                                          </div>
+                                          <span className={obj.done ? 'text-neutral-400 line-through' : 'text-neutral-600'}>{obj.text}</span>
+                                        </motion.div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="space-y-2">
+                            </motion.div>
+                          )}
+                          {/* Step 3: Notes - Compact with Share button */}
+                          {demoStep === 3 && (
+                            <motion.div key="step3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-2">
+                              <div className="bg-white rounded-xl p-3 shadow-sm">
+                                <div className="flex items-center justify-between mb-2">
+                                  <p className="text-[9px] uppercase tracking-wider text-neutral-400">{locale === 'fr' ? 'Notes récentes' : 'Recent notes'}</p>
+                                  <span className="text-[9px] text-[#D4856A]">+ {locale === 'fr' ? 'Ajouter' : 'Add'}</span>
+                                </div>
+                                <div className="space-y-2">
+                                  {[
+                                    { date: locale === 'fr' ? '15 jan' : 'Jan 15', note: locale === 'fr' ? 'Excellent - visualisation réussie' : 'Excellent - visualization success' },
+                                    { date: locale === 'fr' ? '8 jan' : 'Jan 8', note: locale === 'fr' ? 'Progrès anxiété, continue exercices' : 'Anxiety progress, continuing exercises' },
+                                  ].map((entry, i) => (
+                                    <motion.div
+                                      key={i}
+                                      initial={{ opacity: 0 }}
+                                      animate={{ opacity: 1 }}
+                                      transition={{ delay: i * 0.1 }}
+                                      className="flex items-start gap-2"
+                                    >
+                                      <span className="text-[9px] text-[#D4856A] font-medium shrink-0 pt-0.5">{entry.date}</span>
+                                      <p className="text-[10px] text-neutral-600">{entry.note}</p>
+                                    </motion.div>
+                                  ))}
+                                </div>
+                              </div>
+                              {/* Share resource button */}
+                              <motion.button
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.3 }}
+                                onClick={() => setDemoStep(4)}
+                                className="w-full flex items-center justify-center gap-2 py-2 bg-[#D4856A]/10 text-[#D4856A] text-[10px] font-medium rounded-lg hover:bg-[#D4856A]/20 transition-colors"
+                              >
+                                <Share2 className="w-3 h-3" />
+                                {locale === 'fr' ? 'Partager une ressource' : 'Share a resource'}
+                              </motion.button>
+                            </motion.div>
+                          )}
+                          {/* Step 4: Resource Selection */}
+                          {demoStep === 4 && (
+                            <motion.div key="step4" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-2">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Choisir une ressource...' : 'Choose a resource...'}</p>
+                              </div>
+                              <div className="space-y-1.5">
                                 {[
                                   { id: 'breathing', name: locale === 'fr' ? 'Exercice de respiration' : 'Breathing exercise', type: 'PDF' },
                                   { id: 'gratitude', name: locale === 'fr' ? 'Journal de gratitude' : 'Gratitude journal', type: 'Guide' },
@@ -2299,86 +1821,25 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                     initial={{ opacity: 0, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: i * 0.1 }}
-                                    onClick={() => {
-                                      setSelectedClient(resource.id)
-                                      setClientName(resource.name)
-                                      setPractitionerStep(1)
-                                    }}
-                                    className="w-full flex items-center gap-3 p-2.5 rounded-lg bg-white hover:bg-[#D4856A]/5 border border-transparent hover:border-[#D4856A]/20 transition-all"
+                                    onClick={() => setDemoStep(5)}
+                                    className="w-full flex items-center gap-2.5 p-2 rounded-lg bg-white hover:bg-[#D4856A]/5 border border-transparent hover:border-[#D4856A]/20 transition-all shadow-sm"
                                   >
-                                    <div className="w-9 h-9 rounded-lg bg-[#D4856A]/10 flex items-center justify-center">
+                                    <div className="w-8 h-8 rounded-lg bg-[#D4856A]/10 flex items-center justify-center">
                                       <FileText className="w-4 h-4 text-[#D4856A]" />
                                     </div>
                                     <div className="flex-1 text-left">
-                                      <p className="text-sm font-medium text-neutral-700">{resource.name}</p>
-                                      <p className="text-xs text-neutral-400">{resource.type}</p>
+                                      <p className="text-[11px] font-medium text-neutral-700">{resource.name}</p>
+                                      <p className="text-[9px] text-neutral-400">{resource.type}</p>
                                     </div>
+                                    <Share2 className="w-3.5 h-3.5 text-neutral-300" />
                                   </motion.button>
                                 ))}
                               </div>
                             </motion.div>
                           )}
-                          {practitionerStep === 1 && (
-                            <motion.div key="int-step1" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Avec qui partager?' : 'Share with whom?'}</p>
-                              </div>
-                              <div className="bg-white rounded-xl p-3 shadow-sm space-y-2">
-                                <div className="flex items-center gap-2 p-2 bg-[#D4856A]/5 rounded-lg">
-                                  <FileText className="w-4 h-4 text-[#D4856A]" />
-                                  <span className="text-sm text-[#D4856A] font-medium">{clientName}</span>
-                                </div>
-                                <div className="space-y-1 pt-2">
-                                  {[
-                                    { id: 'sarah', name: 'Sarah L.', initials: 'SL' },
-                                    { id: 'marc', name: 'Marc D.', initials: 'MD' },
-                                  ].map((client) => (
-                                    <button
-                                      key={client.id}
-                                      onClick={() => {
-                                        setSessionNote(client.name)
-                                        setPractitionerStep(2)
-                                      }}
-                                      className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-[#D4856A]/5 transition-all"
-                                    >
-                                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#D4856A] to-[#E8A87C] flex items-center justify-center text-white text-[10px] font-medium">
-                                        {client.initials}
-                                      </div>
-                                      <span className="text-sm text-neutral-600">{client.name}</span>
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                          {practitionerStep === 2 && (
-                            <motion.div key="int-step2" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Ajoutez un message...' : 'Add a message...'}</p>
-                              </div>
-                              <div className="bg-white rounded-xl p-3 shadow-sm space-y-2">
-                                <div className="flex items-center gap-2 text-xs text-neutral-500">
-                                  <span>{locale === 'fr' ? 'À:' : 'To:'}</span>
-                                  <span className="font-medium text-neutral-700">{sessionNote}</span>
-                                </div>
-                                <textarea
-                                  placeholder={locale === 'fr' ? 'Message optionnel...' : 'Optional message...'}
-                                  className="w-full h-12 text-sm text-neutral-700 placeholder:text-neutral-300 bg-neutral-50 rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#D4856A]/30"
-                                />
-                                <button
-                                  onClick={() => setPractitionerStep(3)}
-                                  className="w-full py-2 bg-[#D4856A] text-white text-sm font-medium rounded-lg hover:bg-[#c27459] transition-colors flex items-center justify-center gap-2"
-                                >
-                                  <Share2 className="w-4 h-4" />
-                                  {locale === 'fr' ? 'Partager' : 'Share'}
-                                </button>
-                              </div>
-                            </motion.div>
-                          )}
-                          {practitionerStep === 3 && (
-                            <motion.div key="int-step3" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-3">
+                          {/* Step 5: Resource Shared Confirmation */}
+                          {demoStep === 5 && (
+                            <motion.div key="step5" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, ease: "easeOut" }} className="space-y-3">
                               <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
@@ -2393,15 +1854,444 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 </p>
                                 <p className="text-xs text-neutral-500 mt-1">
                                   {locale === 'fr'
-                                    ? `${sessionNote} recevra une notification`
-                                    : `${sessionNote} will receive a notification`}
+                                    ? 'Sarah L. recevra une notification'
+                                    : 'Sarah L. will receive a notification'}
                                 </p>
                               </div>
+                              {/* See progress button */}
+                              <motion.button
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.6 }}
+                                onClick={() => setDemoStep(6)}
+                                className="w-full flex items-center justify-center gap-2 py-2 bg-[#D4856A]/10 text-[#D4856A] text-[10px] font-medium rounded-lg hover:bg-[#D4856A]/20 transition-colors"
+                              >
+                                {locale === 'fr' ? 'Voir la progression →' : 'See progress →'}
+                              </motion.button>
+                            </motion.div>
+                          )}
+                          {/* Step 6: Progress Board */}
+                          {demoStep === 6 && (
+                            <motion.div key="step6" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-2">
+                              <div className="flex items-center justify-between mb-1">
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Progression de Sarah' : "Sarah's Progress"}</p>
+                              </div>
+                              <div className="grid grid-cols-4 gap-1">
+                                {[
+                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : 'Discovery', count: 0, color: 'bg-blue-50 border-blue-200' },
+                                  { id: 'building', label: locale === 'fr' ? 'Construction' : 'Building', count: 1, color: 'bg-amber-50 border-amber-200', hasCard: true },
+                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : 'Thriving', count: 0, color: 'bg-emerald-50 border-emerald-200' },
+                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : 'Independent', count: 0, color: 'bg-purple-50 border-purple-200' },
+                                ].map((stage, i) => (
+                                  <motion.div
+                                    key={stage.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: i * 0.1 }}
+                                    className={`rounded-lg p-1.5 border ${stage.color} min-h-[60px]`}
+                                  >
+                                    <p className="text-[7px] font-medium text-neutral-600 mb-1 truncate">{stage.label}</p>
+                                    {stage.hasCard && (
+                                      <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ delay: 0.4, type: "spring" }}
+                                        className="bg-white rounded p-1 shadow-sm border border-neutral-100 cursor-grab"
+                                      >
+                                        <p className="text-[7px] text-neutral-700 font-medium">{locale === 'fr' ? 'Gestion stress' : 'Stress mgmt'}</p>
+                                      </motion.div>
+                                    )}
+                                  </motion.div>
+                                ))}
+                              </div>
+                              <motion.p
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.6 }}
+                                className="text-[9px] text-center text-neutral-400"
+                              >
+                                {locale === 'fr' ? 'Glissez les objectifs entre les colonnes' : 'Drag goals between columns'}
+                              </motion.p>
+                            </motion.div>
+                          )}
+                          {/* Step 7: Goal Moved Confirmation */}
+                          {demoStep === 7 && (
+                            <motion.div key="step7" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, ease: "easeOut" }} className="space-y-2">
+                              <div className="flex items-center justify-between mb-1">
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Progression de Sarah' : "Sarah's Progress"}</p>
+                              </div>
+                              <div className="grid grid-cols-4 gap-1">
+                                {[
+                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : 'Discovery', color: 'bg-blue-50 border-blue-200' },
+                                  { id: 'building', label: locale === 'fr' ? 'Construction' : 'Building', color: 'bg-amber-50 border-amber-200' },
+                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : 'Thriving', color: 'bg-emerald-50 border-emerald-200', hasCard: true },
+                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : 'Independent', color: 'bg-purple-50 border-purple-200' },
+                                ].map((stage, i) => (
+                                  <motion.div
+                                    key={stage.id}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: i * 0.05 }}
+                                    className={`rounded-lg p-1.5 border ${stage.color} min-h-[60px]`}
+                                  >
+                                    <p className="text-[7px] font-medium text-neutral-600 mb-1 truncate">{stage.label}</p>
+                                    {stage.hasCard && (
+                                      <motion.div
+                                        initial={{ x: -30, opacity: 0 }}
+                                        animate={{ x: 0, opacity: 1 }}
+                                        transition={{ delay: 0.3, type: "spring" }}
+                                        className="bg-white rounded p-1 shadow-sm border border-emerald-200"
+                                      >
+                                        <p className="text-[7px] text-neutral-700 font-medium">{locale === 'fr' ? 'Gestion stress' : 'Stress mgmt'}</p>
+                                        <Check className="w-2.5 h-2.5 text-emerald-500 mt-0.5" />
+                                      </motion.div>
+                                    )}
+                                  </motion.div>
+                                ))}
+                              </div>
+                              <motion.div
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.5 }}
+                                className="flex items-center justify-center gap-2 py-1.5 bg-emerald-50 rounded-lg"
+                              >
+                                <Check className="w-3 h-3 text-emerald-500" />
+                                <p className="text-[9px] text-emerald-700 font-medium">
+                                  {locale === 'fr' ? 'Objectif avancé vers Épanoui!' : 'Goal moved to Thriving!'}
+                                </p>
+                              </motion.div>
                             </motion.div>
                           )}
                         </AnimatePresence>
                       </motion.div>
                     )}
+
+                    {/* Members Interactive Mode */}
+                    {practitionerInteractive && practitionerSubTab === 'members' && (
+                      <motion.div key="members-interactive" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                        <AnimatePresence mode="wait">
+                          {/* Step 0: Client list with Add button - Compact Row */}
+                          {practitionerStep === 0 && (
+                            <motion.div key="int-step0" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Sélectionnez un client' : 'Select a client'}</p>
+                                <span className="text-[10px] text-neutral-400">3 {locale === 'fr' ? 'actifs' : 'active'}</span>
+                              </div>
+                              {/* Client avatars in a row */}
+                              <div className="flex items-center gap-2">
+                                {[
+                                  { id: 'sarah', name: 'Sarah', initials: 'SL', color: 'from-[#D4856A] to-[#E8A87C]' },
+                                  { id: 'marc', name: 'Marc', initials: 'MD', color: 'from-violet-500 to-violet-400' },
+                                  { id: 'julie', name: 'Julie', initials: 'JT', color: 'from-emerald-500 to-emerald-400' },
+                                ].map((client, i) => (
+                                  <motion.button
+                                    key={client.id}
+                                    initial={{ opacity: 0, scale: 0 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: i * 0.08, type: "spring" }}
+                                    onClick={() => {
+                                      setSelectedClient(client.id)
+                                      setClientName(`${client.name} L.`)
+                                      setPractitionerStep(2)
+                                    }}
+                                    className="flex flex-col items-center gap-1 group"
+                                  >
+                                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${client.color} flex items-center justify-center text-white text-[10px] font-medium shadow-sm group-hover:scale-110 transition-transform`}>
+                                      {client.initials}
+                                    </div>
+                                    <p className="text-[9px] text-neutral-500 group-hover:text-neutral-700">{client.name}</p>
+                                  </motion.button>
+                                ))}
+                                {/* Add button */}
+                                <motion.button
+                                  initial={{ opacity: 0, scale: 0 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ delay: 0.25, type: "spring" }}
+                                  onClick={() => {
+                                    setSelectedClient('new')
+                                    setClientName('')
+                                    setPractitionerStep(1)
+                                  }}
+                                  className="flex flex-col items-center gap-1 group"
+                                >
+                                  <div className="w-10 h-10 rounded-full bg-neutral-100 border-2 border-dashed border-neutral-300 flex items-center justify-center text-neutral-400 group-hover:border-[#D4856A] group-hover:text-[#D4856A] transition-colors">
+                                    <Plus className="w-4 h-4" />
+                                  </div>
+                                  <p className="text-[9px] text-neutral-400 group-hover:text-[#D4856A]">{locale === 'fr' ? 'Ajouter' : 'Add'}</p>
+                                </motion.button>
+                              </div>
+                            </motion.div>
+                          )}
+                          {/* Step 1: Add new client form - Compact */}
+                          {practitionerStep === 1 && (
+                            <motion.div key="int-step1" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-2">
+                              <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Nouveau client' : 'New client'}</p>
+                              <div className="bg-white rounded-xl p-3 shadow-sm space-y-2">
+                                <input
+                                  type="text"
+                                  value={clientName}
+                                  onChange={(e) => setClientName(e.target.value)}
+                                  placeholder={locale === 'fr' ? 'Nom du client...' : 'Client name...'}
+                                  className="w-full text-sm text-neutral-700 placeholder:text-neutral-300 bg-neutral-50 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#D4856A]/30"
+                                />
+                                <button
+                                  onClick={() => {
+                                    if (clientName.trim()) {
+                                      setSelectedClient('new-added')
+                                      setPractitionerStep(2)
+                                    }
+                                  }}
+                                  className="w-full py-2 bg-[#D4856A] text-white text-xs font-medium rounded-lg hover:bg-[#c27459] transition-colors disabled:opacity-50"
+                                  disabled={!clientName.trim()}
+                                >
+                                  {locale === 'fr' ? 'Créer' : 'Create'}
+                                </button>
+                              </div>
+                            </motion.div>
+                          )}
+                          {/* Step 2: Client detail view - Compact 2-column */}
+                          {practitionerStep === 2 && (
+                            <motion.div key="int-step2" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-2">
+                              <div className="bg-white rounded-xl p-3 shadow-sm">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#D4856A] to-[#E8A87C] flex items-center justify-center text-white text-[9px] font-medium">
+                                    {clientName ? clientName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'NC'}
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="text-xs font-medium text-neutral-800">{clientName || 'New Client'}</p>
+                                    <p className="text-[9px] text-neutral-400">{locale === 'fr' ? '8 sessions' : '8 sessions'}</p>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {/* Key Points */}
+                                  <div>
+                                    <p className="text-[8px] uppercase tracking-wider text-neutral-400 mb-1">{locale === 'fr' ? 'Points clés' : 'Key points'}</p>
+                                    <div className="space-y-0.5">
+                                      {[
+                                        locale === 'fr' ? 'Anxiété sociale' : 'Social anxiety',
+                                        locale === 'fr' ? 'Besoin structure' : 'Needs structure',
+                                      ].map((item, i) => (
+                                        <div key={i} className="flex items-center gap-1 text-[9px] text-neutral-600">
+                                          <div className="w-1 h-1 rounded-full bg-[#D4856A]" />
+                                          {item}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  {/* Goals */}
+                                  <div>
+                                    <p className="text-[8px] uppercase tracking-wider text-neutral-400 mb-1">{locale === 'fr' ? 'Objectifs' : 'Goals'}</p>
+                                    <div className="space-y-0.5">
+                                      {[
+                                        { text: locale === 'fr' ? 'Respiration' : 'Breathing', done: true },
+                                        { text: locale === 'fr' ? 'Gestion stress' : 'Stress mgmt', done: false },
+                                      ].map((obj, i) => (
+                                        <div key={i} className="flex items-center gap-1 text-[9px]">
+                                          <div className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center ${obj.done ? 'bg-[#D4856A] border-[#D4856A]' : 'border-neutral-300'}`}>
+                                            {obj.done && <Check className="w-1.5 h-1.5 text-white" />}
+                                          </div>
+                                          <span className={obj.done ? 'text-neutral-400 line-through' : 'text-neutral-600'}>{obj.text}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => setPractitionerStep(3)}
+                                className="w-full py-1.5 bg-neutral-100 text-neutral-600 text-[10px] font-medium rounded-lg hover:bg-neutral-200 transition-colors"
+                              >
+                                {locale === 'fr' ? 'Notes →' : 'Notes →'}
+                              </button>
+                            </motion.div>
+                          )}
+                          {/* Step 3: Notes view - Compact with Share button */}
+                          {practitionerStep === 3 && (
+                            <motion.div key="int-step3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-2">
+                              <div className="bg-white rounded-xl p-3 shadow-sm">
+                                <div className="flex items-center justify-between mb-2">
+                                  <p className="text-[9px] uppercase tracking-wider text-neutral-400">{locale === 'fr' ? 'Notes' : 'Notes'}</p>
+                                  <button className="text-[9px] text-[#D4856A] font-medium">+ {locale === 'fr' ? 'Ajouter' : 'Add'}</button>
+                                </div>
+                                <div className="space-y-1.5">
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-[8px] text-[#D4856A] font-medium shrink-0 pt-0.5">{locale === 'fr' ? '15 jan' : 'Jan 15'}</span>
+                                    <p className="text-[9px] text-neutral-600">{locale === 'fr' ? 'Excellent - visualisation réussie' : 'Excellent - visualization success'}</p>
+                                  </div>
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-[8px] text-[#D4856A] font-medium shrink-0 pt-0.5">{locale === 'fr' ? '8 jan' : 'Jan 8'}</span>
+                                    <p className="text-[9px] text-neutral-600">{locale === 'fr' ? 'Progrès anxiété, continue' : 'Anxiety progress, continuing'}</p>
+                                  </div>
+                                </div>
+                              </div>
+                              {/* Share resource button */}
+                              <button
+                                onClick={() => setPractitionerStep(4)}
+                                className="w-full flex items-center justify-center gap-2 py-2 bg-[#D4856A]/10 text-[#D4856A] text-[10px] font-medium rounded-lg hover:bg-[#D4856A]/20 transition-colors"
+                              >
+                                <Share2 className="w-3 h-3" />
+                                {locale === 'fr' ? 'Partager une ressource' : 'Share a resource'}
+                              </button>
+                            </motion.div>
+                          )}
+                          {/* Step 4: Resource Selection */}
+                          {practitionerStep === 4 && (
+                            <motion.div key="int-step4" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-2">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Choisir une ressource...' : 'Choose a resource...'}</p>
+                              </div>
+                              <div className="space-y-1.5">
+                                {[
+                                  { id: 'breathing', name: locale === 'fr' ? 'Exercice de respiration' : 'Breathing exercise', type: 'PDF' },
+                                  { id: 'gratitude', name: locale === 'fr' ? 'Journal de gratitude' : 'Gratitude journal', type: 'Guide' },
+                                  { id: 'anxiety', name: locale === 'fr' ? 'Gérer l\'anxiété' : 'Managing anxiety', type: 'Article' },
+                                ].map((resource, i) => (
+                                  <motion.button
+                                    key={resource.id}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.1 }}
+                                    onClick={() => setPractitionerStep(5)}
+                                    className="w-full flex items-center gap-2.5 p-2 rounded-lg bg-white hover:bg-[#D4856A]/5 border border-transparent hover:border-[#D4856A]/20 transition-all shadow-sm"
+                                  >
+                                    <div className="w-8 h-8 rounded-lg bg-[#D4856A]/10 flex items-center justify-center">
+                                      <FileText className="w-4 h-4 text-[#D4856A]" />
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                      <p className="text-[11px] font-medium text-neutral-700">{resource.name}</p>
+                                      <p className="text-[9px] text-neutral-400">{resource.type}</p>
+                                    </div>
+                                    <Share2 className="w-3.5 h-3.5 text-neutral-300" />
+                                  </motion.button>
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
+                          {/* Step 5: Resource Shared Confirmation */}
+                          {practitionerStep === 5 && (
+                            <motion.div key="int-step5" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-3">
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: "spring", delay: 0.1 }}
+                                className="w-12 h-12 mx-auto rounded-full bg-[#D4856A]/10 flex items-center justify-center"
+                              >
+                                <Check className="w-6 h-6 text-[#D4856A]" />
+                              </motion.div>
+                              <div className="text-center">
+                                <p className="text-sm font-medium text-neutral-800">
+                                  {locale === 'fr' ? 'Ressource partagée!' : 'Resource shared!'}
+                                </p>
+                                <p className="text-xs text-neutral-500 mt-1">
+                                  {locale === 'fr'
+                                    ? `${clientName} recevra une notification`
+                                    : `${clientName} will receive a notification`}
+                                </p>
+                              </div>
+                              {/* See progress button */}
+                              <button
+                                onClick={() => setPractitionerStep(6)}
+                                className="w-full flex items-center justify-center gap-2 py-2 bg-[#D4856A]/10 text-[#D4856A] text-[10px] font-medium rounded-lg hover:bg-[#D4856A]/20 transition-colors"
+                              >
+                                {locale === 'fr' ? 'Voir la progression →' : 'See progress →'}
+                              </button>
+                            </motion.div>
+                          )}
+                          {/* Step 6: Progress Board - Interactive */}
+                          {practitionerStep === 6 && (
+                            <motion.div key="int-step6" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-2">
+                              <div className="flex items-center justify-between mb-1">
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? `Progression de ${clientName}` : `${clientName}'s Progress`}</p>
+                              </div>
+                              <div className="grid grid-cols-4 gap-1">
+                                {[
+                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : 'Discovery', color: 'bg-blue-50 border-blue-200' },
+                                  { id: 'building', label: locale === 'fr' ? 'Construction' : 'Building', color: 'bg-amber-50 border-amber-200', hasCard: true },
+                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : 'Thriving', color: 'bg-emerald-50 border-emerald-200' },
+                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : 'Independent', color: 'bg-purple-50 border-purple-200' },
+                                ].map((stage, i) => (
+                                  <motion.div
+                                    key={stage.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: i * 0.1 }}
+                                    onClick={() => stage.id === 'thriving' && setPractitionerStep(7)}
+                                    className={`rounded-lg p-1.5 border ${stage.color} min-h-[60px] ${stage.id === 'thriving' ? 'cursor-pointer hover:border-emerald-400 transition-colors' : ''}`}
+                                  >
+                                    <p className="text-[7px] font-medium text-neutral-600 mb-1 truncate">{stage.label}</p>
+                                    {stage.hasCard && (
+                                      <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ delay: 0.4, type: "spring" }}
+                                        whileHover={{ scale: 1.05 }}
+                                        onClick={() => setPractitionerStep(7)}
+                                        className="bg-white rounded p-1 shadow-sm border border-neutral-100 cursor-grab active:cursor-grabbing"
+                                      >
+                                        <p className="text-[7px] text-neutral-700 font-medium">{locale === 'fr' ? 'Gestion stress' : 'Stress mgmt'}</p>
+                                      </motion.div>
+                                    )}
+                                  </motion.div>
+                                ))}
+                              </div>
+                              <p className="text-[9px] text-center text-neutral-400">
+                                {locale === 'fr' ? 'Cliquez sur un objectif pour le déplacer' : 'Click a goal to move it'}
+                              </p>
+                            </motion.div>
+                          )}
+                          {/* Step 7: Goal Moved Confirmation */}
+                          {practitionerStep === 7 && (
+                            <motion.div key="int-step7" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-2">
+                              <div className="flex items-center justify-between mb-1">
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? `Progression de ${clientName}` : `${clientName}'s Progress`}</p>
+                              </div>
+                              <div className="grid grid-cols-4 gap-1">
+                                {[
+                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : 'Discovery', color: 'bg-blue-50 border-blue-200' },
+                                  { id: 'building', label: locale === 'fr' ? 'Construction' : 'Building', color: 'bg-amber-50 border-amber-200' },
+                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : 'Thriving', color: 'bg-emerald-50 border-emerald-200', hasCard: true },
+                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : 'Independent', color: 'bg-purple-50 border-purple-200' },
+                                ].map((stage, i) => (
+                                  <motion.div
+                                    key={stage.id}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: i * 0.05 }}
+                                    className={`rounded-lg p-1.5 border ${stage.color} min-h-[60px]`}
+                                  >
+                                    <p className="text-[7px] font-medium text-neutral-600 mb-1 truncate">{stage.label}</p>
+                                    {stage.hasCard && (
+                                      <motion.div
+                                        initial={{ x: -30, opacity: 0 }}
+                                        animate={{ x: 0, opacity: 1 }}
+                                        transition={{ delay: 0.3, type: "spring" }}
+                                        className="bg-white rounded p-1 shadow-sm border border-emerald-200"
+                                      >
+                                        <p className="text-[7px] text-neutral-700 font-medium">{locale === 'fr' ? 'Gestion stress' : 'Stress mgmt'}</p>
+                                        <Check className="w-2.5 h-2.5 text-emerald-500 mt-0.5" />
+                                      </motion.div>
+                                    )}
+                                  </motion.div>
+                                ))}
+                              </div>
+                              <motion.div
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.5 }}
+                                className="flex items-center justify-center gap-2 py-1.5 bg-emerald-50 rounded-lg"
+                              >
+                                <Check className="w-3 h-3 text-emerald-500" />
+                                <p className="text-[9px] text-emerald-700 font-medium">
+                                  {locale === 'fr' ? 'Objectif avancé vers Épanoui!' : 'Goal moved to Thriving!'}
+                                </p>
+                              </motion.div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    )}
+
                   </AnimatePresence>
                 </div>
 
@@ -2415,52 +2305,18 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                       className="mb-3 overflow-hidden"
                     >
                       <div className="bg-neutral-50 rounded-xl p-4 space-y-3">
-                        {practitionerSubTab === 'members' ? (
-                          <>
-                            <p className="text-sm text-neutral-700 leading-relaxed">
-                              {locale === 'fr'
-                                ? "Vos clients ne sont pas des numéros. Ce sont des personnes avec des histoires, des progrès, des défis. Bloom vous aide à garder tout organisé — notes, sessions, jalons — pour que vous puissiez vous concentrer sur ce qui compte."
-                                : "Your clients aren't numbers. They're people with stories, progress, challenges. Bloom helps you keep everything organized — notes, sessions, milestones — so you can focus on what matters."
-                              }
-                            </p>
-                            <p className="text-sm text-neutral-600">
-                              {locale === 'fr'
-                                ? "Pas de logiciels compliqués. Juste un espace calme pour accompagner chaque parcours."
-                                : "No complicated software. Just a calm space to support each journey."
-                              }
-                            </p>
-                          </>
-                        ) : practitionerSubTab === 'journeys' ? (
-                          <>
-                            <p className="text-sm text-neutral-700 leading-relaxed">
-                              {locale === 'fr'
-                                ? "La guérison n'est pas linéaire, mais elle a une direction. Les parcours vous aident à définir des jalons significatifs — pas des cases à cocher, mais de vraies étapes de croissance."
-                                : "Healing isn't linear, but it has a direction. Journeys help you define meaningful milestones — not checkboxes, but real markers of growth."
-                              }
-                            </p>
-                            <p className="text-sm text-neutral-600">
-                              {locale === 'fr'
-                                ? "Partagez-les avec vos clients pour qu'ils voient leur propre chemin. Parfois, voir le progrès est aussi puissant que le faire."
-                                : "Share them with clients so they see their own path. Sometimes seeing progress is as powerful as making it."
-                              }
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="text-sm text-neutral-700 leading-relaxed">
-                              {locale === 'fr'
-                                ? "Vous avez des ressources précieuses — exercices, articles, guides. Bloom vous permet de les organiser et de les partager au bon moment."
-                                : "You have valuable resources — exercises, articles, guides. Bloom lets you organize them and share at the right moment."
-                              }
-                            </p>
-                            <p className="text-sm text-neutral-600">
-                              {locale === 'fr'
-                                ? "Vos clients les reçoivent instantanément. Plus de fichiers perdus dans les emails."
-                                : "Your clients receive them instantly. No more files lost in emails."
-                              }
-                            </p>
-                          </>
-                        )}
+                        <p className="text-sm text-neutral-700 leading-relaxed">
+                          {locale === 'fr'
+                            ? "Vos clients ne sont pas des numéros. Ce sont des personnes avec des histoires, des progrès, des défis. Bloom vous aide à garder tout organisé — notes, sessions, jalons — pour que vous puissiez vous concentrer sur ce qui compte."
+                            : "Your clients aren't numbers. They're people with stories, progress, challenges. Bloom helps you keep everything organized — notes, sessions, milestones — so you can focus on what matters."
+                          }
+                        </p>
+                        <p className="text-sm text-neutral-600">
+                          {locale === 'fr'
+                            ? "Pas de logiciels compliqués. Juste un espace calme pour accompagner chaque parcours."
+                            : "No complicated software. Just a calm space to support each journey."
+                          }
+                        </p>
                         <button
                           onClick={() => setPractitionerExplanation(false)}
                           className="text-xs text-neutral-400 hover:text-neutral-600"
@@ -2473,7 +2329,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                 </AnimatePresence>
 
                 {/* Bottom bar - CTA */}
-                {practitionerInteractive && practitionerStep === 3 ? (
+                {practitionerInteractive && practitionerStep === 7 ? (
                   <Link
                     href="/early-access"
                     className="flex items-center justify-between group"
@@ -2482,18 +2338,29 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                       {locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access'}
                     </span>
                     <div className="w-8 h-8 bg-[#D4856A] rounded-full flex items-center justify-center group-hover:bg-[#c27459] transition-colors">
-                      <ArrowUp className="w-4 h-4 text-white" />
+                      <ArrowUp className="w-4 h-4" />
                     </div>
                   </Link>
                 ) : practitionerInteractive ? (
-                  <button
-                    onClick={resetMembersInteractive}
-                    className="flex items-center justify-between group w-full"
-                  >
-                    <span className="text-xs text-neutral-400 group-hover:text-neutral-600 transition-colors">
-                      {locale === 'fr' ? '← Recommencer' : '← Start over'}
-                    </span>
-                  </button>
+                  <div className={`flex items-center w-full ${practitionerStep > 0 ? 'justify-between' : 'justify-end'}`}>
+                    {practitionerStep > 0 && (
+                      <button
+                        onClick={resetMembersInteractive}
+                        className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+                      >
+                        {locale === 'fr' ? '← Recommencer' : '← Start over'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setPractitionerInteractive(false)
+                        setDemoStep(0)
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 border border-neutral-300 text-neutral-500 bg-transparent text-xs font-medium rounded-full hover:bg-neutral-100 transition-colors"
+                    >
+                      {locale === 'fr' ? 'Voir un exemple' : 'View example'}
+                    </button>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-end">
                     <button
@@ -2513,6 +2380,21 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
             )}
           </AnimatePresence>
         </motion.div>
+
+        {/* CTA Button - only on member homepage, after demo */}
+        {!isPractitionerPage && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 1 }}
+            className="mt-8 flex justify-center"
+          >
+            <Link href="/early-access">
+              <button className="px-8 py-3 bg-[#4A9A86] hover:bg-[#3d8a76] text-white font-medium rounded-full shadow-lg shadow-[#4A9A86]/30 hover:shadow-xl transition-all duration-300">
+                {locale === 'fr' ? 'Commencer gratuitement' : 'Get started free'}
+              </button>
+            </Link>
+          </motion.div>
         )}
 
         {/* Practitioner Early Access Form */}

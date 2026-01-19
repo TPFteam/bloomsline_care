@@ -3315,7 +3315,7 @@ function CreatePsychoeducationContent() {
                     }}
                     className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-xl py-3"
                   >
-                    {locale === 'fr' ? 'Partager avec des patients' : 'Share with Members'}
+                    {locale === 'fr' ? 'Partager cette ressource' : 'Share this resource'}
                   </Button>
                   <Button
                     variant="ghost"

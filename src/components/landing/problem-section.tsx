@@ -21,26 +21,42 @@ export function ProblemSection() {
     {
       id: 'member-1',
       text: {
-        en: "I journaled for three days straight last week. Nobody noticed. I barely noticed. Then I missed a day and felt like I failed all over again. Why is it so hard to give myself credit for the small things?",
-        fr: "J'ai tenu mon journal pendant trois jours d'affilée la semaine dernière. Personne n'a remarqué. J'ai à peine remarqué moi-même. Puis j'ai manqué un jour et j'ai eu l'impression d'avoir tout raté.",
+        en: "I wrote things down for a few days in a row. It didn't change my life. Then I stopped, and suddenly it felt like it didn't count anymore. Why does it feel so easy to erase what I did?",
+        fr: "J'ai écrit pendant quelques jours d'affilée. Ça n'a rien changé à ma vie. Puis j'ai arrêté, et d'un coup, ça n'avait plus compté. Pourquoi est-ce si facile d'effacer ça de ma mémoire ?",
       },
       avatar: { color: 'bg-violet-500', initials: 'SK' },
     },
     {
       id: 'member-2',
       text: {
-        en: "Between work, family, and everything else... by the time I have a moment for myself, I'm too exhausted to do anything meaningful. Self-care feels like just another item on an endless to-do list.",
-        fr: "Entre le travail, la famille et tout le reste... quand j'ai enfin un moment pour moi, je suis trop épuisé pour faire quoi que ce soit de significatif.",
+        en: "I wanted to do more today. I really did. But I barely had the energy to get through the day. Is that still something?",
+        fr: "Je voulais faire plus aujourd'hui. Vraiment. Mais j'avais à peine l'énergie de traverser la journée. Est-ce que le peu que j'ai fait compte quand même ?",
       },
       avatar: { color: 'bg-emerald-500', initials: 'MR' },
     },
     {
       id: 'member-3',
       text: {
-        en: "I've downloaded probably ten different wellness apps. They all work for about a week. Then I get busy, the notifications pile up, and they just become guilt reminders.",
-        fr: "J'ai probablement téléchargé dix applications de bien-être différentes. Elles fonctionnent toutes pendant environ une semaine. Puis les notifications s'accumulent et deviennent des rappels de culpabilité.",
+        en: "Some days I show up. Some days I don't. I keep thinking one of those versions is the \"right\" one.",
+        fr: "Certains jours, je suis au top. D'autres pas du tout. Je continue de croire qu'une seule de ces versions me défini.",
       },
       avatar: { color: 'bg-amber-500', initials: 'JL' },
+    },
+    {
+      id: 'member-4',
+      text: {
+        en: "I didn't follow what I planned. I adjusted instead. Part of me still thinks that means I failed.",
+        fr: "Je n'ai pas suivi ce que j'avais prévu. J'ai fais ce que je pouvais. Mais une partie de moi pense que ce n'est pas assez.",
+      },
+      avatar: { color: 'bg-rose-500', initials: 'AL' },
+    },
+    {
+      id: 'member-5',
+      text: {
+        en: "I keep waiting to feel \"ready\" to take care of myself. I'm starting to wonder if that moment ever really comes.",
+        fr: "J'attends toujours de me sentir \"prête\" pour prendre soin de moi. Je commence à me demander si ce moment arrive vraiment un jour.",
+      },
+      avatar: { color: 'bg-blue-500', initials: 'CM' },
     },
   ]
 
@@ -56,8 +72,8 @@ export function ProblemSection() {
   }
 
   const subheadline = {
-    en: "You're not alone. These are the moments that slip through the cracks—the ones no app notification can fix.",
-    fr: "Vous n'êtes pas seul. Ce sont ces moments qui passent entre les mailles du filet—ceux qu'aucune notification ne peut résoudre.",
+    en: "These moments happen more often than we think. They're often the ones that matter. The ones we go through without naming and forget too quickly.",
+    fr: "Ces moments arrivent plus souvent qu'on ne le croit. Ce sont souvent eux qui comptent. Ceux qu'on traverse sans les nommer et qu'on oublie trop vite.",
   }
 
   // Card positions for the stacked effect

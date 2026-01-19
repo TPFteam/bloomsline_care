@@ -64,7 +64,7 @@ export function HopeSection() {
   const patterns = [
     {
       icon: Frown,
-      text: { en: 'Feel guilty', fr: 'Se sentir coupable' },
+      text: { en: 'Feel guilty', fr: 'Je me sens coupable' },
       response: {
         en: "That guilt? It means you care. You deserve support, not shame.",
         fr: "Cette culpabilité ? Elle montre que vous tenez à vous. Vous méritez du soutien, pas de la honte.",
@@ -72,7 +72,7 @@ export function HopeSection() {
     },
     {
       icon: RotateCcw,
-      text: { en: 'Try again tomorrow', fr: 'Réessayer demain' },
+      text: { en: 'Try again tomorrow', fr: 'Je reporte au lendemain' },
       response: {
         en: "You've been trying. That takes strength. What if tomorrow had a little more support?",
         fr: "Vous avez essayé. Ça demande de la force. Et si demain avait un peu plus de soutien ?",
@@ -80,7 +80,7 @@ export function HopeSection() {
     },
     {
       icon: Download,
-      text: { en: 'Download another app', fr: 'Télécharger une autre app' },
+      text: { en: 'Download another app', fr: 'Je télécharge une app' },
       response: {
         en: "The 10th app won't be different. You don't need another app. You need something that actually understands.",
         fr: "La 10ème app ne sera pas différente. Vous n'avez pas besoin d'une autre app. Vous avez besoin de quelque chose qui comprend vraiment.",
@@ -88,7 +88,7 @@ export function HopeSection() {
     },
     {
       icon: Ban,
-      text: { en: 'Give up', fr: 'Abandonner' },
+      text: { en: 'Give up', fr: "J'abandonne" },
       response: {
         en: "You haven't given up. You're here, still looking. That takes courage.",
         fr: "Vous n'avez pas abandonné. Vous êtes là, encore à chercher. Ça demande du courage.",
@@ -205,7 +205,7 @@ export function HopeSection() {
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <p className="text-lg sm:text-xl text-neutral-600 mb-8">
-              {locale === 'fr' ? "Que faites-vous d'habitude quand vous perdez l'élan ?" : 'What do you usually do when you lose momentum?'}
+              {locale === 'fr' ? "Que faites-vous quand vous n'avez plus l'énergie d'avancer ?" : 'What do you usually do when you lose momentum?'}
             </p>
 
             {/* Pattern Options - Clickable - 2x2 grid */}
