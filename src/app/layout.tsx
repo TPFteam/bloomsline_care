@@ -5,6 +5,9 @@ import { QueryProvider } from "@/lib/providers/query-provider";
 import { Toaster } from "sonner";
 import { LanguageProvider } from "@/lib/i18n/context";
 import { ThemeProvider } from "@/lib/theme/context";
+import { FeedbackWrapper } from "@/components/feedback-wrapper";
+import { CookieConsent } from "@/components/cookie-consent";
+import { PostHogProvider } from "@/lib/analytics/posthog-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,12 +34,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider>
-          <LanguageProvider>
-            <QueryProvider>{children}</QueryProvider>
-            <Toaster position="top-center" richColors />
-          </LanguageProvider>
-        </ThemeProvider>
+        <PostHogProvider>
+          <ThemeProvider>
+            <LanguageProvider>
+              <QueryProvider>{children}</QueryProvider>
+              <FeedbackWrapper />
+              <CookieConsent />
+              <Toaster position="top-center" richColors />
+            </LanguageProvider>
+          </ThemeProvider>
+        </PostHogProvider>
       </body>
     </html>
   );

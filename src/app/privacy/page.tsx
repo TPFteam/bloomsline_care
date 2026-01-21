@@ -5,6 +5,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import { Navbar } from '@/components/landing/navbar'
 import { Footer } from '@/components/landing/footer'
 import { Shield } from 'lucide-react'
+import { EarlyAccessModalProvider } from '@/lib/landing/early-access-modal-context'
 
 export default function PrivacyPolicyPage() {
   const { locale } = useLanguage()
@@ -71,6 +72,7 @@ export default function PrivacyPolicyPage() {
   const t = content[locale as keyof typeof content] || content.en
 
   return (
+    <EarlyAccessModalProvider>
     <div className="bg-white text-gray-900">
       <Navbar />
       <main className="min-h-screen bg-white pt-20">
@@ -126,5 +128,6 @@ export default function PrivacyPolicyPage() {
       </main>
       <Footer />
     </div>
+    </EarlyAccessModalProvider>
   )
 }

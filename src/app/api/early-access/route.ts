@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     const email = sanitizeString(body.email, 255)?.toLowerCase()
     const reason = sanitizeString(body.reason, 500)
     const userType = body.userType
+    const preferredLanguage = body.preferredLanguage === 'fr' ? 'fr' : 'en'
 
     if (!name || !email) {
       return NextResponse.json(
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
         email,
         reason: reason || null,
         user_type: userType,
+        preferred_language: preferredLanguage,
       })
 
     if (error) {
@@ -70,6 +72,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Email will be sent via Supabase Edge Function trigger
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error processing early access request:', error)

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowUp, Plus, Search, Sun, Circle, Smile, Users, Check, Sparkles, Camera, Heart, Share2, FileText } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 import { useTab } from '@/lib/landing/tab-context'
-import Link from 'next/link'
+import { useEarlyAccessModal } from '@/lib/landing/early-access-modal-context'
 
 const rotatingWords = {
   personal: {
@@ -115,6 +115,12 @@ interface MainHeroProps {
 export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
   const { locale } = useLanguage()
   const { activeTab, setActiveTab } = useTab()
+  const { openModal } = useEarlyAccessModal()
+
+  // Handler for opening early access modal with appropriate pre-selection
+  const handleOpenEarlyAccess = () => {
+    openModal(isPractitionerPage ? 'practitioner' : undefined)
+  }
   const [wordIndex, setWordIndex] = useState(0)
   const [personalSubTab, setPersonalSubTab] = useState<PersonalSubTab>('moments')
   const [practitionerSubTab, setPractitionerSubTab] = useState<PractitionerSubTab>('members')
@@ -243,54 +249,6 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
     setSessionNote('')
   }
 
-  // Early access form state
-  const [earlyAccessName, setEarlyAccessName] = useState('')
-  const [earlyAccessEmail, setEarlyAccessEmail] = useState('')
-  const [earlyAccessLoading, setEarlyAccessLoading] = useState(false)
-  const [earlyAccessSuccess, setEarlyAccessSuccess] = useState(false)
-  const [earlyAccessError, setEarlyAccessError] = useState('')
-
-  const handleEarlyAccessSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!earlyAccessName.trim() || !earlyAccessEmail.trim()) {
-      setEarlyAccessError(locale === 'fr' ? 'Veuillez remplir tous les champs' : 'Please fill in all fields')
-      return
-    }
-
-    setEarlyAccessLoading(true)
-    setEarlyAccessError('')
-
-    try {
-      const response = await fetch('/api/early-access', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: earlyAccessName,
-          email: earlyAccessEmail,
-          userType: 'practitioner',
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        if (data.code === 'DUPLICATE') {
-          setEarlyAccessError(locale === 'fr' ? 'Cet email est déjà inscrit' : 'This email is already registered')
-        } else {
-          setEarlyAccessError(data.error || (locale === 'fr' ? 'Une erreur est survenue' : 'An error occurred'))
-        }
-        return
-      }
-
-      setEarlyAccessSuccess(true)
-      setEarlyAccessName('')
-      setEarlyAccessEmail('')
-    } catch {
-      setEarlyAccessError(locale === 'fr' ? 'Une erreur est survenue' : 'An error occurred')
-    } finally {
-      setEarlyAccessLoading(false)
-    }
-  }
 
   // Toggle category selection
   const toggleCategory = (category: string) => {
@@ -508,10 +466,10 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               </p>
                               <div className="flex gap-3">
                                 {[
-                                  { src: '/images/activity.jpg', label: locale === 'fr' ? 'Activité' : 'Activity' },
-                                  { src: '/images/cat.jpg', label: locale === 'fr' ? 'Mon chat' : 'My cat' },
-                                  { src: '/images/friends.jpg', label: locale === 'fr' ? 'Amis' : 'Friends' },
-                                  { src: '/images/family.jpg', label: locale === 'fr' ? 'Famille' : 'Family' },
+                                  { src: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=200&h=200&fit=crop', label: locale === 'fr' ? 'Activité' : 'Activity' },
+                                  { src: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=200&h=200&fit=crop', label: locale === 'fr' ? 'Mon chat' : 'My cat' },
+                                  { src: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=200&h=200&fit=crop', label: locale === 'fr' ? 'Amis' : 'Friends' },
+                                  { src: 'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=200&h=200&fit=crop', label: locale === 'fr' ? 'Famille' : 'Family' },
                                 ].map((img) => (
                                   <button
                                     key={img.src}
@@ -1557,13 +1515,13 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                 {/* Bottom bar - CTA */}
                 {isInteractive && interactiveStep === 3 ? (
                   <div className="flex justify-end">
-                    <Link
-                      href="/early-access"
+                    <button
+                      onClick={handleOpenEarlyAccess}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-[#4A9A86] text-white text-sm font-medium rounded-full hover:bg-[#3d8a76] transition-colors"
                     >
                       {locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access'}
                       <ArrowUp className="w-4 h-4" />
-                    </Link>
+                    </button>
                   </div>
                 ) : isInteractive ? (
                   <div className={`flex items-center w-full ${interactiveStep > 0 ? 'justify-between' : 'justify-end'}`}>
@@ -2330,17 +2288,17 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
 
                 {/* Bottom bar - CTA */}
                 {practitionerInteractive && practitionerStep === 7 ? (
-                  <Link
-                    href="/early-access"
-                    className="flex items-center justify-between group"
+                  <button
+                    onClick={handleOpenEarlyAccess}
+                    className="flex items-center justify-between group w-full"
                   >
                     <span className="text-sm text-[#D4856A] font-medium group-hover:text-[#c27459] transition-colors">
                       {locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access'}
                     </span>
                     <div className="w-8 h-8 bg-[#D4856A] rounded-full flex items-center justify-center group-hover:bg-[#c27459] transition-colors">
-                      <ArrowUp className="w-4 h-4" />
+                      <ArrowUp className="w-4 h-4 text-white" />
                     </div>
-                  </Link>
+                  </button>
                 ) : practitionerInteractive ? (
                   <div className={`flex items-center w-full ${practitionerStep > 0 ? 'justify-between' : 'justify-end'}`}>
                     {practitionerStep > 0 && (
@@ -2389,106 +2347,29 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
             transition={{ duration: 0.5, delay: 1 }}
             className="mt-8 flex justify-center"
           >
-            <Link href="/early-access">
-              <button className="px-8 py-3 bg-[#4A9A86] hover:bg-[#3d8a76] text-white font-medium rounded-full shadow-lg shadow-[#4A9A86]/30 hover:shadow-xl transition-all duration-300">
-                {locale === 'fr' ? 'Commencer gratuitement' : 'Get started free'}
-              </button>
-            </Link>
+            <button
+              onClick={handleOpenEarlyAccess}
+              className="px-8 py-3 bg-[#4A9A86] hover:bg-[#3d8a76] text-white font-medium rounded-full shadow-lg shadow-[#4A9A86]/30 hover:shadow-xl transition-all duration-300"
+            >
+              {locale === 'fr' ? 'Commencer gratuitement' : 'Get started free'}
+            </button>
           </motion.div>
         )}
 
-        {/* Practitioner Early Access Form */}
+        {/* Practitioner CTA */}
         {isPractitionerPage && (
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
-            className="w-full max-w-3xl mx-auto mt-10 px-4 sm:px-6"
+            className="w-full max-w-xl mx-auto mt-10 px-4 sm:px-6 flex justify-center"
           >
-            {earlyAccessSuccess ? (
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-neutral-200/30 p-6 text-center">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Check className="w-6 h-6 text-green-600" />
-                </div>
-                <p className="text-neutral-900 font-medium">
-                  {locale === 'fr' ? 'Merci pour votre inscription !' : 'Thank you for signing up!'}
-                </p>
-                <p className="text-neutral-500 text-sm mt-1">
-                  {locale === 'fr' ? 'Nous vous contacterons bientôt.' : 'We\'ll be in touch soon.'}
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* Desktop: pill shape */}
-                <div className="hidden sm:block bg-white/80 backdrop-blur-sm rounded-full shadow-lg shadow-neutral-200/30 p-2">
-                  <form
-                    className="flex items-center gap-2"
-                    onSubmit={handleEarlyAccessSubmit}
-                  >
-                    <input
-                      type="text"
-                      value={earlyAccessName}
-                      onChange={(e) => setEarlyAccessName(e.target.value)}
-                      placeholder={locale === 'fr' ? 'Votre nom' : 'Your name'}
-                      className="flex-1 px-4 py-3 bg-transparent border-none text-neutral-900 placeholder-neutral-400 focus:outline-none"
-                      disabled={earlyAccessLoading}
-                    />
-                    <div className="w-px h-8 bg-neutral-200" />
-                    <input
-                      type="email"
-                      value={earlyAccessEmail}
-                      onChange={(e) => setEarlyAccessEmail(e.target.value)}
-                      placeholder={locale === 'fr' ? 'Votre email' : 'Your email'}
-                      className="flex-1 px-4 py-3 bg-transparent border-none text-neutral-900 placeholder-neutral-400 focus:outline-none"
-                      disabled={earlyAccessLoading}
-                    />
-                    <button
-                      type="submit"
-                      disabled={earlyAccessLoading}
-                      className="px-6 py-3 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300 whitespace-nowrap disabled:opacity-50"
-                    >
-                      {earlyAccessLoading
-                        ? (locale === 'fr' ? 'Envoi...' : 'Sending...')
-                        : (locale === 'fr' ? 'Accès anticipé' : 'Early Access')}
-                    </button>
-                  </form>
-                </div>
-                {/* Mobile: stacked */}
-                <form
-                  className="sm:hidden flex flex-col gap-3"
-                  onSubmit={handleEarlyAccessSubmit}
-                >
-                  <input
-                    type="text"
-                    value={earlyAccessName}
-                    onChange={(e) => setEarlyAccessName(e.target.value)}
-                    placeholder={locale === 'fr' ? 'Votre nom' : 'Your name'}
-                    className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm rounded-full border border-neutral-200 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#D4856A]/30"
-                    disabled={earlyAccessLoading}
-                  />
-                  <input
-                    type="email"
-                    value={earlyAccessEmail}
-                    onChange={(e) => setEarlyAccessEmail(e.target.value)}
-                    placeholder={locale === 'fr' ? 'Votre email' : 'Your email'}
-                    className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm rounded-full border border-neutral-200 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#D4856A]/30"
-                    disabled={earlyAccessLoading}
-                  />
-                  <button
-                    type="submit"
-                    disabled={earlyAccessLoading}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300 disabled:opacity-50"
-                  >
-                    {earlyAccessLoading
-                      ? (locale === 'fr' ? 'Envoi...' : 'Sending...')
-                      : (locale === 'fr' ? 'Accès anticipé' : 'Early Access')}
-                  </button>
-                </form>
-                {earlyAccessError && (
-                  <p className="text-red-500 text-sm text-center mt-2">{earlyAccessError}</p>
-                )}
-              </>
-            )}
+            <button
+              onClick={handleOpenEarlyAccess}
+              className="px-8 py-4 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300"
+            >
+              {locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access'}
+            </button>
           </motion.div>
         )}
 

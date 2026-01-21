@@ -36,10 +36,13 @@ const translations = {
       hero: 'Hero',
       problem: 'Problem',
       solution: 'Solution',
+      why: 'Why Us',
       product: 'Product',
+      features: 'Features',
       traction: 'Traction',
       progress: 'Progress',
       market: 'Market',
+      marketSize: 'Market Size',
       differentiation: 'Differentiation',
       business: 'Business Model',
       vision: 'Vision',
@@ -85,6 +88,34 @@ const translations = {
         { title: 'Full Visibility', desc: 'Practitioners see the complete journey' },
       ],
     },
+    why: {
+      label: 'WHY BLOOMSLINE',
+      title: 'What brings them here',
+      practitioner: {
+        title: 'Why Practitioners Choose Us',
+        motivation: 'They know healing doesn\'t happen in 50 minutes a week.',
+        painPoints: [
+          'Clients regress between sessions',
+          'No way to see the full picture',
+          'Limited tools beyond the couch',
+          'Burnout from emotional labor',
+        ],
+        outcome: 'Bloomsline extends their care — without extending their hours.',
+        value: 'Clients stay longer. Sessions go deeper.',
+      },
+      member: {
+        title: 'Why Members Stay',
+        motivation: 'They want to feel better — not track more.',
+        painPoints: [
+          'Apps feel like work',
+          'Tracking but not changing',
+          'Alone between sessions',
+          'Guilt when they slip',
+        ],
+        outcome: 'Bloomsline helps them grow — without making it feel like work.',
+        value: 'Real progress. Not just numbers.',
+      },
+    },
     product: {
       label: 'THE PRODUCT',
       title: 'Built for both sides',
@@ -103,6 +134,34 @@ const translations = {
         { name: 'Overview', desc: 'Client engagement and insights' },
       ],
       quote: '"See not just hard days, but the full picture — the effort, the small wins, the patterns over time."',
+    },
+    features: {
+      label: 'CORE FEATURES',
+      title: 'The two things that matter',
+      moments: {
+        title: 'Moments',
+        forWho: 'For Members',
+        problem: 'Life happens fast. We forget the small things that shape us.',
+        solution: 'Moments lets you capture everyday life — a walk, a meal, a feeling. It builds your journey over time.',
+        howItWorks: 'Snap a photo. Add how you felt. Done.',
+        whyItWorks: 'It\'s not about good or bad. It\'s about noticing. Every moment teaches something.',
+        noFriction: '10 seconds. No streaks. No guilt if you skip.',
+        whyTheyDoIt: 'Why they\'ll actually do it',
+        motivation: 'Scroll back and see how far you\'ve come.',
+        motivationDetail: 'Like looking at old photos — but for your growth. That\'s the reward.',
+      },
+      resources: {
+        title: 'Resources',
+        forWho: 'For Practitioners',
+        problem: 'You create great materials. But sharing them is a mess.',
+        solution: 'Resources lets you build a library — worksheets, exercises, guides — and share with one click.',
+        howItWorks: 'Create once. Assign to any client. Track who viewed it.',
+        whyItWorks: 'Your toolkit grows over time. Less repetition, more impact.',
+        noFriction: 'Not more admin. Just better delivery of what you already do.',
+        whyTheyDoIt: 'Why they\'ll actually do it',
+        motivation: 'Create once. Help hundreds.',
+        motivationDetail: 'Every resource you build compounds. Less repeating yourself, more connecting.',
+      },
     },
     traction: {
       label: 'TRACTION',
@@ -195,17 +254,36 @@ const translations = {
         'Insurance demands measurable progress',
       ],
     },
+    marketSize: {
+      title: 'Market Size',
+      tam: {
+        label: 'TAM',
+        value: '$10-13B',
+        desc: 'Meditation, therapy, coaching, self-improvement',
+      },
+      sam: {
+        label: 'SAM',
+        value: '$3-4B',
+        desc: 'Active users of journaling, growth, coaching apps',
+      },
+      som: {
+        label: 'SOM',
+        value: '$200-300M',
+        desc: 'Digital-first users seeking reflection tools and light coaching support',
+      },
+      obtainable: '$100-200M obtainable near-term, with expansion levers into multi-billion SAM and TAM.',
+    },
     differentiation: {
       label: 'DIFFERENTIATION',
       title: 'A new category',
       headers: ['', 'SimplePractice', 'Headspace', 'Bloomsline'],
       subheaders: ['', '& similar', 'Calm, etc.', ''],
       rows: [
-        { label: 'Focus', values: ['Practice management', 'Consumer wellness', 'Therapeutic outcomes'] },
-        { label: 'Between sessions', values: ['—', 'Generic content', '✓'] },
-        { label: 'Practitioner visibility', values: ['Billing only', '—', '✓'] },
+        { label: 'What it does', values: ['Run a business', 'Feel-good content', 'Real progress'] },
+        { label: 'Between sessions', values: ['—', 'Same for everyone', '✓'] },
+        { label: 'What therapists see', values: ['Invoices only', '—', 'Client\'s full journey'] },
         { label: 'AI companion', values: ['—', '—', '✓'] },
-        { label: 'Philosophy', values: ['Admin efficiency', 'Gamification', 'Compassion-first'] },
+        { label: 'Approach', values: ['Save time on admin', 'Streaks & badges', 'Fits into your day'] },
       ],
       summary: 'SimplePractice helps run a practice.',
       summaryHighlight: 'Bloomsline helps deliver better care.',
@@ -302,10 +380,13 @@ const translations = {
       hero: 'Accueil',
       problem: 'Problème',
       solution: 'Solution',
+      why: 'Pourquoi',
       product: 'Produit',
+      features: 'Fonctions',
       traction: 'Traction',
       progress: 'Progrès',
       market: 'Marché',
+      marketSize: 'Taille du Marché',
       differentiation: 'Différenciation',
       business: 'Modèle',
       vision: 'Vision',
@@ -351,6 +432,34 @@ const translations = {
         { title: 'Visibilité Complète', desc: 'Les praticiens voient le parcours entier' },
       ],
     },
+    why: {
+      label: 'POURQUOI BLOOMSLINE',
+      title: 'Ce qui les amène ici',
+      practitioner: {
+        title: 'Pourquoi les Praticiens nous choisissent',
+        motivation: 'Ils savent que la guérison ne se fait pas en 50 minutes par semaine.',
+        painPoints: [
+          'Les clients régressent entre les séances',
+          'Pas moyen de voir le tableau complet',
+          'Outils limités au-delà du cabinet',
+          'Épuisement dû à la charge émotionnelle',
+        ],
+        outcome: 'Bloomsline étend leur soin — sans étendre leurs heures.',
+        value: 'Les clients restent plus longtemps. Les séances vont plus loin.',
+      },
+      member: {
+        title: 'Pourquoi les Membres restent',
+        motivation: 'Ils veulent aller mieux — pas tracker plus.',
+        painPoints: [
+          'Les apps ressemblent à du travail',
+          'Tracker sans changer',
+          'Seuls entre les séances',
+          'Culpabilité quand ils craquent',
+        ],
+        outcome: 'Bloomsline les aide à grandir — sans que ça ressemble à du travail.',
+        value: 'Du vrai progrès. Pas juste des chiffres.',
+      },
+    },
     product: {
       label: 'LE PRODUIT',
       title: 'Conçu pour les deux côtés',
@@ -369,6 +478,34 @@ const translations = {
         { name: 'Aperçu', desc: 'Engagement client et insights' },
       ],
       quote: '"Voir non seulement les jours difficiles, mais le tableau complet — l\'effort, les petites victoires, les patterns au fil du temps."',
+    },
+    features: {
+      label: 'FONCTIONS CLÉS',
+      title: 'Les deux choses qui comptent',
+      moments: {
+        title: 'Moments',
+        forWho: 'Pour les Membres',
+        problem: 'La vie va vite. On oublie les petites choses qui nous façonnent.',
+        solution: 'Moments permet de capturer le quotidien — une balade, un repas, une émotion. Ça construit votre parcours.',
+        howItWorks: 'Une photo. Une émotion. C\'est tout.',
+        whyItWorks: 'Ce n\'est pas une question de bon ou mauvais. C\'est remarquer. Chaque moment apprend quelque chose.',
+        noFriction: '10 secondes. Pas de séries. Pas de culpabilité si vous sautez.',
+        whyTheyDoIt: 'Pourquoi ils le feront',
+        motivation: 'Revenir en arrière et voir le chemin parcouru.',
+        motivationDetail: 'Comme regarder de vieilles photos — mais pour sa croissance. C\'est ça la récompense.',
+      },
+      resources: {
+        title: 'Ressources',
+        forWho: 'Pour les Praticiens',
+        problem: 'Vous créez de super contenus. Mais les partager, c\'est le bazar.',
+        solution: 'Ressources vous permet de construire une bibliothèque — fiches, exercices, guides — et de partager en un clic.',
+        howItWorks: 'Créez une fois. Assignez à n\'importe quel client. Suivez qui a consulté.',
+        whyItWorks: 'Votre boîte à outils grandit avec le temps. Moins de répétition, plus d\'impact.',
+        noFriction: 'Pas plus d\'admin. Juste une meilleure façon de livrer ce que vous faites déjà.',
+        whyTheyDoIt: 'Pourquoi ils le feront',
+        motivation: 'Créer une fois. Aider des centaines.',
+        motivationDetail: 'Chaque ressource que vous créez se cumule. Moins vous répéter, plus connecter.',
+      },
     },
     traction: {
       label: 'TRACTION',
@@ -461,17 +598,36 @@ const translations = {
         "Les assurances exigent des progrès mesurables",
       ],
     },
+    marketSize: {
+      title: 'Taille du Marché',
+      tam: {
+        label: 'TAM',
+        value: '10-13 Mrd$',
+        desc: 'Méditation, thérapie, coaching, développement personnel',
+      },
+      sam: {
+        label: 'SAM',
+        value: '3-4 Mrd$',
+        desc: 'Utilisateurs actifs d\'apps de journaling, croissance, coaching',
+      },
+      som: {
+        label: 'SOM',
+        value: '200-300 M$',
+        desc: 'Utilisateurs digital-first cherchant des outils de réflexion et coaching léger',
+      },
+      obtainable: '100-200 M$ atteignables à court terme, avec des leviers d\'expansion vers un SAM et TAM multi-milliards.',
+    },
     differentiation: {
       label: 'DIFFÉRENCIATION',
       title: 'Une nouvelle catégorie',
       headers: ['', 'SimplePractice', 'Headspace', 'Bloomsline'],
       subheaders: ['', '& similaires', 'Calm, etc.', ''],
       rows: [
-        { label: 'Focus', values: ['Gestion de cabinet', 'Bien-être grand public', 'Résultats thérapeutiques'] },
-        { label: 'Entre les séances', values: ['—', 'Contenu générique', '✓'] },
-        { label: 'Visibilité praticien', values: ['Facturation seulement', '—', '✓'] },
+        { label: 'Ce que ça fait', values: ['Gérer un business', 'Contenu feel-good', 'Vrai progrès'] },
+        { label: 'Entre les séances', values: ['—', 'Pareil pour tous', '✓'] },
+        { label: 'Ce que voit le psy', values: ['Factures seulement', '—', 'Parcours complet du client'] },
         { label: 'Compagnon IA', values: ['—', '—', '✓'] },
-        { label: 'Philosophie', values: ['Efficacité admin', 'Gamification', 'Compassion d\'abord'] },
+        { label: 'Approche', values: ['Gagner du temps admin', 'Séries & badges', 'S\'intègre à votre journée'] },
       ],
       summary: 'SimplePractice aide à gérer un cabinet.',
       summaryHighlight: 'Bloomsline aide à délivrer de meilleurs soins.',
@@ -574,13 +730,16 @@ export default function PitchPage() {
     { id: 'problem', title: t.slides.problem },
     { id: 'solution', title: t.slides.solution },
     { id: 'product', title: t.slides.product },
+    { id: 'features', title: t.slides.features },
+    { id: 'why', title: t.slides.why },
+    { id: 'differentiation', title: t.slides.differentiation },
+    { id: 'market', title: t.slides.market },
+    { id: 'marketSize', title: t.slides.marketSize },
     { id: 'traction', title: t.slides.traction },
     { id: 'progress', title: t.slides.progress },
-    { id: 'market', title: t.slides.market },
-    { id: 'differentiation', title: t.slides.differentiation },
     { id: 'business', title: t.slides.business },
-    { id: 'vision', title: t.slides.vision },
     { id: 'team', title: t.slides.team },
+    { id: 'vision', title: t.slides.vision },
     { id: 'ask', title: t.slides.ask },
     { id: 'contact', title: t.slides.contact },
   ]
@@ -707,15 +866,18 @@ export default function PitchPage() {
           {currentSlide === 1 && <ProblemSlide t={t.problem} />}
           {currentSlide === 2 && <SolutionSlide t={t.solution} />}
           {currentSlide === 3 && <ProductSlide t={t.product} />}
-          {currentSlide === 4 && <TractionSlide t={t.traction} />}
-          {currentSlide === 5 && <ProgressSlide t={t.progress} />}
-          {currentSlide === 6 && <MarketSlide t={t.market} />}
-          {currentSlide === 7 && <DifferentiationSlide t={t.differentiation} />}
-          {currentSlide === 8 && <BusinessModelSlide t={t.business} />}
-          {currentSlide === 9 && <VisionSlide t={t.vision} />}
-          {currentSlide === 10 && <TeamSlide t={t.team} />}
-          {currentSlide === 11 && <AskSlide t={t.ask} />}
-          {currentSlide === 12 && <ContactSlide t={t.contact} />}
+          {currentSlide === 4 && <FeaturesSlide t={t.features} />}
+          {currentSlide === 5 && <WhySlide t={t.why} />}
+          {currentSlide === 6 && <DifferentiationSlide t={t.differentiation} />}
+          {currentSlide === 7 && <MarketSlide t={t.market} />}
+          {currentSlide === 8 && <MarketSizeSlide t={t.marketSize} />}
+          {currentSlide === 9 && <TractionSlide t={t.traction} />}
+          {currentSlide === 10 && <ProgressSlide t={t.progress} />}
+          {currentSlide === 11 && <BusinessModelSlide t={t.business} />}
+          {currentSlide === 12 && <TeamSlide t={t.team} />}
+          {currentSlide === 13 && <VisionSlide t={t.vision} />}
+          {currentSlide === 14 && <AskSlide t={t.ask} />}
+          {currentSlide === 15 && <ContactSlide t={t.contact} />}
         </motion.div>
       </AnimatePresence>
 
@@ -958,6 +1120,112 @@ function SolutionSlide({ t }: SolutionSlideProps) {
   )
 }
 
+interface WhySlideProps {
+  t: typeof translations.en.why
+}
+
+function WhySlide({ t }: WhySlideProps) {
+  return (
+    <div className="h-full w-full flex items-center justify-center px-6">
+      <div className="max-w-6xl mx-auto">
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-teal-600 font-medium mb-4 text-center"
+        >
+          {t.label}
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-12 text-center"
+        >
+          {t.title}
+        </motion.h2>
+
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Practitioners */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="p-8 rounded-3xl bg-gradient-to-br from-[#D4856A]/10 to-white border border-[#D4856A]/20"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-[#D4856A]/20 flex items-center justify-center">
+                <Users className="w-5 h-5 text-[#D4856A]" />
+              </div>
+              <h3 className="font-semibold text-neutral-900">{t.practitioner.title}</h3>
+            </div>
+
+            <p className="text-lg text-[#D4856A] font-medium mb-4 italic">
+              &ldquo;{t.practitioner.motivation}&rdquo;
+            </p>
+
+            <div className="space-y-2 mb-6">
+              {t.practitioner.painPoints.map((point, index) => (
+                <div key={index} className="flex items-center gap-2 text-neutral-600">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D4856A]/50" />
+                  {point}
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 rounded-xl bg-[#D4856A]/10 border border-[#D4856A]/20">
+              <p className="text-[#D4856A] font-medium text-center">
+                {t.practitioner.outcome}
+              </p>
+              <p className="text-[#D4856A]/70 text-sm text-center mt-1">
+                {t.practitioner.value}
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Members */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="p-8 rounded-3xl bg-gradient-to-br from-teal-50 to-white border border-teal-100"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
+                <Heart className="w-5 h-5 text-teal-600" />
+              </div>
+              <h3 className="font-semibold text-neutral-900">{t.member.title}</h3>
+            </div>
+
+            <p className="text-lg text-teal-600 font-medium mb-4 italic">
+              &ldquo;{t.member.motivation}&rdquo;
+            </p>
+
+            <div className="space-y-2 mb-6">
+              {t.member.painPoints.map((point, index) => (
+                <div key={index} className="flex items-center gap-2 text-neutral-600">
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500/50" />
+                  {point}
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 rounded-xl bg-teal-50 border border-teal-100">
+              <p className="text-teal-600 font-medium text-center">
+                {t.member.outcome}
+              </p>
+              <p className="text-teal-600/70 text-sm text-center mt-1">
+                {t.member.value}
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface ProductSlideProps {
   t: typeof translations.en.product
 }
@@ -1003,19 +1271,33 @@ function ProductSlide({ t }: ProductSlideProps) {
             <div className="space-y-4">
               {t.memberFeatures.map((feature, index) => {
                 const Icon = memberIcons[index]
+                const isHero = index === 1 // Moments is the hero feature
                 return (
                   <motion.div
                     key={feature.name}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: 0.3 + index * 0.1 }}
-                    className="flex items-center gap-4 p-3 rounded-xl hover:bg-teal-50 transition-colors"
+                    className={`flex items-center gap-4 p-3 rounded-xl transition-colors ${
+                      isHero
+                        ? 'bg-teal-100/50 border-2 border-teal-300 shadow-sm'
+                        : 'hover:bg-teal-50'
+                    }`}
                   >
-                    <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-5 h-5 text-teal-600" />
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      isHero ? 'bg-teal-500 text-white' : 'bg-teal-100'
+                    }`}>
+                      <Icon className={`w-5 h-5 ${isHero ? '' : 'text-teal-600'}`} />
                     </div>
-                    <div>
-                      <h4 className="font-medium text-neutral-900">{feature.name}</h4>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-neutral-900">{feature.name}</h4>
+                        {isHero && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-teal-500 text-white rounded-full">
+                            Core
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-neutral-500">{feature.desc}</p>
                     </div>
                   </motion.div>
@@ -1039,19 +1321,33 @@ function ProductSlide({ t }: ProductSlideProps) {
             <div className="space-y-4">
               {t.practitionerFeatures.map((feature, index) => {
                 const Icon = practitionerIcons[index]
+                const isHero = index === 0 // Resources is the hero feature
                 return (
                   <motion.div
                     key={feature.name}
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: 0.4 + index * 0.1 }}
-                    className="flex items-center gap-4 p-3 rounded-xl hover:bg-[#D4856A]/10 transition-colors"
+                    className={`flex items-center gap-4 p-3 rounded-xl transition-colors ${
+                      isHero
+                        ? 'bg-[#D4856A]/20 border-2 border-[#D4856A]/40 shadow-sm'
+                        : 'hover:bg-[#D4856A]/10'
+                    }`}
                   >
-                    <div className="w-10 h-10 rounded-lg bg-[#D4856A]/20 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-5 h-5 text-[#D4856A]" />
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      isHero ? 'bg-[#D4856A] text-white' : 'bg-[#D4856A]/20'
+                    }`}>
+                      <Icon className={`w-5 h-5 ${isHero ? '' : 'text-[#D4856A]'}`} />
                     </div>
-                    <div>
-                      <h4 className="font-medium text-neutral-900">{feature.name}</h4>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-neutral-900">{feature.name}</h4>
+                        {isHero && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-[#D4856A] text-white rounded-full">
+                            Core
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-neutral-500">{feature.desc}</p>
                     </div>
                   </motion.div>
@@ -1063,6 +1359,136 @@ function ProductSlide({ t }: ProductSlideProps) {
               <p className="text-sm text-neutral-600 italic">
                 {t.quote}
               </p>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface FeaturesSlideProps {
+  t: typeof translations.en.features
+}
+
+function FeaturesSlide({ t }: FeaturesSlideProps) {
+  return (
+    <div className="h-full w-full flex items-center justify-center px-6">
+      <div className="max-w-6xl mx-auto">
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-teal-600 font-medium mb-4 text-center"
+        >
+          {t.label}
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-12 text-center"
+        >
+          {t.title}
+        </motion.h2>
+
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Moments - For Members */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="p-8 rounded-3xl bg-gradient-to-br from-teal-50 to-white border border-teal-200"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-teal-500 flex items-center justify-center">
+                  <Heart className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-semibold text-neutral-900">{t.moments.title}</h3>
+                  <span className="text-sm text-teal-600">{t.moments.forWho}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-red-50 border border-red-100">
+                <p className="text-sm font-medium text-red-700 mb-1">The problem</p>
+                <p className="text-neutral-700">{t.moments.problem}</p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-teal-50 border border-teal-100">
+                <p className="text-sm font-medium text-teal-700 mb-1">The solution</p>
+                <p className="text-neutral-700">{t.moments.solution}</p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200">
+                <p className="text-sm font-medium text-neutral-600 mb-1">How it works</p>
+                <p className="text-neutral-900 font-medium">{t.moments.howItWorks}</p>
+              </div>
+
+              {/* The hook - why they'll actually do it */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 text-white">
+                <p className="text-sm font-medium text-teal-100 mb-1">{t.moments.whyTheyDoIt}</p>
+                <p className="text-white font-semibold">{t.moments.motivation}</p>
+                <p className="text-teal-100 text-sm mt-1">{t.moments.motivationDetail}</p>
+              </div>
+
+              <div className="pt-4 border-t border-teal-100">
+                <p className="text-sm text-teal-600 italic">{t.moments.whyItWorks}</p>
+                <p className="text-xs text-neutral-500 mt-2">{t.moments.noFriction}</p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Resources - For Practitioners */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="p-8 rounded-3xl bg-gradient-to-br from-[#D4856A]/10 to-white border border-[#D4856A]/30"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-[#D4856A] flex items-center justify-center">
+                  <Lightbulb className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-semibold text-neutral-900">{t.resources.title}</h3>
+                  <span className="text-sm text-[#D4856A]">{t.resources.forWho}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-red-50 border border-red-100">
+                <p className="text-sm font-medium text-red-700 mb-1">The problem</p>
+                <p className="text-neutral-700">{t.resources.problem}</p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#D4856A]/10 border border-[#D4856A]/20">
+                <p className="text-sm font-medium text-[#D4856A] mb-1">The solution</p>
+                <p className="text-neutral-700">{t.resources.solution}</p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200">
+                <p className="text-sm font-medium text-neutral-600 mb-1">How it works</p>
+                <p className="text-neutral-900 font-medium">{t.resources.howItWorks}</p>
+              </div>
+
+              {/* The hook - why they'll actually do it */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white">
+                <p className="text-sm font-medium text-orange-100 mb-1">{t.resources.whyTheyDoIt}</p>
+                <p className="text-white font-semibold">{t.resources.motivation}</p>
+                <p className="text-orange-100 text-sm mt-1">{t.resources.motivationDetail}</p>
+              </div>
+
+              <div className="pt-4 border-t border-[#D4856A]/20">
+                <p className="text-sm text-[#D4856A] italic">{t.resources.whyItWorks}</p>
+                <p className="text-xs text-neutral-500 mt-2">{t.resources.noFriction}</p>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -1135,6 +1561,72 @@ function MarketSlide({ t }: MarketSlideProps) {
             ))}
           </div>
         </motion.div>
+      </div>
+    </div>
+  )
+}
+
+interface MarketSizeSlideProps {
+  t: typeof translations.en.marketSize
+}
+
+function MarketSizeSlide({ t }: MarketSizeSlideProps) {
+  return (
+    <div className="h-full w-full flex items-center justify-center px-6">
+      <div className="max-w-5xl mx-auto">
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-4xl sm:text-5xl font-bold text-neutral-900 mb-12"
+        >
+          {t.title}
+        </motion.h2>
+
+        {/* TAM/SAM/SOM Nested Ovals */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="relative flex items-center justify-center mb-8"
+        >
+          {/* TAM - outermost oval */}
+          <div className="relative border-2 border-dashed border-red-400 rounded-[100px] px-8 py-12 flex items-center">
+            {/* SAM - middle oval */}
+            <div className="border-2 border-dashed border-blue-400 rounded-[80px] px-8 py-10 flex items-center">
+              {/* SOM - innermost oval */}
+              <div className="border-2 border-dashed border-teal-500 rounded-[60px] px-6 py-8 bg-white">
+                <div>
+                  <p className="text-teal-600 font-bold text-xl">{t.som.label}</p>
+                  <p className="text-teal-700 font-bold text-2xl">{t.som.value}</p>
+                  <p className="text-neutral-600 text-sm max-w-[180px] leading-tight mt-1">{t.som.desc}</p>
+                </div>
+              </div>
+              {/* SAM label - positioned to the right */}
+              <div className="ml-6">
+                <p className="text-blue-600 font-bold text-xl">{t.sam.label}</p>
+                <p className="text-blue-700 font-bold text-2xl">{t.sam.value}</p>
+                <p className="text-neutral-600 text-sm max-w-[150px] leading-tight mt-1">{t.sam.desc}</p>
+              </div>
+            </div>
+            {/* TAM label - positioned to the right */}
+            <div className="ml-6">
+              <p className="text-red-500 font-bold text-xl">{t.tam.label}</p>
+              <p className="text-red-600 font-bold text-2xl">{t.tam.value}</p>
+              <p className="text-neutral-600 text-sm max-w-[150px] leading-tight mt-1">{t.tam.desc}</p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Obtainable note */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="text-neutral-700 text-lg font-medium text-center"
+        >
+          **{t.obtainable}
+        </motion.p>
       </div>
     </div>
   )

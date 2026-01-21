@@ -17,17 +17,14 @@ interface NavbarProps {
 export function Navbar({ isPractitionerPage = false }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { t, locale } = useLanguage()
-
-  // Only use the modal hook if on practitioner page (where provider exists)
-  let openModal: (() => void) | null = null
-  try {
-    const modalContext = useEarlyAccessModal()
-    openModal = modalContext.openModal
-  } catch {
-    // Not within provider, openModal stays null
-  }
+  const { openModal } = useEarlyAccessModal()
 
   const DEMO_BOOKING_URL = 'https://calendar.app.google/DwruLrgYZ6TEegL58'
+
+  const handleOpenModal = () => {
+    // Pre-select 'practitioner' if on practitioner page, otherwise no pre-selection
+    openModal(isPractitionerPage ? 'practitioner' : undefined)
+  }
 
   const navItems = [
     { label: t.nav.home, href: '/', active: !isPractitionerPage },
@@ -113,28 +110,17 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
                 {t.nav.signIn}
               </Button>
             </Link>
-            {isPractitionerPage && openModal ? (
-              <Button
-                onClick={openModal}
-                className={`font-medium text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] shadow-[#D4856A]/30 hover:from-[#c27459] hover:to-[#d4946b]`}
-                suppressHydrationWarning
-              >
-                {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
-              </Button>
-            ) : (
-              <Link href="/early-access">
-                <Button
-                  className={`font-medium text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300 ${
-                    isPractitionerPage
-                      ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C] shadow-[#D4856A]/30 hover:from-[#c27459] hover:to-[#d4946b]'
-                      : 'bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] shadow-[#4A9A86]/30 hover:from-[#3d8a76] hover:to-[#4da38c]'
-                  }`}
-                  suppressHydrationWarning
-                >
-                  {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
-                </Button>
-              </Link>
-            )}
+            <Button
+              onClick={handleOpenModal}
+              className={`font-medium text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300 ${
+                isPractitionerPage
+                  ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C] shadow-[#D4856A]/30 hover:from-[#c27459] hover:to-[#d4946b]'
+                  : 'bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] shadow-[#4A9A86]/30 hover:from-[#3d8a76] hover:to-[#4da38c]'
+              }`}
+              suppressHydrationWarning
+            >
+              {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
+            </Button>
           </motion.div>
 
           {/* Mobile menu button */}
@@ -202,31 +188,20 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
                     {t.nav.signIn}
                   </Button>
                 </Link>
-                {isPractitionerPage && openModal ? (
-                  <Button
-                    onClick={() => {
-                      setIsOpen(false)
-                      openModal()
-                    }}
-                    className="w-full font-medium text-white rounded-full shadow-lg bg-gradient-to-r from-[#D4856A] to-[#E8A87C] hover:from-[#c27459] hover:to-[#d4946b]"
-                    suppressHydrationWarning
-                  >
-                    {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
-                  </Button>
-                ) : (
-                  <Link href="/early-access" className="w-full">
-                    <Button
-                      className={`w-full font-medium text-white rounded-full shadow-lg ${
-                        isPractitionerPage
-                          ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C] hover:from-[#c27459] hover:to-[#d4946b]'
-                          : 'bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] hover:from-[#3d8a76] hover:to-[#4da38c]'
-                      }`}
-                      suppressHydrationWarning
-                    >
-                      {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
-                    </Button>
-                  </Link>
-                )}
+                <Button
+                  onClick={() => {
+                    setIsOpen(false)
+                    handleOpenModal()
+                  }}
+                  className={`w-full font-medium text-white rounded-full shadow-lg ${
+                    isPractitionerPage
+                      ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C] hover:from-[#c27459] hover:to-[#d4946b]'
+                      : 'bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] hover:from-[#3d8a76] hover:to-[#4da38c]'
+                  }`}
+                  suppressHydrationWarning
+                >
+                  {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
+                </Button>
               </div>
             </div>
           </motion.div>

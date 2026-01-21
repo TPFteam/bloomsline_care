@@ -96,31 +96,53 @@ export async function GET(request: NextRequest) {
       const message = `Hi ${userName}! We don't have an account for you yet. Would you like to create one?`
       redirectUrl = `${requestUrl.origin}/sign-up?info=${encodeURIComponent(message)}`
     } else if (isNewUser) {
-      // New user - check if they're on the early access waitlist
+      // New user - check if they're allowed to sign up
+      // They can sign up if:
+      // 1. They're on the early_access_waitlist with status 'invited'
+      // 2. They were added as a member by a practitioner
       const userEmail = data.user?.email
+      const userId = data.user?.id
       const adminClient = createAdminClient()
 
-      if (userEmail) {
-        // Check waitlist status using admin client (bypasses RLS)
+      if (userEmail && userId) {
+        // First, check waitlist status using admin client (bypasses RLS)
         const { data: waitlistEntry } = await adminClient
           .from('early_access_waitlist')
-          .select('id, status, name')
+          .select('id, status, name, user_type')
           .eq('email', userEmail)
           .single()
 
-        // Waitlist check (no PII logged)
+        // Second, check if they were added as a member by a practitioner
+        const { data: memberEntry } = await adminClient
+          .from('members')
+          .select('id, practitioner_id, first_name')
+          .eq('email', userEmail)
+          .is('user_id', null) // Not yet linked to a user account
+          .single()
 
-        if (!waitlistEntry || waitlistEntry.status === 'pending') {
-          // User is NOT on the waitlist or hasn't been invited yet
+        // Determine signup eligibility and source
+        let canSignup = false
+        let signupSource: 'waitlist' | 'practitioner_invite' = 'waitlist'
+        let invitedByPractitionerId: string | null = null
+
+        if (waitlistEntry && waitlistEntry.status === 'invited') {
+          // User is on waitlist and has been invited
+          canSignup = true
+          signupSource = 'waitlist'
+        } else if (memberEntry) {
+          // User was added as a member by a practitioner
+          canSignup = true
+          signupSource = 'practitioner_invite'
+          invitedByPractitionerId = memberEntry.practitioner_id
+        }
+
+        if (!canSignup) {
+          // User is NOT authorized to sign up
           // Delete the auto-created account
-          const userId = data.user?.id
-
-          if (userId) {
-            try {
-              await adminClient.auth.admin.deleteUser(userId)
-            } catch {
-              // Silently handle deletion errors
-            }
+          try {
+            await adminClient.auth.admin.deleteUser(userId)
+          } catch {
+            // Silently handle deletion errors
           }
 
           // Redirect to early access page with a friendly message
@@ -130,21 +152,54 @@ export async function GET(request: NextRequest) {
             : `Hey ${userName}! We're currently in early access. Request an invite to join us.`
           redirectUrl = `${requestUrl.origin}/early-access?info=${encodeURIComponent(message)}`
         } else {
-          // User is on the waitlist and has been invited - allow signup
-          // Update their status to 'activated'
-          await adminClient
-            .from('early_access_waitlist')
-            .update({
-              status: 'activated',
-              activated_at: new Date().toISOString()
-            })
-            .eq('id', waitlistEntry.id)
+          // User is authorized to sign up
 
-          // Redirect to onboarding
-          redirectUrl = `${requestUrl.origin}/onboarding`
+          // Update signup source tracking on the users table
+          // Also set user_type to 'member' for practitioner-invited users
+          const updateData: Record<string, unknown> = {
+            signup_source: signupSource,
+            invited_by_practitioner_id: invitedByPractitionerId
+          }
+
+          if (signupSource === 'practitioner_invite') {
+            updateData.user_type = 'member'
+          }
+
+          await adminClient
+            .from('users')
+            .update(updateData)
+            .eq('id', userId)
+
+          if (signupSource === 'waitlist' && waitlistEntry) {
+            // Update waitlist status to 'activated'
+            await adminClient
+              .from('early_access_waitlist')
+              .update({
+                status: 'activated',
+                activated_at: new Date().toISOString()
+              })
+              .eq('id', waitlistEntry.id)
+          }
+
+          if (signupSource === 'practitioner_invite' && memberEntry) {
+            // Link the member record to the new user
+            await adminClient
+              .from('members')
+              .update({ user_id: userId })
+              .eq('id', memberEntry.id)
+          }
+
+          // Redirect based on signup source
+          if (signupSource === 'practitioner_invite') {
+            // Practitioner-invited members go directly to home (they're members)
+            redirectUrl = `${requestUrl.origin}/home`
+          } else {
+            // Waitlist users go to onboarding to select their type
+            redirectUrl = `${requestUrl.origin}/onboarding`
+          }
         }
       } else {
-        // No email - shouldn't happen with Google OAuth, but handle it
+        // No email or userId - shouldn't happen with Google OAuth, but handle it
         redirectUrl = `${requestUrl.origin}/early-access`
       }
     }
