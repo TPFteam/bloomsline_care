@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/i18n/context'
 import { Navbar } from '@/components/landing/navbar'
 import { Footer } from '@/components/landing/footer'
+import { EarlyAccessModalProvider } from '@/lib/landing/early-access-modal-context'
 import { Lock, Server, Eye, Key, ShieldCheck, Bell } from 'lucide-react'
 
 export default function SecurityPage() {
@@ -107,9 +108,10 @@ export default function SecurityPage() {
   const t = content[locale as keyof typeof content] || content.en
 
   return (
-    <div className="bg-white text-gray-900">
-      <Navbar />
-      <main className="min-h-screen bg-white pt-20">
+    <EarlyAccessModalProvider>
+      <div className="bg-white text-gray-900">
+        <Navbar />
+        <main className="min-h-screen bg-white pt-20">
         <div className="container mx-auto px-6 py-12 lg:py-20 max-w-4xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -193,8 +195,9 @@ export default function SecurityPage() {
             </motion.div>
           </motion.div>
         </div>
-      </main>
-      <Footer />
-    </div>
+        </main>
+        <Footer />
+      </div>
+    </EarlyAccessModalProvider>
   )
 }
