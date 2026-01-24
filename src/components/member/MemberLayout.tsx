@@ -49,7 +49,7 @@ function AnimatedIcon({
   )
 }
 
-// Primary nav items (always visible) - Order: Home, Moments, Progress
+// Primary nav items (always visible) - Order: Home, Moments, Rituals
 const primaryNavItems = [
   {
     href: '/home',
@@ -64,21 +64,21 @@ const primaryNavItems = [
     labelFr: 'Moments',
   },
   {
-    href: '/progress',
-    icon: Heart,
-    labelEn: 'Progress',
-    labelFr: 'Progrès',
+    href: '/rituals',
+    icon: Circle,
+    labelEn: 'Rituals',
+    labelFr: 'Rituels',
   },
 ]
 
 // Menu items (in Menu dropdown on right)
 const menuNavItems = [
   {
-    href: '/rituals',
-    icon: Circle,
-    labelEn: 'Rituals',
-    labelFr: 'Rituels',
-    gradient: 'from-sky-400 to-blue-500',
+    href: '/progress',
+    icon: Heart,
+    labelEn: 'Progress',
+    labelFr: 'Progrès',
+    gradient: 'from-emerald-400 to-teal-500',
     core: true,
   },
   {
