@@ -254,28 +254,28 @@ async function getTodaySnapshot(
     // Get all active anchors
     const { data: memberAnchors } = await supabase
       .from('member_anchors')
-      .select('id, name, category, is_active')
+      .select('id, label_en, type, is_active')
       .eq('member_id', memberId)
       .eq('is_active', true)
 
-    // Get today's anchor logs
+    // Get today's anchor logs (presence of a log = completed)
     const { data: anchorLogs } = await supabase
       .from('anchor_logs')
-      .select('anchor_id, completed')
+      .select('anchor_id')
       .eq('member_id', memberId)
-      .eq('date', todayStr)
+      .eq('log_date', todayStr)
 
-    const logMap = new Map(anchorLogs?.map(l => [l.anchor_id, l.completed]) || [])
+    const completedSet = new Set(anchorLogs?.map(l => l.anchor_id) || [])
 
     const growAnchors: { name: string; completed: boolean }[] = []
     const letGoAnchors: { name: string; completed: boolean }[] = []
 
     memberAnchors?.forEach(anchor => {
-      const completed = logMap.get(anchor.id) || false
-      if (anchor.category === 'grow') {
-        growAnchors.push({ name: anchor.name, completed })
+      const completed = completedSet.has(anchor.id)
+      if (anchor.type === 'grow') {
+        growAnchors.push({ name: anchor.label_en, completed })
       } else {
-        letGoAnchors.push({ name: anchor.name, completed })
+        letGoAnchors.push({ name: anchor.label_en, completed })
       }
     })
 
@@ -443,17 +443,17 @@ async function getWeeklyTrends(
     // Get all active anchors
     const { data: memberAnchors } = await supabase
       .from('member_anchors')
-      .select('id, name, category')
+      .select('id, label_en, type')
       .eq('member_id', memberId)
       .eq('is_active', true)
 
-    // Get this week's anchor logs
+    // Get this week's anchor logs (presence of log = completed)
     const { data: weekAnchorLogs } = await supabase
       .from('anchor_logs')
-      .select('anchor_id, completed, date')
+      .select('anchor_id, log_date')
       .eq('member_id', memberId)
-      .gte('date', weekAgoStr)
-      .lte('date', todayStr)
+      .gte('log_date', weekAgoStr)
+      .lte('log_date', todayStr)
 
     // Count completions per anchor
     const anchorCompletions: Record<string, number> = {}
@@ -462,11 +462,11 @@ async function getWeeklyTrends(
     let growPossible = 0
     let letGoPossible = 0
 
-    const anchorCategoryMap = new Map(memberAnchors?.map(a => [a.id, { name: a.name, category: a.category }]) || [])
+    const anchorInfoMap = new Map(memberAnchors?.map(a => [a.id, { name: a.label_en, type: a.type }]) || [])
 
     // Calculate possible completions (anchors * 7 days)
     memberAnchors?.forEach(anchor => {
-      if (anchor.category === 'grow') {
+      if (anchor.type === 'grow') {
         growPossible += 7
       } else {
         letGoPossible += 7
@@ -474,15 +474,13 @@ async function getWeeklyTrends(
     })
 
     weekAnchorLogs?.forEach(log => {
-      if (log.completed) {
-        const anchorInfo = anchorCategoryMap.get(log.anchor_id)
-        if (anchorInfo) {
-          anchorCompletions[anchorInfo.name] = (anchorCompletions[anchorInfo.name] || 0) + 1
-          if (anchorInfo.category === 'grow') {
-            growCompleted++
-          } else {
-            letGoCompleted++
-          }
+      const anchorInfo = anchorInfoMap.get(log.anchor_id)
+      if (anchorInfo) {
+        anchorCompletions[anchorInfo.name] = (anchorCompletions[anchorInfo.name] || 0) + 1
+        if (anchorInfo.type === 'grow') {
+          growCompleted++
+        } else {
+          letGoCompleted++
         }
       }
     })
@@ -495,10 +493,10 @@ async function getWeeklyTrends(
     const topLetGo: string[] = []
 
     sortedAnchors.forEach(([name]) => {
-      const anchor = memberAnchors?.find(a => a.name === name)
-      if (anchor?.category === 'grow' && topGrow.length < 3) {
+      const anchor = memberAnchors?.find(a => a.label_en === name)
+      if (anchor?.type === 'grow' && topGrow.length < 3) {
         topGrow.push(name)
-      } else if (anchor?.category === 'let_go' && topLetGo.length < 3) {
+      } else if (anchor?.type === 'letgo' && topLetGo.length < 3) {
         topLetGo.push(name)
       }
     })
