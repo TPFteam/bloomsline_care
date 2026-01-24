@@ -20,7 +20,7 @@ export function IntroSection() {
   const content = {
     en: {
       thought: "You know how life moves fast and we forget the small moments?",
-      answer: "Bloomsline lets you capture those",
+      answer: "We help you capture those",
       details: "photos, voice notes, written reflections",
       feeling: "with how you felt.",
       pattern: "Over time, you see your patterns,",
@@ -28,7 +28,7 @@ export function IntroSection() {
     },
     fr: {
       thought: "Vous savez comment la vie va vite et on oublie les petits moments ?",
-      answer: "Bloomsline vous permet de les capturer",
+      answer: "On vous aide à les capturer",
       details: "photos, notes vocales, réflexions écrites",
       feeling: "avec ce que vous avez ressenti.",
       pattern: "Au fil du temps, vous voyez vos patterns,",
