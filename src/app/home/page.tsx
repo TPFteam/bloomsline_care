@@ -410,6 +410,7 @@ export default function MyResourcesPage() {
   const [showBloomChat, setShowBloomChat] = useState(false)
   const [anchorsTab, setAnchorsTab] = useState<'grow' | 'letgo'>('grow')
   const [anchorLogs, setAnchorLogs] = useState<Record<string, number[]>>({}) // habitId -> array of timestamps for today
+  const [selectedDateAnchorLogs, setSelectedDateAnchorLogs] = useState<{ anchorId: string; timestamp: number }[]>([]) // For timeline
 
   useEffect(() => {
     loadData()
@@ -455,6 +456,24 @@ export default function MyResourcesPage() {
         setSelectedDateCompletions(completionsData as RitualCompletion[])
       } else {
         setSelectedDateCompletions([])
+      }
+
+      // Fetch anchor logs for the selected date
+      const { data: anchorLogsData } = await supabase
+        .from('anchor_logs')
+        .select('anchor_id, logged_at')
+        .eq('member_id', memberId)
+        .eq('log_date', dateStr)
+
+      if (anchorLogsData) {
+        setSelectedDateAnchorLogs(
+          anchorLogsData.map(log => ({
+            anchorId: log.anchor_id,
+            timestamp: new Date(log.logged_at).getTime(),
+          }))
+        )
+      } else {
+        setSelectedDateAnchorLogs([])
       }
     }
 
@@ -1320,6 +1339,52 @@ export default function MyResourcesPage() {
                             </span>
                           </div>
                         )}
+                      </motion.div>
+                    )
+                  })
+                })()}
+              </div>
+            )}
+
+            {/* Anchor logs on timeline */}
+            {selectedDateAnchorLogs.length > 0 && userAnchors.length > 0 && (
+              <div className="absolute inset-0">
+                {(() => {
+                  return selectedDateAnchorLogs.map((log, i) => {
+                    const anchor = userAnchors.find(a => a.id === log.anchorId)
+                    if (!anchor) return null
+
+                    const logTime = new Date(log.timestamp)
+                    const hours = logTime.getHours() + logTime.getMinutes() / 60
+                    const position = hourToPosition(hours)
+
+                    // Skip if outside visible range
+                    if (position < -5 || position > 105) return null
+
+                    const iconData = ANCHOR_ICONS[anchor.icon]
+                    const AnchorIcon = iconData?.icon || Circle
+                    const isGrow = anchor.type === 'grow'
+
+                    return (
+                      <motion.div
+                        key={`anchor-${log.anchorId}-${log.timestamp}`}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.4 + i * 0.05, type: 'spring', stiffness: 300, damping: 20 }}
+                        className="absolute -translate-x-1/2 z-15"
+                        style={{ left: `${position}%`, bottom: '8px' }}
+                        title={`${locale === 'fr' ? anchor.labelFr : anchor.labelEn} - ${logTime.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`}
+                      >
+                        <motion.div
+                          whileHover={{ scale: 1.2 }}
+                          className={`w-5 h-5 rounded-full flex items-center justify-center border border-white shadow-sm ${
+                            isGrow
+                              ? 'bg-gradient-to-br from-emerald-400 to-teal-500'
+                              : 'bg-gradient-to-br from-rose-400 to-pink-500'
+                          }`}
+                        >
+                          <AnchorIcon className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
+                        </motion.div>
                       </motion.div>
                     )
                   })
