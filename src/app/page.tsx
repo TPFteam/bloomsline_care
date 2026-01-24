@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/landing/navbar";
 import { MainHero } from "@/components/landing/main-hero";
+import { IntroSection } from "@/components/landing/intro-section";
 import { ProblemSection } from "@/components/landing/problem-section";
 import { HopeSection } from "@/components/landing/hope-section";
 import { BeliefSection } from "@/components/landing/belief-section";
@@ -17,6 +18,7 @@ export default function Home() {
           <Navbar />
           <main>
             <MainHero />
+            <IntroSection />
             <ProblemSection />
             <HopeSection />
             <BeliefSection />
