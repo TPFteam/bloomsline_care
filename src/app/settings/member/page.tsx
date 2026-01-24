@@ -25,7 +25,6 @@ import MemberLayout from '@/components/member/MemberLayout'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
-import { getUserPreferences, updateUserPreferences } from '@/lib/services/preferences'
 import { FeedbackButton } from '@/components/feedback-button'
 
 interface MemberProfile {
@@ -63,8 +62,6 @@ export default function MemberSettingsPage() {
   const [editableInfo, setEditableInfo] = useState<EditableInfo>({ phone: '' })
   const [isEditingPhone, setIsEditingPhone] = useState(false)
   const [isSavingPhone, setIsSavingPhone] = useState(false)
-  const [showAllFeatures, setShowAllFeatures] = useState(false)
-  const [isSavingFeatures, setIsSavingFeatures] = useState(false)
   const [showHelpModal, setShowHelpModal] = useState(false)
 
   // Translations
@@ -185,10 +182,6 @@ export default function MemberSettingsPage() {
         })
       }
       // If no prefs exist, keep defaults (true, true)
-
-      // Fetch user preferences for show_all_features
-      const userPrefs = await getUserPreferences()
-      setShowAllFeatures(userPrefs.show_all_features)
     } catch (error) {
       console.error('Error fetching profile:', error)
     } finally {
@@ -260,24 +253,6 @@ export default function MemberSettingsPage() {
   const handleCancelPhoneEdit = () => {
     setEditableInfo({ phone: profile?.phone || '' })
     setIsEditingPhone(false)
-  }
-
-  const handleToggleAllFeatures = async () => {
-    const newValue = !showAllFeatures
-    setShowAllFeatures(newValue)
-    setIsSavingFeatures(true)
-
-    try {
-      const success = await updateUserPreferences({ show_all_features: newValue })
-      if (!success) throw new Error('Failed to save')
-      toast.success(locale === 'fr' ? 'Préférences enregistrées' : 'Preferences saved')
-    } catch (error) {
-      console.error('Error saving feature preference:', error)
-      setShowAllFeatures(!newValue) // Revert on error
-      toast.error(locale === 'fr' ? 'Erreur lors de l\'enregistrement' : 'Error saving preferences')
-    } finally {
-      setIsSavingFeatures(false)
-    }
   }
 
   const handleLogout = async () => {
@@ -628,24 +603,14 @@ export default function MemberSettingsPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl opacity-60">
               <div className="flex-1 mr-4">
                 <span className="font-medium text-gray-700 block">{text.showAllFeatures}</span>
                 <span className="text-xs text-gray-500">{text.showAllFeaturesDesc}</span>
               </div>
-              <button
-                onClick={handleToggleAllFeatures}
-                disabled={isSavingFeatures}
-                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors flex-shrink-0 ${
-                  showAllFeatures ? 'bg-emerald-500' : 'bg-gray-300'
-                } ${isSavingFeatures ? 'opacity-50' : ''}`}
-              >
-                <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
-                    showAllFeatures ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
+              <span className="text-xs font-medium text-violet-600 bg-violet-100 px-2 py-1 rounded-full">
+                {locale === 'fr' ? 'Bientôt' : 'Coming soon'}
+              </span>
             </div>
           </motion.div>
 
