@@ -22,16 +22,14 @@ export function IntroSection() {
       thought: "You know how life moves fast and we forget the small moments?",
       answer: "We help you capture those",
       details: "a photo, a voice note, or just a few words",
-      feeling: "with how you felt.",
-      pattern: "Over time, you see your patterns,",
+      pattern: "Over time, you see your patterns — how you felt, when, and why.",
       bloom: "and Bloom AI helps you make sense of it all.",
     },
     fr: {
       thought: "Vous savez comment la vie va vite et on oublie les petits moments ?",
       answer: "On vous aide à les capturer",
       details: "une photo, une note vocale, ou juste quelques mots",
-      feeling: "avec ce que vous avez ressenti.",
-      pattern: "Au fil du temps, vous voyez vos patterns,",
+      pattern: "Au fil du temps, vous voyez vos patterns — ce que vous avez ressenti, quand, et pourquoi.",
       bloom: "et Bloom IA vous aide à tout comprendre.",
     },
   }
@@ -76,16 +74,6 @@ export function IntroSection() {
             }}
           >
             — {t.details} —
-          </motion.p>
-
-          {/* With feeling */}
-          <motion.p
-            className="text-2xl md:text-3xl lg:text-4xl font-medium leading-relaxed"
-            style={{
-              color: useTransform(grayToColor, [0, 1], ['#9ca3af', '#374151'])
-            }}
-          >
-            {t.feeling}
           </motion.p>
 
           {/* Spacer */}
