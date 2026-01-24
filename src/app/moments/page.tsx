@@ -352,9 +352,18 @@ export default function MomentsPage() {
     )
   }
 
+  // Handle date filter change - load all moments if needed
+  const handleDateFilterChange = async (newFilter: DateFilter) => {
+    setDateFilter(newFilter)
+    // If selecting anything other than 'today' and we haven't loaded all, load them
+    if (newFilter !== 'today' && !loadedAll) {
+      await loadAllMoments()
+    }
+  }
+
   const clearFilters = () => {
     setSelectedMoods([])
-    setDateFilter('all')
+    handleDateFilterChange('today')
   }
 
   const hasActiveFilters = selectedMoods.length > 0 || dateFilter !== 'all'
@@ -547,13 +556,17 @@ export default function MomentsPage() {
                       ].map(option => (
                         <button
                           key={option.value}
-                          onClick={() => setDateFilter(option.value as DateFilter)}
+                          onClick={() => handleDateFilterChange(option.value as DateFilter)}
+                          disabled={loadingMore}
                           className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                             dateFilter === option.value
                               ? isDark ? 'bg-white text-gray-900' : 'bg-gray-900 text-white'
                               : `${isDark ? 'bg-white/5 text-white/60' : 'bg-black/5 text-gray-600'}`
-                          }`}
+                          } disabled:opacity-50`}
                         >
+                          {loadingMore && option.value !== 'today' ? (
+                            <Loader2 className="w-3 h-3 animate-spin inline mr-1" />
+                          ) : null}
                           {option.label}
                         </button>
                       ))}
