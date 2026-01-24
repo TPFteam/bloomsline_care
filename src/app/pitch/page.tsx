@@ -124,7 +124,6 @@ const translations = {
       memberFeatures: [
         { name: 'Rituals', desc: 'Daily practices that adapt to your energy' },
         { name: 'Moments', desc: 'Capture memories with mood tracking' },
-        { name: 'Balance', desc: 'Visualize life dimensions' },
         { name: 'Progress', desc: 'Narrative growth, not scores' },
         { name: 'Bloom AI', desc: 'Your gentle AI companion' },
       ],
@@ -468,7 +467,6 @@ const translations = {
       memberFeatures: [
         { name: 'Rituels', desc: "Des pratiques quotidiennes qui s'adaptent à votre énergie" },
         { name: 'Moments', desc: "Capturez des souvenirs avec suivi de l'humeur" },
-        { name: 'Équilibre', desc: 'Visualisez les dimensions de votre vie' },
         { name: 'Progrès', desc: 'Une croissance narrative, pas des scores' },
         { name: 'Bloom IA', desc: 'Votre compagnon IA bienveillant' },
       ],
