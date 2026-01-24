@@ -593,17 +593,21 @@ function detectPatterns(today: TodaySnapshot, week: WeeklyTrends): DetectedPatte
     }
   }
 
-  // Weekly anchor trends
+  // Weekly anchor trends - but only if they didn't complete everything today
+  // If they completed today, focus on that positive, not weekly criticism
+  const completedAllToday = completedAnchors === totalAnchors && totalAnchors > 0
+
   if (week.anchors.growCompletionRate >= 70) {
     insights.push('User is consistent with their Grow habits this week')
-  } else if (week.anchors.growCompletionRate < 30 && week.anchors.topGrowAnchors.length > 0) {
-    insights.push('User is struggling with Grow habits this week')
+  } else if (week.anchors.growCompletionRate < 30 && week.anchors.topGrowAnchors.length > 0 && !completedAllToday) {
+    // Only mention weekly struggle if they also didn't do well today
+    insights.push('User has low Grow habit completion this week (may have just started tracking)')
   }
 
   if (week.anchors.letGoCompletionRate >= 70) {
     insights.push('User is doing well avoiding things they want to let go of')
-  } else if (week.anchors.letGoCompletionRate < 30 && week.anchors.topLetGoAnchors.length > 0) {
-    insights.push('User is struggling with Let Go habits this week')
+  } else if (week.anchors.letGoCompletionRate < 30 && week.anchors.topLetGoAnchors.length > 0 && !completedAllToday) {
+    insights.push('User has low Let Go habit completion this week (may have just started tracking)')
   }
 
   return { insights }
@@ -626,15 +630,17 @@ export function formatContextForPrompt(context: BloomContext, locale: 'en' | 'fr
     const totalAnchors = today.anchors.totalGrow + today.anchors.totalLetGo
     if (totalAnchors === 0) return loc === 'fr' ? '- Ancres: aucune configurée' : '- Anchors: none configured'
 
-    const growStatus = today.anchors.grow.map(a => `${a.name} (${a.completed ? '✓' : '○'})`).join(', ')
-    const letGoStatus = today.anchors.letGo.map(a => `${a.name} (${a.completed ? '✓' : '○'})`).join(', ')
+    const growDone = today.anchors.grow.filter(a => a.completed).map(a => a.name)
+    const growRemaining = today.anchors.grow.filter(a => !a.completed).map(a => a.name)
+    const letGoAvoided = today.anchors.letGo.filter(a => a.completed).map(a => a.name)
+    const letGoSlipped = today.anchors.letGo.filter(a => !a.completed).map(a => a.name)
 
     if (loc === 'fr') {
-      return `- Ancres Grandir: ${today.anchors.completedGrow}/${today.anchors.totalGrow}${growStatus ? ` [${growStatus}]` : ''}
-- Ancres Lâcher: ${today.anchors.completedLetGo}/${today.anchors.totalLetGo}${letGoStatus ? ` [${letGoStatus}]` : ''}`
+      return `- Habitudes Grandir: ${today.anchors.completedGrow}/${today.anchors.totalGrow} faites${growDone.length ? ` (faits: ${growDone.join(', ')})` : ''}${growRemaining.length ? ` (restants: ${growRemaining.join(', ')})` : ''}
+- Habitudes Lâcher: ${letGoSlipped.length === 0 ? 'Tout évité ✓' : `${letGoSlipped.length} écart(s)`}${letGoAvoided.length ? ` (évités: ${letGoAvoided.join(', ')})` : ''}${letGoSlipped.length ? ` (écarts: ${letGoSlipped.join(', ')})` : ''}`
     }
-    return `- Grow anchors: ${today.anchors.completedGrow}/${today.anchors.totalGrow}${growStatus ? ` [${growStatus}]` : ''}
-- Let Go anchors: ${today.anchors.completedLetGo}/${today.anchors.totalLetGo}${letGoStatus ? ` [${letGoStatus}]` : ''}`
+    return `- Grow habits: ${today.anchors.completedGrow}/${today.anchors.totalGrow} done${growDone.length ? ` (done: ${growDone.join(', ')})` : ''}${growRemaining.length ? ` (remaining: ${growRemaining.join(', ')})` : ''}
+- Let Go habits: ${letGoSlipped.length === 0 ? 'All avoided ✓' : `${letGoSlipped.length} slip(s)`}${letGoAvoided.length ? ` (avoided: ${letGoAvoided.join(', ')})` : ''}${letGoSlipped.length ? ` (slipped: ${letGoSlipped.join(', ')})` : ''}`
   }
 
   // Today section

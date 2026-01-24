@@ -77,14 +77,32 @@ WRITING RULES:
 - Do not summarize their feelings. Just respond naturally.
 
 WHAT YOU KNOW:
-You have access to their sleep, work, life balance, moments, moods, and rituals.
+You have access to their sleep, work, life balance, moments, moods, rituals, and daily anchors.
 Use this naturally. "You have not slept well in days. I noticed."
 Make connections. "You worked 11 hours yesterday. No wonder you feel this way."
 Be specific, not generic.
 
+ANCHORS (HABITS):
+- Anchors are habits they are tracking daily
+- "Grow" anchors are positive habits they want to cultivate (exercise, water, reading, meditation)
+- "Let Go" anchors are things they want to reduce or stop (screen time, junk food, negative self-talk)
+
+GROW vs LET GO - IMPORTANT DISTINCTION:
+- GROW: Goal is to INCREASE the count. More completions = better. "You did 3 grow habits today. Nice."
+- LET GO: Goal is to DECREASE slips. Fewer logs = better. When they mark Let Go complete, it means they AVOIDED the bad habit.
+  - If they avoided all Let Go habits: "You stayed on track. Zero slips."
+  - If they slipped: "One slip today. Tomorrow is fresh."
+
+- Be encouraging but not over the top. Keep it real.
+- If they ask about habits/anchors, summarize: how many grow habits done, how many Let Go habits avoided
+- IMPORTANT: If they completed all anchors TODAY, celebrate that. Do NOT immediately pivot to criticizing weekly stats.
+- Weekly percentages might be low simply because they just started tracking. Do not assume inconsistency.
+- Focus on TODAY first. Only mention weekly trends if specifically asked or if it is genuinely relevant.
+
 DATA FRESHNESS (CRITICAL):
 - If the context shows "no recent data" or "user has not been active", DO NOT make claims about their patterns or week
-- If moments this week = 0 and no balance logged, say "I do not have much recent data to go on"
+- Check ALL data sources: moments, balance, rituals, AND anchors. If ANY have data, use it.
+- If truly nothing is logged anywhere, say "I do not have much recent data to go on"
 - NEVER invent or assume data. If you do not know, say so.
 - Only reference patterns that are marked as "confirmed in last 2 weeks"
 - When user asks "how was my week" and there is no data, say "I do not have enough recent data to tell you about this week"
@@ -186,6 +204,7 @@ const CONTENT_TRIGGERS = {
   moods: ['mood', 'feeling', 'feel', 'humeur', 'sentiment', 'emotions', 'émotions'],
   stats: ['stats', 'numbers', 'data', 'statistiques', 'chiffres', 'données', 'show me'],
   progress: ['progress', 'progrès', 'improving', 'amélioration', 'trend', 'tendance'],
+  anchors: ['anchor', 'anchors', 'habit', 'habits', 'ancre', 'ancres', 'habitude', 'habitudes', 'grow', 'let go', 'grandir', 'lâcher'],
 }
 
 /**
@@ -247,11 +266,71 @@ export function generateContentBlocks(
         const progressBlock = generateProgressInsight(context, locale)
         if (progressBlock) blocks.push(progressBlock)
         break
+
+      case 'anchors':
+        const anchorBlock = generateAnchorStats(context, locale)
+        if (anchorBlock) blocks.push(anchorBlock)
+        break
     }
   }
 
   // Limit to max 2 content blocks per response
   return blocks.slice(0, 2)
+}
+
+/**
+ * Generate anchor/habits statistics
+ * - Grow: Higher count = better (building positive habits)
+ * - Let Go: Lower count = better (avoiding negative habits - show as "avoided" or streak)
+ */
+function generateAnchorStats(context: BloomContext, locale: 'en' | 'fr'): StatsContentBlock | null {
+  const { today, thisWeek } = context
+
+  const totalAnchors = today.anchors.totalGrow + today.anchors.totalLetGo
+  if (totalAnchors === 0) {
+    return null
+  }
+
+  const completedGrow = today.anchors.completedGrow
+  const completedLetGo = today.anchors.completedLetGo
+  const totalGrow = today.anchors.totalGrow
+  const totalLetGo = today.anchors.totalLetGo
+
+  // For Let Go: "completed" means they successfully AVOIDED the bad habit
+  // letGoSlipped = how many they failed to avoid (did the bad habit)
+  const letGoSlipped = totalLetGo - completedLetGo
+
+  return {
+    type: 'stats',
+    title: locale === 'fr' ? 'Ancres aujourd\'hui' : 'Today\'s anchors',
+    stats: [
+      {
+        label: locale === 'fr' ? 'Grandir' : 'Grow',
+        value: `${completedGrow}`,
+        icon: '🌱',
+        trend: completedGrow === totalGrow ? 'up' : completedGrow > 0 ? 'neutral' : 'down',
+        trendValue: locale === 'fr'
+          ? `${completedGrow}/${totalGrow} faits`
+          : `${completedGrow}/${totalGrow} done`,
+      },
+      {
+        label: locale === 'fr' ? 'Évité' : 'Avoided',
+        value: letGoSlipped === 0 ? '✓' : `${letGoSlipped}`,
+        icon: '🍃',
+        trend: letGoSlipped === 0 ? 'up' : 'down',
+        trendValue: letGoSlipped === 0
+          ? (locale === 'fr' ? 'Tout évité' : 'All avoided')
+          : (locale === 'fr' ? `${letGoSlipped} écart(s)` : `${letGoSlipped} slip(s)`),
+      },
+      {
+        label: locale === 'fr' ? 'Semaine' : 'Week',
+        value: `${thisWeek.anchors.growCompletionRate}%`,
+        icon: '📈',
+        trend: thisWeek.anchors.growCompletionRate >= 60 ? 'up' : thisWeek.anchors.growCompletionRate < 30 ? 'down' : 'neutral',
+        trendValue: locale === 'fr' ? 'Progression' : 'Progress',
+      },
+    ],
+  }
 }
 
 /**
