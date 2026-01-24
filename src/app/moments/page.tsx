@@ -753,25 +753,39 @@ export default function MomentsPage() {
             className="flex flex-col items-center justify-center py-20 text-center"
           >
             <div className={`w-24 h-24 rounded-3xl ${theme.cardBg} border ${theme.cardBorder} flex items-center justify-center mb-6`}>
-              <Camera className={`w-10 h-10 ${theme.textFaint}`} />
+              <Sun className={`w-10 h-10 ${theme.textFaint}`} />
             </div>
             <h2 className={`text-lg font-medium ${theme.text} mb-2`}>
-              {locale === 'fr' ? 'Votre espace vous attend' : 'Your space awaits'}
+              {locale === 'fr' ? 'Pas encore de moments aujourd\'hui' : 'No moments today yet'}
             </h2>
             <p className={`${theme.textFaint} text-sm max-w-[260px] leading-relaxed mb-8`}>
               {locale === 'fr'
-                ? 'Capturez ce qui compte. Photos, pensées, voix.'
-                : 'Capture what matters. Photos, thoughts, voice.'}
+                ? 'Qu\'est-ce qui vous traverse l\'esprit ? Capturez-le.'
+                : 'What\'s on your mind? Capture it.'}
             </p>
             <Link href="/moments/capture">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className={`px-6 py-3 rounded-2xl ${theme.accent} font-medium text-sm`}
+                className={`px-6 py-3 rounded-2xl ${theme.accent} font-medium text-sm flex items-center gap-2`}
               >
-                {locale === 'fr' ? 'Commencer' : 'Get started'}
+                <Plus className="w-4 h-4" />
+                {locale === 'fr' ? 'Capturer un moment' : 'Capture a moment'}
               </motion.button>
             </Link>
+            {/* View past moments link */}
+            {!loadedAll && (
+              <button
+                onClick={loadAllMoments}
+                disabled={loadingMore}
+                className={`mt-4 text-sm ${theme.textMuted} hover:${theme.text} transition-colors flex items-center gap-1`}
+              >
+                {loadingMore ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : null}
+                {locale === 'fr' ? 'Voir les moments passés' : 'View past moments'}
+              </button>
+            )}
           </motion.div>
         ) : filteredMoments.length === 0 ? (
           /* No filter results */
@@ -994,7 +1008,7 @@ export default function MomentsPage() {
           </div>
         )}
 
-        {/* Show All button - only show if we haven't loaded all moments yet */}
+        {/* View past moments button - only show if we haven't loaded all moments yet */}
         {!loadedAll && moments.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -1012,10 +1026,12 @@ export default function MomentsPage() {
             >
               {loadingMore ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
-              ) : null}
+              ) : (
+                <ChevronLeft className="w-4 h-4 rotate-180" />
+              )}
               {loadingMore
                 ? (locale === 'fr' ? 'Chargement...' : 'Loading...')
-                : (locale === 'fr' ? 'Voir tous les moments' : 'Show all moments')}
+                : (locale === 'fr' ? 'Voir les moments passés' : 'View past moments')}
             </button>
           </motion.div>
         )}
