@@ -21,15 +21,15 @@ export function IntroSection() {
     en: {
       thought: "You know how life moves fast and we forget the small moments?",
       answer: "We help you capture those",
-      details: "a photo, a voice note, or just a few words",
-      pattern: "Over time, you see your patterns — how you felt, when, and why.",
+      details: "a photo, a voice note, or just how you're feeling",
+      pattern: "Over time, you see your patterns,",
       bloom: "and Bloom AI helps you make sense of it all.",
     },
     fr: {
       thought: "Vous savez comment la vie va vite et on oublie les petits moments ?",
       answer: "On vous aide à les capturer",
-      details: "une photo, une note vocale, ou juste quelques mots",
-      pattern: "Au fil du temps, vous voyez vos patterns — ce que vous avez ressenti, quand, et pourquoi.",
+      details: "une photo, une note vocale, ou juste ce que vous ressentez",
+      pattern: "Au fil du temps, vous voyez vos patterns,",
       bloom: "et Bloom IA vous aide à tout comprendre.",
     },
   }
