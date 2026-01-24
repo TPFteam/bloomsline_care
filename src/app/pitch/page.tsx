@@ -122,10 +122,10 @@ const translations = {
       membersLabel: 'Members',
       practitionersLabel: 'Practitioners',
       memberFeatures: [
-        { name: 'Rituals', desc: 'Daily practices that adapt to your energy' },
         { name: 'Moments', desc: 'Capture memories with mood tracking' },
+        { name: 'Rituals', desc: 'Daily practices that adapt to your energy' },
         { name: 'Progress', desc: 'Narrative growth, not scores' },
-        { name: 'Bloom AI', desc: 'Your gentle AI companion' },
+        { name: 'Bloom AI', desc: 'Personalized guidance and check-ins' },
       ],
       practitionerFeatures: [
         { name: 'Resources', desc: 'Create worksheets, exercises, psychoeducation' },
@@ -465,10 +465,10 @@ const translations = {
       membersLabel: 'Membres',
       practitionersLabel: 'Praticiens',
       memberFeatures: [
-        { name: 'Rituels', desc: "Des pratiques quotidiennes qui s'adaptent à votre énergie" },
         { name: 'Moments', desc: "Capturez des souvenirs avec suivi de l'humeur" },
+        { name: 'Rituels', desc: "Des pratiques quotidiennes qui s'adaptent à votre énergie" },
         { name: 'Progrès', desc: 'Une croissance narrative, pas des scores' },
-        { name: 'Bloom IA', desc: 'Votre compagnon IA bienveillant' },
+        { name: 'Bloom IA', desc: 'Accompagnement personnalisé et suivis' },
       ],
       practitionerFeatures: [
         { name: 'Ressources', desc: 'Créez des fiches, exercices, psychoéducation' },
