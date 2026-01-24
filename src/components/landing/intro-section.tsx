@@ -19,7 +19,7 @@ export function IntroSection() {
 
   const content = {
     en: {
-      thought: "You know how life moves fast and we forget the good moments?",
+      thought: "You know how life moves fast and we forget the small moments?",
       answer: "Bloomsline lets you capture those",
       details: "photos, voice notes, written reflections",
       feeling: "with how you felt.",
@@ -27,7 +27,7 @@ export function IntroSection() {
       bloom: "and Bloom AI helps you make sense of it all.",
     },
     fr: {
-      thought: "Vous savez comment la vie va vite et on oublie les bons moments ?",
+      thought: "Vous savez comment la vie va vite et on oublie les petits moments ?",
       answer: "Bloomsline vous permet de les capturer",
       details: "photos, notes vocales, réflexions écrites",
       feeling: "avec ce que vous avez ressenti.",
