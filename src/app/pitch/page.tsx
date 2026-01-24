@@ -17,7 +17,6 @@ import {
   ArrowRight,
   Check,
   Clock,
-  BarChart3,
   Lightbulb,
   Globe,
   Building2,
@@ -1229,7 +1228,7 @@ interface ProductSlideProps {
 }
 
 function ProductSlide({ t }: ProductSlideProps) {
-  const memberIcons = [Clock, Heart, BarChart3, TrendingUp, Brain]
+  const memberIcons = [Heart, Clock, TrendingUp, Brain]
   const practitionerIcons = [Lightbulb, Calendar, Users]
 
   return (
@@ -1269,7 +1268,7 @@ function ProductSlide({ t }: ProductSlideProps) {
             <div className="space-y-4">
               {t.memberFeatures.map((feature, index) => {
                 const Icon = memberIcons[index]
-                const isHero = index === 1 // Moments is the hero feature
+                const isHero = index === 0 // Moments is the hero feature
                 return (
                   <motion.div
                     key={feature.name}
