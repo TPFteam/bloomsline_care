@@ -1,92 +1,115 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { useRef } from 'react'
+import { motion, useScroll, useTransform } from 'framer-motion'
 import { useLanguage } from '@/lib/i18n/context'
-import { Camera, Mic, PenLine, Sparkles } from 'lucide-react'
 
 export function IntroSection() {
   const { locale } = useLanguage()
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"]
+  })
+
+  // Transform scroll progress to color transition
+  const grayToColor = useTransform(scrollYProgress, [0, 0.3, 0.5], [0, 0, 1])
+  const textOpacity = useTransform(scrollYProgress, [0, 0.2], [0.4, 1])
 
   const content = {
     en: {
-      headline: 'Life moves fast.',
-      subheadline: 'We forget the good moments.',
-      description: 'Bloomsline lets you capture them — photos, voice notes, written reflections — with how you felt. Over time, you see your patterns, and Bloom AI helps you make sense of it all.',
+      thought: "You know how life moves fast and we forget the good moments?",
+      answer: "Bloomsline lets you capture those",
+      details: "photos, voice notes, written reflections",
+      feeling: "with how you felt.",
+      pattern: "Over time, you see your patterns,",
+      bloom: "and Bloom AI helps you make sense of it all.",
     },
     fr: {
-      headline: 'La vie va vite.',
-      subheadline: 'On oublie les bons moments.',
-      description: 'Bloomsline vous permet de les capturer — photos, notes vocales, réflexions écrites — avec ce que vous avez ressenti. Au fil du temps, vous voyez vos patterns, et Bloom IA vous aide à tout comprendre.',
+      thought: "Vous savez comment la vie va vite et on oublie les bons moments ?",
+      answer: "Bloomsline vous permet de les capturer",
+      details: "photos, notes vocales, réflexions écrites",
+      feeling: "avec ce que vous avez ressenti.",
+      pattern: "Au fil du temps, vous voyez vos patterns,",
+      bloom: "et Bloom IA vous aide à tout comprendre.",
     },
   }
 
   const t = locale === 'fr' ? content.fr : content.en
 
-  const captureTypes = [
-    { icon: Camera, label: locale === 'fr' ? 'Photos' : 'Photos' },
-    { icon: Mic, label: locale === 'fr' ? 'Notes vocales' : 'Voice notes' },
-    { icon: PenLine, label: locale === 'fr' ? 'Réflexions' : 'Reflections' },
-  ]
-
   return (
-    <section className="py-20 md:py-28 bg-gradient-to-b from-white to-teal-50/30">
-      <div className="container mx-auto px-6 max-w-4xl">
+    <section
+      ref={containerRef}
+      className="py-24 md:py-36 bg-gradient-to-b from-white via-gray-50/50 to-white overflow-hidden"
+    >
+      <div className="container mx-auto px-6 max-w-3xl">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6 }}
-          className="text-center"
+          className="text-center space-y-6"
+          style={{ opacity: textOpacity }}
         >
-          {/* Headline */}
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-2">
-            {t.headline}
-          </h2>
-          <p className="text-2xl md:text-3xl lg:text-4xl font-medium text-teal-600 mb-8">
-            {t.subheadline}
-          </p>
-
-          {/* Description */}
-          <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto mb-12">
-            {t.description}
-          </p>
-
-          {/* Capture types */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex flex-wrap justify-center gap-4 md:gap-6"
+          {/* The thought - starts gray */}
+          <motion.p
+            className="text-2xl md:text-3xl lg:text-4xl font-light leading-relaxed"
+            style={{
+              color: useTransform(grayToColor, [0, 1], ['#9ca3af', '#374151'])
+            }}
           >
-            {captureTypes.map((type, index) => (
-              <motion.div
-                key={type.label}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.3, delay: 0.3 + index * 0.1 }}
-                className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-gray-100"
-              >
-                <type.icon className="w-5 h-5 text-teal-500" />
-                <span className="text-gray-700 font-medium">{type.label}</span>
-              </motion.div>
-            ))}
-          </motion.div>
+            {t.thought}
+          </motion.p>
 
-          {/* Bloom AI mention */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-            className="mt-10 inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500/10 to-emerald-500/10 rounded-full"
+          {/* The answer - reveals in teal */}
+          <motion.p
+            className="text-2xl md:text-3xl lg:text-4xl font-medium leading-relaxed"
+            style={{
+              color: useTransform(grayToColor, [0, 1], ['#9ca3af', '#0d9488'])
+            }}
           >
-            <Sparkles className="w-5 h-5 text-teal-600" />
-            <span className="text-teal-700 font-medium">
-              {locale === 'fr' ? 'Bloom IA vous aide à tout comprendre' : 'Bloom AI helps you make sense of it all'}
-            </span>
-          </motion.div>
+            {t.answer}
+          </motion.p>
+
+          {/* The details - with em dashes */}
+          <motion.p
+            className="text-xl md:text-2xl lg:text-3xl font-light leading-relaxed"
+            style={{
+              color: useTransform(grayToColor, [0, 1], ['#d1d5db', '#6b7280'])
+            }}
+          >
+            — {t.details} —
+          </motion.p>
+
+          {/* With feeling */}
+          <motion.p
+            className="text-2xl md:text-3xl lg:text-4xl font-medium leading-relaxed"
+            style={{
+              color: useTransform(grayToColor, [0, 1], ['#9ca3af', '#374151'])
+            }}
+          >
+            {t.feeling}
+          </motion.p>
+
+          {/* Spacer */}
+          <div className="py-4" />
+
+          {/* Pattern recognition */}
+          <motion.p
+            className="text-xl md:text-2xl font-light leading-relaxed"
+            style={{
+              color: useTransform(grayToColor, [0, 1], ['#d1d5db', '#6b7280'])
+            }}
+          >
+            {t.pattern}
+          </motion.p>
+
+          {/* Bloom AI - the finale in gradient */}
+          <motion.p
+            className="text-xl md:text-2xl font-medium leading-relaxed"
+            style={{
+              color: useTransform(grayToColor, [0, 1], ['#d1d5db', '#14b8a6'])
+            }}
+          >
+            {t.bloom}
+          </motion.p>
         </motion.div>
       </div>
     </section>
