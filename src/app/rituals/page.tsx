@@ -224,6 +224,7 @@ export default function RitualsPage() {
   const [showCompletionFlow, setShowCompletionFlow] = useState(false)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const timerRestoredRef = useRef(false) // Track if we've restored timer on mount
 
   // Mood options with Lucide icons
   const moodOptions = [
@@ -357,6 +358,56 @@ export default function RitualsPage() {
     }
   }, [timerRunning, timerSeconds])
 
+  // Save timer state to localStorage when timer is running
+  useEffect(() => {
+    if (timerRunning && activeRitual) {
+      const timerState = {
+        ritualId: activeRitual.id,
+        startedAt: Date.now(),
+        secondsRemaining: timerSeconds,
+        initialDuration: (activeRitual.ritual.duration_suggestion || 1) * 60,
+      }
+      localStorage.setItem('activeRitualTimer', JSON.stringify(timerState))
+    }
+  }, [timerRunning, activeRitual, timerSeconds])
+
+  // Clear timer state from localStorage when timer stops or modal closes
+  useEffect(() => {
+    if (!timerRunning && !activeRitual) {
+      localStorage.removeItem('activeRitualTimer')
+    }
+  }, [timerRunning, activeRitual])
+
+  // Restore timer state on mount
+  useEffect(() => {
+    if (timerRestoredRef.current || memberRituals.length === 0) return
+    timerRestoredRef.current = true
+
+    const savedTimer = localStorage.getItem('activeRitualTimer')
+    if (savedTimer) {
+      try {
+        const timerState = JSON.parse(savedTimer)
+        const ritual = memberRituals.find(mr => mr.id === timerState.ritualId)
+
+        if (ritual) {
+          // Calculate elapsed time since timer was saved
+          const elapsedSeconds = Math.floor((Date.now() - timerState.startedAt) / 1000)
+          const newSecondsRemaining = timerState.secondsRemaining - elapsedSeconds
+
+          // Restore the timer state
+          setActiveRitual(ritual)
+          setTimerSeconds(newSecondsRemaining)
+          setTimerRunning(true)
+        } else {
+          // Ritual not found, clear saved state
+          localStorage.removeItem('activeRitualTimer')
+        }
+      } catch {
+        localStorage.removeItem('activeRitualTimer')
+      }
+    }
+  }, [memberRituals])
+
   // Open ritual modal
   const openRitualModal = (mr: MemberRitual) => {
     setActiveRitual(mr)
@@ -374,6 +425,8 @@ export default function RitualsPage() {
     setTimerRunning(false)
     setShowExitConfirm(false)
     if (timerRef.current) clearTimeout(timerRef.current)
+    // Clear saved timer state
+    localStorage.removeItem('activeRitualTimer')
   }
 
   // Handle exit button click - show confirmation only if timer is running
