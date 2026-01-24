@@ -18,11 +18,15 @@ import {
   Phone,
   Edit2,
   X,
+  Layers,
+  MessageCircleQuestion,
 } from 'lucide-react'
 import MemberLayout from '@/components/member/MemberLayout'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
+import { getUserPreferences, updateUserPreferences } from '@/lib/services/preferences'
+import { FeedbackButton } from '@/components/feedback-button'
 
 interface MemberProfile {
   id: string
@@ -59,6 +63,9 @@ export default function MemberSettingsPage() {
   const [editableInfo, setEditableInfo] = useState<EditableInfo>({ phone: '' })
   const [isEditingPhone, setIsEditingPhone] = useState(false)
   const [isSavingPhone, setIsSavingPhone] = useState(false)
+  const [showAllFeatures, setShowAllFeatures] = useState(false)
+  const [isSavingFeatures, setIsSavingFeatures] = useState(false)
+  const [showHelpModal, setShowHelpModal] = useState(false)
 
   // Translations
   const t = {
@@ -91,6 +98,12 @@ export default function MemberSettingsPage() {
       phoneUpdated: 'Phone number updated',
       errorUpdating: 'Error updating phone',
       notProvided: 'Not provided',
+      features: 'App Features',
+      featuresDescription: 'Customize your app experience',
+      showAllFeatures: 'Show all features',
+      showAllFeaturesDesc: 'Enable advanced features like Balance, Care, and Reflection',
+      helpSupport: 'Help & Support',
+      helpSupportDescription: 'Report bugs, suggest features, or ask questions',
     },
     fr: {
       title: 'Paramètres',
@@ -121,6 +134,12 @@ export default function MemberSettingsPage() {
       phoneUpdated: 'Numéro de téléphone mis à jour',
       errorUpdating: 'Erreur lors de la mise à jour',
       notProvided: 'Non fourni',
+      features: 'Fonctionnalités',
+      featuresDescription: 'Personnalisez votre expérience',
+      showAllFeatures: 'Afficher toutes les fonctionnalités',
+      showAllFeaturesDesc: 'Activer les fonctionnalités avancées comme Équilibre, Soins et Réflexion',
+      helpSupport: 'Aide & Support',
+      helpSupportDescription: 'Signaler des bugs, suggérer des idées ou poser des questions',
     },
   }
 
@@ -166,6 +185,10 @@ export default function MemberSettingsPage() {
         })
       }
       // If no prefs exist, keep defaults (true, true)
+
+      // Fetch user preferences for show_all_features
+      const userPrefs = await getUserPreferences()
+      setShowAllFeatures(userPrefs.show_all_features)
     } catch (error) {
       console.error('Error fetching profile:', error)
     } finally {
@@ -237,6 +260,24 @@ export default function MemberSettingsPage() {
   const handleCancelPhoneEdit = () => {
     setEditableInfo({ phone: profile?.phone || '' })
     setIsEditingPhone(false)
+  }
+
+  const handleToggleAllFeatures = async () => {
+    const newValue = !showAllFeatures
+    setShowAllFeatures(newValue)
+    setIsSavingFeatures(true)
+
+    try {
+      const success = await updateUserPreferences({ show_all_features: newValue })
+      if (!success) throw new Error('Failed to save')
+      toast.success(locale === 'fr' ? 'Préférences enregistrées' : 'Preferences saved')
+    } catch (error) {
+      console.error('Error saving feature preference:', error)
+      setShowAllFeatures(!newValue) // Revert on error
+      toast.error(locale === 'fr' ? 'Erreur lors de l\'enregistrement' : 'Error saving preferences')
+    } finally {
+      setIsSavingFeatures(false)
+    }
   }
 
   const handleLogout = async () => {
@@ -340,6 +381,24 @@ export default function MemberSettingsPage() {
               <ChevronRight className="w-4 h-4" />
             </button>
           </motion.div>
+
+          {/* Help & Support */}
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12 }}
+            onClick={() => setShowHelpModal(true)}
+            className="w-full bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center gap-4 hover:bg-teal-50 hover:border-teal-100 transition-all group"
+          >
+            <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-500 rounded-xl flex items-center justify-center">
+              <MessageCircleQuestion className="w-5 h-5 text-white" />
+            </div>
+            <div className="text-left flex-1">
+              <h3 className="font-semibold text-gray-900">{text.helpSupport}</h3>
+              <p className="text-sm text-gray-500">{text.helpSupportDescription}</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-teal-500 transition-colors" />
+          </motion.button>
 
           {/* Contact Information / Phone Edit */}
           <motion.div
@@ -552,11 +611,49 @@ export default function MemberSettingsPage() {
             </div>
           </motion.div>
 
+          {/* App Features */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-400 to-purple-500 rounded-xl flex items-center justify-center">
+                <Layers className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">{text.features}</h3>
+                <p className="text-sm text-gray-500">{text.featuresDescription}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
+              <div className="flex-1 mr-4">
+                <span className="font-medium text-gray-700 block">{text.showAllFeatures}</span>
+                <span className="text-xs text-gray-500">{text.showAllFeaturesDesc}</span>
+              </div>
+              <button
+                onClick={handleToggleAllFeatures}
+                disabled={isSavingFeatures}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors flex-shrink-0 ${
+                  showAllFeatures ? 'bg-emerald-500' : 'bg-gray-300'
+                } ${isSavingFeatures ? 'opacity-50' : ''}`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                    showAllFeatures ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </motion.div>
+
           {/* Logout */}
           <motion.button
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.35 }}
             onClick={handleLogout}
             disabled={isLoggingOut}
             className="w-full bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center gap-4 hover:bg-red-50 hover:border-red-100 transition-all group disabled:opacity-50"
@@ -581,7 +678,7 @@ export default function MemberSettingsPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.45 }}
             className="text-center pt-6"
           >
             <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
@@ -592,6 +689,15 @@ export default function MemberSettingsPage() {
           </motion.div>
         </div>
       </div>
+
+      {/* Help & Support Modal */}
+      <FeedbackButton
+        userEmail={profile?.email}
+        userName={profile ? `${profile.first_name} ${profile.last_name}` : undefined}
+        showFloatingButton={false}
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+      />
     </MemberLayout>
   )
 }

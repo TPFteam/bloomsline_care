@@ -14,6 +14,17 @@ const excludedPaths = [
   '/auth',
   '/onboarding',
   '/practitioner',
+  // B2C member pages - help is accessed via settings instead
+  '/home',
+  '/moments',
+  '/progress',
+  '/rituals',
+  '/balance',
+  '/reflection',
+  '/anchors',
+  '/settings/member',
+  '/my-practitioner',
+  '/profile/member',
 ]
 
 export function FeedbackWrapper() {

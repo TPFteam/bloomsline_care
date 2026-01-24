@@ -11,6 +11,9 @@ type TicketType = 'bug' | 'feature' | 'question'
 interface FeedbackButtonProps {
   userEmail?: string | null
   userName?: string | null
+  showFloatingButton?: boolean
+  isOpen?: boolean
+  onClose?: () => void
 }
 
 const ticketTypes: { value: TicketType; icon: typeof Bug; labelEn: string; labelFr: string }[] = [
@@ -34,9 +37,21 @@ const successMessages: Record<TicketType, { en: { title: string; message: string
   },
 }
 
-export function FeedbackButton({ userEmail, userName }: FeedbackButtonProps) {
+export function FeedbackButton({
+  userEmail,
+  userName,
+  showFloatingButton = true,
+  isOpen: controlledIsOpen,
+  onClose: controlledOnClose,
+}: FeedbackButtonProps) {
   const { locale } = useLanguage()
-  const [isOpen, setIsOpen] = useState(false)
+  const [internalIsOpen, setInternalIsOpen] = useState(false)
+
+  // Support both controlled and uncontrolled modes
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen
+  const setIsOpen = controlledOnClose
+    ? (open: boolean) => { if (!open) controlledOnClose(); else setInternalIsOpen(true); }
+    : setInternalIsOpen
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [submittedType, setSubmittedType] = useState<TicketType>('question')
@@ -147,16 +162,18 @@ export function FeedbackButton({ userEmail, userName }: FeedbackButtonProps) {
 
   return (
     <>
-      {/* Floating Button */}
-      <motion.button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-[150] w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-shadow"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        title={locale === 'fr' ? 'Aide & Support' : 'Help & Support'}
-      >
-        <MessageCircleQuestion className="w-5 h-5" />
-      </motion.button>
+      {/* Floating Button - only show if enabled */}
+      {showFloatingButton && (
+        <motion.button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 z-[150] w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-shadow"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          title={locale === 'fr' ? 'Aide & Support' : 'Help & Support'}
+        >
+          <MessageCircleQuestion className="w-5 h-5" />
+        </motion.button>
+      )}
 
       {/* Modal */}
       <AnimatePresence>
@@ -230,16 +247,14 @@ export function FeedbackButton({ userEmail, userName }: FeedbackButtonProps) {
                           key={type.value}
                           type="button"
                           onClick={() => setFormData({ ...formData, type: type.value })}
-                          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
+                          className={`flex-1 flex items-center justify-center gap-1 px-2 py-2.5 rounded-xl border-2 text-xs font-medium transition-all ${
                             isSelected
                               ? 'border-teal-500 bg-teal-50 text-teal-700'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                           }`}
                         >
-                          <Icon className="w-4 h-4" />
-                          <span className="hidden sm:inline">
-                            {locale === 'fr' ? type.labelFr : type.labelEn}
-                          </span>
+                          <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="truncate">{locale === 'fr' ? type.labelFr : type.labelEn}</span>
                         </button>
                       )
                     })}

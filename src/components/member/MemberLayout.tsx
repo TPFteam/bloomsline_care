@@ -7,15 +7,17 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Home,
   Heart,
-  MoreHorizontal,
+  Menu as MenuIcon,
   PieChart,
   Camera,
   Circle,
   X,
-  Sun,
   Settings,
+  User,
+  Sun,
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
+import { getUserPreferences } from '@/lib/services/preferences'
 
 interface MemberLayoutProps {
   children: React.ReactNode
@@ -47,7 +49,7 @@ function AnimatedIcon({
   )
 }
 
-// Primary nav items (always visible)
+// Primary nav items (always visible) - Order: Home, Moments, Progress
 const primaryNavItems = [
   {
     href: '/home',
@@ -69,21 +71,23 @@ const primaryNavItems = [
   },
 ]
 
-// Secondary nav items (in More menu)
-const moreNavItems = [
-  {
-    href: '/care',
-    icon: Heart,
-    labelEn: 'Care',
-    labelFr: 'Soins',
-    gradient: 'from-rose-400 to-pink-500',
-  },
+// Menu items (in Menu dropdown on right)
+const menuNavItems = [
   {
     href: '/rituals',
     icon: Circle,
     labelEn: 'Rituals',
     labelFr: 'Rituels',
     gradient: 'from-sky-400 to-blue-500',
+    core: true,
+  },
+  {
+    href: '/my-practitioner',
+    icon: User,
+    labelEn: 'My Practitioner',
+    labelFr: 'Mon Praticien',
+    gradient: 'from-rose-400 to-pink-500',
+    core: true,
   },
   {
     href: '/balance',
@@ -91,6 +95,7 @@ const moreNavItems = [
     labelEn: 'Balance',
     labelFr: 'Équilibre',
     gradient: 'from-violet-500 to-purple-600',
+    core: false,
   },
   {
     href: '/reflection',
@@ -98,6 +103,7 @@ const moreNavItems = [
     labelEn: 'Reflect',
     labelFr: 'Réflexion',
     gradient: 'from-teal-400 to-emerald-500',
+    core: false,
   },
   {
     href: '/settings/member',
@@ -105,6 +111,7 @@ const moreNavItems = [
     labelEn: 'Settings',
     labelFr: 'Paramètres',
     gradient: 'from-gray-400 to-gray-600',
+    core: true,
   },
 ]
 
@@ -112,11 +119,24 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
   const pathname = usePathname()
   const { locale } = useLanguage()
   const [showMore, setShowMore] = useState(false)
+  const [showAllFeatures, setShowAllFeatures] = useState(false)
 
   // Force light mode for member pages (B2C should always be light/calming)
   useEffect(() => {
     document.documentElement.classList.remove('dark')
   }, [])
+
+  // Load user preference for showing all features
+  useEffect(() => {
+    getUserPreferences().then(prefs => {
+      setShowAllFeatures(prefs.show_all_features)
+    })
+  }, [])
+
+  // Filter nav items based on preference
+  const filteredMenuNavItems = showAllFeatures
+    ? menuNavItems
+    : menuNavItems.filter(item => item.core)
 
   const isActive = (href: string) => {
     if (href === '/home') {
@@ -125,8 +145,8 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
     return pathname === href || pathname?.startsWith(href + '/')
   }
 
-  // Check if any "more" item is active
-  const isMoreActive = moreNavItems.some(item => isActive(item.href))
+  // Check if any menu item is active
+  const isMenuActive = menuNavItems.some(item => isActive(item.href))
 
   // Don't show bottom nav on fill pages, reflection page, or settings page
   const isFillingResource = pathname?.includes('/fill')
@@ -187,10 +207,10 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed bottom-24 left-4 z-50"
+              className="fixed bottom-24 right-4 z-50"
             >
               <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-2 min-w-[160px]">
-                {moreNavItems.map((item, index) => {
+                {filteredMenuNavItems.map((item, index) => {
                   const Icon = item.icon
                   const active = isActive(item.href)
 
@@ -233,41 +253,6 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
         <nav className="fixed bottom-0 left-0 right-0 z-50 safe-area-pb">
           <div className="mx-4 mb-4">
             <div className="bg-white/95 backdrop-blur-xl rounded-[28px] shadow-lg shadow-gray-200/50 border border-gray-100/50 px-4 py-2 flex items-center justify-around">
-              {/* More Button - Left side */}
-              <motion.button
-                onClick={() => setShowMore(!showMore)}
-                className="flex flex-col items-center justify-center py-2 px-3 relative"
-                whileTap={{ scale: 0.9 }}
-              >
-                <motion.div
-                  className={`transition-colors ${
-                    showMore || isMoreActive ? 'text-emerald-600' : 'text-gray-400'
-                  }`}
-                  animate={showMore ? { rotate: 90 } : { rotate: 0 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                >
-                  {showMore ? (
-                    <X className="w-6 h-6" strokeWidth={2} />
-                  ) : (
-                    <MoreHorizontal className="w-6 h-6" strokeWidth={isMoreActive ? 2.5 : 2} />
-                  )}
-                </motion.div>
-                <span
-                  className={`text-[11px] mt-1 font-medium transition-colors ${
-                    showMore || isMoreActive ? 'text-emerald-600' : 'text-gray-400'
-                  }`}
-                >
-                  {locale === 'fr' ? 'Plus' : 'More'}
-                </span>
-                {isMoreActive && !showMore && (
-                  <motion.div
-                    layoutId="navIndicator"
-                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-emerald-500 rounded-full"
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  />
-                )}
-              </motion.button>
-
               {/* Primary Nav Items */}
               {primaryNavItems.map((item) => {
                 const active = isActive(item.href)
@@ -305,6 +290,41 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
                   </Link>
                 )
               })}
+
+              {/* Menu Button - Right side */}
+              <motion.button
+                onClick={() => setShowMore(!showMore)}
+                className="flex flex-col items-center justify-center py-2 px-3 relative"
+                whileTap={{ scale: 0.9 }}
+              >
+                <motion.div
+                  className={`transition-colors ${
+                    showMore || isMenuActive ? 'text-emerald-600' : 'text-gray-400'
+                  }`}
+                  animate={showMore ? { rotate: 90 } : { rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                >
+                  {showMore ? (
+                    <X className="w-6 h-6" strokeWidth={2} />
+                  ) : (
+                    <MenuIcon className="w-6 h-6" strokeWidth={isMenuActive ? 2.5 : 2} />
+                  )}
+                </motion.div>
+                <span
+                  className={`text-[11px] mt-1 font-medium transition-colors ${
+                    showMore || isMenuActive ? 'text-emerald-600' : 'text-gray-400'
+                  }`}
+                >
+                  {locale === 'fr' ? 'Menu' : 'Menu'}
+                </span>
+                {isMenuActive && !showMore && (
+                  <motion.div
+                    layoutId="navIndicator"
+                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-emerald-500 rounded-full"
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  />
+                )}
+              </motion.button>
             </div>
           </div>
         </nav>

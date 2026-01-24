@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   FileText,
   Clock,
-  CheckCircle,
   Loader2,
   ChevronRight,
   ChevronLeft,
@@ -42,6 +41,32 @@ import {
   ZoomIn,
   ZoomOut,
   Table2,
+  Plus,
+  Droplet,
+  Dumbbell,
+  Brain,
+  Cigarette,
+  Wine,
+  Cookie,
+  Bed,
+  Apple,
+  Smartphone,
+  Tv,
+  Footprints,
+  Candy,
+  Users,
+  PenLine,
+  TreePine,
+  Palette,
+  Wind,
+  Salad,
+  Pizza,
+  Gamepad2,
+  CreditCard,
+  MessageSquare,
+  Timer,
+  ShoppingBag,
+  BedDouble,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -102,6 +127,15 @@ interface RitualCompletion {
   created_at: string
 }
 
+// Daily Anchors types
+interface Anchor {
+  id: string
+  icon: string
+  labelEn: string
+  labelFr: string
+  type: 'grow' | 'letgo'
+}
+
 // Ritual icon mapping (Lucide - fallback)
 const RITUAL_ICONS: Record<string, React.ElementType> = {
   eye: Eye,
@@ -126,6 +160,87 @@ const RITUAL_ICONS: Record<string, React.ElementType> = {
   shield: Shield,
 }
 
+
+// All anchor icons (used for custom anchors and icon lookup)
+const ANCHOR_ICONS: Record<string, { icon: React.ElementType; labelEn: string; labelFr: string }> = {
+  // GROW icons - positive habits to cultivate
+  droplet: { icon: Droplet, labelEn: 'Water', labelFr: 'Eau' },
+  dumbbell: { icon: Dumbbell, labelEn: 'Exercise', labelFr: 'Exercice' },
+  book: { icon: BookOpen, labelEn: 'Reading', labelFr: 'Lecture' },
+  brain: { icon: Brain, labelEn: 'Learning', labelFr: 'Apprentissage' },
+  bed: { icon: Bed, labelEn: 'Sleep', labelFr: 'Sommeil' },
+  apple: { icon: Apple, labelEn: 'Healthy Eating', labelFr: 'Manger sainement' },
+  meditation: { icon: Circle, labelEn: 'Meditation', labelFr: 'Méditation' },
+  walk: { icon: Footprints, labelEn: 'Walking', labelFr: 'Marche' },
+  social: { icon: Users, labelEn: 'Social', labelFr: 'Social' },
+  heart: { icon: Heart, labelEn: 'Self-care', labelFr: 'Bien-être' },
+  sprout: { icon: Sprout, labelEn: 'Growth', labelFr: 'Croissance' },
+  journal: { icon: PenLine, labelEn: 'Journaling', labelFr: 'Journal' },
+  gratitude: { icon: Sparkles, labelEn: 'Gratitude', labelFr: 'Gratitude' },
+  nature: { icon: TreePine, labelEn: 'Nature', labelFr: 'Nature' },
+  creativity: { icon: Palette, labelEn: 'Creativity', labelFr: 'Créativité' },
+  breathing: { icon: Wind, labelEn: 'Breathing', labelFr: 'Respiration' },
+  stretch: { icon: StretchHorizontal, labelEn: 'Stretching', labelFr: 'Étirements' },
+  vegetables: { icon: Salad, labelEn: 'Vegetables', labelFr: 'Légumes' },
+  music: { icon: Music, labelEn: 'Music', labelFr: 'Musique' },
+
+  // LETGO icons - habits to reduce/stop
+  cigarette: { icon: Cigarette, labelEn: 'Smoking', labelFr: 'Tabac' },
+  wine: { icon: Wine, labelEn: 'Alcohol', labelFr: 'Alcool' },
+  coffee: { icon: Coffee, labelEn: 'Caffeine', labelFr: 'Caféine' },
+  cookie: { icon: Cookie, labelEn: 'Snacking', labelFr: 'Grignotage' },
+  smartphone: { icon: Smartphone, labelEn: 'Screen Time', labelFr: 'Écrans' },
+  tv: { icon: Tv, labelEn: 'TV', labelFr: 'Télé' },
+  candy: { icon: Candy, labelEn: 'Sugar', labelFr: 'Sucre' },
+  junkfood: { icon: Pizza, labelEn: 'Junk Food', labelFr: 'Malbouffe' },
+  gaming: { icon: Gamepad2, labelEn: 'Gaming', labelFr: 'Jeux vidéo' },
+  spending: { icon: CreditCard, labelEn: 'Spending', labelFr: 'Dépenses' },
+  socialmedia: { icon: MessageSquare, labelEn: 'Social Media', labelFr: 'Réseaux sociaux' },
+  procrastination: { icon: Timer, labelEn: 'Procrastination', labelFr: 'Procrastination' },
+  shopping: { icon: ShoppingBag, labelEn: 'Shopping', labelFr: 'Achats' },
+  latenights: { icon: BedDouble, labelEn: 'Late Nights', labelFr: 'Coucher tard' },
+}
+
+// Grow options - habits to cultivate/increase
+const GROW_ANCHOR_OPTIONS = [
+  'droplet',      // Water/Hydration
+  'dumbbell',     // Exercise
+  'book',         // Reading
+  'brain',        // Learning
+  'bed',          // Better Sleep
+  'apple',        // Healthy Eating
+  'meditation',   // Meditation
+  'walk',         // Walking
+  'social',       // Social connections
+  'heart',        // Self-care
+  'sprout',       // Personal Growth
+  'journal',      // Journaling
+  'gratitude',    // Gratitude practice
+  'nature',       // Time in nature
+  'creativity',   // Creative activities
+  'breathing',    // Breathing exercises
+  'stretch',      // Stretching/Yoga
+  'vegetables',   // Eating vegetables
+  'music',        // Playing/listening music
+]
+
+// Let Go options - habits to reduce/stop
+const LETGO_ANCHOR_OPTIONS = [
+  'cigarette',      // Smoking
+  'wine',           // Alcohol
+  'coffee',         // Caffeine
+  'cookie',         // Snacking
+  'smartphone',     // Screen time
+  'tv',             // TV watching
+  'candy',          // Sugar
+  'junkfood',       // Junk/Fast food
+  'gaming',         // Gaming
+  'spending',       // Impulse spending
+  'socialmedia',    // Social media
+  'procrastination', // Procrastination
+  'shopping',       // Impulse shopping
+  'latenights',     // Late nights
+]
 
 // Category gradients
 const CATEGORY_GRADIENTS: Record<string, { from: string; to: string }> = {
@@ -293,6 +408,8 @@ export default function MyResourcesPage() {
   const [zoomLevel, setZoomLevel] = useState(1) // 1 = 24h, 2 = 12h, 3 = 8h, 4 = 6h
   const [centerHour, setCenterHour] = useState(12) // Center of visible range
   const [showBloomChat, setShowBloomChat] = useState(false)
+  const [anchorsTab, setAnchorsTab] = useState<'grow' | 'letgo'>('grow')
+  const [anchorLogs, setAnchorLogs] = useState<Record<string, number[]>>({}) // habitId -> array of timestamps for today
 
   useEffect(() => {
     loadData()
@@ -455,6 +572,154 @@ export default function MyResourcesPage() {
     return `${h12}${period}`
   }
 
+  // User's custom anchors state
+  const [userAnchors, setUserAnchors] = useState<Anchor[]>([])
+  const [showAddAnchor, setShowAddAnchor] = useState(false)
+  const [customAnchorMode, setCustomAnchorMode] = useState(false)
+  const [customAnchorLabel, setCustomAnchorLabel] = useState('')
+  const [customAnchorIcon, setCustomAnchorIcon] = useState<string | null>(null)
+
+  // Load anchors and logs from Supabase
+  const loadAnchorsData = async (memberId: string) => {
+    const supabase = createClient()
+    const today = new Date().toISOString().split('T')[0]
+
+    // Load anchors
+    const { data: anchorsData } = await supabase
+      .from('member_anchors')
+      .select('*')
+      .eq('member_id', memberId)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+
+    if (anchorsData) {
+      setUserAnchors(anchorsData.map(a => ({
+        id: a.id,
+        icon: a.icon,
+        labelEn: a.label_en,
+        labelFr: a.label_fr,
+        type: a.type as 'grow' | 'letgo',
+      })))
+    }
+
+    // Load today's logs
+    const { data: logsData } = await supabase
+      .from('anchor_logs')
+      .select('anchor_id, logged_at')
+      .eq('member_id', memberId)
+      .eq('log_date', today)
+
+    if (logsData) {
+      const logsMap: Record<string, number[]> = {}
+      logsData.forEach(log => {
+        if (!logsMap[log.anchor_id]) {
+          logsMap[log.anchor_id] = []
+        }
+        logsMap[log.anchor_id].push(new Date(log.logged_at).getTime())
+      })
+      setAnchorLogs(logsMap)
+    }
+  }
+
+  // Log an anchor tap
+  const logAnchor = async (anchorId: string) => {
+    if (members.length === 0) return
+
+    const supabase = createClient()
+    const memberId = members[0].id
+
+    const { error } = await supabase
+      .from('anchor_logs')
+      .insert({
+        member_id: memberId,
+        anchor_id: anchorId,
+      })
+
+    if (error) {
+      console.error('Error logging anchor:', error)
+      toast.error(locale === 'fr' ? 'Erreur' : 'Error')
+      return
+    }
+
+    // Update local state
+    const now = Date.now()
+    setAnchorLogs(prev => ({
+      ...prev,
+      [anchorId]: [...(prev[anchorId] || []), now]
+    }))
+
+    toast.success(locale === 'fr' ? 'Enregistré!' : 'Logged!', { duration: 1500 })
+  }
+
+  // Get today's count for an anchor
+  const getTodayCount = (anchorId: string) => {
+    const logs = anchorLogs[anchorId] || []
+    return logs.length
+  }
+
+  // Add a new anchor
+  const addAnchor = async (anchor: Omit<Anchor, 'id'>) => {
+    if (members.length === 0) return
+
+    const supabase = createClient()
+    const memberId = members[0].id
+
+    const { data, error } = await supabase
+      .from('member_anchors')
+      .insert({
+        member_id: memberId,
+        icon: anchor.icon,
+        label_en: anchor.labelEn,
+        label_fr: anchor.labelFr,
+        type: anchor.type,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error adding anchor:', error)
+      toast.error(locale === 'fr' ? 'Erreur' : 'Error')
+      return
+    }
+
+    if (data) {
+      setUserAnchors(prev => [...prev, {
+        id: data.id,
+        icon: data.icon,
+        labelEn: data.label_en,
+        labelFr: data.label_fr,
+        type: data.type as 'grow' | 'letgo',
+      }])
+    }
+
+    setShowAddAnchor(false)
+    resetCustomAnchorForm()
+    toast.success(locale === 'fr' ? 'Ajouté!' : 'Added!', { duration: 1500 })
+  }
+
+  // Reset custom anchor form
+  const resetCustomAnchorForm = () => {
+    setCustomAnchorMode(false)
+    setCustomAnchorLabel('')
+    setCustomAnchorIcon(null)
+  }
+
+  // Add custom anchor with user-defined label
+  const addCustomAnchor = async () => {
+    if (!customAnchorLabel.trim() || !customAnchorIcon) return
+
+    await addAnchor({
+      icon: customAnchorIcon,
+      labelEn: customAnchorLabel.trim(),
+      labelFr: customAnchorLabel.trim(),
+      type: anchorsTab,
+    })
+  }
+
+  // Filter anchors by type
+  const growAnchors = userAnchors.filter(a => a.type === 'grow')
+  const letgoAnchors = userAnchors.filter(a => a.type === 'letgo')
+
   async function loadData() {
     try {
       const supabase = createClient()
@@ -500,9 +765,12 @@ export default function MyResourcesPage() {
         const resourceResults = await Promise.all(resourcePromises)
         setResources(resourceResults.flat())
 
-        // Load member rituals and today's completions
+        // Load member rituals, anchors, and today's completions
         const memberId = memberRecords[0].id
         const today = new Date().toISOString().split('T')[0]
+
+        // Load daily anchors data
+        await loadAnchorsData(memberId)
 
         // Fetch member's active rituals sorted by planned time
         const { data: ritualsData } = await supabase
@@ -1173,6 +1441,303 @@ export default function MyResourcesPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* Daily Anchors Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-white/80 backdrop-blur-sm rounded-3xl p-5 border border-white/60 shadow-lg shadow-emerald-100/30"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="text-base font-bold text-gray-900">
+                {locale === 'fr' ? 'Ancres du Jour' : 'Daily Anchors'}
+              </h3>
+            </div>
+            <button
+              onClick={() => router.push('/anchors')}
+              className="text-xs text-amber-600 font-medium hover:text-amber-700 flex items-center gap-1"
+            >
+              {locale === 'fr' ? 'Voir tout' : 'View all'}
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* All Anchors Grid - Grow and Let Go together */}
+          <div className="grid grid-cols-4 gap-3">
+            <AnimatePresence mode="popLayout">
+              {userAnchors.map((anchor, index) => {
+                const todayCount = getTodayCount(anchor.id)
+                const iconData = ANCHOR_ICONS[anchor.icon]
+                const IconComponent = iconData?.icon || Circle
+                const isGrow = anchor.type === 'grow'
+
+                return (
+                  <motion.button
+                    key={anchor.id}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => logAnchor(anchor.id)}
+                    className={`relative aspect-square rounded-2xl flex flex-col items-center justify-center transition-all active:scale-95 ${
+                      isGrow
+                        ? 'bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200'
+                        : 'bg-rose-50 hover:bg-rose-100 border-2 border-rose-200'
+                    }`}
+                  >
+                    <IconComponent className={`w-6 h-6 mb-1 ${
+                      isGrow ? 'text-emerald-600' : 'text-rose-600'
+                    }`} />
+                    <span className="text-[10px] text-gray-500 font-medium text-center leading-tight px-1">
+                      {locale === 'fr' ? anchor.labelFr : anchor.labelEn}
+                    </span>
+                    {/* Count badge */}
+                    {todayCount > 0 && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${
+                          isGrow ? 'bg-emerald-500' : 'bg-rose-500'
+                        }`}
+                      >
+                        {todayCount}
+                      </motion.div>
+                    )}
+                  </motion.button>
+                )
+              })}
+            </AnimatePresence>
+
+            {/* Add custom anchor button - opens modal */}
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              onClick={() => setShowAddAnchor(true)}
+              className="aspect-square rounded-2xl flex items-center justify-center border-2 border-dashed border-amber-300 text-amber-400 hover:border-amber-400 hover:text-amber-500 transition-all hover:scale-105 active:scale-95"
+            >
+              <Plus className="w-6 h-6" />
+            </motion.button>
+          </div>
+
+          {/* Empty state hint */}
+          {userAnchors.length === 0 && (
+            <p className="text-center text-xs text-gray-400 mt-3">
+              {locale === 'fr'
+                ? 'Ajoutez des ancres à suivre'
+                : 'Add anchors to track'}
+            </p>
+          )}
+
+          {/* Hint text when has anchors */}
+          {userAnchors.length > 0 && (
+            <p className="text-center text-xs text-gray-400 mt-3">
+              {locale === 'fr'
+                ? 'Tapez pour enregistrer'
+                : 'Tap to log'}
+            </p>
+          )}
+        </motion.div>
+
+        {/* Add Anchor Modal */}
+        <AnimatePresence>
+          {showAddAnchor && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => { setShowAddAnchor(false); resetCustomAnchorForm() }}
+                className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="fixed inset-x-4 top-1/2 -translate-y-1/2 bg-white rounded-3xl p-5 z-50 max-w-sm mx-auto shadow-2xl max-h-[70vh] overflow-y-auto"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">
+                    {customAnchorMode
+                      ? (locale === 'fr' ? 'Créer une ancre' : 'Create Anchor')
+                      : (locale === 'fr' ? 'Ajouter une ancre' : 'Add Anchor')}
+                  </h3>
+                  <button
+                    onClick={() => { setShowAddAnchor(false); resetCustomAnchorForm() }}
+                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+
+                {/* Type selector */}
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={() => setAnchorsTab('grow')}
+                    className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+                      anchorsTab === 'grow'
+                        ? 'bg-emerald-500 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Sprout className="w-4 h-4" />
+                    {locale === 'fr' ? 'Cultiver' : 'Grow'}
+                  </button>
+                  <button
+                    onClick={() => setAnchorsTab('letgo')}
+                    className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+                      anchorsTab === 'letgo'
+                        ? 'bg-rose-500 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Leaf className="w-4 h-4" />
+                    {locale === 'fr' ? 'Lâcher' : 'Let Go'}
+                  </button>
+                </div>
+
+                {customAnchorMode ? (
+                  /* Custom anchor creation mode */
+                  <div className="space-y-4">
+                    {/* Custom label input */}
+                    <div>
+                      <label className="text-sm text-gray-500 mb-2 block">
+                        {locale === 'fr' ? 'Nom de l\'ancre:' : 'Anchor name:'}
+                      </label>
+                      <input
+                        type="text"
+                        value={customAnchorLabel}
+                        onChange={(e) => setCustomAnchorLabel(e.target.value)}
+                        placeholder={anchorsTab === 'grow'
+                          ? (locale === 'fr' ? 'Ex: Journaling' : 'Ex: Journaling')
+                          : (locale === 'fr' ? 'Ex: Junk food' : 'Ex: Junk food')}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none transition-all text-sm"
+                        maxLength={30}
+                        autoFocus
+                      />
+                    </div>
+
+                    {/* Icon picker for custom */}
+                    <div>
+                      <label className="text-sm text-gray-500 mb-2 block">
+                        {locale === 'fr' ? 'Choisir une icône:' : 'Choose an icon:'}
+                      </label>
+                      <div className="grid grid-cols-6 gap-2">
+                        {Object.entries(ANCHOR_ICONS).map(([key, data]) => {
+                          const IconComp = data.icon
+                          const isSelected = customAnchorIcon === key
+                          return (
+                            <button
+                              key={key}
+                              onClick={() => setCustomAnchorIcon(key)}
+                              className={`aspect-square rounded-xl flex items-center justify-center transition-all ${
+                                isSelected
+                                  ? anchorsTab === 'grow'
+                                    ? 'bg-emerald-500 text-white ring-2 ring-emerald-300'
+                                    : 'bg-rose-500 text-white ring-2 ring-rose-300'
+                                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                              }`}
+                            >
+                              <IconComp className="w-5 h-5" />
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={() => resetCustomAnchorForm()}
+                        className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+                      >
+                        {locale === 'fr' ? 'Retour' : 'Back'}
+                      </button>
+                      <button
+                        onClick={addCustomAnchor}
+                        disabled={!customAnchorLabel.trim() || !customAnchorIcon}
+                        className={`flex-1 py-2.5 rounded-xl text-white text-sm font-medium transition-colors ${
+                          customAnchorLabel.trim() && customAnchorIcon
+                            ? anchorsTab === 'grow'
+                              ? 'bg-emerald-500 hover:bg-emerald-600'
+                              : 'bg-rose-500 hover:bg-rose-600'
+                            : 'bg-gray-300 cursor-not-allowed'
+                        }`}
+                      >
+                        {locale === 'fr' ? 'Ajouter' : 'Add'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Default mode - predefined options */
+                  <>
+                    {/* Icon selection grid - filtered by type */}
+                    <p className="text-sm text-gray-500 mb-3">
+                      {locale === 'fr' ? 'Choisissez une option:' : 'Choose an option:'}
+                    </p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {(anchorsTab === 'grow' ? GROW_ANCHOR_OPTIONS : LETGO_ANCHOR_OPTIONS).map((key) => {
+                        const data = ANCHOR_ICONS[key]
+                        if (!data) return null
+                        const IconComp = data.icon
+                        const alreadyAdded = userAnchors.some(a => a.icon === key)
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => !alreadyAdded && addAnchor({
+                              icon: key,
+                              labelEn: data.labelEn,
+                              labelFr: data.labelFr,
+                              type: anchorsTab,
+                            })}
+                            disabled={alreadyAdded}
+                            className={`aspect-square rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${
+                              alreadyAdded
+                                ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                : anchorsTab === 'grow'
+                                  ? 'bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:scale-105 active:scale-95'
+                                  : 'bg-rose-50 hover:bg-rose-100 border border-rose-200 hover:scale-105 active:scale-95'
+                            }`}
+                          >
+                            <IconComp className={`w-5 h-5 ${
+                              alreadyAdded
+                                ? 'text-gray-300'
+                                : anchorsTab === 'grow' ? 'text-emerald-600' : 'text-rose-600'
+                            }`} />
+                            <span className={`text-[9px] font-medium text-center leading-tight ${
+                              alreadyAdded ? 'text-gray-300' : 'text-gray-500'
+                            }`}>
+                              {locale === 'fr' ? data.labelFr : data.labelEn}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {/* Create custom option */}
+                    <button
+                      onClick={() => setCustomAnchorMode(true)}
+                      className={`w-full mt-4 py-3 rounded-xl border-2 border-dashed text-sm font-medium transition-all hover:scale-[1.02] active:scale-[0.98] ${
+                        anchorsTab === 'grow'
+                          ? 'border-emerald-300 text-emerald-600 hover:bg-emerald-50'
+                          : 'border-rose-300 text-rose-600 hover:bg-rose-50'
+                      }`}
+                    >
+                      <Plus className="w-4 h-4 inline mr-1.5" />
+                      {locale === 'fr' ? 'Créer une ancre personnalisée' : 'Create custom anchor'}
+                    </button>
+                  </>
+                )}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         {/* Upcoming Rituals Section */}
         {(() => {
