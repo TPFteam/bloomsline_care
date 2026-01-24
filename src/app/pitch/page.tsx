@@ -79,12 +79,12 @@ const translations = {
     solution: {
       label: 'THE SOLUTION',
       title: 'Bloomsline',
-      description: 'A therapeutic support platform that helps people grow through small moments — connecting them with practitioners who see their full journey, and an AI that understands consistency comes from',
-      highlight: 'kindness, not criticism',
+      description: 'A two-sided wellness platform. Members capture their emotional journey and build daily habits. Practitioners get real visibility — not just "they had a bad week," but patterns, effort, and small wins over time. Powered by AI that believes',
+      highlight: 'kindness drives consistency',
       pillars: [
-        { title: 'Gentle Growth', desc: 'Small moments, not grand transformations' },
-        { title: 'Bloom AI', desc: 'Present, not pushy. Wise, not judgmental' },
-        { title: 'Full Visibility', desc: 'Practitioners see the complete journey' },
+        { title: 'For Members', desc: 'Moments, rituals, and gentle AI guidance' },
+        { title: 'For Practitioners', desc: 'Resources, sessions, and client insights' },
+        { title: 'The Bridge', desc: 'Real visibility into the journey between sessions' },
       ],
     },
     why: {
@@ -422,12 +422,12 @@ const translations = {
     solution: {
       label: 'LA SOLUTION',
       title: 'Bloomsline',
-      description: "Une plateforme de soutien thérapeutique qui aide les gens à grandir à travers de petits moments — les connectant avec des praticiens qui voient leur parcours complet, et une IA qui comprend que la constance vient de",
-      highlight: 'la bienveillance, pas de la critique',
+      description: "Une plateforme bien-être à deux faces. Les membres capturent leur parcours émotionnel et construisent des habitudes quotidiennes. Les praticiens obtiennent une vraie visibilité — pas juste \"une mauvaise semaine,\" mais les patterns, les efforts et les petites victoires. Propulsé par une IA qui croit que",
+      highlight: 'la bienveillance crée la constance',
       pillars: [
-        { title: 'Croissance Douce', desc: 'De petits moments, pas de grandes transformations' },
-        { title: 'Bloom AI', desc: 'Présent, pas envahissant. Sage, pas moralisateur' },
-        { title: 'Visibilité Complète', desc: 'Les praticiens voient le parcours entier' },
+        { title: 'Pour les Membres', desc: 'Moments, rituels et guidance IA bienveillante' },
+        { title: 'Pour les Praticiens', desc: 'Ressources, séances et insights clients' },
+        { title: 'Le Pont', desc: 'Vraie visibilité sur le parcours entre les séances' },
       ],
     },
     why: {
