@@ -198,8 +198,10 @@ export default function MomentsPage() {
   const [isBloomOpen, setIsBloomOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [selectedMoods, setSelectedMoods] = useState<string[]>([])
-  const [dateFilter, setDateFilter] = useState<DateFilter>('all')
+  const [dateFilter, setDateFilter] = useState<DateFilter>('today')
   const [prefsLoaded, setPrefsLoaded] = useState(false)
+  const [loadedAll, setLoadedAll] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [reflectMoment, setReflectMoment] = useState<Moment | null>(null)
   const [showMoodTrends, setShowMoodTrends] = useState(false)
   const [trendsTimeRange, setTrendsTimeRange] = useState<'weekly' | 'monthly'>('weekly')
@@ -238,8 +240,12 @@ export default function MomentsPage() {
   useEffect(() => {
     async function loadData() {
       try {
+        // Load only today's moments initially for faster load
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+
         const [momentsData, statsData] = await Promise.all([
-          getMemberMoments(),
+          getMemberMoments(100, 0, today),
           getMomentStats(),
         ])
         setMoments(momentsData)
@@ -252,6 +258,21 @@ export default function MomentsPage() {
     }
     loadData()
   }, [])
+
+  // Load all moments when user clicks "Show All"
+  const loadAllMoments = async () => {
+    setLoadingMore(true)
+    try {
+      const allMoments = await getMemberMoments(500) // Load up to 500
+      setMoments(allMoments)
+      setLoadedAll(true)
+      setDateFilter('all')
+    } catch (error) {
+      console.error('Error loading all moments:', error)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   const handleDelete = async (momentId: string) => {
     const confirmed = window.confirm(
@@ -958,6 +979,32 @@ export default function MomentsPage() {
               )
             })}
           </div>
+        )}
+
+        {/* Show All button - only show if we haven't loaded all moments yet */}
+        {!loadedAll && moments.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex justify-center mt-6 pb-4"
+          >
+            <button
+              onClick={loadAllMoments}
+              disabled={loadingMore}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+                isDark
+                  ? 'bg-white/10 text-white/80 hover:bg-white/15 border border-white/10'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+              } disabled:opacity-50`}
+            >
+              {loadingMore ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : null}
+              {loadingMore
+                ? (locale === 'fr' ? 'Chargement...' : 'Loading...')
+                : (locale === 'fr' ? 'Voir tous les moments' : 'Show all moments')}
+            </button>
+          </motion.div>
         )}
       </div>
 

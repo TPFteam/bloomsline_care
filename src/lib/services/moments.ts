@@ -139,19 +139,29 @@ export async function createMoment(input: CreateMomentInput): Promise<Moment | n
 
 /**
  * Get all moments for the current user
+ * @param limit - Max number of moments to return
+ * @param offset - Offset for pagination
+ * @param sinceDate - Optional date to filter moments from (inclusive)
  */
-export async function getMemberMoments(limit = 50, offset = 0): Promise<Moment[]> {
+export async function getMemberMoments(limit = 50, offset = 0, sinceDate?: Date): Promise<Moment[]> {
   const supabase = createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('moments')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1)
+
+  // Apply date filter if provided
+  if (sinceDate) {
+    const dateStr = sinceDate.toISOString()
+    query = query.gte('created_at', dateStr)
+  }
+
+  const { data, error } = await query.range(offset, offset + limit - 1)
 
   if (error) {
     console.error('Error fetching moments:', error)
