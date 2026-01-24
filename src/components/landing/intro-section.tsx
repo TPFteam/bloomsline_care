@@ -21,7 +21,7 @@ export function IntroSection() {
     en: {
       thought: "You know how life moves fast and we forget the small moments?",
       answer: "We help you capture those",
-      details: "photos, voice notes, written reflections",
+      details: "a photo, a voice note, or just a few words",
       feeling: "with how you felt.",
       pattern: "Over time, you see your patterns,",
       bloom: "and Bloom AI helps you make sense of it all.",
@@ -29,7 +29,7 @@ export function IntroSection() {
     fr: {
       thought: "Vous savez comment la vie va vite et on oublie les petits moments ?",
       answer: "On vous aide à les capturer",
-      details: "photos, notes vocales, réflexions écrites",
+      details: "une photo, une note vocale, ou juste quelques mots",
       feeling: "avec ce que vous avez ressenti.",
       pattern: "Au fil du temps, vous voyez vos patterns,",
       bloom: "et Bloom IA vous aide à tout comprendre.",
