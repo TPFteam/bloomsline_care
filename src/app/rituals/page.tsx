@@ -420,13 +420,15 @@ export default function RitualsPage() {
   }
 
   // Close ritual modal
-  const closeRitualModal = () => {
+  // clearTimer: true = discard progress, false = keep timer running in background
+  const closeRitualModal = (clearTimer = false) => {
+    if (clearTimer) {
+      localStorage.removeItem('activeRitualTimer')
+    }
     setActiveRitual(null)
     setTimerRunning(false)
     setShowExitConfirm(false)
     if (timerRef.current) clearTimeout(timerRef.current)
-    // Clear saved timer state
-    localStorage.removeItem('activeRitualTimer')
   }
 
   // Handle exit button click - show confirmation only if timer is running
@@ -434,8 +436,18 @@ export default function RitualsPage() {
     if (timerRunning) {
       setShowExitConfirm(true)
     } else {
-      closeRitualModal()
+      closeRitualModal(true) // No timer running, safe to clear
     }
+  }
+
+  // Exit but keep timer (pause and come back later)
+  const handleExitKeepTimer = () => {
+    closeRitualModal(false) // Keep timer in localStorage
+  }
+
+  // Exit and discard progress
+  const handleExitDiscard = () => {
+    closeRitualModal(true) // Clear timer from localStorage
   }
 
   // Format timer display - handles overtime (negative seconds)
@@ -553,7 +565,7 @@ export default function RitualsPage() {
     }
 
     setSaving(false)
-    closeRitualModal()
+    closeRitualModal(true) // Clear timer on completion
   }
 
   // Fetch data on mount
@@ -2290,20 +2302,26 @@ export default function RitualsPage() {
                           <p className="text-gray-500 text-sm text-center mb-6">
                             {locale === 'fr'
                               ? 'Votre progression sera perdue et le temps sera réinitialisé.'
-                              : 'Your progress will be lost and the timer will reset.'}
+                              : 'You can pause and come back later, or discard your progress.'}
                           </p>
-                          <div className="flex gap-3">
+                          <div className="flex flex-col gap-2">
                             <button
                               onClick={() => setShowExitConfirm(false)}
-                              className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                              className="w-full py-3 px-4 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 transition-colors"
                             >
-                              {locale === 'fr' ? 'Continuer' : 'Continue'}
+                              {locale === 'fr' ? 'Continuer le rituel' : 'Continue Ritual'}
                             </button>
                             <button
-                              onClick={closeRitualModal}
-                              className="flex-1 py-3 px-4 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors"
+                              onClick={handleExitKeepTimer}
+                              className="w-full py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                             >
-                              {locale === 'fr' ? 'Quitter' : 'Exit'}
+                              {locale === 'fr' ? 'Pause & revenir plus tard' : 'Pause & Come Back Later'}
+                            </button>
+                            <button
+                              onClick={handleExitDiscard}
+                              className="w-full py-2 px-4 text-red-500 text-sm font-medium hover:text-red-600 transition-colors"
+                            >
+                              {locale === 'fr' ? 'Abandonner' : 'Discard Progress'}
                             </button>
                           </div>
                         </motion.div>
