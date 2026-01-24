@@ -270,13 +270,15 @@ function ConversationView({
 const DEFAULT_SUGGESTIONS_EN = [
   "How am I feeling today",
   "What have you noticed about me",
-  "I need some perspective",
+  "Help me with my habits",
+  "How are my anchors going",
 ]
 
 const DEFAULT_SUGGESTIONS_FR = [
   "Comment je me sens aujourd'hui",
   "Qu'est-ce que tu as remarqué chez moi",
-  "J'ai besoin de perspective",
+  "Aide-moi avec mes habitudes",
+  "Comment vont mes ancres",
 ]
 
 const TAGLINES_EN = [

@@ -33,6 +33,14 @@ export interface TodaySnapshot {
     completedNames: string[]
     missedNames: string[]
   }
+  anchors: {
+    grow: { name: string; completed: boolean }[]
+    letGo: { name: string; completed: boolean }[]
+    totalGrow: number
+    totalLetGo: number
+    completedGrow: number
+    completedLetGo: number
+  }
 }
 
 export interface WeeklyTrends {
@@ -51,6 +59,13 @@ export interface WeeklyTrends {
   rituals: {
     completionRate: number // percentage
   }
+  anchors: {
+    growCompletionRate: number // percentage
+    letGoCompletionRate: number // percentage
+    totalLogs: number
+    topGrowAnchors: string[]
+    topLetGoAnchors: string[]
+  }
   momentsCount: number
 }
 
@@ -58,7 +73,7 @@ export interface DetectedPatterns {
   insights: string[]
 }
 
-export type EntryPoint = 'home' | 'balance' | 'moments' | 'rituals' | 'progress' | 'reflect' | 'general'
+export type EntryPoint = 'home' | 'balance' | 'moments' | 'rituals' | 'progress' | 'reflect' | 'anchors' | 'general'
 
 /**
  * Build comprehensive context for Bloom AI
@@ -225,7 +240,56 @@ async function getTodaySnapshot(
     }
   }
 
-  return { balance, moments: momentSnapshot, rituals }
+  // Get today's anchors
+  let anchors: TodaySnapshot['anchors'] = {
+    grow: [],
+    letGo: [],
+    totalGrow: 0,
+    totalLetGo: 0,
+    completedGrow: 0,
+    completedLetGo: 0,
+  }
+
+  if (memberId) {
+    // Get all active anchors
+    const { data: memberAnchors } = await supabase
+      .from('member_anchors')
+      .select('id, name, category, is_active')
+      .eq('member_id', memberId)
+      .eq('is_active', true)
+
+    // Get today's anchor logs
+    const { data: anchorLogs } = await supabase
+      .from('anchor_logs')
+      .select('anchor_id, completed')
+      .eq('member_id', memberId)
+      .eq('date', todayStr)
+
+    const logMap = new Map(anchorLogs?.map(l => [l.anchor_id, l.completed]) || [])
+
+    const growAnchors: { name: string; completed: boolean }[] = []
+    const letGoAnchors: { name: string; completed: boolean }[] = []
+
+    memberAnchors?.forEach(anchor => {
+      const completed = logMap.get(anchor.id) || false
+      if (anchor.category === 'grow') {
+        growAnchors.push({ name: anchor.name, completed })
+      } else {
+        letGoAnchors.push({ name: anchor.name, completed })
+      }
+    })
+
+    anchors = {
+      grow: growAnchors,
+      letGo: letGoAnchors,
+      totalGrow: growAnchors.length,
+      totalLetGo: letGoAnchors.length,
+      completedGrow: growAnchors.filter(a => a.completed).length,
+      completedLetGo: letGoAnchors.filter(a => a.completed).length,
+    }
+  }
+
+  return { balance, moments: momentSnapshot, rituals, anchors }
 }
 
 /**
@@ -363,10 +427,96 @@ async function getWeeklyTrends(
       : 0
   }
 
+  // Anchor trends
+  let anchorTrends: WeeklyTrends['anchors'] = {
+    growCompletionRate: 0,
+    letGoCompletionRate: 0,
+    totalLogs: 0,
+    topGrowAnchors: [],
+    topLetGoAnchors: [],
+  }
+
+  if (memberId) {
+    const weekAgoStr = weekAgo.toISOString().split('T')[0]
+    const todayStr = today.toISOString().split('T')[0]
+
+    // Get all active anchors
+    const { data: memberAnchors } = await supabase
+      .from('member_anchors')
+      .select('id, name, category')
+      .eq('member_id', memberId)
+      .eq('is_active', true)
+
+    // Get this week's anchor logs
+    const { data: weekAnchorLogs } = await supabase
+      .from('anchor_logs')
+      .select('anchor_id, completed, date')
+      .eq('member_id', memberId)
+      .gte('date', weekAgoStr)
+      .lte('date', todayStr)
+
+    // Count completions per anchor
+    const anchorCompletions: Record<string, number> = {}
+    let growCompleted = 0
+    let letGoCompleted = 0
+    let growPossible = 0
+    let letGoPossible = 0
+
+    const anchorCategoryMap = new Map(memberAnchors?.map(a => [a.id, { name: a.name, category: a.category }]) || [])
+
+    // Calculate possible completions (anchors * 7 days)
+    memberAnchors?.forEach(anchor => {
+      if (anchor.category === 'grow') {
+        growPossible += 7
+      } else {
+        letGoPossible += 7
+      }
+    })
+
+    weekAnchorLogs?.forEach(log => {
+      if (log.completed) {
+        const anchorInfo = anchorCategoryMap.get(log.anchor_id)
+        if (anchorInfo) {
+          anchorCompletions[anchorInfo.name] = (anchorCompletions[anchorInfo.name] || 0) + 1
+          if (anchorInfo.category === 'grow') {
+            growCompleted++
+          } else {
+            letGoCompleted++
+          }
+        }
+      }
+    })
+
+    // Get top anchors by completion count
+    const sortedAnchors = Object.entries(anchorCompletions)
+      .sort((a, b) => b[1] - a[1])
+
+    const topGrow: string[] = []
+    const topLetGo: string[] = []
+
+    sortedAnchors.forEach(([name]) => {
+      const anchor = memberAnchors?.find(a => a.name === name)
+      if (anchor?.category === 'grow' && topGrow.length < 3) {
+        topGrow.push(name)
+      } else if (anchor?.category === 'let_go' && topLetGo.length < 3) {
+        topLetGo.push(name)
+      }
+    })
+
+    anchorTrends = {
+      growCompletionRate: growPossible > 0 ? Math.round((growCompleted / growPossible) * 100) : 0,
+      letGoCompletionRate: letGoPossible > 0 ? Math.round((letGoCompleted / letGoPossible) * 100) : 0,
+      totalLogs: weekAnchorLogs?.length || 0,
+      topGrowAnchors: topGrow,
+      topLetGoAnchors: topLetGo,
+    }
+  }
+
   return {
     balance: balanceTrends,
     moods: moodTrends,
     rituals: { completionRate: ritualRate },
+    anchors: anchorTrends,
     momentsCount: weekMoments?.length || 0,
   }
 }
@@ -427,6 +577,37 @@ function detectPatterns(today: TodaySnapshot, week: WeeklyTrends): DetectedPatte
     insights.push(`User hasn't completed any rituals today (${today.rituals.missedNames.join(', ')})`)
   }
 
+  // Anchor patterns
+  const totalAnchors = today.anchors.totalGrow + today.anchors.totalLetGo
+  const completedAnchors = today.anchors.completedGrow + today.anchors.completedLetGo
+
+  if (totalAnchors > 0) {
+    if (completedAnchors === totalAnchors) {
+      insights.push('User has completed all their daily anchors/habits today')
+    } else if (completedAnchors === 0) {
+      const growNames = today.anchors.grow.map(a => a.name).join(', ')
+      const letGoNames = today.anchors.letGo.map(a => a.name).join(', ')
+      insights.push(`User has not completed any anchors today. Grow habits: ${growNames}. Let go habits: ${letGoNames}`)
+    } else {
+      const completed = [...today.anchors.grow.filter(a => a.completed), ...today.anchors.letGo.filter(a => a.completed)]
+      const incomplete = [...today.anchors.grow.filter(a => !a.completed), ...today.anchors.letGo.filter(a => !a.completed)]
+      insights.push(`User completed ${completedAnchors}/${totalAnchors} anchors. Done: ${completed.map(a => a.name).join(', ')}. Remaining: ${incomplete.map(a => a.name).join(', ')}`)
+    }
+  }
+
+  // Weekly anchor trends
+  if (week.anchors.growCompletionRate >= 70) {
+    insights.push('User is consistent with their Grow habits this week')
+  } else if (week.anchors.growCompletionRate < 30 && week.anchors.topGrowAnchors.length > 0) {
+    insights.push('User is struggling with Grow habits this week')
+  }
+
+  if (week.anchors.letGoCompletionRate >= 70) {
+    insights.push('User is doing well avoiding things they want to let go of')
+  } else if (week.anchors.letGoCompletionRate < 30 && week.anchors.topLetGoAnchors.length > 0) {
+    insights.push('User is struggling with Let Go habits this week')
+  }
+
   return { insights }
 }
 
@@ -439,8 +620,24 @@ export function formatContextForPrompt(context: BloomContext, locale: 'en' | 'fr
   const formatHours = (mins: number) => `${Math.round(mins / 60 * 10) / 10}h`
 
   // Check if user has been active this week
-  const hasWeeklyData = thisWeek.momentsCount > 0 || thisWeek.balance.avgSleep > 0 || thisWeek.rituals.completionRate > 0
-  const hasTodayData = today.balance.hasLogged || today.moments.count > 0 || today.rituals.completed > 0
+  const hasWeeklyData = thisWeek.momentsCount > 0 || thisWeek.balance.avgSleep > 0 || thisWeek.rituals.completionRate > 0 || thisWeek.anchors.totalLogs > 0
+  const hasTodayData = today.balance.hasLogged || today.moments.count > 0 || today.rituals.completed > 0 || (today.anchors.completedGrow + today.anchors.completedLetGo) > 0
+
+  // Format anchors for today
+  const formatTodayAnchors = (loc: 'en' | 'fr') => {
+    const totalAnchors = today.anchors.totalGrow + today.anchors.totalLetGo
+    if (totalAnchors === 0) return loc === 'fr' ? '- Ancres: aucune configurée' : '- Anchors: none configured'
+
+    const growStatus = today.anchors.grow.map(a => `${a.name} (${a.completed ? '✓' : '○'})`).join(', ')
+    const letGoStatus = today.anchors.letGo.map(a => `${a.name} (${a.completed ? '✓' : '○'})`).join(', ')
+
+    if (loc === 'fr') {
+      return `- Ancres Grandir: ${today.anchors.completedGrow}/${today.anchors.totalGrow}${growStatus ? ` [${growStatus}]` : ''}
+- Ancres Lâcher: ${today.anchors.completedLetGo}/${today.anchors.totalLetGo}${letGoStatus ? ` [${letGoStatus}]` : ''}`
+    }
+    return `- Grow anchors: ${today.anchors.completedGrow}/${today.anchors.totalGrow}${growStatus ? ` [${growStatus}]` : ''}
+- Let Go anchors: ${today.anchors.completedLetGo}/${today.anchors.totalLetGo}${letGoStatus ? ` [${letGoStatus}]` : ''}`
+  }
 
   // Today section
   const todaySection = locale === 'fr' ? `
@@ -450,6 +647,7 @@ AUJOURD'HUI:
 - Vie perso: ${today.balance.hasLogged ? formatHours(today.balance.life) : 'non enregistré'} (objectif: ${formatHours(today.balance.targets.life)})
 - Moments capturés: ${today.moments.count}${today.moments.moods.length > 0 ? ` (humeurs: ${today.moments.moods.join(', ')})` : ''}
 - Rituels: ${today.rituals.completed}/${today.rituals.total} complétés${today.rituals.missedNames.length > 0 ? ` (manqués: ${today.rituals.missedNames.join(', ')})` : ''}
+${formatTodayAnchors('fr')}
 ${!hasTodayData ? '*** L\'utilisateur n\'a rien enregistré aujourd\'hui ***' : ''}
 ` : `
 TODAY:
@@ -458,8 +656,22 @@ TODAY:
 - Life: ${today.balance.hasLogged ? formatHours(today.balance.life) : 'not logged'} (target: ${formatHours(today.balance.targets.life)})
 - Moments captured: ${today.moments.count}${today.moments.moods.length > 0 ? ` (moods: ${today.moments.moods.join(', ')})` : ''}
 - Rituals: ${today.rituals.completed}/${today.rituals.total} done${today.rituals.missedNames.length > 0 ? ` (missed: ${today.rituals.missedNames.join(', ')})` : ''}
+${formatTodayAnchors('en')}
 ${!hasTodayData ? '*** User has not logged anything today ***' : ''}
 `
+
+  // Format weekly anchors
+  const formatWeekAnchors = (loc: 'en' | 'fr') => {
+    if (thisWeek.anchors.totalLogs === 0 && thisWeek.anchors.topGrowAnchors.length === 0 && thisWeek.anchors.topLetGoAnchors.length === 0) {
+      return loc === 'fr' ? '- Ancres: aucune donnée cette semaine' : '- Anchors: no data this week'
+    }
+    if (loc === 'fr') {
+      return `- Ancres Grandir: ${thisWeek.anchors.growCompletionRate}% de complétion${thisWeek.anchors.topGrowAnchors.length > 0 ? ` (meilleures: ${thisWeek.anchors.topGrowAnchors.join(', ')})` : ''}
+- Ancres Lâcher: ${thisWeek.anchors.letGoCompletionRate}% de complétion${thisWeek.anchors.topLetGoAnchors.length > 0 ? ` (meilleures: ${thisWeek.anchors.topLetGoAnchors.join(', ')})` : ''}`
+    }
+    return `- Grow anchors: ${thisWeek.anchors.growCompletionRate}% completion${thisWeek.anchors.topGrowAnchors.length > 0 ? ` (top: ${thisWeek.anchors.topGrowAnchors.join(', ')})` : ''}
+- Let Go anchors: ${thisWeek.anchors.letGoCompletionRate}% completion${thisWeek.anchors.topLetGoAnchors.length > 0 ? ` (top: ${thisWeek.anchors.topLetGoAnchors.join(', ')})` : ''}`
+  }
 
   // This week section
   const weekSection = locale === 'fr' ? `
@@ -470,6 +682,7 @@ ${!hasWeeklyData ? '*** L\'utilisateur n\'a pas utilisé Bloomsline cette semain
 - Vie perso moyenne: ${thisWeek.balance.avgLife}h/jour
 - Humeurs: ${thisWeek.moods.positive}% positives${thisWeek.moods.topMoods.length > 0 ? ` (principales: ${thisWeek.moods.topMoods.join(', ')})` : ''}
 - Rituels: ${thisWeek.rituals.completionRate}% de complétion
+${formatWeekAnchors('fr')}
 - Moments cette semaine: ${thisWeek.momentsCount}
 ` : `
 THIS WEEK:
@@ -479,6 +692,7 @@ ${!hasWeeklyData ? '*** User has NOT used Bloomsline this week - no recent data 
 - Avg life: ${thisWeek.balance.avgLife}h/day
 - Moods: ${thisWeek.moods.positive}% positive${thisWeek.moods.topMoods.length > 0 ? ` (top: ${thisWeek.moods.topMoods.join(', ')})` : ''}
 - Rituals: ${thisWeek.rituals.completionRate}% completion
+${formatWeekAnchors('en')}
 - Moments this week: ${thisWeek.momentsCount}
 `
 
@@ -574,6 +788,29 @@ export function getContextAwareGreeting(
       return locale === 'fr'
         ? `${timeGreeting}. Tu regardes tes progrès. C'est bien de prendre du recul. Qu'est-ce qui te vient à l'esprit ?`
         : `${timeGreeting}. Looking at your progress. Good to reflect. What is on your mind?`
+
+    case 'anchors':
+      const totalAnchors = today.anchors.totalGrow + today.anchors.totalLetGo
+      const completedAnchors = today.anchors.completedGrow + today.anchors.completedLetGo
+
+      if (totalAnchors === 0) {
+        return locale === 'fr'
+          ? `${timeGreeting}. Tu veux définir des habitudes à développer ou à abandonner ?`
+          : `${timeGreeting}. Want to set up some habits to grow or let go of?`
+      }
+      if (completedAnchors === totalAnchors) {
+        return locale === 'fr'
+          ? `${timeGreeting}. Bravo, toutes tes ancres sont faites ! Comment tu te sens ?`
+          : `${timeGreeting}. Nice, all your anchors are done! How are you feeling?`
+      }
+      if (completedAnchors === 0) {
+        return locale === 'fr'
+          ? `${timeGreeting}. Comment avancent tes habitudes aujourd'hui ?`
+          : `${timeGreeting}. How are your habits going today?`
+      }
+      return locale === 'fr'
+        ? `${timeGreeting}. Tu as fait ${completedAnchors}/${totalAnchors} ancres. Besoin de motivation ?`
+        : `${timeGreeting}. You've done ${completedAnchors}/${totalAnchors} anchors. Need some motivation?`
 
     case 'home':
     case 'general':
