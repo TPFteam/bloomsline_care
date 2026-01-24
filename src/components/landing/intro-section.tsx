@@ -23,14 +23,14 @@ export function IntroSection() {
       answer: "We help you capture those",
       details: "a photo, a voice note, or just how you're feeling",
       pattern: "Over time, you see your patterns, understand yourself better, and take gentler steps forward.",
-      bloom: "and Bloom AI helps you make sense of it all.",
+      bloom: "When you need a gentle nudge, Bloom is there.",
     },
     fr: {
       thought: "Vous savez comment la vie va vite et on oublie les petits moments ?",
       answer: "On vous aide à les capturer",
       details: "une photo, une note vocale, ou juste ce que vous ressentez",
       pattern: "Au fil du temps, vous voyez vos patterns, vous comprenez mieux, et vous avancez plus doucement.",
-      bloom: "et Bloom IA vous aide à tout comprendre.",
+      bloom: "Quand vous avez besoin d'un petit coup de pouce, Bloom est là.",
     },
   }
 
