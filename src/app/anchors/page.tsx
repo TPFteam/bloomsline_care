@@ -43,6 +43,10 @@ import {
   BedDouble,
   StretchHorizontal,
   TrendingUp,
+  History,
+  PlusCircle,
+  MinusCircle,
+  RefreshCw,
 } from 'lucide-react'
 import {
   AreaChart,
@@ -64,6 +68,18 @@ interface Anchor {
   labelEn: string
   labelFr: string
   type: 'grow' | 'letgo'
+}
+
+// Activity log types
+interface ActivityLog {
+  id: string
+  anchorId: string
+  action: 'added' | 'removed' | 'reactivated'
+  anchorType: 'grow' | 'letgo'
+  anchorIcon: string
+  anchorLabelEn: string
+  anchorLabelFr: string
+  createdAt: string
 }
 
 // All anchor icons (used for custom anchors and icon lookup)
@@ -159,8 +175,9 @@ export default function AnchorsPage() {
   const [anchorHistory, setAnchorHistory] = useState<Record<string, Record<string, number>>>({})
   const [showAddAnchor, setShowAddAnchor] = useState(false)
   const [addAnchorType, setAddAnchorType] = useState<'grow' | 'letgo'>('grow')
-  const [activeTab, setActiveTab] = useState<'today' | 'week' | 'trends'>('today')
+  const [activeTab, setActiveTab] = useState<'today' | 'week' | 'trends' | 'history'>('today')
   const [selectedTrendAnchor, setSelectedTrendAnchor] = useState<string | null>(null)
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
 
   useEffect(() => {
     loadData()
@@ -258,6 +275,30 @@ export default function AnchorsPage() {
       })
       setAnchorHistory(historyMap)
     }
+
+    // Load activity logs (last 30 days)
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+    const { data: activityData } = await supabase
+      .from('anchor_activity_logs')
+      .select('*')
+      .eq('member_id', memId)
+      .gte('created_at', thirtyDaysAgo.toISOString())
+      .order('created_at', { ascending: false })
+
+    if (activityData) {
+      setActivityLogs(activityData.map(log => ({
+        id: log.id,
+        anchorId: log.anchor_id,
+        action: log.action as 'added' | 'removed' | 'reactivated',
+        anchorType: log.anchor_type as 'grow' | 'letgo',
+        anchorIcon: log.anchor_icon,
+        anchorLabelEn: log.anchor_label_en,
+        anchorLabelFr: log.anchor_label_fr,
+        createdAt: log.created_at,
+      })))
+    }
   }
 
   const logAnchor = async (anchorId: string) => {
@@ -327,6 +368,34 @@ export default function AnchorsPage() {
         labelFr: data.label_fr,
         type: data.type as 'grow' | 'letgo',
       }])
+
+      // Log the activity
+      const { data: activityLog } = await supabase
+        .from('anchor_activity_logs')
+        .insert({
+          member_id: memberId,
+          anchor_id: data.id,
+          action: 'added',
+          anchor_type: data.type,
+          anchor_icon: data.icon,
+          anchor_label_en: data.label_en,
+          anchor_label_fr: data.label_fr,
+        })
+        .select()
+        .single()
+
+      if (activityLog) {
+        setActivityLogs(prev => [{
+          id: activityLog.id,
+          anchorId: activityLog.anchor_id,
+          action: 'added',
+          anchorType: data.type as 'grow' | 'letgo',
+          anchorIcon: data.icon,
+          anchorLabelEn: data.label_en,
+          anchorLabelFr: data.label_fr,
+          createdAt: activityLog.created_at,
+        }, ...prev])
+      }
     }
 
     setShowAddAnchor(false)
@@ -334,6 +403,10 @@ export default function AnchorsPage() {
   }
 
   const removeAnchor = async (anchorId: string) => {
+    // Find the anchor before removing
+    const anchor = userAnchors.find(a => a.id === anchorId)
+    if (!anchor || !memberId) return
+
     const { error } = await supabase
       .from('member_anchors')
       .update({ is_active: false })
@@ -343,6 +416,34 @@ export default function AnchorsPage() {
       console.error('Error removing anchor:', error)
       toast.error(locale === 'fr' ? 'Erreur' : 'Error')
       return
+    }
+
+    // Log the activity
+    const { data: activityLog } = await supabase
+      .from('anchor_activity_logs')
+      .insert({
+        member_id: memberId,
+        anchor_id: anchorId,
+        action: 'removed',
+        anchor_type: anchor.type,
+        anchor_icon: anchor.icon,
+        anchor_label_en: anchor.labelEn,
+        anchor_label_fr: anchor.labelFr,
+      })
+      .select()
+      .single()
+
+    if (activityLog) {
+      setActivityLogs(prev => [{
+        id: activityLog.id,
+        anchorId: anchorId,
+        action: 'removed',
+        anchorType: anchor.type,
+        anchorIcon: anchor.icon,
+        anchorLabelEn: anchor.labelEn,
+        anchorLabelFr: anchor.labelFr,
+        createdAt: activityLog.created_at,
+      }, ...prev])
     }
 
     setUserAnchors(prev => prev.filter(a => a.id !== anchorId))
@@ -496,9 +597,132 @@ export default function AnchorsPage() {
             <TrendingUp className="w-4 h-4" />
             {locale === 'fr' ? 'Tendances' : 'Trends'}
           </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === 'history'
+                ? 'bg-amber-500 text-white shadow-md'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <History className="w-4 h-4" />
+            {locale === 'fr' ? 'Historique' : 'History'}
+          </button>
         </div>
 
-        {activeTab === 'trends' ? (
+        {activeTab === 'history' ? (
+          /* History View */
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">
+              {locale === 'fr' ? 'Activité récente (30 jours)' : 'Recent Activity (30 days)'}
+            </h3>
+
+            {activityLogs.length > 0 ? (
+              <div className="space-y-3">
+                {activityLogs.map(log => {
+                  const iconData = ANCHOR_ICONS[log.anchorIcon]
+                  const IconComponent = iconData?.icon || Circle
+                  const isGrow = log.anchorType === 'grow'
+                  const date = new Date(log.createdAt)
+                  const formattedDate = date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                  const formattedTime = date.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+
+                  return (
+                    <div
+                      key={log.id}
+                      className={`flex items-center gap-4 p-4 rounded-2xl ${
+                        isGrow ? 'bg-emerald-50' : 'bg-rose-50'
+                      }`}
+                    >
+                      {/* Action Icon */}
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        log.action === 'added'
+                          ? 'bg-green-100 text-green-600'
+                          : log.action === 'removed'
+                            ? 'bg-red-100 text-red-600'
+                            : 'bg-blue-100 text-blue-600'
+                      }`}>
+                        {log.action === 'added' && <PlusCircle className="w-5 h-5" />}
+                        {log.action === 'removed' && <MinusCircle className="w-5 h-5" />}
+                        {log.action === 'reactivated' && <RefreshCw className="w-5 h-5" />}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <IconComponent className={`w-4 h-4 ${isGrow ? 'text-emerald-600' : 'text-rose-600'}`} />
+                          <span className="font-medium text-gray-900">
+                            {locale === 'fr' ? log.anchorLabelFr : log.anchorLabelEn}
+                          </span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            isGrow ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                          }`}>
+                            {isGrow
+                              ? (locale === 'fr' ? 'Cultiver' : 'Grow')
+                              : (locale === 'fr' ? 'Lâcher' : 'Let Go')}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                          {log.action === 'added' && (locale === 'fr' ? 'Ajouté' : 'Added')}
+                          {log.action === 'removed' && (locale === 'fr' ? 'Supprimé' : 'Removed')}
+                          {log.action === 'reactivated' && (locale === 'fr' ? 'Réactivé' : 'Reactivated')}
+                        </p>
+                      </div>
+
+                      {/* Date/Time */}
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-gray-700">{formattedDate}</p>
+                        <p className="text-xs text-gray-400">{formattedTime}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <History className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">
+                  {locale === 'fr'
+                    ? 'Aucune activité récente'
+                    : 'No recent activity'}
+                </p>
+                <p className="text-sm text-gray-400 mt-1">
+                  {locale === 'fr'
+                    ? 'Ajoutez ou supprimez des ancres pour voir l\'historique'
+                    : 'Add or remove anchors to see history'}
+                </p>
+              </div>
+            )}
+
+            {/* Activity Summary */}
+            {activityLogs.length > 0 && (
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="bg-green-50 rounded-2xl p-4 text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {activityLogs.filter(l => l.action === 'added').length}
+                  </div>
+                  <p className="text-xs text-green-700 mt-1">
+                    {locale === 'fr' ? 'Ancres ajoutées' : 'Anchors added'}
+                  </p>
+                </div>
+                <div className="bg-red-50 rounded-2xl p-4 text-center">
+                  <div className="text-2xl font-bold text-red-600">
+                    {activityLogs.filter(l => l.action === 'removed').length}
+                  </div>
+                  <p className="text-xs text-red-700 mt-1">
+                    {locale === 'fr' ? 'Ancres supprimées' : 'Anchors removed'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'trends' ? (
           /* Trends View */
           <div>
             {/* Anchor Filter */}
