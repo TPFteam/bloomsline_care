@@ -5,66 +5,33 @@ import { motion, useScroll, useTransform } from 'framer-motion'
 import { useLanguage } from '@/lib/i18n/context'
 import { Camera, Mic, Heart } from 'lucide-react'
 
-// Floating bubble component
-function FloatingBubble({
-  size,
-  initialX,
-  initialY,
-  color,
-  grayToColor,
-  delay = 0,
-}: {
-  size: number
-  initialX: string
-  initialY: string
-  color: string
-  grayToColor: any
-  delay?: number
-}) {
-  const colorValue = useTransform(grayToColor, [0, 1], ['#e5e7eb', color])
-  const opacity = useTransform(grayToColor, [0, 0.5, 1], [0.3, 0.5, 0.7])
-  const scale = useTransform(grayToColor, [0, 1], [0.8, 1])
-
-  return (
-    <motion.div
-      className="absolute rounded-full blur-xl pointer-events-none"
-      style={{
-        width: size,
-        height: size,
-        left: initialX,
-        top: initialY,
-        backgroundColor: colorValue,
-        opacity,
-        scale,
-      }}
-      animate={{
-        y: [0, -20, 0],
-        x: [0, 10, 0],
-      }}
-      transition={{
-        duration: 6 + delay,
-        repeat: Infinity,
-        ease: "easeInOut",
-        delay,
-      }}
-    />
-  )
-}
-
 export function IntroSection() {
   const { locale } = useLanguage()
   const containerRef = useRef<HTMLDivElement>(null)
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start end", "end start"]
+    offset: ["start end", "center center"]
   })
 
-  // Transform scroll progress to color transition
-  const grayToColor = useTransform(scrollYProgress, [0, 0.3, 0.5], [0, 0, 1])
-  const textOpacity = useTransform(scrollYProgress, [0, 0.2], [0.4, 1])
-  const iconOpacity = useTransform(scrollYProgress, [0.2, 0.4], [0, 1])
-  const iconScale = useTransform(scrollYProgress, [0.2, 0.4], [0.5, 1])
+  // Staggered reveal for each element
+  const line1Opacity = useTransform(scrollYProgress, [0, 0.2], [0, 1])
+  const line1Y = useTransform(scrollYProgress, [0, 0.2], [30, 0])
+
+  const line2Opacity = useTransform(scrollYProgress, [0.15, 0.35], [0, 1])
+  const line2Y = useTransform(scrollYProgress, [0.15, 0.35], [30, 0])
+
+  const iconsOpacity = useTransform(scrollYProgress, [0.3, 0.5], [0, 1])
+  const iconsY = useTransform(scrollYProgress, [0.3, 0.5], [20, 0])
+
+  const line3Opacity = useTransform(scrollYProgress, [0.4, 0.6], [0, 1])
+  const line3Y = useTransform(scrollYProgress, [0.4, 0.6], [30, 0])
+
+  const line4Opacity = useTransform(scrollYProgress, [0.55, 0.75], [0, 1])
+  const line4Y = useTransform(scrollYProgress, [0.55, 0.75], [30, 0])
+
+  const line5Opacity = useTransform(scrollYProgress, [0.7, 0.9], [0, 1])
+  const line5Y = useTransform(scrollYProgress, [0.7, 0.9], [30, 0])
 
   const content = {
     en: {
@@ -85,143 +52,85 @@ export function IntroSection() {
 
   const t = locale === 'fr' ? content.fr : content.en
 
-  // Capture type icons
   const captureIcons = [
-    { Icon: Camera, color: '#14b8a6' },  // teal
-    { Icon: Mic, color: '#f59e0b' },     // amber
-    { Icon: Heart, color: '#ec4899' },   // pink
+    { Icon: Camera, color: '#14b8a6', bg: '#ccfbf1' },
+    { Icon: Mic, color: '#f59e0b', bg: '#fef3c7' },
+    { Icon: Heart, color: '#ec4899', bg: '#fce7f3' },
   ]
 
   return (
     <section
       ref={containerRef}
-      className="py-24 md:py-36 bg-gradient-to-b from-white via-gray-50/50 to-white overflow-hidden relative"
+      className="min-h-[80vh] py-24 md:py-36 bg-gradient-to-b from-white via-gray-50/30 to-white flex items-center"
     >
-      {/* Floating bubbles */}
-      <div className="absolute inset-0 overflow-hidden">
-        <FloatingBubble
-          size={120}
-          initialX="10%"
-          initialY="20%"
-          color="#99f6e4"
-          grayToColor={grayToColor}
-          delay={0}
-        />
-        <FloatingBubble
-          size={80}
-          initialX="85%"
-          initialY="15%"
-          color="#fde68a"
-          grayToColor={grayToColor}
-          delay={1}
-        />
-        <FloatingBubble
-          size={100}
-          initialX="75%"
-          initialY="60%"
-          color="#fbcfe8"
-          grayToColor={grayToColor}
-          delay={2}
-        />
-        <FloatingBubble
-          size={60}
-          initialX="5%"
-          initialY="70%"
-          color="#a5f3fc"
-          grayToColor={grayToColor}
-          delay={1.5}
-        />
-        <FloatingBubble
-          size={90}
-          initialX="50%"
-          initialY="80%"
-          color="#c4b5fd"
-          grayToColor={grayToColor}
-          delay={0.5}
-        />
-      </div>
-
-      <div className="container mx-auto px-6 max-w-3xl relative z-10">
-        <motion.div
-          className="text-center space-y-6"
-          style={{ opacity: textOpacity }}
-        >
-          {/* The thought - starts gray */}
+      <div className="container mx-auto px-6 max-w-3xl">
+        <div className="text-center space-y-8">
+          {/* Line 1 - The thought */}
           <motion.p
-            className="text-2xl md:text-3xl lg:text-4xl font-light leading-relaxed"
-            style={{
-              color: useTransform(grayToColor, [0, 1], ['#9ca3af', '#374151'])
-            }}
+            className="text-2xl md:text-3xl lg:text-4xl font-light leading-relaxed text-gray-600"
+            style={{ opacity: line1Opacity, y: line1Y }}
           >
             {t.thought}
           </motion.p>
 
-          {/* The answer - reveals in teal */}
+          {/* Line 2 - The answer */}
           <motion.p
-            className="text-2xl md:text-3xl lg:text-4xl font-medium leading-relaxed"
-            style={{
-              color: useTransform(grayToColor, [0, 1], ['#9ca3af', '#0d9488'])
-            }}
+            className="text-2xl md:text-3xl lg:text-4xl font-semibold leading-relaxed text-teal-600"
+            style={{ opacity: line2Opacity, y: line2Y }}
           >
             {t.answer}
           </motion.p>
 
-          {/* Capture icons */}
+          {/* Icons */}
           <motion.div
-            className="flex justify-center gap-4 py-2"
-            style={{ opacity: iconOpacity, scale: iconScale }}
+            className="flex justify-center gap-5 py-4"
+            style={{ opacity: iconsOpacity, y: iconsY }}
           >
-            {captureIcons.map(({ Icon, color }, index) => (
+            {captureIcons.map(({ Icon, color, bg }, index) => (
               <motion.div
                 key={index}
-                className="w-12 h-12 rounded-full flex items-center justify-center"
-                style={{
-                  backgroundColor: useTransform(grayToColor, [0, 1], ['#f3f4f6', `${color}20`]),
-                }}
+                className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm"
+                style={{ backgroundColor: bg }}
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 300 }}
               >
-                <Icon
-                  className="w-5 h-5"
-                  style={{
-                    color: useTransform(grayToColor, [0, 1], ['#9ca3af', color]) as any,
-                  }}
-                />
+                <Icon className="w-6 h-6" style={{ color }} />
               </motion.div>
             ))}
           </motion.div>
 
-          {/* The details - with em dashes */}
+          {/* Line 3 - The details */}
           <motion.p
-            className="text-xl md:text-2xl lg:text-3xl font-light leading-relaxed"
-            style={{
-              color: useTransform(grayToColor, [0, 1], ['#d1d5db', '#6b7280'])
-            }}
+            className="text-xl md:text-2xl font-light leading-relaxed text-gray-500"
+            style={{ opacity: line3Opacity, y: line3Y }}
           >
-            — {t.details} —
+            {t.details}
           </motion.p>
 
-          {/* Spacer */}
-          <div className="py-4" />
+          {/* Divider */}
+          <motion.div
+            className="flex justify-center"
+            style={{ opacity: line4Opacity }}
+          >
+            <div className="w-16 h-px bg-gray-200" />
+          </motion.div>
 
-          {/* Pattern recognition */}
+          {/* Line 4 - Pattern */}
           <motion.p
-            className="text-xl md:text-2xl font-light leading-relaxed"
-            style={{
-              color: useTransform(grayToColor, [0, 1], ['#d1d5db', '#6b7280'])
-            }}
+            className="text-lg md:text-xl font-light leading-relaxed text-gray-600 max-w-2xl mx-auto"
+            style={{ opacity: line4Opacity, y: line4Y }}
           >
             {t.pattern}
           </motion.p>
 
-          {/* Bloom - the finale in teal */}
+          {/* Line 5 - Bloom */}
           <motion.p
-            className="text-xl md:text-2xl font-medium leading-relaxed"
-            style={{
-              color: useTransform(grayToColor, [0, 1], ['#d1d5db', '#14b8a6'])
-            }}
+            className="text-lg md:text-xl font-medium leading-relaxed text-teal-600"
+            style={{ opacity: line5Opacity, y: line5Y }}
           >
             {t.bloom}
           </motion.p>
-        </motion.div>
+        </div>
       </div>
     </section>
   )
