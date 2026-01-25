@@ -60,14 +60,14 @@ const translations = {
     problem: {
       label: 'THE PROBLEM',
       title: 'Small moments slip away',
-      subtitle: 'before we can learn from them',
+      subtitle: 'before anyone can learn from them',
       points: [
-        { text: 'We forget how we felt', desc: 'Good days and hard days blur together' },
-        { text: 'Progress feels invisible', desc: 'Growth happens slowly, we only see setbacks' },
-        { text: 'Support comes too late', desc: 'By the next session, context is lost' },
+        { text: 'Moments fade', desc: 'You forget. Your practitioner never knew.' },
+        { text: 'Progress hides', desc: 'Growth is slow. Sessions start from scratch.' },
+        { text: 'Help comes late', desc: 'By the next visit, context is gone.' },
       ],
       insight: 'What if those moments were captured',
-      insightEnd: 'understood, and valued?',
+      insightEnd: 'understood, and shared?',
     },
     solution: {
       label: 'THE SOLUTION',
@@ -396,14 +396,14 @@ const translations = {
     problem: {
       label: 'LE PROBLÈME',
       title: 'Les petits moments nous échappent',
-      subtitle: 'avant qu\'on puisse en apprendre',
+      subtitle: 'avant que quiconque puisse en apprendre',
       points: [
-        { text: 'On oublie ce qu\'on a ressenti', desc: 'Les bons et mauvais jours se confondent' },
-        { text: 'Le progrès semble invisible', desc: 'La croissance est lente, on ne voit que les reculs' },
-        { text: 'L\'aide arrive trop tard', desc: 'À la prochaine séance, le contexte est perdu' },
+        { text: 'Les moments s\'effacent', desc: 'Vous oubliez. Votre praticien ne savait pas.' },
+        { text: 'Le progrès se cache', desc: 'La croissance est lente. Les séances repartent de zéro.' },
+        { text: 'L\'aide arrive tard', desc: 'À la prochaine visite, le contexte est perdu.' },
       ],
       insight: 'Et si ces moments étaient capturés',
-      insightEnd: 'compris, et valorisés ?',
+      insightEnd: 'compris, et partagés ?',
     },
     solution: {
       label: 'LA SOLUTION',
@@ -960,12 +960,12 @@ interface ProblemSlideProps {
 function ProblemSlide({ t }: ProblemSlideProps) {
   return (
     <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-3xl mx-auto text-center">
+      <div className="max-w-5xl mx-auto text-center">
         <motion.p
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4"
+          className="text-teal-600 font-medium mb-3"
         >
           {t.label}
         </motion.p>
@@ -974,24 +974,22 @@ function ProblemSlide({ t }: ProblemSlideProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-16 leading-[1.2]"
+          className="text-3xl sm:text-4xl font-light text-neutral-900 mb-10 leading-[1.2]"
         >
-          {t.title}
-          <br />
-          <span className="text-neutral-400">{t.subtitle}</span>
+          {t.title} <span className="text-neutral-400">{t.subtitle}</span>
         </motion.h2>
 
-        <div className="space-y-8">
+        <div className="grid md:grid-cols-3 gap-4 mb-8">
           {t.points.map((point: { text: string; desc: string }, index: number) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-              className="text-left p-6 rounded-2xl bg-neutral-50 border border-neutral-100"
+              className="text-center p-5 rounded-2xl bg-neutral-50 border border-neutral-100"
             >
-              <p className="text-xl font-medium text-neutral-900 mb-1">{point.text}</p>
-              <p className="text-neutral-500">{point.desc}</p>
+              <p className="text-lg font-semibold text-neutral-900 mb-1">{point.text}</p>
+              <p className="text-sm text-neutral-500">{point.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -999,10 +997,10 @@ function ProblemSlide({ t }: ProblemSlideProps) {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="mt-12 p-6 rounded-2xl bg-gradient-to-r from-teal-500 to-teal-600 text-white"
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="inline-block px-8 py-4 rounded-full bg-gradient-to-r from-teal-500 to-teal-600 text-white"
         >
-          <p className="text-xl font-light">
+          <p className="text-lg font-light">
             {t.insight} <span className="font-medium">{t.insightEnd}</span>
           </p>
         </motion.div>
