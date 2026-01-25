@@ -3,6 +3,7 @@
 import { useRef } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { useLanguage } from '@/lib/i18n/context'
+import { Sparkles } from 'lucide-react'
 
 // Highlighted text segment component
 function HighlightedSegment({
@@ -31,6 +32,35 @@ function HighlightedSegment({
   )
 }
 
+// Badge component for "moment"
+function MomentBadge({
+  scrollYProgress,
+  start,
+  end,
+  text,
+}: {
+  scrollYProgress: any
+  start: number
+  end: number
+  text: string
+}) {
+  const bgOpacity = useTransform(scrollYProgress, [start, end], [0.3, 1])
+  const textColor = useTransform(scrollYProgress, [start, end], ['#9ca3af', '#0d9488'])
+
+  return (
+    <motion.span
+      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[0.85em] font-medium mx-1"
+      style={{
+        backgroundColor: useTransform(bgOpacity, (v) => `rgba(204, 251, 241, ${v})`),
+        color: textColor,
+      }}
+    >
+      <Sparkles className="w-4 h-4" />
+      {text}
+    </motion.span>
+  )
+}
+
 export function IntroSection() {
   const { locale } = useLanguage()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -40,37 +70,7 @@ export function IntroSection() {
     offset: ["start center", "end center"]
   })
 
-  const content = {
-    en: {
-      segments: [
-        { text: "You know how life moves fast", highlight: '#6b7280' },
-        { text: " and we forget the small moments?", highlight: '#6b7280' },
-        { text: "\n\nWe help you capture those", highlight: '#0d9488' },
-        { text: " — a photo, a voice note, or just how you're feeling.", highlight: '#6b7280' },
-        { text: "\n\nOver time, you see your patterns,", highlight: '#6b7280' },
-        { text: " understand yourself better,", highlight: '#0d9488' },
-        { text: " and take gentler steps forward.", highlight: '#6b7280' },
-        { text: "\n\nWhen you need a gentle nudge,", highlight: '#6b7280' },
-        { text: " Bloom is there.", highlight: '#0d9488' },
-      ]
-    },
-    fr: {
-      segments: [
-        { text: "Vous savez comment la vie va vite", highlight: '#6b7280' },
-        { text: " et on oublie les petits moments ?", highlight: '#6b7280' },
-        { text: "\n\nOn vous aide à les capturer", highlight: '#0d9488' },
-        { text: " — une photo, une note vocale, ou juste ce que vous ressentez.", highlight: '#6b7280' },
-        { text: "\n\nAu fil du temps, vous voyez vos patterns,", highlight: '#6b7280' },
-        { text: " vous comprenez mieux,", highlight: '#0d9488' },
-        { text: " et vous avancez plus doucement.", highlight: '#6b7280' },
-        { text: "\n\nQuand vous avez besoin d'un petit coup de pouce,", highlight: '#6b7280' },
-        { text: " Bloom est là.", highlight: '#0d9488' },
-      ]
-    },
-  }
-
-  const t = locale === 'fr' ? content.fr : content.en
-  const segmentCount = t.segments.length
+  const segmentCount = 9
   const segmentDuration = 1 / segmentCount
 
   return (
@@ -80,18 +80,100 @@ export function IntroSection() {
     >
       <div className="sticky top-1/2 -translate-y-1/2">
         <div className="container mx-auto px-6 max-w-3xl">
-          <p className="text-2xl md:text-3xl lg:text-4xl font-light leading-relaxed text-center whitespace-pre-line">
-            {t.segments.map((segment, index) => (
-              <HighlightedSegment
-                key={index}
-                scrollYProgress={scrollYProgress}
-                start={index * segmentDuration}
-                end={(index + 0.5) * segmentDuration}
-                highlightColor={segment.highlight}
-              >
-                {segment.text}
-              </HighlightedSegment>
-            ))}
+          <p className="text-2xl md:text-3xl lg:text-4xl font-light leading-[1.8] text-center">
+            <HighlightedSegment
+              scrollYProgress={scrollYProgress}
+              start={0}
+              end={0.5 * segmentDuration}
+              highlightColor="#6b7280"
+            >
+              {locale === 'fr' ? 'Vous savez comment la vie va vite et on oublie les petits' : 'You know how life moves fast and we forget the small'}
+            </HighlightedSegment>
+            {' '}
+            <MomentBadge
+              scrollYProgress={scrollYProgress}
+              start={1 * segmentDuration}
+              end={1.5 * segmentDuration}
+              text={locale === 'fr' ? 'moments' : 'moments'}
+            />
+            <HighlightedSegment
+              scrollYProgress={scrollYProgress}
+              start={1 * segmentDuration}
+              end={1.5 * segmentDuration}
+              highlightColor="#6b7280"
+            >
+              ?
+            </HighlightedSegment>
+
+            <br /><br />
+
+            <HighlightedSegment
+              scrollYProgress={scrollYProgress}
+              start={2 * segmentDuration}
+              end={2.5 * segmentDuration}
+              highlightColor="#0d9488"
+            >
+              {locale === 'fr' ? 'On vous aide à les capturer' : 'We help you capture those'}
+            </HighlightedSegment>
+            <HighlightedSegment
+              scrollYProgress={scrollYProgress}
+              start={3 * segmentDuration}
+              end={3.5 * segmentDuration}
+              highlightColor="#6b7280"
+            >
+              {locale === 'fr'
+                ? " — une photo, une note vocale, ou juste ce que vous ressentez."
+                : " — a photo, a voice note, or just how you're feeling."}
+            </HighlightedSegment>
+
+            <br /><br />
+
+            <HighlightedSegment
+              scrollYProgress={scrollYProgress}
+              start={4 * segmentDuration}
+              end={4.5 * segmentDuration}
+              highlightColor="#6b7280"
+            >
+              {locale === 'fr' ? 'Au fil du temps, vous voyez vos patterns,' : 'Over time, you see your patterns,'}
+            </HighlightedSegment>
+            {' '}
+            <HighlightedSegment
+              scrollYProgress={scrollYProgress}
+              start={5 * segmentDuration}
+              end={5.5 * segmentDuration}
+              highlightColor="#0d9488"
+            >
+              {locale === 'fr' ? 'vous comprenez mieux,' : 'understand yourself better,'}
+            </HighlightedSegment>
+            {' '}
+            <HighlightedSegment
+              scrollYProgress={scrollYProgress}
+              start={6 * segmentDuration}
+              end={6.5 * segmentDuration}
+              highlightColor="#6b7280"
+            >
+              {locale === 'fr' ? 'et vous avancez plus doucement.' : 'and take gentler steps forward.'}
+            </HighlightedSegment>
+
+            <br /><br />
+
+            <HighlightedSegment
+              scrollYProgress={scrollYProgress}
+              start={7 * segmentDuration}
+              end={7.5 * segmentDuration}
+              highlightColor="#6b7280"
+            >
+              {locale === 'fr' ? "Quand vous avez besoin d'un petit coup de pouce," : 'When you need a gentle nudge,'}
+            </HighlightedSegment>
+            {' '}
+            <HighlightedSegment
+              scrollYProgress={scrollYProgress}
+              start={8 * segmentDuration}
+              end={8.5 * segmentDuration}
+              highlightColor="#0d9488"
+            >
+              {locale === 'fr' ? 'Bloom est là.' : 'Bloom is there.'}
+            </HighlightedSegment>
           </p>
         </div>
       </div>
