@@ -20,7 +20,10 @@ import {
   Lightbulb,
   Globe,
   Building2,
-  Zap
+  Zap,
+  Camera,
+  EyeOff,
+  RefreshCw
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { Button } from '@/components/ui/button'
@@ -59,15 +62,29 @@ const translations = {
     },
     problem: {
       label: 'THE PROBLEM',
-      title: 'Small moments slip away',
-      subtitle: 'before anyone can learn from them',
-      points: [
-        { text: 'Moments fade', desc: 'You forget. Your practitioner never knew.' },
-        { text: 'Progress hides', desc: 'Growth is slow. Sessions start from scratch.' },
-        { text: 'Help comes late', desc: 'By the next visit, context is gone.' },
+      title: 'Therapy works.',
+      subtitle: 'But only',
+      highlight: '1 hour',
+      subtitleEnd: 'a week.',
+      gap: {
+        title: 'The Gap',
+        session: '1h',
+        sessionLabel: 'Session',
+        life: '167h',
+        lifeLabel: 'Life happens',
+        arrow: '→',
+      },
+      lostTitle: 'What Gets Lost',
+      lost: [
+        { icon: 'camera', label: 'Moments fade' },
+        { icon: 'eye', label: 'Progress invisible' },
+        { icon: 'refresh', label: 'Sessions restart' },
       ],
-      insight: 'What if those moments were captured',
-      insightEnd: 'understood, and shared?',
+      stats: [
+        { number: '15 min', label: 'lost catching up' },
+        { number: '50%', label: 'drop before session 4' },
+      ],
+      cost: 'Therapy gets harder. Recovery takes longer.',
     },
     solution: {
       label: 'THE SOLUTION',
@@ -395,15 +412,29 @@ const translations = {
     },
     problem: {
       label: 'LE PROBLÈME',
-      title: 'Les petits moments nous échappent',
-      subtitle: 'avant que quiconque puisse en apprendre',
-      points: [
-        { text: 'Les moments s\'effacent', desc: 'Vous oubliez. Votre praticien ne savait pas.' },
-        { text: 'Le progrès se cache', desc: 'La croissance est lente. Les séances repartent de zéro.' },
-        { text: 'L\'aide arrive tard', desc: 'À la prochaine visite, le contexte est perdu.' },
+      title: 'La thérapie fonctionne.',
+      subtitle: 'Mais seulement',
+      highlight: '1 heure',
+      subtitleEnd: 'par semaine.',
+      gap: {
+        title: 'L\'écart',
+        session: '1h',
+        sessionLabel: 'Séance',
+        life: '167h',
+        lifeLabel: 'La vie continue',
+        arrow: '→',
+      },
+      lostTitle: 'Ce qui se perd',
+      lost: [
+        { icon: 'camera', label: 'Les moments s\'effacent' },
+        { icon: 'eye', label: 'Progrès invisible' },
+        { icon: 'refresh', label: 'Séances repartent à zéro' },
       ],
-      insight: 'Et si ces moments étaient capturés',
-      insightEnd: 'compris, et partagés ?',
+      stats: [
+        { number: '15 min', label: 'perdues à rattraper' },
+        { number: '50%', label: 'abandonnent avant séance 4' },
+      ],
+      cost: 'La thérapie devient plus difficile. La guérison prend plus de temps.',
     },
     solution: {
       label: 'LA SOLUTION',
@@ -958,51 +989,95 @@ interface ProblemSlideProps {
 }
 
 function ProblemSlide({ t }: ProblemSlideProps) {
+  const iconMap: Record<string, React.ReactNode> = {
+    camera: <Camera className="w-6 h-6" />,
+    eye: <EyeOff className="w-6 h-6" />,
+    refresh: <RefreshCw className="w-6 h-6" />,
+  }
+
   return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-5xl mx-auto text-center">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-3"
-        >
-          {t.label}
-        </motion.p>
+    <div className="h-full w-full flex items-center justify-center px-8 lg:px-16">
+      <div className="w-full max-w-7xl mx-auto">
+        {/* Top Section - Label + Headline */}
+        <div className="text-center mb-8">
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-teal-600 font-medium mb-4"
+          >
+            {t.label}
+          </motion.p>
 
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-3xl sm:text-4xl font-light text-neutral-900 mb-10 leading-[1.2]"
-        >
-          {t.title} <span className="text-neutral-400">{t.subtitle}</span>
-        </motion.h2>
-
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          {t.points.map((point: { text: string; desc: string }, index: number) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-              className="text-center p-5 rounded-2xl bg-neutral-50 border border-neutral-100"
-            >
-              <p className="text-lg font-semibold text-neutral-900 mb-1">{point.text}</p>
-              <p className="text-sm text-neutral-500">{point.desc}</p>
-            </motion.div>
-          ))}
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 mb-2 leading-[1.1]"
+          >
+            {t.title} <span className="text-neutral-400">{t.subtitle} <span className="text-red-500 font-medium">{t.highlight}</span> {t.subtitleEnd}</span>
+          </motion.h2>
         </div>
 
+        {/* Two Column Layout - Gap & What's Lost */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="inline-block px-8 py-4 rounded-full bg-gradient-to-r from-teal-500 to-teal-600 text-white"
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8"
         >
-          <p className="text-lg font-light">
-            {t.insight} <span className="font-medium">{t.insightEnd}</span>
+          {/* Left - Visual Gap */}
+          <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-neutral-50">
+            <p className="text-sm font-medium text-neutral-500 uppercase tracking-wide mb-4">{t.gap.title}</p>
+            <div className="flex items-center gap-6 mb-4">
+              <div className="w-24 h-24 rounded-2xl bg-teal-100 flex items-center justify-center">
+                <span className="text-4xl font-bold text-teal-600">{t.gap.session}</span>
+              </div>
+              <div className="text-neutral-300 text-3xl">{t.gap.arrow}</div>
+              <div className="w-32 h-24 rounded-2xl bg-white border-2 border-dashed border-neutral-300 flex items-center justify-center">
+                <span className="text-4xl font-bold text-neutral-400">{t.gap.life}</span>
+              </div>
+            </div>
+            <div className="flex gap-12 text-sm text-neutral-500">
+              <span>{t.gap.sessionLabel}</span>
+              <span>{t.gap.lifeLabel}</span>
+            </div>
+          </div>
+
+          {/* Right - What's Lost */}
+          <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-red-50/50">
+            <p className="text-sm font-medium text-red-400 uppercase tracking-wide mb-4">{t.lostTitle}</p>
+            <div className="flex justify-center gap-8">
+              {t.lost.map((item: { icon: string; label: string }, index: number) => (
+                <div key={index} className="flex flex-col items-center gap-3 text-center">
+                  <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-red-400 shadow-sm">
+                    {iconMap[item.icon]}
+                  </div>
+                  <span className="text-sm text-neutral-600 leading-tight max-w-[100px]">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Bottom Center - Stats with Message */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.35 }}
+          className="text-center"
+        >
+          <p className="text-xl text-neutral-600 mb-6">
+            {t.cost}
           </p>
+          <div className="flex justify-center gap-12 lg:gap-20">
+            {t.stats.map((stat: { number: string; label: string }, index: number) => (
+              <div key={index} className="text-center">
+                <p className="text-5xl lg:text-6xl font-bold text-red-500">{stat.number}</p>
+                <p className="text-sm text-neutral-500 mt-1">{stat.label}</p>
+              </div>
+            ))}
+          </div>
         </motion.div>
       </div>
     </div>
