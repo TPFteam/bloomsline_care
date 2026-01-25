@@ -76,7 +76,7 @@ export function IntroSection() {
   return (
     <section
       ref={containerRef}
-      className="min-h-[120vh] py-32 md:py-40 bg-gradient-to-b from-white via-gray-50/20 to-white"
+      className="min-h-[120vh] pt-48 md:pt-56 pb-32 bg-gradient-to-b from-white via-gray-50/20 to-white"
     >
       <div className="sticky top-1/2 -translate-y-1/2">
         <div className="container mx-auto px-6 max-w-3xl">
