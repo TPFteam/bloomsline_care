@@ -76,9 +76,9 @@ export function IntroSection() {
   return (
     <section
       ref={containerRef}
-      className="min-h-[120vh] pt-48 md:pt-56 pb-32 bg-gradient-to-b from-white via-gray-50/20 to-white"
+      className="min-h-[100vh] mt-20 py-20 bg-gradient-to-b from-white via-gray-50/20 to-white"
     >
-      <div className="sticky top-1/2 -translate-y-1/2">
+      <div className="sticky top-1/3">
         <div className="container mx-auto px-6 max-w-3xl">
           <p className="text-2xl md:text-3xl lg:text-4xl font-light leading-[1.8] text-center">
             <HighlightedSegment
