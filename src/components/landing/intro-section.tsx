@@ -3,7 +3,7 @@
 import { useRef } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { useLanguage } from '@/lib/i18n/context'
-import { Sparkles } from 'lucide-react'
+import { Sun } from 'lucide-react'
 
 // Highlighted text segment component
 function HighlightedSegment({
@@ -55,7 +55,7 @@ function MomentBadge({
         color: textColor,
       }}
     >
-      <Sparkles className="w-4 h-4" />
+      <Sun className="w-4 h-4" />
       {text}
     </motion.span>
   )
