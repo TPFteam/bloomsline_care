@@ -127,7 +127,7 @@ interface RitualCompletion {
   created_at: string
 }
 
-// Daily Anchors types
+// Daily Seeds types
 interface Anchor {
   id: string
   icon: string
@@ -1507,7 +1507,7 @@ export default function MyResourcesPage() {
           </div>
         </motion.div>
 
-        {/* Daily Anchors Section */}
+        {/* Daily Seeds Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1521,11 +1521,11 @@ export default function MyResourcesPage() {
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <h3 className="text-base font-bold text-gray-900">
-                {locale === 'fr' ? 'Ancres du Jour' : 'Daily Anchors'}
+                {locale === 'fr' ? 'Graines du Jour' : 'Daily Seeds'}
               </h3>
             </div>
             <button
-              onClick={() => router.push('/anchors')}
+              onClick={() => router.push('/seeds')}
               className="text-xs text-amber-600 font-medium hover:text-amber-700 flex items-center gap-1"
             >
               {locale === 'fr' ? 'Voir tout' : 'View all'}

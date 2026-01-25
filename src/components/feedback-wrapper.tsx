@@ -21,7 +21,7 @@ const excludedPaths = [
   '/rituals',
   '/balance',
   '/reflection',
-  '/anchors',
+  '/seeds',
   '/settings/member',
   '/my-practitioner',
   '/profile/member',

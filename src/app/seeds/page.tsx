@@ -163,7 +163,7 @@ const LETGO_ANCHOR_OPTIONS = [
   'latenights',     // Late nights
 ]
 
-export default function AnchorsPage() {
+export default function SeedsPage() {
   const router = useRouter()
   const { locale } = useLanguage()
   const supabase = createClient()
@@ -547,21 +547,33 @@ export default function AnchorsPage() {
     <MemberLayout>
       <div className="px-5 pt-6 pb-8">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <button
-            onClick={() => router.back()}
-            className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">
-              {locale === 'fr' ? 'Mes Ancres' : 'My Anchors'}
-            </h1>
-            <p className="text-sm text-gray-500">
-              {locale === 'fr' ? 'Suivez vos habitudes quotidiennes' : 'Track your daily habits'}
-            </p>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">
+                {locale === 'fr' ? 'Graines du Jour' : 'Daily Seeds'}
+              </h1>
+              <p className="text-sm text-gray-500">
+                {locale === 'fr' ? 'Plantez et cultivez vos habitudes' : 'Plant and nurture your habits'}
+              </p>
+            </div>
           </div>
+          <button
+            onClick={() => setActiveTab(activeTab === 'history' ? 'today' : 'history')}
+            className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors ${
+              activeTab === 'history'
+                ? 'bg-amber-500 text-white'
+                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+            }`}
+          >
+            <History className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Tab switcher */}
@@ -596,17 +608,6 @@ export default function AnchorsPage() {
           >
             <TrendingUp className="w-4 h-4" />
             {locale === 'fr' ? 'Tendances' : 'Trends'}
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'history'
-                ? 'bg-amber-500 text-white shadow-md'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <History className="w-4 h-4" />
-            {locale === 'fr' ? 'Historique' : 'History'}
           </button>
         </div>
 
@@ -694,8 +695,8 @@ export default function AnchorsPage() {
                 </p>
                 <p className="text-sm text-gray-400 mt-1">
                   {locale === 'fr'
-                    ? 'Ajoutez ou supprimez des ancres pour voir l\'historique'
-                    : 'Add or remove anchors to see history'}
+                    ? 'Ajoutez ou supprimez des graines pour voir l\'historique'
+                    : 'Add or remove seeds to see history'}
                 </p>
               </div>
             )}
@@ -708,7 +709,7 @@ export default function AnchorsPage() {
                     {activityLogs.filter(l => l.action === 'added').length}
                   </div>
                   <p className="text-xs text-green-700 mt-1">
-                    {locale === 'fr' ? 'Ancres ajoutées' : 'Anchors added'}
+                    {locale === 'fr' ? 'Graines ajoutées' : 'Seeds added'}
                   </p>
                 </div>
                 <div className="bg-red-50 rounded-2xl p-4 text-center">
@@ -716,7 +717,7 @@ export default function AnchorsPage() {
                     {activityLogs.filter(l => l.action === 'removed').length}
                   </div>
                   <p className="text-xs text-red-700 mt-1">
-                    {locale === 'fr' ? 'Ancres supprimées' : 'Anchors removed'}
+                    {locale === 'fr' ? 'Graines supprimées' : 'Seeds removed'}
                   </p>
                 </div>
               </div>
@@ -917,8 +918,8 @@ export default function AnchorsPage() {
                 <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500">
                   {locale === 'fr'
-                    ? 'Ajoutez des ancres pour voir les tendances'
-                    : 'Add anchors to see trends'}
+                    ? 'Ajoutez des graines pour voir les tendances'
+                    : 'Add seeds to see trends'}
                 </p>
               </div>
             )}
@@ -1212,7 +1213,7 @@ export default function AnchorsPage() {
               <div className="text-center py-12">
                 <Sparkles className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500">
-                  {locale === 'fr' ? 'Ajoutez des ancres pour voir vos progrès' : 'Add anchors to see your progress'}
+                  {locale === 'fr' ? 'Ajoutez des graines pour voir vos progrès' : 'Add seeds to see your progress'}
                 </p>
               </div>
             )}
@@ -1222,8 +1223,8 @@ export default function AnchorsPage() {
         {/* Hint */}
         <p className="text-center text-xs text-gray-400 mt-6">
           {locale === 'fr'
-            ? 'Tapez sur une ancre pour enregistrer'
-            : 'Tap an anchor to log it'}
+            ? 'Tapez sur une graine pour enregistrer'
+            : 'Tap a seed to log it'}
         </p>
       </div>
 
@@ -1246,7 +1247,7 @@ export default function AnchorsPage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-gray-900">
-                  {locale === 'fr' ? 'Ajouter une ancre' : 'Add Anchor'}
+                  {locale === 'fr' ? 'Ajouter une graine' : 'Add Seed'}
                 </h3>
                 <button
                   onClick={() => setShowAddAnchor(false)}
