@@ -59,22 +59,15 @@ const translations = {
     },
     problem: {
       label: 'THE PROBLEM',
-      title: 'Mental health support is broken',
-      subtitle: 'between sessions',
-      practitionersTitle: 'For Practitioners',
-      practitionerPoints: [
-        'Zero visibility into what happens between sessions',
-        'Clients forget therapeutic practices',
-        'Start from scratch every appointment',
+      title: 'Small moments slip away',
+      subtitle: 'before we can learn from them',
+      points: [
+        { text: 'We forget how we felt', desc: 'Good days and hard days blur together' },
+        { text: 'Progress feels invisible', desc: 'Growth happens slowly, we only see setbacks' },
+        { text: 'Support comes too late', desc: 'By the next session, context is lost' },
       ],
-      membersTitle: 'For Members',
-      memberPoints: [
-        'Wellness apps create guilt, not growth',
-        '70% abandon within 30 days',
-        'Exhausted from "optimizing themselves"',
-      ],
-      insight: 'The gap between sessions',
-      insightEnd: 'is where therapeutic progress is lost.',
+      insight: 'What if those moments were captured',
+      insightEnd: 'understood, and valued?',
     },
     solution: {
       label: 'THE SOLUTION',
@@ -402,22 +395,15 @@ const translations = {
     },
     problem: {
       label: 'LE PROBLÈME',
-      title: "L'accompagnement en santé mentale est défaillant",
-      subtitle: 'entre les séances',
-      practitionersTitle: 'Pour les Praticiens',
-      practitionerPoints: [
-        'Aucune visibilité sur ce qui se passe entre les séances',
-        'Les clients oublient les pratiques thérapeutiques',
-        'Recommencer à zéro à chaque rendez-vous',
+      title: 'Les petits moments nous échappent',
+      subtitle: 'avant qu\'on puisse en apprendre',
+      points: [
+        { text: 'On oublie ce qu\'on a ressenti', desc: 'Les bons et mauvais jours se confondent' },
+        { text: 'Le progrès semble invisible', desc: 'La croissance est lente, on ne voit que les reculs' },
+        { text: 'L\'aide arrive trop tard', desc: 'À la prochaine séance, le contexte est perdu' },
       ],
-      membersTitle: 'Pour les Membres',
-      memberPoints: [
-        'Les apps de bien-être créent de la culpabilité, pas de la croissance',
-        '70% abandonnent en moins de 30 jours',
-        'Épuisés de vouloir "s\'optimiser"',
-      ],
-      insight: "L'espace entre les séances",
-      insightEnd: "c'est là où le progrès thérapeutique se perd.",
+      insight: 'Et si ces moments étaient capturés',
+      insightEnd: 'compris, et valorisés ?',
     },
     solution: {
       label: 'LA SOLUTION',
@@ -974,7 +960,7 @@ interface ProblemSlideProps {
 function ProblemSlide({ t }: ProblemSlideProps) {
   return (
     <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-3xl mx-auto text-center">
         <motion.p
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -988,65 +974,36 @@ function ProblemSlide({ t }: ProblemSlideProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-12 leading-[1.2]"
+          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-16 leading-[1.2]"
         >
           {t.title}
           <br />
           <span className="text-neutral-400">{t.subtitle}</span>
         </motion.h2>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Practitioners */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="p-8 rounded-3xl bg-gradient-to-br from-[#D4856A]/10 to-[#E8A87C]/10 border border-[#D4856A]/20"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-[#D4856A]/20 flex items-center justify-center mb-6">
-              <Users className="w-6 h-6 text-[#D4856A]" />
-            </div>
-            <h3 className="text-xl font-semibold text-neutral-900 mb-4">{t.practitionersTitle}</h3>
-            <ul className="space-y-3 text-neutral-600">
-              {t.practitionerPoints.map((point, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#D4856A] mt-2 flex-shrink-0" />
-                  {point}
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-
-          {/* Members */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="p-8 rounded-3xl bg-gradient-to-br from-teal-50 to-teal-100/50 border border-teal-200/50"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-teal-100 flex items-center justify-center mb-6">
-              <Heart className="w-6 h-6 text-teal-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-neutral-900 mb-4">{t.membersTitle}</h3>
-            <ul className="space-y-3 text-neutral-600">
-              {t.memberPoints.map((point, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500 mt-2 flex-shrink-0" />
-                  {point}
-                </li>
-              ))}
-            </ul>
-          </motion.div>
+        <div className="space-y-8">
+          {t.points.map((point: { text: string; desc: string }, index: number) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
+              className="text-left p-6 rounded-2xl bg-neutral-50 border border-neutral-100"
+            >
+              <p className="text-xl font-medium text-neutral-900 mb-1">{point.text}</p>
+              <p className="text-neutral-500">{point.desc}</p>
+            </motion.div>
+          ))}
         </div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="mt-10 p-6 rounded-2xl bg-neutral-900 text-white text-center"
+          transition={{ duration: 0.5, delay: 0.6 }}
+          className="mt-12 p-6 rounded-2xl bg-gradient-to-r from-teal-500 to-teal-600 text-white"
         >
-          <p className="text-lg font-light">
-            <span className="text-teal-400 font-medium">{t.insight}</span> {t.insightEnd}
+          <p className="text-xl font-light">
+            {t.insight} <span className="font-medium">{t.insightEnd}</span>
           </p>
         </motion.div>
       </div>
