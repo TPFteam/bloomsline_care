@@ -6,8 +6,9 @@ import { useLanguage } from '@/lib/i18n/context'
 import { Navbar } from '@/components/landing/navbar'
 import { Footer } from '@/components/landing/footer'
 import { Button } from '@/components/ui/button'
-import { Check, Heart, Users, Info, Sparkles, Leaf, Sun } from 'lucide-react'
+import { Check, Heart, Info, Sparkles, Leaf, Sun } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
+import { EarlyAccessModalProvider } from '@/lib/landing/early-access-modal-context'
 
 type UserType = 'member' | 'practitioner' | 'both' | null
 
@@ -104,6 +105,7 @@ function EarlyAccessContent() {
   ]
 
   return (
+    <EarlyAccessModalProvider>
     <div className="bg-white text-gray-900">
       <Navbar />
       <main className="min-h-screen bg-white pt-20">
@@ -484,6 +486,7 @@ function EarlyAccessContent() {
       </main>
       <Footer />
     </div>
+    </EarlyAccessModalProvider>
   )
 }
 
