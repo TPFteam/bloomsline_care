@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -18,6 +18,9 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 import { getUserPreferences } from '@/lib/services/preferences'
+import { FeatureGuide } from '@/components/feature-guide/FeatureGuide'
+import { momentsGuideSteps } from '@/components/feature-guide/guides/moments-guide'
+import { useFeatureGuide } from '@/lib/hooks/useFeatureGuide'
 
 interface MemberLayoutProps {
   children: React.ReactNode
@@ -117,9 +120,13 @@ const menuNavItems = [
 
 export default function MemberLayout({ children }: MemberLayoutProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const { locale } = useLanguage()
   const [showMore, setShowMore] = useState(false)
   const [showAllFeatures, setShowAllFeatures] = useState(false)
+
+  // Feature guide for Moments (shown when clicking camera if not completed)
+  const { showGuide: showMomentsGuide, completeGuide: completeMomentsGuide, skipGuide: skipMomentsGuide, setShowGuide: setShowMomentsGuide, guideStatus: momentsGuideStatus } = useFeatureGuide('moments')
 
   // Force light mode for member pages (B2C should always be light/calming)
   useEffect(() => {
@@ -174,8 +181,15 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.2 }}
         >
-          <Link
-            href="/moments/capture?from=/home"
+          <button
+            onClick={() => {
+              // Show guide if not completed yet
+              if (!momentsGuideStatus?.completed && !momentsGuideStatus?.skipped) {
+                setShowMomentsGuide(true)
+              } else {
+                router.push('/moments/capture?from=/home')
+              }
+            }}
             className="fixed bottom-24 right-4 z-50 w-14 h-14 bg-gradient-to-br from-rose-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg shadow-pink-300/50 active:scale-95 transition-transform"
           >
             <motion.div
@@ -184,8 +198,24 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
             >
               <Camera className="w-6 h-6 text-white" />
             </motion.div>
-          </Link>
+          </button>
         </motion.div>
+      )}
+
+      {/* Feature Guide for Moments (shown when clicking camera if not completed) */}
+      {showMomentsGuide && (
+        <FeatureGuide
+          featureName="moments"
+          steps={momentsGuideSteps}
+          onComplete={() => {
+            completeMomentsGuide()
+            router.push('/moments/capture?from=/home')
+          }}
+          onSkip={() => {
+            skipMomentsGuide()
+            router.push('/moments/capture?from=/home')
+          }}
+        />
       )}
 
       {/* More Menu Overlay */}

@@ -26,6 +26,7 @@ import {
   TrendingUp,
   TrendingDown,
   BarChart2,
+  Info,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/i18n/context'
@@ -192,7 +193,7 @@ export default function MomentsPage() {
   const { locale } = useLanguage()
 
   // Feature guide
-  const { showGuide, completeGuide, skipGuide } = useFeatureGuide('moments')
+  const { showGuide, completeGuide, skipGuide, setShowGuide } = useFeatureGuide('moments')
 
   const [moments, setMoments] = useState<Moment[]>([])
   const [stats, setStats] = useState<{ total: number; thisWeek: number; byType: Record<MomentType, number> } | null>(null)
@@ -495,6 +496,15 @@ export default function MomentsPage() {
                 className={`p-2.5 rounded-xl ${theme.toggleBg} ${theme.textMuted} hover:scale-105 transition-all`}
               >
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+
+              {/* Help/Guide button */}
+              <button
+                onClick={() => setShowGuide(true)}
+                className={`p-2.5 rounded-xl ${theme.toggleBg} ${theme.textMuted} hover:scale-105 transition-all`}
+                title={locale === 'fr' ? 'Comment ça marche' : 'How it works'}
+              >
+                <Info className="w-4 h-4" />
               </button>
             </motion.div>
           </div>

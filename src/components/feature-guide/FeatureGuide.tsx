@@ -63,14 +63,14 @@ export function FeatureGuide({
         angle: 60,
         spread: 55,
         origin: { x: 0, y: 0.7 },
-        colors: ['#a855f7', '#f59e0b', '#10b981', '#ec4899', '#3b82f6']
+        colors: ['#4A9A86', '#5AB39C', '#6BB3A0', '#D4856A', '#E8A87C']
       })
       confetti({
         particleCount: 3,
         angle: 120,
         spread: 55,
         origin: { x: 1, y: 0.7 },
-        colors: ['#a855f7', '#f59e0b', '#10b981', '#ec4899', '#3b82f6']
+        colors: ['#4A9A86', '#5AB39C', '#6BB3A0', '#D4856A', '#E8A87C']
       })
 
       if (Date.now() < end) {
@@ -135,7 +135,7 @@ export function FeatureGuide({
                 y: [0, -20, 0],
               }}
               transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute -top-20 -left-20 w-60 h-60 bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 opacity-30 rounded-full blur-3xl"
+              className="absolute -top-20 -left-20 w-60 h-60 bg-gradient-to-br from-[#D4856A] via-[#E8A87C] to-[#f5d6c6] opacity-30 rounded-full blur-3xl"
             />
             <motion.div
               animate={{
@@ -143,7 +143,7 @@ export function FeatureGuide({
                 y: [0, 30, 0],
               }}
               transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute -bottom-20 -right-20 w-80 h-80 bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-500 opacity-20 rounded-full blur-3xl"
+              className="absolute -bottom-20 -right-20 w-80 h-80 bg-gradient-to-br from-[#4A9A86] via-[#5AB39C] to-[#6BB3A0] opacity-20 rounded-full blur-3xl"
             />
           </div>
 
@@ -207,10 +207,10 @@ export function FeatureGuide({
                             opacity: [0.3, 0.5, 0.3]
                           }}
                           transition={{ duration: 2, repeat: Infinity }}
-                          className={`absolute inset-0 bg-gradient-to-br ${step.gradient || 'from-amber-400 to-orange-500'} rounded-3xl blur-xl`}
+                          className={`absolute inset-0 bg-gradient-to-br ${step.gradient || 'from-[#4A9A86] to-[#5AB39C]'} rounded-3xl blur-xl`}
                         />
                         {/* Icon box */}
-                        <div className={`relative w-full h-full bg-gradient-to-br ${step.gradient || 'from-amber-400 to-orange-500'} rounded-3xl flex items-center justify-center shadow-lg`}>
+                        <div className={`relative w-full h-full bg-gradient-to-br ${step.gradient || 'from-[#4A9A86] to-[#5AB39C]'} rounded-3xl flex items-center justify-center shadow-lg`}>
                           <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
@@ -224,7 +224,7 @@ export function FeatureGuide({
                         <motion.div
                           animate={{ rotate: 360 }}
                           transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                          className="absolute -top-2 -right-2 text-amber-400"
+                          className="absolute -top-2 -right-2 text-[#4A9A86]"
                         >
                           <Sparkles className="w-5 h-5" />
                         </motion.div>
@@ -271,9 +271,9 @@ export function FeatureGuide({
                         animate={{
                           width: index === currentStep ? 28 : 10,
                           backgroundColor: index === currentStep
-                            ? '#f59e0b'
+                            ? '#4A9A86'
                             : index < currentStep
-                              ? '#fbbf24'
+                              ? '#5AB39C'
                               : '#e5e7eb'
                         }}
                         className="h-2.5 rounded-full"
@@ -301,7 +301,7 @@ export function FeatureGuide({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleNext}
-                    className="flex-1 py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
+                    className="flex-1 py-4 px-6 rounded-2xl bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] hover:from-[#3d8a76] hover:to-[#4da38c] text-white font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
                   >
                     {isLastStep ? (
                       <>

@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Camera, Video, Mic, PenLine, Plus, Heart, Smile, Sparkles, Check, MessageCircle } from 'lucide-react'
+import { Camera, Video, Mic, PenLine, Plus, Heart, Smile, Sparkles, Check } from 'lucide-react'
 
 // Animation 1: Welcome - Floating moments collage
 export function WelcomeAnimation() {
@@ -11,7 +11,7 @@ export function WelcomeAnimation() {
       <motion.div
         animate={{ y: [0, -8, 0], rotate: [-3, -3, -3] }}
         transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute w-16 h-20 bg-gradient-to-br from-rose-400 to-pink-500 rounded-xl shadow-lg -left-2 top-4"
+        className="absolute w-16 h-20 bg-gradient-to-br from-[#D4856A] to-[#E8A87C] rounded-xl shadow-lg -left-2 top-4"
       >
         <div className="w-full h-full flex items-center justify-center">
           <Heart className="w-6 h-6 text-white" />
@@ -21,7 +21,7 @@ export function WelcomeAnimation() {
       <motion.div
         animate={{ y: [0, -10, 0], rotate: [2, 2, 2] }}
         transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
-        className="absolute w-20 h-24 bg-gradient-to-br from-violet-400 to-purple-500 rounded-xl shadow-lg z-10"
+        className="absolute w-20 h-24 bg-gradient-to-br from-[#4A9A86] to-[#5AB39C] rounded-xl shadow-lg z-10"
       >
         <div className="w-full h-full flex items-center justify-center">
           <Sparkles className="w-8 h-8 text-white" />
@@ -31,7 +31,7 @@ export function WelcomeAnimation() {
       <motion.div
         animate={{ y: [0, -6, 0], rotate: [4, 4, 4] }}
         transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
-        className="absolute w-16 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl shadow-lg -right-2 top-6"
+        className="absolute w-16 h-20 bg-gradient-to-br from-[#4A9A86] to-[#6BB3A0] rounded-xl shadow-lg -right-2 top-6"
       >
         <div className="w-full h-full flex items-center justify-center">
           <Camera className="w-6 h-6 text-white" />
@@ -51,10 +51,10 @@ export function CaptureAnimation() {
           {/* Capture options appearing */}
           <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2">
             {[
-              { icon: Camera, color: 'from-blue-400 to-cyan-500', delay: 0 },
-              { icon: Video, color: 'from-rose-400 to-pink-500', delay: 0.15 },
-              { icon: Mic, color: 'from-amber-400 to-orange-500', delay: 0.3 },
-              { icon: PenLine, color: 'from-emerald-400 to-teal-500', delay: 0.45 },
+              { icon: Camera, color: 'from-[#4A9A86] to-[#5AB39C]', delay: 0 },
+              { icon: Video, color: 'from-[#D4856A] to-[#E8A87C]', delay: 0.15 },
+              { icon: Mic, color: 'from-[#4A9A86] to-[#6BB3A0]', delay: 0.3 },
+              { icon: PenLine, color: 'from-[#C27459] to-[#D4856A]', delay: 0.45 },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -78,7 +78,7 @@ export function CaptureAnimation() {
           <motion.div
             animate={{ scale: [1, 0.9, 1] }}
             transition={{ duration: 3, repeat: Infinity }}
-            className="absolute bottom-3 left-1/2 -translate-x-1/2 -translate-y-12 w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg"
+            className="absolute bottom-3 left-1/2 -translate-x-1/2 -translate-y-12 w-10 h-10 bg-gradient-to-br from-[#4A9A86] to-[#5AB39C] rounded-full flex items-center justify-center shadow-lg"
           >
             <Plus className="w-5 h-5 text-white" />
           </motion.div>
@@ -99,11 +99,11 @@ export function CaptureAnimation() {
 // Animation 3: Mood tracking
 export function MoodAnimation() {
   const moods = [
-    { emoji: '😊', color: 'bg-amber-100', delay: 0 },
-    { emoji: '😌', color: 'bg-emerald-100', delay: 0.1 },
-    { emoji: '🥰', color: 'bg-rose-100', delay: 0.2 },
-    { emoji: '😔', color: 'bg-blue-100', delay: 0.3 },
-    { emoji: '😤', color: 'bg-orange-100', delay: 0.4 },
+    { emoji: '😊', color: 'bg-[#e8f5f1]', delay: 0 },
+    { emoji: '😌', color: 'bg-[#f5ebe7]', delay: 0.1 },
+    { emoji: '🥰', color: 'bg-[#e8f5f1]', delay: 0.2 },
+    { emoji: '😔', color: 'bg-[#f0f5f3]', delay: 0.3 },
+    { emoji: '😤', color: 'bg-[#f5ebe7]', delay: 0.4 },
   ]
 
   return (
@@ -128,15 +128,15 @@ export function MoodAnimation() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: [0, 1, 1, 0], y: [10, 0, 0, -10] }}
         transition={{ duration: 3, repeat: Infinity, times: [0, 0.2, 0.8, 1] }}
-        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-100 to-orange-100 rounded-full"
+        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#e8f5f1] to-[#d4ebe4] rounded-full"
       >
         <span className="text-lg">😊</span>
-        <span className="text-sm font-medium text-amber-700">Grateful</span>
+        <span className="text-sm font-medium text-[#4A9A86]">Grateful</span>
         <motion.div
           animate={{ scale: [0, 1] }}
           transition={{ delay: 1, duration: 0.3, repeat: Infinity, repeatDelay: 2.7 }}
         >
-          <Check className="w-4 h-4 text-amber-600" />
+          <Check className="w-4 h-4 text-[#4A9A86]" />
         </motion.div>
       </motion.div>
     </div>
@@ -154,7 +154,7 @@ export function BloomAnimation() {
           <motion.div
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center"
+            className="w-8 h-8 bg-gradient-to-br from-[#4A9A86] to-[#5AB39C] rounded-full flex items-center justify-center"
           >
             <Sparkles className="w-4 h-4 text-white" />
           </motion.div>
@@ -183,14 +183,14 @@ export function BloomAnimation() {
           initial={{ opacity: 0 }}
           animate={{ opacity: [0, 1, 1, 0] }}
           transition={{ duration: 3.5, repeat: Infinity, times: [0, 0.3, 0.7, 1] }}
-          className="flex items-center gap-1 ml-auto w-fit bg-amber-100 rounded-xl px-3 py-1.5"
+          className="flex items-center gap-1 ml-auto w-fit bg-[#f5ebe7] rounded-xl px-3 py-1.5"
         >
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
               animate={{ y: [0, -3, 0] }}
               transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.15 }}
-              className="w-1.5 h-1.5 bg-amber-500 rounded-full"
+              className="w-1.5 h-1.5 bg-[#D4856A] rounded-full"
             />
           ))}
         </motion.div>
@@ -210,17 +210,17 @@ export function GrowthAnimation() {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ duration: 0.4, repeat: Infinity, repeatDelay: 4 }}
-          className="w-14 h-14 bg-gradient-to-br from-violet-400 to-purple-500 rounded-xl shadow-lg flex items-center justify-center"
+          className="w-14 h-14 bg-gradient-to-br from-[#4A9A86] to-[#5AB39C] rounded-xl shadow-lg flex items-center justify-center"
         >
           <Camera className="w-6 h-6 text-white" />
         </motion.div>
 
         {/* Growing moments */}
         {[
-          { x: -40, y: -30, delay: 0.5, color: 'from-rose-400 to-pink-500', icon: Heart },
-          { x: 40, y: -25, delay: 1, color: 'from-amber-400 to-orange-500', icon: Smile },
-          { x: -35, y: 30, delay: 1.5, color: 'from-emerald-400 to-teal-500', icon: PenLine },
-          { x: 45, y: 35, delay: 2, color: 'from-cyan-400 to-blue-500', icon: Mic },
+          { x: -40, y: -30, delay: 0.5, color: 'from-[#D4856A] to-[#E8A87C]', icon: Heart },
+          { x: 40, y: -25, delay: 1, color: 'from-[#4A9A86] to-[#6BB3A0]', icon: Smile },
+          { x: -35, y: 30, delay: 1.5, color: 'from-[#5AB39C] to-[#4A9A86]', icon: PenLine },
+          { x: 45, y: 35, delay: 2, color: 'from-[#C27459] to-[#D4856A]', icon: Mic },
         ].map((item, i) => (
           <motion.div
             key={i}
@@ -240,7 +240,7 @@ export function GrowthAnimation() {
           transition={{ delay: 3, duration: 0.8, repeat: Infinity, repeatDelay: 3.2 }}
           className="absolute inset-0 flex items-center justify-center"
         >
-          <Sparkles className="w-20 h-20 text-amber-400" />
+          <Sparkles className="w-20 h-20 text-[#4A9A86]" />
         </motion.div>
       </div>
     </div>

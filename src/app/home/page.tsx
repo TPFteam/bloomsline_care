@@ -67,6 +67,7 @@ import {
   Timer,
   ShoppingBag,
   BedDouble,
+  Info,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -86,6 +87,10 @@ import { toast } from 'sonner'
 import BloomChatInterface from '@/components/bloom/BloomChatInterface'
 import MemberLayout from '@/components/member/MemberLayout'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
+import { FeatureGuide } from '@/components/feature-guide/FeatureGuide'
+import { flowGuideSteps } from '@/components/feature-guide/guides/flow-guide'
+import { seedsGuideSteps } from '@/components/feature-guide/guides/seeds-guide'
+import { useFeatureGuide } from '@/lib/hooks/useFeatureGuide'
 import type { Member } from '@/types/member'
 import { getMemberMoments, type Moment } from '@/lib/services/moments'
 // Ritual types
@@ -411,6 +416,12 @@ export default function MyResourcesPage() {
   const [anchorsTab, setAnchorsTab] = useState<'grow' | 'letgo'>('grow')
   const [anchorLogs, setAnchorLogs] = useState<Record<string, number[]>>({}) // habitId -> array of timestamps for today
   const [selectedDateAnchorLogs, setSelectedDateAnchorLogs] = useState<{ anchorId: string; timestamp: number }[]>([]) // For timeline
+
+  // Feature guide for Today's Flow
+  const { showGuide: showFlowGuide, completeGuide: completeFlowGuide, skipGuide: skipFlowGuide, setShowGuide: setShowFlowGuide } = useFeatureGuide('flow')
+
+  // Feature guide for Seeds (shown when clicking + if not completed)
+  const { showGuide: showSeedsGuide, completeGuide: completeSeedsGuide, skipGuide: skipSeedsGuide, setShowGuide: setShowSeedsGuide, guideStatus: seedsGuideStatus } = useFeatureGuide('seeds')
 
   useEffect(() => {
     loadData()
@@ -915,6 +926,32 @@ export default function MyResourcesPage() {
 
   return (
     <MemberLayout>
+      {/* Feature Guide for Today's Flow */}
+      {showFlowGuide && (
+        <FeatureGuide
+          featureName="flow"
+          steps={flowGuideSteps}
+          onComplete={completeFlowGuide}
+          onSkip={skipFlowGuide}
+        />
+      )}
+
+      {/* Feature Guide for Seeds (shown when clicking + if not completed) */}
+      {showSeedsGuide && (
+        <FeatureGuide
+          featureName="seeds"
+          steps={seedsGuideSteps}
+          onComplete={() => {
+            completeSeedsGuide()
+            setShowAddAnchor(true)
+          }}
+          onSkip={() => {
+            skipSeedsGuide()
+            setShowAddAnchor(true)
+          }}
+        />
+      )}
+
       {/* Header */}
       <div className="px-5 pt-6 pb-2 safe-area-pt relative z-[100]">
         <div className="flex items-start justify-between">
@@ -1002,9 +1039,19 @@ export default function MyResourcesPage() {
         >
           {/* Header with date navigation and zoom controls */}
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-base font-bold text-gray-900 whitespace-nowrap">
-              {locale === 'fr' ? 'Flux du jour' : "Today's Flow"}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-bold text-gray-900 whitespace-nowrap">
+                {locale === 'fr' ? 'Flux du jour' : "Today's Flow"}
+              </h3>
+              {/* Info button */}
+              <button
+                onClick={() => setShowFlowGuide(true)}
+                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                title={locale === 'fr' ? "Qu'est-ce que c'est?" : "What's this?"}
+              >
+                <Info className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
             <div className="flex items-center gap-1">
               <button
                 onClick={goToPreviousDay}
@@ -1028,7 +1075,6 @@ export default function MyResourcesPage() {
               </button>
             </div>
           </div>
-
 
           {/* Journey Visualization */}
           <div className="relative h-40 bg-emerald-50/50 rounded-2xl overflow-hidden">
@@ -1579,12 +1625,19 @@ export default function MyResourcesPage() {
               })}
             </AnimatePresence>
 
-            {/* Add custom anchor button - opens modal */}
+            {/* Add custom anchor button - opens modal or guide */}
             <motion.button
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
-              onClick={() => setShowAddAnchor(true)}
+              onClick={() => {
+                // Show guide if not completed yet
+                if (!seedsGuideStatus?.completed && !seedsGuideStatus?.skipped) {
+                  setShowSeedsGuide(true)
+                } else {
+                  setShowAddAnchor(true)
+                }
+              }}
               className="aspect-square rounded-2xl flex items-center justify-center border-2 border-dashed border-amber-300 text-amber-400 hover:border-amber-400 hover:text-amber-500 transition-all hover:scale-105 active:scale-95"
             >
               <Plus className="w-6 h-6" />

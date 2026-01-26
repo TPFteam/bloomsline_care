@@ -47,6 +47,7 @@ import {
   PlusCircle,
   MinusCircle,
   RefreshCw,
+  Info,
 } from 'lucide-react'
 import {
   AreaChart,
@@ -60,6 +61,9 @@ import MemberLayout from '@/components/member/MemberLayout'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
+import { FeatureGuide } from '@/components/feature-guide/FeatureGuide'
+import { seedsGuideSteps } from '@/components/feature-guide/guides/seeds-guide'
+import { useFeatureGuide } from '@/lib/hooks/useFeatureGuide'
 
 // Anchor types
 interface Anchor {
@@ -167,6 +171,9 @@ export default function SeedsPage() {
   const router = useRouter()
   const { locale } = useLanguage()
   const supabase = createClient()
+
+  // Feature guide
+  const { showGuide, completeGuide, skipGuide, setShowGuide } = useFeatureGuide('seeds')
 
   const [loading, setLoading] = useState(true)
   const [memberId, setMemberId] = useState<string | null>(null)
@@ -625,6 +632,16 @@ export default function SeedsPage() {
 
   return (
     <MemberLayout>
+      {/* Feature Guide - shows on first visit */}
+      {showGuide && (
+        <FeatureGuide
+          featureName="seeds"
+          steps={seedsGuideSteps}
+          onComplete={completeGuide}
+          onSkip={skipGuide}
+        />
+      )}
+
       <div className="px-5 pt-6 pb-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -644,16 +661,27 @@ export default function SeedsPage() {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => setActiveTab(activeTab === 'history' ? 'day' : 'history')}
-            className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors ${
-              activeTab === 'history'
-                ? 'bg-amber-500 text-white'
-                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-            }`}
-          >
-            <History className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Help/Guide button */}
+            <button
+              onClick={() => setShowGuide(true)}
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+              title={locale === 'fr' ? 'Comment ça marche' : 'How it works'}
+            >
+              <Info className="w-5 h-5" />
+            </button>
+            {/* History button */}
+            <button
+              onClick={() => setActiveTab(activeTab === 'history' ? 'day' : 'history')}
+              className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors ${
+                activeTab === 'history'
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+            >
+              <History className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Tab switcher */}

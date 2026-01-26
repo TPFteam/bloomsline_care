@@ -47,10 +47,14 @@ import {
   Meh,
   Frown,
   Angry,
+  Info,
 } from 'lucide-react'
 import MemberLayout from '@/components/member/MemberLayout'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
+import { FeatureGuide } from '@/components/feature-guide/FeatureGuide'
+import { ritualsGuideSteps } from '@/components/feature-guide/guides/rituals-guide'
+import { useFeatureGuide } from '@/lib/hooks/useFeatureGuide'
 
 // Icon mapping for rituals
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -176,6 +180,10 @@ function getTodayStr(): string {
 export default function RitualsPage() {
   const { locale } = useLanguage()
   const router = useRouter()
+
+  // Feature guide
+  const { showGuide, completeGuide, skipGuide, setShowGuide } = useFeatureGuide('rituals')
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [memberId, setMemberId] = useState<string | null>(null)
@@ -1015,6 +1023,16 @@ export default function RitualsPage() {
 
   return (
     <MemberLayout>
+      {/* Feature Guide - shows on first visit */}
+      {showGuide && (
+        <FeatureGuide
+          featureName="rituals"
+          steps={ritualsGuideSteps}
+          onComplete={completeGuide}
+          onSkip={skipGuide}
+        />
+      )}
+
       <div className="px-5 pt-6 pb-8">
         {/* Header */}
         <motion.div
@@ -1026,16 +1044,26 @@ export default function RitualsPage() {
             <h1 className="text-2xl font-bold text-gray-900">
               {locale === 'fr' ? 'Rituels' : 'Rituals'}
             </h1>
-            {/* History Button */}
-            <button
-              onClick={() => router.push('/rituals/history')}
-              className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-xl text-gray-600 hover:bg-gray-200 transition-colors"
-            >
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                {locale === 'fr' ? 'Historique' : 'History'}
-              </span>
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Help/Guide button */}
+              <button
+                onClick={() => setShowGuide(true)}
+                className="p-2 bg-gray-100 rounded-xl text-gray-500 hover:bg-gray-200 transition-colors"
+                title={locale === 'fr' ? 'Comment ça marche' : 'How it works'}
+              >
+                <Info className="w-4 h-4" />
+              </button>
+              {/* History Button */}
+              <button
+                onClick={() => router.push('/rituals/history')}
+                className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-xl text-gray-600 hover:bg-gray-200 transition-colors"
+              >
+                <Calendar className="w-4 h-4" />
+                <span className="text-sm font-medium">
+                  {locale === 'fr' ? 'Historique' : 'History'}
+                </span>
+              </button>
+            </div>
           </div>
           <p className="text-gray-500 text-sm">
             {totalProgress.total > 0 ? (
