@@ -125,8 +125,8 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
   const [showMore, setShowMore] = useState(false)
   const [showAllFeatures, setShowAllFeatures] = useState(false)
 
-  // Feature guide for Moments (shown when clicking camera if not completed)
-  const { showGuide: showMomentsGuide, completeGuide: completeMomentsGuide, skipGuide: skipMomentsGuide, setShowGuide: setShowMomentsGuide, guideStatus: momentsGuideStatus } = useFeatureGuide('moments')
+  // Feature guide for Moments (only show on camera button click)
+  const { showGuide: showMomentsGuide, completeGuide: completeMomentsGuide, skipGuide: skipMomentsGuide, setShowGuide: setShowMomentsGuide, guideStatus: momentsGuideStatus } = useFeatureGuide('moments', { autoShow: false })
 
   // Force light mode for member pages (B2C should always be light/calming)
   useEffect(() => {
