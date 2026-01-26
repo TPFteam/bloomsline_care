@@ -175,9 +175,12 @@ export default function SeedsPage() {
   const [anchorHistory, setAnchorHistory] = useState<Record<string, Record<string, number>>>({})
   const [showAddAnchor, setShowAddAnchor] = useState(false)
   const [addAnchorType, setAddAnchorType] = useState<'grow' | 'letgo'>('grow')
-  const [activeTab, setActiveTab] = useState<'today' | 'week' | 'trends' | 'history'>('today')
+  const [activeTab, setActiveTab] = useState<'day' | 'week' | 'trends' | 'history'>('day')
   const [selectedTrendAnchor, setSelectedTrendAnchor] = useState<string | null>(null)
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
+  const [selectedDay, setSelectedDay] = useState<string>(new Date().toISOString().split('T')[0]) // Current selected day for Day view
+  const [editMode, setEditMode] = useState(false) // Toggle to show/hide delete buttons
+  const [trendsRange, setTrendsRange] = useState<7 | 30 | 90 | 180>(7) // Trends time range filter
 
   useEffect(() => {
     loadData()
@@ -251,10 +254,10 @@ export default function SeedsPage() {
       setAnchorLogs(logsMap)
     }
 
-    // Load last 7 days of history
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
-    const startDate = sevenDaysAgo.toISOString().split('T')[0]
+    // Load last 180 days of history (max range for trends)
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setDate(sixMonthsAgo.getDate() - 180)
+    const startDate = sixMonthsAgo.toISOString().split('T')[0]
 
     const { data: historyData } = await supabase
       .from('anchor_logs')
@@ -454,6 +457,10 @@ export default function SeedsPage() {
     return anchorLogs[anchorId]?.length || 0
   }
 
+  const getCountForDate = (anchorId: string, date: string) => {
+    return anchorHistory[anchorId]?.[date] || 0
+  }
+
   const getLast7Days = () => {
     const days = []
     for (let i = 6; i >= 0; i--) {
@@ -491,9 +498,82 @@ export default function SeedsPage() {
     return streak
   }
 
+  // Get days for a given range
+  const getDaysForRange = (range: number) => {
+    const days = []
+    for (let i = range - 1; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      days.push({
+        date: date.toISOString().split('T')[0],
+        dayName: date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short' }),
+        dayNum: date.getDate(),
+        monthName: date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short' }),
+        isToday: i === 0,
+      })
+    }
+    return days
+  }
+
   // Compute chart data for trends
   const getTrendsData = () => {
-    const days = getLast7Days()
+    const days = getDaysForRange(trendsRange)
+
+    // For longer ranges, we might want to aggregate by week or show fewer points
+    const shouldAggregate = trendsRange > 30
+
+    if (shouldAggregate) {
+      // Group by week for 3 months and 6 months
+      const weeks: { name: string; date: string; grow: number; letgo: number; value?: number }[] = []
+      let weekGrow = 0
+      let weekLetgo = 0
+      let weekValue = 0
+      let weekStart = ''
+
+      days.forEach((day, index) => {
+        if (index % 7 === 0) {
+          if (weekStart) {
+            weeks.push({
+              name: weekStart,
+              date: weekStart,
+              grow: weekGrow,
+              letgo: weekLetgo,
+              value: weekValue,
+            })
+          }
+          weekStart = `${day.monthName} ${day.dayNum}`
+          weekGrow = 0
+          weekLetgo = 0
+          weekValue = 0
+        }
+
+        if (selectedTrendAnchor) {
+          weekValue += getAnchorCountForDate(selectedTrendAnchor, day.date)
+        } else {
+          userAnchors.forEach(anchor => {
+            const count = getAnchorCountForDate(anchor.id, day.date)
+            if (anchor.type === 'grow') {
+              weekGrow += count
+            } else {
+              weekLetgo += count
+            }
+          })
+        }
+      })
+
+      // Add last partial week
+      if (weekStart) {
+        weeks.push({
+          name: weekStart,
+          date: weekStart,
+          grow: weekGrow,
+          letgo: weekLetgo,
+          value: weekValue,
+        })
+      }
+
+      return weeks
+    }
 
     if (selectedTrendAnchor) {
       // Single anchor view
@@ -501,7 +581,7 @@ export default function SeedsPage() {
       if (!anchor) return []
 
       return days.map(day => ({
-        name: day.dayName,
+        name: trendsRange <= 7 ? day.dayName : `${day.monthName} ${day.dayNum}`,
         date: day.date,
         value: getAnchorCountForDate(selectedTrendAnchor, day.date),
       }))
@@ -522,7 +602,7 @@ export default function SeedsPage() {
       })
 
       return {
-        name: day.dayName,
+        name: trendsRange <= 7 ? day.dayName : `${day.monthName} ${day.dayNum}`,
         date: day.date,
         grow: growTotal,
         letgo: letgoTotal,
@@ -565,7 +645,7 @@ export default function SeedsPage() {
             </div>
           </div>
           <button
-            onClick={() => setActiveTab(activeTab === 'history' ? 'today' : 'history')}
+            onClick={() => setActiveTab(activeTab === 'history' ? 'day' : 'history')}
             className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors ${
               activeTab === 'history'
                 ? 'bg-amber-500 text-white'
@@ -579,14 +659,14 @@ export default function SeedsPage() {
         {/* Tab switcher */}
         <div className="flex gap-2 mb-6">
           <button
-            onClick={() => setActiveTab('today')}
+            onClick={() => setActiveTab('day')}
             className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${
-              activeTab === 'today'
+              activeTab === 'day'
                 ? 'bg-amber-500 text-white shadow-md'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            {locale === 'fr' ? "Aujourd'hui" : 'Today'}
+            {locale === 'fr' ? 'Jour' : 'Day'}
           </button>
           <button
             onClick={() => setActiveTab('week')}
@@ -726,10 +806,32 @@ export default function SeedsPage() {
         ) : activeTab === 'trends' ? (
           /* Trends View */
           <div>
+            {/* Time Range Filter */}
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+              {([
+                { value: 7, label: locale === 'fr' ? '7 jours' : '7 days' },
+                { value: 30, label: locale === 'fr' ? '30 jours' : '30 days' },
+                { value: 90, label: locale === 'fr' ? '3 mois' : '3 months' },
+                { value: 180, label: locale === 'fr' ? '6 mois' : '6 months' },
+              ] as const).map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => setTrendsRange(option.value)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
+                    trendsRange === option.value
+                      ? 'bg-amber-500 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
             {/* Anchor Filter */}
             <div className="mb-4">
               <p className="text-sm text-gray-500 mb-2">
-                {locale === 'fr' ? 'Filtrer par ancre:' : 'Filter by anchor:'}
+                {locale === 'fr' ? 'Filtrer par graine:' : 'Filter by seed:'}
               </p>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -781,8 +883,8 @@ export default function SeedsPage() {
                           : userAnchors.find(a => a.id === selectedTrendAnchor)?.labelEn
                       }`
                     : locale === 'fr'
-                      ? 'Cultiver vs Lâcher (7 jours)'
-                      : 'Grow vs Let Go (7 days)'}
+                      ? `Cultiver vs Lâcher (${trendsRange === 7 ? '7 jours' : trendsRange === 30 ? '30 jours' : trendsRange === 90 ? '3 mois' : '6 mois'})`
+                      : `Grow vs Let Go (${trendsRange === 7 ? '7 days' : trendsRange === 30 ? '30 days' : trendsRange === 90 ? '3 months' : '6 months'})`}
                 </h3>
                 <div className="h-48">
                   <ResponsiveContainer width="100%" height="100%">
@@ -929,19 +1031,28 @@ export default function SeedsPage() {
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <div className="bg-emerald-50 rounded-2xl p-4 text-center">
                   <div className="text-2xl font-bold text-emerald-600">
-                    {getLast7Days().reduce((total, day) => {
+                    {getDaysForRange(trendsRange).reduce((total, day) => {
                       return total + growAnchors.reduce((sum, a) => sum + getAnchorCountForDate(a.id, day.date), 0)
                     }, 0)}
                   </div>
                   <p className="text-xs text-emerald-700 mt-1">
                     {locale === 'fr' ? 'Habitudes cultivées' : 'Habits grown'}
                     <br />
-                    <span className="text-emerald-500">{locale === 'fr' ? '(7 jours)' : '(7 days)'}</span>
+                    <span className="text-emerald-500">
+                      ({trendsRange === 7
+                        ? (locale === 'fr' ? '7 jours' : '7 days')
+                        : trendsRange === 30
+                          ? (locale === 'fr' ? '30 jours' : '30 days')
+                          : trendsRange === 90
+                            ? (locale === 'fr' ? '3 mois' : '3 months')
+                            : (locale === 'fr' ? '6 mois' : '6 months')
+                      })
+                    </span>
                   </p>
                 </div>
                 <div className="bg-rose-50 rounded-2xl p-4 text-center">
                   <div className="text-2xl font-bold text-rose-600">
-                    {getLast7Days().reduce((total, day) => {
+                    {getDaysForRange(trendsRange).reduce((total, day) => {
                       return total + letgoAnchors.reduce((sum, a) => sum + getAnchorCountForDate(a.id, day.date), 0)
                     }, 0)}
                   </div>
@@ -954,8 +1065,60 @@ export default function SeedsPage() {
               </div>
             )}
           </div>
-        ) : activeTab === 'today' ? (
+        ) : activeTab === 'day' ? (
           <>
+            {/* Day selector */}
+            <div className="flex justify-between mb-5 px-1">
+              {getLast7Days().map(day => {
+                const isSelected = selectedDay === day.date
+                return (
+                  <button
+                    key={day.date}
+                    onClick={() => setSelectedDay(day.date)}
+                    className={`text-center px-2.5 py-2 rounded-xl transition-all ${
+                      isSelected
+                        ? 'bg-amber-500 text-white shadow-md'
+                        : 'text-gray-400 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="text-xs uppercase font-medium">{day.dayName}</div>
+                    <div className="text-sm font-semibold">{day.dayNum}</div>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Selected day label */}
+            <p className="text-sm text-gray-500 mb-4 text-center">
+              {selectedDay === new Date().toISOString().split('T')[0]
+                ? (locale === 'fr' ? "Aujourd'hui" : 'Today')
+                : new Date(selectedDay + 'T12:00:00').toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                  })
+              }
+            </p>
+
+            {/* Edit mode toggle - only show if there are seeds and it's today */}
+            {userAnchors.length > 0 && selectedDay === new Date().toISOString().split('T')[0] && (
+              <div className="flex justify-end mb-3">
+                <button
+                  onClick={() => setEditMode(!editMode)}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${
+                    editMode
+                      ? 'bg-red-100 text-red-600'
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  }`}
+                >
+                  {editMode
+                    ? (locale === 'fr' ? 'Terminé' : 'Done')
+                    : (locale === 'fr' ? 'Modifier' : 'Edit')
+                  }
+                </button>
+              </div>
+            )}
+
             {/* Grow Section */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-3">
@@ -980,30 +1143,39 @@ export default function SeedsPage() {
                   {growAnchors.map(anchor => {
                     const iconData = ANCHOR_ICONS[anchor.icon]
                     const IconComponent = iconData?.icon || Circle
-                    const todayCount = getTodayCount(anchor.id)
+                    const isToday = selectedDay === new Date().toISOString().split('T')[0]
+                    const dayCount = isToday ? getTodayCount(anchor.id) : getCountForDate(anchor.id, selectedDay)
 
                     return (
                       <motion.div
                         key={anchor.id}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => logAnchor(anchor.id)}
-                        className="relative bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200 rounded-2xl p-4 flex flex-col items-center justify-center transition-colors cursor-pointer"
+                        whileTap={isToday && !editMode ? { scale: 0.95 } : undefined}
+                        onClick={() => isToday && !editMode && logAnchor(anchor.id)}
+                        className={`relative bg-emerald-50 border-2 rounded-2xl p-4 flex flex-col items-center justify-center transition-colors ${
+                          editMode
+                            ? 'border-red-200 bg-red-50/30'
+                            : isToday
+                              ? 'border-emerald-200 hover:bg-emerald-100 cursor-pointer'
+                              : 'border-emerald-200 opacity-80'
+                        }`}
                       >
                         <IconComponent className="w-8 h-8 text-emerald-600 mb-2" />
                         <span className="text-xs text-gray-600 font-medium text-center">
                           {locale === 'fr' ? anchor.labelFr : anchor.labelEn}
                         </span>
-                        {todayCount > 0 && (
+                        {dayCount > 0 && !editMode && (
                           <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
-                            {todayCount}
+                            {dayCount}
                           </div>
                         )}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); removeAnchor(anchor.id) }}
-                          className="absolute top-1 right-1 p-1 text-gray-300 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {isToday && editMode && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); removeAnchor(anchor.id) }}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
                       </motion.div>
                     )
                   })}
@@ -1048,30 +1220,39 @@ export default function SeedsPage() {
                   {letgoAnchors.map(anchor => {
                     const iconData = ANCHOR_ICONS[anchor.icon]
                     const IconComponent = iconData?.icon || Circle
-                    const todayCount = getTodayCount(anchor.id)
+                    const isToday = selectedDay === new Date().toISOString().split('T')[0]
+                    const dayCount = isToday ? getTodayCount(anchor.id) : getCountForDate(anchor.id, selectedDay)
 
                     return (
                       <motion.div
                         key={anchor.id}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => logAnchor(anchor.id)}
-                        className="relative bg-rose-50 hover:bg-rose-100 border-2 border-rose-200 rounded-2xl p-4 flex flex-col items-center justify-center transition-colors cursor-pointer"
+                        whileTap={isToday && !editMode ? { scale: 0.95 } : undefined}
+                        onClick={() => isToday && !editMode && logAnchor(anchor.id)}
+                        className={`relative bg-rose-50 border-2 rounded-2xl p-4 flex flex-col items-center justify-center transition-colors ${
+                          editMode
+                            ? 'border-red-200 bg-red-50/30'
+                            : isToday
+                              ? 'border-rose-200 hover:bg-rose-100 cursor-pointer'
+                              : 'border-rose-200 opacity-80'
+                        }`}
                       >
                         <IconComponent className="w-8 h-8 text-rose-600 mb-2" />
                         <span className="text-xs text-gray-600 font-medium text-center">
                           {locale === 'fr' ? anchor.labelFr : anchor.labelEn}
                         </span>
-                        {todayCount > 0 && (
+                        {dayCount > 0 && !editMode && (
                           <div className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
-                            {todayCount}
+                            {dayCount}
                           </div>
                         )}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); removeAnchor(anchor.id) }}
-                          className="absolute top-1 right-1 p-1 text-gray-300 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {isToday && editMode && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); removeAnchor(anchor.id) }}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
                       </motion.div>
                     )
                   })}
@@ -1095,18 +1276,29 @@ export default function SeedsPage() {
         ) : (
           /* Week View */
           <div>
-            {/* Days header */}
-            <div className="flex justify-between mb-4 px-2">
-              {getLast7Days().map(day => (
-                <div
-                  key={day.date}
-                  className={`text-center ${day.isToday ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}
-                >
-                  <div className="text-xs uppercase">{day.dayName}</div>
-                  <div className="text-sm">{day.dayNum}</div>
-                </div>
-              ))}
+            {/* Week overview header */}
+            <div className="bg-gray-50 rounded-2xl p-3 mb-4">
+              <div className="flex justify-between">
+                {getLast7Days().map(day => (
+                  <div
+                    key={day.date}
+                    className={`text-center w-10 ${
+                      day.isToday
+                        ? 'text-amber-600'
+                        : 'text-gray-400'
+                    }`}
+                  >
+                    <div className="text-[10px] uppercase font-medium tracking-wide">{day.dayName}</div>
+                    <div className={`text-xs mt-0.5 ${day.isToday ? 'font-bold' : ''}`}>{day.dayNum}</div>
+                  </div>
+                ))}
+              </div>
             </div>
+
+            {/* Tip */}
+            <p className="text-[11px] text-gray-400 text-center mb-4">
+              {locale === 'fr' ? 'Utilisez l\'onglet Jour pour voir les détails' : 'Use Day tab to view details'}
+            </p>
 
             {/* Grow anchors */}
             {growAnchors.length > 0 && (

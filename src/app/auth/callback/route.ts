@@ -179,6 +179,38 @@ export async function GET(request: NextRequest) {
                 activated_at: new Date().toISOString()
               })
               .eq('id', waitlistEntry.id)
+
+            // Auto-set user type from waitlist (skip onboarding for known types)
+            const waitlistUserType = waitlistEntry.user_type as 'member' | 'practitioner' | 'both'
+
+            if (waitlistUserType === 'member' || waitlistUserType === 'practitioner') {
+              // Update user profile with the type from waitlist
+              await adminClient
+                .from('users')
+                .update({
+                  user_type: waitlistUserType,
+                  full_name: waitlistEntry.name || data.user?.user_metadata?.full_name,
+                  onboarding_completed: true
+                })
+                .eq('id', userId)
+
+              // If member, also create a member record
+              if (waitlistUserType === 'member') {
+                const nameParts = (waitlistEntry.name || data.user?.user_metadata?.full_name || '').split(' ')
+                const firstName = nameParts[0] || ''
+                const lastName = nameParts.slice(1).join(' ') || ''
+
+                await adminClient
+                  .from('members')
+                  .insert({
+                    user_id: userId,
+                    email: userEmail,
+                    first_name: firstName,
+                    last_name: lastName,
+                    status: 'active'
+                  })
+              }
+            }
           }
 
           if (signupSource === 'practitioner_invite' && memberEntry) {
@@ -193,12 +225,25 @@ export async function GET(request: NextRequest) {
               .eq('id', memberEntry.id)
           }
 
-          // Redirect based on signup source
+          // Redirect based on signup source and user type
           if (signupSource === 'practitioner_invite') {
             // Practitioner-invited members go directly to home (they're members)
             redirectUrl = `${requestUrl.origin}/home`
+          } else if (signupSource === 'waitlist' && waitlistEntry) {
+            const waitlistUserType = waitlistEntry.user_type as 'member' | 'practitioner' | 'both'
+
+            if (waitlistUserType === 'member') {
+              // Members go to home
+              redirectUrl = `${requestUrl.origin}/home`
+            } else if (waitlistUserType === 'practitioner') {
+              // Practitioners go to dashboard
+              redirectUrl = `${requestUrl.origin}/dashboard`
+            } else {
+              // 'both' type - let them choose in onboarding
+              redirectUrl = `${requestUrl.origin}/onboarding`
+            }
           } else {
-            // Waitlist users go to onboarding to select their type
+            // Fallback to onboarding
             redirectUrl = `${requestUrl.origin}/onboarding`
           }
         }

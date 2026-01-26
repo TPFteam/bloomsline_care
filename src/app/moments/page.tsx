@@ -42,6 +42,9 @@ import {
 import { getUserPreferences, updateUserPreferences } from '@/lib/services/preferences'
 import { toast } from 'sonner'
 import BloomChatInterface from '@/components/bloom/BloomChatInterface'
+import { FeatureGuide } from '@/components/feature-guide/FeatureGuide'
+import { momentsGuideSteps } from '@/components/feature-guide/guides/moments-guide'
+import { useFeatureGuide } from '@/lib/hooks/useFeatureGuide'
 
 const typeIcons: Record<MomentType, typeof Camera> = {
   photo: Camera,
@@ -187,6 +190,9 @@ function BloomPill({ isDark, locale, onClick }: { isDark: boolean; locale: strin
 export default function MomentsPage() {
   const router = useRouter()
   const { locale } = useLanguage()
+
+  // Feature guide
+  const { showGuide, completeGuide, skipGuide } = useFeatureGuide('moments')
 
   const [moments, setMoments] = useState<Moment[]>([])
   const [stats, setStats] = useState<{ total: number; thisWeek: number; byType: Record<MomentType, number> } | null>(null)
@@ -397,6 +403,17 @@ export default function MomentsPage() {
   }
 
   return (
+    <>
+      {/* Feature Guide - shows on first visit */}
+      {showGuide && (
+        <FeatureGuide
+          featureName="moments"
+          steps={momentsGuideSteps}
+          onComplete={completeGuide}
+          onSkip={skipGuide}
+        />
+      )}
+
     <div className={`min-h-screen ${theme.bg} pb-32 transition-colors duration-500`}>
       {/* Ambient effects */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -1526,5 +1543,6 @@ export default function MomentsPage() {
         )}
       </AnimatePresence>
     </div>
+    </>
   )
 }
