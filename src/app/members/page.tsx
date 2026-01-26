@@ -260,11 +260,62 @@ export default function MembersPage() {
         return
       }
 
+      const emailToAdd = newMember.email.trim().toLowerCase()
+
+      // Check if a member with this email already exists
+      const { data: existingMembers } = await supabase
+        .from('members')
+        .select('id, practitioner_id, first_name, last_name')
+        .eq('email', emailToAdd)
+
+      if (existingMembers && existingMembers.length > 0) {
+        // Check if already linked to this practitioner
+        const alreadyYours = existingMembers.find(m => m.practitioner_id === authUser.id)
+        if (alreadyYours) {
+          toast.error(locale === 'fr'
+            ? 'Cette personne est déjà dans votre liste'
+            : 'This person is already in your list')
+          setSaving(false)
+          return
+        }
+
+        // Check if there's an orphan record (no practitioner) - link it instead of creating new
+        const orphanRecord = existingMembers.find(m => !m.practitioner_id)
+        if (orphanRecord) {
+          const { data, error } = await supabase
+            .from('members')
+            .update({
+              practitioner_id: authUser.id,
+              first_name: newMember.firstName.trim(),
+              last_name: newMember.lastName.trim(),
+              phone: newMember.phone.trim() || null,
+              status: 'pending' as const,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', orphanRecord.id)
+            .select()
+            .single()
+
+          if (error) throw error
+
+          // Add to list and recalculate stats
+          const updatedMembers = [data, ...members]
+          setMembers(updatedMembers)
+          calculateStats(updatedMembers)
+
+          setNewMember({ firstName: '', lastName: '', email: '', phone: '' })
+          setShowAddModal(false)
+          toast.success(t.members.success.memberCreated)
+          setSaving(false)
+          return
+        }
+      }
+
       const memberData = {
         practitioner_id: authUser.id,
         first_name: newMember.firstName.trim(),
         last_name: newMember.lastName.trim(),
-        email: newMember.email.trim(),
+        email: emailToAdd,
         phone: newMember.phone.trim() || null,
         status: 'pending' as const,
         engagement_level: 'medium' as const,
