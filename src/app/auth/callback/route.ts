@@ -182,10 +182,14 @@ export async function GET(request: NextRequest) {
           }
 
           if (signupSource === 'practitioner_invite' && memberEntry) {
-            // Link the member record to the new user
+            // Link the member record to the new user and activate
             await adminClient
               .from('members')
-              .update({ user_id: userId })
+              .update({
+                user_id: userId,
+                status: 'active',
+                updated_at: new Date().toISOString()
+              })
               .eq('id', memberEntry.id)
           }
 
