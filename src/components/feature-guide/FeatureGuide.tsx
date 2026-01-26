@@ -171,7 +171,7 @@ export function FeatureGuide({
               )}
 
               {/* Content */}
-              <div className="px-8 pt-10 pb-8">
+              <div className="px-5 sm:px-8 pt-8 sm:pt-10 pb-6 sm:pb-8">
                 <AnimatePresence mode="wait" custom={direction}>
                   <motion.div
                     key={currentStep}
@@ -189,7 +189,7 @@ export function FeatureGuide({
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1, duration: 0.4 }}
-                        className="mb-6"
+                        className="mb-4 sm:mb-6 scale-90 sm:scale-100 origin-center"
                       >
                         {step.animation}
                       </motion.div>
@@ -236,7 +236,7 @@ export function FeatureGuide({
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
-                      className="text-2xl font-bold text-gray-900 mb-4"
+                      className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4"
                     >
                       {locale === 'fr' ? step.titleFr : step.titleEn}
                     </motion.h2>
@@ -246,7 +246,7 @@ export function FeatureGuide({
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
-                      className="text-gray-600 leading-relaxed text-base"
+                      className="text-gray-600 leading-relaxed text-sm sm:text-base"
                     >
                       {locale === 'fr' ? step.descriptionFr : step.descriptionEn}
                     </motion.p>
@@ -254,7 +254,7 @@ export function FeatureGuide({
                 </AnimatePresence>
 
                 {/* Progress dots */}
-                <div className="flex justify-center gap-2.5 mt-10 mb-8">
+                <div className="flex justify-center gap-2 sm:gap-2.5 mt-6 sm:mt-10 mb-5 sm:mb-8">
                   {steps.map((_, index) => (
                     <motion.button
                       key={index}
@@ -284,15 +284,15 @@ export function FeatureGuide({
                 </div>
 
                 {/* Navigation buttons */}
-                <div className="flex gap-3">
+                <div className="flex gap-2 sm:gap-3">
                   {currentStep > 0 && (
                     <motion.button
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       onClick={handlePrev}
-                      className="flex-1 py-4 px-6 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all flex items-center justify-center gap-2"
+                      className="flex-1 py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base"
                     >
-                      <ChevronLeft className="w-5 h-5" />
+                      <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                       {locale === 'fr' ? 'Retour' : 'Back'}
                     </motion.button>
                   )}
@@ -301,17 +301,17 @@ export function FeatureGuide({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleNext}
-                    className="flex-1 py-4 px-6 rounded-2xl bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] hover:from-[#3d8a76] hover:to-[#4da38c] text-white font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
+                    className="flex-1 py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] hover:from-[#3d8a76] hover:to-[#4da38c] text-white font-semibold transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-lg text-sm sm:text-base"
                   >
                     {isLastStep ? (
                       <>
-                        <Sparkles className="w-5 h-5" />
+                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
                         {locale === 'fr' ? "C'est parti !" : "Let's Go!"}
                       </>
                     ) : (
                       <>
                         {locale === 'fr' ? 'Suivant' : 'Next'}
-                        <ChevronRight className="w-5 h-5" />
+                        <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                       </>
                     )}
                   </motion.button>
@@ -322,7 +322,7 @@ export function FeatureGuide({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  className="text-center text-gray-400 text-sm mt-6"
+                  className="text-center text-gray-400 text-xs sm:text-sm mt-4 sm:mt-6"
                 >
                   {currentStep + 1} / {steps.length}
                 </motion.p>

@@ -15,7 +15,12 @@ interface FeatureGuides {
   [key: string]: GuideStatus | undefined
 }
 
-export function useFeatureGuide(featureName: FeatureName) {
+interface UseFeatureGuideOptions {
+  autoShow?: boolean // Whether to auto-show on first visit (default: true)
+}
+
+export function useFeatureGuide(featureName: FeatureName, options: UseFeatureGuideOptions = {}) {
+  const { autoShow = true } = options
   const [showGuide, setShowGuide] = useState(false)
   const [loading, setLoading] = useState(true)
   const [guideStatus, setGuideStatus] = useState<GuideStatus | null>(null)
@@ -44,16 +49,16 @@ export function useFeatureGuide(featureName: FeatureName) {
         // Don't show if already completed or skipped
         setShowGuide(false)
       } else {
-        // First time - show the guide
+        // First time - only auto-show if enabled
         setGuideStatus(null)
-        setShowGuide(true)
+        setShowGuide(autoShow)
       }
     } catch (error) {
       console.error('Error checking guide status:', error)
     } finally {
       setLoading(false)
     }
-  }, [featureName, supabase])
+  }, [featureName, supabase, autoShow])
 
   useEffect(() => {
     checkGuideStatus()

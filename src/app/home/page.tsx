@@ -417,11 +417,11 @@ export default function MyResourcesPage() {
   const [anchorLogs, setAnchorLogs] = useState<Record<string, number[]>>({}) // habitId -> array of timestamps for today
   const [selectedDateAnchorLogs, setSelectedDateAnchorLogs] = useState<{ anchorId: string; timestamp: number }[]>([]) // For timeline
 
-  // Feature guide for Today's Flow
-  const { showGuide: showFlowGuide, completeGuide: completeFlowGuide, skipGuide: skipFlowGuide, setShowGuide: setShowFlowGuide } = useFeatureGuide('flow')
+  // Feature guide for Today's Flow (only show on info button click)
+  const { showGuide: showFlowGuide, completeGuide: completeFlowGuide, skipGuide: skipFlowGuide, setShowGuide: setShowFlowGuide } = useFeatureGuide('flow', { autoShow: false })
 
-  // Feature guide for Seeds (shown when clicking + if not completed)
-  const { showGuide: showSeedsGuide, completeGuide: completeSeedsGuide, skipGuide: skipSeedsGuide, setShowGuide: setShowSeedsGuide, guideStatus: seedsGuideStatus } = useFeatureGuide('seeds')
+  // Feature guide for Seeds (only show on info button click or + button)
+  const { showGuide: showSeedsGuide, completeGuide: completeSeedsGuide, skipGuide: skipSeedsGuide, setShowGuide: setShowSeedsGuide, guideStatus: seedsGuideStatus } = useFeatureGuide('seeds', { autoShow: false })
 
   useEffect(() => {
     loadData()
