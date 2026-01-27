@@ -1712,7 +1712,7 @@ export default function MyResourcesPage() {
                     }`}
                   >
                     <Sprout className="w-4 h-4" />
-                    {locale === 'fr' ? 'Cultiver' : 'Grow'}
+                    {locale === 'fr' ? 'Garder' : 'Grow'}
                   </button>
                   <button
                     onClick={() => setAnchorsTab('letgo')}
@@ -1723,7 +1723,7 @@ export default function MyResourcesPage() {
                     }`}
                   >
                     <Leaf className="w-4 h-4" />
-                    {locale === 'fr' ? 'Lâcher' : 'Let Go'}
+                    {locale === 'fr' ? 'Alléger' : 'Let Go'}
                   </button>
                 </div>
 
