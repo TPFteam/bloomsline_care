@@ -20,7 +20,7 @@ export const seedsGuideSteps: GuideStep[] = [
   {
     animation: <SeedsGrowLetGoAnimation />,
     titleEn: "Grow & Let Go",
-    titleFr: "Cultiver et Lâcher prise",
+    titleFr: "Garder et Alléger",
     descriptionEn: "Choose what to nurture more of, and what to gently release. Both paths lead to growth.",
     descriptionFr: "Choisissez ce que vous voulez cultiver davantage et ce que vous souhaitez libérer doucement. Les deux chemins mènent à la croissance.",
   },

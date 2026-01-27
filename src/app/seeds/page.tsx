@@ -773,8 +773,8 @@ export default function SeedsPage() {
                             isGrow ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
                           }`}>
                             {isGrow
-                              ? (locale === 'fr' ? 'Cultiver' : 'Grow')
-                              : (locale === 'fr' ? 'Lâcher' : 'Let Go')}
+                              ? (locale === 'fr' ? 'Garder' : 'Grow')
+                              : (locale === 'fr' ? 'Alléger' : 'Let Go')}
                           </span>
                         </div>
                         <p className="text-sm text-gray-500 mt-0.5">
@@ -911,7 +911,7 @@ export default function SeedsPage() {
                           : userAnchors.find(a => a.id === selectedTrendAnchor)?.labelEn
                       }`
                     : locale === 'fr'
-                      ? `Cultiver vs Lâcher (${trendsRange === 7 ? '7 jours' : trendsRange === 30 ? '30 jours' : trendsRange === 90 ? '3 mois' : '6 mois'})`
+                      ? `Garder vs Alléger (${trendsRange === 7 ? '7 jours' : trendsRange === 30 ? '30 jours' : trendsRange === 90 ? '3 mois' : '6 mois'})`
                       : `Grow vs Let Go (${trendsRange === 7 ? '7 days' : trendsRange === 30 ? '30 days' : trendsRange === 90 ? '3 months' : '6 months'})`}
                 </h3>
                 <div className="h-48">
@@ -1007,7 +1007,7 @@ export default function SeedsPage() {
                         <Area
                           type="monotone"
                           dataKey="grow"
-                          name={locale === 'fr' ? 'Cultiver' : 'Grow'}
+                          name={locale === 'fr' ? 'Garder' : 'Grow'}
                           stroke="#10b981"
                           strokeWidth={2}
                           fill="url(#colorGrow)"
@@ -1015,7 +1015,7 @@ export default function SeedsPage() {
                         <Area
                           type="monotone"
                           dataKey="letgo"
-                          name={locale === 'fr' ? 'Lâcher' : 'Let Go'}
+                          name={locale === 'fr' ? 'Alléger' : 'Let Go'}
                           stroke="#f43f5e"
                           strokeWidth={2}
                           fill="url(#colorLetgo)"
@@ -1031,13 +1031,13 @@ export default function SeedsPage() {
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-emerald-500" />
                       <span className="text-xs text-gray-600">
-                        {locale === 'fr' ? 'Cultiver' : 'Grow'}
+                        {locale === 'fr' ? 'Garder' : 'Grow'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-rose-500" />
                       <span className="text-xs text-gray-600">
-                        {locale === 'fr' ? 'Lâcher' : 'Let Go'}
+                        {locale === 'fr' ? 'Alléger' : 'Let Go'}
                       </span>
                     </div>
                   </div>
@@ -1155,7 +1155,7 @@ export default function SeedsPage() {
                     <Sprout className="w-4 h-4 text-white" />
                   </div>
                   <h2 className="font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Cultiver' : 'Grow'}
+                    {locale === 'fr' ? 'Garder' : 'Grow'}
                   </h2>
                 </div>
                 <button
@@ -1232,7 +1232,7 @@ export default function SeedsPage() {
                     <Leaf className="w-4 h-4 text-white" />
                   </div>
                   <h2 className="font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Lâcher' : 'Let Go'}
+                    {locale === 'fr' ? 'Alléger' : 'Let Go'}
                   </h2>
                 </div>
                 <button
@@ -1334,7 +1334,7 @@ export default function SeedsPage() {
                 <div className="flex items-center gap-2 mb-3">
                   <Sprout className="w-5 h-5 text-emerald-500" />
                   <span className="font-medium text-gray-700">
-                    {locale === 'fr' ? 'Cultiver' : 'Grow'}
+                    {locale === 'fr' ? 'Garder' : 'Grow'}
                   </span>
                 </div>
                 <div className="space-y-3">
@@ -1388,7 +1388,7 @@ export default function SeedsPage() {
                 <div className="flex items-center gap-2 mb-3">
                   <Leaf className="w-5 h-5 text-rose-500" />
                   <span className="font-medium text-gray-700">
-                    {locale === 'fr' ? 'Lâcher' : 'Let Go'}
+                    {locale === 'fr' ? 'Alléger' : 'Let Go'}
                   </span>
                 </div>
                 <div className="space-y-3">
@@ -1485,8 +1485,8 @@ export default function SeedsPage() {
               }`}>
                 {addAnchorType === 'grow' ? <Sprout className="w-4 h-4" /> : <Leaf className="w-4 h-4" />}
                 {addAnchorType === 'grow'
-                  ? (locale === 'fr' ? 'Cultiver' : 'Grow')
-                  : (locale === 'fr' ? 'Lâcher' : 'Let Go')}
+                  ? (locale === 'fr' ? 'Garder' : 'Grow')
+                  : (locale === 'fr' ? 'Alléger' : 'Let Go')}
               </div>
 
               {/* Icon grid - filtered by type */}

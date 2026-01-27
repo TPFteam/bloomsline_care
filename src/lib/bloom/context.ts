@@ -637,7 +637,7 @@ export function formatContextForPrompt(context: BloomContext, locale: 'en' | 'fr
 
     if (loc === 'fr') {
       return `- Habitudes Grandir: ${today.anchors.completedGrow}/${today.anchors.totalGrow} faites${growDone.length ? ` (faits: ${growDone.join(', ')})` : ''}${growRemaining.length ? ` (restants: ${growRemaining.join(', ')})` : ''}
-- Habitudes Lâcher: ${letGoSlipped.length === 0 ? 'Tout évité ✓' : `${letGoSlipped.length} écart(s)`}${letGoAvoided.length ? ` (évités: ${letGoAvoided.join(', ')})` : ''}${letGoSlipped.length ? ` (écarts: ${letGoSlipped.join(', ')})` : ''}`
+- Habitudes Alléger: ${letGoSlipped.length === 0 ? 'Tout évité ✓' : `${letGoSlipped.length} écart(s)`}${letGoAvoided.length ? ` (évités: ${letGoAvoided.join(', ')})` : ''}${letGoSlipped.length ? ` (écarts: ${letGoSlipped.join(', ')})` : ''}`
     }
     return `- Grow habits: ${today.anchors.completedGrow}/${today.anchors.totalGrow} done${growDone.length ? ` (done: ${growDone.join(', ')})` : ''}${growRemaining.length ? ` (remaining: ${growRemaining.join(', ')})` : ''}
 - Let Go habits: ${letGoSlipped.length === 0 ? 'All avoided ✓' : `${letGoSlipped.length} slip(s)`}${letGoAvoided.length ? ` (avoided: ${letGoAvoided.join(', ')})` : ''}${letGoSlipped.length ? ` (slipped: ${letGoSlipped.join(', ')})` : ''}`
@@ -671,7 +671,7 @@ ${!hasTodayData ? '*** User has not logged anything today ***' : ''}
     }
     if (loc === 'fr') {
       return `- Ancres Grandir: ${thisWeek.anchors.growCompletionRate}% de complétion${thisWeek.anchors.topGrowAnchors.length > 0 ? ` (meilleures: ${thisWeek.anchors.topGrowAnchors.join(', ')})` : ''}
-- Ancres Lâcher: ${thisWeek.anchors.letGoCompletionRate}% de complétion${thisWeek.anchors.topLetGoAnchors.length > 0 ? ` (meilleures: ${thisWeek.anchors.topLetGoAnchors.join(', ')})` : ''}`
+- Ancres Alléger: ${thisWeek.anchors.letGoCompletionRate}% de complétion${thisWeek.anchors.topLetGoAnchors.length > 0 ? ` (meilleures: ${thisWeek.anchors.topLetGoAnchors.join(', ')})` : ''}`
     }
     return `- Grow anchors: ${thisWeek.anchors.growCompletionRate}% completion${thisWeek.anchors.topGrowAnchors.length > 0 ? ` (top: ${thisWeek.anchors.topGrowAnchors.join(', ')})` : ''}
 - Let Go anchors: ${thisWeek.anchors.letGoCompletionRate}% completion${thisWeek.anchors.topLetGoAnchors.length > 0 ? ` (top: ${thisWeek.anchors.topLetGoAnchors.join(', ')})` : ''}`
