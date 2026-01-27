@@ -446,10 +446,10 @@ export default function CarePage() {
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Mes Évaluations' : 'My Assessments'}
+                    {locale === 'fr' ? 'Mes supports' : 'My Resources'}
                   </h4>
                   <p className="text-sm text-gray-500">
-                    {locale === 'fr' ? 'Évaluations et exercices' : 'Assessments and exercises'}
+                    {locale === 'fr' ? 'Exercices et fiches' : 'Exercises and worksheets'}
                   </p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
