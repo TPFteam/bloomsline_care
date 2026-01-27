@@ -22,9 +22,7 @@ import {
   Eye,
   Save,
   BookOpen,
-  Sparkles,
   Heart,
-  Lightbulb,
   ThumbsUp,
   Meh,
 } from 'lucide-react'
@@ -193,8 +191,8 @@ function SubmissionConfirmation({
   )
 }
 
-// Reading feedback modal - subtle feeling-based feedback
-type ReadingFeedback = 'inspiring' | 'helpful' | 'interesting' | 'touched' | 'okay'
+// Reading feedback modal - simple 3-option feedback
+type ReadingFeedback = 'loved' | 'helpful' | 'okay'
 
 const feedbackOptions: {
   value: ReadingFeedback
@@ -203,10 +201,8 @@ const feedbackOptions: {
   color: string
   bg: string
 }[] = [
-  { value: 'inspiring', icon: Sparkles, label: { en: 'Inspiring', fr: 'Inspirant' }, color: 'text-amber-500', bg: 'bg-amber-50 hover:bg-amber-100 border-amber-200' },
+  { value: 'loved', icon: Heart, label: { en: 'Loved it', fr: "J'ai adoré" }, color: 'text-pink-500', bg: 'bg-pink-50 hover:bg-pink-100 border-pink-200' },
   { value: 'helpful', icon: ThumbsUp, label: { en: 'Helpful', fr: 'Utile' }, color: 'text-emerald-500', bg: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' },
-  { value: 'interesting', icon: Lightbulb, label: { en: 'Interesting', fr: 'Intéressant' }, color: 'text-blue-500', bg: 'bg-blue-50 hover:bg-blue-100 border-blue-200' },
-  { value: 'touched', icon: Heart, label: { en: 'Touched me', fr: 'Touchant' }, color: 'text-pink-500', bg: 'bg-pink-50 hover:bg-pink-100 border-pink-200' },
   { value: 'okay', icon: Meh, label: { en: 'It was okay', fr: 'Correct' }, color: 'text-gray-400', bg: 'bg-gray-50 hover:bg-gray-100 border-gray-200' },
 ]
 
@@ -258,7 +254,7 @@ function ReadingFeedbackModal({
           </div>
 
           {/* Feedback Options */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="grid grid-cols-3 gap-2 mb-6">
             {feedbackOptions.map((option) => {
               const Icon = option.icon
               const isSelected = selected === option.value
