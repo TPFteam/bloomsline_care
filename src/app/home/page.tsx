@@ -1691,7 +1691,7 @@ export default function MyResourcesPage() {
                   <h3 className="text-lg font-bold text-gray-900">
                     {customAnchorMode
                       ? (locale === 'fr' ? 'Créer une ancre' : 'Create Anchor')
-                      : (locale === 'fr' ? 'Ajouter une ancre' : 'Add Anchor')}
+                      : (locale === 'fr' ? 'Ajouter quelque chose' : 'Add Something')}
                   </h3>
                   <button
                     onClick={() => { setShowAddAnchor(false); resetCustomAnchorForm() }}
