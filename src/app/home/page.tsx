@@ -91,6 +91,7 @@ import { FeatureGuide } from '@/components/feature-guide/FeatureGuide'
 import { flowGuideSteps } from '@/components/feature-guide/guides/flow-guide'
 import { seedsGuideSteps } from '@/components/feature-guide/guides/seeds-guide'
 import { useFeatureGuide } from '@/lib/hooks/useFeatureGuide'
+import { useBottomNav } from '@/lib/contexts/bottom-nav-context'
 import type { Member } from '@/types/member'
 import { getMemberMoments, type Moment } from '@/lib/services/moments'
 // Ritual types
@@ -430,6 +431,9 @@ export default function MyResourcesPage() {
   // Feature guide for Seeds (only show on info button click or + button)
   const { showGuide: showSeedsGuide, completeGuide: completeSeedsGuide, skipGuide: skipSeedsGuide, setShowGuide: setShowSeedsGuide, guideStatus: seedsGuideStatus } = useFeatureGuide('seeds', { autoShow: false })
 
+  // Bottom nav visibility control
+  const { setHideBottomNav } = useBottomNav()
+
   useEffect(() => {
     loadData()
   }, [locale, router])
@@ -615,6 +619,11 @@ export default function MyResourcesPage() {
   const [customAnchorMode, setCustomAnchorMode] = useState(false)
   const [customAnchorLabel, setCustomAnchorLabel] = useState('')
   const [customAnchorIcon, setCustomAnchorIcon] = useState<string | null>(null)
+
+  // Hide bottom nav when Add Something dialog is open
+  useEffect(() => {
+    setHideBottomNav(showAddAnchor)
+  }, [showAddAnchor, setHideBottomNav])
 
   // Load anchors and logs from Supabase
   const loadAnchorsData = async (memberId: string) => {

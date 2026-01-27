@@ -21,6 +21,7 @@ import { getUserPreferences } from '@/lib/services/preferences'
 import { FeatureGuide } from '@/components/feature-guide/FeatureGuide'
 import { momentsGuideSteps } from '@/components/feature-guide/guides/moments-guide'
 import { useFeatureGuide } from '@/lib/hooks/useFeatureGuide'
+import { useBottomNav } from '@/lib/contexts/bottom-nav-context'
 
 interface MemberLayoutProps {
   children: React.ReactNode
@@ -128,6 +129,9 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
   // Feature guide for Moments (only show on camera button click)
   const { showGuide: showMomentsGuide, completeGuide: completeMomentsGuide, skipGuide: skipMomentsGuide, setShowGuide: setShowMomentsGuide, guideStatus: momentsGuideStatus } = useFeatureGuide('moments', { autoShow: false })
 
+  // Bottom nav visibility from context (can be hidden by dialogs)
+  const { hideBottomNav } = useBottomNav()
+
   // Force light mode for member pages (B2C should always be light/calming)
   useEffect(() => {
     document.documentElement.classList.remove('dark')
@@ -160,8 +164,8 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
   const isReflectionPage = pathname === '/reflection'
   const isSettingsPage = pathname?.startsWith('/settings')
 
-  // Hide all navigation on focus pages (reflection, settings)
-  const hideNavigation = isFillingResource || isReflectionPage || isSettingsPage
+  // Hide all navigation on focus pages (reflection, settings) or when dialogs are open
+  const hideNavigation = isFillingResource || isReflectionPage || isSettingsPage || hideBottomNav
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50 via-emerald-50/50 to-white relative overflow-hidden">
