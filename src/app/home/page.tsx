@@ -1804,7 +1804,7 @@ export default function MyResourcesPage() {
                   <>
                     {/* Icon selection grid - filtered by type */}
                     <p className="text-sm text-gray-500 mb-3">
-                      {locale === 'fr' ? 'Choisissez une option:' : 'Choose an option:'}
+                      {locale === 'fr' ? 'Que souhaitez-vous faire ?' : 'What would you like to do?'}
                     </p>
                     <div className="grid grid-cols-4 gap-2">
                       {(anchorsTab === 'grow' ? GROW_ANCHOR_OPTIONS : LETGO_ANCHOR_OPTIONS).map((key) => {
