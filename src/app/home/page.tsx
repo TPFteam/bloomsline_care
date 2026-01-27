@@ -1574,7 +1574,7 @@ export default function MyResourcesPage() {
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <h3 className="text-base font-bold text-gray-900">
-                {locale === 'fr' ? 'Graines du Jour' : 'Daily Seeds'}
+                {locale === 'fr' ? 'Mes petits pas' : 'My Little Steps'}
               </h3>
             </div>
             <button
