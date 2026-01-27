@@ -378,9 +378,16 @@ const typeIcons: Record<string, React.ElementType> = {
 // Get greeting based on time
 function getGreeting(locale: string) {
   const hour = new Date().getHours()
-  if (hour < 12) return locale === 'fr' ? 'Bonjour' : 'Good morning'
-  if (hour < 18) return locale === 'fr' ? 'Bon après-midi' : 'Good afternoon'
-  return locale === 'fr' ? 'Bonsoir' : 'Good evening'
+  if (locale === 'fr') {
+    // French: Bonjour (day), Bonsoir (evening), Bonne nuit (late night)
+    if (hour < 18) return 'Bonjour'
+    if (hour < 22) return 'Bonsoir'
+    return 'Bonne nuit'
+  }
+  // English
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
 }
 
 // Get motivational message
