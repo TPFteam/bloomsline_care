@@ -23,8 +23,8 @@ export default function ProgressPage() {
   const router = useRouter()
   const [showBloomChat, setShowBloomChat] = useState(false)
 
-  // Feature guide for Progress (only show on info button click)
-  const { showGuide, completeGuide, skipGuide, setShowGuide } = useFeatureGuide('progress', { autoShow: false })
+  // Feature guide for Progress (auto-show on first visit)
+  const { showGuide, completeGuide, skipGuide, setShowGuide } = useFeatureGuide('progress')
 
   return (
     <MemberLayout>
