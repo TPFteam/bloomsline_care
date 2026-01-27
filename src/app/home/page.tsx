@@ -1048,7 +1048,7 @@ export default function MyResourcesPage() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-gray-900 whitespace-nowrap">
-                {locale === 'fr' ? 'Flux du jour' : "Today's Flow"}
+                {locale === 'fr' ? 'Fil du jour' : "Today's Flow"}
               </h3>
               {/* Info button */}
               <button
