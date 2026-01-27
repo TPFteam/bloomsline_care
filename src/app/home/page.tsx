@@ -1807,6 +1807,20 @@ export default function MyResourcesPage() {
                       {locale === 'fr' ? 'Que souhaitez-vous faire ?' : 'What would you like to do?'}
                     </p>
                     <div className="grid grid-cols-4 gap-2">
+                      {/* Create custom option - first in grid */}
+                      <button
+                        onClick={() => setCustomAnchorMode(true)}
+                        className={`aspect-square rounded-xl flex flex-col items-center justify-center gap-1 transition-all border-2 border-dashed hover:scale-105 active:scale-95 ${
+                          anchorsTab === 'grow'
+                            ? 'border-emerald-300 text-emerald-600 hover:bg-emerald-50'
+                            : 'border-rose-300 text-rose-600 hover:bg-rose-50'
+                        }`}
+                      >
+                        <Plus className={`w-5 h-5 ${anchorsTab === 'grow' ? 'text-emerald-600' : 'text-rose-600'}`} />
+                        <span className="text-[9px] font-medium text-center leading-tight text-gray-500">
+                          {locale === 'fr' ? 'Créer' : 'Create'}
+                        </span>
+                      </button>
                       {(anchorsTab === 'grow' ? GROW_ANCHOR_OPTIONS : LETGO_ANCHOR_OPTIONS).map((key) => {
                         const data = ANCHOR_ICONS[key]
                         if (!data) return null
@@ -1844,19 +1858,6 @@ export default function MyResourcesPage() {
                         )
                       })}
                     </div>
-
-                    {/* Create custom option */}
-                    <button
-                      onClick={() => setCustomAnchorMode(true)}
-                      className={`w-full mt-4 py-3 rounded-xl border-2 border-dashed text-sm font-medium transition-all hover:scale-[1.02] active:scale-[0.98] ${
-                        anchorsTab === 'grow'
-                          ? 'border-emerald-300 text-emerald-600 hover:bg-emerald-50'
-                          : 'border-rose-300 text-rose-600 hover:bg-rose-50'
-                      }`}
-                    >
-                      <Plus className="w-4 h-4 inline mr-1.5" />
-                      {locale === 'fr' ? 'Créer une ancre personnalisée' : 'Create custom anchor'}
-                    </button>
                   </>
                 )}
               </motion.div>
