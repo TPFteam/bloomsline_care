@@ -432,7 +432,7 @@ export default function MyResourcesPage() {
   const { showGuide: showSeedsGuide, completeGuide: completeSeedsGuide, skipGuide: skipSeedsGuide, setShowGuide: setShowSeedsGuide, guideStatus: seedsGuideStatus } = useFeatureGuide('seeds', { autoShow: false })
 
   // Bottom nav visibility control
-  const { setHideBottomNav } = useBottomNav()
+  const { setBlurBottomNav } = useBottomNav()
 
   useEffect(() => {
     loadData()
@@ -620,10 +620,10 @@ export default function MyResourcesPage() {
   const [customAnchorLabel, setCustomAnchorLabel] = useState('')
   const [customAnchorIcon, setCustomAnchorIcon] = useState<string | null>(null)
 
-  // Hide bottom nav when Add Something dialog is open
+  // Blur bottom nav when Add Something dialog is open
   useEffect(() => {
-    setHideBottomNav(showAddAnchor)
-  }, [showAddAnchor, setHideBottomNav])
+    setBlurBottomNav(showAddAnchor)
+  }, [showAddAnchor, setBlurBottomNav])
 
   // Load anchors and logs from Supabase
   const loadAnchorsData = async (memberId: string) => {

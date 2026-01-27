@@ -129,8 +129,8 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
   // Feature guide for Moments (only show on camera button click)
   const { showGuide: showMomentsGuide, completeGuide: completeMomentsGuide, skipGuide: skipMomentsGuide, setShowGuide: setShowMomentsGuide, guideStatus: momentsGuideStatus } = useFeatureGuide('moments', { autoShow: false })
 
-  // Bottom nav visibility from context (can be hidden by dialogs)
-  const { hideBottomNav } = useBottomNav()
+  // Bottom nav blur from context (can be blurred by dialogs)
+  const { blurBottomNav } = useBottomNav()
 
   // Force light mode for member pages (B2C should always be light/calming)
   useEffect(() => {
@@ -164,8 +164,8 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
   const isReflectionPage = pathname === '/reflection'
   const isSettingsPage = pathname?.startsWith('/settings')
 
-  // Hide all navigation on focus pages (reflection, settings) or when dialogs are open
-  const hideNavigation = isFillingResource || isReflectionPage || isSettingsPage || hideBottomNav
+  // Hide all navigation on focus pages (reflection, settings)
+  const hideNavigation = isFillingResource || isReflectionPage || isSettingsPage
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50 via-emerald-50/50 to-white relative overflow-hidden">
@@ -184,6 +184,7 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.2 }}
+          className={`transition-all duration-200 ${blurBottomNav ? 'blur-sm opacity-50 pointer-events-none' : ''}`}
         >
           <button
             onClick={() => {
@@ -194,7 +195,7 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
                 router.push('/moments/capture?from=/home')
               }
             }}
-            className="fixed bottom-24 right-4 z-50 w-14 h-14 bg-gradient-to-br from-rose-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg shadow-pink-300/50 active:scale-95 transition-transform"
+            className="fixed bottom-24 right-4 z-40 w-14 h-14 bg-gradient-to-br from-rose-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg shadow-pink-300/50 active:scale-95 transition-transform"
           >
             <motion.div
               animate={{ rotate: [0, 10, -10, 0] }}
@@ -284,7 +285,7 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
 
       {/* Bottom Navigation - Hide on focus pages */}
       {!hideNavigation && (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 safe-area-pb">
+        <nav className={`fixed bottom-0 left-0 right-0 z-40 safe-area-pb transition-all duration-200 ${blurBottomNav ? 'blur-sm opacity-50 pointer-events-none' : ''}`}>
           <div className="mx-4 mb-4">
             <div className="bg-white/95 backdrop-blur-xl rounded-[28px] shadow-lg shadow-gray-200/50 border border-gray-100/50 px-4 py-2 flex items-center justify-around">
               {/* Primary Nav Items */}

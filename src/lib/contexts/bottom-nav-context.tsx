@@ -3,20 +3,20 @@
 import { createContext, useContext, useState, ReactNode } from 'react'
 
 interface BottomNavContextType {
-  hideBottomNav: boolean
-  setHideBottomNav: (hide: boolean) => void
+  blurBottomNav: boolean
+  setBlurBottomNav: (blur: boolean) => void
 }
 
 const BottomNavContext = createContext<BottomNavContextType>({
-  hideBottomNav: false,
-  setHideBottomNav: () => {},
+  blurBottomNav: false,
+  setBlurBottomNav: () => {},
 })
 
 export function BottomNavProvider({ children }: { children: ReactNode }) {
-  const [hideBottomNav, setHideBottomNav] = useState(false)
+  const [blurBottomNav, setBlurBottomNav] = useState(false)
 
   return (
-    <BottomNavContext.Provider value={{ hideBottomNav, setHideBottomNav }}>
+    <BottomNavContext.Provider value={{ blurBottomNav, setBlurBottomNav }}>
       {children}
     </BottomNavContext.Provider>
   )
