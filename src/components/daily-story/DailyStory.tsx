@@ -1,13 +1,17 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronLeft, ChevronRight, Camera, Leaf, Heart, Sun, Moon, Sparkles } from 'lucide-react'
+import { X, Camera, Leaf, Heart, Sun, Moon, Sparkles, Mic, Play, Pause, PenLine, Video } from 'lucide-react'
 import Image from 'next/image'
+
+type MomentType = 'photo' | 'video' | 'voice' | 'write'
 
 interface Moment {
   id: string
-  image_url: string
+  type: MomentType
+  media_url?: string | null
+  text_content?: string | null
   caption?: string
   created_at: string
 }
@@ -171,7 +175,12 @@ export function DailyStory({ moments, seedLogs, locale, onClose }: DailyStoryPro
           )}
 
           {currentSlide.type === 'moment' && currentSlide.data && (
-            <MomentSlide moment={currentSlide.data as Moment} locale={locale} />
+            <MomentSlide
+              moment={currentSlide.data as Moment}
+              locale={locale}
+              onPause={() => setIsPaused(true)}
+              onResume={() => setIsPaused(false)}
+            />
           )}
 
           {currentSlide.type === 'seeds-summary' && currentSlide.data && (
@@ -242,52 +251,247 @@ function IntroSlide({ locale, greeting, momentsCount, seedsCount }: { locale: st
   )
 }
 
-// Moment Slide
-function MomentSlide({ moment, locale }: { moment: Moment; locale: string }) {
+// Moment Slide - handles photo, video, voice, and text
+function MomentSlide({ moment, locale, onPause, onResume }: { moment: Moment; locale: string; onPause: () => void; onResume: () => void }) {
+  const [isPlaying, setIsPlaying] = useState(false)
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+
   const time = new Date(moment.created_at).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
     hour: 'numeric',
     minute: '2-digit',
   })
 
-  // Don't render if no image
-  if (!moment.image_url) return null
+  const getTypeIcon = () => {
+    switch (moment.type) {
+      case 'photo': return <Camera className="w-4 h-4" />
+      case 'video': return <Video className="w-4 h-4" />
+      case 'voice': return <Mic className="w-4 h-4" />
+      case 'write': return <PenLine className="w-4 h-4" />
+      default: return <Camera className="w-4 h-4" />
+    }
+  }
 
-  return (
-    <div className="relative w-full h-full">
-      {/* Background image */}
-      <Image
-        src={moment.image_url}
-        alt={moment.caption || 'Moment'}
-        fill
-        className="object-cover"
-        unoptimized
-      />
+  const handlePlayPause = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (moment.type === 'voice' && audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause()
+        onResume()
+      } else {
+        audioRef.current.play()
+        onPause()
+      }
+      setIsPlaying(!isPlaying)
+    } else if (moment.type === 'video' && videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause()
+        onResume()
+      } else {
+        videoRef.current.play()
+        onPause()
+      }
+      setIsPlaying(!isPlaying)
+    }
+  }
 
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+  // Photo slide
+  if (moment.type === 'photo' && moment.media_url) {
+    return (
+      <div className="relative w-full h-full">
+        <Image
+          src={moment.media_url}
+          alt={moment.caption || 'Moment'}
+          fill
+          className="object-cover"
+          unoptimized
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+        <div className="absolute bottom-0 left-0 right-0 p-6 pb-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 text-white/70 text-sm mb-2"
+          >
+            {getTypeIcon()}
+            <span>{time}</span>
+          </motion.div>
+          {moment.caption && (
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-white text-xl font-medium"
+            >
+              {moment.caption}
+            </motion.p>
+          )}
+        </div>
+      </div>
+    )
+  }
 
-      {/* Content */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 pb-20">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 text-white/70 text-sm mb-2"
+  // Video slide
+  if (moment.type === 'video' && moment.media_url) {
+    return (
+      <div className="relative w-full h-full bg-black">
+        <video
+          ref={videoRef}
+          src={moment.media_url}
+          className="absolute inset-0 w-full h-full object-contain"
+          playsInline
+          onEnded={() => { setIsPlaying(false); onResume() }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
+
+        {/* Play/Pause button */}
+        <button
+          onClick={handlePlayPause}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center"
         >
-          <Camera className="w-4 h-4" />
-          <span>{time}</span>
-        </motion.div>
+          {isPlaying ? (
+            <Pause className="w-8 h-8 text-white" fill="white" />
+          ) : (
+            <Play className="w-8 h-8 text-white ml-1" fill="white" />
+          )}
+        </button>
 
-        {moment.caption && (
+        <div className="absolute bottom-0 left-0 right-0 p-6 pb-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 text-white/70 text-sm mb-2"
+          >
+            {getTypeIcon()}
+            <span>{time}</span>
+          </motion.div>
+          {moment.caption && (
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-white text-xl font-medium"
+            >
+              {moment.caption}
+            </motion.p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Voice slide
+  if (moment.type === 'voice' && moment.media_url) {
+    return (
+      <div className="relative w-full h-full bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 flex flex-col items-center justify-center">
+        <audio
+          ref={audioRef}
+          src={moment.media_url}
+          onEnded={() => { setIsPlaying(false); onResume() }}
+        />
+
+        {/* Animated waves */}
+        <div className="relative mb-8">
+          {[...Array(3)].map((_, i) => (
+            <motion.div
+              key={i}
+              animate={isPlaying ? {
+                scale: [1, 1.5, 1],
+                opacity: [0.5, 0.2, 0.5],
+              } : {}}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                delay: i * 0.3,
+              }}
+              className="absolute inset-0 w-24 h-24 border-2 border-white/30 rounded-full"
+              style={{ transform: `scale(${1 + i * 0.3})` }}
+            />
+          ))}
+          <button
+            onClick={handlePlayPause}
+            className="relative w-24 h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center"
+          >
+            {isPlaying ? (
+              <Pause className="w-10 h-10 text-white" fill="white" />
+            ) : (
+              <Play className="w-10 h-10 text-white ml-1" fill="white" />
+            )}
+          </button>
+        </div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-white/70 text-sm mb-2"
+        >
+          {locale === 'fr' ? 'Note vocale' : 'Voice note'}
+        </motion.p>
+
+        <div className="absolute bottom-0 left-0 right-0 p-6 pb-20 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-center gap-2 text-white/70 text-sm mb-2"
+          >
+            {getTypeIcon()}
+            <span>{time}</span>
+          </motion.div>
+          {moment.caption && (
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-white text-xl font-medium"
+            >
+              {moment.caption}
+            </motion.p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Text/Write slide
+  if (moment.type === 'write') {
+    return (
+      <div className="relative w-full h-full bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center p-8">
+        <div className="max-w-md text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring' }}
+            className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-6"
+          >
+            <PenLine className="w-8 h-8 text-white" />
+          </motion.div>
+
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-white text-xl font-medium"
+            className="text-white text-2xl font-medium leading-relaxed"
           >
-            {moment.caption}
+            "{moment.text_content || moment.caption}"
           </motion.p>
-        )}
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="mt-6 flex items-center justify-center gap-2 text-white/70 text-sm"
+          >
+            {getTypeIcon()}
+            <span>{time}</span>
+          </motion.div>
+        </div>
       </div>
+    )
+  }
+
+  // Fallback for unknown types
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center">
+      <p className="text-white/50">{locale === 'fr' ? 'Moment' : 'Moment'}</p>
     </div>
   )
 }

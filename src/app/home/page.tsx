@@ -2284,14 +2284,14 @@ export default function MyResourcesPage() {
       <AnimatePresence>
         {showDailyStory && (
           <DailyStory
-            moments={todaysMoments
-              .filter(m => m.media_url) // Only include moments with images
-              .map(m => ({
-                id: m.id,
-                image_url: m.media_url!,
-                caption: m.caption || undefined,
-                created_at: m.created_at,
-              }))}
+            moments={todaysMoments.map(m => ({
+              id: m.id,
+              type: m.type,
+              media_url: m.media_url,
+              text_content: m.text_content,
+              caption: m.caption || undefined,
+              created_at: m.created_at,
+            }))}
             seedLogs={selectedDateAnchorLogs.map(log => {
               const anchor = userAnchors.find(a => a.id === log.anchorId)
               return {
