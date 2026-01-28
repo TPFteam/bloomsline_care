@@ -51,22 +51,7 @@ export function OnboardingWelcomeAnimation() {
           />
         </div>
 
-        {/* Sparkles around */}
-        <motion.div
-          animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 text-amber-400"
-        >
-          <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
         </motion.div>
-        <motion.div
-          animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
-          className="absolute -bottom-1 -left-3 sm:-bottom-2 sm:-left-4 text-[#4A9A86]"
-        >
-          <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-        </motion.div>
-      </motion.div>
 
       {/* Bloomsline text */}
       <motion.p
