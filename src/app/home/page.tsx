@@ -95,6 +95,8 @@ import { useFeatureGuide } from '@/lib/hooks/useFeatureGuide'
 import { useBottomNav } from '@/lib/contexts/bottom-nav-context'
 import type { Member } from '@/types/member'
 import { getMemberMoments, type Moment } from '@/lib/services/moments'
+import { DailyStory } from '@/components/daily-story/DailyStory'
+import { DailyStoryCard } from '@/components/daily-story/DailyStoryCard'
 // Ritual types
 interface Ritual {
   id: string
@@ -422,6 +424,7 @@ export default function MyResourcesPage() {
   const [zoomLevel, setZoomLevel] = useState(1) // 1 = 24h, 2 = 12h, 3 = 8h, 4 = 6h
   const [centerHour, setCenterHour] = useState(12) // Center of visible range
   const [showBloomChat, setShowBloomChat] = useState(false)
+  const [showDailyStory, setShowDailyStory] = useState(false)
   const [anchorsTab, setAnchorsTab] = useState<'grow' | 'letgo'>('grow')
   const [anchorLogs, setAnchorLogs] = useState<Record<string, number[]>>({}) // habitId -> array of timestamps for today
   const [selectedDateAnchorLogs, setSelectedDateAnchorLogs] = useState<{ anchorId: string; timestamp: number }[]>([]) // For timeline
@@ -1059,6 +1062,16 @@ export default function MyResourcesPage() {
             </motion.div>
           ))}
         </AnimatePresence>
+
+        {/* Daily Story Card - Shows after 6 PM if there's content */}
+        {currentTime.getHours() >= 18 && isToday() && (todaysMoments.length > 0 || selectedDateAnchorLogs.length > 0) && (
+          <DailyStoryCard
+            momentsCount={todaysMoments.length}
+            seedsCount={selectedDateAnchorLogs.length}
+            locale={locale}
+            onClick={() => setShowDailyStory(true)}
+          />
+        )}
 
         {/* Today's Journey - Emotional Flow Visualization */}
         <motion.div
@@ -2266,6 +2279,35 @@ export default function MyResourcesPage() {
         isDark={false}
         entryPoint="home"
       />
+
+      {/* Daily Story */}
+      <AnimatePresence>
+        {showDailyStory && (
+          <DailyStory
+            moments={todaysMoments.map(m => ({
+              id: m.id,
+              image_url: m.media_url || '',
+              caption: m.caption || undefined,
+              created_at: m.created_at,
+            }))}
+            seedLogs={selectedDateAnchorLogs.map(log => {
+              const anchor = userAnchors.find(a => a.id === log.anchorId)
+              return {
+                id: `${log.anchorId}-${log.timestamp}`,
+                anchor: {
+                  icon: anchor?.icon || 'leaf',
+                  labelEn: anchor?.labelEn || '',
+                  labelFr: anchor?.labelFr || '',
+                  type: anchor?.type || 'grow',
+                },
+                logged_at: new Date(log.timestamp).toISOString(),
+              }
+            })}
+            locale={locale}
+            onClose={() => setShowDailyStory(false)}
+          />
+        )}
+      </AnimatePresence>
     </MemberLayout>
   )
 }
