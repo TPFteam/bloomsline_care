@@ -352,25 +352,40 @@ export function OnboardingReadyAnimation() {
         </motion.div>
       ))}
 
-      {/* Center content */}
+      {/* Bloomsline Logo */}
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: 'spring', damping: 12 }}
         className="relative z-10 flex flex-col items-center"
       >
-        <motion.div
-          animate={{ scale: [1, 1.05, 1], rotate: [0, 5, -5, 0] }}
-          transition={{ duration: 3, repeat: Infinity }}
-          className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-[#4A9A86] via-[#5AB39C] to-[#4A9A86] rounded-full flex items-center justify-center shadow-xl"
-        >
+        {/* Logo container */}
+        <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
+          {/* Petals - Coral */}
+          {[0, 60, 120, 180, 240, 300].map((rotation, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-5 h-8 sm:w-6 sm:h-10 bg-gradient-to-t from-[#D4856A] to-[#E8A87C] rounded-full origin-bottom"
+              style={{
+                transform: `rotate(${rotation}deg) translateY(-35%)`,
+              }}
+              animate={{
+                scale: [1, 1.1, 1],
+                opacity: [0.85, 1, 0.85]
+              }}
+              transition={{
+                duration: 2, repeat: Infinity, ease: "easeInOut", delay: i * 0.1
+              }}
+            />
+          ))}
+
+          {/* Center circle - Teal */}
           <motion.div
-            animate={{ y: [-2, 2, -2] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            <Leaf className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
-          </motion.div>
-        </motion.div>
+            className="absolute w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#4A9A86] to-[#5AB39C] rounded-full z-10 shadow-lg"
+            animate={{ scale: [1, 1.15, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
 
         <motion.p
           initial={{ opacity: 0, y: 10 }}
