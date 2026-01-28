@@ -249,6 +249,9 @@ function MomentSlide({ moment, locale }: { moment: Moment; locale: string }) {
     minute: '2-digit',
   })
 
+  // Don't render if no image
+  if (!moment.image_url) return null
+
   return (
     <div className="relative w-full h-full">
       {/* Background image */}
@@ -257,6 +260,7 @@ function MomentSlide({ moment, locale }: { moment: Moment; locale: string }) {
         alt={moment.caption || 'Moment'}
         fill
         className="object-cover"
+        unoptimized
       />
 
       {/* Gradient overlay */}
