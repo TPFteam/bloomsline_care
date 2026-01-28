@@ -8,87 +8,94 @@ interface ShareFlowOptions {
 
 export async function captureFlowAsImage({ element, locale, date }: ShareFlowOptions): Promise<Blob | null> {
   try {
-    // Create a wrapper div with branding
-    const wrapper = document.createElement('div')
-    wrapper.style.cssText = `
-      position: fixed;
-      left: -9999px;
-      top: 0;
-      background: linear-gradient(to bottom, #f0fdfa, #ecfdf5, #ffffff);
-      padding: 24px;
-      border-radius: 24px;
-      width: ${element.offsetWidth + 48}px;
-    `
-
-    // Clone the element
-    const clone = element.cloneNode(true) as HTMLElement
-    clone.style.cssText = `
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 24px;
-      padding: 20px;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-    `
-
-    // Create header with date
-    const header = document.createElement('div')
-    header.style.cssText = `
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-      padding: 0 4px;
-    `
-    header.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #4A9A86, #5AB39C); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
-            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
-          </svg>
-        </div>
-        <span style="font-size: 14px; font-weight: 600; color: #374151;">${date}</span>
-      </div>
-    `
-
-    // Create footer with branding
-    const footer = document.createElement('div')
-    footer.style.cssText = `
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid rgba(0, 0, 0, 0.05);
-    `
-    footer.innerHTML = `
-      <div style="position: relative; width: 28px; height: 28px;">
-        ${generateLogoSVG()}
-      </div>
-      <span style="font-size: 14px; font-weight: 700; color: #374151; letter-spacing: -0.02em;">Bloomsline</span>
-      <span style="font-size: 11px; color: #9CA3AF; margin-left: 4px;">${locale === 'fr' ? 'Mon bien-être' : 'My wellbeing'}</span>
-    `
-
-    wrapper.appendChild(header)
-    wrapper.appendChild(clone)
-    wrapper.appendChild(footer)
-    document.body.appendChild(wrapper)
-
-    // Capture the wrapper
-    const canvas = await html2canvas(wrapper, {
-      backgroundColor: null,
-      scale: 2, // Higher quality
+    // First capture the original element directly
+    const originalCanvas = await html2canvas(element, {
+      backgroundColor: '#ffffff',
+      scale: 2,
       useCORS: true,
       allowTaint: true,
       logging: false,
+      ignoreElements: (el) => {
+        // Ignore any elements that might cause issues
+        return el.tagName === 'IFRAME' || el.classList?.contains('ignore-capture')
+      },
     })
 
-    // Clean up
-    document.body.removeChild(wrapper)
+    // Create a new canvas with branding
+    const padding = 40
+    const headerHeight = 60
+    const footerHeight = 60
+    const totalWidth = originalCanvas.width + padding * 2
+    const totalHeight = originalCanvas.height + padding * 2 + headerHeight + footerHeight
+
+    const finalCanvas = document.createElement('canvas')
+    finalCanvas.width = totalWidth
+    finalCanvas.height = totalHeight
+    const ctx = finalCanvas.getContext('2d')
+
+    if (!ctx) {
+      throw new Error('Could not get canvas context')
+    }
+
+    // Draw gradient background
+    const gradient = ctx.createLinearGradient(0, 0, 0, totalHeight)
+    gradient.addColorStop(0, '#f0fdfa')
+    gradient.addColorStop(0.5, '#ecfdf5')
+    gradient.addColorStop(1, '#ffffff')
+    ctx.fillStyle = gradient
+    ctx.fillRect(0, 0, totalWidth, totalHeight)
+
+    // Draw header
+    ctx.fillStyle = '#374151'
+    ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    ctx.textAlign = 'left'
+    ctx.fillText(date, padding, padding + 35)
+
+    // Draw small leaf icon before date
+    drawLeafIcon(ctx, padding - 40, padding + 12, 28)
+
+    // Draw the captured flow
+    const flowY = padding + headerHeight
+
+    // Add rounded rectangle background for the flow
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
+    roundRect(ctx, padding - 10, flowY - 10, originalCanvas.width + 20, originalCanvas.height + 20, 24)
+    ctx.fill()
+
+    // Draw shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.08)'
+    ctx.shadowBlur = 20
+    ctx.shadowOffsetY = 4
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
+    roundRect(ctx, padding - 10, flowY - 10, originalCanvas.width + 20, originalCanvas.height + 20, 24)
+    ctx.fill()
+    ctx.shadowColor = 'transparent'
+    ctx.shadowBlur = 0
+    ctx.shadowOffsetY = 0
+
+    // Draw the actual flow image
+    ctx.drawImage(originalCanvas, padding, flowY)
+
+    // Draw footer with branding
+    const footerY = flowY + originalCanvas.height + 30
+
+    // Draw Bloomsline logo
+    drawBloomslineLogo(ctx, totalWidth / 2 - 80, footerY, 36)
+
+    // Draw "Bloomsline" text
+    ctx.fillStyle = '#374151'
+    ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    ctx.textAlign = 'left'
+    ctx.fillText('Bloomsline', totalWidth / 2 - 35, footerY + 26)
+
+    // Draw tagline
+    ctx.fillStyle = '#9CA3AF'
+    ctx.font = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    ctx.fillText(locale === 'fr' ? 'Mon bien-être' : 'My wellbeing', totalWidth / 2 + 95, footerY + 24)
 
     // Convert to blob
     return new Promise((resolve) => {
-      canvas.toBlob((blob) => {
+      finalCanvas.toBlob((blob) => {
         resolve(blob)
       }, 'image/png', 1.0)
     })
@@ -130,29 +137,86 @@ export async function shareFlow(blob: Blob, locale: string): Promise<boolean> {
   return true
 }
 
-function generateLogoSVG(): string {
-  // Bloomsline flower logo as inline SVG
-  return `
-    <svg viewBox="0 0 40 40" width="28" height="28">
-      <!-- Petals -->
-      <ellipse cx="20" cy="12" rx="5" ry="9" fill="url(#petal-gradient)" transform="rotate(0 20 20)"/>
-      <ellipse cx="20" cy="12" rx="5" ry="9" fill="url(#petal-gradient)" transform="rotate(60 20 20)"/>
-      <ellipse cx="20" cy="12" rx="5" ry="9" fill="url(#petal-gradient)" transform="rotate(120 20 20)"/>
-      <ellipse cx="20" cy="12" rx="5" ry="9" fill="url(#petal-gradient)" transform="rotate(180 20 20)"/>
-      <ellipse cx="20" cy="12" rx="5" ry="9" fill="url(#petal-gradient)" transform="rotate(240 20 20)"/>
-      <ellipse cx="20" cy="12" rx="5" ry="9" fill="url(#petal-gradient)" transform="rotate(300 20 20)"/>
-      <!-- Center -->
-      <circle cx="20" cy="20" r="8" fill="url(#center-gradient)"/>
-      <defs>
-        <linearGradient id="petal-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
-          <stop offset="0%" stop-color="#D4856A"/>
-          <stop offset="100%" stop-color="#E8A87C"/>
-        </linearGradient>
-        <linearGradient id="center-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#4A9A86"/>
-          <stop offset="100%" stop-color="#5AB39C"/>
-        </linearGradient>
-      </defs>
-    </svg>
-  `
+// Helper function to draw rounded rectangle
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+  ctx.beginPath()
+  ctx.moveTo(x + radius, y)
+  ctx.lineTo(x + width - radius, y)
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius)
+  ctx.lineTo(x + width, y + height - radius)
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height)
+  ctx.lineTo(x + radius, y + height)
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius)
+  ctx.lineTo(x, y + radius)
+  ctx.quadraticCurveTo(x, y, x + radius, y)
+  ctx.closePath()
+}
+
+// Helper function to draw leaf icon
+function drawLeafIcon(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+  ctx.save()
+  ctx.translate(x, y)
+
+  // Draw background circle
+  ctx.fillStyle = '#4A9A86'
+  ctx.beginPath()
+  ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Draw leaf shape (simplified)
+  ctx.strokeStyle = 'white'
+  ctx.lineWidth = 2
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+
+  const s = size / 24 // scale factor
+  ctx.beginPath()
+  ctx.moveTo(11 * s, 20 * s)
+  ctx.bezierCurveTo(11 * s, 15 * s, 8 * s, 10 * s, 10 * s, 6 * s)
+  ctx.bezierCurveTo(15 * s, 5 * s, 17 * s, 5 * s, 19 * s, 3 * s)
+  ctx.bezierCurveTo(20 * s, 5 * s, 21 * s, 8 * s, 21 * s, 11 * s)
+  ctx.bezierCurveTo(21 * s, 16 * s, 16 * s, 20 * s, 11 * s, 20 * s)
+  ctx.stroke()
+
+  ctx.restore()
+}
+
+// Helper function to draw Bloomsline logo
+function drawBloomslineLogo(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+  ctx.save()
+  ctx.translate(x, y)
+
+  const center = size / 2
+  const petalWidth = size * 0.15
+  const petalHeight = size * 0.35
+
+  // Draw 6 petals
+  for (let i = 0; i < 6; i++) {
+    ctx.save()
+    ctx.translate(center, center)
+    ctx.rotate((i * 60 * Math.PI) / 180)
+
+    // Petal gradient
+    const petalGradient = ctx.createLinearGradient(0, -petalHeight, 0, 0)
+    petalGradient.addColorStop(0, '#E8A87C')
+    petalGradient.addColorStop(1, '#D4856A')
+    ctx.fillStyle = petalGradient
+
+    ctx.beginPath()
+    ctx.ellipse(0, -center * 0.5, petalWidth, petalHeight, 0, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.restore()
+  }
+
+  // Draw center circle
+  const centerGradient = ctx.createLinearGradient(center - size * 0.2, center - size * 0.2, center + size * 0.2, center + size * 0.2)
+  centerGradient.addColorStop(0, '#4A9A86')
+  centerGradient.addColorStop(1, '#5AB39C')
+  ctx.fillStyle = centerGradient
+  ctx.beginPath()
+  ctx.arc(center, center, size * 0.22, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.restore()
 }
