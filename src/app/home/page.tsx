@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -68,6 +68,7 @@ import {
   ShoppingBag,
   BedDouble,
   Info,
+  Share2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -97,6 +98,7 @@ import type { Member } from '@/types/member'
 import { getMemberMoments, type Moment } from '@/lib/services/moments'
 import { DailyStory } from '@/components/daily-story/DailyStory'
 import { DailyStoryCard } from '@/components/daily-story/DailyStoryCard'
+import { captureFlowAsImage, shareFlow } from '@/lib/utils/share-flow'
 // Ritual types
 interface Ritual {
   id: string
@@ -425,6 +427,8 @@ export default function MyResourcesPage() {
   const [centerHour, setCenterHour] = useState(12) // Center of visible range
   const [showBloomChat, setShowBloomChat] = useState(false)
   const [showDailyStory, setShowDailyStory] = useState(false)
+  const [isSharing, setIsSharing] = useState(false)
+  const flowContainerRef = useRef<HTMLDivElement>(null)
   const [anchorsTab, setAnchorsTab] = useState<'grow' | 'letgo'>('grow')
   const [anchorLogs, setAnchorLogs] = useState<Record<string, number[]>>({}) // habitId -> array of timestamps for today
   const [selectedDateAnchorLogs, setSelectedDateAnchorLogs] = useState<{ anchorId: string; timestamp: number }[]>([]) // For timeline
@@ -912,6 +916,33 @@ export default function MyResourcesPage() {
     }
   }
 
+  const handleShareFlow = async () => {
+    if (!flowContainerRef.current || isSharing) return
+
+    setIsSharing(true)
+    try {
+      const blob = await captureFlowAsImage({
+        element: flowContainerRef.current,
+        locale,
+        date: formatSelectedDate(),
+      })
+
+      if (blob) {
+        const shared = await shareFlow(blob, locale)
+        if (shared) {
+          toast.success(locale === 'fr' ? 'Image prête!' : 'Image ready!')
+        }
+      } else {
+        toast.error(locale === 'fr' ? 'Erreur lors de la capture' : 'Error capturing image')
+      }
+    } catch (error) {
+      console.error('Error sharing flow:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors du partage' : 'Error sharing')
+    } finally {
+      setIsSharing(false)
+    }
+  }
+
   if (loading) {
     return (
       <MemberLayout>
@@ -1076,6 +1107,7 @@ export default function MyResourcesPage() {
 
         {/* Today's Journey - Emotional Flow Visualization */}
         <motion.div
+          ref={flowContainerRef}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white/80 backdrop-blur-sm rounded-3xl p-5 border border-white/60 shadow-lg shadow-emerald-100/30 overflow-hidden"
@@ -1093,6 +1125,19 @@ export default function MyResourcesPage() {
                 title={locale === 'fr' ? "Qu'est-ce que c'est?" : "What's this?"}
               >
                 <Info className="w-4 h-4 text-gray-400" />
+              </button>
+              {/* Share button */}
+              <button
+                onClick={handleShareFlow}
+                disabled={isSharing}
+                className="p-1 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
+                title={locale === 'fr' ? 'Partager' : 'Share'}
+              >
+                {isSharing ? (
+                  <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                ) : (
+                  <Share2 className="w-4 h-4 text-gray-400" />
+                )}
               </button>
             </div>
             <div className="flex items-center gap-1">
