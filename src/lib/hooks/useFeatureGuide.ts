@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/browser-client'
 
-export type FeatureName = 'moments' | 'seeds' | 'rituals' | 'balance' | 'reflection' | 'progress' | 'flow'
+export type FeatureName = 'moments' | 'seeds' | 'rituals' | 'balance' | 'reflection' | 'progress' | 'flow' | 'onboarding'
 
 interface GuideStatus {
   completed: boolean

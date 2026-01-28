@@ -90,6 +90,7 @@ import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { FeatureGuide } from '@/components/feature-guide/FeatureGuide'
 import { flowGuideSteps } from '@/components/feature-guide/guides/flow-guide'
 import { seedsGuideSteps } from '@/components/feature-guide/guides/seeds-guide'
+import { onboardingGuideSteps } from '@/components/feature-guide/guides/onboarding-guide'
 import { useFeatureGuide } from '@/lib/hooks/useFeatureGuide'
 import { useBottomNav } from '@/lib/contexts/bottom-nav-context'
 import type { Member } from '@/types/member'
@@ -424,6 +425,9 @@ export default function MyResourcesPage() {
   const [anchorsTab, setAnchorsTab] = useState<'grow' | 'letgo'>('grow')
   const [anchorLogs, setAnchorLogs] = useState<Record<string, number[]>>({}) // habitId -> array of timestamps for today
   const [selectedDateAnchorLogs, setSelectedDateAnchorLogs] = useState<{ anchorId: string; timestamp: number }[]>([]) // For timeline
+
+  // Global onboarding guide (shows automatically for first-time users)
+  const { showGuide: showOnboarding, completeGuide: completeOnboarding, loading: onboardingLoading } = useFeatureGuide('onboarding', { autoShow: true })
 
   // Feature guide for Today's Flow (only show on info button click)
   const { showGuide: showFlowGuide, completeGuide: completeFlowGuide, skipGuide: skipFlowGuide, setShowGuide: setShowFlowGuide } = useFeatureGuide('flow', { autoShow: false })
@@ -949,6 +953,15 @@ export default function MyResourcesPage() {
           steps={flowGuideSteps}
           onComplete={completeFlowGuide}
           onSkip={skipFlowGuide}
+        />
+      )}
+
+      {/* Global Onboarding Guide (shown for first-time users - mandatory) */}
+      {showOnboarding && !onboardingLoading && (
+        <FeatureGuide
+          featureName="onboarding"
+          steps={onboardingGuideSteps}
+          onComplete={completeOnboarding}
         />
       )}
 
