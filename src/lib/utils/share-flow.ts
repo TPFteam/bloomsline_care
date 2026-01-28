@@ -19,6 +19,29 @@ export async function captureFlowAsImage({ element, locale, date }: ShareFlowOpt
         // Ignore any elements that might cause issues
         return el.tagName === 'IFRAME' || el.classList?.contains('ignore-capture')
       },
+      onclone: (clonedDoc) => {
+        // Replace any lab() colors with fallbacks in the cloned document
+        const allElements = clonedDoc.querySelectorAll('*')
+        allElements.forEach((el) => {
+          const style = window.getComputedStyle(el as Element)
+          const htmlEl = el as HTMLElement
+
+          // Get computed colors and replace if they contain lab()
+          const bgColor = style.backgroundColor
+          const textColor = style.color
+          const borderColor = style.borderColor
+
+          if (bgColor && bgColor.includes('lab(')) {
+            htmlEl.style.backgroundColor = '#f0fdf4'
+          }
+          if (textColor && textColor.includes('lab(')) {
+            htmlEl.style.color = '#374151'
+          }
+          if (borderColor && borderColor.includes('lab(')) {
+            htmlEl.style.borderColor = '#e5e7eb'
+          }
+        })
+      },
     })
 
     // Create a new canvas with branding
@@ -100,7 +123,11 @@ export async function captureFlowAsImage({ element, locale, date }: ShareFlowOpt
       }, 'image/png', 1.0)
     })
   } catch (error) {
-    console.error('Error capturing flow:', error)
+    console.error('Error capturing flow - details:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     return null
   }
 }
