@@ -6,63 +6,77 @@ import { Leaf, Heart, Sun, Camera, Sparkles, Info, Home, Circle } from 'lucide-r
 // Animation 1: Welcome to Bloomsline - Logo reveal with bloom effect
 export function OnboardingWelcomeAnimation() {
   return (
-    <div className="relative w-full h-36 sm:h-44 flex items-center justify-center">
-      {/* Animated petals/leaves blooming out */}
-      {[0, 60, 120, 180, 240, 300].map((rotation, i) => (
-        <motion.div
-          key={i}
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 0.6 }}
-          transition={{ delay: i * 0.1, duration: 0.5, repeat: Infinity, repeatDelay: 3 }}
-          style={{ rotate: rotation }}
-          className="absolute"
-        >
-          <motion.div
-            animate={{ y: [-5, 5, -5] }}
-            transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
-            className="w-8 h-8 sm:w-10 sm:h-10 -translate-y-12"
-          >
-            <Leaf className="w-full h-full text-[#4A9A86]" />
-          </motion.div>
-        </motion.div>
-      ))}
-
-      {/* Center bloom */}
+    <div className="relative w-full h-36 sm:h-44 flex flex-col items-center justify-center">
+      {/* Bloomsline Logo - Animated flower */}
       <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.3, type: 'spring', damping: 12 }}
-        className="relative z-10"
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', damping: 12 }}
+        className="relative"
       >
+        {/* Glow effect */}
         <motion.div
-          animate={{ scale: [1, 1.1, 1] }}
+          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 2, repeat: Infinity }}
-          className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-[#4A9A86] to-[#5AB39C] rounded-full flex items-center justify-center shadow-xl"
-        >
+          className="absolute inset-0 bg-gradient-to-br from-[#4A9A86]/40 to-[#D4856A]/40 rounded-full blur-xl scale-150"
+        />
+
+        {/* Logo container */}
+        <div className="relative w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center">
+          {/* Petals - Coral */}
+          {[0, 60, 120, 180, 240, 300].map((rotation, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-6 h-10 sm:w-8 sm:h-14 bg-gradient-to-t from-[#D4856A] to-[#E8A87C] rounded-full origin-bottom"
+              style={{
+                transform: `rotate(${rotation}deg) translateY(-35%)`,
+              }}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{
+                scale: [1, 1.08, 1],
+                opacity: [0.85, 1, 0.85]
+              }}
+              transition={{
+                scale: { duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 },
+                opacity: { duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 },
+              }}
+            />
+          ))}
+
+          {/* Center circle - Teal */}
           <motion.div
-            animate={{ rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 3, repeat: Infinity }}
-          >
-            <Leaf className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
-          </motion.div>
-        </motion.div>
+            className="absolute w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-[#4A9A86] to-[#5AB39C] rounded-full z-10 shadow-lg"
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
 
         {/* Sparkles around */}
         <motion.div
-          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+          animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 1.5, repeat: Infinity }}
-          className="absolute -top-2 -right-2 text-amber-400"
+          className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 text-amber-400"
         >
           <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
         </motion.div>
         <motion.div
-          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+          animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
-          className="absolute -bottom-1 -left-3 text-[#D4856A]"
+          className="absolute -bottom-1 -left-3 sm:-bottom-2 sm:-left-4 text-[#4A9A86]"
         >
           <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
         </motion.div>
       </motion.div>
+
+      {/* Bloomsline text */}
+      <motion.p
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="mt-3 sm:mt-4 text-lg sm:text-xl font-bold text-gray-800 tracking-tight"
+      >
+        Bloomsline
+      </motion.p>
     </div>
   )
 }
