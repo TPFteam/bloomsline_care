@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Camera, Leaf, Heart, Sun, Moon, Sparkles, Mic, Play, Pause, PenLine, Video } from 'lucide-react'
+import { X, Camera, Leaf, Heart, Sun, Moon, Sparkles, Mic, Play, Pause, PenLine, Video, Circle, Clock } from 'lucide-react'
 import Image from 'next/image'
 
 type MomentType = 'photo' | 'video' | 'voice' | 'write'
@@ -27,19 +27,29 @@ interface SeedLog {
   logged_at: string
 }
 
+interface RitualLog {
+  id: string
+  name: string
+  nameFr: string
+  icon: string
+  duration_minutes: number | null
+  completed_at: string
+}
+
 interface StorySlide {
-  type: 'intro' | 'moment' | 'seeds-summary' | 'outro'
-  data?: Moment | SeedLog[] | null
+  type: 'intro' | 'moment' | 'seeds-summary' | 'rituals-summary' | 'outro'
+  data?: Moment | SeedLog[] | RitualLog[] | null
 }
 
 interface DailyStoryProps {
   moments: Moment[]
   seedLogs: SeedLog[]
+  rituals: RitualLog[]
   locale: string
   onClose: () => void
 }
 
-export function DailyStory({ moments, seedLogs, locale, onClose }: DailyStoryProps) {
+export function DailyStory({ moments, seedLogs, rituals, locale, onClose }: DailyStoryProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [progress, setProgress] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
@@ -48,6 +58,7 @@ export function DailyStory({ moments, seedLogs, locale, onClose }: DailyStoryPro
   const slides: StorySlide[] = [
     { type: 'intro' },
     ...moments.map(m => ({ type: 'moment' as const, data: m })),
+    ...(rituals.length > 0 ? [{ type: 'rituals-summary' as const, data: rituals }] : []),
     ...(seedLogs.length > 0 ? [{ type: 'seeds-summary' as const, data: seedLogs }] : []),
     { type: 'outro' },
   ]
@@ -171,7 +182,7 @@ export function DailyStory({ moments, seedLogs, locale, onClose }: DailyStoryPro
           className="absolute inset-0 flex items-center justify-center"
         >
           {currentSlide.type === 'intro' && (
-            <IntroSlide locale={locale} greeting={getGreeting()} momentsCount={moments.length} seedsCount={seedLogs.length} />
+            <IntroSlide locale={locale} greeting={getGreeting()} momentsCount={moments.length} seedsCount={seedLogs.length} ritualsCount={rituals.length} />
           )}
 
           {currentSlide.type === 'moment' && currentSlide.data && (
@@ -185,6 +196,10 @@ export function DailyStory({ moments, seedLogs, locale, onClose }: DailyStoryPro
 
           {currentSlide.type === 'seeds-summary' && currentSlide.data && (
             <SeedsSummarySlide seeds={currentSlide.data as SeedLog[]} locale={locale} />
+          )}
+
+          {currentSlide.type === 'rituals-summary' && currentSlide.data && (
+            <RitualsSummarySlide rituals={currentSlide.data as RitualLog[]} locale={locale} />
           )}
 
           {currentSlide.type === 'outro' && (
@@ -202,9 +217,30 @@ export function DailyStory({ moments, seedLogs, locale, onClose }: DailyStoryPro
 }
 
 // Intro Slide
-function IntroSlide({ locale, greeting, momentsCount, seedsCount }: { locale: string; greeting: string; momentsCount: number; seedsCount: number }) {
+function IntroSlide({ locale, greeting, momentsCount, seedsCount, ritualsCount }: { locale: string; greeting: string; momentsCount: number; seedsCount: number; ritualsCount: number }) {
   const hour = new Date().getHours()
   const Icon = hour >= 18 ? Moon : Sun
+
+  // Build stats text
+  const stats: string[] = []
+  if (momentsCount > 0) {
+    stats.push(locale === 'fr'
+      ? `${momentsCount} moment${momentsCount !== 1 ? 's' : ''}`
+      : `${momentsCount} moment${momentsCount !== 1 ? 's' : ''}`
+    )
+  }
+  if (ritualsCount > 0) {
+    stats.push(locale === 'fr'
+      ? `${ritualsCount} rituel${ritualsCount !== 1 ? 's' : ''}`
+      : `${ritualsCount} ritual${ritualsCount !== 1 ? 's' : ''}`
+    )
+  }
+  if (seedsCount > 0) {
+    stats.push(locale === 'fr'
+      ? `${seedsCount} graine${seedsCount !== 1 ? 's' : ''}`
+      : `${seedsCount} seed${seedsCount !== 1 ? 's' : ''}`
+    )
+  }
 
   return (
     <div className="flex flex-col items-center justify-center text-center px-8">
@@ -232,10 +268,7 @@ function IntroSlide({ locale, greeting, momentsCount, seedsCount }: { locale: st
         transition={{ delay: 0.4 }}
         className="text-white/70 text-lg"
       >
-        {locale === 'fr'
-          ? `${momentsCount} moment${momentsCount !== 1 ? 's' : ''} • ${seedsCount} graine${seedsCount !== 1 ? 's' : ''}`
-          : `${momentsCount} moment${momentsCount !== 1 ? 's' : ''} • ${seedsCount} seed${seedsCount !== 1 ? 's' : ''}`
-        }
+        {stats.join(' • ') || (locale === 'fr' ? 'Votre journée' : 'Your day')}
       </motion.p>
 
       <motion.div
@@ -560,6 +593,104 @@ function SeedsSummarySlide({ seeds, locale }: { seeds: SeedLog[]; locale: string
               ))}
             </div>
           </motion.div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Rituals Summary Slide
+function RitualsSummarySlide({ rituals, locale }: { rituals: RitualLog[]; locale: string }) {
+  const formatDuration = (minutes: number | null) => {
+    if (!minutes) return null
+    if (minutes < 60) {
+      return locale === 'fr' ? `${minutes} min` : `${minutes} min`
+    }
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    if (mins === 0) {
+      return locale === 'fr' ? `${hours}h` : `${hours}h`
+    }
+    return locale === 'fr' ? `${hours}h${mins}` : `${hours}h ${mins}m`
+  }
+
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-teal-500 via-emerald-500 to-green-500 flex flex-col items-center justify-center px-6">
+      {/* Header */}
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', delay: 0.2 }}
+        className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-6"
+      >
+        <Circle className="w-8 h-8 text-white" />
+      </motion.div>
+
+      <motion.h2
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="text-2xl font-bold text-white mb-2"
+      >
+        {locale === 'fr' ? 'Vos rituels' : 'Your Rituals'}
+      </motion.h2>
+
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+        className="text-white/70 text-sm mb-6"
+      >
+        {locale === 'fr'
+          ? `${rituals.length} rituel${rituals.length !== 1 ? 's' : ''} complété${rituals.length !== 1 ? 's' : ''} aujourd'hui`
+          : `${rituals.length} ritual${rituals.length !== 1 ? 's' : ''} completed today`
+        }
+      </motion.p>
+
+      {/* Rituals list */}
+      <div className="w-full max-w-sm space-y-3">
+        {rituals.slice(0, 4).map((ritual, i) => (
+          <motion.div
+            key={ritual.id}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 + i * 0.1 }}
+            className="bg-white/15 backdrop-blur-sm rounded-2xl p-4 flex items-center gap-4"
+          >
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+              <Circle className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="text-white font-medium">
+                {locale === 'fr' ? ritual.nameFr : ritual.name}
+              </p>
+              {ritual.duration_minutes && (
+                <p className="text-white/70 text-sm flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {formatDuration(ritual.duration_minutes)}
+                </p>
+              )}
+            </div>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.7 + i * 0.1, type: 'spring' }}
+              className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center"
+            >
+              <Heart className="w-4 h-4 text-white" fill="white" />
+            </motion.div>
+          </motion.div>
+        ))}
+
+        {rituals.length > 4 && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+            className="text-center text-white/60 text-sm"
+          >
+            +{rituals.length - 4} {locale === 'fr' ? 'autres' : 'more'}
+          </motion.p>
         )}
       </div>
     </div>

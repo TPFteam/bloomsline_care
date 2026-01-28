@@ -6,14 +6,36 @@ import { Play, Moon, Sparkles } from 'lucide-react'
 interface DailyStoryCardProps {
   momentsCount: number
   seedsCount: number
+  ritualsCount?: number
   locale: string
   onClick: () => void
 }
 
-export function DailyStoryCard({ momentsCount, seedsCount, locale, onClick }: DailyStoryCardProps) {
-  const hasContent = momentsCount > 0 || seedsCount > 0
+export function DailyStoryCard({ momentsCount, seedsCount, ritualsCount = 0, locale, onClick }: DailyStoryCardProps) {
+  const hasContent = momentsCount > 0 || seedsCount > 0 || ritualsCount > 0
 
   if (!hasContent) return null
+
+  // Build stats text
+  const stats: string[] = []
+  if (momentsCount > 0) {
+    stats.push(locale === 'fr'
+      ? `${momentsCount} moment${momentsCount !== 1 ? 's' : ''}`
+      : `${momentsCount} moment${momentsCount !== 1 ? 's' : ''}`
+    )
+  }
+  if (ritualsCount > 0) {
+    stats.push(locale === 'fr'
+      ? `${ritualsCount} rituel${ritualsCount !== 1 ? 's' : ''}`
+      : `${ritualsCount} ritual${ritualsCount !== 1 ? 's' : ''}`
+    )
+  }
+  if (seedsCount > 0) {
+    stats.push(locale === 'fr'
+      ? `${seedsCount} graine${seedsCount !== 1 ? 's' : ''}`
+      : `${seedsCount} seed${seedsCount !== 1 ? 's' : ''}`
+    )
+  }
 
   return (
     <motion.button
@@ -65,10 +87,7 @@ export function DailyStoryCard({ momentsCount, seedsCount, locale, onClick }: Da
               {locale === 'fr' ? 'Votre journée' : 'Your Day'}
             </h3>
             <p className="text-white/70 text-sm">
-              {locale === 'fr'
-                ? `${momentsCount} moment${momentsCount !== 1 ? 's' : ''} • ${seedsCount} graine${seedsCount !== 1 ? 's' : ''}`
-                : `${momentsCount} moment${momentsCount !== 1 ? 's' : ''} • ${seedsCount} seed${seedsCount !== 1 ? 's' : ''}`
-              }
+              {stats.join(' • ')}
             </p>
           </div>
         </div>

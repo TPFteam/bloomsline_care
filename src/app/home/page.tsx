@@ -1064,10 +1064,11 @@ export default function MyResourcesPage() {
         </AnimatePresence>
 
         {/* Daily Story Card - Shows after 6 PM if there's content */}
-        {currentTime.getHours() >= 18 && isToday() && (todaysMoments.length > 0 || selectedDateAnchorLogs.length > 0) && (
+        {currentTime.getHours() >= 18 && isToday() && (todaysMoments.length > 0 || selectedDateAnchorLogs.length > 0 || selectedDateCompletions.length > 0) && (
           <DailyStoryCard
             momentsCount={todaysMoments.length}
             seedsCount={selectedDateAnchorLogs.length}
+            ritualsCount={selectedDateCompletions.length}
             locale={locale}
             onClick={() => setShowDailyStory(true)}
           />
@@ -2303,6 +2304,17 @@ export default function MyResourcesPage() {
                   type: anchor?.type || 'grow',
                 },
                 logged_at: new Date(log.timestamp).toISOString(),
+              }
+            })}
+            rituals={selectedDateCompletions.map(completion => {
+              const memberRitual = memberRituals.find(mr => mr.ritual_id === completion.ritual_id)
+              return {
+                id: completion.id,
+                name: memberRitual?.ritual.name || '',
+                nameFr: memberRitual?.ritual.name_fr || memberRitual?.ritual.name || '',
+                icon: memberRitual?.ritual.icon || 'circle',
+                duration_minutes: completion.duration_minutes,
+                completed_at: completion.created_at,
               }
             })}
             locale={locale}
