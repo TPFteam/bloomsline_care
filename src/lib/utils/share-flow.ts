@@ -1,4 +1,4 @@
-import html2canvas from 'html2canvas'
+import { toPng } from 'html-to-image'
 
 interface ShareFlowOptions {
   element: HTMLElement
@@ -8,33 +8,35 @@ interface ShareFlowOptions {
 
 export async function captureFlowAsImage({ element, locale, date }: ShareFlowOptions): Promise<Blob | null> {
   try {
-    console.log('Starting capture, element:', element)
+    // Capture the element as PNG data URL
+    const dataUrl = await toPng(element, {
+      quality: 1,
+      pixelRatio: 2,
+      backgroundColor: '#ffffff',
+      skipFonts: true, // Skip font loading to avoid issues
+      filter: (node) => {
+        // Skip any problematic elements
+        if (node instanceof Element) {
+          return !node.classList?.contains('ignore-capture')
+        }
+        return true
+      },
+    })
 
-    // First capture the original element directly
-    let originalCanvas: HTMLCanvasElement
-    try {
-      originalCanvas = await html2canvas(element, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: true, // Enable logging to debug
-        ignoreElements: (el) => {
-          return el.tagName === 'IFRAME' || el.classList?.contains('ignore-capture')
-        },
-      })
-      console.log('html2canvas success, canvas:', originalCanvas.width, 'x', originalCanvas.height)
-    } catch (canvasError) {
-      console.error('html2canvas failed:', canvasError)
-      throw canvasError
-    }
+    // Load the image
+    const img = new Image()
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = reject
+      img.src = dataUrl
+    })
 
-    // Create a new canvas with branding
+    // Create final canvas with branding
     const padding = 40
     const headerHeight = 60
-    const footerHeight = 60
-    const totalWidth = originalCanvas.width + padding * 2
-    const totalHeight = originalCanvas.height + padding * 2 + headerHeight + footerHeight
+    const footerHeight = 70
+    const totalWidth = img.width + padding * 2
+    const totalHeight = img.height + padding * 2 + headerHeight + footerHeight
 
     const finalCanvas = document.createElement('canvas')
     finalCanvas.width = totalWidth
@@ -53,53 +55,54 @@ export async function captureFlowAsImage({ element, locale, date }: ShareFlowOpt
     ctx.fillStyle = gradient
     ctx.fillRect(0, 0, totalWidth, totalHeight)
 
-    // Draw header
+    // Draw header with date
     ctx.fillStyle = '#374151'
-    ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    ctx.font = 'bold 28px system-ui, -apple-system, sans-serif'
     ctx.textAlign = 'left'
-    ctx.fillText(date, padding, padding + 35)
+    ctx.fillText(date, padding + 45, padding + 38)
 
     // Draw small leaf icon before date
-    drawLeafIcon(ctx, padding - 40, padding + 12, 28)
+    drawLeafIcon(ctx, padding, padding + 10, 32)
 
     // Draw the captured flow
     const flowY = padding + headerHeight
 
-    // Add rounded rectangle background for the flow
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
-    roundRect(ctx, padding - 10, flowY - 10, originalCanvas.width + 20, originalCanvas.height + 20, 24)
-    ctx.fill()
-
-    // Draw shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.08)'
+    // Add shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.1)'
     ctx.shadowBlur = 20
     ctx.shadowOffsetY = 4
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
-    roundRect(ctx, padding - 10, flowY - 10, originalCanvas.width + 20, originalCanvas.height + 20, 24)
+
+    // Draw white rounded background
+    ctx.fillStyle = '#ffffff'
+    roundRect(ctx, padding - 10, flowY - 10, img.width + 20, img.height + 20, 24)
     ctx.fill()
+
+    // Reset shadow
     ctx.shadowColor = 'transparent'
     ctx.shadowBlur = 0
     ctx.shadowOffsetY = 0
 
     // Draw the actual flow image
-    ctx.drawImage(originalCanvas, padding, flowY)
+    ctx.drawImage(img, padding, flowY)
 
     // Draw footer with branding
-    const footerY = flowY + originalCanvas.height + 30
+    const footerY = flowY + img.height + 35
 
     // Draw Bloomsline logo
-    drawBloomslineLogo(ctx, totalWidth / 2 - 80, footerY, 36)
+    const logoX = totalWidth / 2 - 90
+    drawBloomslineLogo(ctx, logoX, footerY - 5, 40)
 
     // Draw "Bloomsline" text
     ctx.fillStyle = '#374151'
-    ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    ctx.font = 'bold 26px system-ui, -apple-system, sans-serif'
     ctx.textAlign = 'left'
-    ctx.fillText('Bloomsline', totalWidth / 2 - 35, footerY + 26)
+    ctx.fillText('Bloomsline', logoX + 50, footerY + 28)
 
     // Draw tagline
     ctx.fillStyle = '#9CA3AF'
-    ctx.font = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    ctx.fillText(locale === 'fr' ? 'Mon bien-être' : 'My wellbeing', totalWidth / 2 + 95, footerY + 24)
+    ctx.font = '16px system-ui, -apple-system, sans-serif'
+    const tagline = locale === 'fr' ? 'Mon bien-être' : 'My wellbeing'
+    ctx.fillText(tagline, logoX + 175, footerY + 26)
 
     // Convert to blob
     return new Promise((resolve) => {
@@ -108,13 +111,7 @@ export async function captureFlowAsImage({ element, locale, date }: ShareFlowOpt
       }, 'image/png', 1.0)
     })
   } catch (error) {
-    console.error('Error capturing flow - raw error:', error)
-    console.error('Error type:', typeof error)
-    console.error('Error constructor:', error?.constructor?.name)
-    if (error instanceof Error) {
-      console.error('Error message:', error.message)
-      console.error('Error stack:', error.stack)
-    }
+    console.error('Error capturing flow:', error)
     return null
   }
 }
@@ -171,25 +168,34 @@ function drawLeafIcon(ctx: CanvasRenderingContext2D, x: number, y: number, size:
   ctx.save()
   ctx.translate(x, y)
 
-  // Draw background circle
-  ctx.fillStyle = '#4A9A86'
-  ctx.beginPath()
-  ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2)
+  // Draw background rounded rectangle
+  const bgGradient = ctx.createLinearGradient(0, 0, size, size)
+  bgGradient.addColorStop(0, '#4A9A86')
+  bgGradient.addColorStop(1, '#5AB39C')
+  ctx.fillStyle = bgGradient
+  roundRect(ctx, 0, 0, size, size, size * 0.25)
   ctx.fill()
 
-  // Draw leaf shape (simplified)
+  // Draw leaf shape
   ctx.strokeStyle = 'white'
-  ctx.lineWidth = 2
+  ctx.lineWidth = 2.5
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
 
-  const s = size / 24 // scale factor
+  const s = size / 24
   ctx.beginPath()
-  ctx.moveTo(11 * s, 20 * s)
-  ctx.bezierCurveTo(11 * s, 15 * s, 8 * s, 10 * s, 10 * s, 6 * s)
-  ctx.bezierCurveTo(15 * s, 5 * s, 17 * s, 5 * s, 19 * s, 3 * s)
-  ctx.bezierCurveTo(20 * s, 5 * s, 21 * s, 8 * s, 21 * s, 11 * s)
-  ctx.bezierCurveTo(21 * s, 16 * s, 16 * s, 20 * s, 11 * s, 20 * s)
+  // Leaf path
+  ctx.moveTo(12 * s, 19 * s)
+  ctx.bezierCurveTo(12 * s, 14 * s, 8 * s, 9 * s, 10 * s, 5 * s)
+  ctx.bezierCurveTo(14 * s, 4 * s, 16 * s, 4 * s, 18 * s, 2 * s)
+  ctx.bezierCurveTo(19 * s, 4 * s, 20 * s, 7 * s, 20 * s, 10 * s)
+  ctx.bezierCurveTo(20 * s, 15 * s, 16 * s, 19 * s, 12 * s, 19 * s)
+  ctx.stroke()
+
+  // Stem
+  ctx.beginPath()
+  ctx.moveTo(5 * s, 21 * s)
+  ctx.bezierCurveTo(7 * s, 17 * s, 10 * s, 14 * s, 12 * s, 12 * s)
   ctx.stroke()
 
   ctx.restore()
@@ -201,8 +207,8 @@ function drawBloomslineLogo(ctx: CanvasRenderingContext2D, x: number, y: number,
   ctx.translate(x, y)
 
   const center = size / 2
-  const petalWidth = size * 0.15
-  const petalHeight = size * 0.35
+  const petalWidth = size * 0.13
+  const petalHeight = size * 0.32
 
   // Draw 6 petals
   for (let i = 0; i < 6; i++) {
@@ -211,25 +217,25 @@ function drawBloomslineLogo(ctx: CanvasRenderingContext2D, x: number, y: number,
     ctx.rotate((i * 60 * Math.PI) / 180)
 
     // Petal gradient
-    const petalGradient = ctx.createLinearGradient(0, -petalHeight, 0, 0)
+    const petalGradient = ctx.createLinearGradient(0, -petalHeight * 1.5, 0, 0)
     petalGradient.addColorStop(0, '#E8A87C')
     petalGradient.addColorStop(1, '#D4856A')
     ctx.fillStyle = petalGradient
 
     ctx.beginPath()
-    ctx.ellipse(0, -center * 0.5, petalWidth, petalHeight, 0, 0, Math.PI * 2)
+    ctx.ellipse(0, -center * 0.45, petalWidth, petalHeight, 0, 0, Math.PI * 2)
     ctx.fill()
 
     ctx.restore()
   }
 
   // Draw center circle
-  const centerGradient = ctx.createLinearGradient(center - size * 0.2, center - size * 0.2, center + size * 0.2, center + size * 0.2)
+  const centerGradient = ctx.createLinearGradient(center - size * 0.15, center - size * 0.15, center + size * 0.15, center + size * 0.15)
   centerGradient.addColorStop(0, '#4A9A86')
   centerGradient.addColorStop(1, '#5AB39C')
   ctx.fillStyle = centerGradient
   ctx.beginPath()
-  ctx.arc(center, center, size * 0.22, 0, Math.PI * 2)
+  ctx.arc(center, center, size * 0.2, 0, Math.PI * 2)
   ctx.fill()
 
   ctx.restore()
