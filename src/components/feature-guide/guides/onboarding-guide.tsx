@@ -15,8 +15,8 @@ export const onboardingGuideSteps: GuideStep[] = [
     animation: <OnboardingWelcomeAnimation />,
     titleEn: "Welcome to Bloomsline",
     titleFr: "Bienvenue sur Bloomsline",
-    descriptionEn: "Your companion for everyday wellbeing. Small steps, big changes - we'll do this together.",
-    descriptionFr: "Votre compagnon pour le bien-etre au quotidien. Petits pas, grands changements - on fait ca ensemble.",
+    descriptionEn: "A simple app for your everyday wellbeing. Small steps, big changes - let's do this together.",
+    descriptionFr: "Une appli simple pour votre bien-etre au quotidien. Petits pas, grands changements - on fait ca ensemble.",
   },
   {
     animation: <OnboardingPersonalSpaceAnimation />,
