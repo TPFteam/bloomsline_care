@@ -8,41 +8,26 @@ interface ShareFlowOptions {
 
 export async function captureFlowAsImage({ element, locale, date }: ShareFlowOptions): Promise<Blob | null> {
   try {
+    console.log('Starting capture, element:', element)
+
     // First capture the original element directly
-    const originalCanvas = await html2canvas(element, {
-      backgroundColor: '#ffffff',
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      logging: false,
-      ignoreElements: (el) => {
-        // Ignore any elements that might cause issues
-        return el.tagName === 'IFRAME' || el.classList?.contains('ignore-capture')
-      },
-      onclone: (clonedDoc) => {
-        // Replace any lab() colors with fallbacks in the cloned document
-        const allElements = clonedDoc.querySelectorAll('*')
-        allElements.forEach((el) => {
-          const style = window.getComputedStyle(el as Element)
-          const htmlEl = el as HTMLElement
-
-          // Get computed colors and replace if they contain lab()
-          const bgColor = style.backgroundColor
-          const textColor = style.color
-          const borderColor = style.borderColor
-
-          if (bgColor && bgColor.includes('lab(')) {
-            htmlEl.style.backgroundColor = '#f0fdf4'
-          }
-          if (textColor && textColor.includes('lab(')) {
-            htmlEl.style.color = '#374151'
-          }
-          if (borderColor && borderColor.includes('lab(')) {
-            htmlEl.style.borderColor = '#e5e7eb'
-          }
-        })
-      },
-    })
+    let originalCanvas: HTMLCanvasElement
+    try {
+      originalCanvas = await html2canvas(element, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: true, // Enable logging to debug
+        ignoreElements: (el) => {
+          return el.tagName === 'IFRAME' || el.classList?.contains('ignore-capture')
+        },
+      })
+      console.log('html2canvas success, canvas:', originalCanvas.width, 'x', originalCanvas.height)
+    } catch (canvasError) {
+      console.error('html2canvas failed:', canvasError)
+      throw canvasError
+    }
 
     // Create a new canvas with branding
     const padding = 40
@@ -123,11 +108,13 @@ export async function captureFlowAsImage({ element, locale, date }: ShareFlowOpt
       }, 'image/png', 1.0)
     })
   } catch (error) {
-    console.error('Error capturing flow - details:', {
-      error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-    })
+    console.error('Error capturing flow - raw error:', error)
+    console.error('Error type:', typeof error)
+    console.error('Error constructor:', error?.constructor?.name)
+    if (error instanceof Error) {
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
     return null
   }
 }
