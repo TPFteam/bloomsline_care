@@ -184,15 +184,19 @@ export async function GET(request: NextRequest) {
             const waitlistUserType = waitlistEntry.user_type as 'member' | 'practitioner' | 'both'
 
             if (waitlistUserType === 'member' || waitlistUserType === 'practitioner') {
-              // Update user profile with the type from waitlist
+              // Create user profile with the type from waitlist
+              // (handle_new_user trigger doesn't auto-create profiles)
+              const userEmail = data.user?.email
               await adminClient
                 .from('users')
-                .update({
+                .upsert({
+                  id: userId,
+                  email: userEmail,
                   user_type: waitlistUserType,
                   full_name: waitlistEntry.name || data.user?.user_metadata?.full_name,
-                  onboarding_completed: true
-                })
-                .eq('id', userId)
+                  avatar_url: data.user?.user_metadata?.avatar_url || null,
+                  has_consented: false,
+                }, { onConflict: 'id' })
 
               // If member, also create a member record
               if (waitlistUserType === 'member') {

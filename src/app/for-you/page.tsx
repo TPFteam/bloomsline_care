@@ -60,8 +60,8 @@ const memberContent = {
     fr: 'Un espace calme pour noter comment vous allez vraiment',
   },
   pitch: {
-    en: 'Bloomsline is an app where you note how you\u2019re doing. A few words, whenever you feel like it. Over time, you start seeing what\u2019s actually going on.',
-    fr: 'Bloomsline est une appli o\u00f9 vous notez comment vous allez. Quelques mots, quand vous en avez envie. Avec le temps, vous commencez \u00e0 voir ce qui se passe vraiment.',
+    en: 'Bloomsline helps you understand yourself better. Small daily check-ins, meaningful habits, and a closer connection with your practitioner \u2014 all in one quiet space.',
+    fr: 'Bloomsline vous aide \u00e0 mieux vous comprendre. De petits bilans quotidiens, des habitudes qui comptent, et un lien plus fort avec votre praticien \u2014 le tout dans un espace calme.',
   },
   scenarios: [
     {
