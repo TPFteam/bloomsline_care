@@ -21,8 +21,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bloomsline - Therapeutic Content Hub for Mental Health Practitioners",
-  description: "Organize, create, and share therapeutic resources with ease. The comprehensive content hub designed for therapists, psychologists, and mental health professionals.",
+  title: "Bloomsline — Building understanding",
+  description: "A simple space to care for yourself and the people you support.",
 };
 
 export default function RootLayout({
