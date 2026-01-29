@@ -71,6 +71,7 @@ import {
   Share2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { LoadingDots } from '@/components/ui/loading-dots'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import {
@@ -484,6 +485,7 @@ export default function MyResourcesPage() {
         .select('*')
         .eq('member_id', memberId)
         .eq('completion_date', dateStr)
+        .eq('completed', true)
 
       if (completionsData) {
         setSelectedDateCompletions(completionsData as RitualCompletion[])
@@ -850,12 +852,13 @@ export default function MyResourcesPage() {
           setMemberRituals(sorted as MemberRitual[])
         }
 
-        // Fetch today's completions
+        // Fetch today's completions (only completed ones)
         const { data: completionsData } = await supabase
           .from('ritual_completions')
           .select('*')
           .eq('member_id', memberId)
           .eq('completion_date', today)
+          .eq('completed', true)
 
         if (completionsData) {
           setTodayCompletions(completionsData as RitualCompletion[])
@@ -946,32 +949,7 @@ export default function MyResourcesPage() {
   if (loading) {
     return (
       <MemberLayout>
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-50 via-teal-50/30 to-white">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center gap-4"
-          >
-            {/* Animated circle loader */}
-            <div className="relative w-12 h-12">
-              <motion.div
-                className="absolute inset-0 rounded-full border-[3px] border-emerald-100"
-              />
-              <motion.div
-                className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-emerald-500 border-r-emerald-500"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              />
-            </div>
-            <motion.span
-              className="text-gray-500 text-sm font-medium"
-              animate={{ opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              {locale === 'fr' ? 'Chargement...' : 'Loading...'}
-            </motion.span>
-          </motion.div>
-        </div>
+        <LoadingDots fullScreen />
       </MemberLayout>
     )
   }
@@ -1094,8 +1072,9 @@ export default function MyResourcesPage() {
           ))}
         </AnimatePresence>
 
-        {/* Daily Story Card - Shows after 6 PM if there's content */}
-        {currentTime.getHours() >= 18 && isToday() && (todaysMoments.length > 0 || selectedDateAnchorLogs.length > 0 || selectedDateCompletions.length > 0) && (
+        {/* Daily Story Card - Shows after 6 PM for today, always for past days */}
+        {(todaysMoments.length > 0 || selectedDateAnchorLogs.length > 0 || selectedDateCompletions.length > 0) &&
+         (!isToday() || currentTime.getHours() >= 18) && (
           <DailyStoryCard
             momentsCount={todaysMoments.length}
             seedsCount={selectedDateAnchorLogs.length}
@@ -1118,27 +1097,29 @@ export default function MyResourcesPage() {
               <h3 className="text-base font-bold text-gray-900 whitespace-nowrap">
                 {locale === 'fr' ? 'Fil du jour' : "Today's Flow"}
               </h3>
-              {/* Info button */}
+              {/* Info button - hidden from capture */}
               <button
                 onClick={() => setShowFlowGuide(true)}
-                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                className="p-1 rounded-full hover:bg-gray-100 transition-colors ignore-capture"
                 title={locale === 'fr' ? "Qu'est-ce que c'est?" : "What's this?"}
               >
                 <Info className="w-4 h-4 text-gray-400" />
               </button>
-              {/* Share button */}
-              <button
-                onClick={handleShareFlow}
-                disabled={isSharing}
-                className="p-1 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
-                title={locale === 'fr' ? 'Partager' : 'Share'}
-              >
-                {isSharing ? (
-                  <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                ) : (
-                  <Share2 className="w-4 h-4 text-gray-400" />
-                )}
-              </button>
+              {/* Share button - hidden from capture, only after 6 PM for today */}
+              {(!isToday() || currentTime.getHours() >= 18) && (
+                <button
+                  onClick={handleShareFlow}
+                  disabled={isSharing}
+                  className="p-1 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 ignore-capture"
+                  title={locale === 'fr' ? 'Partager' : 'Share'}
+                >
+                  {isSharing ? (
+                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                  ) : (
+                    <Share2 className="w-4 h-4 text-gray-400" />
+                  )}
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-1">
               <button
@@ -2351,7 +2332,7 @@ export default function MyResourcesPage() {
                 logged_at: new Date(log.timestamp).toISOString(),
               }
             })}
-            rituals={selectedDateCompletions.map(completion => {
+            rituals={selectedDateCompletions.filter(c => c.completed).map(completion => {
               const memberRitual = memberRituals.find(mr => mr.ritual_id === completion.ritual_id)
               return {
                 id: completion.id,

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import MemberLayout from '@/components/member/MemberLayout'
+import { LoadingDots } from '@/components/ui/loading-dots'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -465,9 +466,7 @@ export default function MyPractitionerPage() {
   if (loading) {
     return (
       <MemberLayout>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <LoadingDots fullScreen />
       </MemberLayout>
     )
   }

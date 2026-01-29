@@ -16,6 +16,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import MemberLayout from '@/components/member/MemberLayout'
+import { LoadingDots } from '@/components/ui/loading-dots'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -233,9 +234,7 @@ export default function MemberProfilePage() {
   if (loading) {
     return (
       <MemberLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
-        </div>
+        <LoadingDots fullScreen />
       </MemberLayout>
     )
   }

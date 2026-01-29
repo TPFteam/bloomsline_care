@@ -43,6 +43,7 @@ import {
 import { getUserPreferences, updateUserPreferences } from '@/lib/services/preferences'
 import { toast } from 'sonner'
 import BloomChatInterface from '@/components/bloom/BloomChatInterface'
+import { LoadingDots } from '@/components/ui/loading-dots'
 import { FeatureGuide } from '@/components/feature-guide/FeatureGuide'
 import { momentsGuideSteps } from '@/components/feature-guide/guides/moments-guide'
 import { useFeatureGuide } from '@/lib/hooks/useFeatureGuide'
@@ -389,18 +390,7 @@ export default function MomentsPage() {
   }
 
   if (loading) {
-    return (
-      <div className={`min-h-screen ${theme.bg} flex items-center justify-center`}>
-        <div className="relative w-10 h-10">
-          <div className={`absolute inset-0 rounded-full border-[3px] ${isDark ? 'border-gray-700' : 'border-emerald-100'}`} />
-          <motion.div
-            className={`absolute inset-0 rounded-full border-[3px] border-transparent ${isDark ? 'border-t-emerald-400 border-r-emerald-400' : 'border-t-emerald-500 border-r-emerald-500'}`}
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          />
-        </div>
-      </div>
-    )
+    return <LoadingDots fullScreen />
   }
 
   return (

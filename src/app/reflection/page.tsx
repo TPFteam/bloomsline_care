@@ -30,6 +30,7 @@ import {
 import { useRouter } from 'next/navigation'
 import MemberLayout from '@/components/member/MemberLayout'
 import { Button } from '@/components/ui/button'
+import { LoadingDots } from '@/components/ui/loading-dots'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import BloomChatInterface from '@/components/bloom/BloomChatInterface'
@@ -596,9 +597,7 @@ export default function ReflectionPage() {
   if (loading) {
     return (
       <MemberLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
-        </div>
+        <LoadingDots fullScreen />
       </MemberLayout>
     )
   }

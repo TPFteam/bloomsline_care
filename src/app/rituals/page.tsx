@@ -50,6 +50,7 @@ import {
   Info,
 } from 'lucide-react'
 import MemberLayout from '@/components/member/MemberLayout'
+import { LoadingDots } from '@/components/ui/loading-dots'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { FeatureGuide } from '@/components/feature-guide/FeatureGuide'
@@ -1005,16 +1006,7 @@ export default function RitualsPage() {
   if (loading) {
     return (
       <MemberLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="relative w-10 h-10">
-            <div className="absolute inset-0 rounded-full border-[3px] border-emerald-100" />
-            <motion.div
-              className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-emerald-500 border-r-emerald-500"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            />
-          </div>
-        </div>
+        <LoadingDots fullScreen />
       </MemberLayout>
     )
   }

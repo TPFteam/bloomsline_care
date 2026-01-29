@@ -233,6 +233,66 @@ export function progressUpdateTemplate({
   return wrapInLayout(content, true)
 }
 
+// Early access invitation accepted - You're in!
+export function earlyAccessInvitationTemplate({
+  name,
+  userType,
+  signupUrl,
+}: {
+  name: string
+  userType: 'member' | 'practitioner' | 'both'
+  signupUrl: string
+}) {
+  const isPractitioner = userType === 'practitioner' || userType === 'both'
+
+  const roleMessage = userType === 'member'
+    ? "a space to nurture your wellbeing"
+    : userType === 'practitioner'
+    ? "tools to better support the people you care for"
+    : "both personal wellbeing tools and practitioner features"
+
+  const content = `
+    <div style="text-align: center; margin-bottom: 32px;">
+      <div style="font-size: 48px; margin-bottom: 16px;">🌸</div>
+      <h1 style="margin: 0 0 8px 0; font-size: 28px; font-weight: 600; color: #333;">
+        ${name}, you're in!
+      </h1>
+      <p style="margin: 0; font-size: 16px; color: #888;">
+        Your spot at Bloomsline is ready
+      </p>
+    </div>
+
+    <p style="margin: 0 0 24px 0; color: #555; font-size: 16px; line-height: 1.7;">
+      We've been building something special, and we're thrilled you'll be one of the first to experience it.
+    </p>
+
+    <div style="background: linear-gradient(135deg, #f0fdfa 0%, #ecfdf5 100%); border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+      <p style="margin: 0 0 12px 0; font-size: 14px; color: #4A9A86; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+        What awaits you
+      </p>
+      <p style="margin: 0; color: #333; font-size: 16px; line-height: 1.6;">
+        ${roleMessage}
+      </p>
+    </div>
+
+    <p style="margin: 0 0 32px 0; color: #555; font-size: 15px; line-height: 1.7;">
+      This isn't just another app. It's a gentle space where small steps lead to meaningful change. We can't wait to see you inside.
+    </p>
+
+    <div style="text-align: center; margin: 40px 0;">
+      <a href="${signupUrl}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #4A9A86 0%, #5AB39C 100%); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(74, 154, 134, 0.4);">
+        Create Your Account →
+      </a>
+    </div>
+
+    <p style="margin: 32px 0 0 0; color: #888; font-size: 14px; text-align: center; font-style: italic;">
+      "Every bloom begins with a single step."
+    </p>
+  `
+
+  return wrapInLayout(content, isPractitioner)
+}
+
 // Session reminder
 export function sessionReminderTemplate({
   clientName,

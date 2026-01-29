@@ -6,7 +6,6 @@ import {
   Heart,
   Calendar,
   Clock,
-  Loader2,
   Users,
   FileText,
   BookOpen,
@@ -20,10 +19,12 @@ import {
   X,
   CheckCircle,
   ChevronLeft,
+  Loader2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import MemberLayout from '@/components/member/MemberLayout'
+import { LoadingDots } from '@/components/ui/loading-dots'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -351,16 +352,7 @@ export default function CarePage() {
   if (loading) {
     return (
       <MemberLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="relative w-10 h-10">
-            <div className="absolute inset-0 rounded-full border-[3px] border-emerald-100" />
-            <motion.div
-              className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-emerald-500 border-r-emerald-500"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            />
-          </div>
-        </div>
+        <LoadingDots fullScreen />
       </MemberLayout>
     )
   }

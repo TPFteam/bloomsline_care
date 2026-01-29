@@ -42,6 +42,7 @@ import {
   History,
 } from 'lucide-react'
 import MemberLayout from '@/components/member/MemberLayout'
+import { LoadingDots } from '@/components/ui/loading-dots'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 
@@ -355,9 +356,7 @@ export default function RitualHistoryPage() {
   if (loading) {
     return (
       <MemberLayout>
-        <div className="min-h-screen flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-        </div>
+        <LoadingDots fullScreen />
       </MemberLayout>
     )
   }

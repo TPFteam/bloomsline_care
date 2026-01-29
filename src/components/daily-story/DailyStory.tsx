@@ -53,6 +53,7 @@ export function DailyStory({ moments, seedLogs, rituals, locale, onClose }: Dail
   const [currentIndex, setCurrentIndex] = useState(0)
   const [progress, setProgress] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
+  const [shouldClose, setShouldClose] = useState(false)
 
   // Build slides array
   const slides: StorySlide[] = [
@@ -66,6 +67,13 @@ export function DailyStory({ moments, seedLogs, rituals, locale, onClose }: Dail
   const totalSlides = slides.length
   const slideDuration = 5000 // 5 seconds per slide
 
+  // Handle close in separate effect to avoid setState during render
+  useEffect(() => {
+    if (shouldClose) {
+      onClose()
+    }
+  }, [shouldClose, onClose])
+
   // Auto-advance logic
   useEffect(() => {
     if (isPaused) return
@@ -78,8 +86,8 @@ export function DailyStory({ moments, seedLogs, rituals, locale, onClose }: Dail
             setCurrentIndex(i => i + 1)
             return 0
           } else {
-            // End of story
-            onClose()
+            // End of story - set flag instead of calling onClose directly
+            setShouldClose(true)
             return 100
           }
         }
@@ -88,7 +96,7 @@ export function DailyStory({ moments, seedLogs, rituals, locale, onClose }: Dail
     }, 100)
 
     return () => clearInterval(interval)
-  }, [currentIndex, totalSlides, isPaused, onClose])
+  }, [currentIndex, totalSlides, isPaused])
 
   // Reset progress when slide changes
   useEffect(() => {
