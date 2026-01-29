@@ -120,14 +120,14 @@ export function ConsentModal({ isOpen, onAccept, locale }: ConsentModalProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.96 }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
-            className="relative z-10 w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[85vh] overflow-y-auto"
+            className="relative z-10 w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[85vh] overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
           >
-            {/* Amber MVP banner */}
-            <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 rounded-t-2xl">
-              <p className="text-sm text-amber-800">{t.mvpNotice}</p>
+            {/* Subtle MVP notice */}
+            <div className="px-6 pt-6 sm:px-8 sm:pt-8">
+              <p className="text-xs text-neutral-400 leading-relaxed">{t.mvpNotice}</p>
             </div>
 
-            <div className="px-6 py-6 sm:px-8 sm:py-8">
+            <div className="px-6 pb-6 pt-4 sm:px-8 sm:pb-8 sm:pt-5">
               {/* Header */}
               <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-1">
                 {t.heading}
