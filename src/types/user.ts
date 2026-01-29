@@ -29,6 +29,7 @@ export interface User {
   avatar_url: string | null
   user_type: UserType
   preferred_language: Language
+  has_consented?: boolean
   created_at: string
   updated_at: string
 }

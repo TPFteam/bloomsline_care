@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { UserType, USER_TYPE_LABELS } from '@/types/user'
 import { useLanguage } from '@/lib/i18n/context'
 import { Heart, Users } from 'lucide-react'
+import { ConsentModal } from '@/components/consent-modal'
 
 export default function OnboardingPage() {
   const { t, locale } = useLanguage()
@@ -16,6 +17,7 @@ export default function OnboardingPage() {
   const [selectedType, setSelectedType] = useState<UserType | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [userName, setUserName] = useState<string>('there')
+  const [hasConsented, setHasConsented] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export default function OnboardingPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user_type: selectedType }),
+        body: JSON.stringify({ user_type: selectedType, has_consented: hasConsented }),
       })
 
       const result = await response.json()
@@ -97,6 +99,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50 relative overflow-hidden">
+      <ConsentModal isOpen={!hasConsented} onAccept={() => setHasConsented(true)} locale={locale} />
       {/* Cinematic gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-lavender-100/30 via-peach-50/20 to-mint-100/30"></div>
 

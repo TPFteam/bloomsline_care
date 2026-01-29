@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     // Get request body
     const body = await request.json()
-    const { user_type } = body
+    const { user_type, has_consented } = body
 
     // Validate user_type
     if (!user_type || !isValidUserType(user_type)) {
@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
         full_name: user.user_metadata?.full_name || null,
         avatar_url: user.user_metadata?.avatar_url || null,
         user_type: user_type as UserType,
+        has_consented: !!has_consented,
       })
       .select()
       .single()

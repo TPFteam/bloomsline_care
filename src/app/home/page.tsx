@@ -95,6 +95,7 @@ import { seedsGuideSteps } from '@/components/feature-guide/guides/seeds-guide'
 import { onboardingGuideSteps } from '@/components/feature-guide/guides/onboarding-guide'
 import { useFeatureGuide } from '@/lib/hooks/useFeatureGuide'
 import { useBottomNav } from '@/lib/contexts/bottom-nav-context'
+import { ConsentModal } from '@/components/consent-modal'
 import type { Member } from '@/types/member'
 import { getMemberMoments, type Moment } from '@/lib/services/moments'
 import { DailyStory } from '@/components/daily-story/DailyStory'
@@ -417,6 +418,7 @@ export default function MyResourcesPage() {
   const [todayCompletions, setTodayCompletions] = useState<RitualCompletion[]>([])
   const [selectedDateCompletions, setSelectedDateCompletions] = useState<RitualCompletion[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasConsented, setHasConsented] = useState(true)
   const [processingInvitation, setProcessingInvitation] = useState<string | null>(null)
   const [previewMoment, setPreviewMoment] = useState<Moment | null>(null)
   const [previewRitual, setPreviewRitual] = useState<{ ritual: MemberRitual; completion: RitualCompletion | null } | null>(null)
@@ -789,6 +791,16 @@ export default function MyResourcesPage() {
         return
       }
 
+      // Check consent status
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('has_consented')
+        .eq('id', user.id)
+        .single()
+      if (userProfile) {
+        setHasConsented(!!userProfile.has_consented)
+      }
+
       const pendingInvitations = await getPendingInvitations()
       setInvitations(pendingInvitations)
 
@@ -946,6 +958,15 @@ export default function MyResourcesPage() {
     }
   }
 
+  const handleConsent = async () => {
+    setHasConsented(true)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase.from('users').update({ has_consented: true }).eq('id', user.id)
+    }
+  }
+
   if (loading) {
     return (
       <MemberLayout>
@@ -958,6 +979,7 @@ export default function MyResourcesPage() {
 
   return (
     <MemberLayout>
+      <ConsentModal isOpen={!hasConsented} onAccept={handleConsent} locale={locale} />
       {/* Feature Guide for Today's Flow */}
       {showFlowGuide && (
         <FeatureGuide

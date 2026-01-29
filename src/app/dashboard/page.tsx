@@ -34,6 +34,7 @@ import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
+import { ConsentModal } from '@/components/consent-modal'
 
 interface ActivityItem {
   id: string
@@ -106,6 +107,7 @@ function DashboardContent() {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
   const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '' })
   const [savingMember, setSavingMember] = useState(false)
+  const [hasConsented, setHasConsented] = useState(true)
 
   // Featured templates - one from each type
   const featuredTemplates: TemplateOption[] = [
@@ -415,6 +417,7 @@ function DashboardContent() {
           return
         }
         setUser(userProfile)
+        setHasConsented(!!userProfile.has_consented)
         if (userProfile.preferred_language) {
           setLocale(userProfile.preferred_language, false)
         }
@@ -432,6 +435,13 @@ function DashboardContent() {
     getUser()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, searchParams, supabase, setLocale, locale])
+
+  const handleConsent = async () => {
+    setHasConsented(true)
+    if (user) {
+      await supabase.from('users').update({ has_consented: true }).eq('id', user.id)
+    }
+  }
 
   const getGreeting = () => {
     const hour = new Date().getHours()
@@ -576,6 +586,7 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex transition-colors">
+      <ConsentModal isOpen={!hasConsented} onAccept={handleConsent} locale={locale} />
       <AppSidebar activeItem="home" />
 
       {/* Main Content */}
