@@ -254,9 +254,9 @@ export function BlockRenderer({ blocks }: BlockRendererProps) {
       case 'heading':
         const level = block.content.level as 1 | 2 | 3
         const headingClasses = {
-          1: 'text-4xl font-bold text-foreground mb-6 mt-8',
-          2: 'text-3xl font-bold text-foreground mb-5 mt-7',
-          3: 'text-2xl font-bold text-foreground mb-4 mt-6'
+          1: 'text-4xl font-bold text-gray-900 mb-6 mt-8',
+          2: 'text-3xl font-bold text-gray-900 mb-5 mt-7',
+          3: 'text-2xl font-bold text-gray-900 mb-4 mt-6'
         }
         const HeadingContent = block.content.text
 
