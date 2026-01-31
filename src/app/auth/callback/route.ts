@@ -186,13 +186,15 @@ export async function GET(request: NextRequest) {
             if (waitlistUserType === 'member' || waitlistUserType === 'practitioner') {
               // Create user profile with the type from waitlist
               // (handle_new_user trigger doesn't auto-create profiles)
+              // Map 'practitioner' to 'mentor' (DB enum uses 'mentor')
+              const dbUserType = waitlistUserType === 'practitioner' ? 'mentor' : 'member'
               const userEmail = data.user?.email
               await adminClient
                 .from('users')
                 .upsert({
                   id: userId,
                   email: userEmail,
-                  user_type: waitlistUserType,
+                  user_type: dbUserType,
                   full_name: waitlistEntry.name || data.user?.user_metadata?.full_name,
                   avatar_url: data.user?.user_metadata?.avatar_url || null,
                   has_consented: false,
