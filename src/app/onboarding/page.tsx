@@ -21,13 +21,29 @@ export default function OnboardingPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    // Get user info
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push('/sign-up')
         return
       }
+
+      // Check if user already has a profile — redirect based on user_type
+      const { data: profile } = await supabase
+        .from('users')
+        .select('user_type')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.user_type) {
+        if (profile.user_type === 'member') {
+          router.push('/home')
+        } else {
+          router.push('/dashboard')
+        }
+        return
+      }
+
       const name = user.user_metadata?.full_name?.split(' ')[0] || 'there'
       setUserName(name)
     }
