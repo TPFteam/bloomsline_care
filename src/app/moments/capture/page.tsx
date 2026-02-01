@@ -26,6 +26,48 @@ import { toast } from 'sonner'
 type CaptureType = 'photo' | 'video' | 'voice' | 'write'
 type Step = 'select' | 'capture' | 'preview' | 'details'
 
+const MAX_IMAGE_DIMENSION = 1920
+const IMAGE_QUALITY = 0.8
+const MAX_VIDEO_SIZE_MB = 30
+
+function compressImage(file: File): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      let { width, height } = img
+      // Only resize if larger than max dimension
+      if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+        if (width > height) {
+          height = Math.round((height / width) * MAX_IMAGE_DIMENSION)
+          width = MAX_IMAGE_DIMENSION
+        } else {
+          width = Math.round((width / height) * MAX_IMAGE_DIMENSION)
+          height = MAX_IMAGE_DIMENSION
+        }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img, 0, 0, width, height)
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(new File([blob], file.name, { type: 'image/jpeg' }))
+          } else {
+            resolve(file)
+          }
+        },
+        'image/jpeg',
+        IMAGE_QUALITY
+      )
+      URL.revokeObjectURL(img.src)
+    }
+    img.onerror = () => resolve(file)
+    img.src = URL.createObjectURL(file)
+  })
+}
+
 const moodTags = [
   // Positive emotions
   { id: 'grateful', emoji: '🙏', labelEn: 'Grateful', labelFr: 'Reconnaissant' },
@@ -149,16 +191,22 @@ function CaptureMomentContent() {
   }
 
   // Photo handling
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setPhotoFile(file) // Store the file for upload
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        setCapturedImage(event.target?.result as string)
+      try {
+        const compressed = await compressImage(file)
+        setPhotoFile(compressed)
+        const url = URL.createObjectURL(compressed)
+        setCapturedImage(url)
+        setStep('preview')
+      } catch {
+        // Fallback to original file if compression fails
+        setPhotoFile(file)
+        const url = URL.createObjectURL(file)
+        setCapturedImage(url)
         setStep('preview')
       }
-      reader.readAsDataURL(file)
     }
   }
 
@@ -166,7 +214,16 @@ function CaptureMomentContent() {
   const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setVideoFile(file) // Store the file for upload
+      const sizeMB = file.size / (1024 * 1024)
+      if (sizeMB > MAX_VIDEO_SIZE_MB) {
+        toast.error(
+          locale === 'fr'
+            ? `La vidéo est trop volumineuse (${Math.round(sizeMB)}MB). Maximum ${MAX_VIDEO_SIZE_MB}MB.`
+            : `Video is too large (${Math.round(sizeMB)}MB). Maximum ${MAX_VIDEO_SIZE_MB}MB.`
+        )
+        return
+      }
+      setVideoFile(file)
       const url = URL.createObjectURL(file)
       setCapturedVideo(url)
       setStep('preview')
