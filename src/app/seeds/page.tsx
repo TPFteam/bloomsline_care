@@ -654,10 +654,10 @@ export default function SeedsPage() {
             </button>
             <div>
               <h1 className="text-xl font-bold text-gray-900">
-                {locale === 'fr' ? 'Graines du Jour' : 'Daily Seeds'}
+                {locale === 'fr' ? 'Mes petits pas' : 'My Little Steps'}
               </h1>
               <p className="text-sm text-gray-500">
-                {locale === 'fr' ? 'Plantez et cultivez vos habitudes' : 'Plant and nurture your habits'}
+                {locale === 'fr' ? 'Cultivez vos habitudes, un pas à la fois' : 'Nurture your habits, one step at a time'}
               </p>
             </div>
           </div>
