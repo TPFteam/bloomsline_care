@@ -54,6 +54,7 @@ import {
   Area,
   XAxis,
   YAxis,
+  CartesianGrid,
   ResponsiveContainer,
   Tooltip,
 } from 'recharts'
@@ -913,111 +914,125 @@ export default function SeedsPage() {
                       ? `Garder vs Alléger (${trendsRange === 7 ? '7 jours' : trendsRange === 30 ? '30 jours' : trendsRange === 90 ? '3 mois' : '6 mois'})`
                       : `Grow vs Let Go (${trendsRange === 7 ? '7 days' : trendsRange === 30 ? '30 days' : trendsRange === 90 ? '3 months' : '6 months'})`}
                 </h3>
-                <div className="h-48">
+                <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     {selectedTrendAnchor ? (
-                      <AreaChart data={getTrendsData()}>
+                      <AreaChart data={getTrendsData()} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                         <defs>
                           <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                             <stop
-                              offset="5%"
+                              offset="0%"
                               stopColor={
                                 userAnchors.find(a => a.id === selectedTrendAnchor)?.type === 'grow'
                                   ? '#10b981'
-                                  : '#f43f5e'
+                                  : '#f59e0b'
                               }
-                              stopOpacity={0.3}
+                              stopOpacity={0.2}
                             />
                             <stop
-                              offset="95%"
+                              offset="100%"
                               stopColor={
                                 userAnchors.find(a => a.id === selectedTrendAnchor)?.type === 'grow'
                                   ? '#10b981'
-                                  : '#f43f5e'
+                                  : '#f59e0b'
                               }
                               stopOpacity={0}
                             />
                           </linearGradient>
                         </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                         <XAxis
                           dataKey="name"
                           axisLine={false}
                           tickLine={false}
                           tick={{ fontSize: 11, fill: '#9ca3af' }}
+                          dy={8}
                         />
                         <YAxis
                           axisLine={false}
                           tickLine={false}
                           tick={{ fontSize: 11, fill: '#9ca3af' }}
                           allowDecimals={false}
+                          width={30}
                         />
                         <Tooltip
                           contentStyle={{
                             backgroundColor: 'white',
-                            border: '1px solid #e5e7eb',
+                            border: 'none',
                             borderRadius: '12px',
                             fontSize: '12px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                           }}
                         />
                         <Area
-                          type="monotone"
+                          type="natural"
                           dataKey="value"
                           stroke={
                             userAnchors.find(a => a.id === selectedTrendAnchor)?.type === 'grow'
                               ? '#10b981'
-                              : '#f43f5e'
+                              : '#f59e0b'
                           }
-                          strokeWidth={2}
+                          strokeWidth={2.5}
                           fill="url(#colorValue)"
+                          dot={{ r: 3, fill: 'white', strokeWidth: 2 }}
+                          activeDot={{ r: 5, strokeWidth: 2 }}
                         />
                       </AreaChart>
                     ) : (
-                      <AreaChart data={getTrendsData()}>
+                      <AreaChart data={getTrendsData()} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                         <defs>
                           <linearGradient id="colorGrow" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.15} />
+                            <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
                           </linearGradient>
                           <linearGradient id="colorLetgo" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                            <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.15} />
+                            <stop offset="100%" stopColor="#f59e0b" stopOpacity={0} />
                           </linearGradient>
                         </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                         <XAxis
                           dataKey="name"
                           axisLine={false}
                           tickLine={false}
                           tick={{ fontSize: 11, fill: '#9ca3af' }}
+                          dy={8}
                         />
                         <YAxis
                           axisLine={false}
                           tickLine={false}
                           tick={{ fontSize: 11, fill: '#9ca3af' }}
                           allowDecimals={false}
+                          width={30}
                         />
                         <Tooltip
                           contentStyle={{
                             backgroundColor: 'white',
-                            border: '1px solid #e5e7eb',
+                            border: 'none',
                             borderRadius: '12px',
                             fontSize: '12px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                           }}
                         />
                         <Area
-                          type="monotone"
+                          type="natural"
                           dataKey="grow"
                           name={locale === 'fr' ? 'Garder' : 'Grow'}
                           stroke="#10b981"
-                          strokeWidth={2}
+                          strokeWidth={2.5}
                           fill="url(#colorGrow)"
+                          dot={{ r: 3, fill: 'white', stroke: '#10b981', strokeWidth: 2 }}
+                          activeDot={{ r: 5, fill: '#10b981', strokeWidth: 2 }}
                         />
                         <Area
-                          type="monotone"
+                          type="natural"
                           dataKey="letgo"
                           name={locale === 'fr' ? 'Alléger' : 'Let Go'}
-                          stroke="#f43f5e"
-                          strokeWidth={2}
+                          stroke="#f59e0b"
+                          strokeWidth={2.5}
                           fill="url(#colorLetgo)"
+                          dot={{ r: 3, fill: 'white', stroke: '#f59e0b', strokeWidth: 2 }}
+                          activeDot={{ r: 5, fill: '#f59e0b', strokeWidth: 2 }}
                         />
                       </AreaChart>
                     )}
@@ -1034,7 +1049,7 @@ export default function SeedsPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-amber-300" />
+                      <div className="w-3 h-3 rounded-full bg-amber-500" />
                       <span className="text-xs text-gray-600">
                         {locale === 'fr' ? 'Alléger' : 'Let Go'}
                       </span>
