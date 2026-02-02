@@ -834,7 +834,7 @@ export default function SeedsPage() {
           /* Trends View */
           <div>
             {/* Time Range Filter */}
-            <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {([
                 { value: 7, label: locale === 'fr' ? '7 jours' : '7 days' },
                 { value: 30, label: locale === 'fr' ? '30 jours' : '30 days' },
