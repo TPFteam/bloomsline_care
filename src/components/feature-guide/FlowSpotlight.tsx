@@ -201,18 +201,33 @@ export function FlowSpotlight({ isOpen, onComplete, onSkip, flowContainerRef }: 
   const title = locale === 'fr' ? step.titleFr : step.titleEn
   const isLastStep = currentStep === STEPS.length - 1
 
-  // Tooltip positioning
+  // Tooltip positioning — centered horizontally, clamped within viewport
+  const viewW = typeof window !== 'undefined' ? window.innerWidth : 375
+  const viewH = typeof window !== 'undefined' ? window.innerHeight : 812
+  const tooltipW = Math.min(288, viewW - 32) // 16px padding each side
+  const tooltipLeft = Math.max(16, (viewW - tooltipW) / 2)
+
   const tooltipStyle: React.CSSProperties = {
     position: 'fixed',
-    left: Math.max(16, Math.min(highlightRect.left, window.innerWidth - 304)),
-    maxWidth: 288,
+    left: tooltipLeft,
+    width: tooltipW,
+    maxWidth: tooltipW,
     zIndex: 52,
   }
 
-  if (tooltipPos === 'below') {
-    tooltipStyle.top = highlightRect.top + highlightRect.height + 16
+  // Place tooltip below highlight, but clamp so it doesn't go off-screen
+  const belowY = highlightRect.top + highlightRect.height + 12
+  const aboveY = highlightRect.top - 12
+  // Estimate tooltip height ~180px
+  const estimatedTooltipH = 180
+
+  if (belowY + estimatedTooltipH < viewH - 16) {
+    tooltipStyle.top = belowY
+  } else if (aboveY - estimatedTooltipH > 16) {
+    tooltipStyle.bottom = viewH - aboveY
   } else {
-    tooltipStyle.bottom = window.innerHeight - highlightRect.top + 16
+    // Neither fits well — place in bottom third of screen
+    tooltipStyle.bottom = 16
   }
 
   return (
