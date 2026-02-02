@@ -90,7 +90,7 @@ import BloomChatInterface from '@/components/bloom/BloomChatInterface'
 import MemberLayout from '@/components/member/MemberLayout'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { FeatureGuide } from '@/components/feature-guide/FeatureGuide'
-import { flowGuideSteps } from '@/components/feature-guide/guides/flow-guide'
+import { FlowSpotlight } from '@/components/feature-guide/FlowSpotlight'
 import { seedsGuideSteps } from '@/components/feature-guide/guides/seeds-guide'
 import { onboardingGuideSteps } from '@/components/feature-guide/guides/onboarding-guide'
 import { useFeatureGuide } from '@/lib/hooks/useFeatureGuide'
@@ -440,7 +440,7 @@ export default function MyResourcesPage() {
   const { showGuide: showOnboarding, completeGuide: completeOnboarding, loading: onboardingLoading } = useFeatureGuide('onboarding', { autoShow: true })
 
   // Feature guide for Today's Flow (only show on info button click)
-  const { showGuide: showFlowGuide, completeGuide: completeFlowGuide, skipGuide: skipFlowGuide, setShowGuide: setShowFlowGuide } = useFeatureGuide('flow', { autoShow: false })
+  const { showGuide: showFlowGuide, completeGuide: completeFlowGuide, skipGuide: skipFlowGuide, setShowGuide: setShowFlowGuide } = useFeatureGuide('flow', { autoShow: true })
 
   // Feature guide for Seeds (only show on info button click or + button)
   const { showGuide: showSeedsGuide, completeGuide: completeSeedsGuide, skipGuide: skipSeedsGuide, setShowGuide: setShowSeedsGuide, guideStatus: seedsGuideStatus } = useFeatureGuide('seeds', { autoShow: false })
@@ -980,17 +980,7 @@ export default function MyResourcesPage() {
   return (
     <MemberLayout>
       <ConsentModal isOpen={!hasConsented} onAccept={handleConsent} locale={locale} />
-      {/* Feature Guide for Today's Flow */}
-      {showFlowGuide && (
-        <FeatureGuide
-          featureName="flow"
-          steps={flowGuideSteps}
-          onComplete={completeFlowGuide}
-          onSkip={skipFlowGuide}
-        />
-      )}
-
-      {/* Global Onboarding Guide (shown for first-time users - mandatory) */}
+      {/* Global Onboarding Guide (shown for first-time users - mandatory, takes priority) */}
       {showOnboarding && !onboardingLoading && (
         <FeatureGuide
           featureName="onboarding"
@@ -998,6 +988,14 @@ export default function MyResourcesPage() {
           onComplete={completeOnboarding}
         />
       )}
+
+      {/* Spotlight walkthrough for Today's Flow (only after onboarding is done) */}
+      <FlowSpotlight
+        isOpen={showFlowGuide && !showOnboarding}
+        onComplete={completeFlowGuide}
+        onSkip={skipFlowGuide}
+        flowContainerRef={flowContainerRef}
+      />
 
       {/* Feature Guide for Seeds (shown when clicking + if not completed) */}
       {showSeedsGuide && (
@@ -1194,8 +1192,104 @@ export default function MyResourcesPage() {
               )
             })()}
 
-            {/* Empty state - show when no moments */}
-            {todaysMoments.length === 0 && (
+            {/* Demo overlay for spotlight walkthrough — always shows all example elements so the guide is consistent */}
+            {showFlowGuide && (
+              <div className="absolute inset-0 z-30 pointer-events-none bg-emerald-50/80">
+                {/* Demo current time indicator at 75% */}
+                <div
+                  data-spotlight="time-indicator"
+                  className="absolute top-0 bottom-0 w-px bg-emerald-400/60"
+                  style={{ left: '75%' }}
+                >
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                </div>
+                {/* Demo flow line */}
+                <svg data-spotlight="flow-line" className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="demoFlowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#10b981" />
+                      <stop offset="100%" stopColor="#14b8a6" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M 15 60 C 28 60, 28 30, 40 30 C 52 30, 52 45, 65 45 C 78 45, 78 25, 85 25"
+                    fill="none"
+                    stroke="url(#demoFlowGradient)"
+                    strokeWidth="0.8"
+                    strokeLinecap="round"
+                    opacity="0.6"
+                  />
+                </svg>
+                {/* Demo moment dots */}
+                <div
+                  data-spotlight="moment-dot"
+                  className="absolute -translate-x-1/2 -translate-y-1/2"
+                  style={{ left: '40%', top: '30%' }}
+                >
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center border-2 border-white"
+                    style={{ background: 'linear-gradient(135deg, #34d399 0%, #10b981 100%)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
+                  >
+                    <Heart className="w-4 h-4 text-white" strokeWidth={2.5} />
+                  </div>
+                </div>
+                <div
+                  className="absolute -translate-x-1/2 -translate-y-1/2"
+                  style={{ left: '65%', top: '45%' }}
+                >
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center border-2 border-white"
+                    style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
+                  >
+                    <Stars className="w-4 h-4 text-white" strokeWidth={2.5} />
+                  </div>
+                </div>
+                <div
+                  className="absolute -translate-x-1/2 -translate-y-1/2"
+                  style={{ left: '85%', top: '25%' }}
+                >
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center border-2 border-white"
+                    style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
+                  >
+                    <Sun className="w-4 h-4 text-white" strokeWidth={2.5} />
+                  </div>
+                </div>
+                {/* Demo ritual dot with checkmark */}
+                <div
+                  data-spotlight="ritual-dot"
+                  className="absolute -translate-x-1/2 top-1/2 -translate-y-1/2"
+                  style={{ left: '15%' }}
+                >
+                  <div className="relative">
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center border-2 border-white"
+                      style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}
+                    >
+                      <Coffee className="w-3 h-3 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full flex items-center justify-center">
+                      <Check className="w-2 h-2 text-white" />
+                    </div>
+                  </div>
+                </div>
+                {/* Demo seed dots at bottom */}
+                <div data-spotlight="seed-dot" className="absolute bottom-2 left-0 right-0 flex justify-center gap-6">
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center border border-white shadow-sm bg-gradient-to-br from-emerald-400 to-teal-500">
+                    <Droplet className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
+                  </div>
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center border border-white shadow-sm bg-gradient-to-br from-emerald-400 to-teal-500">
+                    <Dumbbell className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
+                  </div>
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center border border-white shadow-sm bg-gradient-to-br from-amber-400 to-amber-500">
+                    <Smartphone className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Empty state - show when no moments and guide not active */}
+            {todaysMoments.length === 0 && !showFlowGuide && (
               <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
                 <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-2">
                   <Sun className="w-6 h-6 text-gray-300" />
@@ -1517,7 +1611,7 @@ export default function MyResourcesPage() {
                           className={`w-5 h-5 rounded-full flex items-center justify-center border border-white shadow-sm ${
                             isGrow
                               ? 'bg-gradient-to-br from-emerald-400 to-teal-500'
-                              : 'bg-gradient-to-br from-rose-400 to-pink-500'
+                              : 'bg-gradient-to-br from-amber-400 to-amber-500'
                           }`}
                         >
                           <AnchorIcon className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
@@ -1582,6 +1676,7 @@ export default function MyResourcesPage() {
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
             {/* Talk to Bloom prompt */}
             <button
+              data-spotlight="wanna-talk"
               onClick={() => setShowBloomChat(true)}
               className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-emerald-500 transition-colors"
             >
@@ -1690,11 +1785,11 @@ export default function MyResourcesPage() {
                     className={`relative aspect-square rounded-2xl flex flex-col items-center justify-center transition-all active:scale-95 ${
                       isGrow
                         ? 'bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200'
-                        : 'bg-rose-50 hover:bg-rose-100 border-2 border-rose-200'
+                        : 'bg-amber-50 hover:bg-amber-100 border-2 border-amber-100'
                     }`}
                   >
                     <IconComponent className={`w-6 h-6 mb-1 ${
-                      isGrow ? 'text-emerald-600' : 'text-rose-600'
+                      isGrow ? 'text-emerald-600' : 'text-amber-400'
                     }`} />
                     <span className="text-[10px] text-gray-500 font-medium text-center leading-tight px-1">
                       {locale === 'fr' ? anchor.labelFr : anchor.labelEn}
@@ -1705,7 +1800,7 @@ export default function MyResourcesPage() {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${
-                          isGrow ? 'bg-emerald-500' : 'bg-rose-500'
+                          isGrow ? 'bg-emerald-500' : 'bg-amber-300'
                         }`}
                       >
                         {todayCount}
@@ -1802,7 +1897,7 @@ export default function MyResourcesPage() {
                     onClick={() => setAnchorsTab('letgo')}
                     className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
                       anchorsTab === 'letgo'
-                        ? 'bg-rose-500 text-white shadow-md'
+                        ? 'bg-amber-300 text-white shadow-md'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
@@ -1849,7 +1944,7 @@ export default function MyResourcesPage() {
                                 isSelected
                                   ? anchorsTab === 'grow'
                                     ? 'bg-emerald-500 text-white ring-2 ring-emerald-300'
-                                    : 'bg-rose-500 text-white ring-2 ring-rose-300'
+                                    : 'bg-amber-300 text-white ring-2 ring-amber-100'
                                   : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                               }`}
                             >
@@ -1875,7 +1970,7 @@ export default function MyResourcesPage() {
                           customAnchorLabel.trim() && customAnchorIcon
                             ? anchorsTab === 'grow'
                               ? 'bg-emerald-500 hover:bg-emerald-600'
-                              : 'bg-rose-500 hover:bg-rose-600'
+                              : 'bg-amber-300 hover:bg-amber-400'
                             : 'bg-gray-300 cursor-not-allowed'
                         }`}
                       >
@@ -1911,13 +2006,13 @@ export default function MyResourcesPage() {
                                 ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
                                 : anchorsTab === 'grow'
                                   ? 'bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:scale-105 active:scale-95'
-                                  : 'bg-rose-50 hover:bg-rose-100 border border-rose-200 hover:scale-105 active:scale-95'
+                                  : 'bg-amber-50 hover:bg-amber-100 border border-amber-100 hover:scale-105 active:scale-95'
                             }`}
                           >
                             <IconComp className={`w-5 h-5 ${
                               alreadyAdded
                                 ? 'text-gray-300'
-                                : anchorsTab === 'grow' ? 'text-emerald-600' : 'text-rose-600'
+                                : anchorsTab === 'grow' ? 'text-emerald-600' : 'text-amber-400'
                             }`} />
                             <span className={`text-[9px] font-medium text-center leading-tight ${
                               alreadyAdded ? 'text-gray-300' : 'text-gray-500'
@@ -1933,10 +2028,10 @@ export default function MyResourcesPage() {
                         className={`aspect-square rounded-xl flex flex-col items-center justify-center gap-1 transition-all border-2 border-dashed hover:scale-105 active:scale-95 ${
                           anchorsTab === 'grow'
                             ? 'border-emerald-300 text-emerald-600 hover:bg-emerald-50'
-                            : 'border-rose-300 text-rose-600 hover:bg-rose-50'
+                            : 'border-amber-100 text-amber-400 hover:bg-amber-50'
                         }`}
                       >
-                        <Plus className={`w-5 h-5 ${anchorsTab === 'grow' ? 'text-emerald-600' : 'text-rose-600'}`} />
+                        <Plus className={`w-5 h-5 ${anchorsTab === 'grow' ? 'text-emerald-600' : 'text-amber-400'}`} />
                         <span className="text-[9px] font-medium text-center leading-tight text-gray-500">
                           {locale === 'fr' ? 'Créer' : 'Create'}
                         </span>
