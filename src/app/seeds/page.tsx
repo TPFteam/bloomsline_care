@@ -745,7 +745,7 @@ export default function SeedsPage() {
                     <div
                       key={log.id}
                       className={`flex items-center gap-4 p-4 rounded-2xl ${
-                        isGrow ? 'bg-emerald-50' : 'bg-rose-50'
+                        isGrow ? 'bg-emerald-50' : 'bg-amber-50'
                       }`}
                     >
                       {/* Action Icon */}
@@ -764,12 +764,12 @@ export default function SeedsPage() {
                       {/* Content */}
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <IconComponent className={`w-4 h-4 ${isGrow ? 'text-emerald-600' : 'text-rose-600'}`} />
+                          <IconComponent className={`w-4 h-4 ${isGrow ? 'text-emerald-600' : 'text-amber-400'}`} />
                           <span className="font-medium text-gray-900">
                             {locale === 'fr' ? log.anchorLabelFr : log.anchorLabelEn}
                           </span>
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            isGrow ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                            isGrow ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-400'
                           }`}>
                             {isGrow
                               ? (locale === 'fr' ? 'Garder' : 'Grow')
@@ -885,10 +885,10 @@ export default function SeedsPage() {
                         isSelected
                           ? isGrow
                             ? 'bg-emerald-500 text-white'
-                            : 'bg-rose-500 text-white'
+                            : 'bg-amber-300 text-white'
                           : isGrow
                             ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                            : 'bg-rose-100 text-rose-700 hover:bg-rose-200'
+                            : 'bg-amber-100 text-amber-400 hover:bg-amber-200'
                       }`}
                     >
                       <IconComponent className="w-3.5 h-3.5" />
@@ -1034,7 +1034,7 @@ export default function SeedsPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-rose-500" />
+                      <div className="w-3 h-3 rounded-full bg-amber-300" />
                       <span className="text-xs text-gray-600">
                         {locale === 'fr' ? 'Alléger' : 'Let Go'}
                       </span>
@@ -1077,16 +1077,16 @@ export default function SeedsPage() {
                     </span>
                   </p>
                 </div>
-                <div className="bg-rose-50 rounded-2xl p-4 text-center">
-                  <div className="text-2xl font-bold text-rose-600">
+                <div className="bg-amber-50 rounded-2xl p-4 text-center">
+                  <div className="text-2xl font-bold text-amber-400">
                     {getDaysForRange(trendsRange).reduce((total, day) => {
                       return total + letgoAnchors.reduce((sum, a) => sum + getAnchorCountForDate(a.id, day.date), 0)
                     }, 0)}
                   </div>
-                  <p className="text-xs text-rose-700 mt-1">
+                  <p className="text-xs text-amber-400 mt-1">
                     {locale === 'fr' ? 'Habitudes notées' : 'Habits logged'}
                     <br />
-                    <span className="text-rose-500">{locale === 'fr' ? '(à réduire)' : '(to reduce)'}</span>
+                    <span className="text-amber-400">{locale === 'fr' ? '(à réduire)' : '(to reduce)'}</span>
                   </p>
                 </div>
               </div>
@@ -1227,7 +1227,7 @@ export default function SeedsPage() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-rose-500 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-amber-300 flex items-center justify-center">
                     <Leaf className="w-4 h-4 text-white" />
                   </div>
                   <h2 className="font-semibold text-gray-900">
@@ -1236,7 +1236,7 @@ export default function SeedsPage() {
                 </div>
                 <button
                   onClick={() => { setAddAnchorType('letgo'); setShowAddAnchor(true) }}
-                  className="text-rose-600 hover:text-rose-700 p-1"
+                  className="text-amber-400 hover:text-amber-400 p-1"
                 >
                   <Plus className="w-5 h-5" />
                 </button>
@@ -1255,20 +1255,20 @@ export default function SeedsPage() {
                         key={anchor.id}
                         whileTap={isToday && !editMode ? { scale: 0.95 } : undefined}
                         onClick={() => isToday && !editMode && logAnchor(anchor.id)}
-                        className={`relative bg-rose-50 border-2 rounded-2xl p-4 flex flex-col items-center justify-center transition-colors ${
+                        className={`relative bg-amber-50 border-2 rounded-2xl p-4 flex flex-col items-center justify-center transition-colors ${
                           editMode
                             ? 'border-red-200 bg-red-50/30'
                             : isToday
-                              ? 'border-rose-200 hover:bg-rose-100 cursor-pointer'
-                              : 'border-rose-200 opacity-80'
+                              ? 'border-amber-100 hover:bg-amber-100 cursor-pointer'
+                              : 'border-amber-100 opacity-80'
                         }`}
                       >
-                        <IconComponent className="w-8 h-8 text-rose-600 mb-2" />
+                        <IconComponent className="w-8 h-8 text-amber-400 mb-2" />
                         <span className="text-xs text-gray-600 font-medium text-center">
                           {locale === 'fr' ? anchor.labelFr : anchor.labelEn}
                         </span>
                         {dayCount > 0 && !editMode && (
-                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
+                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-300 rounded-full flex items-center justify-center text-xs font-bold text-white">
                             {dayCount}
                           </div>
                         )}
@@ -1285,14 +1285,14 @@ export default function SeedsPage() {
                   })}
                 </div>
               ) : (
-                <div className="bg-rose-50 rounded-2xl p-6 text-center border-2 border-dashed border-rose-200">
-                  <Leaf className="w-8 h-8 text-rose-300 mx-auto mb-2" />
+                <div className="bg-amber-50 rounded-2xl p-6 text-center border-2 border-dashed border-amber-100">
+                  <Leaf className="w-8 h-8 text-amber-300 mx-auto mb-2" />
                   <p className="text-sm text-gray-500">
                     {locale === 'fr' ? 'Ajoutez des habitudes à réduire' : 'Add habits to let go'}
                   </p>
                   <button
                     onClick={() => { setAddAnchorType('letgo'); setShowAddAnchor(true) }}
-                    className="mt-3 text-rose-600 text-sm font-medium hover:text-rose-700"
+                    className="mt-3 text-amber-400 text-sm font-medium hover:text-amber-400"
                   >
                     + {locale === 'fr' ? 'Ajouter' : 'Add'}
                   </button>
@@ -1385,7 +1385,7 @@ export default function SeedsPage() {
             {letgoAnchors.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <Leaf className="w-5 h-5 text-rose-500" />
+                  <Leaf className="w-5 h-5 text-amber-400" />
                   <span className="font-medium text-gray-700">
                     {locale === 'fr' ? 'Alléger' : 'Let Go'}
                   </span>
@@ -1396,9 +1396,9 @@ export default function SeedsPage() {
                     const IconComponent = iconData?.icon || Circle
 
                     return (
-                      <div key={anchor.id} className="bg-rose-50 rounded-2xl p-4">
+                      <div key={anchor.id} className="bg-amber-50 rounded-2xl p-4">
                         <div className="flex items-center gap-2 mb-3">
-                          <IconComponent className="w-5 h-5 text-rose-600" />
+                          <IconComponent className="w-5 h-5 text-amber-400" />
                           <span className="font-medium text-gray-700">
                             {locale === 'fr' ? anchor.labelFr : anchor.labelEn}
                           </span>
@@ -1411,8 +1411,8 @@ export default function SeedsPage() {
                                 key={day.date}
                                 className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-medium ${
                                   count > 0
-                                    ? 'bg-rose-500 text-white'
-                                    : 'bg-rose-100 text-rose-300'
+                                    ? 'bg-amber-300 text-white'
+                                    : 'bg-amber-100 text-amber-300'
                                 }`}
                               >
                                 {count > 0 ? count : '-'}
@@ -1480,7 +1480,7 @@ export default function SeedsPage() {
               <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium mb-4 ${
                 addAnchorType === 'grow'
                   ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-rose-100 text-rose-700'
+                  : 'bg-amber-100 text-amber-400'
               }`}>
                 {addAnchorType === 'grow' ? <Sprout className="w-4 h-4" /> : <Leaf className="w-4 h-4" />}
                 {addAnchorType === 'grow'
@@ -1509,13 +1509,13 @@ export default function SeedsPage() {
                           ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
                           : addAnchorType === 'grow'
                             ? 'bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:scale-105 active:scale-95'
-                            : 'bg-rose-50 hover:bg-rose-100 border border-rose-200 hover:scale-105 active:scale-95'
+                            : 'bg-amber-50 hover:bg-amber-100 border border-amber-100 hover:scale-105 active:scale-95'
                       }`}
                     >
                       <IconComp className={`w-5 h-5 ${
                         alreadyAdded
                           ? 'text-gray-300'
-                          : addAnchorType === 'grow' ? 'text-emerald-600' : 'text-rose-600'
+                          : addAnchorType === 'grow' ? 'text-emerald-600' : 'text-amber-400'
                       }`} />
                       <span className={`text-[9px] font-medium text-center leading-tight ${
                         alreadyAdded ? 'text-gray-300' : 'text-gray-500'
