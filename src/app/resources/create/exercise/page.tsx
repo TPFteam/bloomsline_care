@@ -38,7 +38,7 @@ import {
   AlertDialogTitle,
   AlertDialogDescription,
 } from '@/components/ui/alert-dialog'
-import { useLanguage } from '@/lib/i18n/context'
+import { useLanguage, lt } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { ResourceCategory } from '@/types/library'
@@ -67,8 +67,8 @@ interface ExerciseStep {
 interface StepTypeOption {
   type: StepType
   icon: React.ElementType
-  label: { en: string; fr: string }
-  description: { en: string; fr: string }
+  label: Record<string, string>
+  description: Record<string, string>
 }
 
 const stepTypes: StepTypeOption[] = [
@@ -240,10 +240,10 @@ export default function CreateExercisePage() {
       } else {
         const stepsWithIds = template.steps.map(s => ({ ...s, id: generateId() }))
         setSteps(stepsWithIds)
-        setTitle(template.name[locale])
+        setTitle(lt(template.name, locale))
         // Track template for modification check - deep copy to compare against original values
         originalTemplateContentRef.current = {
-          title: template.name[locale],
+          title: lt(template.name, locale),
           steps: stepsWithIds.map(s => ({ ...s }))
         }
       }
@@ -596,10 +596,10 @@ export default function CreateExercisePage() {
 
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
-              {exerciseStep.title || stepType?.label[locale] || 'Untitled'}
+              {exerciseStep.title || (stepType ? lt(stepType.label, locale) : 'Untitled')}
             </p>
             <div className="flex items-center gap-2 text-xs text-gray-500">
-              <span>{stepType?.label[locale]}</span>
+              <span>{stepType ? lt(stepType.label, locale) : ''}</span>
               {exerciseStep.duration && (
                 <>
                   <span>•</span>
@@ -708,7 +708,7 @@ export default function CreateExercisePage() {
                             onClick={() => applyBreathingPreset(exerciseStep.id, preset)}
                             className="px-3 py-1.5 text-sm rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
                           >
-                            {preset.name[locale]}
+                            {lt(preset.name, locale)}
                           </button>
                         ))}
                       </div>
@@ -793,7 +793,7 @@ export default function CreateExercisePage() {
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                           >
-                            {part[locale]}
+                            {lt(part, locale)}
                           </button>
                         ))}
                       </div>
@@ -926,10 +926,10 @@ export default function CreateExercisePage() {
                         )}
                       </div>
                       <h3 className="font-semibold text-gray-900 mb-1">
-                        {template.name[locale]}
+                        {lt(template.name, locale)}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        {template.description[locale]}
+                        {lt(template.description, locale)}
                       </p>
                       {template.id !== 'blank' && (
                         <p className="text-xs text-amber-600 mt-2">
@@ -1102,8 +1102,8 @@ export default function CreateExercisePage() {
                                     <Icon className="w-4 h-4 text-amber-600" />
                                   </div>
                                   <div>
-                                    <p className="text-sm font-medium text-gray-900">{st.label[locale]}</p>
-                                    <p className="text-xs text-gray-500">{st.description[locale]}</p>
+                                    <p className="text-sm font-medium text-gray-900">{lt(st.label, locale)}</p>
+                                    <p className="text-xs text-gray-500">{lt(st.description, locale)}</p>
                                   </div>
                                 </button>
                               )
@@ -1411,7 +1411,7 @@ export default function CreateExercisePage() {
                           </span>
                           <Icon className="w-4 h-4 text-gray-400" />
                           <span className="text-gray-700 truncate flex-1">
-                            {s.title || sType?.label[locale]}
+                            {s.title || (sType ? lt(sType.label, locale) : '')}
                           </span>
                           {s.duration && (
                             <span className="text-xs text-gray-500 flex items-center gap-1">

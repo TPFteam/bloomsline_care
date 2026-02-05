@@ -1515,15 +1515,17 @@ export default function RitualsPage() {
                       const categoryConfig = ritualCategories.find(c => c.id === selectedRitualToAdd.category)!
 
                       // Fallback tips if no benefit in database
-                      const fallbackTips: Record<string, { en: string; fr: string }> = {
-                        morning: { en: 'Starting your day with intention sets a positive tone', fr: 'Commencer la journée avec intention donne un ton positif' },
-                        midday: { en: 'A mindful pause helps reset your energy', fr: 'Une pause consciente aide à recharger votre énergie' },
-                        evening: { en: 'Winding down mindfully improves rest quality', fr: 'Se détendre en pleine conscience améliore la qualité du repos' },
-                        selfcare: { en: 'Small acts of self-care build lasting wellbeing', fr: 'Les petits gestes de bien-être construisent un bonheur durable' }
+                      const fallbackTips: Record<string, Record<string, string>> = {
+                        morning: { en: 'Starting your day with intention sets a positive tone', fr: 'Commencer la journée avec intention donne un ton positif', es: 'Comenzar el día con intención establece un tono positivo' },
+                        midday: { en: 'A mindful pause helps reset your energy', fr: 'Une pause consciente aide à recharger votre énergie', es: 'Una pausa consciente ayuda a recargar tu energía' },
+                        evening: { en: 'Winding down mindfully improves rest quality', fr: 'Se détendre en pleine conscience améliore la qualité du repos', es: 'Relajarse conscientemente mejora la calidad del descanso' },
+                        selfcare: { en: 'Small acts of self-care build lasting wellbeing', fr: 'Les petits gestes de bien-être construisent un bonheur durable', es: 'Pequeños actos de autocuidado construyen un bienestar duradero' }
                       }
 
                       const benefitText = locale === 'fr'
                         ? (selectedRitualToAdd.benefit_fr || fallbackTips[selectedRitualToAdd.category]?.fr)
+                        : locale === 'es'
+                        ? (fallbackTips[selectedRitualToAdd.category]?.es || selectedRitualToAdd.benefit || fallbackTips[selectedRitualToAdd.category]?.en)
                         : (selectedRitualToAdd.benefit || fallbackTips[selectedRitualToAdd.category]?.en)
 
                       return (

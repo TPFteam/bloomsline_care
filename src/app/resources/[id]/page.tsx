@@ -32,7 +32,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Logo } from '@/components/ui/logo'
-import { useLanguage } from '@/lib/i18n/context'
+import { useLanguage, lt } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { getResourceById, deleteResource, getResourceSubmissions, updateSubmission, type ResourceSubmission } from '@/lib/services/resources'
 import { removeResourceFromAllCollections, isResourceSaved } from '@/lib/services/collections'
@@ -107,7 +107,7 @@ const typeConfig: Record<ResourceType | 'assessment', {
 }
 
 // Question type labels
-const questionTypeLabels: Record<string, { en: string; fr: string }> = {
+const questionTypeLabels: Record<string, Record<string, string>> = {
   multiple_choice: { en: 'Multiple Choice', fr: 'Choix multiple' },
   likert: { en: 'Likert Scale', fr: 'Échelle de Likert' },
   yes_no: { en: 'Yes/No', fr: 'Oui/Non' },
@@ -534,7 +534,7 @@ export default function ResourceDetailPage() {
     }>
     enableScoring?: boolean
     showScoreToMember?: boolean
-    scoringRanges?: Array<{ min: number; max: number; label: { en: string; fr: string } } | { minScore: number; maxScore: number; label: string; description: string }>
+    scoringRanges?: Array<{ min: number; max: number; label: Record<string, string> } | { minScore: number; maxScore: number; label: string; description: string }>
     maxScore?: number
     instructions?: string
   } | null
@@ -976,7 +976,7 @@ export default function ResourceDetailPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant="outline" className="text-xs">
-                              {questionTypeLabels[question.type]?.[locale] || question.type}
+                              {questionTypeLabels[question.type] ? lt(questionTypeLabels[question.type], locale) : question.type}
                             </Badge>
                             {hasScoring && question.type === 'multiple_choice' && question.options && (
                               <span className="text-xs text-gray-500">
@@ -1142,8 +1142,8 @@ export default function ResourceDetailPage() {
                     // Handle both legacy (minScore/maxScore) and new (min/max) formats
                     const minVal = 'min' in range ? range.min : (range as any).minScore
                     const maxVal = 'max' in range ? range.max : (range as any).maxScore
-                    const labelVal = typeof range.label === 'object' && 'en' in range.label ? range.label[locale] : (typeof range.label === 'string' ? range.label : '')
-                    const descVal = 'description' in range && range.description ? (typeof range.description === 'object' && 'en' in range.description ? range.description[locale] : (typeof range.description === 'string' ? range.description : '')) : ''
+                    const labelVal = typeof range.label === 'object' && 'en' in range.label ? lt(range.label as Record<string, string>, locale) : (typeof range.label === 'string' ? range.label : '')
+                    const descVal = 'description' in range && range.description ? (typeof range.description === 'object' && 'en' in range.description ? lt(range.description as Record<string, string>, locale) : (typeof range.description === 'string' ? range.description : '')) : ''
 
                     return (
                       <div
@@ -1205,7 +1205,7 @@ export default function ResourceDetailPage() {
                     const infoTypes = ['heading', 'paragraph', 'quote', 'tip', 'affirmation', 'image', 'divider']
 
                     // Question type labels for display
-                    const typeLabels: Record<string, { en: string; fr: string }> = {
+                    const typeLabels: Record<string, Record<string, string>> = {
                       prompt: { en: 'Text', fr: 'Texte' },
                       checklist: { en: 'Checklist', fr: 'Liste' },
                       scale: { en: 'Scale', fr: 'Échelle' },
@@ -1225,7 +1225,7 @@ export default function ResourceDetailPage() {
                     }
 
                     // Info type labels for display
-                    const infoTypeLabels: Record<string, { en: string; fr: string }> = {
+                    const infoTypeLabels: Record<string, Record<string, string>> = {
                       heading: { en: 'Title', fr: 'Titre' },
                       paragraph: { en: 'Text', fr: 'Texte' },
                       quote: { en: 'Quote', fr: 'Citation' },
@@ -1252,7 +1252,7 @@ export default function ResourceDetailPage() {
                             <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
                               {infoNumber}
                             </div>
-                            <span className="text-[9px] text-gray-400 uppercase">{infoTypeLabels.heading[locale]}</span>
+                            <span className="text-[9px] text-gray-400 uppercase">{lt(infoTypeLabels.heading, locale)}</span>
                           </div>
                           <h3 className="text-xl font-semibold text-gray-900">{blockContent}</h3>
                         </div>
@@ -1266,7 +1266,7 @@ export default function ResourceDetailPage() {
                             <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
                               {infoNumber}
                             </div>
-                            <span className="text-[9px] text-gray-400 uppercase">{infoTypeLabels.paragraph[locale]}</span>
+                            <span className="text-[9px] text-gray-400 uppercase">{lt(infoTypeLabels.paragraph, locale)}</span>
                           </div>
                           <p className="text-gray-700 leading-relaxed">{blockContent}</p>
                         </div>
@@ -1280,7 +1280,7 @@ export default function ResourceDetailPage() {
                             <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
                               {infoNumber}
                             </div>
-                            <span className="text-[9px] text-gray-400 uppercase">{infoTypeLabels.divider[locale]}</span>
+                            <span className="text-[9px] text-gray-400 uppercase">{lt(infoTypeLabels.divider, locale)}</span>
                           </div>
                           <hr className="border-gray-200" />
                         </div>
@@ -1294,7 +1294,7 @@ export default function ResourceDetailPage() {
                             <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
                               {infoNumber}
                             </div>
-                            <span className="text-[9px] text-gray-400 uppercase">{infoTypeLabels.quote[locale]}</span>
+                            <span className="text-[9px] text-gray-400 uppercase">{lt(infoTypeLabels.quote, locale)}</span>
                           </div>
                           <blockquote className="border-l-4 border-lavender-300 pl-4 py-2 italic text-gray-700 bg-lavender-50/30 rounded-r-lg">
                             {blockContent}
@@ -1320,7 +1320,7 @@ export default function ResourceDetailPage() {
                             <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
                               {infoNumber}
                             </div>
-                            <span className="text-[9px] text-gray-400 uppercase">{infoTypeLabels.tip[locale]}</span>
+                            <span className="text-[9px] text-gray-400 uppercase">{lt(infoTypeLabels.tip, locale)}</span>
                           </div>
                           <div className={`p-4 rounded-xl border ${tipStyles[style as keyof typeof tipStyles] || tipStyles.default}`}>
                             <p className="text-sm">{blockContent}</p>
@@ -1336,7 +1336,7 @@ export default function ResourceDetailPage() {
                             <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
                               {infoNumber}
                             </div>
-                            <span className="text-[9px] text-gray-400 uppercase">{infoTypeLabels.affirmation[locale]}</span>
+                            <span className="text-[9px] text-gray-400 uppercase">{lt(infoTypeLabels.affirmation, locale)}</span>
                           </div>
                           <div className="p-5 bg-gradient-to-br from-lavender-50 to-purple-50 rounded-xl border border-lavender-100 text-center">
                             <p className="text-lavender-700 font-medium text-lg">{blockContent}</p>
@@ -1352,7 +1352,7 @@ export default function ResourceDetailPage() {
                             <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
                               {infoNumber}
                             </div>
-                            <span className="text-[9px] text-gray-400 uppercase">{infoTypeLabels.image[locale]}</span>
+                            <span className="text-[9px] text-gray-400 uppercase">{lt(infoTypeLabels.image, locale)}</span>
                           </div>
                           <div className="flex flex-col items-start">
                             {(block as any).mediaFile?.url ? (
@@ -1383,7 +1383,7 @@ export default function ResourceDetailPage() {
                     }
 
                     // Interactive blocks get a subtle card treatment with question number
-                    const typeLabel = typeLabels[blockType]?.[locale] || blockType
+                    const typeLabel = typeLabels[blockType] ? lt(typeLabels[blockType], locale) : blockType
 
                     return (
                       <div
@@ -1703,7 +1703,7 @@ export default function ResourceDetailPage() {
                 {/* Clean reading preview for psychoeducation */}
                 <div className="space-y-6">
                   {(() => {
-                    const typeLabels: Record<string, { en: string; fr: string }> = {
+                    const typeLabels: Record<string, Record<string, string>> = {
                       heading: { en: 'Title', fr: 'Titre' },
                       paragraph: { en: 'Text', fr: 'Texte' },
                       key_points: { en: 'Key Points', fr: 'Points clés' },
@@ -1720,7 +1720,7 @@ export default function ResourceDetailPage() {
                       const blockContent = typeof (block as any).content === 'string' ? (block as any).content : ''
                       const blockId = (block as any).id || index
                       const sectionNumber = index + 1
-                      const typeLabel = typeLabels[blockType]?.[locale] || blockType
+                      const typeLabel = typeLabels[blockType] ? lt(typeLabels[blockType], locale) : blockType
 
                       // Heading
                       if (blockType === 'heading') {

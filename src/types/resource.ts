@@ -313,8 +313,8 @@ export type ResourceBlock =
 export interface ScoringRange {
   min: number
   max: number
-  label: { en: string; fr: string }
-  description?: { en: string; fr: string }
+  label: Record<string, string>
+  description?: Record<string, string>
 }
 
 // Type-specific settings
@@ -544,32 +544,32 @@ export interface CreateResponseDTO {
 }
 
 // Helper functions
-export function getResourceTypeLabel(type: ResourceType | 'assessment', locale: 'en' | 'fr' = 'en'): string {
-  const labels: Record<ResourceType | 'assessment', { en: string; fr: string }> = {
+export function getResourceTypeLabel(type: ResourceType | 'assessment', locale: string = 'en'): string {
+  const labels: Record<ResourceType | 'assessment', Record<string, string>> = {
     worksheet: { en: 'Worksheet', fr: 'Exercice' },
     assessment: { en: 'Worksheet', fr: 'Exercice' }, // Legacy - maps to worksheet
     exercise: { en: 'Exercise', fr: 'Exercice' },
     psychoeducation: { en: 'Education', fr: 'Éducation' },
     table: { en: 'Table Exercise', fr: 'Tableau' },
   }
-  return labels[type][locale]
+  return labels[type]?.[locale] ?? labels[type]?.['en'] ?? ''
 }
 
-export function getStatusLabel(status: ResourceStatus, locale: 'en' | 'fr' = 'en'): string {
-  const labels: Record<ResourceStatus, { en: string; fr: string }> = {
+export function getStatusLabel(status: ResourceStatus, locale: string = 'en'): string {
+  const labels: Record<ResourceStatus, Record<string, string>> = {
     draft: { en: 'Draft', fr: 'Brouillon' },
     published: { en: 'Published', fr: 'Publié' },
     archived: { en: 'Archived', fr: 'Archivé' },
   }
-  return labels[status][locale]
+  return labels[status]?.[locale] ?? labels[status]?.['en'] ?? ''
 }
 
-export function getAssignmentStatusLabel(status: AssignmentStatus, locale: 'en' | 'fr' = 'en'): string {
-  const labels: Record<AssignmentStatus, { en: string; fr: string }> = {
+export function getAssignmentStatusLabel(status: AssignmentStatus, locale: string = 'en'): string {
+  const labels: Record<AssignmentStatus, Record<string, string>> = {
     pending: { en: 'Pending', fr: 'En attente' },
     in_progress: { en: 'In Progress', fr: 'En cours' },
     completed: { en: 'Completed', fr: 'Terminé' },
     expired: { en: 'Expired', fr: 'Expiré' },
   }
-  return labels[status][locale]
+  return labels[status]?.[locale] ?? labels[status]?.['en'] ?? ''
 }

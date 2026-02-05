@@ -157,6 +157,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   )
 }
 
+/** Safely index a { en, fr, es? } translation object with fallback to English */
+export function lt(text: Record<string, string>, locale: Locale): string {
+  return text[locale] ?? text['en'] ?? ''
+}
+
 export function useLanguage() {
   const context = useContext(LanguageContext)
   if (context === undefined) {

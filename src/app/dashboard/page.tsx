@@ -31,7 +31,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { useLanguage } from '@/lib/i18n/context'
+import { useLanguage, lt } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import { ConsentModal } from '@/components/consent-modal'
@@ -48,8 +48,8 @@ interface ActivityItem {
 interface TemplateOption {
   id: string
   type: 'worksheet' | 'table' | 'psychoeducation'
-  name: { en: string; fr: string }
-  description: { en: string; fr: string }
+  name: Record<string, string>
+  description: Record<string, string>
   href: string
 }
 
@@ -58,8 +58,8 @@ type ResourceType = 'worksheet' | 'table' | 'psychoeducation'
 
 interface Template {
   id: string
-  name: { en: string; fr: string }
-  description: { en: string; fr: string }
+  name: Record<string, string>
+  description: Record<string, string>
 }
 
 const templatesData: Record<ResourceType, Template[]> = {
@@ -565,12 +565,12 @@ function DashboardContent() {
   ]
 
   const getTypeLabel = (type: ResourceType) => {
-    const labels: Record<ResourceType, { en: string; fr: string }> = {
+    const labels: Record<ResourceType, Record<string, string>> = {
       psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
       worksheet: { en: 'Worksheet', fr: 'Fiche' },
       table: { en: 'Table', fr: 'Tableau' },
     }
-    return labels[type][locale]
+    return lt(labels[type], locale)
   }
 
   if (loading) {
@@ -900,7 +900,7 @@ function DashboardContent() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-gray-700">
-                            {template.name[locale]}
+                            {lt(template.name, locale)}
                           </p>
                           <p className="text-xs text-gray-500">
                             {getTemplateTypeLabel(template.type)}
@@ -980,10 +980,10 @@ function DashboardContent() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 group-hover:text-gray-700">
-                        {template.name[locale]}
+                        {lt(template.name, locale)}
                       </p>
                       <p className="text-sm text-gray-500 truncate">
-                        {template.description[locale]}
+                        {lt(template.description, locale)}
                       </p>
                     </div>
                     <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />

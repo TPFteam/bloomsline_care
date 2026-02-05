@@ -70,7 +70,7 @@ import {
   AlertDialogDescription,
 } from '@/components/ui/alert-dialog'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
-import { useLanguage } from '@/lib/i18n/context'
+import { useLanguage, lt } from '@/lib/i18n/context'
 import { createResource, getResourceById, updateResource } from '@/lib/services/resources'
 import { uploadResourceFile, validateFile } from '@/lib/services/resource-storage'
 import { supabase } from '@/lib/supabase/client'
@@ -167,8 +167,8 @@ interface WorksheetBlock {
 interface BlockTypeOption {
   type: BlockType
   icon: React.ElementType
-  label: { en: string; fr: string }
-  description: { en: string; fr: string }
+  label: Record<string, string>
+  description: Record<string, string>
 }
 
 const blockTypes: BlockTypeOption[] = [
@@ -316,7 +316,7 @@ const allCategories: ResourceCategory[] = [
 ]
 
 // Default Likert scales for scored worksheets
-const likertPresets = {
+const likertPresets: Record<string, Record<string, string[]>> = {
   agreement: {
     en: ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'],
     fr: ['Fortement en désaccord', 'En désaccord', 'Neutre', 'D\'accord', 'Fortement d\'accord'],
@@ -501,7 +501,7 @@ function CreateWorksheetContent() {
         const template = worksheetTemplates.find(t => t.id === templateParam)
         if (template && template.id !== 'blank') {
           setBlocks(template.blocks.map(b => ({ ...b, id: generateId() })))
-          setTitle(template.name[locale])
+          setTitle(lt(template.name, locale))
           selectedTemplateIdRef.current = templateParam
           hasModifiedContentRef.current = false // Using template = must modify before proceeding
         }
@@ -668,7 +668,7 @@ function CreateWorksheetContent() {
         hasModifiedContentRef.current = true // Blank = can proceed
       } else {
         setBlocks(template.blocks.map(b => ({ ...b, id: generateId() })))
-        setTitle(template.name[locale])
+        setTitle(lt(template.name, locale))
         selectedTemplateIdRef.current = templateId
         hasModifiedContentRef.current = false // Using template = must modify before proceeding
       }
@@ -710,7 +710,7 @@ function CreateWorksheetContent() {
 
   // Add new block
   const addBlock = (type: BlockType) => {
-    const preset = likertPresets[selectedLikertPreset as keyof typeof likertPresets]
+    const preset = likertPresets[selectedLikertPreset]
     const newBlock: WorksheetBlock = {
       id: generateId(),
       type,
@@ -740,9 +740,9 @@ function CreateWorksheetContent() {
       ...(type === 'list_input' && { listMinItems: 1, listMaxItems: 10, listItemPlaceholder: '' }),
       // Scoring question types (likert, numeric, slider)
       ...(type === 'likert' && {
-        scaleLabels: preset[locale],
-        scaleRange: preset[locale].length,
-        scoring: preset[locale].reduce((acc, _, i) => ({ ...acc, [i.toString()]: i }), {}),
+        scaleLabels: preset[locale] ?? preset['en'],
+        scaleRange: (preset[locale] ?? preset['en']).length,
+        scoring: (preset[locale] ?? preset['en']).reduce((acc, _, i) => ({ ...acc, [i.toString()]: i }), {}),
       }),
       ...(type === 'numeric' && {
         minValue: 0,
@@ -775,12 +775,12 @@ function CreateWorksheetContent() {
 
   // Apply likert preset to a block
   const applyLikertPreset = (blockId: string, presetKey: string) => {
-    const preset = likertPresets[presetKey as keyof typeof likertPresets]
+    const preset = likertPresets[presetKey]
     if (preset) {
       updateBlock(blockId, {
-        scaleLabels: preset[locale],
-        scaleRange: preset[locale].length,
-        scoring: preset[locale].reduce((acc, _, i) => ({ ...acc, [i.toString()]: i }), {}),
+        scaleLabels: preset[locale] ?? preset['en'],
+        scaleRange: (preset[locale] ?? preset['en']).length,
+        scoring: (preset[locale] ?? preset['en']).reduce((acc, _, i) => ({ ...acc, [i.toString()]: i }), {}),
       })
     }
   }
@@ -847,7 +847,7 @@ function CreateWorksheetContent() {
   const getScoreInterpretation = (score: number) => {
     for (const range of scoringRanges) {
       if (score >= range.min && score <= range.max) {
-        return range.label[locale]
+        return lt(range.label, locale)
       }
     }
     return ''
@@ -2183,7 +2183,7 @@ function CreateWorksheetContent() {
 
           <div className="flex-1 min-w-0">
             <p className="text-sm text-gray-700 truncate">
-              {block.content || <span className="text-gray-400">{blockType?.label[locale]}</span>}
+              {block.content || <span className="text-gray-400">{blockType ? lt(blockType.label, locale) : ''}</span>}
             </p>
           </div>
 
@@ -3568,7 +3568,7 @@ function CreateWorksheetContent() {
                                 key={key}
                                 onClick={() => applyLikertPreset(block.id, key)}
                                 className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                                  block.scaleLabels?.join(',') === preset[locale].join(',')
+                                  block.scaleLabels?.join(',') === (preset[locale] ?? preset['en']).join(',')
                                     ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
                                     : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
                                 }`}
@@ -3588,7 +3588,7 @@ function CreateWorksheetContent() {
                             {locale === 'fr' ? 'Aperçu pour le membre' : 'Member will see'}
                           </p>
                           <div className="flex flex-wrap gap-2 justify-center">
-                            {(block.scaleLabels || likertPresets.frequency[locale]).map((label, i) => (
+                            {(block.scaleLabels || (likertPresets.frequency[locale] ?? likertPresets.frequency['en'])).map((label, i) => (
                               <button
                                 key={i}
                                 className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg text-gray-600"
@@ -3611,7 +3611,7 @@ function CreateWorksheetContent() {
                           </span>
                         </div>
                         <div className="grid grid-cols-5 gap-2">
-                          {(block.scaleLabels || likertPresets.frequency[locale]).map((label, i) => (
+                          {(block.scaleLabels || (likertPresets.frequency[locale] ?? likertPresets.frequency['en'])).map((label, i) => (
                             <div key={i} className="text-center">
                               <p className="text-xs text-gray-500 mb-1 truncate" title={label}>{label.substring(0, 8)}...</p>
                               <input
@@ -4206,10 +4206,10 @@ function CreateWorksheetContent() {
                         )}
                       </div>
                       <h3 className="font-semibold text-gray-900 mb-1">
-                        {template.name[locale]}
+                        {lt(template.name, locale)}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        {template.description[locale]}
+                        {lt(template.description, locale)}
                       </p>
                       {template.id !== 'blank' && (
                         <p className="text-xs text-blue-600 mt-2">
@@ -4471,7 +4471,7 @@ function CreateWorksheetContent() {
                                           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors group"
                                         >
                                           <Icon className="w-3.5 h-3.5 text-gray-500 group-hover:text-gray-700" />
-                                          <span className="text-xs text-gray-600 group-hover:text-gray-800">{bt.label[locale]}</span>
+                                          <span className="text-xs text-gray-600 group-hover:text-gray-800">{lt(bt.label, locale)}</span>
                                         </button>
                                       )
                                     })}
@@ -4484,7 +4484,7 @@ function CreateWorksheetContent() {
                                           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors group"
                                         >
                                           <Icon className="w-3.5 h-3.5 text-gray-500 group-hover:text-gray-700" />
-                                          <span className="text-xs text-gray-600 group-hover:text-gray-800">{bt.label[locale]}</span>
+                                          <span className="text-xs text-gray-600 group-hover:text-gray-800">{lt(bt.label, locale)}</span>
                                         </button>
                                       )
                                     })}
@@ -4515,7 +4515,7 @@ function CreateWorksheetContent() {
                                           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors group"
                                         >
                                           <Icon className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-600" />
-                                          <span className="text-xs text-blue-600 group-hover:text-blue-700">{bt.label[locale]}</span>
+                                          <span className="text-xs text-blue-600 group-hover:text-blue-700">{lt(bt.label, locale)}</span>
                                         </button>
                                       )
                                     })}
@@ -4528,7 +4528,7 @@ function CreateWorksheetContent() {
                                           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors group"
                                         >
                                           <Icon className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-600" />
-                                          <span className="text-xs text-blue-600 group-hover:text-blue-700">{bt.label[locale]}</span>
+                                          <span className="text-xs text-blue-600 group-hover:text-blue-700">{lt(bt.label, locale)}</span>
                                         </button>
                                       )
                                     })}
@@ -4559,7 +4559,7 @@ function CreateWorksheetContent() {
                                           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors group"
                                         >
                                           <Icon className="w-3.5 h-3.5 text-amber-500 group-hover:text-amber-600" />
-                                          <span className="text-xs text-amber-600 group-hover:text-amber-700">{bt.label[locale]}</span>
+                                          <span className="text-xs text-amber-600 group-hover:text-amber-700">{lt(bt.label, locale)}</span>
                                         </button>
                                       )
                                     })}
@@ -4583,7 +4583,7 @@ function CreateWorksheetContent() {
                                           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 transition-colors group"
                                         >
                                           <Icon className="w-3.5 h-3.5 text-green-500 group-hover:text-green-600" />
-                                          <span className="text-xs text-green-600 group-hover:text-green-700">{bt.label[locale]}</span>
+                                          <span className="text-xs text-green-600 group-hover:text-green-700">{lt(bt.label, locale)}</span>
                                         </button>
                                       )
                                     })}
@@ -4596,7 +4596,7 @@ function CreateWorksheetContent() {
                                           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 transition-colors group"
                                         >
                                           <Icon className="w-3.5 h-3.5 text-green-500 group-hover:text-green-600" />
-                                          <span className="text-xs text-green-600 group-hover:text-green-700">{bt.label[locale]}</span>
+                                          <span className="text-xs text-green-600 group-hover:text-green-700">{lt(bt.label, locale)}</span>
                                         </button>
                                       )
                                     })}
@@ -5232,7 +5232,7 @@ function CreateWorksheetContent() {
                                     <span className="text-gray-400">=</span>
                                     <input
                                       type="text"
-                                      value={range.label[locale]}
+                                      value={lt(range.label, locale)}
                                       onChange={(e) => {
                                         const newRanges = [...scoringRanges]
                                         newRanges[index].label = { ...newRanges[index].label, [locale]: e.target.value }
@@ -5502,7 +5502,7 @@ function CreateWorksheetContent() {
                             </span>
                             <Icon className="w-4 h-4 text-gray-400" />
                             <span className="text-gray-700 truncate flex-1">
-                              {block.content || blockType?.label[locale]}
+                              {block.content || (blockType ? lt(blockType.label, locale) : '')}
                             </span>
                           </div>
                         )

@@ -17,7 +17,7 @@ import {
   Puzzle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useLanguage } from '@/lib/i18n/context'
+import { useLanguage, lt } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
 import type { User } from '@/types/user'
@@ -32,8 +32,8 @@ interface ResourceTypeOption {
 
 interface Template {
   id: string
-  name: { en: string; fr: string }
-  description: { en: string; fr: string }
+  name: Record<string, string>
+  description: Record<string, string>
   blocks: number
   isBlank?: boolean
 }
@@ -46,14 +46,14 @@ const resourceTypes: ResourceTypeOption[] = [
   { id: 'exercise', comingSoon: true },
 ]
 
-const typeLabels: Record<PractitionerResourceType, { en: string; fr: string }> = {
+const typeLabels: Record<PractitionerResourceType, Record<string, string>> = {
   worksheet: { en: 'Worksheet', fr: 'Exercice' },
   table: { en: 'Table', fr: 'Tableau' },
   psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
   exercise: { en: 'Activity', fr: 'Activité' },
 }
 
-const typeDescriptions: Record<PractitionerResourceType, { en: string; fr: string }> = {
+const typeDescriptions: Record<PractitionerResourceType, Record<string, string>> = {
   worksheet: {
     en: 'Engage through active exploration',
     fr: 'Faire travailler par une exploration active',
@@ -72,7 +72,7 @@ const typeDescriptions: Record<PractitionerResourceType, { en: string; fr: strin
   },
 }
 
-const typeExamples: Record<PractitionerResourceType, { en: string[]; fr: string[] }> = {
+const typeExamples: Record<PractitionerResourceType, Record<string, string[]>> = {
   worksheet: {
     en: ['Self-esteem', 'Relationships'],
     fr: ['Estime de soi', 'Relations'],
@@ -443,17 +443,17 @@ export default function CreateResourcePage() {
 
                   {/* Type Label */}
                   <h3 className="font-semibold text-gray-900 mb-2 text-lg">
-                    {typeLabels[type.id][locale]}
+                    {lt(typeLabels[type.id], locale)}
                   </h3>
 
                   {/* Description */}
                   <p className="text-sm text-gray-500 mb-4 leading-relaxed">
-                    {typeDescriptions[type.id][locale]}
+                    {lt(typeDescriptions[type.id], locale)}
                   </p>
 
                   {/* Examples */}
                   <div className="flex flex-wrap justify-center gap-1.5">
-                    {typeExamples[type.id][locale].map((example, i) => (
+                    {(typeExamples[type.id][locale] ?? typeExamples[type.id]['en']).map((example, i) => (
                       <span
                         key={i}
                         className="text-xs px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full"
@@ -519,10 +519,10 @@ export default function CreateResourcePage() {
                           <FileText className={`w-5 h-5 ${currentColors.text}`} />
                         </div>
                         <h3 className="font-medium text-gray-900 mb-1">
-                          {template.name[locale]}
+                          {lt(template.name, locale)}
                         </h3>
                         <p className="text-sm text-gray-500 mb-2">
-                          {template.description[locale]}
+                          {lt(template.description, locale)}
                         </p>
                         <span className={`text-xs ${currentColors.text} font-medium`}>
                           {template.blocks} {locale === 'fr' ? 'blocs' : 'blocks'}

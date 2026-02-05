@@ -51,7 +51,7 @@ import {
   AlertDialogTitle,
   AlertDialogDescription,
 } from '@/components/ui/alert-dialog'
-import { useLanguage } from '@/lib/i18n/context'
+import { useLanguage, lt } from '@/lib/i18n/context'
 import { createResource, getResourceById, updateResource } from '@/lib/services/resources'
 import { uploadResourceFile, validateFile, formatFileSize } from '@/lib/services/resource-storage'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -105,8 +105,8 @@ interface ContentBlock {
 interface ContentBlockOption {
   type: ContentBlockType
   icon: React.ElementType
-  label: { en: string; fr: string }
-  description: { en: string; fr: string }
+  label: Record<string, string>
+  description: Record<string, string>
 }
 
 const contentBlockTypes: ContentBlockOption[] = [
@@ -435,7 +435,7 @@ function CreatePsychoeducationContent() {
           }))
           setBlocks(blocksWithIds as ContentBlock[])
           setLearningObjectives(template.learningObjectives)
-          setTitle(template.name[locale])
+          setTitle(lt(template.name, locale))
           // Track template for modification check
           selectedTemplateIdRef.current = templateParam
           hasModifiedContentRef.current = false // Using template = must modify before proceeding
@@ -501,7 +501,7 @@ function CreatePsychoeducationContent() {
       }))
       setBlocks(blocksWithIds as ContentBlock[])
       setLearningObjectives([...template.learningObjectives])
-      setTitle(template.name[locale]) // Set title from template
+      setTitle(lt(template.name, locale)) // Set title from template
       setStep('build')
 
       // Track if using a template (not blank)
@@ -1525,7 +1525,7 @@ function CreatePsychoeducationContent() {
 
           <div className="flex-1 min-w-0">
             <p className="text-sm text-gray-700 truncate">
-              {block.content || <span className="text-gray-400">{blockType?.label[locale]}</span>}
+              {block.content || <span className="text-gray-400">{blockType ? lt(blockType.label, locale) : ''}</span>}
             </p>
           </div>
 
@@ -1681,7 +1681,7 @@ function CreatePsychoeducationContent() {
                               }`}
                             >
                               <CalloutIcon className="w-4 h-4" />
-                              {value[locale]}
+                              {lt(value as unknown as Record<string, string>, locale)}
                             </button>
                           )
                         })}
@@ -2365,10 +2365,10 @@ function CreatePsychoeducationContent() {
                         )}
                       </div>
                       <h3 className="font-semibold text-gray-900 mb-1">
-                        {template.name[locale as 'en' | 'fr']}
+                        {lt(template.name, locale)}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        {template.description[locale as 'en' | 'fr']}
+                        {lt(template.description, locale)}
                       </p>
                       {template.id !== 'blank' && (
                         <p className="text-xs text-violet-600 mt-2">
@@ -2623,8 +2623,8 @@ function CreatePsychoeducationContent() {
                                         <Icon className="w-4 h-4 text-purple-600" />
                                       </div>
                                       <div>
-                                        <p className="text-sm font-medium text-gray-900">{bt.label[locale]}</p>
-                                        <p className="text-xs text-gray-500">{bt.description[locale]}</p>
+                                        <p className="text-sm font-medium text-gray-900">{lt(bt.label, locale)}</p>
+                                        <p className="text-xs text-gray-500">{lt(bt.description, locale)}</p>
                                       </div>
                                     </button>
                                   )

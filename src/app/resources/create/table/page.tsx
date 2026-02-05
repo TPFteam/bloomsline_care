@@ -35,7 +35,7 @@ import {
   AlertDialogTitle,
   AlertDialogDescription,
 } from '@/components/ui/alert-dialog'
-import { useLanguage } from '@/lib/i18n/context'
+import { useLanguage, lt } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { ResourceCategory } from '@/types/library'
@@ -266,7 +266,7 @@ function CreateTableExerciseContent() {
         } else {
           const columnsWithIds = template.columns.map(c => ({ ...c, id: generateId() }))
           setColumns(columnsWithIds)
-          setTitle(template.name[locale])
+          setTitle(lt(template.name, locale))
           setInstructions(template.instructions || '')
           selectedTemplateIdRef.current = templateParam
           originalTemplateContentRef.current = {
@@ -358,7 +358,7 @@ function CreateTableExerciseContent() {
       }))
       setColumns(columnsWithIds)
       setInstructions(template.instructions)
-      setTitle(template.name[locale]) // Set title from template
+      setTitle(lt(template.name, locale)) // Set title from template
       setStep('build')
 
       // Track template for modification check (skip for blank template)
@@ -730,10 +730,10 @@ function CreateTableExerciseContent() {
                         )}
                       </div>
                       <h3 className="font-semibold text-gray-900 mb-1">
-                        {template.name[locale as 'en' | 'fr']}
+                        {lt(template.name, locale)}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        {template.description[locale as 'en' | 'fr']}
+                        {lt(template.description, locale)}
                       </p>
                       {template.id !== 'blank' && (
                         <p className="text-xs text-emerald-600 mt-2">

@@ -248,8 +248,8 @@ export interface UpdatePractitionerProfileInput {
 // HELPER FUNCTIONS
 // ============================================
 
-export function getSpecialtyLabel(specialty: Specialty, locale: 'en' | 'fr' = 'en'): string {
-  const labels: Record<Specialty, { en: string; fr: string }> = {
+export function getSpecialtyLabel(specialty: Specialty, locale: string = 'en'): string {
+  const labels: Record<Specialty, Record<string, string>> = {
     anxiety: { en: 'Anxiety', fr: 'Anxiété' },
     depression: { en: 'Depression', fr: 'Dépression' },
     trauma_ptsd: { en: 'Trauma & PTSD', fr: 'Traumatisme & TSPT' },
@@ -280,8 +280,8 @@ export function getSpecialtyLabel(specialty: Specialty, locale: 'en' | 'fr' = 'e
   return labels[specialty]?.[locale] || specialty
 }
 
-export function getApproachLabel(approach: TherapeuticApproach, locale: 'en' | 'fr' = 'en'): string {
-  const labels: Record<TherapeuticApproach, { en: string; fr: string }> = {
+export function getApproachLabel(approach: TherapeuticApproach, locale: string = 'en'): string {
+  const labels: Record<TherapeuticApproach, Record<string, string>> = {
     cbt: { en: 'Cognitive Behavioral (CBT)', fr: 'Thérapie cognitivo-comportementale (TCC)' },
     dbt: { en: 'Dialectical Behavior (DBT)', fr: 'Thérapie comportementale dialectique' },
     emdr: { en: 'EMDR', fr: 'EMDR' },
@@ -303,8 +303,8 @@ export function getApproachLabel(approach: TherapeuticApproach, locale: 'en' | '
   return labels[approach]?.[locale] || approach
 }
 
-export function getAgeGroupLabel(ageGroup: AgeGroup, locale: 'en' | 'fr' = 'en'): string {
-  const labels: Record<AgeGroup, { en: string; fr: string }> = {
+export function getAgeGroupLabel(ageGroup: AgeGroup, locale: string = 'en'): string {
+  const labels: Record<AgeGroup, Record<string, string>> = {
     children: { en: 'Children (0-12)', fr: 'Enfants (0-12)' },
     adolescents: { en: 'Adolescents (13-17)', fr: 'Adolescents (13-17)' },
     young_adults: { en: 'Young Adults (18-25)', fr: 'Jeunes adultes (18-25)' },
@@ -314,8 +314,8 @@ export function getAgeGroupLabel(ageGroup: AgeGroup, locale: 'en' | 'fr' = 'en')
   return labels[ageGroup]?.[locale] || ageGroup
 }
 
-export function getSessionTypeLabel(sessionType: SessionType, locale: 'en' | 'fr' = 'en'): string {
-  const labels: Record<SessionType, { en: string; fr: string }> = {
+export function getSessionTypeLabel(sessionType: SessionType, locale: string = 'en'): string {
+  const labels: Record<SessionType, Record<string, string>> = {
     individual: { en: 'Individual', fr: 'Individuelle' },
     couples: { en: 'Couples', fr: 'Couple' },
     family: { en: 'Family', fr: 'Familiale' },
@@ -324,8 +324,8 @@ export function getSessionTypeLabel(sessionType: SessionType, locale: 'en' | 'fr
   return labels[sessionType]?.[locale] || sessionType
 }
 
-export function getClientAcceptanceLabel(status: ClientAcceptanceStatus, locale: 'en' | 'fr' = 'en'): string {
-  const labels: Record<ClientAcceptanceStatus, { en: string; fr: string }> = {
+export function getClientAcceptanceLabel(status: ClientAcceptanceStatus, locale: string = 'en'): string {
+  const labels: Record<ClientAcceptanceStatus, Record<string, string>> = {
     accepting: { en: 'Accepting New Clients', fr: 'Accepte de nouveaux clients' },
     waitlist: { en: 'Waitlist Only', fr: 'Liste d\'attente uniquement' },
     not_accepting: { en: 'Not Accepting New Clients', fr: 'N\'accepte pas de nouveaux clients' },

@@ -197,27 +197,27 @@ const practitionerContent = {
 
 interface BenefitItem {
   icon: React.ComponentType<{ className?: string }>
-  title: { en: string; fr: string }
-  desc: { en: string; fr: string }
+  title: Record<string, string>
+  desc: Record<string, string>
 }
 
 interface Scenario {
-  label: { en: string; fr: string }
-  story: { en: string; fr: string }
+  label: Record<string, string>
+  story: Record<string, string>
 }
 
 interface BlockContent {
-  headline: { en: string; fr: string }
-  pitch: { en: string; fr: string }
+  headline: Record<string, string>
+  pitch: Record<string, string>
   scenarios: Scenario[]
-  why: { en: string; fr: string }
+  why: Record<string, string>
   shift?: {
-    today: { en: string; fr: string }
-    future: { en: string; fr: string }
-    bloomsline: { en: string; fr: string }
-    bridge: { en: string; fr: string }
+    today: Record<string, string>
+    future: Record<string, string>
+    bloomsline: Record<string, string>
+    bridge: Record<string, string>
   }
-  closing: { en: string; fr: string }
+  closing: Record<string, string>
 }
 
 /* ─── Expandable sub-row ─── */
@@ -323,7 +323,7 @@ function PitchBlock({
   onToggle,
   locale,
 }: {
-  label: { en: string; fr: string }
+  label: Record<string, string>
   accent: 'teal' | 'coral'
   benefits: BenefitItem[]
   content: BlockContent
@@ -331,7 +331,7 @@ function PitchBlock({
   onToggle: () => void
   locale: string
 }) {
-  const t = (obj: { en: string; fr: string; es?: string }) => (locale === 'fr' ? obj.fr : locale === 'es' ? (obj.es ?? obj.en) : obj.en)
+  const t = (obj: Record<string, string>) => obj[locale] ?? obj['en'] ?? ''
   const [openSub, setOpenSub] = useState<string | null>(null)
   const [openShift, setOpenShift] = useState<string | null>(null)
   const [activeScenario, setActiveScenario] = useState(0)

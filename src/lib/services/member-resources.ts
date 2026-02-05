@@ -34,8 +34,8 @@ export interface WorksheetSettings {
   scoringRanges?: Array<{
     min: number
     max: number
-    label: string | { en: string; fr: string }
-    description?: string | { en: string; fr: string }
+    label: string | Record<string, string>
+    description?: string | Record<string, string>
   }>
   maxScore?: number
   questions?: Array<{

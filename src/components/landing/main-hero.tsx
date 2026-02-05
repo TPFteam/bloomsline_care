@@ -7,25 +7,29 @@ import { useLanguage } from '@/lib/i18n/context'
 import { useTab } from '@/lib/landing/tab-context'
 import { useEarlyAccessModal } from '@/lib/landing/early-access-modal-context'
 
-const rotatingWords = {
+const rotatingWords: Record<string, Record<string, string[]>> = {
   personal: {
     en: ['existing', 'moving', 'growing'],
     fr: ['existez', 'avancez', 'grandissez'],
+    es: ['existiendo', 'avanzando', 'creciendo'],
   },
   practitioner: {
     en: ['Create', 'Share', 'Track engagement'],
     fr: ['Créez', 'Partagez', 'Suivez les rythmes'],
+    es: ['Crea', 'Comparte', 'Sigue el progreso'],
   },
 }
 
-const fixedHeadline = {
+const fixedHeadline: Record<string, Record<string, string>> = {
   personal: {
     en: "Quietly, you're",
     fr: 'Doucement, vous',
+    es: 'Silenciosamente, estás',
   },
   practitioner: {
     en: 'effortlessly',
     fr: 'sans effort',
+    es: 'sin esfuerzo',
   },
 }
 
@@ -159,7 +163,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
 
   // Rotate words
   useEffect(() => {
-    const wordsArray = isPractitionerPage ? rotatingWords.practitioner[locale] : rotatingWords.personal[locale]
+    const wordsArray = isPractitionerPage ? (rotatingWords.practitioner[locale] ?? rotatingWords.practitioner.en) : (rotatingWords.personal[locale] ?? rotatingWords.personal.en)
     const interval = setInterval(() => {
       setWordIndex((prev) => (prev + 1) % wordsArray.length)
     }, 3500)
@@ -337,7 +341,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                       transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
                       className="inline-block bg-gradient-to-r from-[#D4856A] to-[#E8A87C] bg-clip-text text-transparent"
                     >
-                      {rotatingWords.practitioner[locale][wordIndex % rotatingWords.practitioner[locale].length]}
+                      {(rotatingWords.practitioner[locale] ?? rotatingWords.practitioner.en)[wordIndex % (rotatingWords.practitioner[locale] ?? rotatingWords.practitioner.en).length]}
                     </motion.span>
                   </AnimatePresence>
                   <br />
@@ -348,7 +352,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
               ) : (
                 <>
                   <span className="text-neutral-900">
-                    {fixedHeadline.personal[locale]}{' '}
+                    {fixedHeadline.personal[locale] ?? fixedHeadline.personal.en}{' '}
                   </span>
                   <AnimatePresence mode="wait">
                     <motion.span
@@ -359,7 +363,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                       transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
                       className={`inline-block bg-gradient-to-r ${currentColors.text} bg-clip-text text-transparent`}
                     >
-                      {rotatingWords.personal[locale][wordIndex % rotatingWords.personal[locale].length]}
+                      {(rotatingWords.personal[locale] ?? rotatingWords.personal.en)[wordIndex % (rotatingWords.personal[locale] ?? rotatingWords.personal.en).length]}
                     </motion.span>
                   </AnimatePresence>
                 </>
