@@ -38,7 +38,7 @@ type TabId = 'overview' | 'sessions' | 'progress' | 'files' | 'shared'
 
 export default function MemberProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -149,6 +149,39 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
       if (sessionsData) setSessions(sessionsData)
     } catch (error) {
       console.error('Error fetching related data:', error)
+    }
+  }
+
+  const handleStatusChange = async (newStatus: 'active' | 'inactive') => {
+    if (!member) return
+
+    try {
+      const { error } = await supabase
+        .from('members')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', member.id)
+
+      if (error) throw error
+
+      // Update local state
+      setMember({ ...member, status: newStatus })
+
+      toast.success(
+        locale === 'fr'
+          ? `Statut changé en ${newStatus === 'active' ? 'Actif' : 'Inactif'}`
+          : locale === 'es'
+          ? `Estado cambiado a ${newStatus === 'active' ? 'Activo' : 'Inactivo'}`
+          : `Status changed to ${newStatus === 'active' ? 'Active' : 'Inactive'}`
+      )
+    } catch (error) {
+      console.error('Error updating status:', error)
+      toast.error(
+        locale === 'fr'
+          ? 'Erreur lors du changement de statut'
+          : locale === 'es'
+          ? 'Error al cambiar el estado'
+          : 'Failed to update status'
+      )
     }
   }
 
@@ -268,6 +301,32 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                         <Edit className="w-4 h-4" />
                       </Button>
                     </Link>
+                    {/* Status Badge with Edit */}
+                    <div className="flex items-center gap-1 group/status">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
+                        {t.members.status[member.status] || t.members.status.active}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const newStatus = member.status === 'active' ? 'inactive' : 'active'
+                          const newStatusLabel = newStatus === 'active'
+                            ? (locale === 'fr' ? 'Actif' : locale === 'es' ? 'Activo' : 'Active')
+                            : (locale === 'fr' ? 'Inactif' : locale === 'es' ? 'Inactivo' : 'Inactive')
+                          const confirmMsg = locale === 'fr'
+                            ? `Changer le statut en "${newStatusLabel}" ?`
+                            : locale === 'es'
+                            ? `¿Cambiar estado a "${newStatusLabel}"?`
+                            : `Change status to "${newStatusLabel}"?`
+                          if (confirm(confirmMsg)) {
+                            handleStatusChange(newStatus)
+                          }
+                        }}
+                        className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all opacity-0 group-hover/status:opacity-100"
+                        title={locale === 'fr' ? 'Changer le statut' : locale === 'es' ? 'Cambiar estado' : 'Change status'}
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Contact Info */}
