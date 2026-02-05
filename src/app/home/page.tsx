@@ -146,6 +146,7 @@ interface Anchor {
   icon: string
   labelEn: string
   labelFr: string
+  labelEs?: string
   type: 'grow' | 'letgo'
 }
 
@@ -175,7 +176,7 @@ const RITUAL_ICONS: Record<string, React.ElementType> = {
 
 
 // All anchor icons (used for custom anchors and icon lookup)
-const ANCHOR_ICONS: Record<string, { icon: React.ElementType; labelEn: string; labelFr: string }> = {
+const ANCHOR_ICONS: Record<string, { icon: React.ElementType; labelEn: string; labelFr: string; labelEs?: string }> = {
   // GROW icons - positive habits to cultivate
   droplet: { icon: Droplet, labelEn: 'Water', labelFr: 'Eau' },
   dumbbell: { icon: Dumbbell, labelEn: 'Exercise', labelFr: 'Exercice' },
@@ -1612,7 +1613,7 @@ export default function MyResourcesPage() {
                         transition={{ delay: 0.4 + i * 0.05, type: 'spring', stiffness: 300, damping: 20 }}
                         className="absolute -translate-x-1/2 z-15"
                         style={{ left: `${position}%`, bottom: '8px' }}
-                        title={`${locale === 'fr' ? anchor.labelFr : locale === 'es' ? anchor.labelEn : anchor.labelEn} - ${logTime.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`}
+                        title={`${locale === 'fr' ? anchor.labelFr : locale === 'es' ? (anchor.labelEs || anchor.labelEn) : anchor.labelEn} - ${logTime.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`}
                       >
                         <motion.div
                           whileHover={{ scale: 1.2 }}
@@ -1800,7 +1801,7 @@ export default function MyResourcesPage() {
                       isGrow ? 'text-emerald-600' : 'text-amber-400'
                     }`} />
                     <span className="text-[10px] text-gray-500 font-medium text-center leading-tight px-1">
-                      {locale === 'fr' ? anchor.labelFr : locale === 'es' ? anchor.labelEn : anchor.labelEn}
+                      {locale === 'fr' ? anchor.labelFr : locale === 'es' ? (anchor.labelEs || anchor.labelEn) : anchor.labelEn}
                     </span>
                     {/* Count badge */}
                     {todayCount > 0 && (

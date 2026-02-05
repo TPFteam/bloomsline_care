@@ -22,6 +22,7 @@ interface SeedLog {
     icon: string
     labelEn: string
     labelFr: string
+    labelEs?: string
     type: 'grow' | 'letgo'
   }
   logged_at: string
@@ -31,6 +32,7 @@ interface RitualLog {
   id: string
   name: string
   nameFr: string
+  nameEs?: string
   icon: string
   duration_minutes: number | null
   completed_at: string

@@ -737,7 +737,7 @@ const translations = {
 
 export default function PitchPage() {
   const { locale, setLocale } = useLanguage()
-  const t = translations[locale] || translations.en
+  const t = (translations as Record<string, typeof translations.en>)[locale] || translations.en
 
   const slides = [
     { id: 'hero', title: t.slides.hero },

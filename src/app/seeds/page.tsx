@@ -73,6 +73,7 @@ interface Anchor {
   icon: string
   labelEn: string
   labelFr: string
+  labelEs?: string
   type: 'grow' | 'letgo'
 }
 
@@ -89,7 +90,7 @@ interface ActivityLog {
 }
 
 // All anchor icons (used for custom anchors and icon lookup)
-const ANCHOR_ICONS: Record<string, { icon: React.ElementType; labelEn: string; labelFr: string }> = {
+const ANCHOR_ICONS: Record<string, { icon: React.ElementType; labelEn: string; labelFr: string; labelEs?: string }> = {
   // GROW icons - positive habits to cultivate
   droplet: { icon: Droplet, labelEn: 'Water', labelFr: 'Eau' },
   dumbbell: { icon: Dumbbell, labelEn: 'Exercise', labelFr: 'Exercice' },
@@ -895,7 +896,7 @@ export default function SeedsPage() {
                       }`}
                     >
                       <IconComponent className="w-3.5 h-3.5" />
-                      {locale === 'fr' ? anchor.labelFr : anchor.labelEn}
+                      {locale === 'fr' ? anchor.labelFr : locale === 'es' ? (anchor.labelEs || anchor.labelEn) : anchor.labelEn}
                     </button>
                   )
                 })}
@@ -1208,7 +1209,7 @@ export default function SeedsPage() {
                       >
                         <IconComponent className="w-8 h-8 text-emerald-600 mb-2" />
                         <span className="text-xs text-gray-600 font-medium text-center">
-                          {locale === 'fr' ? anchor.labelFr : anchor.labelEn}
+                          {locale === 'fr' ? anchor.labelFr : locale === 'es' ? (anchor.labelEs || anchor.labelEn) : anchor.labelEn}
                         </span>
                         {dayCount > 0 && !editMode && (
                           <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
@@ -1285,7 +1286,7 @@ export default function SeedsPage() {
                       >
                         <IconComponent className="w-8 h-8 text-amber-400 mb-2" />
                         <span className="text-xs text-gray-600 font-medium text-center">
-                          {locale === 'fr' ? anchor.labelFr : anchor.labelEn}
+                          {locale === 'fr' ? anchor.labelFr : locale === 'es' ? (anchor.labelEs || anchor.labelEn) : anchor.labelEn}
                         </span>
                         {dayCount > 0 && !editMode && (
                           <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-300 rounded-full flex items-center justify-center text-xs font-bold text-white">
@@ -1368,7 +1369,7 @@ export default function SeedsPage() {
                           <div className="flex items-center gap-2">
                             <IconComponent className="w-5 h-5 text-emerald-600" />
                             <span className="font-medium text-gray-700">
-                              {locale === 'fr' ? anchor.labelFr : anchor.labelEn}
+                              {locale === 'fr' ? anchor.labelFr : locale === 'es' ? (anchor.labelEs || anchor.labelEn) : anchor.labelEn}
                             </span>
                           </div>
                           {streak > 1 && (
@@ -1420,7 +1421,7 @@ export default function SeedsPage() {
                         <div className="flex items-center gap-2 mb-3">
                           <IconComponent className="w-5 h-5 text-amber-400" />
                           <span className="font-medium text-gray-700">
-                            {locale === 'fr' ? anchor.labelFr : anchor.labelEn}
+                            {locale === 'fr' ? anchor.labelFr : locale === 'es' ? (anchor.labelEs || anchor.labelEn) : anchor.labelEn}
                           </span>
                         </div>
                         <div className="flex justify-between">

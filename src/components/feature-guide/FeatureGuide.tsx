@@ -11,10 +11,10 @@ export interface GuideStep {
   animation?: React.ReactNode // Custom animated illustration
   titleEn: string
   titleFr: string
-  titleEs: string
+  titleEs?: string // Optional, falls back to English
   descriptionEn: string
   descriptionFr: string
-  descriptionEs: string
+  descriptionEs?: string // Optional, falls back to English
   gradient?: string // Custom gradient for icon background
 }
 
@@ -240,7 +240,7 @@ export function FeatureGuide({
                       transition={{ delay: 0.2 }}
                       className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4"
                     >
-                      {locale === 'fr' ? step.titleFr : locale === 'es' ? step.titleEs : step.titleEn}
+                      {locale === 'fr' ? step.titleFr : locale === 'es' ? (step.titleEs || step.titleEn) : step.titleEn}
                     </motion.h2>
 
                     {/* Description */}
@@ -250,7 +250,7 @@ export function FeatureGuide({
                       transition={{ delay: 0.3 }}
                       className="text-gray-600 leading-relaxed text-sm sm:text-base"
                     >
-                      {locale === 'fr' ? step.descriptionFr : locale === 'es' ? step.descriptionEs : step.descriptionEn}
+                      {locale === 'fr' ? step.descriptionFr : locale === 'es' ? (step.descriptionEs || step.descriptionEn) : step.descriptionEn}
                     </motion.p>
                   </motion.div>
                 </AnimatePresence>

@@ -420,9 +420,9 @@ export default function RitualHistoryPage() {
           >
             <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
               {[
-                { id: 'day' as FilterType, labelEn: 'By Day', labelFr: 'Par jour' },
-                { id: 'category' as FilterType, labelEn: 'By Theme', labelFr: 'Par thème' },
-                { id: 'all' as FilterType, labelEn: 'All', labelFr: 'Tout' },
+                { id: 'day' as FilterType, labelEn: 'By Day', labelFr: 'Par jour', labelEs: 'Por día' },
+                { id: 'category' as FilterType, labelEn: 'By Theme', labelFr: 'Par thème', labelEs: 'Por tema' },
+                { id: 'all' as FilterType, labelEn: 'All', labelFr: 'Tout', labelEs: 'Todo' },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -433,7 +433,7 @@ export default function RitualHistoryPage() {
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  {locale === 'fr' ? tab.labelFr : tab.labelEn}
+                  {locale === 'fr' ? tab.labelFr : locale === 'es' ? tab.labelEs : tab.labelEn}
                 </button>
               ))}
             </div>
