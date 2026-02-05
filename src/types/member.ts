@@ -67,6 +67,9 @@ export interface Member {
   // Notes
   internal_notes: string | null
 
+  // Demo flag
+  is_demo: boolean // Identifies demo/example profiles for new practitioners
+
   // Metadata
   created_at: string
   updated_at: string
@@ -327,7 +330,7 @@ export interface MemberHubStats {
   total_members: number
   active_members: number
   inactive_members: number
-  pending_members: number
+  pending_members: number // Deprecated - kept for backwards compatibility
   sessions_this_week: number
   average_engagement: number // percentage
 }

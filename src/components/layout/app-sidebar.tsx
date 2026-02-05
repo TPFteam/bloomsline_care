@@ -21,6 +21,7 @@ export function AppSidebar({ activeItem }: AppSidebarProps) {
 
   const navItems = [
     { id: 'home' as NavItem, href: '/dashboard', icon: Home, label: locale === 'fr' ? 'Accueil' : locale === 'es' ? 'Inicio' : 'Home' },
+    { id: 'members' as NavItem, href: '/members', icon: Users, label: locale === 'fr' ? 'Personnes suivies' : locale === 'es' ? 'Personas' : 'People' },
   ]
 
   const resourceItems = [
@@ -28,7 +29,6 @@ export function AppSidebar({ activeItem }: AppSidebarProps) {
   ]
 
   const managementItems = [
-    { id: 'members' as NavItem, href: '/members', icon: Users, label: locale === 'fr' ? 'Personnes suivies' : locale === 'es' ? 'Personas' : 'People' },
     { id: 'analytics' as NavItem, href: '/analytics', icon: Activity, label: locale === 'fr' ? 'Rythme' : locale === 'es' ? 'Tu ritmo' : 'Your Flow' },
   ]
 

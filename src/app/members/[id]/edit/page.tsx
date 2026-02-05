@@ -51,7 +51,7 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [dateOfBirth, setDateOfBirth] = useState('')
-  const [status, setStatus] = useState<MemberStatus>('pending')
+  const [status, setStatus] = useState<MemberStatus>('active')
   const [engagementLevel, setEngagementLevel] = useState<EngagementLevel>('medium')
   const [internalNotes, setInternalNotes] = useState('')
 
@@ -371,7 +371,6 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
                       onChange={(e) => setStatus(e.target.value as MemberStatus)}
                       className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-100 outline-none transition-all bg-white"
                     >
-                      <option value="pending">{t.members.status.pending}</option>
                       <option value="active">{t.members.status.active}</option>
                       <option value="inactive">{t.members.status.inactive}</option>
                     </select>

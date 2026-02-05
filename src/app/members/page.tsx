@@ -32,7 +32,7 @@ import type { Member, MemberFilter, MemberHubStats, Session } from '@/types/memb
 import { getMemberFullName, getMemberInitials } from '@/types/member'
 
 // Helper function for relative time
-function getRelativeTime(dateString: string, locale: 'en' | 'fr' | 'es' | 'es'): string {
+function getRelativeTime(dateString: string, locale: 'en' | 'fr' | 'es'): string {
   const date = new Date(dateString)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
@@ -205,7 +205,6 @@ export default function MembersPage() {
   const calculateStats = (membersList: Member[]) => {
     const active = membersList.filter(m => m.status === 'active').length
     const inactive = membersList.filter(m => m.status === 'inactive').length
-    const pending = membersList.filter(m => m.status === 'pending').length
 
     const engagementValues = { low: 1, medium: 2, high: 3 }
     const totalEngagement = membersList.reduce((sum, m) => sum + engagementValues[m.engagement_level], 0)
@@ -215,7 +214,7 @@ export default function MembersPage() {
       total_members: membersList.length,
       active_members: active,
       inactive_members: inactive,
-      pending_members: pending,
+      pending_members: 0,
       sessions_this_week: 0,
       average_engagement: avgEngagement,
     })
@@ -238,6 +237,41 @@ export default function MembersPage() {
     } catch (error) {
       console.error('Error deleting member:', error)
       toast.error(t.members.errors.deleteFailed)
+    }
+  }
+
+  const handleStatusChange = async (id: string, newStatus: 'active' | 'inactive') => {
+    try {
+      const { error } = await supabase
+        .from('members')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', id)
+
+      if (error) throw error
+
+      // Update local state
+      const updatedMembers = members.map(m =>
+        m.id === id ? { ...m, status: newStatus } : m
+      )
+      setMembers(updatedMembers)
+      calculateStats(updatedMembers)
+
+      toast.success(
+        locale === 'fr'
+          ? `Statut changé en ${newStatus === 'active' ? 'Actif' : 'Inactif'}`
+          : locale === 'es'
+          ? `Estado cambiado a ${newStatus === 'active' ? 'Activo' : 'Inactivo'}`
+          : `Status changed to ${newStatus === 'active' ? 'Active' : 'Inactive'}`
+      )
+    } catch (error) {
+      console.error('Error updating status:', error)
+      toast.error(
+        locale === 'fr'
+          ? 'Erreur lors du changement de statut'
+          : locale === 'es'
+          ? 'Error al cambiar el estado'
+          : 'Failed to update status'
+      )
     }
   }
 
@@ -289,7 +323,7 @@ export default function MembersPage() {
               first_name: newMember.firstName.trim(),
               last_name: newMember.lastName.trim(),
               phone: newMember.phone.trim() || null,
-              status: 'pending' as const,
+              status: 'active' as const,
               updated_at: new Date().toISOString(),
             })
             .eq('id', orphanRecord.id)
@@ -317,7 +351,7 @@ export default function MembersPage() {
         last_name: newMember.lastName.trim(),
         email: emailToAdd,
         phone: newMember.phone.trim() || null,
-        status: 'pending' as const,
+        status: 'active' as const,
         engagement_level: 'medium' as const,
       }
 
@@ -367,7 +401,6 @@ export default function MembersPage() {
     { value: 'all', label: t.members.filters.all, count: stats.total_members },
     { value: 'active', label: t.members.filters.active, count: stats.active_members },
     { value: 'inactive', label: t.members.filters.inactive, count: stats.inactive_members },
-    { value: 'pending', label: t.members.filters.pending, count: stats.pending_members },
   ]
 
   if (loading) {
@@ -561,6 +594,7 @@ export default function MembersPage() {
                       member={member}
                       index={index}
                       onDelete={handleDeleteMember}
+                      onStatusChange={handleStatusChange}
                       t={t}
                       locale={locale}
                       nextSession={nextSessions[member.id] || null}
@@ -572,6 +606,7 @@ export default function MembersPage() {
                       member={member}
                       index={index}
                       onDelete={handleDeleteMember}
+                      onStatusChange={handleStatusChange}
                       t={t}
                       locale={locale}
                       nextSession={nextSessions[member.id] || null}
@@ -724,6 +759,7 @@ function MemberCard({
   member,
   index,
   onDelete,
+  onStatusChange,
   t,
   locale,
   nextSession,
@@ -732,6 +768,7 @@ function MemberCard({
   member: Member
   index: number
   onDelete: (id: string) => void
+  onStatusChange: (id: string, newStatus: 'active' | 'inactive') => void
   t: ReturnType<typeof useLanguage>['t']
   locale: 'en' | 'fr' | 'es'
   nextSession: Session | null
@@ -739,13 +776,13 @@ function MemberCard({
 }) {
   const router = useRouter()
 
-  const statusConfig = {
-    active: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-    inactive: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' },
-    pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
+  const statusConfig: Record<string, { bg: string; text: string; dot: string; hoverBg: string }> = {
+    active: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', hoverBg: 'hover:bg-emerald-100' },
+    inactive: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400', hoverBg: 'hover:bg-gray-200' },
+    pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500', hoverBg: 'hover:bg-amber-100' },
   }
 
-  const status = statusConfig[member.status]
+  const status = statusConfig[member.status] || statusConfig.active
 
   return (
     <motion.div
@@ -771,13 +808,28 @@ function MemberCard({
         </div>
 
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 truncate text-base">
-            {getMemberFullName(member)}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 truncate text-base">
+              {getMemberFullName(member)}
+            </h3>
+            {member.is_demo && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-100 text-violet-600 border border-violet-200">
+                {locale === 'fr' ? 'Démo' : locale === 'es' ? 'Demo' : 'Demo'}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-1.5 mt-1">
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
-              {t.members.status[member.status]}
-            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                const newStatus = member.status === 'active' ? 'inactive' : 'active'
+                onStatusChange(member.id, newStatus)
+              }}
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.text} ${status.hoverBg} transition-colors cursor-pointer`}
+              title={locale === 'fr' ? 'Cliquer pour changer le statut' : locale === 'es' ? 'Clic para cambiar estado' : 'Click to change status'}
+            >
+              {t.members.status[member.status] || t.members.status.active}
+            </button>
           </div>
         </div>
 
@@ -859,6 +911,7 @@ function MemberListItem({
   member,
   index,
   onDelete,
+  onStatusChange,
   t,
   locale,
   nextSession,
@@ -867,6 +920,7 @@ function MemberListItem({
   member: Member
   index: number
   onDelete: (id: string) => void
+  onStatusChange: (id: string, newStatus: 'active' | 'inactive') => void
   t: ReturnType<typeof useLanguage>['t']
   locale: 'en' | 'fr' | 'es'
   nextSession: Session | null
@@ -874,13 +928,13 @@ function MemberListItem({
 }) {
   const router = useRouter()
 
-  const statusConfig = {
-    active: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-    inactive: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' },
-    pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
+  const statusConfig: Record<string, { bg: string; text: string; dot: string; hoverBg: string }> = {
+    active: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', hoverBg: 'hover:bg-emerald-100' },
+    inactive: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400', hoverBg: 'hover:bg-gray-200' },
+    pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500', hoverBg: 'hover:bg-amber-100' },
   }
 
-  const status = statusConfig[member.status]
+  const status = statusConfig[member.status] || statusConfig.active
 
   return (
     <motion.div
@@ -910,11 +964,24 @@ function MemberListItem({
           <h3 className="font-medium text-gray-900 truncate">
             {getMemberFullName(member)}
           </h3>
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${status.bg} ${status.text}`}>
-            {t.members.status[member.status]}
-          </span>
+          {member.is_demo && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-100 text-violet-600 border border-violet-200">
+              {locale === 'fr' ? 'Démo' : locale === 'es' ? 'Demo' : 'Demo'}
+            </span>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              const newStatus = member.status === 'active' ? 'inactive' : 'active'
+              onStatusChange(member.id, newStatus)
+            }}
+            className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${status.bg} ${status.text} ${status.hoverBg} transition-colors cursor-pointer`}
+            title={locale === 'fr' ? 'Cliquer pour changer le statut' : locale === 'es' ? 'Clic para cambiar estado' : 'Click to change status'}
+          >
+            {t.members.status[member.status] || t.members.status.active}
+          </button>
         </div>
-        </div>
+      </div>
 
       {/* Last Shared Resource */}
       {lastSharedResource && (
