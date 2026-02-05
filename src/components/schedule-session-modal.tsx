@@ -61,12 +61,12 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
   // Session type options for manual mode (must match database enum)
   const sessionTypeOptions = [
-    { value: 'initial_consultation', label: 'Initial Consultation', labelFr: 'Consultation initiale' },
-    { value: 'follow_up', label: 'Follow-up', labelFr: 'Suivi' },
-    { value: 'check_in', label: 'Check-in', labelFr: 'Point de situation' },
-    { value: 'crisis', label: 'Crisis Intervention', labelFr: 'Intervention de crise' },
-    { value: 'group', label: 'Group Session', labelFr: 'Séance de groupe' },
-    { value: 'other', label: 'Other', labelFr: 'Autre' },
+    { value: 'initial_consultation', label: 'Initial Consultation', labelFr: 'Consultation initiale', labelEs: 'Consulta inicial' },
+    { value: 'follow_up', label: 'Follow-up', labelFr: 'Suivi', labelEs: 'Seguimiento' },
+    { value: 'check_in', label: 'Check-in', labelFr: 'Point de situation', labelEs: 'Revisión' },
+    { value: 'crisis', label: 'Crisis Intervention', labelFr: 'Intervention de crise', labelEs: 'Intervención de crisis' },
+    { value: 'group', label: 'Group Session', labelFr: 'Séance de groupe', labelEs: 'Sesión grupal' },
+    { value: 'other', label: 'Other', labelFr: 'Autre', labelEs: 'Otro' },
   ]
 
   const getSessionTypeLabel = (value: string) => {
@@ -75,8 +75,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
   // Session format options
   const sessionFormatOptions = [
-    { value: 'in_person', label: 'In Person', labelFr: 'En personne', Icon: Building2 },
-    { value: 'virtual', label: 'Virtual', labelFr: 'Virtuel', Icon: Video },
+    { value: 'in_person', label: 'In Person', labelFr: 'En personne', labelEs: 'Presencial', Icon: Building2 },
+    { value: 'virtual', label: 'Virtual', labelFr: 'Virtuel', labelEs: 'Virtual', Icon: Video },
   ]
 
   const supabase = createClient()
@@ -415,7 +415,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                 </button>
               )}
               <h2 className="text-lg font-semibold text-gray-900">
-                {locale === 'fr' ? 'Planifier une séance' : 'Schedule Session'}
+                {locale === 'fr' ? 'Planifier une séance' : locale === 'es' ? 'Programar sesión' : 'Schedule Session'}
               </h2>
             </div>
             <button
@@ -469,7 +469,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    placeholder={locale === 'fr' ? 'Rechercher des patients...' : 'Search members...'}
+                    placeholder={locale === 'fr' ? 'Rechercher des patients...' : locale === 'es' ? 'Buscar miembros...' : 'Search members...'}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-mint-500 focus:ring-2 focus:ring-mint-500/20 outline-none transition-all"
@@ -478,12 +478,12 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
                 {loading ? (
                   <div className="py-8 text-center text-gray-500">
-                    {locale === 'fr' ? 'Chargement des patients...' : 'Loading members...'}
+                    {locale === 'fr' ? 'Chargement des patients...' : locale === 'es' ? 'Cargando miembros...' : 'Loading members...'}
                   </div>
                 ) : filteredMembers.length === 0 ? (
                   <div className="py-8 text-center text-gray-500">
                     <Users className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-                    <p>{locale === 'fr' ? 'Aucun patient trouvé' : 'No members found'}</p>
+                    <p>{locale === 'fr' ? 'Aucun patient trouvé' : locale === 'es' ? 'No se encontraron miembros' : 'No members found'}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -532,7 +532,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                           : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      {locale === 'fr' ? 'Depuis le calendrier' : 'From Calendar'}
+                      {locale === 'fr' ? 'Depuis le calendrier' : locale === 'es' ? 'Desde el calendario' : 'From Calendar'}
                     </button>
                     <button
                       onClick={() => setScheduleMode('manual')}
@@ -542,7 +542,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                           : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      {locale === 'fr' ? 'Saisie manuelle' : 'Manual Entry'}
+                      {locale === 'fr' ? 'Saisie manuelle' : locale === 'es' ? 'Entrada manual' : 'Manual Entry'}
                     </button>
                   </div>
                 )}
@@ -551,16 +551,16 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                   <div className="py-6 text-center">
                     <Calendar className="w-10 h-10 mx-auto mb-3 text-gray-300" />
                     <p className="text-gray-600 font-medium">
-                      {locale === 'fr' ? 'Aucun type de séance configuré' : 'No session types configured'}
+                      {locale === 'fr' ? 'Aucun type de séance configuré' : locale === 'es' ? 'No hay tipos de sesión configurados' : 'No session types configured'}
                     </p>
                     <p className="text-sm text-gray-400 mt-1 mb-4">
-                      {locale === 'fr' ? 'Ajoutez des types de séance dans les paramètres' : 'Add session types in Bookings Settings'}
+                      {locale === 'fr' ? 'Ajoutez des types de séance dans les paramètres' : locale === 'es' ? 'Agrega tipos de sesión en la configuración de reservas' : 'Add session types in Bookings Settings'}
                     </p>
                     <button
                       onClick={() => setScheduleMode('manual')}
                       className="px-4 py-2.5 bg-mint-50 text-mint-700 font-medium rounded-xl hover:bg-mint-100 transition-colors"
                     >
-                      {locale === 'fr' ? 'Continuer sans calendrier' : 'Continue without calendar'}
+                      {locale === 'fr' ? 'Continuer sans calendrier' : locale === 'es' ? 'Continuar sin calendario' : 'Continue without calendar'}
                     </button>
                   </div>
                 ) : scheduleMode === 'calendar' ? (
@@ -592,7 +592,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        {locale === 'fr' ? 'Type de séance' : 'Session Type'}
+                        {locale === 'fr' ? 'Type de séance' : locale === 'es' ? 'Tipo de sesión' : 'Session Type'}
                       </label>
                       <div className="grid grid-cols-2 gap-2">
                         {sessionTypeOptions.map((option) => (
@@ -605,14 +605,14 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                                 : 'border-gray-200 hover:border-gray-300 text-gray-700'
                             }`}
                           >
-                            {locale === 'fr' ? option.labelFr : option.label}
+                            {locale === 'fr' ? option.labelFr : locale === 'es' ? (option.labelEs || option.label) : option.label}
                           </button>
                         ))}
                       </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        {locale === 'fr' ? 'Durée (minutes)' : 'Duration (minutes)'}
+                        {locale === 'fr' ? 'Durée (minutes)' : locale === 'es' ? 'Duración (minutos)' : 'Duration (minutes)'}
                       </label>
                       <div className="flex gap-2">
                         {[30, 45, 60, 90].map((duration) => (
@@ -632,7 +632,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        {locale === 'fr' ? 'Format de séance' : 'Session Format'}
+                        {locale === 'fr' ? 'Format de séance' : locale === 'es' ? 'Formato de sesión' : 'Session Format'}
                       </label>
                       <div className="flex gap-2">
                         {sessionFormatOptions.map((option) => {
@@ -648,7 +648,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                               }`}
                             >
                               <IconComponent className="w-4 h-4" />
-                              <span>{locale === 'fr' ? option.labelFr : option.label}</span>
+                              <span>{locale === 'fr' ? option.labelFr : locale === 'es' ? (option.labelEs || option.label) : option.label}</span>
                             </button>
                           )
                         })}
@@ -665,7 +665,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                 {/* Date Selection */}
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-3 block">
-                    {locale === 'fr' ? 'Sélectionner la date' : 'Select Date'}
+                    {locale === 'fr' ? 'Sélectionner la date' : locale === 'es' ? 'Seleccionar fecha' : 'Select Date'}
                   </label>
 
                   {/* Calendar picker - allows any date */}
@@ -681,7 +681,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                 {/* Time Selection */}
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-2 block">
-                    {locale === 'fr' ? 'Sélectionner l\'heure' : 'Select Time'}
+                    {locale === 'fr' ? 'Sélectionner l\'heure' : locale === 'es' ? 'Seleccionar hora' : 'Select Time'}
                   </label>
                   {scheduleMode === 'manual' ? (
                     /* Manual time input - themed picker */
@@ -692,7 +692,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                   ) : availableSlots.length === 0 ? (
                     <div className="py-6 text-center text-gray-500">
                       <Clock className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                      <p className="text-sm">{locale === 'fr' ? 'Aucun créneau disponible pour cette date' : 'No available slots for this date'}</p>
+                      <p className="text-sm">{locale === 'fr' ? 'Aucun créneau disponible pour cette date' : locale === 'es' ? 'No hay horarios disponibles para esta fecha' : 'No available slots for this date'}</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-3 gap-2">
@@ -738,35 +738,35 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
                   <div className="border-t border-gray-200 pt-3 space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">{locale === 'fr' ? 'Type de séance' : 'Session Type'}</span>
+                      <span className="text-gray-500">{locale === 'fr' ? 'Type de séance' : locale === 'es' ? 'Tipo de sesión' : 'Session Type'}</span>
                       <span className="font-medium text-gray-900">
                         {scheduleMode === 'manual' ? getSessionTypeLabel(manualSessionType) : selectedSessionType?.name}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">{locale === 'fr' ? 'Durée' : 'Duration'}</span>
+                      <span className="text-gray-500">{locale === 'fr' ? 'Durée' : locale === 'es' ? 'Duración' : 'Duration'}</span>
                       <span className="font-medium text-gray-900">
                         {scheduleMode === 'manual' ? manualDuration : selectedSessionType?.duration} min
                       </span>
                     </div>
                     {scheduleMode === 'manual' && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">{locale === 'fr' ? 'Format' : 'Format'}</span>
+                        <span className="text-gray-500">{locale === 'fr' ? 'Format' : locale === 'es' ? 'Formato' : 'Format'}</span>
                         <span className="font-medium text-gray-900 flex items-center gap-1.5">
                           {manualSessionFormat === 'virtual' ? (
-                            <><Video className="w-4 h-4" /> {locale === 'fr' ? 'Virtuel' : 'Virtual'}</>
+                            <><Video className="w-4 h-4" /> {locale === 'fr' ? 'Virtuel' : locale === 'es' ? 'Virtual' : 'Virtual'}</>
                           ) : (
-                            <><Building2 className="w-4 h-4" /> {locale === 'fr' ? 'En personne' : 'In Person'}</>
+                            <><Building2 className="w-4 h-4" /> {locale === 'fr' ? 'En personne' : locale === 'es' ? 'Presencial' : 'In Person'}</>
                           )}
                         </span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">{locale === 'fr' ? 'Date' : 'Date'}</span>
+                      <span className="text-gray-500">{locale === 'fr' ? 'Date' : locale === 'es' ? 'Fecha' : 'Date'}</span>
                       <span className="font-medium text-gray-900">{format(selectedDate, 'EEEE, MMMM d, yyyy')}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">{locale === 'fr' ? 'Heure' : 'Time'}</span>
+                      <span className="text-gray-500">{locale === 'fr' ? 'Heure' : locale === 'es' ? 'Hora' : 'Time'}</span>
                       <span className="font-medium text-gray-900">
                         {scheduleMode === 'manual'
                           ? format(new Date(`2000-01-01T${manualTime}`), 'h:mm a')
@@ -775,9 +775,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                     </div>
                     {scheduleMode === 'manual' && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">{locale === 'fr' ? 'Mode' : 'Mode'}</span>
+                        <span className="text-gray-500">{locale === 'fr' ? 'Mode' : locale === 'es' ? 'Modo' : 'Mode'}</span>
                         <span className="font-medium text-amber-600">
-                          {locale === 'fr' ? 'Manuel (sans sync calendrier)' : 'Manual (no calendar sync)'}
+                          {locale === 'fr' ? 'Manuel (sans sync calendrier)' : locale === 'es' ? 'Manual (sin sincronización de calendario)' : 'Manual (no calendar sync)'}
                         </span>
                       </div>
                     )}
@@ -786,12 +786,12 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-2 block">
-                    {locale === 'fr' ? 'Notes (optionnel)' : 'Notes (optional)'}
+                    {locale === 'fr' ? 'Notes (optionnel)' : locale === 'es' ? 'Notas (opcional)' : 'Notes (optional)'}
                   </label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder={locale === 'fr' ? 'Ajouter des notes pour cette séance...' : 'Add any notes for this session...'}
+                    placeholder={locale === 'fr' ? 'Ajouter des notes pour cette séance...' : locale === 'es' ? 'Agregar notas para esta sesión...' : 'Add any notes for this session...'}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mint-500 focus:ring-2 focus:ring-mint-500/20 outline-none transition-all resize-none"
                     rows={3}
                   />
@@ -809,8 +809,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                 className="w-full py-3 bg-gradient-to-r from-mint-500 to-mint-600 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-mint-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading
-                  ? (locale === 'fr' ? 'Planification...' : 'Scheduling...')
-                  : (locale === 'fr' ? 'Confirmer et planifier' : 'Confirm & Schedule')}
+                  ? (locale === 'fr' ? 'Planification...' : locale === 'es' ? 'Programando...' : 'Scheduling...')
+                  : (locale === 'fr' ? 'Confirmer et planifier' : locale === 'es' ? 'Confirmar y programar' : 'Confirm & Schedule')}
               </button>
             ) : (
               <button
@@ -822,7 +822,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                 disabled={!canProceed()}
                 className="w-full py-3 bg-gradient-to-r from-mint-500 to-mint-600 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-mint-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {locale === 'fr' ? 'Continuer' : 'Continue'}
+                {locale === 'fr' ? 'Continuer' : locale === 'es' ? 'Continuar' : 'Continue'}
                 <ChevronRight className="w-5 h-5" />
               </button>
             )}

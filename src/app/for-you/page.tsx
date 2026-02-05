@@ -331,7 +331,7 @@ function PitchBlock({
   onToggle: () => void
   locale: string
 }) {
-  const t = (obj: { en: string; fr: string }) => (locale === 'fr' ? obj.fr : obj.en)
+  const t = (obj: { en: string; fr: string; es?: string }) => (locale === 'fr' ? obj.fr : locale === 'es' ? (obj.es ?? obj.en) : obj.en)
   const [openSub, setOpenSub] = useState<string | null>(null)
   const [openShift, setOpenShift] = useState<string | null>(null)
   const [activeScenario, setActiveScenario] = useState(0)
@@ -527,7 +527,7 @@ function PitchBlock({
                 >
                   <div className="max-w-2xl">
                     <ShiftRow
-                      title={locale === 'fr' ? 'Aujourd\u2019hui' : 'Today'}
+                      title={locale === 'fr' ? 'Aujourd\u2019hui' : locale === 'es' ? 'Hoy' : 'Today'}
                       chevronColor={s.chevron}
                       isOpen={openShift === 'today'}
                       onToggle={() => toggleShift('today')}
@@ -537,7 +537,7 @@ function PitchBlock({
                       </p>
                     </ShiftRow>
                     <ShiftRow
-                      title={locale === 'fr' ? 'O\u00f9 \u00e7a s\u2019en va' : 'Where it\u2019s going'}
+                      title={locale === 'fr' ? 'O\u00f9 \u00e7a s\u2019en va' : locale === 'es' ? 'Hacia d\u00f3nde va' : 'Where it\u2019s going'}
                       chevronColor={s.chevron}
                       isOpen={openShift === 'future'}
                       onToggle={() => toggleShift('future')}
@@ -547,7 +547,7 @@ function PitchBlock({
                       </p>
                     </ShiftRow>
                     <ShiftRow
-                      title={locale === 'fr' ? 'Ce que Bloomsline fait' : 'What Bloomsline does'}
+                      title={locale === 'fr' ? 'Ce que Bloomsline fait' : locale === 'es' ? 'Lo que hace Bloomsline' : 'What Bloomsline does'}
                       chevronColor={s.chevron}
                       isOpen={openShift === 'bloomsline'}
                       onToggle={() => toggleShift('bloomsline')}
@@ -595,10 +595,12 @@ export default function ForYouPage() {
   const pageTitle = {
     en: 'This is for you',
     fr: 'C\u2019est pour vous',
+    es: 'Esto es para ti',
   }
   const pageSubtitle = {
     en: 'Whether you\u2019re looking for support or you support others \u2014 Bloomsline was made with you in mind.',
     fr: 'Que vous cherchiez du soutien ou que vous accompagniez les autres \u2014 Bloomsline a \u00e9t\u00e9 pens\u00e9 pour vous.',
+    es: 'Ya sea que busques apoyo o que apoyes a otros \u2014 Bloomsline fue creado pensando en ti.',
   }
 
   return (
@@ -624,10 +626,10 @@ export default function ForYouPage() {
             className="text-center mb-14"
           >
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-light text-neutral-900 mb-4">
-              {locale === 'fr' ? pageTitle.fr : pageTitle.en}
+              {locale === 'fr' ? pageTitle.fr : locale === 'es' ? pageTitle.es : pageTitle.en}
             </h1>
             <p className="text-lg text-neutral-500 font-light leading-relaxed max-w-xl mx-auto">
-              {locale === 'fr' ? pageSubtitle.fr : pageSubtitle.en}
+              {locale === 'fr' ? pageSubtitle.fr : locale === 'es' ? pageSubtitle.es : pageSubtitle.en}
             </p>
           </motion.div>
 

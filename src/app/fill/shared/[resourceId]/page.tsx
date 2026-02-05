@@ -50,33 +50,33 @@ function AutoSaveIndicator({ status, lastSavedAt }: { status: AutoSaveStatus; la
       case 'pending':
         return {
           icon: Clock,
-          text: locale === 'fr' ? 'Modifications non enregistrées' : 'Unsaved changes',
+          text: locale === 'fr' ? 'Modifications non enregistrées' : locale === 'es' ? 'Cambios sin guardar' : 'Unsaved changes',
           color: 'text-amber-600',
         }
       case 'saving':
         return {
           icon: Loader2,
-          text: locale === 'fr' ? 'Enregistrement...' : 'Saving...',
+          text: locale === 'fr' ? 'Enregistrement...' : locale === 'es' ? 'Guardando...' : 'Saving...',
           color: 'text-blue-600',
           animate: true,
         }
       case 'saved':
         return {
           icon: Cloud,
-          text: locale === 'fr' ? 'Enregistré' : 'Saved',
+          text: locale === 'fr' ? 'Enregistré' : locale === 'es' ? 'Guardado' : 'Saved',
           color: 'text-emerald-600',
         }
       case 'error':
         return {
           icon: CloudOff,
-          text: locale === 'fr' ? 'Erreur de sauvegarde' : 'Save error',
+          text: locale === 'fr' ? 'Erreur de sauvegarde' : locale === 'es' ? 'Error al guardar' : 'Save error',
           color: 'text-red-600',
         }
       default:
         if (lastSavedAt) {
           return {
             icon: CheckCircle,
-            text: locale === 'fr' ? 'Brouillon enregistré' : 'Draft saved',
+            text: locale === 'fr' ? 'Brouillon enregistré' : locale === 'es' ? 'Borrador guardado' : 'Draft saved',
             color: 'text-gray-500',
           }
         }
@@ -139,19 +139,21 @@ function SubmissionConfirmation({
           </div>
 
           <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
-            {locale === 'fr' ? 'Soumis avec succès!' : 'Successfully Submitted!'}
+            {locale === 'fr' ? 'Soumis avec succès!' : locale === 'es' ? '¡Enviado con éxito!' : 'Successfully Submitted!'}
           </h2>
 
           <p className="text-center text-gray-600 mb-6">
             {locale === 'fr'
               ? `Vos réponses pour "${resourceTitle}" ont été soumises.`
-              : `Your responses for "${resourceTitle}" have been submitted.`}
+              : locale === 'es'
+                ? `Sus respuestas para "${resourceTitle}" han sido enviadas.`
+                : `Your responses for "${resourceTitle}" have been submitted.`}
           </p>
 
           {scores && (
             <div className="bg-gradient-to-br from-teal-50 to-lavender-50 rounded-2xl p-6 mb-6 border border-teal-100">
               <h3 className="text-sm font-medium text-gray-600 mb-3 text-center">
-                {locale === 'fr' ? 'Votre Score' : 'Your Score'}
+                {locale === 'fr' ? 'Votre Score' : locale === 'es' ? 'Su Puntuación' : 'Your Score'}
               </h3>
               <div className="text-center">
                 <div className="text-4xl font-bold text-teal-600 mb-1">
@@ -176,13 +178,13 @@ function SubmissionConfirmation({
               onClick={() => router.push('/home')}
               className="flex-1 rounded-full"
             >
-              {locale === 'fr' ? 'Voir mes ressources' : 'View My Resources'}
+              {locale === 'fr' ? 'Voir mes ressources' : locale === 'es' ? 'Ver mis recursos' : 'View My Resources'}
             </Button>
             <Button
               onClick={onClose}
               className="flex-1 rounded-full bg-gradient-to-r from-teal-500 to-teal-600"
             >
-              {locale === 'fr' ? 'Fermer' : 'Close'}
+              {locale === 'fr' ? 'Fermer' : locale === 'es' ? 'Cerrar' : 'Close'}
             </Button>
           </div>
         </motion.div>
@@ -197,13 +199,13 @@ type ReadingFeedback = 'loved' | 'helpful' | 'okay'
 const feedbackOptions: {
   value: ReadingFeedback
   icon: React.ElementType
-  label: { en: string; fr: string }
+  label: { en: string; fr: string; es: string }
   color: string
   bg: string
 }[] = [
-  { value: 'loved', icon: Heart, label: { en: 'Loved it', fr: "J'ai adoré" }, color: 'text-pink-500', bg: 'bg-pink-50 hover:bg-pink-100 border-pink-200' },
-  { value: 'helpful', icon: ThumbsUp, label: { en: 'Helpful', fr: 'Utile' }, color: 'text-emerald-500', bg: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' },
-  { value: 'okay', icon: Meh, label: { en: 'It was okay', fr: 'Correct' }, color: 'text-gray-400', bg: 'bg-gray-50 hover:bg-gray-100 border-gray-200' },
+  { value: 'loved', icon: Heart, label: { en: 'Loved it', fr: "J'ai adoré", es: 'Me encantó' }, color: 'text-pink-500', bg: 'bg-pink-50 hover:bg-pink-100 border-pink-200' },
+  { value: 'helpful', icon: ThumbsUp, label: { en: 'Helpful', fr: 'Utile', es: 'Útil' }, color: 'text-emerald-500', bg: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' },
+  { value: 'okay', icon: Meh, label: { en: 'It was okay', fr: 'Correct', es: 'Estuvo bien' }, color: 'text-gray-400', bg: 'bg-gray-50 hover:bg-gray-100 border-gray-200' },
 ]
 
 function ReadingFeedbackModal({
@@ -244,12 +246,14 @@ function ReadingFeedbackModal({
               <BookOpen className="w-8 h-8 text-purple-500" />
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">
-              {locale === 'fr' ? 'Comment était cette lecture ?' : 'How was this read?'}
+              {locale === 'fr' ? 'Comment était cette lecture ?' : locale === 'es' ? '¿Qué le pareció esta lectura?' : 'How was this read?'}
             </h2>
             <p className="text-sm text-gray-500">
               {locale === 'fr'
                 ? 'Partagez votre ressenti (optionnel)'
-                : 'Share how you felt (optional)'}
+                : locale === 'es'
+                  ? 'Comparta cómo se sintió (opcional)'
+                  : 'Share how you felt (optional)'}
             </p>
           </div>
 
@@ -271,7 +275,7 @@ function ReadingFeedbackModal({
                 >
                   <Icon className={`w-7 h-7 ${option.color}`} />
                   <span className={`text-sm font-medium ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>
-                    {locale === 'fr' ? option.label.fr : option.label.en}
+                    {locale === 'fr' ? option.label.fr : locale === 'es' ? option.label.es : option.label.en}
                   </span>
                 </motion.button>
               )
@@ -286,7 +290,7 @@ function ReadingFeedbackModal({
               disabled={isSubmitting}
               className="flex-1 rounded-full text-gray-500"
             >
-              {locale === 'fr' ? 'Passer' : 'Skip'}
+              {locale === 'fr' ? 'Passer' : locale === 'es' ? 'Omitir' : 'Skip'}
             </Button>
             <Button
               onClick={() => onSubmit(selected)}
@@ -298,7 +302,7 @@ function ReadingFeedbackModal({
               ) : (
                 <>
                   <CheckCircle className="w-5 h-5 mr-2" />
-                  {locale === 'fr' ? 'Terminer' : 'Done'}
+                  {locale === 'fr' ? 'Terminer' : locale === 'es' ? 'Listo' : 'Done'}
                 </>
               )}
             </Button>
@@ -420,7 +424,9 @@ export default function FillSharedResourcePage() {
           toast.error(
             locale === 'fr'
               ? 'Aucun profil membre trouvé'
-              : 'No member profile found'
+              : locale === 'es'
+                ? 'No se encontró perfil de miembro'
+                : 'No member profile found'
           )
           router.push('/dashboard')
           return
@@ -442,7 +448,9 @@ export default function FillSharedResourcePage() {
           toast.error(
             locale === 'fr'
               ? 'Ressource non trouvée'
-              : 'Resource not found'
+              : locale === 'es'
+                ? 'Recurso no encontrado'
+                : 'Resource not found'
           )
           router.push('/home')
           return
@@ -464,7 +472,9 @@ export default function FillSharedResourcePage() {
           toast.error(
             locale === 'fr'
               ? 'Aucun profil membre trouvé'
-              : 'No member profile found'
+              : locale === 'es'
+                ? 'No se encontró perfil de miembro'
+                : 'No member profile found'
           )
           router.push('/dashboard')
           return
@@ -483,7 +493,9 @@ export default function FillSharedResourcePage() {
           toast.error(
             locale === 'fr'
               ? 'Ressource non trouvée'
-              : 'Resource not found'
+              : locale === 'es'
+                ? 'Recurso no encontrado'
+                : 'Resource not found'
           )
           router.push('/home')
           return
@@ -546,7 +558,9 @@ export default function FillSharedResourcePage() {
             toast.error(
               locale === 'fr'
                 ? `Erreur: ${createError.message || 'Impossible de créer la réponse'}`
-                : `Error: ${createError.message || 'Unable to create response'}`
+                : locale === 'es'
+                  ? `Error: ${createError.message || 'No se pudo crear la respuesta'}`
+                  : `Error: ${createError.message || 'Unable to create response'}`
             )
             return
           }
@@ -559,7 +573,9 @@ export default function FillSharedResourcePage() {
         toast.error(
           locale === 'fr'
             ? 'Erreur lors du chargement'
-            : 'Error loading resource'
+            : locale === 'es'
+              ? 'Error al cargar el recurso'
+              : 'Error loading resource'
         )
       } finally {
         setLoading(false)
@@ -674,14 +690,18 @@ export default function FillSharedResourcePage() {
       toast.success(
         locale === 'fr'
           ? 'Entrées enregistrées'
-          : 'Entries saved'
+          : locale === 'es'
+            ? 'Entradas guardadas'
+            : 'Entries saved'
       )
     } catch (error) {
       console.error('Error saving:', error)
       toast.error(
         locale === 'fr'
           ? 'Erreur lors de l\'enregistrement'
-          : 'Error saving entries'
+          : locale === 'es'
+            ? 'Error al guardar las entradas'
+            : 'Error saving entries'
       )
     } finally {
       setSubmitting(false)
@@ -733,14 +753,18 @@ export default function FillSharedResourcePage() {
       toast.success(
         locale === 'fr'
           ? 'Marqué comme lu'
-          : 'Marked as read'
+          : locale === 'es'
+            ? 'Marcado como leído'
+            : 'Marked as read'
       )
     } catch (error) {
       console.error('Error marking as read:', error)
       toast.error(
         locale === 'fr'
           ? 'Erreur lors du marquage'
-          : 'Error marking as read'
+          : locale === 'es'
+            ? 'Error al marcar como leído'
+            : 'Error marking as read'
       )
     } finally {
       setSubmitting(false)
@@ -764,7 +788,9 @@ export default function FillSharedResourcePage() {
       toast.error(
         locale === 'fr'
           ? `Veuillez répondre à toutes les questions requises (${unansweredRequired.length} manquantes)`
-          : `Please answer all required questions (${unansweredRequired.length} missing)`
+          : locale === 'es'
+            ? `Por favor responda todas las preguntas requeridas (${unansweredRequired.length} pendientes)`
+            : `Please answer all required questions (${unansweredRequired.length} missing)`
       )
       return
     }
@@ -812,14 +838,18 @@ export default function FillSharedResourcePage() {
       toast.success(
         locale === 'fr'
           ? 'Réponses soumises avec succès'
-          : 'Responses submitted successfully'
+          : locale === 'es'
+            ? 'Respuestas enviadas con éxito'
+            : 'Responses submitted successfully'
       )
     } catch (error) {
       console.error('Error submitting:', error)
       toast.error(
         locale === 'fr'
           ? 'Erreur lors de la soumission'
-          : 'Error submitting responses'
+          : locale === 'es'
+            ? 'Error al enviar las respuestas'
+            : 'Error submitting responses'
       )
     } finally {
       setSubmitting(false)
@@ -839,7 +869,7 @@ export default function FillSharedResourcePage() {
             <Loader2 className="w-6 h-6 text-teal-600 animate-spin" />
           </div>
           <span className="text-gray-500 text-sm">
-            {locale === 'fr' ? 'Chargement...' : 'Loading...'}
+            {locale === 'fr' ? 'Chargement...' : locale === 'es' ? 'Cargando...' : 'Loading...'}
           </span>
         </motion.div>
       </div>
@@ -862,7 +892,7 @@ export default function FillSharedResourcePage() {
       window.location.reload()
     } catch (error) {
       console.error('Error updating response:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors de la modification' : 'Error editing response')
+      toast.error(locale === 'fr' ? 'Erreur lors de la modification' : locale === 'es' ? 'Error al editar la respuesta' : 'Error editing response')
     }
   }
 
@@ -873,7 +903,9 @@ export default function FillSharedResourcePage() {
     const confirmed = window.confirm(
       locale === 'fr'
         ? 'Êtes-vous sûr de vouloir supprimer cette soumission? Cette action est irréversible.'
-        : 'Are you sure you want to delete this submission? This action cannot be undone.'
+        : locale === 'es'
+          ? '¿Está seguro de que desea eliminar este envío? Esta acción no se puede deshacer.'
+          : 'Are you sure you want to delete this submission? This action cannot be undone.'
     )
 
     if (!confirmed) return
@@ -886,19 +918,19 @@ export default function FillSharedResourcePage() {
 
       if (error) throw error
 
-      toast.success(locale === 'fr' ? 'Soumission supprimée' : 'Submission deleted')
+      toast.success(locale === 'fr' ? 'Soumission supprimée' : locale === 'es' ? 'Envío eliminado' : 'Submission deleted')
       // Force full page reload to clear cache
       window.location.href = '/home'
     } catch (error) {
       console.error('Error deleting response:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors de la suppression' : 'Error deleting submission')
+      toast.error(locale === 'fr' ? 'Erreur lors de la suppression' : locale === 'es' ? 'Error al eliminar el envío' : 'Error deleting submission')
     }
   }
 
   // Render response value for display
   const renderResponseDisplay = (block: ResourceBlock, value: unknown): string => {
     if (value === undefined || value === null || value === '') {
-      return locale === 'fr' ? 'Non répondu' : 'Not answered'
+      return locale === 'fr' ? 'Non répondu' : locale === 'es' ? 'Sin responder' : 'Not answered'
     }
 
     switch (block.type) {
@@ -916,8 +948,8 @@ export default function FillSharedResourcePage() {
 
       case 'yes_no':
         return value === 'yes'
-          ? (locale === 'fr' ? 'Oui' : 'Yes')
-          : (locale === 'fr' ? 'Non' : 'No')
+          ? (locale === 'fr' ? 'Oui' : locale === 'es' ? 'Sí' : 'Yes')
+          : (locale === 'fr' ? 'Non' : locale === 'es' ? 'No' : 'No')
 
       case 'checklist': {
         const items: (string | { text?: string })[] = ('items' in block && Array.isArray(block.items)) ? block.items : []
@@ -958,9 +990,11 @@ export default function FillSharedResourcePage() {
         if (Array.isArray(value) && value.length > 0) {
           return locale === 'fr'
             ? `${value.length} entrée(s) ajoutée(s)`
-            : `${value.length} entr${value.length === 1 ? 'y' : 'ies'} added`
+            : locale === 'es'
+              ? `${value.length} entrada${value.length === 1 ? '' : 's'} agregada${value.length === 1 ? '' : 's'}`
+              : `${value.length} entr${value.length === 1 ? 'y' : 'ies'} added`
         }
-        return locale === 'fr' ? 'Aucune entrée' : 'No entries'
+        return locale === 'fr' ? 'Aucune entrée' : locale === 'es' ? 'Sin entradas' : 'No entries'
 
       default:
         return JSON.stringify(value)
@@ -998,7 +1032,7 @@ export default function FillSharedResourcePage() {
                 <h1 className="font-semibold text-gray-900 truncate text-lg">{resourceTitle}</h1>
                 <div className="flex items-center gap-1.5 text-xs text-emerald-600">
                   <CheckCircle className="w-3.5 h-3.5" />
-                  <span className="font-medium">{locale === 'fr' ? 'Soumis' : 'Submitted'}</span>
+                  <span className="font-medium">{locale === 'fr' ? 'Soumis' : locale === 'es' ? 'Enviado' : 'Submitted'}</span>
                 </div>
               </div>
             </div>
@@ -1021,12 +1055,12 @@ export default function FillSharedResourcePage() {
                 </div>
                 <div>
                   <h2 className="font-semibold">
-                    {locale === 'fr' ? 'Soumission réussie' : 'Submission Complete'}
+                    {locale === 'fr' ? 'Soumission réussie' : locale === 'es' ? 'Envío completado' : 'Submission Complete'}
                   </h2>
                   {response.submitted_at && (
                     <p className="text-xs text-emerald-100 flex items-center gap-1 mt-1">
                       <Calendar className="w-3 h-3" />
-                      {new Date(response.submitted_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                      {new Date(response.submitted_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
                         day: 'numeric',
                         month: 'short',
                         hour: '2-digit',
@@ -1043,14 +1077,14 @@ export default function FillSharedResourcePage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium flex items-center gap-1.5">
                       <Star className="w-4 h-4" />
-                      {locale === 'fr' ? 'Score' : 'Score'}
+                      {locale === 'fr' ? 'Score' : locale === 'es' ? 'Puntuación' : 'Score'}
                     </span>
                     <span className="text-xl font-bold">
                       {scores.percentage}%
                     </span>
                   </div>
                   <div className="text-xs text-emerald-100 mt-1">
-                    {scores.total} / {scores.maxScore} {locale === 'fr' ? 'points' : 'points'}
+                    {scores.total} / {scores.maxScore} {locale === 'fr' ? 'points' : locale === 'es' ? 'puntos' : 'points'}
                   </div>
                 </div>
               )}
@@ -1064,7 +1098,7 @@ export default function FillSharedResourcePage() {
               className="bg-white rounded-2xl p-4 shadow-sm"
             >
               <h3 className="font-semibold text-gray-900 mb-3">
-                {locale === 'fr' ? 'Vos réponses' : 'Your Responses'}
+                {locale === 'fr' ? 'Vos réponses' : locale === 'es' ? 'Sus respuestas' : 'Your Responses'}
               </h3>
 
               <div className="space-y-3">
@@ -1103,7 +1137,7 @@ export default function FillSharedResourcePage() {
               className="flex-1 h-12 rounded-xl"
             >
               <Edit2 className="w-4 h-4 mr-2" />
-              {locale === 'fr' ? 'Modifier' : 'Edit'}
+              {locale === 'fr' ? 'Modifier' : locale === 'es' ? 'Editar' : 'Edit'}
             </Button>
             <Button
               variant="outline"
@@ -1157,7 +1191,7 @@ export default function FillSharedResourcePage() {
             <div className="mt-3">
               <div className="flex items-center justify-between text-xs mb-1.5">
                 <span className="text-gray-500">
-                  {locale === 'fr' ? 'Progression' : 'Progress'}
+                  {locale === 'fr' ? 'Progression' : locale === 'es' ? 'Progreso' : 'Progress'}
                 </span>
                 <span className="font-semibold text-teal-600">{progress}%</span>
               </div>
@@ -1271,7 +1305,7 @@ export default function FillSharedResourcePage() {
                 className="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-lg text-base font-semibold"
               >
                 <CheckCircle className="w-5 h-5 mr-2" />
-                {locale === 'fr' ? 'Terminé - Retour' : 'Completed - Back'}
+                {locale === 'fr' ? 'Terminé - Retour' : locale === 'es' ? 'Completado - Volver' : 'Completed - Back'}
               </Button>
             ) : (
               <Button
@@ -1283,12 +1317,12 @@ export default function FillSharedResourcePage() {
                 {submitting ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    {locale === 'fr' ? 'Marquage...' : 'Marking...'}
+                    {locale === 'fr' ? 'Marquage...' : locale === 'es' ? 'Marcando...' : 'Marking...'}
                   </>
                 ) : (
                   <>
                     <BookOpen className="w-5 h-5 mr-2" />
-                    {locale === 'fr' ? 'Marquer comme lu' : 'Mark as Read'}
+                    {locale === 'fr' ? 'Marquer comme lu' : locale === 'es' ? 'Marcar como leído' : 'Mark as Read'}
                   </>
                 )}
               </Button>
@@ -1303,7 +1337,7 @@ export default function FillSharedResourcePage() {
                 className="flex-1 h-12 rounded-xl border-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
               >
                 <Eye className="w-5 h-5 mr-2" />
-                {locale === 'fr' ? 'Voir tout' : 'View All'}
+                {locale === 'fr' ? 'Voir tout' : locale === 'es' ? 'Ver todo' : 'View All'}
               </Button>
               <Button
                 onClick={handleSaveTableExercise}
@@ -1314,12 +1348,12 @@ export default function FillSharedResourcePage() {
                 {submitting ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                    {locale === 'fr' ? 'Enregistrement...' : locale === 'es' ? 'Guardando...' : 'Saving...'}
                   </>
                 ) : (
                   <>
                     <Save className="w-5 h-5 mr-2" />
-                    {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                    {locale === 'fr' ? 'Enregistrer' : locale === 'es' ? 'Guardar' : 'Save'}
                   </>
                 )}
               </Button>
@@ -1332,7 +1366,9 @@ export default function FillSharedResourcePage() {
                   <p className="text-xs text-amber-700 font-medium mb-2">
                     {locale === 'fr'
                       ? `${unansweredQuestions.length} question(s) restante(s)`
-                      : `${unansweredQuestions.length} question(s) remaining`}
+                      : locale === 'es'
+                        ? `${unansweredQuestions.length} pregunta(s) pendiente(s)`
+                        : `${unansweredQuestions.length} question(s) remaining`}
                   </p>
                   <div className="flex gap-1.5 overflow-x-auto pb-1">
                     {unansweredQuestions.slice(0, 8).map(({ block, index }) => (
@@ -1361,18 +1397,18 @@ export default function FillSharedResourcePage() {
                 {submitting ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    {locale === 'fr' ? 'Soumission...' : 'Submitting...'}
+                    {locale === 'fr' ? 'Soumission...' : locale === 'es' ? 'Enviando...' : 'Submitting...'}
                   </>
                 ) : progress < 100 ? (
                   <>
                     <span>{progress}%</span>
                     <span className="mx-2">•</span>
-                    <span>{locale === 'fr' ? 'Incomplet' : 'Incomplete'}</span>
+                    <span>{locale === 'fr' ? 'Incomplet' : locale === 'es' ? 'Incompleto' : 'Incomplete'}</span>
                   </>
                 ) : (
                   <>
                     <Send className="w-5 h-5 mr-2" />
-                    {locale === 'fr' ? 'Soumettre' : 'Submit'}
+                    {locale === 'fr' ? 'Soumettre' : locale === 'es' ? 'Enviar' : 'Submit'}
                   </>
                 )}
               </Button>
@@ -1417,12 +1453,14 @@ export default function FillSharedResourcePage() {
                     </div>
                     <div>
                       <h2 className="font-semibold text-emerald-900">
-                        {locale === 'fr' ? 'Toutes les entrées' : 'All Entries'}
+                        {locale === 'fr' ? 'Toutes les entrées' : locale === 'es' ? 'Todas las entradas' : 'All Entries'}
                       </h2>
                       <p className="text-sm text-emerald-700">
                         {entries.length} {locale === 'fr'
                           ? (entries.length === 1 ? 'entrée' : 'entrées')
-                          : (entries.length === 1 ? 'entry' : 'entries')}
+                          : locale === 'es'
+                            ? (entries.length === 1 ? 'entrada' : 'entradas')
+                            : (entries.length === 1 ? 'entry' : 'entries')}
                       </p>
                     </div>
                   </div>
@@ -1439,11 +1477,13 @@ export default function FillSharedResourcePage() {
                   {entries.length === 0 ? (
                     <div className="text-center py-12 text-gray-500">
                       <Table2 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                      <p>{locale === 'fr' ? 'Aucune entrée pour le moment' : 'No entries yet'}</p>
+                      <p>{locale === 'fr' ? 'Aucune entrée pour le moment' : locale === 'es' ? 'Aún no hay entradas' : 'No entries yet'}</p>
                       <p className="text-sm mt-1">
                         {locale === 'fr'
                           ? 'Ajoutez des entrées ci-dessous'
-                          : 'Add entries below'}
+                          : locale === 'es'
+                            ? 'Agregue entradas a continuación'
+                            : 'Add entries below'}
                       </p>
                     </div>
                   ) : (

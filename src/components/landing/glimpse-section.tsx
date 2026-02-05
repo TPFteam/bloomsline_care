@@ -771,11 +771,12 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
     {
       id: 'resources',
       icon: Share2,
-      label: { en: 'Resources', fr: 'Ressources' },
-      title: { en: 'Share your resources', fr: 'Partagez vos supports' },
+      label: { en: 'Resources', fr: 'Ressources', es: 'Recursos' },
+      title: { en: 'Share your resources', fr: 'Partagez vos supports', es: 'Comparta sus recursos' },
       description: {
         en: 'Create and organize your questionnaires, exercises, and therapeutic resources in one place.',
         fr: 'Créez et regroupez vos questionnaires, exercices et ressources éducatives.',
+        es: 'Cree y organice sus cuestionarios, ejercicios y recursos terapéuticos en un solo lugar.',
       },
       visual: <AnimatedResources locale={locale} />,
       color: 'from-amber-500/10 to-orange-500/10',
@@ -783,11 +784,12 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
     {
       id: 'sessions',
       icon: FolderOpen,
-      label: { en: 'Sessions', fr: 'Séances' },
-      title: { en: 'Prepare your sessions effortlessly', fr: 'Préparez vos séances sans effort' },
+      label: { en: 'Sessions', fr: 'Séances', es: 'Sesiones' },
+      title: { en: 'Prepare your sessions effortlessly', fr: 'Préparez vos séances sans effort', es: 'Prepare sus sesiones sin esfuerzo' },
       description: {
         en: 'Clinical elements discussed throughout sessions are accessible without digging through your notes.',
         fr: 'Les éléments abordés au fil des séances sont accessibles sans parcourir l\'ensemble de vos notes.',
+        es: 'Los elementos clínicos discutidos a lo largo de las sesiones son accesibles sin revisar todas sus notas.',
       },
       visual: <AnimatedSessions locale={locale} />,
       color: 'from-rose-500/10 to-pink-500/10',
@@ -795,11 +797,12 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
     {
       id: 'overview',
       icon: BarChart3,
-      label: { en: 'Overview', fr: 'Vue d\'ensemble' },
-      title: { en: 'See the full picture', fr: 'Vue d\'ensemble' },
+      label: { en: 'Overview', fr: 'Vue d\'ensemble', es: 'Vista general' },
+      title: { en: 'See the full picture', fr: 'Vue d\'ensemble', es: 'Vea el panorama completo' },
       description: {
         en: 'Rhythm variations and journey continuity become readable, guiding your attention where it\'s needed.',
         fr: 'Les variations de rythme et la continuité des parcours deviennent lisibles, pour orienter votre attention là où elle est nécessaire.',
+        es: 'Las variaciones de ritmo y la continuidad del recorrido se vuelven legibles, guiando su atención donde se necesita.',
       },
       visual: <AnimatedOverview locale={locale} />,
       color: 'from-emerald-500/10 to-teal-500/10',
@@ -810,11 +813,12 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
     {
       id: 'rituals',
       icon: Sun,
-      label: { en: 'Rituals', fr: 'Rituels' },
-      title: { en: 'Move forward without guilt', fr: 'Avancer sans culpabilité' },
+      label: { en: 'Rituals', fr: 'Rituels', es: 'Rituales' },
+      title: { en: 'Move forward without guilt', fr: 'Avancer sans culpabilité', es: 'Avanza sin culpa' },
       description: {
         en: 'Adjust what you had planned when the energy isn\'t there. A 2-minute pause instead of 20. A gentle stretch instead of a workout. Whatever feels right today.',
         fr: 'Adapter ce que vous aviez prévu quand l\'énergie n\'est plus là. Une pause de 2 minutes au lieu de 20. Un étirement doux au lieu d\'un entraînement. Ce qui vous convient aujourd\'hui.',
+        es: 'Adapta lo que habías planeado cuando la energía no alcanza. Una pausa de 2 minutos en vez de 20. Un estiramiento suave en vez de un entrenamiento. Lo que se sienta bien hoy.',
       },
       visual: <AnimatedRituals />,
       color: 'from-amber-500/10 to-orange-500/10',
@@ -822,11 +826,12 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
     {
       id: 'moments',
       icon: Heart,
-      label: { en: 'Moments', fr: 'Moments' },
-      title: { en: 'Capture what matters', fr: 'Exprimer ce que vous vivez' },
+      label: { en: 'Moments', fr: 'Moments', es: 'Momentos' },
+      title: { en: 'Capture what matters', fr: 'Exprimer ce que vous vivez', es: 'Captura lo que importa' },
       description: {
         en: 'A kind word someone said. A small win. A hard day. Moments become part of your story, mapped in your flow.',
         fr: 'Déposer ce qui vous traverse et garder une trace de ce qui compte vraiment.',
+        es: 'Una palabra amable que alguien dijo. Una pequeña victoria. Un día difícil. Los momentos se vuelven parte de tu historia, mapeados en tu flujo.',
       },
       visual: <AnimatedMoments />,
       color: 'from-rose-500/10 to-pink-500/10',
@@ -834,11 +839,12 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
     {
       id: 'balance',
       icon: Sparkles,
-      label: { en: 'Balance', fr: 'Équilibre' },
-      title: { en: 'Find your balance', fr: 'Explorer vos repères à vous' },
+      label: { en: 'Balance', fr: 'Équilibre', es: 'Equilibrio' },
+      title: { en: 'Find your balance', fr: 'Explorer vos repères à vous', es: 'Encuentra tu equilibrio' },
       description: {
         en: 'See where you are spending your energy. Not to judge, but to understand. Small adjustments, not big overhauls.',
         fr: 'Prendre conscience de son rythme au quotidien pour mieux comprendre ce qui vous fait du bien.',
+        es: 'Observa dónde estás gastando tu energía. No para juzgar, sino para entender. Pequeños ajustes, no grandes cambios.',
       },
       visual: <AnimatedBalance />,
       color: 'from-indigo-500/10 to-violet-500/10',
@@ -846,11 +852,12 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
     {
       id: 'progress',
       icon: TrendingUp,
-      label: { en: 'Progress', fr: 'Progrès' },
-      title: { en: 'Progress that feels human', fr: 'Des progrès qui restent humains' },
+      label: { en: 'Progress', fr: 'Progrès', es: 'Progreso' },
+      title: { en: 'Progress that feels human', fr: 'Des progrès qui restent humains', es: 'Progreso que se siente humano' },
       description: {
         en: 'Not streaks or points. Just a gentle look back. "Last month you showed up 18 times. That is 18 times you chose yourself."',
         fr: 'Ici, il n\'y a pas de compétition. Juste un regard bienveillant en arrière. Le mois dernier, vous étiez présent 18 fois. C\'est 18 moments où vous vous êtes choisi.',
+        es: 'Sin rachas ni puntos. Solo una mirada amable hacia atrás. "El mes pasado estuviste presente 18 veces. Son 18 veces que te elegiste a ti mismo."',
       },
       visual: <AnimatedProgress />,
       color: 'from-emerald-500/10 to-teal-500/10',
@@ -858,11 +865,12 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
     {
       id: 'connection',
       icon: MessageCircle,
-      label: { en: 'Connection', fr: 'Connexion' },
-      title: { en: 'Someone who sees your journey', fr: 'Quelqu\'un qui vous voit' },
+      label: { en: 'Connection', fr: 'Connexion', es: 'Conexión' },
+      title: { en: 'Someone who sees your journey', fr: 'Quelqu\'un qui vous voit', es: 'Alguien que ve tu camino' },
       description: {
         en: 'Only if you choose to share. Your practitioner sees not just your hard days, but the full picture. The effort, the small wins, the patterns over time.',
         fr: 'Vous pouvez partager votre parcours avec la personne qui vous accompagne. Elle ne verra pas seulement les moments difficiles, mais l\'ensemble de votre chemin. Les moments qui comptent, les petites victoires et ce qui prend forme avec le temps.',
+        es: 'Solo si decides compartir. Tu profesional no solo ve tus días difíciles, sino el panorama completo. El esfuerzo, las pequeñas victorias, los patrones con el tiempo.',
       },
       visual: <AnimatedConnection />,
       color: 'from-teal-500/10 to-cyan-500/10',
@@ -881,21 +889,25 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
         >
           <p className="text-sm font-medium uppercase tracking-wider text-neutral-400 mb-4">
             {isPractitionerPage
-              ? (locale === 'fr' ? 'Pour votre pratique' : 'For your practice')
-              : (locale === 'fr' ? 'Ce que nous avons créé' : 'What we built')}
+              ? (locale === 'fr' ? 'Pour votre pratique' : locale === 'es' ? 'Para su práctica' : 'For your practice')
+              : (locale === 'fr' ? 'Ce que nous avons créé' : locale === 'es' ? 'Lo que creamos' : 'What we built')}
           </p>
           <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-4">
             {isPractitionerPage
-              ? (locale === 'fr' ? 'Parce que certains signaux doivent être vus à temps.' : 'Because some signals need to be seen in time.')
-              : (locale === 'fr' ? 'Voici Bloomsline.' : 'This is Bloomsline.')}
+              ? (locale === 'fr' ? 'Parce que certains signaux doivent être vus à temps.' : locale === 'es' ? 'Porque algunas señales necesitan ser vistas a tiempo.' : 'Because some signals need to be seen in time.')
+              : (locale === 'fr' ? 'Voici Bloomsline.' : locale === 'es' ? 'Esto es Bloomsline.' : 'This is Bloomsline.')}
           </h2>
           <p className="text-neutral-500 max-w-2xl mx-auto leading-relaxed">
             {isPractitionerPage
               ? (locale === 'fr'
                 ? 'Des outils pensés pour accompagner vos clients entre les séances, sans alourdir votre quotidien.'
+                : locale === 'es'
+                ? 'Herramientas diseñadas para acompañar a sus clientes entre sesiones, sin añadir carga a su día a día.'
                 : 'Tools designed to support your clients between sessions, without adding to your daily workload.')
               : (locale === 'fr'
                 ? 'Une façon de vous reconnecter à vous-même. De donner du sens aux petits gestes. De voir que ce que vous faites compte.'
+                : locale === 'es'
+                ? 'Una forma de reconectarte contigo mismo. De encontrar sentido en las pequeñas cosas. De ver que lo que haces importa.'
                 : 'A way to reconnect with yourself. To find meaning in the small things. To see that what you do matters.')}
           </p>
         </motion.div>
@@ -919,11 +931,11 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
                     <step.icon className="w-5 h-5 text-neutral-700" />
                   </div>
                   <h3 className="text-xl sm:text-2xl font-light text-neutral-900">
-                    {locale === 'fr' ? step.title.fr : step.title.en}
+                    {locale === 'fr' ? step.title.fr : locale === 'es' ? step.title.es : step.title.en}
                   </h3>
                 </div>
                 <p className="text-neutral-600 leading-relaxed">
-                  {locale === 'fr' ? step.description.fr : step.description.en}
+                  {locale === 'fr' ? step.description.fr : locale === 'es' ? step.description.es : step.description.en}
                 </p>
               </div>
 
@@ -952,7 +964,7 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
               onClick={openModal}
               className="inline-block px-8 py-4 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300"
             >
-              {locale === 'fr' ? 'Tester Bloomsline gratuitement' : 'Try Bloomsline for free'}
+              {locale === 'fr' ? 'Tester Bloomsline gratuitement' : locale === 'es' ? 'Prueba Bloomsline gratis' : 'Try Bloomsline for free'}
             </button>
           </motion.div>
         )}
@@ -969,11 +981,15 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
             <p className="text-2xl sm:text-3xl font-light text-neutral-700 leading-relaxed mb-6">
               {locale === 'fr'
                 ? 'Le bien-être n\'est pas une liste de tâches à cocher. C\'est avant tout prendre soin de soi sans se forcer.'
+                : locale === 'es'
+                ? 'Esto no son tareas. Son pequeños actos de cuidarte a ti mismo.'
                 : 'These are not tasks. They are small acts of showing up for yourself.'}
             </p>
             {locale !== 'fr' && (
               <p className="text-neutral-500">
-                And over time, they become proof that you matter.
+                {locale === 'es'
+                  ? 'Y con el tiempo, se convierten en la prueba de que importas.'
+                  : 'And over time, they become proof that you matter.'}
               </p>
             )}
           </motion.div>

@@ -11,8 +11,10 @@ export interface GuideStep {
   animation?: React.ReactNode // Custom animated illustration
   titleEn: string
   titleFr: string
+  titleEs: string
   descriptionEn: string
   descriptionFr: string
+  descriptionEs: string
   gradient?: string // Custom gradient for icon background
 }
 
@@ -238,7 +240,7 @@ export function FeatureGuide({
                       transition={{ delay: 0.2 }}
                       className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4"
                     >
-                      {locale === 'fr' ? step.titleFr : step.titleEn}
+                      {locale === 'fr' ? step.titleFr : locale === 'es' ? step.titleEs : step.titleEn}
                     </motion.h2>
 
                     {/* Description */}
@@ -248,7 +250,7 @@ export function FeatureGuide({
                       transition={{ delay: 0.3 }}
                       className="text-gray-600 leading-relaxed text-sm sm:text-base"
                     >
-                      {locale === 'fr' ? step.descriptionFr : step.descriptionEn}
+                      {locale === 'fr' ? step.descriptionFr : locale === 'es' ? step.descriptionEs : step.descriptionEn}
                     </motion.p>
                   </motion.div>
                 </AnimatePresence>
@@ -293,7 +295,7 @@ export function FeatureGuide({
                       className="flex-1 py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base"
                     >
                       <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-                      {locale === 'fr' ? 'Retour' : 'Back'}
+                      {locale === 'fr' ? 'Retour' : locale === 'es' ? 'Atrás' : 'Back'}
                     </motion.button>
                   )}
 
@@ -306,11 +308,11 @@ export function FeatureGuide({
                     {isLastStep ? (
                       <>
                         <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-                        {locale === 'fr' ? "C'est parti !" : "Let's Go!"}
+                        {locale === 'fr' ? "C'est parti !" : locale === 'es' ? '¡Vamos!' : "Let's Go!"}
                       </>
                     ) : (
                       <>
-                        {locale === 'fr' ? 'Suivant' : 'Next'}
+                        {locale === 'fr' ? 'Suivant' : locale === 'es' ? 'Siguiente' : 'Next'}
                         <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                       </>
                     )}

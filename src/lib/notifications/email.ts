@@ -178,24 +178,24 @@ function generateEmailHtml(params: {
 export function getEmailContent(
   type: NotificationType,
   _metadata: Record<string, unknown>,
-  locale: 'en' | 'fr' = 'en'
+  locale: 'en' | 'fr' | 'es' = 'en'
 ): EmailTemplate {
   // Map notification types to email-specific content
-  const actionTexts: Record<string, { en: string; fr: string }> = {
-    resource_shared: { en: 'View Resource', fr: 'Voir la ressource' },
-    resource_assigned: { en: 'Start Now', fr: 'Commencer' },
-    assignment_due_soon: { en: 'Complete Now', fr: 'Compléter' },
-    session_scheduled: { en: 'View Session', fr: 'Voir la session' },
-    booking_confirmed: { en: 'View Booking', fr: 'Voir la réservation' },
-    resource_submitted: { en: 'Review Submission', fr: 'Voir la soumission' },
-    booking_request: { en: 'Review Request', fr: 'Voir la demande' },
-    reschedule_requested: { en: 'Respond', fr: 'Répondre' },
+  const actionTexts: Record<string, { en: string; fr: string; es: string }> = {
+    resource_shared: { en: 'View Resource', fr: 'Voir la ressource', es: 'Ver recurso' },
+    resource_assigned: { en: 'Start Now', fr: 'Commencer', es: 'Comenzar ahora' },
+    assignment_due_soon: { en: 'Complete Now', fr: 'Compléter', es: 'Completar ahora' },
+    session_scheduled: { en: 'View Session', fr: 'Voir la session', es: 'Ver sesión' },
+    booking_confirmed: { en: 'View Booking', fr: 'Voir la réservation', es: 'Ver reserva' },
+    resource_submitted: { en: 'Review Submission', fr: 'Voir la soumission', es: 'Revisar envío' },
+    booking_request: { en: 'Review Request', fr: 'Voir la demande', es: 'Revisar solicitud' },
+    reschedule_requested: { en: 'Respond', fr: 'Répondre', es: 'Responder' },
   }
 
   return {
     subject: '', // Will be filled by caller
     body: '', // Will be filled by caller
-    actionText: actionTexts[type]?.[locale] || (locale === 'fr' ? 'Voir' : 'View'),
+    actionText: actionTexts[type]?.[locale] || (locale === 'fr' ? 'Voir' : locale === 'es' ? 'Ver' : 'View'),
   }
 }
 

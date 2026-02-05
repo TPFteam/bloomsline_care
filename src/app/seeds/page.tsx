@@ -325,7 +325,7 @@ export default function SeedsPage() {
 
     if (error) {
       console.error('Error logging anchor:', error)
-      toast.error(locale === 'fr' ? 'Erreur' : 'Error')
+      toast.error(locale === 'fr' ? 'Erreur' : locale === 'es' ? 'Error' : 'Error')
       return
     }
 
@@ -345,7 +345,7 @@ export default function SeedsPage() {
       }
     }))
 
-    toast.success(locale === 'fr' ? 'Enregistré!' : 'Logged!', { duration: 1500 })
+    toast.success(locale === 'fr' ? 'Enregistré!' : locale === 'es' ? '¡Registrado!' : 'Logged!', { duration: 1500 })
   }
 
   const addAnchor = async (iconKey: string) => {
@@ -368,7 +368,7 @@ export default function SeedsPage() {
 
     if (error) {
       console.error('Error adding anchor:', error)
-      toast.error(locale === 'fr' ? 'Erreur' : 'Error')
+      toast.error(locale === 'fr' ? 'Erreur' : locale === 'es' ? 'Error' : 'Error')
       return
     }
 
@@ -411,7 +411,7 @@ export default function SeedsPage() {
     }
 
     setShowAddAnchor(false)
-    toast.success(locale === 'fr' ? 'Ajouté!' : 'Added!', { duration: 1500 })
+    toast.success(locale === 'fr' ? 'Ajouté!' : locale === 'es' ? '¡Agregado!' : 'Added!', { duration: 1500 })
   }
 
   const removeAnchor = async (anchorId: string) => {
@@ -426,7 +426,7 @@ export default function SeedsPage() {
 
     if (error) {
       console.error('Error removing anchor:', error)
-      toast.error(locale === 'fr' ? 'Erreur' : 'Error')
+      toast.error(locale === 'fr' ? 'Erreur' : locale === 'es' ? 'Error' : 'Error')
       return
     }
 
@@ -459,7 +459,7 @@ export default function SeedsPage() {
     }
 
     setUserAnchors(prev => prev.filter(a => a.id !== anchorId))
-    toast.success(locale === 'fr' ? 'Supprimé' : 'Removed', { duration: 1500 })
+    toast.success(locale === 'fr' ? 'Supprimé' : locale === 'es' ? 'Eliminado' : 'Removed', { duration: 1500 })
   }
 
   const getTodayCount = (anchorId: string) => {
@@ -477,7 +477,7 @@ export default function SeedsPage() {
       date.setDate(date.getDate() - i)
       days.push({
         date: date.toISOString().split('T')[0],
-        dayName: date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short' }),
+        dayName: date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { weekday: 'short' }),
         dayNum: date.getDate(),
         isToday: i === 0,
       })
@@ -515,9 +515,9 @@ export default function SeedsPage() {
       date.setDate(date.getDate() - i)
       days.push({
         date: date.toISOString().split('T')[0],
-        dayName: date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short' }),
+        dayName: date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { weekday: 'short' }),
         dayNum: date.getDate(),
-        monthName: date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short' }),
+        monthName: date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { month: 'short' }),
         isToday: i === 0,
       })
     }
@@ -654,10 +654,10 @@ export default function SeedsPage() {
             </button>
             <div>
               <h1 className="text-xl font-bold text-gray-900">
-                {locale === 'fr' ? 'Mes petits pas' : 'My Little Steps'}
+                {locale === 'fr' ? 'Mes petits pas' : locale === 'es' ? 'Mis pequeños pasos' : 'My Little Steps'}
               </h1>
               <p className="text-sm text-gray-500">
-                {locale === 'fr' ? 'Cultivez vos habitudes, un pas à la fois' : 'Nurture your habits, one step at a time'}
+                {locale === 'fr' ? 'Cultivez vos habitudes, un pas à la fois' : locale === 'es' ? 'Cultiva tus hábitos, un paso a la vez' : 'Nurture your habits, one step at a time'}
               </p>
             </div>
           </div>
@@ -666,7 +666,7 @@ export default function SeedsPage() {
             <button
               onClick={() => setShowGuide(true)}
               className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
-              title={locale === 'fr' ? 'Comment ça marche' : 'How it works'}
+              title={locale === 'fr' ? 'Comment ça marche' : locale === 'es' ? 'Cómo funciona' : 'How it works'}
             >
               <Info className="w-5 h-5" />
             </button>
@@ -694,7 +694,7 @@ export default function SeedsPage() {
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            {locale === 'fr' ? 'Jour' : 'Day'}
+            {locale === 'fr' ? 'Jour' : locale === 'es' ? 'Día' : 'Day'}
           </button>
           <button
             onClick={() => setActiveTab('week')}
@@ -704,7 +704,7 @@ export default function SeedsPage() {
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            {locale === 'fr' ? '7 jours' : '7 Days'}
+            {locale === 'fr' ? '7 jours' : locale === 'es' ? '7 Días' : '7 Days'}
           </button>
           <button
             onClick={() => setActiveTab('trends')}
@@ -715,7 +715,7 @@ export default function SeedsPage() {
             }`}
           >
             <TrendingUp className="w-4 h-4" />
-            {locale === 'fr' ? 'Tendances' : 'Trends'}
+            {locale === 'fr' ? 'Tendances' : locale === 'es' ? 'Tendencias' : 'Trends'}
           </button>
         </div>
 
@@ -723,7 +723,7 @@ export default function SeedsPage() {
           /* History View */
           <div>
             <h3 className="text-sm font-semibold text-gray-700 mb-4">
-              {locale === 'fr' ? 'Activité récente (30 jours)' : 'Recent Activity (30 days)'}
+              {locale === 'fr' ? 'Activité récente (30 jours)' : locale === 'es' ? 'Actividad reciente (30 días)' : 'Recent Activity (30 days)'}
             </h3>
 
             {activityLogs.length > 0 ? (
@@ -733,11 +733,11 @@ export default function SeedsPage() {
                   const IconComponent = iconData?.icon || Circle
                   const isGrow = log.anchorType === 'grow'
                   const date = new Date(log.createdAt)
-                  const formattedDate = date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                  const formattedDate = date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
                     month: 'short',
                     day: 'numeric',
                   })
-                  const formattedTime = date.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                  const formattedTime = date.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
                     hour: '2-digit',
                     minute: '2-digit',
                   })
@@ -773,14 +773,14 @@ export default function SeedsPage() {
                             isGrow ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-400'
                           }`}>
                             {isGrow
-                              ? (locale === 'fr' ? 'Garder' : 'Grow')
-                              : (locale === 'fr' ? 'Alléger' : 'Let Go')}
+                              ? (locale === 'fr' ? 'Garder' : locale === 'es' ? 'Cultivar' : 'Grow')
+                              : (locale === 'fr' ? 'Alléger' : locale === 'es' ? 'Soltar' : 'Let Go')}
                           </span>
                         </div>
                         <p className="text-sm text-gray-500 mt-0.5">
-                          {log.action === 'added' && (locale === 'fr' ? 'Ajouté' : 'Added')}
-                          {log.action === 'removed' && (locale === 'fr' ? 'Supprimé' : 'Removed')}
-                          {log.action === 'reactivated' && (locale === 'fr' ? 'Réactivé' : 'Reactivated')}
+                          {log.action === 'added' && (locale === 'fr' ? 'Ajouté' : locale === 'es' ? 'Agregado' : 'Added')}
+                          {log.action === 'removed' && (locale === 'fr' ? 'Supprimé' : locale === 'es' ? 'Eliminado' : 'Removed')}
+                          {log.action === 'reactivated' && (locale === 'fr' ? 'Réactivé' : locale === 'es' ? 'Reactivado' : 'Reactivated')}
                         </p>
                       </div>
 
@@ -799,11 +799,13 @@ export default function SeedsPage() {
                 <p className="text-gray-500">
                   {locale === 'fr'
                     ? 'Aucune activité récente'
+                    : locale === 'es' ? 'Sin actividad reciente'
                     : 'No recent activity'}
                 </p>
                 <p className="text-sm text-gray-400 mt-1">
                   {locale === 'fr'
                     ? 'Ajoutez ou supprimez des graines pour voir l\'historique'
+                    : locale === 'es' ? 'Agrega o elimina semillas para ver el historial'
                     : 'Add or remove seeds to see history'}
                 </p>
               </div>
@@ -817,7 +819,7 @@ export default function SeedsPage() {
                     {activityLogs.filter(l => l.action === 'added').length}
                   </div>
                   <p className="text-xs text-green-700 mt-1">
-                    {locale === 'fr' ? 'Graines ajoutées' : 'Seeds added'}
+                    {locale === 'fr' ? 'Graines ajoutées' : locale === 'es' ? 'Semillas agregadas' : 'Seeds added'}
                   </p>
                 </div>
                 <div className="bg-red-50 rounded-2xl p-4 text-center">
@@ -825,7 +827,7 @@ export default function SeedsPage() {
                     {activityLogs.filter(l => l.action === 'removed').length}
                   </div>
                   <p className="text-xs text-red-700 mt-1">
-                    {locale === 'fr' ? 'Graines supprimées' : 'Seeds removed'}
+                    {locale === 'fr' ? 'Graines supprimées' : locale === 'es' ? 'Semillas eliminadas' : 'Seeds removed'}
                   </p>
                 </div>
               </div>
@@ -837,10 +839,10 @@ export default function SeedsPage() {
             {/* Time Range Filter */}
             <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {([
-                { value: 7, label: locale === 'fr' ? '7 jours' : '7 days' },
-                { value: 30, label: locale === 'fr' ? '30 jours' : '30 days' },
-                { value: 90, label: locale === 'fr' ? '3 mois' : '3 months' },
-                { value: 180, label: locale === 'fr' ? '6 mois' : '6 months' },
+                { value: 7, label: locale === 'fr' ? '7 jours' : locale === 'es' ? '7 días' : '7 days' },
+                { value: 30, label: locale === 'fr' ? '30 jours' : locale === 'es' ? '30 días' : '30 days' },
+                { value: 90, label: locale === 'fr' ? '3 mois' : locale === 'es' ? '3 meses' : '3 months' },
+                { value: 180, label: locale === 'fr' ? '6 mois' : locale === 'es' ? '6 meses' : '6 months' },
               ] as const).map(option => (
                 <button
                   key={option.value}
@@ -859,7 +861,7 @@ export default function SeedsPage() {
             {/* Anchor Filter */}
             <div className="mb-4">
               <p className="text-sm text-gray-500 mb-2">
-                {locale === 'fr' ? 'Filtrer par graine:' : 'Filter by seed:'}
+                {locale === 'fr' ? 'Filtrer par graine:' : locale === 'es' ? 'Filtrar por semilla:' : 'Filter by seed:'}
               </p>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -870,7 +872,7 @@ export default function SeedsPage() {
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  {locale === 'fr' ? 'Tout' : 'All'}
+                  {locale === 'fr' ? 'Tout' : locale === 'es' ? 'Todo' : 'All'}
                 </button>
                 {userAnchors.map(anchor => {
                   const iconData = ANCHOR_ICONS[anchor.icon]
@@ -905,14 +907,16 @@ export default function SeedsPage() {
               <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
                 <h3 className="text-sm font-semibold text-gray-700 mb-4">
                   {selectedTrendAnchor
-                    ? `${locale === 'fr' ? 'Progression:' : 'Progress:'} ${
+                    ? `${locale === 'fr' ? 'Progression:' : locale === 'es' ? 'Progreso:' : 'Progress:'} ${
                         locale === 'fr'
                           ? userAnchors.find(a => a.id === selectedTrendAnchor)?.labelFr
                           : userAnchors.find(a => a.id === selectedTrendAnchor)?.labelEn
                       }`
                     : locale === 'fr'
                       ? `Garder vs Alléger (${trendsRange === 7 ? '7 jours' : trendsRange === 30 ? '30 jours' : trendsRange === 90 ? '3 mois' : '6 mois'})`
-                      : `Grow vs Let Go (${trendsRange === 7 ? '7 days' : trendsRange === 30 ? '30 days' : trendsRange === 90 ? '3 months' : '6 months'})`}
+                      : locale === 'es'
+                        ? `Cultivar vs Soltar (${trendsRange === 7 ? '7 días' : trendsRange === 30 ? '30 días' : trendsRange === 90 ? '3 meses' : '6 meses'})`
+                        : `Grow vs Let Go (${trendsRange === 7 ? '7 days' : trendsRange === 30 ? '30 days' : trendsRange === 90 ? '3 months' : '6 months'})`}
                 </h3>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1017,7 +1021,7 @@ export default function SeedsPage() {
                         <Area
                           type="natural"
                           dataKey="grow"
-                          name={locale === 'fr' ? 'Garder' : 'Grow'}
+                          name={locale === 'fr' ? 'Garder' : locale === 'es' ? 'Cultivar' : 'Grow'}
                           stroke="#10b981"
                           strokeWidth={2.5}
                           fill="url(#colorGrow)"
@@ -1027,7 +1031,7 @@ export default function SeedsPage() {
                         <Area
                           type="natural"
                           dataKey="letgo"
-                          name={locale === 'fr' ? 'Alléger' : 'Let Go'}
+                          name={locale === 'fr' ? 'Alléger' : locale === 'es' ? 'Soltar' : 'Let Go'}
                           stroke="#f59e0b"
                           strokeWidth={2.5}
                           fill="url(#colorLetgo)"
@@ -1045,13 +1049,13 @@ export default function SeedsPage() {
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-emerald-500" />
                       <span className="text-xs text-gray-600">
-                        {locale === 'fr' ? 'Garder' : 'Grow'}
+                        {locale === 'fr' ? 'Garder' : locale === 'es' ? 'Cultivar' : 'Grow'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-amber-500" />
                       <span className="text-xs text-gray-600">
-                        {locale === 'fr' ? 'Alléger' : 'Let Go'}
+                        {locale === 'fr' ? 'Alléger' : locale === 'es' ? 'Soltar' : 'Let Go'}
                       </span>
                     </div>
                   </div>
@@ -1063,6 +1067,7 @@ export default function SeedsPage() {
                 <p className="text-gray-500">
                   {locale === 'fr'
                     ? 'Ajoutez des graines pour voir les tendances'
+                    : locale === 'es' ? 'Agrega semillas para ver tendencias'
                     : 'Add seeds to see trends'}
                 </p>
               </div>
@@ -1078,16 +1083,16 @@ export default function SeedsPage() {
                     }, 0)}
                   </div>
                   <p className="text-xs text-emerald-700 mt-1">
-                    {locale === 'fr' ? 'Habitudes cultivées' : 'Habits grown'}
+                    {locale === 'fr' ? 'Habitudes cultivées' : locale === 'es' ? 'Hábitos cultivados' : 'Habits grown'}
                     <br />
                     <span className="text-emerald-500">
                       ({trendsRange === 7
-                        ? (locale === 'fr' ? '7 jours' : '7 days')
+                        ? (locale === 'fr' ? '7 jours' : locale === 'es' ? '7 días' : '7 days')
                         : trendsRange === 30
-                          ? (locale === 'fr' ? '30 jours' : '30 days')
+                          ? (locale === 'fr' ? '30 jours' : locale === 'es' ? '30 días' : '30 days')
                           : trendsRange === 90
-                            ? (locale === 'fr' ? '3 mois' : '3 months')
-                            : (locale === 'fr' ? '6 mois' : '6 months')
+                            ? (locale === 'fr' ? '3 mois' : locale === 'es' ? '3 meses' : '3 months')
+                            : (locale === 'fr' ? '6 mois' : locale === 'es' ? '6 meses' : '6 months')
                       })
                     </span>
                   </p>
@@ -1099,9 +1104,9 @@ export default function SeedsPage() {
                     }, 0)}
                   </div>
                   <p className="text-xs text-amber-400 mt-1">
-                    {locale === 'fr' ? 'Habitudes notées' : 'Habits logged'}
+                    {locale === 'fr' ? 'Habitudes notées' : locale === 'es' ? 'Hábitos registrados' : 'Habits logged'}
                     <br />
-                    <span className="text-amber-400">{locale === 'fr' ? '(à réduire)' : '(to reduce)'}</span>
+                    <span className="text-amber-400">{locale === 'fr' ? '(à réduire)' : locale === 'es' ? '(a reducir)' : '(to reduce)'}</span>
                   </p>
                 </div>
               </div>
@@ -1133,8 +1138,8 @@ export default function SeedsPage() {
             {/* Selected day label */}
             <p className="text-sm text-gray-500 mb-4 text-center">
               {selectedDay === new Date().toISOString().split('T')[0]
-                ? (locale === 'fr' ? "Aujourd'hui" : 'Today')
-                : new Date(selectedDay + 'T12:00:00').toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                ? (locale === 'fr' ? "Aujourd'hui" : locale === 'es' ? 'Hoy' : 'Today')
+                : new Date(selectedDay + 'T12:00:00').toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
                     weekday: 'long',
                     month: 'long',
                     day: 'numeric',
@@ -1154,8 +1159,8 @@ export default function SeedsPage() {
                   }`}
                 >
                   {editMode
-                    ? (locale === 'fr' ? 'Terminé' : 'Done')
-                    : (locale === 'fr' ? 'Modifier' : 'Edit')
+                    ? (locale === 'fr' ? 'Terminé' : locale === 'es' ? 'Listo' : 'Done')
+                    : (locale === 'fr' ? 'Modifier' : locale === 'es' ? 'Editar' : 'Edit')
                   }
                 </button>
               </div>
@@ -1169,7 +1174,7 @@ export default function SeedsPage() {
                     <Sprout className="w-4 h-4 text-white" />
                   </div>
                   <h2 className="font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Garder' : 'Grow'}
+                    {locale === 'fr' ? 'Garder' : locale === 'es' ? 'Cultivar' : 'Grow'}
                   </h2>
                 </div>
                 <button
@@ -1226,13 +1231,13 @@ export default function SeedsPage() {
                 <div className="bg-emerald-50 rounded-2xl p-6 text-center border-2 border-dashed border-emerald-200">
                   <Sprout className="w-8 h-8 text-emerald-300 mx-auto mb-2" />
                   <p className="text-sm text-gray-500">
-                    {locale === 'fr' ? 'Ajoutez des habitudes à cultiver' : 'Add habits to grow'}
+                    {locale === 'fr' ? 'Ajoutez des habitudes à cultiver' : locale === 'es' ? 'Agrega hábitos para cultivar' : 'Add habits to grow'}
                   </p>
                   <button
                     onClick={() => { setAddAnchorType('grow'); setShowAddAnchor(true) }}
                     className="mt-3 text-emerald-600 text-sm font-medium hover:text-emerald-700"
                   >
-                    + {locale === 'fr' ? 'Ajouter' : 'Add'}
+                    + {locale === 'fr' ? 'Ajouter' : locale === 'es' ? 'Agregar' : 'Add'}
                   </button>
                 </div>
               )}
@@ -1246,7 +1251,7 @@ export default function SeedsPage() {
                     <Leaf className="w-4 h-4 text-white" />
                   </div>
                   <h2 className="font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Alléger' : 'Let Go'}
+                    {locale === 'fr' ? 'Alléger' : locale === 'es' ? 'Soltar' : 'Let Go'}
                   </h2>
                 </div>
                 <button
@@ -1303,13 +1308,13 @@ export default function SeedsPage() {
                 <div className="bg-amber-50 rounded-2xl p-6 text-center border-2 border-dashed border-amber-100">
                   <Leaf className="w-8 h-8 text-amber-300 mx-auto mb-2" />
                   <p className="text-sm text-gray-500">
-                    {locale === 'fr' ? 'Ajoutez des habitudes à réduire' : 'Add habits to let go'}
+                    {locale === 'fr' ? 'Ajoutez des habitudes à réduire' : locale === 'es' ? 'Agrega hábitos para soltar' : 'Add habits to let go'}
                   </p>
                   <button
                     onClick={() => { setAddAnchorType('letgo'); setShowAddAnchor(true) }}
                     className="mt-3 text-amber-400 text-sm font-medium hover:text-amber-400"
                   >
-                    + {locale === 'fr' ? 'Ajouter' : 'Add'}
+                    + {locale === 'fr' ? 'Ajouter' : locale === 'es' ? 'Agregar' : 'Add'}
                   </button>
                 </div>
               )}
@@ -1339,7 +1344,7 @@ export default function SeedsPage() {
 
             {/* Tip */}
             <p className="text-[11px] text-gray-400 text-center mb-4">
-              {locale === 'fr' ? 'Utilisez l\'onglet Jour pour voir les détails' : 'Use Day tab to view details'}
+              {locale === 'fr' ? 'Utilisez l\'onglet Jour pour voir les détails' : locale === 'es' ? 'Usa la pestaña Día para ver detalles' : 'Use Day tab to view details'}
             </p>
 
             {/* Grow anchors */}
@@ -1348,7 +1353,7 @@ export default function SeedsPage() {
                 <div className="flex items-center gap-2 mb-3">
                   <Sprout className="w-5 h-5 text-emerald-500" />
                   <span className="font-medium text-gray-700">
-                    {locale === 'fr' ? 'Garder' : 'Grow'}
+                    {locale === 'fr' ? 'Garder' : locale === 'es' ? 'Cultivar' : 'Grow'}
                   </span>
                 </div>
                 <div className="space-y-3">
@@ -1368,7 +1373,7 @@ export default function SeedsPage() {
                           </div>
                           {streak > 1 && (
                             <span className="text-xs bg-emerald-500 text-white px-2.5 py-1 rounded-full font-medium">
-                              🔥 {streak} {locale === 'fr' ? 'jours' : 'days'}
+                              🔥 {streak} {locale === 'fr' ? 'jours' : locale === 'es' ? 'días' : 'days'}
                             </span>
                           )}
                         </div>
@@ -1402,7 +1407,7 @@ export default function SeedsPage() {
                 <div className="flex items-center gap-2 mb-3">
                   <Leaf className="w-5 h-5 text-amber-400" />
                   <span className="font-medium text-gray-700">
-                    {locale === 'fr' ? 'Alléger' : 'Let Go'}
+                    {locale === 'fr' ? 'Alléger' : locale === 'es' ? 'Soltar' : 'Let Go'}
                   </span>
                 </div>
                 <div className="space-y-3">
@@ -1447,7 +1452,7 @@ export default function SeedsPage() {
               <div className="text-center py-12">
                 <Sparkles className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500">
-                  {locale === 'fr' ? 'Ajoutez des graines pour voir vos progrès' : 'Add seeds to see your progress'}
+                  {locale === 'fr' ? 'Ajoutez des graines pour voir vos progrès' : locale === 'es' ? 'Agrega semillas para ver tu progreso' : 'Add seeds to see your progress'}
                 </p>
               </div>
             )}
@@ -1458,6 +1463,7 @@ export default function SeedsPage() {
         <p className="text-center text-xs text-gray-400 mt-6">
           {locale === 'fr'
             ? 'Tapez sur une graine pour enregistrer'
+            : locale === 'es' ? 'Toca una semilla para registrarla'
             : 'Tap a seed to log it'}
         </p>
       </div>
@@ -1481,7 +1487,7 @@ export default function SeedsPage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-gray-900">
-                  {locale === 'fr' ? 'Ajouter une graine' : 'Add Seed'}
+                  {locale === 'fr' ? 'Ajouter une graine' : locale === 'es' ? 'Agregar semilla' : 'Add Seed'}
                 </h3>
                 <button
                   onClick={() => setShowAddAnchor(false)}
@@ -1499,13 +1505,13 @@ export default function SeedsPage() {
               }`}>
                 {addAnchorType === 'grow' ? <Sprout className="w-4 h-4" /> : <Leaf className="w-4 h-4" />}
                 {addAnchorType === 'grow'
-                  ? (locale === 'fr' ? 'Garder' : 'Grow')
-                  : (locale === 'fr' ? 'Alléger' : 'Let Go')}
+                  ? (locale === 'fr' ? 'Garder' : locale === 'es' ? 'Cultivar' : 'Grow')
+                  : (locale === 'fr' ? 'Alléger' : locale === 'es' ? 'Soltar' : 'Let Go')}
               </div>
 
               {/* Icon grid - filtered by type */}
               <p className="text-sm text-gray-500 mb-3">
-                {locale === 'fr' ? 'Choisissez:' : 'Choose:'}
+                {locale === 'fr' ? 'Choisissez:' : locale === 'es' ? 'Elige:' : 'Choose:'}
               </p>
               <div className="grid grid-cols-4 gap-2">
                 {(addAnchorType === 'grow' ? GROW_ANCHOR_OPTIONS : LETGO_ANCHOR_OPTIONS).map((key) => {

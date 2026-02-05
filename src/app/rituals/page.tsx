@@ -232,15 +232,15 @@ export default function RitualsPage() {
 
   // Mood options with Lucide icons
   const moodOptions = [
-    { value: 'great', icon: Laugh, label: locale === 'fr' ? 'Super' : 'Great', color: 'text-emerald-500', bg: 'bg-emerald-100' },
-    { value: 'good', icon: SmilePlus, label: locale === 'fr' ? 'Bien' : 'Good', color: 'text-green-500', bg: 'bg-green-100' },
-    { value: 'okay', icon: Meh, label: locale === 'fr' ? 'Okay' : 'Okay', color: 'text-yellow-500', bg: 'bg-yellow-100' },
-    { value: 'low', icon: Frown, label: locale === 'fr' ? 'Bas' : 'Low', color: 'text-orange-500', bg: 'bg-orange-100' },
-    { value: 'difficult', icon: Angry, label: locale === 'fr' ? 'Difficile' : 'Difficult', color: 'text-red-500', bg: 'bg-red-100' },
+    { value: 'great', icon: Laugh, label: locale === 'fr' ? 'Super' : locale === 'es' ? 'Genial' : 'Great', color: 'text-emerald-500', bg: 'bg-emerald-100' },
+    { value: 'good', icon: SmilePlus, label: locale === 'fr' ? 'Bien' : locale === 'es' ? 'Bien' : 'Good', color: 'text-green-500', bg: 'bg-green-100' },
+    { value: 'okay', icon: Meh, label: locale === 'fr' ? 'Okay' : locale === 'es' ? 'Regular' : 'Okay', color: 'text-yellow-500', bg: 'bg-yellow-100' },
+    { value: 'low', icon: Frown, label: locale === 'fr' ? 'Bas' : locale === 'es' ? 'Bajo' : 'Low', color: 'text-orange-500', bg: 'bg-orange-100' },
+    { value: 'difficult', icon: Angry, label: locale === 'fr' ? 'Difficile' : locale === 'es' ? 'Difícil' : 'Difficult', color: 'text-red-500', bg: 'bg-red-100' },
   ]
 
   // Personalized reflection prompts for each mood (5 options each)
-  const moodPrompts: Record<string, { en: string[], fr: string[] }> = {
+  const moodPrompts: Record<string, { en: string[], fr: string[], es: string[] }> = {
     great: {
       en: [
         "✨ Amazing! What made this moment special?",
@@ -255,6 +255,13 @@ export default function RitualsPage() {
         "💫 Merveilleux! De quoi êtes-vous reconnaissant(e)?",
         "🎉 J'adore cette énergie! Que voulez-vous retenir?",
         "☀️ Beau moment! Comment garder ce sentiment?",
+      ],
+      es: [
+        "✨ ¡Increíble! ¿Qué hizo este momento especial?",
+        "🌟 ¡Estás radiante! ¿Qué despertó esta alegría?",
+        "💫 ¡Maravilloso! ¿Por qué estás agradecido/a ahora?",
+        "🎉 ¡Me encanta esta energía! ¿Qué te gustaría recordar?",
+        "☀️ ¡Hermoso! ¿Cómo puedes llevar este sentimiento contigo?",
       ],
     },
     good: {
@@ -272,6 +279,13 @@ export default function RitualsPage() {
         "🍃 Bravo! Des réflexions à noter?",
         "🌻 Bel effort! De quoi êtes-vous fier(e)?",
       ],
+      es: [
+        "🌿 ¿Qué se sintió bien de esto?",
+        "🌱 ¡Buen trabajo! ¿Qué notaste?",
+        "💚 ¡Encantador! ¿Qué te ayudó a llegar aquí?",
+        "🍃 ¡Bien hecho! ¿Alguna reflexión para capturar?",
+        "🌻 ¡Gran esfuerzo! ¿De qué estás orgulloso/a?",
+      ],
     },
     okay: {
       en: [
@@ -287,6 +301,13 @@ export default function RitualsPage() {
         "💬 Parfois 'okay' suffit. Qu'avez-vous en tête?",
         "🤔 Qu'est-ce qui rendrait demain meilleur?",
         "📝 Des réflexions sur ce moment?",
+      ],
+      es: [
+        "💭 ¿Hay algo que te gustaría capturar?",
+        "🌤️ Apareciste, eso importa. ¿Algún pensamiento?",
+        "💬 A veces estar bien es suficiente. ¿Qué tienes en mente?",
+        "🤔 ¿Qué haría que mañana fuera aún mejor?",
+        "📝 ¿Alguna reflexión de este momento?",
       ],
     },
     low: {
@@ -304,6 +325,13 @@ export default function RitualsPage() {
         "🌧️ Les moments difficiles passent. Qu'est-ce qui vous soutiendrait?",
         "💜 Soyez doux avec vous-même. Un petit réconfort?",
       ],
+      es: [
+        "🤗 ¿Qué te ayudaría ahora mismo?",
+        "💙 Está bien sentirse así. ¿Qué necesitas?",
+        "🫂 No estás solo/a. ¿Qué te pesa?",
+        "🌧️ Los momentos difíciles pasan. ¿Qué te haría sentir apoyado/a?",
+        "💜 Sé amable contigo. ¿Un pequeño consuelo?",
+      ],
     },
     difficult: {
       en: [
@@ -320,12 +348,19 @@ export default function RitualsPage() {
         "🕊️ Les jours difficiles arrivent. Qu'est-ce qui vous guérirait?",
         "❤️‍🩹 Vos sentiments sont valides. Que diriez-vous à un ami?",
       ],
+      es: [
+        "💙 Se necesita valor para seguir adelante. ¿Qué hay en tu corazón?",
+        "🌊 Déjalo salir, este es tu espacio seguro. ¿Cómo estás realmente?",
+        "💪 Eres más fuerte de lo que crees. ¿Qué necesitas soltar?",
+        "🕊️ Los días difíciles pasan. ¿Qué te haría sentir mejor ahora?",
+        "❤️‍🩹 Tus sentimientos son válidos. ¿Qué le dirías a un amigo?",
+      ],
     },
   }
 
   // Get random prompt for current mood
   const getRandomPrompt = (mood: string) => {
-    const prompts = moodPrompts[mood]?.[locale === 'fr' ? 'fr' : 'en'] || []
+    const prompts = moodPrompts[mood]?.[locale === 'fr' ? 'fr' : locale === 'es' ? 'es' : 'en'] || []
     return prompts[Math.floor(Math.random() * prompts.length)] || ''
   }
 
@@ -497,13 +532,13 @@ export default function RitualsPage() {
     yesterday.setDate(yesterday.getDate() - 1)
 
     if (dateStr === todayStr) {
-      return locale === 'fr' ? "Aujourd'hui" : 'Today'
+      return locale === 'fr' ? "Aujourd'hui" : locale === 'es' ? 'Hoy' : 'Today'
     }
     if (dateStr === `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`) {
-      return locale === 'fr' ? 'Hier' : 'Yesterday'
+      return locale === 'fr' ? 'Hier' : locale === 'es' ? 'Ayer' : 'Yesterday'
     }
 
-    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric'
@@ -1032,14 +1067,14 @@ export default function RitualsPage() {
         >
           <div className="flex items-center justify-between mb-1">
             <h1 className="text-2xl font-bold text-gray-900">
-              {locale === 'fr' ? 'Rituels' : 'Rituals'}
+              {locale === 'fr' ? 'Rituels' : locale === 'es' ? 'Rituales' : 'Rituals'}
             </h1>
             <div className="flex items-center gap-2">
               {/* Help/Guide button */}
               <button
                 onClick={() => setShowGuide(true)}
                 className="p-2 bg-gray-100 rounded-xl text-gray-500 hover:bg-gray-200 transition-colors"
-                title={locale === 'fr' ? 'Comment ça marche' : 'How it works'}
+                title={locale === 'fr' ? 'Comment ça marche' : locale === 'es' ? 'Cómo funciona' : 'How it works'}
               >
                 <Info className="w-4 h-4" />
               </button>
@@ -1050,7 +1085,7 @@ export default function RitualsPage() {
               >
                 <Calendar className="w-4 h-4" />
                 <span className="text-sm font-medium">
-                  {locale === 'fr' ? 'Historique' : 'History'}
+                  {locale === 'fr' ? 'Historique' : locale === 'es' ? 'Historial' : 'History'}
                 </span>
               </button>
             </div>
@@ -1058,12 +1093,14 @@ export default function RitualsPage() {
           <p className="text-gray-500 text-sm">
             {totalProgress.total > 0 ? (
               <>
-                {totalProgress.completed}/{totalProgress.total} {locale === 'fr' ? 'complétés aujourd\'hui' : 'completed today'}
+                {totalProgress.completed}/{totalProgress.total} {locale === 'fr' ? 'complétés aujourd\'hui' : locale === 'es' ? 'completados hoy' : 'completed today'}
               </>
             ) : (
               locale === 'fr'
                 ? 'Créez des habitudes positives pour votre bien-être'
-                : 'Build positive habits for your wellbeing'
+                : locale === 'es'
+                  ? 'Crea hábitos positivos para tu bienestar'
+                  : 'Build positive habits for your wellbeing'
             )}
           </p>
         </motion.div>
@@ -1079,7 +1116,7 @@ export default function RitualsPage() {
             {/* Header */}
             <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">
-                {locale === 'fr' ? 'Rythme Quotidien' : 'Daily Rhythm'}
+                {locale === 'fr' ? 'Rythme Quotidien' : locale === 'es' ? 'Ritmo Diario' : 'Daily Rhythm'}
               </h3>
               <span className="text-sm text-gray-400">
                 {totalProgress.completed}/{totalProgress.total}
@@ -1145,7 +1182,7 @@ export default function RitualsPage() {
                         onClick={() => openRitualModal(mr)}
                         className={`px-3 py-1.5 ${category.iconBg} ${category.color} text-xs font-medium rounded-full`}
                       >
-                        {locale === 'fr' ? 'Go' : 'Go'}
+                        {locale === 'fr' ? 'Go' : locale === 'es' ? 'Go' : 'Go'}
                       </button>
                     )}
 
@@ -1170,7 +1207,7 @@ export default function RitualsPage() {
               >
                 <p className="text-sm text-emerald-600 font-medium flex items-center justify-center gap-2">
                   <Sparkles className="w-4 h-4" />
-                  {locale === 'fr' ? 'Tous les rituels complétés!' : 'All rituals complete!'}
+                  {locale === 'fr' ? 'Tous les rituels complétés!' : locale === 'es' ? '¡Todos los rituales completados!' : 'All rituals complete!'}
                 </p>
               </motion.div>
             )}
@@ -1204,7 +1241,7 @@ export default function RitualsPage() {
                 <p className="text-[10px] text-gray-500">
                   {categoryRituals.length > 0 ? (
                     <span className={progress.completed === progress.total && progress.total > 0 ? 'text-emerald-600 font-medium' : ''}>
-                      {progress.completed}/{progress.total} {locale === 'fr' ? 'fait' : 'done'}
+                      {progress.completed}/{progress.total} {locale === 'fr' ? 'fait' : locale === 'es' ? 'hecho' : 'done'}
                     </span>
                   ) : (
                     locale === 'fr' ? category.descFr : category.descEn
@@ -1308,7 +1345,7 @@ export default function RitualsPage() {
                                 onClick={() => openRitualModal(mr)}
                                 className={`px-3 py-1.5 ${category.iconBg} ${category.color} text-xs font-medium rounded-lg`}
                               >
-                                {locale === 'fr' ? 'Faire' : 'Start'}
+                                {locale === 'fr' ? 'Faire' : locale === 'es' ? 'Iniciar' : 'Start'}
                               </button>
                             )}
 
@@ -1335,7 +1372,7 @@ export default function RitualsPage() {
                       {categoryRituals.length === 0 && (
                         <div className="bg-gray-50 rounded-xl p-4 text-center">
                           <p className="text-sm text-gray-400">
-                            {locale === 'fr' ? 'Aucun rituel ajouté' : 'No rituals added'}
+                            {locale === 'fr' ? 'Aucun rituel ajouté' : locale === 'es' ? 'No hay rituales agregados' : 'No rituals added'}
                           </p>
                         </div>
                       )}
@@ -1349,7 +1386,7 @@ export default function RitualsPage() {
                       >
                         <Plus className="w-4 h-4 text-gray-500" />
                         <span className="text-sm font-medium text-gray-500">
-                          {locale === 'fr' ? 'Ajouter un rituel' : 'Add ritual'}
+                          {locale === 'fr' ? 'Ajouter un rituel' : locale === 'es' ? 'Agregar ritual' : 'Add ritual'}
                         </span>
                       </button>
                     </div>
@@ -1385,7 +1422,7 @@ export default function RitualsPage() {
                   <>
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-bold text-gray-900">
-                        {locale === 'fr' ? 'Ajouter un rituel' : 'Add Ritual'}
+                        {locale === 'fr' ? 'Ajouter un rituel' : locale === 'es' ? 'Agregar ritual' : 'Add Ritual'}
                       </h3>
                       <button
                         onClick={() => setShowAddModal(false)}
@@ -1444,7 +1481,7 @@ export default function RitualsPage() {
                     >
                       <Plus className="w-5 h-5 text-emerald-600" />
                       <span className="font-medium text-emerald-600">
-                        {locale === 'fr' ? 'Créer un rituel personnalisé' : 'Create custom ritual'}
+                        {locale === 'fr' ? 'Créer un rituel personnalisé' : locale === 'es' ? 'Crear ritual personalizado' : 'Create custom ritual'}
                       </span>
                     </button>
                   </>
@@ -1459,7 +1496,7 @@ export default function RitualsPage() {
                         <ChevronDown className="w-5 h-5 rotate-90" />
                       </button>
                       <h3 className="text-lg font-bold text-gray-900">
-                        {locale === 'fr' ? 'Planifier le rituel' : 'Schedule Ritual'}
+                        {locale === 'fr' ? 'Planifier le rituel' : locale === 'es' ? 'Programar ritual' : 'Schedule Ritual'}
                       </h3>
                       <button
                         onClick={() => {
@@ -1511,7 +1548,7 @@ export default function RitualsPage() {
                           {selectedRitualToAdd.description && (
                             <div className="bg-white rounded-xl p-3 mb-3 border border-gray-100">
                               <p className="text-xs font-medium text-gray-500 mb-1">
-                                {locale === 'fr' ? '📝 Comment faire' : '📝 What to do'}
+                                {locale === 'fr' ? '📝 Comment faire' : locale === 'es' ? '📝 Qué hacer' : '📝 What to do'}
                               </p>
                               <p className="text-sm text-gray-700 leading-relaxed">
                                 {locale === 'fr' ? selectedRitualToAdd.description_fr : selectedRitualToAdd.description}
@@ -1523,7 +1560,7 @@ export default function RitualsPage() {
                           {benefitText && (
                             <div className="bg-emerald-50/50 rounded-xl p-3 border border-emerald-100/50">
                               <p className="text-xs font-medium text-emerald-700 mb-1">
-                                {locale === 'fr' ? '✨ Pourquoi ça aide' : '✨ Why it helps'}
+                                {locale === 'fr' ? '✨ Pourquoi ça aide' : locale === 'es' ? '✨ Por qué ayuda' : '✨ Why it helps'}
                               </p>
                               <p className="text-sm text-emerald-600/90 leading-relaxed">
                                 {benefitText}
@@ -1538,7 +1575,7 @@ export default function RitualsPage() {
                     <div className="mb-6">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         <Clock className="w-4 h-4 inline mr-1" />
-                        {locale === 'fr' ? 'Heure prévue' : 'Planned Time'}
+                        {locale === 'fr' ? 'Heure prévue' : locale === 'es' ? 'Hora prevista' : 'Planned Time'}
                       </label>
                       <input
                         type="time"
@@ -1549,7 +1586,9 @@ export default function RitualsPage() {
                       <p className="text-xs text-gray-400 mt-2 text-center">
                         {locale === 'fr'
                           ? 'Choisissez l\'heure à laquelle vous prévoyez de faire ce rituel'
-                          : 'Choose when you plan to do this ritual'}
+                          : locale === 'es'
+                            ? 'Elige cuándo planeas hacer este ritual'
+                            : 'Choose when you plan to do this ritual'}
                       </p>
                     </div>
 
@@ -1564,7 +1603,7 @@ export default function RitualsPage() {
                       ) : (
                         <>
                           <Plus className="w-5 h-5" />
-                          {locale === 'fr' ? 'Ajouter à mon rythme' : 'Add to my rhythm'}
+                          {locale === 'fr' ? 'Ajouter à mon rythme' : locale === 'es' ? 'Agregar a mi ritmo' : 'Add to my rhythm'}
                         </>
                       )}
                     </button>
@@ -1594,7 +1633,7 @@ export default function RitualsPage() {
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold text-gray-900">
-                    {locale === 'fr' ? 'Nouveau rituel' : 'New Ritual'}
+                    {locale === 'fr' ? 'Nouveau rituel' : locale === 'es' ? 'Nuevo ritual' : 'New Ritual'}
                   </h3>
                   <button
                     onClick={() => setShowCustomModal(false)}
@@ -1607,13 +1646,13 @@ export default function RitualsPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {locale === 'fr' ? 'Nom' : 'Name'}
+                      {locale === 'fr' ? 'Nom' : locale === 'es' ? 'Nombre' : 'Name'}
                     </label>
                     <input
                       type="text"
                       value={customRitual.name}
                       onChange={(e) => setCustomRitual(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder={locale === 'fr' ? 'Mon rituel...' : 'My ritual...'}
+                      placeholder={locale === 'fr' ? 'Mon rituel...' : locale === 'es' ? 'Mi ritual...' : 'My ritual...'}
                       className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
                     />
                   </div>
@@ -1621,7 +1660,7 @@ export default function RitualsPage() {
                   {/* Icon Selection */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {locale === 'fr' ? 'Icône' : 'Icon'}
+                      {locale === 'fr' ? 'Icône' : locale === 'es' ? 'Icono' : 'Icon'}
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {availableIcons.map((iconOption) => {
@@ -1647,12 +1686,12 @@ export default function RitualsPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {locale === 'fr' ? 'Description (optionnel)' : 'Description (optional)'}
+                      {locale === 'fr' ? 'Description (optionnel)' : locale === 'es' ? 'Descripción (opcional)' : 'Description (optional)'}
                     </label>
                     <textarea
                       value={customRitual.description}
                       onChange={(e) => setCustomRitual(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder={locale === 'fr' ? 'Décrivez votre rituel...' : 'Describe your ritual...'}
+                      placeholder={locale === 'fr' ? 'Décrivez votre rituel...' : locale === 'es' ? 'Describe tu ritual...' : 'Describe your ritual...'}
                       rows={2}
                       className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none transition-all resize-none"
                     />
@@ -1661,7 +1700,7 @@ export default function RitualsPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       <Clock className="w-4 h-4 inline mr-1" />
-                      {locale === 'fr' ? 'Heure prévue' : 'Planned Time'}
+                      {locale === 'fr' ? 'Heure prévue' : locale === 'es' ? 'Hora prevista' : 'Planned Time'}
                     </label>
                     <input
                       type="time"
@@ -1675,7 +1714,7 @@ export default function RitualsPage() {
                   <div className="p-4 bg-gray-50 rounded-xl space-y-3">
                     <label className="flex items-center justify-between cursor-pointer">
                       <span className="text-sm font-medium text-gray-700">
-                        {locale === 'fr' ? 'Durée prévue' : 'Set duration'}
+                        {locale === 'fr' ? 'Durée prévue' : locale === 'es' ? 'Establecer duración' : 'Set duration'}
                       </span>
                       <button
                         type="button"
@@ -1720,7 +1759,7 @@ export default function RitualsPage() {
                     {saving ? (
                       <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                     ) : (
-                      locale === 'fr' ? 'Créer' : 'Create'
+                      locale === 'fr' ? 'Créer' : locale === 'es' ? 'Crear' : 'Create'
                     )}
                   </button>
                 </div>
@@ -1748,7 +1787,7 @@ export default function RitualsPage() {
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold text-gray-900">
-                    {locale === 'fr' ? 'Modifier le rituel' : 'Edit Ritual'}
+                    {locale === 'fr' ? 'Modifier le rituel' : locale === 'es' ? 'Editar ritual' : 'Edit Ritual'}
                   </h3>
                   <button
                     onClick={() => setEditingRitual(null)}
@@ -1761,13 +1800,13 @@ export default function RitualsPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {locale === 'fr' ? 'Nom' : 'Name'}
+                      {locale === 'fr' ? 'Nom' : locale === 'es' ? 'Nombre' : 'Name'}
                     </label>
                     <input
                       type="text"
                       value={editingRitual.name}
                       onChange={(e) => setEditingRitual(prev => prev ? ({ ...prev, name: e.target.value }) : null)}
-                      placeholder={locale === 'fr' ? 'Mon rituel...' : 'My ritual...'}
+                      placeholder={locale === 'fr' ? 'Mon rituel...' : locale === 'es' ? 'Mi ritual...' : 'My ritual...'}
                       className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
                     />
                   </div>
@@ -1775,7 +1814,7 @@ export default function RitualsPage() {
                   {/* Icon Selection */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {locale === 'fr' ? 'Icône' : 'Icon'}
+                      {locale === 'fr' ? 'Icône' : locale === 'es' ? 'Icono' : 'Icon'}
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {availableIcons.map((iconOption) => {
@@ -1801,12 +1840,12 @@ export default function RitualsPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {locale === 'fr' ? 'Description (optionnel)' : 'Description (optional)'}
+                      {locale === 'fr' ? 'Description (optionnel)' : locale === 'es' ? 'Descripción (opcional)' : 'Description (optional)'}
                     </label>
                     <textarea
                       value={editingRitual.description}
                       onChange={(e) => setEditingRitual(prev => prev ? ({ ...prev, description: e.target.value }) : null)}
-                      placeholder={locale === 'fr' ? 'Décrivez votre rituel...' : 'Describe your ritual...'}
+                      placeholder={locale === 'fr' ? 'Décrivez votre rituel...' : locale === 'es' ? 'Describe tu ritual...' : 'Describe your ritual...'}
                       rows={2}
                       className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all resize-none"
                     />
@@ -1815,7 +1854,7 @@ export default function RitualsPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       <Clock className="w-4 h-4 inline mr-1" />
-                      {locale === 'fr' ? 'Heure prévue' : 'Planned Time'}
+                      {locale === 'fr' ? 'Heure prévue' : locale === 'es' ? 'Hora prevista' : 'Planned Time'}
                     </label>
                     <input
                       type="time"
@@ -1829,7 +1868,7 @@ export default function RitualsPage() {
                   <div className="p-4 bg-gray-50 rounded-xl space-y-3">
                     <label className="flex items-center justify-between cursor-pointer">
                       <span className="text-sm font-medium text-gray-700">
-                        {locale === 'fr' ? 'Durée prévue' : 'Set duration'}
+                        {locale === 'fr' ? 'Durée prévue' : locale === 'es' ? 'Establecer duración' : 'Set duration'}
                       </span>
                       <button
                         type="button"
@@ -1874,7 +1913,7 @@ export default function RitualsPage() {
                     {saving ? (
                       <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                     ) : (
-                      locale === 'fr' ? 'Enregistrer' : 'Save Changes'
+                      locale === 'fr' ? 'Enregistrer' : locale === 'es' ? 'Guardar cambios' : 'Save Changes'
                     )}
                   </button>
                 </div>
@@ -1931,8 +1970,8 @@ export default function RitualsPage() {
                         <Pencil className="w-5 h-5 text-blue-600" />
                       </div>
                       <div>
-                        <p className="font-medium">{locale === 'fr' ? 'Modifier' : 'Edit'}</p>
-                        <p className="text-xs text-gray-500">{locale === 'fr' ? 'Changer le nom, durée...' : 'Change name, duration...'}</p>
+                        <p className="font-medium">{locale === 'fr' ? 'Modifier' : locale === 'es' ? 'Editar' : 'Edit'}</p>
+                        <p className="text-xs text-gray-500">{locale === 'fr' ? 'Changer le nom, durée...' : locale === 'es' ? 'Cambiar nombre, duración...' : 'Change name, duration...'}</p>
                       </div>
                     </button>
                   )}
@@ -1949,8 +1988,8 @@ export default function RitualsPage() {
                       <X className="w-5 h-5 text-orange-600" />
                     </div>
                     <div>
-                      <p className="font-medium">{locale === 'fr' ? 'Retirer' : 'Remove'}</p>
-                      <p className="text-xs text-gray-500">{locale === 'fr' ? 'Retirer de votre liste' : 'Remove from your list'}</p>
+                      <p className="font-medium">{locale === 'fr' ? 'Retirer' : locale === 'es' ? 'Quitar' : 'Remove'}</p>
+                      <p className="text-xs text-gray-500">{locale === 'fr' ? 'Retirer de votre liste' : locale === 'es' ? 'Quitar de tu lista' : 'Remove from your list'}</p>
                     </div>
                   </button>
 
@@ -1972,8 +2011,8 @@ export default function RitualsPage() {
                         <Trash2 className="w-5 h-5 text-red-600" />
                       </div>
                       <div>
-                        <p className="font-medium">{locale === 'fr' ? 'Supprimer' : 'Delete'}</p>
-                        <p className="text-xs text-red-500">{locale === 'fr' ? 'Supprimer définitivement' : 'Delete permanently'}</p>
+                        <p className="font-medium">{locale === 'fr' ? 'Supprimer' : locale === 'es' ? 'Eliminar' : 'Delete'}</p>
+                        <p className="text-xs text-red-500">{locale === 'fr' ? 'Supprimer définitivement' : locale === 'es' ? 'Eliminar permanentemente' : 'Delete permanently'}</p>
                       </div>
                     </button>
                   )}
@@ -1984,7 +2023,7 @@ export default function RitualsPage() {
                   onClick={() => setMenuRitual(null)}
                   className="w-full mt-4 py-3 text-gray-500 font-medium"
                 >
-                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                  {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
                 </button>
               </motion.div>
             </>
@@ -2013,12 +2052,14 @@ export default function RitualsPage() {
                     <Trash2 className="w-6 h-6 text-red-500" />
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 mb-1">
-                    {locale === 'fr' ? 'Supprimer définitivement ?' : 'Delete permanently?'}
+                    {locale === 'fr' ? 'Supprimer définitivement ?' : locale === 'es' ? '¿Eliminar permanentemente?' : 'Delete permanently?'}
                   </h3>
                   <p className="text-sm text-gray-500">
                     {locale === 'fr'
                       ? `"${showDeleteConfirm.name}" sera supprimé définitivement. Cette action est irréversible.`
-                      : `"${showDeleteConfirm.name}" will be permanently deleted. This action cannot be undone.`
+                      : locale === 'es'
+                        ? `"${showDeleteConfirm.name}" se eliminará permanentemente. Esta acción no se puede deshacer.`
+                        : `"${showDeleteConfirm.name}" will be permanently deleted. This action cannot be undone.`
                     }
                   </p>
                 </div>
@@ -2028,7 +2069,7 @@ export default function RitualsPage() {
                     onClick={() => setShowDeleteConfirm(null)}
                     className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
                   >
-                    {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                    {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
                   </button>
                   <button
                     onClick={deleteCustomRitual}
@@ -2038,7 +2079,7 @@ export default function RitualsPage() {
                     {saving ? (
                       <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                     ) : (
-                      locale === 'fr' ? 'Supprimer' : 'Delete'
+                      locale === 'fr' ? 'Supprimer' : locale === 'es' ? 'Eliminar' : 'Delete'
                     )}
                   </button>
                 </div>
@@ -2121,31 +2162,33 @@ export default function RitualsPage() {
                           className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl"
                         >
                           <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
-                            {locale === 'fr' ? 'Quitter le rituel ?' : 'Exit ritual?'}
+                            {locale === 'fr' ? 'Quitter le rituel ?' : locale === 'es' ? '¿Salir del ritual?' : 'Exit ritual?'}
                           </h3>
                           <p className="text-gray-500 text-sm text-center mb-6">
                             {locale === 'fr'
                               ? 'Votre progression sera perdue et le temps sera réinitialisé.'
-                              : 'You can pause and come back later, or discard your progress.'}
+                              : locale === 'es'
+                                ? 'Puedes pausar y volver más tarde, o descartar tu progreso.'
+                                : 'You can pause and come back later, or discard your progress.'}
                           </p>
                           <div className="flex flex-col gap-2">
                             <button
                               onClick={() => setShowExitConfirm(false)}
                               className="w-full py-3 px-4 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 transition-colors"
                             >
-                              {locale === 'fr' ? 'Continuer le rituel' : 'Continue Ritual'}
+                              {locale === 'fr' ? 'Continuer le rituel' : locale === 'es' ? 'Continuar ritual' : 'Continue Ritual'}
                             </button>
                             <button
                               onClick={handleExitKeepTimer}
                               className="w-full py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                             >
-                              {locale === 'fr' ? 'Pause & revenir plus tard' : 'Pause & Come Back Later'}
+                              {locale === 'fr' ? 'Pause & revenir plus tard' : locale === 'es' ? 'Pausar y volver más tarde' : 'Pause & Come Back Later'}
                             </button>
                             <button
                               onClick={handleExitDiscard}
                               className="w-full py-2 px-4 text-red-500 text-sm font-medium hover:text-red-600 transition-colors"
                             >
-                              {locale === 'fr' ? 'Abandonner' : 'Discard Progress'}
+                              {locale === 'fr' ? 'Abandonner' : locale === 'es' ? 'Descartar progreso' : 'Discard Progress'}
                             </button>
                           </div>
                         </motion.div>
@@ -2258,8 +2301,8 @@ export default function RitualsPage() {
                               </motion.span>
                               <span className="text-sm text-gray-500 mt-1">
                                 {isOvertime
-                                  ? (locale === 'fr' ? 'temps bonus!' : 'bonus time!')
-                                  : (locale === 'fr' ? 'restant' : 'remaining')}
+                                  ? (locale === 'fr' ? 'temps bonus!' : locale === 'es' ? '¡tiempo extra!' : 'bonus time!')
+                                  : (locale === 'fr' ? 'restant' : locale === 'es' ? 'restante' : 'remaining')}
                               </span>
                             </div>
                           </div>
@@ -2302,7 +2345,7 @@ export default function RitualsPage() {
                           animate={{ opacity: 1 }}
                           className="text-gray-500 text-sm text-center mb-4"
                         >
-                          {locale === 'fr' ? 'Respirez profondément...' : 'Breathe deeply...'}
+                          {locale === 'fr' ? 'Respirez profondément...' : locale === 'es' ? 'Respira profundamente...' : 'Breathe deeply...'}
                         </motion.p>
                       )}
 
@@ -2313,7 +2356,7 @@ export default function RitualsPage() {
                           animate={{ opacity: 1 }}
                           className="text-emerald-600 text-sm text-center mb-4 font-medium"
                         >
-                          {locale === 'fr' ? 'Continuez ou terminez quand vous êtes prêt!' : 'Keep going or finish when ready!'}
+                          {locale === 'fr' ? 'Continuez ou terminez quand vous êtes prêt!' : locale === 'es' ? '¡Sigue adelante o termina cuando estés listo!' : 'Keep going or finish when ready!'}
                         </motion.p>
                       )}
 
@@ -2331,7 +2374,7 @@ export default function RitualsPage() {
                           className="w-full max-w-sm bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg transition-colors"
                         >
                           <Sparkles className="w-5 h-5" />
-                          {locale === 'fr' ? 'Terminer' : 'Finish'}
+                          {locale === 'fr' ? 'Terminer' : locale === 'es' ? 'Finalizar' : 'Finish'}
                         </motion.button>
                       )}
 
@@ -2345,7 +2388,7 @@ export default function RitualsPage() {
                           {/* Step 1: Mood Selection */}
                           <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4">
                             <p className="text-sm text-gray-600 text-center mb-3 font-medium">
-                              {locale === 'fr' ? 'Comment vous sentez-vous?' : 'How do you feel?'}
+                              {locale === 'fr' ? 'Comment vous sentez-vous?' : locale === 'es' ? '¿Cómo te sientes?' : 'How do you feel?'}
                             </p>
                             <div className="flex justify-center gap-2">
                               {moodOptions.map((mood) => {
@@ -2402,7 +2445,7 @@ export default function RitualsPage() {
                                   e.target.style.height = 'auto'
                                   e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px'
                                 }}
-                                placeholder={locale === 'fr' ? 'Partagez vos pensées...' : 'Share your thoughts...'}
+                                placeholder={locale === 'fr' ? 'Partagez vos pensées...' : locale === 'es' ? 'Comparte tus pensamientos...' : 'Share your thoughts...'}
                                 rows={2}
                                 className="w-full px-3 py-2 bg-white/80 backdrop-blur-sm rounded-xl border-0 focus:ring-2 focus:ring-white/50 outline-none transition-all resize-none text-gray-700 placeholder-gray-400 text-sm shadow-sm min-h-[52px]"
                               />
@@ -2422,7 +2465,7 @@ export default function RitualsPage() {
                                 ) : (
                                   <>
                                     <Sparkles className="w-5 h-5" />
-                                    {locale === 'fr' ? 'Terminer le rituel' : 'Complete Ritual'}
+                                    {locale === 'fr' ? 'Terminer le rituel' : locale === 'es' ? 'Completar ritual' : 'Complete Ritual'}
                                   </>
                                 )}
                               </motion.button>
@@ -2434,7 +2477,7 @@ export default function RitualsPage() {
                             onClick={() => setShowCompletionFlow(false)}
                             className="text-gray-500 text-sm hover:text-gray-700 transition-colors"
                           >
-                            {locale === 'fr' ? '← Continuer le rituel' : '← Continue ritual'}
+                            {locale === 'fr' ? '← Continuer le rituel' : locale === 'es' ? '← Continuar ritual' : '← Continue ritual'}
                           </button>
                         </motion.div>
                       )}
@@ -2445,7 +2488,7 @@ export default function RitualsPage() {
                           onClick={handleExitClick}
                           className="mt-4 text-gray-500 text-sm hover:text-gray-700 transition-colors"
                         >
-                          {locale === 'fr' ? 'Faire plus tard' : 'Do later'}
+                          {locale === 'fr' ? 'Faire plus tard' : locale === 'es' ? 'Hacer más tarde' : 'Do later'}
                         </button>
                       )}
                       {/* Bottom spacer for centering */}
@@ -2491,7 +2534,7 @@ export default function RitualsPage() {
                             {locale === 'fr' ? historyRitual.ritual.name_fr : historyRitual.ritual.name}
                           </h3>
                           <p className="text-xs text-gray-500">
-                            {locale === 'fr' ? 'Historique' : 'History'}
+                            {locale === 'fr' ? 'Historique' : locale === 'es' ? 'Historial' : 'History'}
                           </p>
                         </div>
                         <button
@@ -2514,7 +2557,7 @@ export default function RitualsPage() {
                               <Calendar className="w-6 h-6 text-gray-300" />
                             </div>
                             <p className="text-gray-400 text-sm">
-                              {locale === 'fr' ? 'Pas encore de données' : 'No history yet'}
+                              {locale === 'fr' ? 'Pas encore de données' : locale === 'es' ? 'Aún no hay historial' : 'No history yet'}
                             </p>
                           </div>
                         ) : (
@@ -2586,7 +2629,7 @@ export default function RitualsPage() {
                                 {ritualHistory.filter(h => h.completed).length}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {locale === 'fr' ? 'Complétés' : 'Completed'}
+                                {locale === 'fr' ? 'Complétés' : locale === 'es' ? 'Completados' : 'Completed'}
                               </p>
                             </div>
                             <div className="w-px h-8 bg-gray-200" />
@@ -2602,7 +2645,7 @@ export default function RitualsPage() {
                                   : '-'}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {locale === 'fr' ? 'Moy. min' : 'Avg mins'}
+                                {locale === 'fr' ? 'Moy. min' : locale === 'es' ? 'Prom. min' : 'Avg mins'}
                               </p>
                             </div>
                             <div className="w-px h-8 bg-gray-200" />
@@ -2611,7 +2654,7 @@ export default function RitualsPage() {
                                 {ritualHistory.filter(h => h.notes).length}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {locale === 'fr' ? 'Notes' : 'Notes'}
+                                {locale === 'fr' ? 'Notes' : locale === 'es' ? 'Notas' : 'Notes'}
                               </p>
                             </div>
                           </div>

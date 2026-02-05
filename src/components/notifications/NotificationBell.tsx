@@ -18,7 +18,7 @@ import {
 import { useNotifications } from '@/hooks/useNotifications'
 import { useRouter, usePathname } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
-import { fr } from 'date-fns/locale'
+import { fr, es } from 'date-fns/locale'
 import { useLanguage } from '@/lib/i18n/context'
 import type { NotificationType } from '@/lib/notifications/types'
 
@@ -138,7 +138,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
   const formatTime = (dateStr: string) => {
     return formatDistanceToNow(new Date(dateStr), {
       addSuffix: true,
-      locale: locale === 'fr' ? fr : undefined,
+      locale: locale === 'fr' ? fr : locale === 'es' ? es : undefined,
     })
   }
 
@@ -188,11 +188,11 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-gray-900 dark:text-white">
-                  {locale === 'fr' ? 'Notifications' : 'Notifications'}
+                  {locale === 'fr' ? 'Notifications' : locale === 'es' ? 'Notificaciones' : 'Notifications'}
                 </h3>
                 {unreadCount > 0 && (
                   <span className="px-2 py-0.5 text-xs font-medium bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 rounded-full">
-                    {unreadCount} {locale === 'fr' ? 'nouvelles' : 'new'}
+                    {unreadCount} {locale === 'fr' ? 'nouvelles' : locale === 'es' ? 'nuevas' : 'new'}
                   </span>
                 )}
               </div>
@@ -201,7 +201,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
                   <button
                     onClick={markAllAsRead}
                     className="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
-                    title={locale === 'fr' ? 'Tout marquer comme lu' : 'Mark all as read'}
+                    title={locale === 'fr' ? 'Tout marquer comme lu' : locale === 'es' ? 'Marcar todo como leido' : 'Mark all as read'}
                   >
                     <CheckCheck className="w-4 h-4" />
                   </button>
@@ -227,12 +227,14 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
                     <Bell className="w-8 h-8 text-gray-300 dark:text-white/20" />
                   </div>
                   <p className="text-gray-500 dark:text-white/50 font-medium">
-                    {locale === 'fr' ? 'Aucune notification' : 'No notifications yet'}
+                    {locale === 'fr' ? 'Aucune notification' : locale === 'es' ? 'No hay notificaciones' : 'No notifications yet'}
                   </p>
                   <p className="text-gray-400 dark:text-white/30 text-sm mt-1">
                     {locale === 'fr'
                       ? 'Vous verrez vos notifications ici'
-                      : "You'll see your notifications here"}
+                      : locale === 'es'
+                        ? 'Veras tus notificaciones aqui'
+                        : "You'll see your notifications here"}
                   </p>
                 </div>
               ) : (
@@ -251,7 +253,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
                           >
                             <Trash2 className="w-4 h-4" />
                             <span className="text-sm font-medium">
-                              {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                              {locale === 'fr' ? 'Supprimer' : locale === 'es' ? 'Eliminar' : 'Delete'}
                             </span>
                           </button>
                         </div>
@@ -313,7 +315,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
                                       <button
                                         onClick={(e) => handleMarkAsRead(e, notification.id)}
                                         className="p-1 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-emerald-500 transition-colors"
-                                        title={locale === 'fr' ? 'Marquer comme lu' : 'Mark as read'}
+                                        title={locale === 'fr' ? 'Marquer comme lu' : locale === 'es' ? 'Marcar como leido' : 'Mark as read'}
                                       >
                                         <Check className="w-3.5 h-3.5" />
                                       </button>
@@ -321,7 +323,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
                                     <button
                                       onClick={(e) => handleDelete(e, notification.id)}
                                       className="p-1 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-red-500 transition-colors"
-                                      title={locale === 'fr' ? 'Supprimer' : 'Delete'}
+                                      title={locale === 'fr' ? 'Supprimer' : locale === 'es' ? 'Eliminar' : 'Delete'}
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -348,7 +350,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
                   }}
                   className="text-sm text-gray-500 dark:text-white/50 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                 >
-                  {locale === 'fr' ? '⚙️ Gérer les préférences' : '⚙️ Manage preferences'}
+                  {locale === 'fr' ? '⚙️ Gérer les préférences' : locale === 'es' ? '⚙️ Administrar preferencias' : '⚙️ Manage preferences'}
                 </button>
               </div>
             )}

@@ -11,6 +11,7 @@ export interface StoredInsight {
   insight_key: string
   insight_text: string
   insight_text_fr?: string
+  insight_text_es?: string
   confidence: number
   data_points: number
   first_detected_at: string
@@ -71,6 +72,7 @@ interface DetectedPattern {
   key: string
   text: string
   textFr: string
+  textEs: string
   confidence: number
   dataPoints: number
 }
@@ -185,6 +187,7 @@ async function upsertInsight(
         insight_key: pattern.key,
         insight_text: pattern.text,
         insight_text_fr: pattern.textFr,
+        insight_text_es: pattern.textEs,
         confidence: pattern.confidence,
         data_points: pattern.dataPoints,
         last_confirmed_at: new Date().toISOString(),
@@ -238,6 +241,7 @@ function detectSleepPatterns(data: PatternData): DetectedPattern[] {
         key: 'weekend_sleep_more',
         text: `You sleep about ${diffHours} hours more on weekends than weekdays.`,
         textFr: `Tu dors environ ${diffHours} heures de plus le week-end qu'en semaine.`,
+        textEs: `Duermes aproximadamente ${diffHours} horas más los fines de semana que entre semana.`,
         confidence: Math.min(0.9, 0.5 + (entries.length / 60)),
         dataPoints: entries.length,
       })
@@ -247,6 +251,7 @@ function detectSleepPatterns(data: PatternData): DetectedPattern[] {
         key: 'weekday_sleep_more',
         text: `Interestingly, you sleep ${Math.abs(diffHours)} hours more on weekdays than weekends.`,
         textFr: `Fait intéressant, tu dors ${Math.abs(diffHours)} heures de plus en semaine que le week-end.`,
+        textEs: `Curiosamente, duermes ${Math.abs(diffHours)} horas más entre semana que los fines de semana.`,
         confidence: Math.min(0.9, 0.5 + (entries.length / 60)),
         dataPoints: entries.length,
       })
@@ -263,6 +268,7 @@ function detectSleepPatterns(data: PatternData): DetectedPattern[] {
       key: 'chronic_sleep_deprivation',
       text: `You have been averaging ${avgSleepHours} hours of sleep over the past month. That is below the recommended 7-8 hours.`,
       textFr: `Tu as dormi en moyenne ${avgSleepHours} heures ces derniers mois. C'est en dessous des 7-8 heures recommandées.`,
+      textEs: `Has dormido un promedio de ${avgSleepHours} horas en el último mes. Eso está por debajo de las 7-8 horas recomendadas.`,
       confidence: 0.85,
       dataPoints: entries.length,
     })
@@ -272,6 +278,7 @@ function detectSleepPatterns(data: PatternData): DetectedPattern[] {
       key: 'good_sleep_habit',
       text: `You have been maintaining ${avgSleepHours} hours of sleep on average. That is solid.`,
       textFr: `Tu maintiens une moyenne de ${avgSleepHours} heures de sommeil. C'est bien.`,
+      textEs: `Has mantenido un promedio de ${avgSleepHours} horas de sueño. Eso está muy bien.`,
       confidence: 0.85,
       dataPoints: entries.length,
     })
@@ -286,6 +293,7 @@ function detectSleepPatterns(data: PatternData): DetectedPattern[] {
       key: 'regular_napper',
       text: `You take naps about ${napPercentage}% of the time. Naps can be great for energy.`,
       textFr: `Tu fais des siestes environ ${napPercentage}% du temps. Les siestes peuvent être très bénéfiques.`,
+      textEs: `Tomas siestas aproximadamente el ${napPercentage}% del tiempo. Las siestas pueden ser muy buenas para la energía.`,
       confidence: 0.7,
       dataPoints: napsCount,
     })
@@ -310,6 +318,7 @@ function detectWorkPatterns(data: PatternData): DetectedPattern[] {
       key: 'long_work_hours',
       text: `You have been working ${avgWorkHours} hours on average. That is quite intense.`,
       textFr: `Tu travailles en moyenne ${avgWorkHours} heures. C'est assez intense.`,
+      textEs: `Has trabajado un promedio de ${avgWorkHours} horas. Eso es bastante intenso.`,
       confidence: 0.8,
       dataPoints: entries.length,
     })
@@ -326,6 +335,7 @@ function detectWorkPatterns(data: PatternData): DetectedPattern[] {
       key: 'meeting_heavy',
       text: `About ${meetingPercentage}% of your work time is spent in meetings. Consider if you need more deep focus time.`,
       textFr: `Environ ${meetingPercentage}% de ton temps de travail est passé en réunions. As-tu besoin de plus de temps de concentration ?`,
+      textEs: `Aproximadamente el ${meetingPercentage}% de tu tiempo de trabajo lo pasas en reuniones. Considera si necesitas más tiempo de concentración profunda.`,
       confidence: 0.75,
       dataPoints: entries.length,
     })
@@ -339,6 +349,7 @@ function detectWorkPatterns(data: PatternData): DetectedPattern[] {
       key: 'good_deep_work',
       text: `You are great at prioritizing deep work. More than half your work time is focused.`,
       textFr: `Tu es doué pour prioriser le travail en profondeur. Plus de la moitié de ton temps est du travail concentré.`,
+      textEs: `Eres muy bueno priorizando el trabajo profundo. Más de la mitad de tu tiempo es trabajo concentrado.`,
       confidence: 0.8,
       dataPoints: entries.length,
     })
@@ -375,6 +386,7 @@ function detectWeeklyCycles(data: PatternData): DetectedPattern[] {
   // Find most and least productive days
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   const dayNamesFr = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+  const dayNamesEs = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
 
   let maxWorkDay = -1, maxWorkAvg = 0
   let minWorkDay = -1, minWorkAvg = Infinity
@@ -399,6 +411,7 @@ function detectWeeklyCycles(data: PatternData): DetectedPattern[] {
       key: 'most_productive_day',
       text: `${dayNames[maxWorkDay]} tends to be your most productive work day.`,
       textFr: `Le ${dayNamesFr[maxWorkDay]} est généralement ton jour le plus productif.`,
+      textEs: `El ${dayNamesEs[maxWorkDay]} suele ser tu día de trabajo más productivo.`,
       confidence: 0.7,
       dataPoints: dayStats[maxWorkDay].work.length,
     })
@@ -423,6 +436,7 @@ function detectWeeklyCycles(data: PatternData): DetectedPattern[] {
       key: 'best_life_day',
       text: `${dayNames[maxLifeDay]} is when you dedicate the most time to yourself (${maxLifeHours}h on average).`,
       textFr: `Le ${dayNamesFr[maxLifeDay]} est le jour où tu te consacres le plus de temps (${maxLifeHours}h en moyenne).`,
+      textEs: `El ${dayNamesEs[maxLifeDay]} es cuando más tiempo te dedicas a ti mismo (${maxLifeHours}h en promedio).`,
       confidence: 0.7,
       dataPoints: dayStats[maxLifeDay].life.length,
     })
@@ -485,6 +499,7 @@ function detectMoodCorrelations(data: PatternData): DetectedPattern[] {
         key: 'sleep_improves_mood',
         text: `When you get good sleep (7+ hours), you are ${diff}% more likely to feel positive.`,
         textFr: `Quand tu dors bien (7h+), tu as ${diff}% plus de chances de te sentir positif.`,
+        textEs: `Cuando duermes bien (7+ horas), tienes un ${diff}% más de probabilidad de sentirte positivo.`,
         confidence: 0.8,
         dataPoints: goodSleepDays.length + badSleepDays.length,
       })
@@ -514,6 +529,7 @@ function detectMoodCorrelations(data: PatternData): DetectedPattern[] {
         key: 'exercise_improves_mood',
         text: `You tend to feel better on days when you exercise. Your mood noticeably lifts after physical activity.`,
         textFr: `Tu te sens mieux les jours où tu fais de l'exercice. Ton humeur s'améliore après l'activité physique.`,
+        textEs: `Tiendes a sentirte mejor los días que haces ejercicio. Tu estado de ánimo mejora notablemente después de la actividad física.`,
         confidence: 0.75,
         dataPoints: exerciseDays.length,
       })
@@ -539,6 +555,7 @@ function detectRitualImpact(data: PatternData): DetectedPattern[] {
       key: 'high_ritual_consistency',
       text: `You are incredibly consistent with your rituals. This dedication builds lasting habits.`,
       textFr: `Tu es incroyablement constant avec tes rituels. Cette dévotion construit des habitudes durables.`,
+      textEs: `Eres increíblemente constante con tus rituales. Esta dedicación construye hábitos duraderos.`,
       confidence: 0.9,
       dataPoints: ritualCompletions.length,
     })
@@ -548,6 +565,7 @@ function detectRitualImpact(data: PatternData): DetectedPattern[] {
       key: 'ritual_struggle',
       text: `Rituals seem to be challenging right now. Maybe we could look at making them simpler?`,
       textFr: `Les rituels semblent difficiles en ce moment. On pourrait peut-être les simplifier ?`,
+      textEs: `Los rituales parecen difíciles en este momento. ¿Quizás podríamos simplificarlos?`,
       confidence: 0.7,
       dataPoints: ritualCompletions.length,
     })
@@ -566,6 +584,7 @@ function detectRitualImpact(data: PatternData): DetectedPattern[] {
       key: 'rituals_improve_mood',
       text: `Your rituals actually improve your mood. You often feel better after completing them.`,
       textFr: `Tes rituels améliorent vraiment ton humeur. Tu te sens souvent mieux après.`,
+      textEs: `Tus rituales realmente mejoran tu estado de ánimo. A menudo te sientes mejor después de completarlos.`,
       confidence: 0.8,
       dataPoints: moodImprovements.length,
     })
@@ -608,6 +627,7 @@ function detectBalancePatterns(data: PatternData): DetectedPattern[] {
       key: 'good_overall_balance',
       text: `You have maintained good balance most days. That is not easy, be proud of that.`,
       textFr: `Tu as maintenu un bon équilibre la plupart des jours. C'est pas facile, bravo.`,
+      textEs: `Has mantenido un buen equilibrio la mayoría de los días. No es fácil, siéntete orgulloso de eso.`,
       confidence: 0.85,
       dataPoints: entries.length,
     })
@@ -620,6 +640,7 @@ function detectBalancePatterns(data: PatternData): DetectedPattern[] {
       key: 'work_dominant_lifestyle',
       text: `Work takes up more than half your day ${percentage}% of the time. How are you feeling about that?`,
       textFr: `Le travail prend plus de la moitié de ta journée ${percentage}% du temps. Comment te sens-tu par rapport à ça ?`,
+      textEs: `El trabajo ocupa más de la mitad de tu día el ${percentage}% del tiempo. ¿Cómo te sientes al respecto?`,
       confidence: 0.8,
       dataPoints: entries.length,
     })
@@ -633,24 +654,30 @@ function detectBalancePatterns(data: PatternData): DetectedPattern[] {
  */
 export function formatInsightsForPrompt(
   insights: StoredInsight[],
-  locale: 'en' | 'fr' = 'en'
+  locale: 'en' | 'fr' | 'es' = 'en'
 ): string {
   if (insights.length === 0) {
     return locale === 'fr'
       ? '\n*** Pas de patterns récents détectés (utilisateur peu actif récemment) ***'
-      : '\n*** No recent patterns detected (user has not been active recently) ***'
+      : locale === 'es'
+        ? '\n*** No se detectaron patrones recientes (el usuario no ha estado activo recientemente) ***'
+        : '\n*** No recent patterns detected (user has not been active recently) ***'
   }
 
   const header = locale === 'fr'
     ? '\nPATTERNS RÉCENTS (confirmés dans les 2 dernières semaines):'
-    : '\nRECENT PATTERNS (confirmed in last 2 weeks):'
+    : locale === 'es'
+      ? '\nPATRONES RECIENTES (confirmados en las últimas 2 semanas):'
+      : '\nRECENT PATTERNS (confirmed in last 2 weeks):'
 
   const formattedInsights = insights
     .slice(0, 5) // Top 5 most confident
     .map(insight => {
       const text = locale === 'fr' && insight.insight_text_fr
         ? insight.insight_text_fr
-        : insight.insight_text
+        : locale === 'es' && insight.insight_text_es
+          ? insight.insight_text_es
+          : insight.insight_text
       return `- ${text} (confidence: ${Math.round(insight.confidence * 100)}%)`
     })
     .join('\n')

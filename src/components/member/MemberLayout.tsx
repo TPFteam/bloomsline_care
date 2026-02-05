@@ -60,18 +60,21 @@ const primaryNavItems = [
     icon: Home,
     labelEn: 'Home',
     labelFr: 'Accueil',
+    labelEs: 'Inicio',
   },
   {
     href: '/moments',
     icon: Sun,
     labelEn: 'Moments',
     labelFr: 'Moments',
+    labelEs: 'Momentos',
   },
   {
     href: '/rituals',
     icon: Circle,
     labelEn: 'Rituals',
     labelFr: 'Rituels',
+    labelEs: 'Rituales',
   },
 ]
 
@@ -82,6 +85,7 @@ const menuNavItems = [
     icon: Heart,
     labelEn: 'Progress',
     labelFr: 'Progrès',
+    labelEs: 'Progreso',
     gradient: 'from-emerald-400 to-teal-500',
     core: true,
   },
@@ -90,6 +94,7 @@ const menuNavItems = [
     icon: User,
     labelEn: 'My Practitioner',
     labelFr: 'Mon Praticien',
+    labelEs: 'Mi profesional',
     gradient: 'from-rose-400 to-pink-500',
     core: true,
   },
@@ -98,6 +103,7 @@ const menuNavItems = [
     icon: PieChart,
     labelEn: 'Balance',
     labelFr: 'Équilibre',
+    labelEs: 'Equilibrio',
     gradient: 'from-violet-500 to-purple-600',
     core: false,
   },
@@ -106,6 +112,7 @@ const menuNavItems = [
     icon: Heart,
     labelEn: 'Reflect',
     labelFr: 'Réflexion',
+    labelEs: 'Reflexión',
     gradient: 'from-teal-400 to-emerald-500',
     core: false,
   },
@@ -114,6 +121,7 @@ const menuNavItems = [
     icon: Settings,
     labelEn: 'Settings',
     labelFr: 'Paramètres',
+    labelEs: 'Configuración',
     gradient: 'from-gray-400 to-gray-600',
     core: true,
   },
@@ -271,7 +279,7 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
                           <Icon className="w-5 h-5 text-white" />
                         </motion.div>
                         <span className={`font-medium ${active ? 'text-gray-900' : 'text-gray-600'}`}>
-                          {locale === 'fr' ? item.labelFr : item.labelEn}
+                          {locale === 'fr' ? item.labelFr : locale === 'es' ? item.labelEs : item.labelEn}
                         </span>
                       </Link>
                     </motion.div>
@@ -313,7 +321,7 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
                       animate={active ? { scale: [1, 1.05, 1] } : {}}
                       transition={{ duration: 0.3 }}
                     >
-                      {locale === 'fr' ? item.labelFr : item.labelEn}
+                      {locale === 'fr' ? item.labelFr : locale === 'es' ? item.labelEs : item.labelEn}
                     </motion.span>
                     {active && (
                       <motion.div
@@ -350,7 +358,7 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
                     showMore || isMenuActive ? 'text-emerald-600' : 'text-gray-400'
                   }`}
                 >
-                  {locale === 'fr' ? 'Menu' : 'Menu'}
+                  {locale === 'fr' ? 'Menu' : locale === 'es' ? 'Menú' : 'Menu'}
                 </span>
                 {isMenuActive && !showMore && (
                   <motion.div

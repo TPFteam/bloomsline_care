@@ -49,7 +49,7 @@ interface BlockRendererProps {
   value: unknown
   onChange: (value: unknown) => void
   disabled?: boolean
-  locale?: 'en' | 'fr'
+  locale?: 'en' | 'fr' | 'es'
   settings?: {
     rowMode?: 'unlimited' | 'limited'
     minRows?: number
@@ -109,7 +109,7 @@ export function BlockRenderer({
           className="p-4 bg-gradient-to-br from-teal-50 to-emerald-50/50 border border-teal-100 rounded-2xl"
         >
           <p className="text-teal-700 text-[15px]">
-            <span className="font-medium">{locale === 'fr' ? '💡 Conseil: ' : '💡 Tip: '}</span>
+            <span className="font-medium">{locale === 'fr' ? '💡 Conseil: ' : locale === 'es' ? '💡 Consejo: ' : '💡 Tip: '}</span>
             {typeof block.content === 'string' ? block.content : ''}
           </p>
         </motion.div>
@@ -151,11 +151,11 @@ export function BlockRenderer({
           {audioUrl ? (
             <audio controls className="w-full h-12">
               <source src={audioUrl} />
-              {locale === 'fr' ? 'Votre navigateur ne supporte pas l\'audio.' : 'Your browser does not support audio.'}
+              {locale === 'fr' ? 'Votre navigateur ne supporte pas l\'audio.' : locale === 'es' ? 'Su navegador no soporta audio.' : 'Your browser does not support audio.'}
             </audio>
           ) : (
             <div className="p-3 bg-gray-100 rounded-xl text-gray-500 text-sm">
-              {locale === 'fr' ? 'Aucun audio disponible' : 'No audio available'}
+              {locale === 'fr' ? 'Aucun audio disponible' : locale === 'es' ? 'No hay audio disponible' : 'No audio available'}
             </div>
           )}
         </motion.div>
@@ -174,12 +174,12 @@ export function BlockRenderer({
             <div className="rounded-xl overflow-hidden bg-black">
               <video controls className="w-full">
                 <source src={videoUrl} />
-                {locale === 'fr' ? 'Votre navigateur ne supporte pas la vidéo.' : 'Your browser does not support video.'}
+                {locale === 'fr' ? 'Votre navigateur ne supporte pas la vidéo.' : locale === 'es' ? 'Su navegador no soporta video.' : 'Your browser does not support video.'}
               </video>
             </div>
           ) : (
             <div className="p-4 bg-gray-100 rounded-xl text-gray-500 text-sm text-center">
-              {locale === 'fr' ? 'Aucune vidéo disponible' : 'No video available'}
+              {locale === 'fr' ? 'Aucune vidéo disponible' : locale === 'es' ? 'No hay video disponible' : 'No video available'}
             </div>
           )}
           {videoCaption && (
@@ -213,7 +213,7 @@ export function BlockRenderer({
           <span className="text-2xl">{platformIcons[linkPlatform] || '🔗'}</span>
           <div className="flex-1 min-w-0">
             <p className="text-gray-800 font-medium truncate">
-              {linkTitle || (typeof block.content === 'string' ? block.content : (locale === 'fr' ? 'Lien externe' : 'External link'))}
+              {linkTitle || (typeof block.content === 'string' ? block.content : (locale === 'fr' ? 'Lien externe' : locale === 'es' ? 'Enlace externo' : 'External link'))}
             </p>
             {linkUrl && (
               <p className="text-xs text-gray-400 truncate">{linkUrl}</p>
@@ -282,7 +282,7 @@ export function BlockRenderer({
             value={(value as string) || ''}
             onChange={(e) => onChange(e.target.value)}
             disabled={disabled}
-            placeholder={locale === 'fr' ? 'Partagez vos pensées...' : 'Share your thoughts...'}
+            placeholder={locale === 'fr' ? 'Partagez vos pensées...' : locale === 'es' ? 'Comparta sus pensamientos...' : 'Share your thoughts...'}
             className="w-full p-4 rounded-2xl border-2 border-gray-100 bg-gray-50/50 focus:border-teal-300 focus:bg-white focus:ring-0 outline-none resize-none min-h-[120px] disabled:bg-gray-50 disabled:text-gray-400 transition-all duration-200 text-gray-700 placeholder:text-gray-400"
           />
         </div>
@@ -457,7 +457,7 @@ export function BlockRenderer({
     default:
       return (
         <div className="p-4 bg-gray-50 rounded-xl text-gray-500">
-          {locale === 'fr' ? 'Type de bloc non supporté: ' : 'Unsupported block type: '}{block.type}
+          {locale === 'fr' ? 'Type de bloc non supporté: ' : locale === 'es' ? 'Tipo de bloque no soportado: ' : 'Unsupported block type: '}{block.type}
         </div>
       )
   }
@@ -492,7 +492,7 @@ function MultipleChoiceBlock({
       </label>
       {options.length === 0 ? (
         <p className="text-gray-400 italic text-sm">
-          {locale === 'fr' ? 'Aucune option disponible' : 'No options available'}
+          {locale === 'fr' ? 'Aucune option disponible' : locale === 'es' ? 'No hay opciones disponibles' : 'No options available'}
         </p>
       ) : (
         <div className="space-y-2">
@@ -567,7 +567,7 @@ function YesNoBlock({
           } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
         >
           <CheckCircle className={`w-5 h-5 ${value === 'yes' ? 'text-emerald-500' : 'text-gray-400'}`} />
-          <span className="font-medium">{locale === 'fr' ? 'Oui' : 'Yes'}</span>
+          <span className="font-medium">{locale === 'fr' ? 'Oui' : locale === 'es' ? 'Sí' : 'Yes'}</span>
         </motion.button>
         <motion.button
           type="button"
@@ -582,7 +582,7 @@ function YesNoBlock({
           } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
         >
           <X className={`w-5 h-5 ${value === 'no' ? 'text-gray-600' : 'text-gray-400'}`} />
-          <span className="font-medium">{locale === 'fr' ? 'Non' : 'No'}</span>
+          <span className="font-medium">{locale === 'fr' ? 'Non' : locale === 'es' ? 'No' : 'No'}</span>
         </motion.button>
       </div>
     </div>
@@ -736,11 +736,11 @@ function LikertBlock({
 
   // Mood options for mood scale type (using icon names)
   const moodOptions = [
-    { emoji: 'Angry', label: locale === 'fr' ? 'Difficile' : 'Struggling', value: 1 },
-    { emoji: 'Frown', label: locale === 'fr' ? 'Fragile' : 'Low', value: 2 },
-    { emoji: 'Meh', label: locale === 'fr' ? 'Neutre' : 'Okay', value: 3 },
-    { emoji: 'Smile', label: locale === 'fr' ? 'Bien' : 'Good', value: 4 },
-    { emoji: 'Laugh', label: locale === 'fr' ? 'Épanoui' : 'Thriving', value: 5 },
+    { emoji: 'Angry', label: locale === 'fr' ? 'Difficile' : locale === 'es' ? 'Luchando' : 'Struggling', value: 1 },
+    { emoji: 'Frown', label: locale === 'fr' ? 'Fragile' : locale === 'es' ? 'Bajo' : 'Low', value: 2 },
+    { emoji: 'Meh', label: locale === 'fr' ? 'Neutre' : locale === 'es' ? 'Regular' : 'Okay', value: 3 },
+    { emoji: 'Smile', label: locale === 'fr' ? 'Bien' : locale === 'es' ? 'Bien' : 'Good', value: 4 },
+    { emoji: 'Laugh', label: locale === 'fr' ? 'Épanoui' : locale === 'es' ? 'Excelente' : 'Thriving', value: 5 },
   ]
 
   return (
@@ -935,7 +935,7 @@ function NumericBlock({
         value={value ?? ''}
         onChange={(e) => onChange(Number(e.target.value))}
         disabled={disabled}
-        placeholder={locale === 'fr' ? 'Entrez un nombre...' : 'Enter a number...'}
+        placeholder={locale === 'fr' ? 'Entrez un nombre...' : locale === 'es' ? 'Ingrese un número...' : 'Enter a number...'}
         className="w-full p-4 rounded-2xl border-2 border-gray-100 bg-gray-50/50 focus:border-teal-300 focus:bg-white focus:ring-0 outline-none disabled:bg-gray-50 disabled:text-gray-400 transition-all duration-200 text-gray-700 placeholder:text-gray-400"
       />
     </div>
@@ -1010,7 +1010,7 @@ function MatrixRatingBlock({
         </div>
         {(labels.min || labels.max) && (
           <p className="text-xs text-gray-400 text-center mt-3">
-            1 = {labels.min || (locale === 'fr' ? 'Pas du tout' : 'Not at all')} · {scaleMax} = {labels.max || (locale === 'fr' ? 'Tout à fait' : 'Completely')}
+            1 = {labels.min || (locale === 'fr' ? 'Pas du tout' : locale === 'es' ? 'Para nada' : 'Not at all')} · {scaleMax} = {labels.max || (locale === 'fr' ? 'Tout à fait' : locale === 'es' ? 'Completamente' : 'Completely')}
           </p>
         )}
       </div>
@@ -1089,11 +1089,11 @@ function MoodBlock({
   const moodOptions = ('moodOptions' in block && Array.isArray(block.moodOptions))
     ? block.moodOptions
     : [
-        { emoji: 'Angry', label: locale === 'fr' ? 'Difficile' : 'Struggling', value: 1 },
-        { emoji: 'Frown', label: locale === 'fr' ? 'Fragile' : 'Low', value: 2 },
-        { emoji: 'Meh', label: locale === 'fr' ? 'Neutre' : 'Okay', value: 3 },
-        { emoji: 'Smile', label: locale === 'fr' ? 'Bien' : 'Good', value: 4 },
-        { emoji: 'Laugh', label: locale === 'fr' ? 'Épanoui' : 'Thriving', value: 5 },
+        { emoji: 'Angry', label: locale === 'fr' ? 'Difficile' : locale === 'es' ? 'Luchando' : 'Struggling', value: 1 },
+        { emoji: 'Frown', label: locale === 'fr' ? 'Fragile' : locale === 'es' ? 'Bajo' : 'Low', value: 2 },
+        { emoji: 'Meh', label: locale === 'fr' ? 'Neutre' : locale === 'es' ? 'Regular' : 'Okay', value: 3 },
+        { emoji: 'Smile', label: locale === 'fr' ? 'Bien' : locale === 'es' ? 'Bien' : 'Good', value: 4 },
+        { emoji: 'Laugh', label: locale === 'fr' ? 'Épanoui' : locale === 'es' ? 'Excelente' : 'Thriving', value: 5 },
       ]
 
   return (
@@ -1266,7 +1266,7 @@ function ListInputBlock({
                 value={item}
                 onChange={(e) => updateItem(index, e.target.value)}
                 disabled={disabled}
-                placeholder={locale === 'fr' ? `Élément ${index + 1}...` : `Item ${index + 1}...`}
+                placeholder={locale === 'fr' ? `Élément ${index + 1}...` : locale === 'es' ? `Elemento ${index + 1}...` : `Item ${index + 1}...`}
                 className="flex-1 p-3.5 rounded-2xl border-2 border-gray-100 bg-gray-50/50 focus:border-teal-300 focus:bg-white focus:ring-0 outline-none disabled:bg-gray-50 disabled:text-gray-400 transition-all duration-200 text-gray-700 placeholder:text-gray-400"
               />
               {items.length > 1 && !disabled && (
@@ -1292,7 +1292,7 @@ function ListInputBlock({
             className="flex items-center gap-2 px-4 py-2.5 text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-xl text-sm font-medium transition-colors"
           >
             <Plus className="w-4 h-4" />
-            {locale === 'fr' ? 'Ajouter un élément' : 'Add item'}
+            {locale === 'fr' ? 'Ajouter un élément' : locale === 'es' ? 'Agregar elemento' : 'Add item'}
           </motion.button>
         )}
       </div>
@@ -1390,7 +1390,7 @@ function TableExerciseBlock({
   if (columns.length === 0) {
     return (
       <div className="p-4 bg-gray-50 rounded-xl text-gray-500">
-        {locale === 'fr' ? 'Aucune colonne définie' : 'No columns defined'}
+        {locale === 'fr' ? 'Aucune colonne définie' : locale === 'es' ? 'No hay columnas definidas' : 'No columns defined'}
       </div>
     )
   }
@@ -1410,7 +1410,7 @@ function TableExerciseBlock({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <span className="text-lg font-semibold text-gray-900">
-              {locale === 'fr' ? 'Entrée' : 'Entry'} {safeCurrentIndex + 1}
+              {locale === 'fr' ? 'Entrée' : locale === 'es' ? 'Entrada' : 'Entry'} {safeCurrentIndex + 1}
             </span>
             <span className="text-sm text-gray-400">
               / {rows.length}
@@ -1480,7 +1480,7 @@ function TableExerciseBlock({
                     value={currentRow[col.id] || ''}
                     onChange={(e) => updateCell(safeCurrentIndex, col.id, e.target.value)}
                     disabled={disabled}
-                    placeholder={locale === 'fr' ? 'Tapez ici...' : 'Type here...'}
+                    placeholder={locale === 'fr' ? 'Tapez ici...' : locale === 'es' ? 'Escriba aquí...' : 'Type here...'}
                     rows={3}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 outline-none resize-none text-base disabled:bg-gray-50 disabled:text-gray-500 transition-all"
                   />
@@ -1503,7 +1503,7 @@ function TableExerciseBlock({
             }`}
           >
             <ChevronLeft className="w-5 h-5" />
-            {locale === 'fr' ? 'Précédent' : 'Previous'}
+            {locale === 'fr' ? 'Précédent' : locale === 'es' ? 'Anterior' : 'Previous'}
           </button>
 
           {safeCurrentIndex < rows.length - 1 ? (
@@ -1512,7 +1512,7 @@ function TableExerciseBlock({
               onClick={goToNext}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-600 active:scale-98 transition-all"
             >
-              {locale === 'fr' ? 'Suivant' : 'Next'}
+              {locale === 'fr' ? 'Suivant' : locale === 'es' ? 'Siguiente' : 'Next'}
               <ChevronRight className="w-5 h-5" />
             </button>
           ) : !disabled && canAddRow ? (
@@ -1522,11 +1522,11 @@ function TableExerciseBlock({
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-600 active:scale-98 transition-all"
             >
               <Plus className="w-5 h-5" />
-              {locale === 'fr' ? 'Nouvelle entrée' : 'New Entry'}
+              {locale === 'fr' ? 'Nouvelle entrée' : locale === 'es' ? 'Nueva entrada' : 'New Entry'}
             </button>
           ) : (
             <div className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gray-100 text-gray-400">
-              {locale === 'fr' ? 'Dernière entrée' : 'Last Entry'}
+              {locale === 'fr' ? 'Dernière entrée' : locale === 'es' ? 'Última entrada' : 'Last Entry'}
             </div>
           )}
         </div>
@@ -1536,7 +1536,9 @@ function TableExerciseBlock({
           <div className="text-center py-3 mt-2 text-sm text-gray-500">
             {locale === 'fr'
               ? `Maximum de ${maxRows} entrées atteint`
-              : `Maximum of ${maxRows} entries reached`}
+              : locale === 'es'
+                ? `Máximo de ${maxRows} entradas alcanzado`
+                : `Maximum of ${maxRows} entries reached`}
           </div>
         )}
       </div>
@@ -1581,7 +1583,7 @@ function TableExerciseBlock({
                         value={row[col.id] || ''}
                         onChange={(e) => updateCell(rowIndex, col.id, e.target.value)}
                         disabled={disabled}
-                        placeholder={locale === 'fr' ? 'Tapez ici...' : 'Type here...'}
+                        placeholder={locale === 'fr' ? 'Tapez ici...' : locale === 'es' ? 'Escriba aquí...' : 'Type here...'}
                         rows={2}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none resize-none text-sm disabled:bg-gray-50 disabled:text-gray-500"
                       />
@@ -1616,7 +1618,7 @@ function TableExerciseBlock({
             className="mt-4 flex items-center gap-2 px-4 py-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl text-sm font-medium transition-colors"
           >
             <Plus className="w-4 h-4" />
-            {locale === 'fr' ? 'Ajouter une ligne' : 'Add Row'}
+            {locale === 'fr' ? 'Ajouter une ligne' : locale === 'es' ? 'Agregar fila' : 'Add Row'}
             {settings?.rowMode === 'limited' && (
               <span className="text-emerald-500">({rows.length}/{maxRows})</span>
             )}
@@ -1628,7 +1630,9 @@ function TableExerciseBlock({
           <p className="mt-4 text-sm text-gray-500">
             {locale === 'fr'
               ? `Maximum de ${maxRows} entrées atteint`
-              : `Maximum of ${maxRows} entries reached`}
+              : locale === 'es'
+                ? `Máximo de ${maxRows} entradas alcanzado`
+                : `Maximum of ${maxRows} entries reached`}
           </p>
         )}
       </div>
@@ -1638,9 +1642,11 @@ function TableExerciseBlock({
         <p className="mt-3 text-xs text-gray-400 text-center md:block hidden">
           {rows.length} {locale === 'fr'
             ? (rows.length === 1 ? 'entrée' : 'entrées')
-            : (rows.length === 1 ? 'entry' : 'entries')}
+            : locale === 'es'
+              ? (rows.length === 1 ? 'entrada' : 'entradas')
+              : (rows.length === 1 ? 'entry' : 'entries')}
           {settings?.rowMode === 'limited' && ` / ${maxRows} max`}
-          {minRows > 1 && ` (${locale === 'fr' ? 'min' : 'min'}: ${minRows})`}
+          {minRows > 1 && ` (${locale === 'fr' ? 'min' : locale === 'es' ? 'mín' : 'min'}: ${minRows})`}
         </p>
       )}
     </div>
@@ -1705,7 +1711,7 @@ function AudioResponseBlock({
             </motion.button>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-teal-700 truncate">{value.fileName || 'Audio recording'}</p>
-              <p className="text-xs text-teal-600">{locale === 'fr' ? 'Prêt à jouer' : 'Ready to play'}</p>
+              <p className="text-xs text-teal-600">{locale === 'fr' ? 'Prêt à jouer' : locale === 'es' ? 'Listo para reproducir' : 'Ready to play'}</p>
             </div>
             {!disabled && (
               <motion.button
@@ -1744,10 +1750,10 @@ function AudioResponseBlock({
               <Mic className="w-6 h-6" />
             </div>
             <span className={`text-sm font-medium ${disabled ? 'text-gray-400' : 'text-teal-700'}`}>
-              {locale === 'fr' ? 'Enregistrer un audio' : 'Record audio'}
+              {locale === 'fr' ? 'Enregistrer un audio' : locale === 'es' ? 'Grabar audio' : 'Record audio'}
             </span>
             <span className={`text-xs ${disabled ? 'text-gray-400' : 'text-teal-600'}`}>
-              {locale === 'fr' ? '(Bientôt disponible)' : '(Coming soon)'}
+              {locale === 'fr' ? '(Bientôt disponible)' : locale === 'es' ? '(Próximamente)' : '(Coming soon)'}
             </span>
           </motion.button>
 
@@ -1766,7 +1772,7 @@ function AudioResponseBlock({
             />
             <Upload className={`w-5 h-5 mx-auto mb-2 ${disabled ? 'text-gray-400' : 'text-gray-500'}`} />
             <span className={`text-sm ${disabled ? 'text-gray-400' : 'text-gray-600'}`}>
-              {locale === 'fr' ? 'Ou téléverser un fichier audio' : 'Or upload an audio file'}
+              {locale === 'fr' ? 'Ou téléverser un fichier audio' : locale === 'es' ? 'O subir un archivo de audio' : 'Or upload an audio file'}
             </span>
           </label>
         </div>
@@ -1874,10 +1880,10 @@ function FileResponseBlock({
             <Upload className={`w-7 h-7 ${disabled ? 'text-gray-400' : 'text-teal-600'}`} />
           </div>
           <p className={`text-sm font-medium mb-1 ${disabled ? 'text-gray-400' : 'text-gray-700'}`}>
-            {locale === 'fr' ? 'Cliquez pour téléverser' : 'Click to upload'}
+            {locale === 'fr' ? 'Cliquez pour téléverser' : locale === 'es' ? 'Haga clic para subir' : 'Click to upload'}
           </p>
           <p className={`text-xs ${disabled ? 'text-gray-400' : 'text-gray-500'}`}>
-            {locale === 'fr' ? 'ou glissez-déposez un fichier' : 'or drag and drop a file'}
+            {locale === 'fr' ? 'ou glissez-déposez un fichier' : locale === 'es' ? 'o arrastre y suelte un archivo' : 'or drag and drop a file'}
           </p>
         </label>
       )}

@@ -70,21 +70,21 @@ function compressImage(file: File): Promise<File> {
 
 const moodTags = [
   // Positive emotions
-  { id: 'grateful', emoji: '🙏', labelEn: 'Grateful', labelFr: 'Reconnaissant' },
-  { id: 'peaceful', emoji: '🌿', labelEn: 'Peaceful', labelFr: 'Paisible' },
-  { id: 'joyful', emoji: '✨', labelEn: 'Joyful', labelFr: 'Joyeux' },
-  { id: 'inspired', emoji: '💡', labelEn: 'Inspired', labelFr: 'Inspiré' },
-  { id: 'loved', emoji: '💕', labelEn: 'Loved', labelFr: 'Aimé' },
-  { id: 'calm', emoji: '🧘', labelEn: 'Calm', labelFr: 'Calme' },
-  { id: 'hopeful', emoji: '🌟', labelEn: 'Hopeful', labelFr: 'Plein d\'espoir' },
-  { id: 'proud', emoji: '🏆', labelEn: 'Proud', labelFr: 'Fier' },
+  { id: 'grateful', emoji: '🙏', labelEn: 'Grateful', labelFr: 'Reconnaissant', labelEs: 'Agradecido' },
+  { id: 'peaceful', emoji: '🌿', labelEn: 'Peaceful', labelFr: 'Paisible', labelEs: 'Tranquilo' },
+  { id: 'joyful', emoji: '✨', labelEn: 'Joyful', labelFr: 'Joyeux', labelEs: 'Alegre' },
+  { id: 'inspired', emoji: '💡', labelEn: 'Inspired', labelFr: 'Inspiré', labelEs: 'Inspirado' },
+  { id: 'loved', emoji: '💕', labelEn: 'Loved', labelFr: 'Aimé', labelEs: 'Amado' },
+  { id: 'calm', emoji: '🧘', labelEn: 'Calm', labelFr: 'Calme', labelEs: 'Calmado' },
+  { id: 'hopeful', emoji: '🌟', labelEn: 'Hopeful', labelFr: 'Plein d\'espoir', labelEs: 'Esperanzado' },
+  { id: 'proud', emoji: '🏆', labelEn: 'Proud', labelFr: 'Fier', labelEs: 'Orgulloso' },
   // Softer/processing emotions
-  { id: 'overwhelmed', emoji: '🌊', labelEn: 'Overwhelmed', labelFr: 'Submergé' },
-  { id: 'tired', emoji: '🌙', labelEn: 'Tired', labelFr: 'Fatigué' },
-  { id: 'uncertain', emoji: '🌫️', labelEn: 'Uncertain', labelFr: 'Incertain' },
-  { id: 'tender', emoji: '🥀', labelEn: 'Tender', labelFr: 'Sensible' },
-  { id: 'restless', emoji: '💭', labelEn: 'Restless', labelFr: 'Agité' },
-  { id: 'heavy', emoji: '🌧️', labelEn: 'Heavy', labelFr: 'Lourd' },
+  { id: 'overwhelmed', emoji: '🌊', labelEn: 'Overwhelmed', labelFr: 'Submergé', labelEs: 'Abrumado' },
+  { id: 'tired', emoji: '🌙', labelEn: 'Tired', labelFr: 'Fatigué', labelEs: 'Cansado' },
+  { id: 'uncertain', emoji: '🌫️', labelEn: 'Uncertain', labelFr: 'Incertain', labelEs: 'Incierto' },
+  { id: 'tender', emoji: '🥀', labelEn: 'Tender', labelFr: 'Sensible', labelEs: 'Sensible' },
+  { id: 'restless', emoji: '💭', labelEn: 'Restless', labelFr: 'Agité', labelEs: 'Inquieto' },
+  { id: 'heavy', emoji: '🌧️', labelEn: 'Heavy', labelFr: 'Lourd', labelEs: 'Pesado' },
 ]
 
 const captureTypes = [
@@ -93,8 +93,10 @@ const captureTypes = [
     icon: Camera,
     labelEn: 'Photo',
     labelFr: 'Photo',
+    labelEs: 'Foto',
     descEn: 'Take or upload a photo',
     descFr: 'Prendre ou télécharger une photo',
+    descEs: 'Tomar o subir una foto',
     gradient: 'from-rose-400 to-pink-500',
     bg: 'bg-rose-50',
   },
@@ -103,8 +105,10 @@ const captureTypes = [
     icon: Video,
     labelEn: 'Video',
     labelFr: 'Vidéo',
+    labelEs: 'Video',
     descEn: 'Record or upload a video',
     descFr: 'Enregistrer ou télécharger une vidéo',
+    descEs: 'Grabar o subir un video',
     gradient: 'from-violet-400 to-purple-500',
     bg: 'bg-violet-50',
   },
@@ -113,8 +117,10 @@ const captureTypes = [
     icon: Mic,
     labelEn: 'Voice',
     labelFr: 'Voix',
+    labelEs: 'Voz',
     descEn: 'Record a voice note',
     descFr: 'Enregistrer une note vocale',
+    descEs: 'Grabar una nota de voz',
     gradient: 'from-amber-400 to-orange-500',
     bg: 'bg-amber-50',
   },
@@ -123,8 +129,10 @@ const captureTypes = [
     icon: FileText,
     labelEn: 'Write',
     labelFr: 'Écrire',
+    labelEs: 'Escribir',
     descEn: 'Write your thoughts',
     descFr: 'Écrivez vos pensées',
+    descEs: 'Escribe tus pensamientos',
     gradient: 'from-emerald-400 to-teal-500',
     bg: 'bg-emerald-50',
   },
@@ -219,7 +227,9 @@ function CaptureMomentContent() {
         toast.error(
           locale === 'fr'
             ? `La vidéo est trop volumineuse (${Math.round(sizeMB)}MB). Maximum ${MAX_VIDEO_SIZE_MB}MB.`
-            : `Video is too large (${Math.round(sizeMB)}MB). Maximum ${MAX_VIDEO_SIZE_MB}MB.`
+            : locale === 'es'
+              ? `El video es demasiado grande (${Math.round(sizeMB)}MB). Máximo ${MAX_VIDEO_SIZE_MB}MB.`
+              : `Video is too large (${Math.round(sizeMB)}MB). Maximum ${MAX_VIDEO_SIZE_MB}MB.`
         )
         return
       }
@@ -258,7 +268,9 @@ function CaptureMomentContent() {
       console.error('Error accessing microphone:', error)
       alert(locale === 'fr'
         ? 'Impossible d\'accéder au microphone'
-        : 'Unable to access microphone')
+        : locale === 'es'
+          ? 'No se puede acceder al micrófono'
+          : 'Unable to access microphone')
     }
   }
 
@@ -303,14 +315,16 @@ function CaptureMomentContent() {
 
       if (result) {
         toast.success(
-          locale === 'fr' ? 'Moment sauvegardé!' : 'Moment saved!'
+          locale === 'fr' ? 'Moment sauvegardé!' : locale === 'es' ? '¡Momento guardado!' : 'Moment saved!'
         )
         router.push(returnTo)
       } else {
         toast.error(
           locale === 'fr'
             ? 'Erreur lors de la sauvegarde'
-            : 'Error saving moment'
+            : locale === 'es'
+              ? 'Error al guardar el momento'
+              : 'Error saving moment'
         )
       }
     } catch (error) {
@@ -318,7 +332,9 @@ function CaptureMomentContent() {
       toast.error(
         locale === 'fr'
           ? 'Erreur lors de la sauvegarde'
-          : 'Error saving moment'
+          : locale === 'es'
+            ? 'Error al guardar el momento'
+            : 'Error saving moment'
       )
     } finally {
       setSaving(false)
@@ -366,9 +382,9 @@ function CaptureMomentContent() {
         </button>
         <h1 className="text-white font-medium">
           {step === 'select'
-            ? (locale === 'fr' ? 'Nouveau moment' : 'New Moment')
+            ? (locale === 'fr' ? 'Nouveau moment' : locale === 'es' ? 'Nuevo momento' : 'New Moment')
             : currentType
-              ? (locale === 'fr' ? currentType.labelFr : currentType.labelEn)
+              ? (locale === 'fr' ? currentType.labelFr : locale === 'es' ? currentType.labelEs : currentType.labelEn)
               : ''}
         </h1>
         <div className="w-10" />
@@ -389,7 +405,9 @@ function CaptureMomentContent() {
               <p className="text-white/60 text-center mb-8">
                 {locale === 'fr'
                   ? 'Comment voulez-vous capturer ce moment ?'
-                  : 'How would you like to capture this moment?'}
+                  : locale === 'es'
+                    ? '¿Cómo te gustaría capturar este momento?'
+                    : 'How would you like to capture this moment?'}
               </p>
 
               <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto w-full">
@@ -405,10 +423,10 @@ function CaptureMomentContent() {
                       <type.icon className="w-8 h-8 text-white" />
                     </div>
                     <span className="text-white font-semibold">
-                      {locale === 'fr' ? type.labelFr : type.labelEn}
+                      {locale === 'fr' ? type.labelFr : locale === 'es' ? type.labelEs : type.labelEn}
                     </span>
                     <span className="text-white/50 text-xs text-center">
-                      {locale === 'fr' ? type.descFr : type.descEn}
+                      {locale === 'fr' ? type.descFr : locale === 'es' ? type.descEs : type.descEn}
                     </span>
                   </motion.button>
                 ))}
@@ -438,7 +456,7 @@ function CaptureMomentContent() {
                   <Camera className="w-12 h-12 text-white" />
                 </div>
                 <p className="text-white text-center px-8 font-medium">
-                  {locale === 'fr' ? 'Appuyez pour prendre une photo' : 'Tap to take a photo'}
+                  {locale === 'fr' ? 'Appuyez pour prendre une photo' : locale === 'es' ? 'Toca para tomar una foto' : 'Tap to take a photo'}
                 </p>
               </button>
 
@@ -453,7 +471,7 @@ function CaptureMomentContent() {
               >
                 <Upload className="w-5 h-5" />
                 <span className="text-sm font-medium">
-                  {locale === 'fr' ? 'Choisir une photo' : 'Choose from gallery'}
+                  {locale === 'fr' ? 'Choisir une photo' : locale === 'es' ? 'Elegir de la galería' : 'Choose from gallery'}
                 </span>
               </button>
 
@@ -488,7 +506,7 @@ function CaptureMomentContent() {
                   <Video className="w-12 h-12 text-white" />
                 </div>
                 <p className="text-white text-center px-8 font-medium">
-                  {locale === 'fr' ? 'Appuyez pour enregistrer une vidéo' : 'Tap to record a video'}
+                  {locale === 'fr' ? 'Appuyez pour enregistrer une vidéo' : locale === 'es' ? 'Toca para grabar un video' : 'Tap to record a video'}
                 </p>
               </button>
 
@@ -503,7 +521,7 @@ function CaptureMomentContent() {
               >
                 <Upload className="w-5 h-5" />
                 <span className="text-sm font-medium">
-                  {locale === 'fr' ? 'Choisir une vidéo' : 'Choose from gallery'}
+                  {locale === 'fr' ? 'Choisir une vidéo' : locale === 'es' ? 'Elegir de la galería' : 'Choose from gallery'}
                 </span>
               </button>
 
@@ -580,8 +598,8 @@ function CaptureMomentContent() {
 
               <p className="text-white/60 mt-6 text-center">
                 {isRecording
-                  ? (locale === 'fr' ? 'Appuyez pour arrêter' : 'Tap to stop')
-                  : (locale === 'fr' ? 'Appuyez pour enregistrer' : 'Tap to record')}
+                  ? (locale === 'fr' ? 'Appuyez pour arrêter' : locale === 'es' ? 'Toca para detener' : 'Tap to stop')
+                  : (locale === 'fr' ? 'Appuyez pour enregistrer' : locale === 'es' ? 'Toca para grabar' : 'Tap to record')}
               </p>
             </motion.div>
           )}
@@ -600,14 +618,16 @@ function CaptureMomentContent() {
                   onChange={(e) => setWrittenText(e.target.value)}
                   placeholder={locale === 'fr'
                     ? 'Écrivez vos pensées, sentiments, ou ce que vous voulez capturer...'
-                    : 'Write your thoughts, feelings, or whatever you want to capture...'}
+                    : locale === 'es'
+                      ? 'Escribe tus pensamientos, sentimientos o lo que quieras capturar...'
+                      : 'Write your thoughts, feelings, or whatever you want to capture...'}
                   className="flex-1 w-full p-6 bg-white/10 backdrop-blur-lg rounded-3xl border border-white/10 text-white placeholder-white/40 resize-none text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-transparent caret-white"
                   autoFocus
                 />
 
                 <div className="mt-4 flex items-center justify-between">
                   <span className="text-white/40 text-sm">
-                    {writtenText.length} {locale === 'fr' ? 'caractères' : 'characters'}
+                    {writtenText.length} {locale === 'fr' ? 'caractères' : locale === 'es' ? 'caracteres' : 'characters'}
                   </span>
                   <Button
                     onClick={goToDetails}
@@ -615,7 +635,7 @@ function CaptureMomentContent() {
                     className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full px-6"
                   >
                     <Check className="w-4 h-4 mr-2" />
-                    {locale === 'fr' ? 'Continuer' : 'Continue'}
+                    {locale === 'fr' ? 'Continuer' : locale === 'es' ? 'Continuar' : 'Continue'}
                   </Button>
                 </div>
               </div>
@@ -664,7 +684,7 @@ function CaptureMomentContent() {
                     <Mic className="w-16 h-16 text-white" />
                   </div>
                   <p className="text-white text-xl font-medium mb-2">
-                    {locale === 'fr' ? 'Note vocale' : 'Voice Note'}
+                    {locale === 'fr' ? 'Note vocale' : locale === 'es' ? 'Nota de voz' : 'Voice Note'}
                   </p>
                   <p className="text-white/60 mb-6">
                     {formatTime(recordingTime)}
@@ -688,7 +708,7 @@ function CaptureMomentContent() {
                   >
                     <Sparkles className="w-5 h-5 text-white" />
                     <span className="text-white font-semibold">
-                      {locale === 'fr' ? 'Continuer' : 'Continue'}
+                      {locale === 'fr' ? 'Continuer' : locale === 'es' ? 'Continuar' : 'Continue'}
                     </span>
                   </button>
                 </div>
@@ -733,14 +753,14 @@ function CaptureMomentContent() {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-900">
-                      {currentType && (locale === 'fr' ? currentType.labelFr : currentType.labelEn)}
+                      {currentType && (locale === 'fr' ? currentType.labelFr : locale === 'es' ? currentType.labelEs : currentType.labelEn)}
                     </p>
                     <p className="text-sm text-gray-500 truncate">
                       {captureType === 'write' && writtenText
                         ? writtenText.slice(0, 50) + (writtenText.length > 50 ? '...' : '')
                         : captureType === 'voice'
                           ? formatTime(recordingTime)
-                          : (locale === 'fr' ? 'Moment capturé' : 'Captured moment')}
+                          : (locale === 'fr' ? 'Moment capturé' : locale === 'es' ? 'Momento capturado' : 'Captured moment')}
                     </p>
                   </div>
                 </div>
@@ -755,7 +775,7 @@ function CaptureMomentContent() {
                 {/* Mood tags */}
                 <div className="mb-6">
                   <label className="text-sm font-medium text-gray-700 mb-3 block">
-                    {locale === 'fr' ? 'Comment vous sentez-vous ?' : 'How are you feeling?'}
+                    {locale === 'fr' ? 'Comment vous sentez-vous ?' : locale === 'es' ? '¿Cómo te sientes?' : 'How are you feeling?'}
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {moodTags.map((mood) => (
@@ -769,7 +789,7 @@ function CaptureMomentContent() {
                         }`}
                       >
                         <span>{mood.emoji}</span>
-                        <span>{locale === 'fr' ? mood.labelFr : mood.labelEn}</span>
+                        <span>{locale === 'fr' ? mood.labelFr : locale === 'es' ? mood.labelEs : mood.labelEn}</span>
                       </button>
                     ))}
                   </div>
@@ -779,12 +799,12 @@ function CaptureMomentContent() {
                 {captureType !== 'write' && (
                   <div className="mb-8">
                     <label className="text-sm font-medium text-gray-700 mb-2 block">
-                      {locale === 'fr' ? 'Ajouter une note (optionnel)' : 'Add a note (optional)'}
+                      {locale === 'fr' ? 'Ajouter une note (optionnel)' : locale === 'es' ? 'Agregar una nota (opcional)' : 'Add a note (optional)'}
                     </label>
                     <textarea
                       value={caption}
                       onChange={(e) => setCaption(e.target.value)}
-                      placeholder={locale === 'fr' ? 'Décrivez ce moment...' : 'Describe this moment...'}
+                      placeholder={locale === 'fr' ? 'Décrivez ce moment...' : locale === 'es' ? 'Describe este momento...' : 'Describe this moment...'}
                       className="w-full p-4 bg-gray-50 rounded-2xl border-0 focus:ring-2 focus:ring-emerald-500 resize-none text-sm text-gray-900 caret-gray-900"
                       rows={3}
                     />
@@ -802,14 +822,14 @@ function CaptureMomentContent() {
                   ) : (
                     <>
                       <Send className="w-5 h-5 mr-2" />
-                      {locale === 'fr' ? 'Sauvegarder le moment' : 'Save Moment'}
+                      {locale === 'fr' ? 'Sauvegarder le moment' : locale === 'es' ? 'Guardar momento' : 'Save Moment'}
                     </>
                   )}
                 </Button>
 
                 {selectedMoods.length === 0 && (
                   <p className="text-center text-sm text-gray-400 mt-3">
-                    {locale === 'fr' ? 'Sélectionnez au moins une humeur' : 'Select at least one mood'}
+                    {locale === 'fr' ? 'Sélectionnez au moins une humeur' : locale === 'es' ? 'Selecciona al menos un estado de ánimo' : 'Select at least one mood'}
                   </p>
                 )}
               </div>

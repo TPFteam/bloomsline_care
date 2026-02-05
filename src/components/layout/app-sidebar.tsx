@@ -20,16 +20,16 @@ export function AppSidebar({ activeItem }: AppSidebarProps) {
   const { locale } = useLanguage()
 
   const navItems = [
-    { id: 'home' as NavItem, href: '/dashboard', icon: Home, label: locale === 'fr' ? 'Accueil' : 'Home' },
+    { id: 'home' as NavItem, href: '/dashboard', icon: Home, label: locale === 'fr' ? 'Accueil' : locale === 'es' ? 'Inicio' : 'Home' },
   ]
 
   const resourceItems = [
-    { id: 'library' as NavItem, href: '/library', icon: BookOpen, label: locale === 'fr' ? 'Ressources' : 'Library' },
+    { id: 'library' as NavItem, href: '/library', icon: BookOpen, label: locale === 'fr' ? 'Ressources' : locale === 'es' ? 'Biblioteca' : 'Library' },
   ]
 
   const managementItems = [
-    { id: 'members' as NavItem, href: '/members', icon: Users, label: locale === 'fr' ? 'Personnes suivies' : 'People' },
-    { id: 'analytics' as NavItem, href: '/analytics', icon: Activity, label: locale === 'fr' ? 'Rythme' : 'Your Flow' },
+    { id: 'members' as NavItem, href: '/members', icon: Users, label: locale === 'fr' ? 'Personnes suivies' : locale === 'es' ? 'Personas' : 'People' },
+    { id: 'analytics' as NavItem, href: '/analytics', icon: Activity, label: locale === 'fr' ? 'Rythme' : locale === 'es' ? 'Tu ritmo' : 'Your Flow' },
   ]
 
   const renderNavItem = (item: { id: NavItem; href: string; icon: typeof Home; label: string }) => {

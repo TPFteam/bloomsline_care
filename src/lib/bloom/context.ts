@@ -616,7 +616,7 @@ function detectPatterns(today: TodaySnapshot, week: WeeklyTrends): DetectedPatte
 /**
  * Format context for the AI system prompt
  */
-export function formatContextForPrompt(context: BloomContext, locale: 'en' | 'fr' = 'en'): string {
+export function formatContextForPrompt(context: BloomContext, locale: 'en' | 'fr' | 'es' = 'en'): string {
   const { today, thisWeek, patterns, storedInsights } = context
 
   const formatHours = (mins: number) => `${Math.round(mins / 60 * 10) / 10}h`
@@ -626,9 +626,9 @@ export function formatContextForPrompt(context: BloomContext, locale: 'en' | 'fr
   const hasTodayData = today.balance.hasLogged || today.moments.count > 0 || today.rituals.completed > 0 || (today.anchors.completedGrow + today.anchors.completedLetGo) > 0
 
   // Format anchors for today
-  const formatTodayAnchors = (loc: 'en' | 'fr') => {
+  const formatTodayAnchors = (loc: 'en' | 'fr' | 'es') => {
     const totalAnchors = today.anchors.totalGrow + today.anchors.totalLetGo
-    if (totalAnchors === 0) return loc === 'fr' ? '- Ancres: aucune configurée' : '- Anchors: none configured'
+    if (totalAnchors === 0) return loc === 'fr' ? '- Ancres: aucune configurée' : loc === 'es' ? '- Anclas: ninguna configurada' : '- Anchors: none configured'
 
     const growDone = today.anchors.grow.filter(a => a.completed).map(a => a.name)
     const growRemaining = today.anchors.grow.filter(a => !a.completed).map(a => a.name)
@@ -638,6 +638,10 @@ export function formatContextForPrompt(context: BloomContext, locale: 'en' | 'fr
     if (loc === 'fr') {
       return `- Habitudes Grandir: ${today.anchors.completedGrow}/${today.anchors.totalGrow} faites${growDone.length ? ` (faits: ${growDone.join(', ')})` : ''}${growRemaining.length ? ` (restants: ${growRemaining.join(', ')})` : ''}
 - Habitudes Alléger: ${letGoSlipped.length === 0 ? 'Tout évité ✓' : `${letGoSlipped.length} écart(s)`}${letGoAvoided.length ? ` (évités: ${letGoAvoided.join(', ')})` : ''}${letGoSlipped.length ? ` (écarts: ${letGoSlipped.join(', ')})` : ''}`
+    }
+    if (loc === 'es') {
+      return `- Hábitos Crecer: ${today.anchors.completedGrow}/${today.anchors.totalGrow} hechos${growDone.length ? ` (hechos: ${growDone.join(', ')})` : ''}${growRemaining.length ? ` (pendientes: ${growRemaining.join(', ')})` : ''}
+- Hábitos Soltar: ${letGoSlipped.length === 0 ? 'Todo evitado ✓' : `${letGoSlipped.length} recaída(s)`}${letGoAvoided.length ? ` (evitados: ${letGoAvoided.join(', ')})` : ''}${letGoSlipped.length ? ` (recaídas: ${letGoSlipped.join(', ')})` : ''}`
     }
     return `- Grow habits: ${today.anchors.completedGrow}/${today.anchors.totalGrow} done${growDone.length ? ` (done: ${growDone.join(', ')})` : ''}${growRemaining.length ? ` (remaining: ${growRemaining.join(', ')})` : ''}
 - Let Go habits: ${letGoSlipped.length === 0 ? 'All avoided ✓' : `${letGoSlipped.length} slip(s)`}${letGoAvoided.length ? ` (avoided: ${letGoAvoided.join(', ')})` : ''}${letGoSlipped.length ? ` (slipped: ${letGoSlipped.join(', ')})` : ''}`
@@ -653,6 +657,15 @@ AUJOURD'HUI:
 - Rituels: ${today.rituals.completed}/${today.rituals.total} complétés${today.rituals.missedNames.length > 0 ? ` (manqués: ${today.rituals.missedNames.join(', ')})` : ''}
 ${formatTodayAnchors('fr')}
 ${!hasTodayData ? '*** L\'utilisateur n\'a rien enregistré aujourd\'hui ***' : ''}
+` : locale === 'es' ? `
+HOY:
+- Sueño: ${today.balance.hasLogged ? formatHours(today.balance.sleep) : 'no registrado'} (objetivo: ${formatHours(today.balance.targets.sleep)})
+- Trabajo: ${today.balance.hasLogged ? formatHours(today.balance.work) : 'no registrado'} (objetivo: ${formatHours(today.balance.targets.work)})
+- Vida personal: ${today.balance.hasLogged ? formatHours(today.balance.life) : 'no registrado'} (objetivo: ${formatHours(today.balance.targets.life)})
+- Momentos capturados: ${today.moments.count}${today.moments.moods.length > 0 ? ` (ánimos: ${today.moments.moods.join(', ')})` : ''}
+- Rituales: ${today.rituals.completed}/${today.rituals.total} completados${today.rituals.missedNames.length > 0 ? ` (pendientes: ${today.rituals.missedNames.join(', ')})` : ''}
+${formatTodayAnchors('es')}
+${!hasTodayData ? '*** El usuario no ha registrado nada hoy ***' : ''}
 ` : `
 TODAY:
 - Sleep: ${today.balance.hasLogged ? formatHours(today.balance.sleep) : 'not logged'} (target: ${formatHours(today.balance.targets.sleep)})
@@ -665,13 +678,17 @@ ${!hasTodayData ? '*** User has not logged anything today ***' : ''}
 `
 
   // Format weekly anchors
-  const formatWeekAnchors = (loc: 'en' | 'fr') => {
+  const formatWeekAnchors = (loc: 'en' | 'fr' | 'es') => {
     if (thisWeek.anchors.totalLogs === 0 && thisWeek.anchors.topGrowAnchors.length === 0 && thisWeek.anchors.topLetGoAnchors.length === 0) {
-      return loc === 'fr' ? '- Ancres: aucune donnée cette semaine' : '- Anchors: no data this week'
+      return loc === 'fr' ? '- Ancres: aucune donnée cette semaine' : loc === 'es' ? '- Anclas: sin datos esta semana' : '- Anchors: no data this week'
     }
     if (loc === 'fr') {
       return `- Ancres Grandir: ${thisWeek.anchors.growCompletionRate}% de complétion${thisWeek.anchors.topGrowAnchors.length > 0 ? ` (meilleures: ${thisWeek.anchors.topGrowAnchors.join(', ')})` : ''}
 - Ancres Alléger: ${thisWeek.anchors.letGoCompletionRate}% de complétion${thisWeek.anchors.topLetGoAnchors.length > 0 ? ` (meilleures: ${thisWeek.anchors.topLetGoAnchors.join(', ')})` : ''}`
+    }
+    if (loc === 'es') {
+      return `- Anclas Crecer: ${thisWeek.anchors.growCompletionRate}% de cumplimiento${thisWeek.anchors.topGrowAnchors.length > 0 ? ` (mejores: ${thisWeek.anchors.topGrowAnchors.join(', ')})` : ''}
+- Anclas Soltar: ${thisWeek.anchors.letGoCompletionRate}% de cumplimiento${thisWeek.anchors.topLetGoAnchors.length > 0 ? ` (mejores: ${thisWeek.anchors.topLetGoAnchors.join(', ')})` : ''}`
     }
     return `- Grow anchors: ${thisWeek.anchors.growCompletionRate}% completion${thisWeek.anchors.topGrowAnchors.length > 0 ? ` (top: ${thisWeek.anchors.topGrowAnchors.join(', ')})` : ''}
 - Let Go anchors: ${thisWeek.anchors.letGoCompletionRate}% completion${thisWeek.anchors.topLetGoAnchors.length > 0 ? ` (top: ${thisWeek.anchors.topLetGoAnchors.join(', ')})` : ''}`
@@ -688,6 +705,16 @@ ${!hasWeeklyData ? '*** L\'utilisateur n\'a pas utilisé Bloomsline cette semain
 - Rituels: ${thisWeek.rituals.completionRate}% de complétion
 ${formatWeekAnchors('fr')}
 - Moments cette semaine: ${thisWeek.momentsCount}
+` : locale === 'es' ? `
+ESTA SEMANA:
+${!hasWeeklyData ? '*** El usuario NO ha usado Bloomsline esta semana - no hay datos recientes disponibles ***\n' : ''}
+- Sueño promedio: ${thisWeek.balance.avgSleep}h/noche (${thisWeek.balance.sleepTrend === 'improving' ? 'mejorando' : thisWeek.balance.sleepTrend === 'declining' ? 'en descenso' : 'estable'})
+- Trabajo promedio: ${thisWeek.balance.avgWork}h/día (${thisWeek.balance.workTrend === 'increasing' ? 'en aumento' : thisWeek.balance.workTrend === 'decreasing' ? 'en descenso' : 'estable'})
+- Vida personal promedio: ${thisWeek.balance.avgLife}h/día
+- Ánimos: ${thisWeek.moods.positive}% positivos${thisWeek.moods.topMoods.length > 0 ? ` (principales: ${thisWeek.moods.topMoods.join(', ')})` : ''}
+- Rituales: ${thisWeek.rituals.completionRate}% de cumplimiento
+${formatWeekAnchors('es')}
+- Momentos esta semana: ${thisWeek.momentsCount}
 ` : `
 THIS WEEK:
 ${!hasWeeklyData ? '*** User has NOT used Bloomsline this week - no recent data available ***\n' : ''}
@@ -704,6 +731,9 @@ ${formatWeekAnchors('en')}
   const patternsSection = patterns.insights.length > 0
     ? (locale === 'fr' ? `
 OBSERVATIONS RÉCENTES:
+${patterns.insights.map(i => `- ${i}`).join('\n')}
+` : locale === 'es' ? `
+OBSERVACIONES RECIENTES:
 ${patterns.insights.map(i => `- ${i}`).join('\n')}
 ` : `
 RECENT OBSERVATIONS:
@@ -722,14 +752,16 @@ ${patterns.insights.map(i => `- ${i}`).join('\n')}
  */
 export function getContextAwareGreeting(
   context: BloomContext,
-  locale: 'en' | 'fr' = 'en'
+  locale: 'en' | 'fr' | 'es' = 'en'
 ): string {
   const { today, thisWeek, entryPoint } = context
   const hour = new Date().getHours()
 
   const timeGreeting = locale === 'fr'
     ? (hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir')
-    : (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening')
+    : locale === 'es'
+      ? (hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches')
+      : (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening')
 
   // Entry point specific greetings
   switch (entryPoint) {
@@ -737,61 +769,85 @@ export function getContextAwareGreeting(
       if (!today.balance.hasLogged) {
         return locale === 'fr'
           ? `${timeGreeting}. Je vois que tu n'as pas encore enregistré ta journée. Comment te sens-tu ?`
-          : `${timeGreeting}. I see you have not logged today yet. How are you feeling?`
+          : locale === 'es'
+            ? `${timeGreeting}. Veo que aún no has registrado tu día. ¿Cómo te sientes?`
+            : `${timeGreeting}. I see you have not logged today yet. How are you feeling?`
       }
       if (today.balance.sleep < today.balance.targets.sleep * 0.7) {
         return locale === 'fr'
           ? `${timeGreeting}. Tu as l'air d'avoir peu dormi. Comment vas-tu ?`
-          : `${timeGreeting}. Looks like you did not get much sleep. How are you holding up?`
+          : locale === 'es'
+            ? `${timeGreeting}. Parece que no dormiste mucho. ¿Cómo te encuentras?`
+            : `${timeGreeting}. Looks like you did not get much sleep. How are you holding up?`
       }
       return locale === 'fr'
         ? `${timeGreeting}. Comment va ton équilibre aujourd'hui ?`
-        : `${timeGreeting}. How is your balance today?`
+        : locale === 'es'
+          ? `${timeGreeting}. ¿Cómo va tu equilibrio hoy?`
+          : `${timeGreeting}. How is your balance today?`
 
     case 'moments':
       if (today.moments.count === 0) {
         return locale === 'fr'
           ? `${timeGreeting}. Tu veux capturer un moment ou juste discuter ?`
-          : `${timeGreeting}. Want to capture a moment or just chat?`
+          : locale === 'es'
+            ? `${timeGreeting}. ¿Quieres capturar un momento o solo charlar?`
+            : `${timeGreeting}. Want to capture a moment or just chat?`
       }
       if (today.moments.moods.some(m => ['anxious', 'sad', 'frustrated'].includes(m))) {
         return locale === 'fr'
           ? `${timeGreeting}. J'ai vu que tu te sens un peu difficile aujourd'hui. Je suis là si tu veux en parler.`
-          : `${timeGreeting}. I noticed you have been feeling a bit heavy today. Want to talk about it?`
+          : locale === 'es'
+            ? `${timeGreeting}. Noté que hoy te has sentido un poco pesado. ¿Quieres hablar de ello?`
+            : `${timeGreeting}. I noticed you have been feeling a bit heavy today. Want to talk about it?`
       }
       return locale === 'fr'
         ? `${timeGreeting}. Tu as capturé ${today.moments.count} moment(s) aujourd'hui. Comment ça va ?`
-        : `${timeGreeting}. You have captured ${today.moments.count} moment(s) today. How are you?`
+        : locale === 'es'
+          ? `${timeGreeting}. Has capturado ${today.moments.count} momento(s) hoy. ¿Cómo estás?`
+          : `${timeGreeting}. You have captured ${today.moments.count} moment(s) today. How are you?`
 
     case 'rituals':
       if (today.rituals.completed === today.rituals.total && today.rituals.total > 0) {
         return locale === 'fr'
           ? `${timeGreeting}. Bravo, tous tes rituels sont faits ! Comment te sens-tu ?`
-          : `${timeGreeting}. Nice, all your rituals are done. How are you feeling?`
+          : locale === 'es'
+            ? `${timeGreeting}. Bien hecho, todos tus rituales están completos. ¿Cómo te sientes?`
+            : `${timeGreeting}. Nice, all your rituals are done. How are you feeling?`
       }
       if (today.rituals.completed === 0 && today.rituals.total > 0) {
         return locale === 'fr'
           ? `${timeGreeting}. Tu n'as pas encore fait tes rituels. Tout va bien ?`
-          : `${timeGreeting}. Have not done your rituals yet. Everything okay?`
+          : locale === 'es'
+            ? `${timeGreeting}. Aún no has hecho tus rituales. ¿Todo bien?`
+            : `${timeGreeting}. Have not done your rituals yet. Everything okay?`
       }
       return locale === 'fr'
         ? `${timeGreeting}. Comment se passent tes rituels aujourd'hui ?`
-        : `${timeGreeting}. How are your rituals going today?`
+        : locale === 'es'
+          ? `${timeGreeting}. ¿Cómo van tus rituales hoy?`
+          : `${timeGreeting}. How are your rituals going today?`
 
     case 'reflect':
       if (thisWeek.moods.positive < 40) {
         return locale === 'fr'
           ? `${timeGreeting}. Cette semaine a l'air un peu difficile. Tu veux qu'on en parle ?`
-          : `${timeGreeting}. This week looks a bit tough. Want to talk about it?`
+          : locale === 'es'
+            ? `${timeGreeting}. Esta semana parece un poco difícil. ¿Quieres hablar de ello?`
+            : `${timeGreeting}. This week looks a bit tough. Want to talk about it?`
       }
       return locale === 'fr'
         ? `${timeGreeting}. J'ai vu ton résumé de la semaine. Comment tu te sens par rapport à tout ça ?`
-        : `${timeGreeting}. I saw your weekly summary. How do you feel about it all?`
+        : locale === 'es'
+          ? `${timeGreeting}. Vi tu resumen semanal. ¿Cómo te sientes con todo eso?`
+          : `${timeGreeting}. I saw your weekly summary. How do you feel about it all?`
 
     case 'progress':
       return locale === 'fr'
         ? `${timeGreeting}. Tu regardes tes progrès. C'est bien de prendre du recul. Qu'est-ce qui te vient à l'esprit ?`
-        : `${timeGreeting}. Looking at your progress. Good to reflect. What is on your mind?`
+        : locale === 'es'
+          ? `${timeGreeting}. Revisando tu progreso. Es bueno reflexionar. ¿Qué tienes en mente?`
+          : `${timeGreeting}. Looking at your progress. Good to reflect. What is on your mind?`
 
     case 'anchors':
       const totalAnchors = today.anchors.totalGrow + today.anchors.totalLetGo
@@ -800,21 +856,29 @@ export function getContextAwareGreeting(
       if (totalAnchors === 0) {
         return locale === 'fr'
           ? `${timeGreeting}. Tu veux définir des habitudes à développer ou à abandonner ?`
-          : `${timeGreeting}. Want to set up some habits to grow or let go of?`
+          : locale === 'es'
+            ? `${timeGreeting}. ¿Quieres establecer hábitos para crecer o soltar?`
+            : `${timeGreeting}. Want to set up some habits to grow or let go of?`
       }
       if (completedAnchors === totalAnchors) {
         return locale === 'fr'
           ? `${timeGreeting}. Bravo, toutes tes ancres sont faites ! Comment tu te sens ?`
-          : `${timeGreeting}. Nice, all your anchors are done! How are you feeling?`
+          : locale === 'es'
+            ? `${timeGreeting}. Bien hecho, todas tus anclas están completas. ¿Cómo te sientes?`
+            : `${timeGreeting}. Nice, all your anchors are done! How are you feeling?`
       }
       if (completedAnchors === 0) {
         return locale === 'fr'
           ? `${timeGreeting}. Comment avancent tes habitudes aujourd'hui ?`
-          : `${timeGreeting}. How are your habits going today?`
+          : locale === 'es'
+            ? `${timeGreeting}. ¿Cómo van tus hábitos hoy?`
+            : `${timeGreeting}. How are your habits going today?`
       }
       return locale === 'fr'
         ? `${timeGreeting}. Tu as fait ${completedAnchors}/${totalAnchors} ancres. Besoin de motivation ?`
-        : `${timeGreeting}. You've done ${completedAnchors}/${totalAnchors} anchors. Need some motivation?`
+        : locale === 'es'
+          ? `${timeGreeting}. Has completado ${completedAnchors}/${totalAnchors} anclas. ¿Necesitas motivación?`
+          : `${timeGreeting}. You've done ${completedAnchors}/${totalAnchors} anchors. Need some motivation?`
 
     case 'home':
     case 'general':
@@ -823,15 +887,21 @@ export function getContextAwareGreeting(
       if (!today.balance.hasLogged && today.moments.count === 0) {
         return locale === 'fr'
           ? `${timeGreeting}. Comment vas-tu aujourd'hui ?`
-          : `${timeGreeting}. How are you doing today?`
+          : locale === 'es'
+            ? `${timeGreeting}. ¿Cómo estás hoy?`
+            : `${timeGreeting}. How are you doing today?`
       }
       if (thisWeek.balance.sleepTrend === 'declining') {
         return locale === 'fr'
           ? `${timeGreeting}. J'ai remarqué que ton sommeil a baissé cette semaine. Comment tu te sens ?`
-          : `${timeGreeting}. I noticed your sleep has been declining this week. How are you feeling?`
+          : locale === 'es'
+            ? `${timeGreeting}. Noté que tu sueño ha disminuido esta semana. ¿Cómo te sientes?`
+            : `${timeGreeting}. I noticed your sleep has been declining this week. How are you feeling?`
       }
       return locale === 'fr'
         ? `${timeGreeting}. Qu'est-ce qui t'occupe l'esprit ?`
-        : `${timeGreeting}. What is on your mind?`
+        : locale === 'es'
+          ? `${timeGreeting}. ¿Qué tienes en mente?`
+          : `${timeGreeting}. What is on your mind?`
   }
 }

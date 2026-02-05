@@ -58,7 +58,7 @@ export default function ResourcesPage() {
       }
     } catch (error) {
       console.error('Error loading resources:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors du chargement' : 'Error loading resources')
+      toast.error(locale === 'fr' ? 'Erreur lors du chargement' : locale === 'es' ? 'Error al cargar los recursos' : 'Error loading resources')
     } finally {
       setLoading(false)
     }
@@ -116,15 +116,17 @@ export default function ResourcesPage() {
             className="flex items-center gap-1 text-gray-500 mb-4"
           >
             <ChevronLeft className="w-5 h-5" />
-            <span className="text-sm">{locale === 'fr' ? 'Retour' : 'Back'}</span>
+            <span className="text-sm">{locale === 'fr' ? 'Retour' : locale === 'es' ? 'Volver' : 'Back'}</span>
           </button>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            {locale === 'fr' ? 'Mes Ressources' : 'My Resources'}
+            {locale === 'fr' ? 'Mes Ressources' : locale === 'es' ? 'Mis Recursos' : 'My Resources'}
           </h1>
           <p className="text-gray-500">
             {locale === 'fr'
               ? 'Worksheets et exercices partagés par vos mentors'
-              : 'Worksheets and exercises shared by your mentors'}
+              : locale === 'es'
+                ? 'Hojas de trabajo y ejercicios compartidos por tus mentores'
+                : 'Worksheets and exercises shared by your mentors'}
           </p>
         </motion.div>
 
@@ -136,7 +138,7 @@ export default function ResourcesPage() {
             onClick={() => setFilter('all')}
             className={`rounded-full ${filter === 'all' ? 'bg-emerald-500 hover:bg-emerald-600' : ''}`}
           >
-            {locale === 'fr' ? 'Tous' : 'All'}
+            {locale === 'fr' ? 'Tous' : locale === 'es' ? 'Todos' : 'All'}
             <span className="ml-1.5 text-xs opacity-70">{resources.length}</span>
           </Button>
           <Button
@@ -145,7 +147,7 @@ export default function ResourcesPage() {
             onClick={() => setFilter('pending')}
             className={`rounded-full ${filter === 'pending' ? 'bg-amber-500 hover:bg-amber-600' : ''}`}
           >
-            {locale === 'fr' ? 'À faire' : 'To do'}
+            {locale === 'fr' ? 'À faire' : locale === 'es' ? 'Pendiente' : 'To do'}
             <span className="ml-1.5 text-xs opacity-70">{pendingCount}</span>
           </Button>
           <Button
@@ -154,7 +156,7 @@ export default function ResourcesPage() {
             onClick={() => setFilter('completed')}
             className={`rounded-full ${filter === 'completed' ? 'bg-emerald-500 hover:bg-emerald-600' : ''}`}
           >
-            {locale === 'fr' ? 'Complétés' : 'Completed'}
+            {locale === 'fr' ? 'Complétés' : locale === 'es' ? 'Completados' : 'Completed'}
             <span className="ml-1.5 text-xs opacity-70">{completedCount}</span>
           </Button>
         </div>
@@ -171,15 +173,17 @@ export default function ResourcesPage() {
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               {filter === 'pending'
-                ? (locale === 'fr' ? 'Aucune ressource en attente' : 'No pending resources')
+                ? (locale === 'fr' ? 'Aucune ressource en attente' : locale === 'es' ? 'No hay recursos pendientes' : 'No pending resources')
                 : filter === 'completed'
-                  ? (locale === 'fr' ? 'Aucune ressource complétée' : 'No completed resources')
-                  : (locale === 'fr' ? 'Aucune ressource' : 'No resources yet')}
+                  ? (locale === 'fr' ? 'Aucune ressource complétée' : locale === 'es' ? 'No hay recursos completados' : 'No completed resources')
+                  : (locale === 'fr' ? 'Aucune ressource' : locale === 'es' ? 'Aún no hay recursos' : 'No resources yet')}
             </h3>
             <p className="text-gray-500">
               {locale === 'fr'
                 ? 'Les ressources de vos mentors apparaîtront ici.'
-                : 'Resources from your mentors will appear here.'}
+                : locale === 'es'
+                  ? 'Los recursos de tus mentores aparecerán aquí.'
+                  : 'Resources from your mentors will appear here.'}
             </p>
           </motion.div>
         ) : (
@@ -228,10 +232,10 @@ export default function ResourcesPage() {
                             : 'bg-gray-100 text-gray-600'
                       }`}>
                         {isCompleted
-                          ? (locale === 'fr' ? 'Complété' : 'Completed')
+                          ? (locale === 'fr' ? 'Complété' : locale === 'es' ? 'Completado' : 'Completed')
                           : isInProgress
-                            ? (locale === 'fr' ? 'En cours' : 'In progress')
-                            : (locale === 'fr' ? 'À faire' : 'To do')}
+                            ? (locale === 'fr' ? 'En cours' : locale === 'es' ? 'En progreso' : 'In progress')
+                            : (locale === 'fr' ? 'À faire' : locale === 'es' ? 'Pendiente' : 'To do')}
                       </span>
                       <span className="text-gray-300">•</span>
                       <span className="capitalize">{item.resource.type}</span>
@@ -244,7 +248,7 @@ export default function ResourcesPage() {
                         <>
                           <span className="text-gray-300 mx-1">•</span>
                           <span>
-                            {new Date(item.sharedAt).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                            {new Date(item.sharedAt).toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
                               month: 'short',
                               day: 'numeric',
                             })}

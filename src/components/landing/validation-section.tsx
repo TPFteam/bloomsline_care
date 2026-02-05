@@ -32,6 +32,7 @@ export function ValidationSection() {
           text: {
             en: 'of wellness app users stop using the app within 30 days.',
             fr: 'des utilisateurs d\'apps bien-être arrêtent dans les 30 jours.',
+            es: 'de los usuarios de apps de bienestar dejan de usarla en 30 días.',
           },
           source: 'Business of Apps, 2024',
           sourceUrl: 'https://www.businessofapps.com/data/health-fitness-app-benchmarks/',
@@ -41,10 +42,12 @@ export function ValidationSection() {
           suffix: {
             en: 'days',
             fr: 'jours',
+            es: 'días',
           },
           text: {
             en: 'on average to form a habit. Most people give up in the first two weeks.',
             fr: 'en moyenne pour former une habitude. La plupart abandonnent en deux semaines.',
+            es: 'en promedio para formar un hábito. La mayoría se rinde en las primeras dos semanas.',
           },
           source: 'European Journal of Social Psychology',
           sourceUrl: 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3505409/',
@@ -54,6 +57,7 @@ export function ValidationSection() {
           text: {
             en: 'of mental health app users drop off within the first 10 days.',
             fr: 'des utilisateurs d\'apps santé mentale abandonnent en 10 jours.',
+            es: 'de los usuarios de apps de salud mental abandonan en los primeros 10 días.',
           },
           source: 'JMIR Research',
           sourceUrl: 'https://www.researchgate.net/figure/App-30-day-retention-by-mental-health-focus-The-percentages-reflect-the-number-of-users_fig2_334562120',
@@ -67,6 +71,7 @@ export function ValidationSection() {
           text: {
             en: 'barrier to therapy progress: clients forgetting what to practice between sessions.',
             fr: 'obstacle aux progrès en thérapie: les clients oublient quoi pratiquer entre les séances.',
+            es: 'barrera para el progreso terapéutico: los clientes olvidan qué practicar entre sesiones.',
           },
           source: 'PMC Research, 2024',
           sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11671782/',
@@ -76,10 +81,12 @@ export function ValidationSection() {
           suffix: {
             en: 'days',
             fr: 'jours',
+            es: 'días',
           },
           text: {
             en: 'is all it takes for clients to forget most of what was discussed in session.',
             fr: 'suffisent pour que les clients oublient la plupart de ce qui a été discuté.',
+            es: 'es todo lo que se necesita para que los clientes olviden la mayor parte de lo discutido en sesión.',
           },
           source: 'Cognitive Therapy Research',
           sourceUrl: 'https://link.springer.com/article/10.1007/s10608-020-10136-x',
@@ -89,6 +96,7 @@ export function ValidationSection() {
           text: {
             en: 'better outcomes when clients have support between sessions.',
             fr: 'meilleurs résultats quand les clients ont du soutien entre les séances.',
+            es: 'mejores resultados cuando los clientes tienen apoyo entre sesiones.',
           },
           source: 'Journal of Clinical Psychology',
           sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/16319035/',
@@ -110,11 +118,13 @@ export function ValidationSection() {
           className="text-center mb-16"
         >
           <p className="text-sm font-medium uppercase tracking-wider text-neutral-400 mb-4">
-            {locale === 'fr' ? 'Ce n\'est pas vous' : 'It is not you'}
+            {locale === 'fr' ? 'Ce n\'est pas vous' : locale === 'es' ? 'No eres tú' : 'It is not you'}
           </p>
           <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 max-w-2xl mx-auto">
             {locale === 'fr'
               ? 'Le système est conçu contre vous.'
+              : locale === 'es'
+              ? 'El sistema está diseñado en tu contra.'
               : 'The system is designed against you.'}
           </h2>
         </motion.div>
@@ -133,12 +143,12 @@ export function ValidationSection() {
                 {stat.number}
                 {stat.suffix && (
                   <span className="text-2xl sm:text-3xl ml-1">
-                    {locale === 'fr' ? stat.suffix.fr : stat.suffix.en}
+                    {locale === 'fr' ? stat.suffix.fr : locale === 'es' ? stat.suffix.es : stat.suffix.en}
                   </span>
                 )}
               </div>
               <p className="text-neutral-600 leading-relaxed mb-3">
-                {locale === 'fr' ? stat.text.fr : stat.text.en}
+                {locale === 'fr' ? stat.text.fr : locale === 'es' ? stat.text.es : stat.text.en}
               </p>
               <a
                 href={stat.sourceUrl}

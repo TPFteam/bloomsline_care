@@ -54,11 +54,12 @@ export default function ProgressPage() {
             </button>
             <div>
               <h1 className="text-lg font-semibold text-gray-800">
-                {locale === 'fr' ? 'Votre Progrès' : 'Your Progress'}
+                {locale === 'fr' ? 'Votre Progrès' : locale === 'es' ? 'Tu Progreso' : 'Your Progress'}
               </h1>
               <p className="text-sm text-gray-500">
                 {locale === 'fr'
                   ? 'Comprendre votre parcours'
+                  : locale === 'es' ? 'Comprende tu camino'
                   : 'Understand your journey'}
               </p>
             </div>
@@ -67,7 +68,7 @@ export default function ProgressPage() {
           <button
             onClick={() => setShowGuide(true)}
             className="w-9 h-9 flex items-center justify-center rounded-full bg-white/80 border border-gray-200 hover:bg-gray-50 transition-colors"
-            title={locale === 'fr' ? "Qu'est-ce que c'est?" : "What's this?"}
+            title={locale === 'fr' ? "Qu'est-ce que c'est?" : locale === 'es' ? "¿Qué es esto?" : "What's this?"}
           >
             <Info className="w-4 h-4 text-gray-400" />
           </button>

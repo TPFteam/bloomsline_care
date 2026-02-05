@@ -31,12 +31,14 @@ export function EarlyAccessSection({ isPractitionerPage = false }: EarlyAccessSe
           className="max-w-2xl mx-auto text-center"
         >
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-light text-neutral-900 mb-6">
-            {locale === 'fr' ? 'Prêt à commencer ?' : 'Ready to begin?'}
+            {locale === 'fr' ? 'Prêt à commencer ?' : locale === 'es' ? '¿Listo para comenzar?' : 'Ready to begin?'}
           </h2>
 
           <p className="text-lg text-neutral-500 mb-10">
             {locale === 'fr'
               ? 'Rejoignez notre liste d\'attente et soyez parmi les premiers à découvrir Bloomsline.'
+              : locale === 'es'
+              ? 'Únete a nuestra lista de espera y sé de los primeros en conocer Bloomsline.'
               : 'Join our waitlist and be among the first to experience Bloomsline.'}
           </p>
 
@@ -49,7 +51,7 @@ export function EarlyAccessSection({ isPractitionerPage = false }: EarlyAccessSe
                   : 'bg-neutral-900 text-white hover:bg-neutral-800'
               }`}
             >
-              {locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access'}
+              {locale === 'fr' ? 'Obtenir un accès anticipé' : locale === 'es' ? 'Obtener acceso anticipado' : 'Get Early Access'}
               <ArrowRight className="w-4 h-4" />
             </button>
             <a
@@ -59,7 +61,7 @@ export function EarlyAccessSection({ isPractitionerPage = false }: EarlyAccessSe
               className="px-8 py-4 rounded-full border-2 border-neutral-300 text-neutral-700 font-medium inline-flex items-center gap-2 hover:border-neutral-400 hover:text-neutral-900 transition-colors"
             >
               <Calendar className="w-4 h-4" />
-              {locale === 'fr' ? 'Réserver une démo' : 'Book a Demo'}
+              {locale === 'fr' ? 'Réserver une démo' : locale === 'es' ? 'Reservar una demo' : 'Book a Demo'}
             </a>
           </div>
         </motion.div>

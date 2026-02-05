@@ -21,19 +21,25 @@ export function DailyStoryCard({ momentsCount, seedsCount, ritualsCount = 0, loc
   if (momentsCount > 0) {
     stats.push(locale === 'fr'
       ? `${momentsCount} moment${momentsCount !== 1 ? 's' : ''}`
-      : `${momentsCount} moment${momentsCount !== 1 ? 's' : ''}`
+      : locale === 'es'
+        ? `${momentsCount} momento${momentsCount !== 1 ? 's' : ''}`
+        : `${momentsCount} moment${momentsCount !== 1 ? 's' : ''}`
     )
   }
   if (ritualsCount > 0) {
     stats.push(locale === 'fr'
       ? `${ritualsCount} rituel${ritualsCount !== 1 ? 's' : ''}`
-      : `${ritualsCount} ritual${ritualsCount !== 1 ? 's' : ''}`
+      : locale === 'es'
+        ? `${ritualsCount} ritual${ritualsCount !== 1 ? 'es' : ''}`
+        : `${ritualsCount} ritual${ritualsCount !== 1 ? 's' : ''}`
     )
   }
   if (seedsCount > 0) {
     stats.push(locale === 'fr'
       ? `${seedsCount} graine${seedsCount !== 1 ? 's' : ''}`
-      : `${seedsCount} seed${seedsCount !== 1 ? 's' : ''}`
+      : locale === 'es'
+        ? `${seedsCount} semilla${seedsCount !== 1 ? 's' : ''}`
+        : `${seedsCount} seed${seedsCount !== 1 ? 's' : ''}`
     )
   }
 
@@ -63,7 +69,7 @@ export function DailyStoryCard({ momentsCount, seedsCount, ritualsCount = 0, loc
 
           <div>
             <h3 className="text-white font-semibold text-sm">
-              {locale === 'fr' ? 'Votre journée' : 'Your Day'}
+              {locale === 'fr' ? 'Votre journée' : locale === 'es' ? 'Tu día' : 'Your Day'}
             </h3>
             <p className="text-white/70 text-xs">
               {stats.join(' · ')}

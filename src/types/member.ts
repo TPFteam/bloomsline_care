@@ -410,22 +410,22 @@ export function formatRelativeTime(date: string | null): string {
   return `${Math.floor(diffDays / 30)} months ago`
 }
 
-export function formatDate(date: string | null, locale: 'en' | 'fr' = 'en'): string {
-  if (!date) return locale === 'fr' ? 'Jamais' : 'Never'
+export function formatDate(date: string | null, locale: 'en' | 'fr' | 'es' = 'en'): string {
+  if (!date) return locale === 'fr' ? 'Jamais' : locale === 'es' ? 'Nunca' : 'Never'
 
   const d = new Date(date)
-  return d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+  return d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   })
 }
 
-export function formatDateTime(date: string | null, locale: 'en' | 'fr' = 'en'): string {
-  if (!date) return locale === 'fr' ? 'Jamais' : 'Never'
+export function formatDateTime(date: string | null, locale: 'en' | 'fr' | 'es' = 'en'): string {
+  if (!date) return locale === 'fr' ? 'Jamais' : locale === 'es' ? 'Nunca' : 'Never'
 
   const d = new Date(date)
-  return d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+  return d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',

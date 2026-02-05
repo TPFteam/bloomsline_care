@@ -30,7 +30,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
-import { fr, enUS } from 'date-fns/locale'
+import { fr, enUS, es } from 'date-fns/locale'
 import {
   getMemberRecord,
   getMemberPractitioner,
@@ -161,6 +161,57 @@ const content = {
     inPerson: 'En personne',
     phone: 'Téléphone',
   },
+  es: {
+    title: 'Mi Profesional',
+    noPractitioner: 'Aún no hay profesional conectado',
+    noPractitionerDesc: 'Cuando un profesional te invite, aparecerá aquí.',
+    resources: 'Recursos',
+    noResources: 'Aún no hay recursos',
+    noResourcesDesc: 'Tu profesional compartirá hojas de trabajo y ejercicios contigo aquí.',
+    pending: 'Pendiente',
+    inProgress: 'En progreso',
+    completed: 'Completado',
+    dueDate: 'Fecha límite',
+    viewAll: 'Ver todo',
+    viewLess: 'Ver menos',
+    sharedBy: 'Compartido por',
+    quickAccess: 'Acceso rápido',
+    myPractitioners: 'Mis Profesionales',
+    viewPractitioners: 'Ver tus profesionales',
+    myAssessments: 'Mis Evaluaciones',
+    assessmentsDesc: 'Evaluaciones y ejercicios',
+    myStories: 'Mis Historias',
+    storiesDesc: 'Relatos terapéuticos',
+    upcomingSessions: 'Próximas Sesiones',
+    noUpcoming: 'No hay sesiones programadas',
+    sessionHistory: 'Historial de Sesiones',
+    noHistory: 'No hay historial de sesiones',
+    awaitingConfirmation: 'Esperando tu confirmación',
+    rescheduleRequested: 'Reprogramación solicitada',
+    confirmed: 'Confirmado',
+    cancelled: 'Cancelado',
+    noShow: 'Ausente',
+    confirm: 'Confirmar',
+    reschedule: 'Reprogramar',
+    newDateProposed: 'Nueva fecha propuesta',
+    accept: 'Aceptar',
+    decline: 'Rechazar',
+    requestReschedule: 'Solicitar reprogramación',
+    rescheduleReason: 'Por favor indícanos por qué necesitas reprogramar.',
+    reasonPlaceholder: 'Razón de la reprogramación...',
+    suggestDate: 'Sugerir una nueva fecha (opcional)',
+    date: 'Fecha',
+    time: 'Hora',
+    cancel: 'Cancelar',
+    sendRequest: 'Enviar solicitud',
+    with: 'con',
+    initialSession: 'Sesión inicial',
+    followUp: 'Seguimiento',
+    emergency: 'Emergencia',
+    assessment: 'Evaluación',
+    inPerson: 'Presencial',
+    phone: 'Teléfono',
+  },
 }
 
 export default function MyPractitionerPage() {
@@ -283,10 +334,10 @@ export default function MyPractitionerPage() {
         prev.map(s => s.id === sessionId ? { ...s, member_confirmed: true, reschedule_requested: false } : s)
       )
 
-      toast.success(locale === 'fr' ? 'Séance confirmée!' : 'Session confirmed!')
+      toast.success(locale === 'fr' ? 'Séance confirmée!' : locale === 'es' ? '¡Sesión confirmada!' : 'Session confirmed!')
     } catch (error) {
       console.error('Error confirming session:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors de la confirmation' : 'Failed to confirm session')
+      toast.error(locale === 'fr' ? 'Erreur lors de la confirmation' : locale === 'es' ? 'Error al confirmar la sesión' : 'Failed to confirm session')
     } finally {
       setActionLoading(null)
     }
@@ -294,7 +345,7 @@ export default function MyPractitionerPage() {
 
   const handleRequestReschedule = async (sessionId: string) => {
     if (!rescheduleReason.trim()) {
-      toast.error(locale === 'fr' ? 'Veuillez indiquer une raison' : 'Please provide a reason')
+      toast.error(locale === 'fr' ? 'Veuillez indiquer une raison' : locale === 'es' ? 'Por favor proporciona una razón' : 'Please provide a reason')
       return
     }
 
@@ -326,10 +377,10 @@ export default function MyPractitionerPage() {
       setRescheduleReason('')
       setSuggestedDate('')
       setSuggestedTime('')
-      toast.success(locale === 'fr' ? 'Demande de report envoyée' : 'Reschedule request sent')
+      toast.success(locale === 'fr' ? 'Demande de report envoyée' : locale === 'es' ? 'Solicitud de reprogramación enviada' : 'Reschedule request sent')
     } catch (error) {
       console.error('Error requesting reschedule:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors de la demande' : 'Failed to request reschedule')
+      toast.error(locale === 'fr' ? 'Erreur lors de la demande' : locale === 'es' ? 'Error al solicitar la reprogramación' : 'Failed to request reschedule')
     } finally {
       setActionLoading(null)
     }
@@ -364,10 +415,10 @@ export default function MyPractitionerPage() {
         } : s)
       )
 
-      toast.success(locale === 'fr' ? 'Nouvelle date acceptée!' : 'New date accepted!')
+      toast.success(locale === 'fr' ? 'Nouvelle date acceptée!' : locale === 'es' ? '¡Nueva fecha aceptada!' : 'New date accepted!')
     } catch (error) {
       console.error('Error accepting proposed date:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors de l\'acceptation' : 'Failed to accept date')
+      toast.error(locale === 'fr' ? 'Erreur lors de l\'acceptation' : locale === 'es' ? 'Error al aceptar la fecha' : 'Failed to accept date')
     } finally {
       setActionLoading(null)
     }
@@ -394,10 +445,10 @@ export default function MyPractitionerPage() {
         } : s)
       )
 
-      toast.success(locale === 'fr' ? 'Proposition déclinée' : 'Proposal declined')
+      toast.success(locale === 'fr' ? 'Proposition déclinée' : locale === 'es' ? 'Propuesta rechazada' : 'Proposal declined')
     } catch (error) {
       console.error('Error declining proposed date:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors du déclin' : 'Failed to decline')
+      toast.error(locale === 'fr' ? 'Erreur lors du déclin' : locale === 'es' ? 'Error al rechazar' : 'Failed to decline')
     } finally {
       setActionLoading(null)
     }
@@ -413,13 +464,13 @@ export default function MyPractitionerPage() {
   }
 
   const getSessionTypeLabel = (type: string) => {
-    const labels: Record<string, { en: string; fr: string }> = {
-      initial: { en: t.initialSession, fr: t.initialSession },
-      follow_up: { en: t.followUp, fr: t.followUp },
-      emergency: { en: t.emergency, fr: t.emergency },
-      assessment: { en: t.assessment, fr: t.assessment },
+    const labels: Record<string, { en: string; fr: string; es: string }> = {
+      initial: { en: t.initialSession, fr: t.initialSession, es: t.initialSession },
+      follow_up: { en: t.followUp, fr: t.followUp, es: t.followUp },
+      emergency: { en: t.emergency, fr: t.emergency, es: t.emergency },
+      assessment: { en: t.assessment, fr: t.assessment, es: t.assessment },
     }
-    return labels[type]?.[locale as 'en' | 'fr'] || type
+    return labels[type]?.[locale as 'en' | 'fr' | 'es'] || type
   }
 
   const getStatusColor = (status: string) => {
@@ -654,7 +705,7 @@ export default function MyPractitionerPage() {
                             <p className="font-semibold text-purple-800 text-sm">{t.newDateProposed}</p>
                             <p className="text-sm text-purple-700 mt-1">
                               {format(new Date(session.practitioner_proposed_date!), "EEEE, MMM d 'at' HH:mm", {
-                                locale: locale === 'fr' ? fr : enUS
+                                locale: locale === 'fr' ? fr : locale === 'es' ? es : enUS
                               })}
                             </p>
                           </div>
@@ -714,7 +765,7 @@ export default function MyPractitionerPage() {
                       {/* Date Box */}
                       <div className="flex-shrink-0 w-14 h-14 bg-white rounded-xl border border-gray-100 flex flex-col items-center justify-center shadow-sm">
                         <span className="text-xs text-gray-500 uppercase">
-                          {format(sessionDate, 'MMM', { locale: locale === 'fr' ? fr : enUS })}
+                          {format(sessionDate, 'MMM', { locale: locale === 'fr' ? fr : locale === 'es' ? es : enUS })}
                         </span>
                         <span className="text-xl font-bold text-gray-900">
                           {format(sessionDate, 'd')}
@@ -928,7 +979,7 @@ export default function MyPractitionerPage() {
                         isCompleted ? 'bg-gray-100' : isCancelled ? 'bg-red-100' : 'bg-amber-100'
                       }`}>
                         <span className="text-xs text-gray-500 uppercase">
-                          {format(sessionDate, 'MMM', { locale: locale === 'fr' ? fr : enUS })}
+                          {format(sessionDate, 'MMM', { locale: locale === 'fr' ? fr : locale === 'es' ? es : enUS })}
                         </span>
                         <span className="text-lg font-bold text-gray-700">
                           {format(sessionDate, 'd')}

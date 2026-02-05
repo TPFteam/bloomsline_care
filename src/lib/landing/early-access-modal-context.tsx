@@ -19,22 +19,22 @@ const userTypeOptions = [
   {
     value: 'member' as UserType,
     Icon: Leaf,
-    label: { en: 'For myself', fr: 'Pour moi' },
-    description: { en: 'I want support for my own wellbeing', fr: 'Je cherche du soutien pour mon bien-être' },
+    label: { en: 'For myself', fr: 'Pour moi', es: 'Para mí' },
+    description: { en: 'I want support for my own wellbeing', fr: 'Je cherche du soutien pour mon bien-être', es: 'Busco apoyo para mi propio bienestar' },
     color: 'teal',
   },
   {
     value: 'practitioner' as UserType,
     Icon: Heart,
-    label: { en: 'I help others', fr: 'J\'accompagne les autres' },
-    description: { en: 'I\'m a therapist, coach, or practitioner', fr: 'Je suis thérapeute, coach ou praticien' },
+    label: { en: 'I help others', fr: 'J\'accompagne les autres', es: 'Ayudo a otros' },
+    description: { en: 'I\'m a therapist, coach, or practitioner', fr: 'Je suis thérapeute, coach ou praticien', es: 'Soy terapeuta, coach o profesional' },
     color: 'lavender',
   },
   {
     value: 'both' as UserType,
     Icon: Sparkles,
-    label: { en: 'Both', fr: 'Les deux' },
-    description: { en: 'I care for myself and support others', fr: 'Je prends soin de moi et j\'accompagne les autres' },
+    label: { en: 'Both', fr: 'Les deux', es: 'Ambos' },
+    description: { en: 'I care for myself and support others', fr: 'Je prends soin de moi et j\'accompagne les autres', es: 'Cuido de mí y apoyo a otros' },
     color: 'rose',
   },
 ]
@@ -73,7 +73,7 @@ export function EarlyAccessModalProvider({ children }: { children: ReactNode }) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.name.trim() || !formData.email.trim() || !formData.userType) {
-      setError(locale === 'fr' ? 'Veuillez remplir tous les champs obligatoires' : 'Please fill in all required fields')
+      setError(locale === 'fr' ? 'Veuillez remplir tous les champs obligatoires' : locale === 'es' ? 'Por favor, complete todos los campos obligatorios' : 'Please fill in all required fields')
       return
     }
 
@@ -91,16 +91,16 @@ export function EarlyAccessModalProvider({ children }: { children: ReactNode }) 
 
       if (!response.ok) {
         if (data.code === 'DUPLICATE') {
-          setError(locale === 'fr' ? 'Cet email est déjà inscrit' : 'This email is already on the list')
+          setError(locale === 'fr' ? 'Cet email est déjà inscrit' : locale === 'es' ? 'Este correo ya está en la lista' : 'This email is already on the list')
         } else {
-          setError(data.error || (locale === 'fr' ? 'Une erreur est survenue' : 'An error occurred'))
+          setError(data.error || (locale === 'fr' ? 'Une erreur est survenue' : locale === 'es' ? 'Ha ocurrido un error' : 'An error occurred'))
         }
         return
       }
 
       setSuccess(true)
     } catch {
-      setError(locale === 'fr' ? 'Une erreur est survenue' : 'An error occurred')
+      setError(locale === 'fr' ? 'Une erreur est survenue' : locale === 'es' ? 'Ha ocurrido un error' : 'An error occurred')
     } finally {
       setLoading(false)
     }
@@ -165,20 +165,22 @@ export function EarlyAccessModalProvider({ children }: { children: ReactNode }) 
                     <Check className="w-6 h-6 text-teal-600" />
                   </div>
                   <h3 className="text-xl font-semibold text-neutral-900 mb-2">
-                    {locale === 'fr' ? `Merci, ${formData.name} !` : `Thank you, ${formData.name}!`}
+                    {locale === 'fr' ? `Merci, ${formData.name} !` : locale === 'es' ? `¡Gracias, ${formData.name}!` : `Thank you, ${formData.name}!`}
                   </h3>
                   <p className="text-neutral-500">
-                    {locale === 'fr' ? 'Nous vous contacterons bientôt.' : "We'll be in touch soon."}
+                    {locale === 'fr' ? 'Nous vous contacterons bientôt.' : locale === 'es' ? 'Nos pondremos en contacto pronto.' : "We'll be in touch soon."}
                   </p>
                 </div>
               ) : (
                 <>
                   <h3 className="text-xl font-semibold text-neutral-900 mb-2">
-                    {locale === 'fr' ? 'Rejoignez les premiers' : 'Join the first ones'}
+                    {locale === 'fr' ? 'Rejoignez les premiers' : locale === 'es' ? 'Únete a los primeros' : 'Join the first ones'}
                   </h3>
                   <p className="text-neutral-500 text-sm mb-6">
                     {locale === 'fr'
                       ? 'Nous construisons Bloomsline avec soin. Dites-nous qui vous êtes.'
+                      : locale === 'es'
+                      ? 'Estamos construyendo Bloomsline con cuidado. Cuéntanos quién eres.'
                       : 'We are building Bloomsline with care. Tell us who you are.'}
                   </p>
 
@@ -186,13 +188,13 @@ export function EarlyAccessModalProvider({ children }: { children: ReactNode }) 
                     {/* Name */}
                     <div>
                       <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                        {locale === 'fr' ? 'Votre prénom' : 'Your name'}
+                        {locale === 'fr' ? 'Votre prénom' : locale === 'es' ? 'Tu nombre' : 'Your name'}
                       </label>
                       <input
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder={locale === 'fr' ? 'Marie' : 'Sarah'}
+                        placeholder={locale === 'fr' ? 'Marie' : locale === 'es' ? 'María' : 'Sarah'}
                         className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
                         disabled={loading}
                         required
@@ -202,13 +204,13 @@ export function EarlyAccessModalProvider({ children }: { children: ReactNode }) 
                     {/* Email */}
                     <div>
                       <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                        {locale === 'fr' ? 'Votre email' : 'Your email'}
+                        {locale === 'fr' ? 'Votre email' : locale === 'es' ? 'Tu correo electrónico' : 'Your email'}
                       </label>
                       <input
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder={locale === 'fr' ? 'marie@example.com' : 'sarah@example.com'}
+                        placeholder={locale === 'fr' ? 'marie@example.com' : locale === 'es' ? 'maria@example.com' : 'sarah@example.com'}
                         className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
                         disabled={loading}
                         required
@@ -218,7 +220,7 @@ export function EarlyAccessModalProvider({ children }: { children: ReactNode }) 
                     {/* User Type Selection */}
                     <div>
                       <label className="block text-sm font-medium text-neutral-700 mb-2">
-                        {locale === 'fr' ? 'Comment voulez-vous utiliser Bloomsline?' : 'How do you want to use Bloomsline?'}
+                        {locale === 'fr' ? 'Comment voulez-vous utiliser Bloomsline?' : locale === 'es' ? '¿Cómo quieres usar Bloomsline?' : 'How do you want to use Bloomsline?'}
                       </label>
                       <div className="space-y-2">
                         {userTypeOptions.map((option) => {
@@ -246,10 +248,10 @@ export function EarlyAccessModalProvider({ children }: { children: ReactNode }) 
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="font-medium text-neutral-800 text-sm">
-                                    {locale === 'fr' ? option.label.fr : option.label.en}
+                                    {locale === 'fr' ? option.label.fr : locale === 'es' ? option.label.es : option.label.en}
                                   </p>
                                   <p className="text-xs text-neutral-500 truncate">
-                                    {locale === 'fr' ? option.description.fr : option.description.en}
+                                    {locale === 'fr' ? option.description.fr : locale === 'es' ? option.description.es : option.description.en}
                                   </p>
                                 </div>
                                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
@@ -271,9 +273,9 @@ export function EarlyAccessModalProvider({ children }: { children: ReactNode }) 
                     {/* Reason (optional) */}
                     <div>
                       <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                        {locale === 'fr' ? "Qu'est-ce qui vous amène ici?" : 'What brings you here?'}
+                        {locale === 'fr' ? "Qu'est-ce qui vous amène ici?" : locale === 'es' ? '¿Qué te trae aquí?' : 'What brings you here?'}
                         <span className="text-neutral-400 font-normal ml-1">
-                          {locale === 'fr' ? '(optionnel)' : '(optional)'}
+                          {locale === 'fr' ? '(optionnel)' : locale === 'es' ? '(opcional)' : '(optional)'}
                         </span>
                       </label>
                       <textarea
@@ -281,6 +283,8 @@ export function EarlyAccessModalProvider({ children }: { children: ReactNode }) 
                         onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                         placeholder={locale === 'fr'
                           ? 'Un moment difficile, une envie de changement...'
+                          : locale === 'es'
+                          ? 'Un momento difícil, un deseo de cambio...'
                           : 'A hard moment, a desire for change...'}
                         rows={2}
                         className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 resize-none"
@@ -291,7 +295,7 @@ export function EarlyAccessModalProvider({ children }: { children: ReactNode }) 
                     {/* Preferred Language */}
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-neutral-500">
-                        {locale === 'fr' ? 'Langue préférée' : 'Preferred language'}
+                        {locale === 'fr' ? 'Langue préférée' : locale === 'es' ? 'Idioma preferido' : 'Preferred language'}
                       </span>
                       <div className="flex items-center gap-1 bg-neutral-100 rounded-full p-1">
                         <button
@@ -331,14 +335,16 @@ export function EarlyAccessModalProvider({ children }: { children: ReactNode }) 
                       className="w-full px-6 py-3 bg-neutral-900 text-white font-medium rounded-xl hover:bg-neutral-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading
-                        ? (locale === 'fr' ? 'Envoi...' : 'Sending...')
-                        : (locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access')}
+                        ? (locale === 'fr' ? 'Envoi...' : locale === 'es' ? 'Enviando...' : 'Sending...')
+                        : (locale === 'fr' ? 'Obtenir un accès anticipé' : locale === 'es' ? 'Obtener acceso anticipado' : 'Get Early Access')}
                     </button>
                   </form>
 
                   <p className="text-center text-xs text-neutral-400 mt-4">
                     {locale === 'fr'
                       ? 'Nous ne partageons jamais vos informations.'
+                      : locale === 'es'
+                      ? 'Nunca compartimos tu información.'
                       : 'We never share your information.'}
                   </p>
                 </>

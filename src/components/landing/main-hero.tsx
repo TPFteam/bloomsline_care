@@ -342,7 +342,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                   </AnimatePresence>
                   <br />
                   <span className="text-neutral-900">
-                    {locale === 'fr' ? 'sans effort' : 'effortlessly'}
+                    {locale === 'fr' ? 'sans effort' : locale === 'es' ? 'sin esfuerzo' : 'effortlessly'}
                   </span>
                 </>
               ) : (
@@ -377,10 +377,14 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
             {isPractitionerPage ? (
               locale === 'fr'
                 ? 'Accompagnez dans la durée, sans alourdir votre pratique.'
+                : locale === 'es'
+                ? 'Apoyo a largo plazo, sin sobrecargar tu práctica.'
                 : 'Long-term support, without adding to your workload.'
             ) : (
               locale === 'fr'
                 ? 'Un espace pour y voir plus clair quand tout devient flou.'
+                : locale === 'es'
+                ? 'Un espacio para ver con claridad cuando todo se vuelve borroso.'
                 : 'A space to find clarity when everything feels unclear.'
             )}
           </motion.p>
@@ -396,7 +400,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
         >
           {/* Context label */}
           <p className="text-center text-xs text-neutral-400 mb-3">
-            {locale === 'fr' ? 'Découvrez comment ça marche' : 'See how it works'}
+            {locale === 'fr' ? 'Découvrez comment ça marche' : locale === 'es' ? 'Descubre cómo funciona' : 'See how it works'}
           </p>
           <AnimatePresence mode="wait">
             {!isPractitionerPage ? (
@@ -412,14 +416,14 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                 {!isInteractive && (
                   <div className="flex items-center gap-1 sm:gap-2 mb-3 flex-wrap">
                     <span className="text-neutral-700 text-sm">
-                      {locale === 'fr' ? 'Quel' : 'What'}
+                      {locale === 'fr' ? 'Quel' : locale === 'es' ? 'Qué' : 'What'}
                     </span>
 
                     {/* Pill tabs inline - rituals and balance hidden for now */}
                     {[
-                      { id: 'moments' as PersonalSubTab, label: locale === 'fr' ? 'moment' : 'moment', Icon: Sun },
-                      // { id: 'rituals' as PersonalSubTab, label: locale === 'fr' ? 'rituel' : 'ritual', Icon: Circle },
-                      // { id: 'balance' as PersonalSubTab, label: locale === 'fr' ? 'équilibre' : 'balance', Icon: Smile },
+                      { id: 'moments' as PersonalSubTab, label: locale === 'fr' ? 'moment' : locale === 'es' ? 'momento' : 'moment', Icon: Sun },
+                      // { id: 'rituals' as PersonalSubTab, label: locale === 'fr' ? 'rituel' : locale === 'es' ? 'ritual' : 'ritual', Icon: Circle },
+                      // { id: 'balance' as PersonalSubTab, label: locale === 'fr' ? 'équilibre' : locale === 'es' ? 'equilibrio' : 'balance', Icon: Smile },
                     ].map((tab) => (
                       <button
                         key={tab.id}
@@ -436,7 +440,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                     ))}
 
                     <span className="text-neutral-700 text-sm">
-                      {locale === 'fr' ? "a compté aujourd'hui ?" : 'mattered today?'}
+                      {locale === 'fr' ? "a compté aujourd'hui ?" : locale === 'es' ? 'importó hoy?' : 'mattered today?'}
                     </span>
                   </div>
                 )}
@@ -458,7 +462,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                           {interactiveStep === 0 && (
                             <motion.div key="int-step0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
                               <p className="text-sm text-neutral-600 flex items-center gap-1.5">
-                                {locale === 'fr' ? 'Choisissez un' : 'Pick a'}
+                                {locale === 'fr' ? 'Choisissez un' : locale === 'es' ? 'Elige un' : 'Pick a'}
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#4A9A86]/15 text-[#4A9A86] text-sm font-medium rounded-full">
                                   <Sun className="w-3 h-3" />
                                   moment
@@ -466,10 +470,10 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               </p>
                               <div className="flex gap-3">
                                 {[
-                                  { src: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=200&h=200&fit=crop', label: locale === 'fr' ? 'Activité' : 'Activity' },
-                                  { src: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=200&h=200&fit=crop', label: locale === 'fr' ? 'Mon chat' : 'My cat' },
-                                  { src: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=200&h=200&fit=crop', label: locale === 'fr' ? 'Amis' : 'Friends' },
-                                  { src: 'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=200&h=200&fit=crop', label: locale === 'fr' ? 'Famille' : 'Family' },
+                                  { src: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=200&h=200&fit=crop', label: locale === 'fr' ? 'Activité' : locale === 'es' ? 'Actividad' : 'Activity' },
+                                  { src: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=200&h=200&fit=crop', label: locale === 'fr' ? 'Mon chat' : locale === 'es' ? 'Mi gato' : 'My cat' },
+                                  { src: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=200&h=200&fit=crop', label: locale === 'fr' ? 'Amis' : locale === 'es' ? 'Amigos' : 'Friends' },
+                                  { src: 'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=200&h=200&fit=crop', label: locale === 'fr' ? 'Famille' : locale === 'es' ? 'Familia' : 'Family' },
                                 ].map((img) => (
                                   <button
                                     key={img.src}
@@ -493,13 +497,13 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               <div className="flex gap-3 items-start">
                                 {selectedImage && <img src={selectedImage} alt="" className="w-12 h-12 rounded-lg object-cover shadow-sm" />}
                                 <div className="flex-1">
-                                  <p className="text-sm text-neutral-600">{locale === 'fr' ? "Qu'est-ce qui a rendu ce moment spécial ?" : 'What made this moment special?'}</p>
+                                  <p className="text-sm text-neutral-600">{locale === 'fr' ? "Qu'est-ce qui a rendu ce moment spécial ?" : locale === 'es' ? '¿Qué hizo especial este momento?' : 'What made this moment special?'}</p>
                                   <div className="flex flex-wrap gap-2 mt-2">
                                   {[
-                                    { icon: Smile, label: locale === 'fr' ? 'Soulagement' : 'Peaceful' },
-                                    { icon: Heart, label: locale === 'fr' ? 'Joie' : 'Grateful' },
-                                    { icon: Sparkles, label: locale === 'fr' ? 'Amour' : 'Inspired' },
-                                    { icon: Sun, label: locale === 'fr' ? 'Bienveillance' : 'Energized' },
+                                    { icon: Smile, label: locale === 'fr' ? 'Soulagement' : locale === 'es' ? 'Tranquilo' : 'Peaceful' },
+                                    { icon: Heart, label: locale === 'fr' ? 'Joie' : locale === 'es' ? 'Agradecido' : 'Grateful' },
+                                    { icon: Sparkles, label: locale === 'fr' ? 'Amour' : locale === 'es' ? 'Inspirado' : 'Inspired' },
+                                    { icon: Sun, label: locale === 'fr' ? 'Bienveillance' : locale === 'es' ? 'Energizado' : 'Energized' },
                                   ].map((f) => (
                                     <button
                                       key={f.label}
@@ -524,7 +528,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                     >
                                       <input
                                         type="text"
-                                        placeholder={locale === 'fr' ? 'Ce que vous ressentez compte...' : 'What you feel matters...'}
+                                        placeholder={locale === 'fr' ? 'Ce que vous ressentez compte...' : locale === 'es' ? 'Lo que sientes importa...' : 'What you feel matters...'}
                                         value={userNote}
                                         onChange={(e) => setUserNote(e.target.value)}
                                         className="w-full text-sm border-0 border-b border-neutral-200 pb-2 focus:outline-none focus:border-[#4A9A86] bg-transparent"
@@ -534,7 +538,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                         onClick={() => setInteractiveStep(3)}
                                         className="text-xs text-[#4A9A86] font-medium"
                                       >
-                                        {locale === 'fr' ? 'Voir mon parcours →' : 'See my journey →'}
+                                        {locale === 'fr' ? 'Voir mon parcours →' : locale === 'es' ? 'Ver mi recorrido →' : 'See my journey →'}
                                       </button>
                                     </motion.div>
                                   )}
@@ -548,7 +552,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <motion.div key="int-step3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <Check className="w-5 h-5 text-[#4A9A86]" />
-                                <p className="text-sm text-neutral-700 font-medium">{locale === 'fr' ? 'Ajouté à votre flow!' : 'Added to your flow!'}</p>
+                                <p className="text-sm text-neutral-700 font-medium">{locale === 'fr' ? 'Ajouté à votre flow!' : locale === 'es' ? '¡Añadido a tu flujo!' : 'Added to your flow!'}</p>
                               </div>
 
                               {/* Flow visualization */}
@@ -622,17 +626,25 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                       {selectedImage?.includes('cat')
                                         ? (locale === 'fr'
                                           ? 'Les moments avec votre compagnon comptent. Bloom vous montrera comment ils illuminent vos journées.'
+                                          : locale === 'es'
+                                          ? 'Los momentos con tu compañero importan. Bloom te mostrará cómo iluminan tus días.'
                                           : 'Moments with your furry friend matter. Bloom will show you how they brighten your days.')
                                         : selectedImage?.includes('coffee')
                                         ? (locale === 'fr'
                                           ? 'Ces petits rituels font la différence. Continuez et découvrez vos patterns de bien-être.'
+                                          : locale === 'es'
+                                          ? 'Estos pequeños rituales hacen la diferencia. Sigue adelante y descubre tus patrones de bienestar.'
                                           : 'These little rituals make a difference. Keep going and discover your wellness patterns.')
                                         : selectedImage?.includes('sunset')
                                         ? (locale === 'fr'
                                           ? 'Prendre le temps de contempler, ça compte. Bloom révélera ce qui vous ressource.'
+                                          : locale === 'es'
+                                          ? 'Tomarse tiempo para contemplar importa. Bloom revelará lo que te recarga.'
                                           : 'Taking time to pause matters. Bloom will reveal what recharges you.')
                                         : (locale === 'fr'
                                           ? 'Ces moments en nature sont précieux. Continuez et Bloom vous montrera ce qui vous apaise.'
+                                          : locale === 'es'
+                                          ? 'Estos momentos en la naturaleza son valiosos. Sigue adelante y Bloom te mostrará lo que te da calma.'
                                           : 'These nature moments are precious. Keep going and Bloom will show you what brings you calm.')
                                       }
                                     </p>
@@ -642,7 +654,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                       transition={{ delay: 2 }}
                                       className="text-xs text-[#4A9A86] font-medium mt-1.5"
                                     >
-                                      {locale === 'fr' ? '3 moments de plus pour votre premier insight →' : '3 more moments to your first insight →'}
+                                      {locale === 'fr' ? '3 moments de plus pour votre premier insight →' : locale === 'es' ? '3 momentos más para tu primer descubrimiento →' : '3 more moments to your first insight →'}
                                     </motion.p>
                                   </div>
                                 </div>
@@ -656,7 +668,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 onClick={resetInteractive}
                                 className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
                               >
-                                {locale === 'fr' ? '↺ Recommencer' : '↺ Start again'}
+                                {locale === 'fr' ? '↺ Recommencer' : locale === 'es' ? '↺ Empezar de nuevo' : '↺ Start again'}
                               </motion.button>
                             </motion.div>
                           )}
@@ -694,8 +706,8 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   </motion.div>
                                 </motion.div>
                                 <div className="flex-1 flex flex-col justify-center">
-                                  <p className="text-sm text-neutral-800 font-medium">{locale === 'fr' ? currentDemo.title.fr : currentDemo.title.en}</p>
-                                  <p className="text-xs text-neutral-400 mt-0.5">{locale === 'fr' ? 'Maintenant' : 'Just now'}</p>
+                                  <p className="text-sm text-neutral-800 font-medium">{locale === 'fr' ? currentDemo.title.fr : locale === 'es' ? currentDemo.title.en : currentDemo.title.en}</p>
+                                  <p className="text-xs text-neutral-400 mt-0.5">{locale === 'fr' ? 'Maintenant' : locale === 'es' ? 'Ahora mismo' : 'Just now'}</p>
                                   <div className="flex gap-1.5 mt-2">
                                     <motion.span
                                       initial={{ width: 0 }}
@@ -710,7 +722,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               {/* Hint */}
                               <p className="text-xs text-neutral-400 flex items-center gap-1.5">
                                 <Plus className="w-3 h-3" />
-                                {locale === 'fr' ? "Qu'est-ce qui a rendu ce moment spécial ?" : 'What made this moment special?'}
+                                {locale === 'fr' ? "Qu'est-ce qui a rendu ce moment spécial ?" : locale === 'es' ? '¿Qué hizo especial este momento?' : 'What made this moment special?'}
                               </p>
                             </motion.div>
                           )}
@@ -725,7 +737,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   className="w-14 h-14 rounded-xl shadow-md shrink-0 object-cover"
                                 />
                                 <div className="flex-1">
-                                  <p className="text-sm text-neutral-800 font-medium">{locale === 'fr' ? currentDemo.title.fr : currentDemo.title.en}</p>
+                                  <p className="text-sm text-neutral-800 font-medium">{locale === 'fr' ? currentDemo.title.fr : locale === 'es' ? currentDemo.title.en : currentDemo.title.en}</p>
                                   {/* Typing animation */}
                                   <div className="mt-2 flex items-center gap-1">
                                     <motion.p
@@ -734,7 +746,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                       transition={{ duration: 1.5, ease: 'easeOut' }}
                                       className="text-sm text-neutral-600 overflow-hidden whitespace-nowrap"
                                     >
-                                      {locale === 'fr' ? currentDemo.caption.fr : currentDemo.caption.en}
+                                      {locale === 'fr' ? currentDemo.caption.fr : locale === 'es' ? currentDemo.caption.en : currentDemo.caption.en}
                                     </motion.p>
                                     <motion.span
                                       animate={{ opacity: [1, 0, 1] }}
@@ -771,7 +783,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                         f.selected ? 'text-[#4A9A86]' : 'text-neutral-600'
                                       }`}
                                     >
-                                      <Icon className="w-3 h-3" /> {locale === 'fr' ? f.label.fr : f.label.en}
+                                      <Icon className="w-3 h-3" /> {locale === 'fr' ? f.label.fr : locale === 'es' ? f.label.en : f.label.en}
                                     </motion.span>
                                   )
                                 })}
@@ -823,7 +835,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 transition={{ delay: 1.3 }}
                                 className="text-xs text-neutral-500 text-center"
                               >
-                                {locale === 'fr' ? 'Votre flow cette semaine' : 'Your flow this week'}
+                                {locale === 'fr' ? 'Votre flow cette semaine' : locale === 'es' ? 'Tu flujo esta semana' : 'Your flow this week'}
                               </motion.p>
                             </motion.div>
                           )}
@@ -838,7 +850,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 <div className="w-6 h-6 rounded-full bg-[#4A9A86] flex items-center justify-center">
                                   <Sparkles className="w-3 h-3 text-white" />
                                 </div>
-                                <p className="text-sm text-neutral-600">{locale === 'fr' ? 'Bloom a remarqué quelque chose...' : 'Bloom noticed something...'}</p>
+                                <p className="text-sm text-neutral-600">{locale === 'fr' ? 'Bloom a remarqué quelque chose...' : locale === 'es' ? 'Bloom notó algo...' : 'Bloom noticed something...'}</p>
                               </motion.div>
 
                               {/* The insight card */}
@@ -856,8 +868,8 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                     ))}
                                   </div>
                                   <div className="flex-1">
-                                    <p className="text-sm text-neutral-800 font-medium">{locale === 'fr' ? currentDemo.insight.title.fr : currentDemo.insight.title.en}</p>
-                                    <p className="text-xs text-neutral-500 mt-0.5">{locale === 'fr' ? currentDemo.insight.subtitle.fr : currentDemo.insight.subtitle.en}</p>
+                                    <p className="text-sm text-neutral-800 font-medium">{locale === 'fr' ? currentDemo.insight.title.fr : locale === 'es' ? currentDemo.insight.title.en : currentDemo.insight.title.en}</p>
+                                    <p className="text-xs text-neutral-500 mt-0.5">{locale === 'fr' ? currentDemo.insight.subtitle.fr : locale === 'es' ? currentDemo.insight.subtitle.en : currentDemo.insight.subtitle.en}</p>
                                   </div>
                                 </div>
                                 {/* The value - clear metric */}
@@ -876,7 +888,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                     />
                                   </div>
                                   <span className="text-sm font-semibold text-[#4A9A86]">{currentDemo.insight.percent}%</span>
-                                  <span className="text-xs text-neutral-500">{locale === 'fr' ? currentDemo.insight.metric.fr : currentDemo.insight.metric.en}</span>
+                                  <span className="text-xs text-neutral-500">{locale === 'fr' ? currentDemo.insight.metric.fr : locale === 'es' ? currentDemo.insight.metric.en : currentDemo.insight.metric.en}</span>
                                 </motion.div>
                               </motion.div>
                             </motion.div>
@@ -898,13 +910,13 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                           {/* Step 0: Pick a ritual - gentle, tiny rituals */}
                           {interactiveStep === 0 && (
                             <motion.div key="rit-step0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
-                              <p className="text-sm text-neutral-600">{locale === 'fr' ? 'Un petit geste pour vous' : 'A tiny act for you'}</p>
+                              <p className="text-sm text-neutral-600">{locale === 'fr' ? 'Un petit geste pour vous' : locale === 'es' ? 'Un pequeño gesto para ti' : 'A tiny act for you'}</p>
                               <div className="space-y-2">
                                 {[
-                                  { id: 'window', icon: Sun, label: locale === 'fr' ? 'Moment fenêtre' : 'Window moment', desc: locale === 'fr' ? '2 min à regarder le monde' : '2 min gazing at the world' },
-                                  { id: 'sip', icon: Circle, label: locale === 'fr' ? 'Première gorgée' : 'First sip', desc: locale === 'fr' ? 'Savourer votre boisson' : 'Savor your drink' },
-                                  { id: 'breath', icon: Heart, label: locale === 'fr' ? 'Souffle lever' : 'Sunrise breath', desc: locale === 'fr' ? '3 respirations profondes' : '3 deep breaths' },
-                                  { id: 'intention', icon: Sparkles, label: locale === 'fr' ? 'Graine d\'intention' : 'Intention seed', desc: locale === 'fr' ? 'Une pensée pour la journée' : 'One thought for the day' },
+                                  { id: 'window', icon: Sun, label: locale === 'fr' ? 'Moment fenêtre' : locale === 'es' ? 'Momento ventana' : 'Window moment', desc: locale === 'fr' ? '2 min à regarder le monde' : locale === 'es' ? '2 min mirando el mundo' : '2 min gazing at the world' },
+                                  { id: 'sip', icon: Circle, label: locale === 'fr' ? 'Première gorgée' : locale === 'es' ? 'Primer sorbo' : 'First sip', desc: locale === 'fr' ? 'Savourer votre boisson' : locale === 'es' ? 'Saborear tu bebida' : 'Savor your drink' },
+                                  { id: 'breath', icon: Heart, label: locale === 'fr' ? 'Souffle lever' : locale === 'es' ? 'Respiro amanecer' : 'Sunrise breath', desc: locale === 'fr' ? '3 respirations profondes' : locale === 'es' ? '3 respiraciones profundas' : '3 deep breaths' },
+                                  { id: 'intention', icon: Sparkles, label: locale === 'fr' ? 'Graine d\'intention' : locale === 'es' ? 'Semilla de intención' : 'Intention seed', desc: locale === 'fr' ? 'Une pensée pour la journée' : locale === 'es' ? 'Un pensamiento para el día' : 'One thought for the day' },
                                 ].map((ritual) => (
                                   <button
                                     key={ritual.id}
@@ -930,12 +942,12 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                           {/* Step 1: When - gentle, flexible */}
                           {interactiveStep === 1 && (
                             <motion.div key="rit-step1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
-                              <p className="text-sm text-neutral-600">{locale === 'fr' ? 'Quand vous sentez-vous prêt?' : 'When feels right?'}</p>
+                              <p className="text-sm text-neutral-600">{locale === 'fr' ? 'Quand vous sentez-vous prêt?' : locale === 'es' ? '¿Cuándo te sientes listo?' : 'When feels right?'}</p>
                               <div className="flex gap-2">
                                 {[
-                                  { id: 'wakeup', label: locale === 'fr' ? 'Au réveil' : 'Waking up', emoji: '🌅' },
-                                  { id: 'midday', label: locale === 'fr' ? 'Pause midi' : 'Midday pause', emoji: '☀️' },
-                                  { id: 'evening', label: locale === 'fr' ? 'Fin de journée' : 'Winding down', emoji: '🌙' },
+                                  { id: 'wakeup', label: locale === 'fr' ? 'Au réveil' : locale === 'es' ? 'Al despertar' : 'Waking up', emoji: '🌅' },
+                                  { id: 'midday', label: locale === 'fr' ? 'Pause midi' : locale === 'es' ? 'Pausa del mediodía' : 'Midday pause', emoji: '☀️' },
+                                  { id: 'evening', label: locale === 'fr' ? 'Fin de journée' : locale === 'es' ? 'Fin del día' : 'Winding down', emoji: '🌙' },
                                 ].map((time) => (
                                   <button
                                     key={time.id}
@@ -958,7 +970,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <motion.div key="rit-step2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <Check className="w-5 h-5 text-[#4A9A86]" />
-                                <p className="text-sm text-neutral-700 font-medium">{locale === 'fr' ? 'Votre petit geste est prêt' : 'Your tiny act is ready'}</p>
+                                <p className="text-sm text-neutral-700 font-medium">{locale === 'fr' ? 'Votre petit geste est prêt' : locale === 'es' ? 'Tu pequeño gesto está listo' : 'Your tiny act is ready'}</p>
                               </div>
                               <motion.div
                                 initial={{ opacity: 0, y: 10 }}
@@ -974,27 +986,27 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   </div>
                                   <div className="flex-1">
                                     <p className="text-sm text-neutral-700 font-medium">
-                                      {selectedRitual === 'window' ? (locale === 'fr' ? 'Moment fenêtre' : 'Window moment')
-                                        : selectedRitual === 'sip' ? (locale === 'fr' ? 'Première gorgée' : 'First sip')
-                                        : selectedRitual === 'breath' ? (locale === 'fr' ? 'Souffle lever' : 'Sunrise breath')
-                                        : (locale === 'fr' ? 'Graine d\'intention' : 'Intention seed')}
+                                      {selectedRitual === 'window' ? (locale === 'fr' ? 'Moment fenêtre' : locale === 'es' ? 'Momento ventana' : 'Window moment')
+                                        : selectedRitual === 'sip' ? (locale === 'fr' ? 'Première gorgée' : locale === 'es' ? 'Primer sorbo' : 'First sip')
+                                        : selectedRitual === 'breath' ? (locale === 'fr' ? 'Souffle lever' : locale === 'es' ? 'Respiro amanecer' : 'Sunrise breath')
+                                        : (locale === 'fr' ? 'Graine d\'intention' : locale === 'es' ? 'Semilla de intención' : 'Intention seed')}
                                     </p>
                                     <p className="text-xs text-neutral-500">
-                                      {selectedTime === 'wakeup' ? (locale === 'fr' ? '🌅 Au réveil' : '🌅 Waking up')
-                                        : selectedTime === 'midday' ? (locale === 'fr' ? '☀️ Pause midi' : '☀️ Midday pause')
-                                        : (locale === 'fr' ? '🌙 Fin de journée' : '🌙 Winding down')}
+                                      {selectedTime === 'wakeup' ? (locale === 'fr' ? '🌅 Au réveil' : locale === 'es' ? '🌅 Al despertar' : '🌅 Waking up')
+                                        : selectedTime === 'midday' ? (locale === 'fr' ? '☀️ Pause midi' : locale === 'es' ? '☀️ Pausa del mediodía' : '☀️ Midday pause')
+                                        : (locale === 'fr' ? '🌙 Fin de journée' : locale === 'es' ? '🌙 Fin del día' : '🌙 Winding down')}
                                     </p>
                                   </div>
                                 </div>
                               </motion.div>
                               <p className="text-xs text-neutral-400 text-center">
-                                {locale === 'fr' ? 'Pas de pression. Juste une invitation.' : 'No pressure. Just an invitation.'}
+                                {locale === 'fr' ? 'Pas de pression. Juste une invitation.' : locale === 'es' ? 'Sin presión. Solo una invitación.' : 'No pressure. Just an invitation.'}
                               </p>
                               <button
                                 onClick={() => setInteractiveStep(3)}
                                 className="text-xs text-[#4A9A86] font-medium"
                               >
-                                {locale === 'fr' ? 'Voir la magie →' : 'See the magic →'}
+                                {locale === 'fr' ? 'Voir la magie →' : locale === 'es' ? 'Ver la magia →' : 'See the magic →'}
                               </button>
                             </motion.div>
                           )}
@@ -1017,7 +1029,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                     />
                                   ))}
                                 </div>
-                                <span className="text-xs text-neutral-500">{locale === 'fr' ? 'Jour 1' : 'Day 1'}</span>
+                                <span className="text-xs text-neutral-500">{locale === 'fr' ? 'Jour 1' : locale === 'es' ? 'Día 1' : 'Day 1'}</span>
                               </div>
 
                               {/* Personalized poetic insight based on ritual */}
@@ -1034,12 +1046,12 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   <div>
                                     <p className="text-sm text-neutral-700">
                                       {selectedRitual === 'window'
-                                        ? (locale === 'fr' ? '2 minutes à regarder le monde. Parfois c\'est tout ce qu\'il faut pour se recentrer.' : '2 minutes looking at the world. Sometimes that\'s all it takes to feel centered.')
+                                        ? (locale === 'fr' ? '2 minutes à regarder le monde. Parfois c\'est tout ce qu\'il faut pour se recentrer.' : locale === 'es' ? '2 minutos mirando el mundo. A veces eso es todo lo que necesitas para centrarte.' : '2 minutes looking at the world. Sometimes that\'s all it takes to feel centered.')
                                         : selectedRitual === 'sip'
-                                        ? (locale === 'fr' ? 'Cette première gorgée, savourée. Un petit rituel qui change la couleur de la journée.' : 'That first sip, savored. A tiny ritual that changes how the day feels.')
+                                        ? (locale === 'fr' ? 'Cette première gorgée, savourée. Un petit rituel qui change la couleur de la journée.' : locale === 'es' ? 'Ese primer sorbo, saboreado. Un pequeño ritual que cambia cómo se siente el día.' : 'That first sip, savored. A tiny ritual that changes how the day feels.')
                                         : selectedRitual === 'breath'
-                                        ? (locale === 'fr' ? '3 respirations. Votre corps connaît déjà le chemin vers le calme.' : '3 breaths. Your body already knows the way to calm.')
-                                        : (locale === 'fr' ? 'Une pensée pour guider la journée. Pas un objectif, juste une intention douce.' : 'One thought to guide the day. Not a goal, just a gentle intention.')
+                                        ? (locale === 'fr' ? '3 respirations. Votre corps connaît déjà le chemin vers le calme.' : locale === 'es' ? '3 respiraciones. Tu cuerpo ya conoce el camino hacia la calma.' : '3 breaths. Your body already knows the way to calm.')
+                                        : (locale === 'fr' ? 'Une pensée pour guider la journée. Pas un objectif, juste une intention douce.' : locale === 'es' ? 'Un pensamiento para guiar el día. No es una meta, solo una intención suave.' : 'One thought to guide the day. Not a goal, just a gentle intention.')
                                       }
                                     </p>
                                     <motion.p
@@ -1048,7 +1060,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                       transition={{ delay: 1.2 }}
                                       className="text-xs text-[#4A9A86] mt-2"
                                     >
-                                      {locale === 'fr' ? 'Bloom remarquera ce qui fonctionne pour vous →' : 'Bloom will notice what works for you →'}
+                                      {locale === 'fr' ? 'Bloom remarquera ce qui fonctionne pour vous →' : locale === 'es' ? 'Bloom notará lo que funciona para ti →' : 'Bloom will notice what works for you →'}
                                     </motion.p>
                                   </div>
                                 </div>
@@ -1059,7 +1071,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 onClick={resetRitualsInteractive}
                                 className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
                               >
-                                {locale === 'fr' ? '↺ Recommencer' : '↺ Start again'}
+                                {locale === 'fr' ? '↺ Recommencer' : locale === 'es' ? '↺ Empezar de nuevo' : '↺ Start again'}
                               </button>
                             </motion.div>
                           )}
@@ -1075,7 +1087,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <motion.div key="step0" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-[#4A9A86]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Pas des habitudes. Des petits gestes...' : 'Not habits. Tiny acts...'}</p>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Pas des habitudes. Des petits gestes...' : locale === 'es' ? 'No son hábitos. Son pequeños gestos...' : 'Not habits. Tiny acts...'}</p>
                               </div>
                               <div className="flex items-center gap-4">
                                 <motion.div
@@ -1086,8 +1098,8 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   <Sun className="w-7 h-7 text-[#4A9A86]" />
                                 </motion.div>
                                 <div className="flex-1">
-                                  <p className="text-sm font-medium text-neutral-800">{locale === 'fr' ? 'Moment fenêtre' : 'Window moment'}</p>
-                                  <p className="text-xs text-neutral-400 mt-0.5">{locale === 'fr' ? '2 minutes à regarder le monde' : '2 minutes gazing at the world'}</p>
+                                  <p className="text-sm font-medium text-neutral-800">{locale === 'fr' ? 'Moment fenêtre' : locale === 'es' ? 'Momento ventana' : 'Window moment'}</p>
+                                  <p className="text-xs text-neutral-400 mt-0.5">{locale === 'fr' ? '2 minutes à regarder le monde' : locale === 'es' ? '2 minutos mirando el mundo' : '2 minutes gazing at the world'}</p>
                                 </div>
                               </div>
                             </motion.div>
@@ -1096,13 +1108,13 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <motion.div key="step1" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-[#4A9A86]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Des gestes simples qui vous ressemblent...' : 'Simple acts that feel like you...'}</p>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Des gestes simples qui vous ressemblent...' : locale === 'es' ? 'Gestos simples que se sienten como tú...' : 'Simple acts that feel like you...'}</p>
                               </div>
                               <div className="space-y-2">
                                 {[
-                                  { icon: Sun, name: locale === 'fr' ? 'Moment fenêtre' : 'Window moment', when: locale === 'fr' ? 'Au réveil' : 'Waking up' },
-                                  { icon: Circle, name: locale === 'fr' ? 'Première gorgée' : 'First sip', when: locale === 'fr' ? 'Avec mon café' : 'With my coffee' },
-                                  { icon: Heart, name: locale === 'fr' ? 'Souffle lever' : 'Sunrise breath', when: locale === 'fr' ? 'Quand j\'en ai besoin' : 'When I need it' },
+                                  { icon: Sun, name: locale === 'fr' ? 'Moment fenêtre' : locale === 'es' ? 'Momento ventana' : 'Window moment', when: locale === 'fr' ? 'Au réveil' : locale === 'es' ? 'Al despertar' : 'Waking up' },
+                                  { icon: Circle, name: locale === 'fr' ? 'Première gorgée' : locale === 'es' ? 'Primer sorbo' : 'First sip', when: locale === 'fr' ? 'Avec mon café' : locale === 'es' ? 'Con mi café' : 'With my coffee' },
+                                  { icon: Heart, name: locale === 'fr' ? 'Souffle lever' : locale === 'es' ? 'Respiro amanecer' : 'Sunrise breath', when: locale === 'fr' ? 'Quand j\'en ai besoin' : locale === 'es' ? 'Cuando lo necesito' : 'When I need it' },
                                 ].map((ritual, i) => (
                                   <motion.div
                                     key={ritual.name}
@@ -1127,7 +1139,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <motion.div key="step2" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-[#4A9A86]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Pas de pression. Juste des invitations...' : 'No pressure. Just invitations...'}</p>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Pas de pression. Juste des invitations...' : locale === 'es' ? 'Sin presión. Solo invitaciones...' : 'No pressure. Just invitations...'}</p>
                               </div>
                               <div className="space-y-3">
                                 {/* Soft progress bars instead of gamified streaks */}
@@ -1145,10 +1157,10 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                       />
                                     ))}
                                   </div>
-                                  <span className="text-xs text-neutral-500">{locale === 'fr' ? 'Cette semaine' : 'This week'}</span>
+                                  <span className="text-xs text-neutral-500">{locale === 'fr' ? 'Cette semaine' : locale === 'es' ? 'Esta semana' : 'This week'}</span>
                                 </div>
                                 <p className="text-sm text-neutral-600 text-center">
-                                  {locale === 'fr' ? '3 moments de calme trouvés' : '3 quiet moments found'}
+                                  {locale === 'fr' ? '3 moments de calme trouvés' : locale === 'es' ? '3 momentos de calma encontrados' : '3 quiet moments found'}
                                 </p>
                               </div>
                             </motion.div>
@@ -1157,7 +1169,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <motion.div key="step3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-[#4A9A86]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Bloom remarque ce qui fonctionne...' : 'Bloom notices what works...'}</p>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Bloom remarque ce qui fonctionne...' : locale === 'es' ? 'Bloom nota lo que funciona...' : 'Bloom notices what works...'}</p>
                               </div>
                               <motion.div
                                 initial={{ scale: 0.95, opacity: 0 }}
@@ -1173,6 +1185,8 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                     <p className="text-sm text-neutral-700">
                                       {locale === 'fr'
                                         ? 'Vos matins avec un moment fenêtre? Vous êtes plus présent le reste de la journée.'
+                                        : locale === 'es'
+                                        ? 'Tus mañanas con un momento ventana? Te sientes más presente el resto del día.'
                                         : 'Mornings with a window moment? You feel more present the rest of the day.'}
                                     </p>
                                   </div>
@@ -1197,12 +1211,12 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                           {/* Step 0: Quick daily check-in */}
                           {interactiveStep === 0 && (
                             <motion.div key="bal-step0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
-                              <p className="text-sm text-neutral-600">{locale === 'fr' ? 'Comment était votre journée?' : 'How was your day?'}</p>
+                              <p className="text-sm text-neutral-600">{locale === 'fr' ? 'Comment était votre journée?' : locale === 'es' ? '¿Cómo fue tu día?' : 'How was your day?'}</p>
                               <div className="space-y-3">
                                 {[
-                                  { id: 'work', label: locale === 'fr' ? 'Travail' : 'Work', color: 'bg-red-400', defaultVal: 80 },
-                                  { id: 'rest', label: locale === 'fr' ? 'Repos' : 'Rest', color: 'bg-emerald-400', defaultVal: 30 },
-                                  { id: 'social', label: locale === 'fr' ? 'Social' : 'Social', color: 'bg-purple-400', defaultVal: 40 },
+                                  { id: 'work', label: locale === 'fr' ? 'Travail' : locale === 'es' ? 'Trabajo' : 'Work', color: 'bg-red-400', defaultVal: 80 },
+                                  { id: 'rest', label: locale === 'fr' ? 'Repos' : locale === 'es' ? 'Descanso' : 'Rest', color: 'bg-emerald-400', defaultVal: 30 },
+                                  { id: 'social', label: locale === 'fr' ? 'Social' : locale === 'es' ? 'Social' : 'Social', color: 'bg-purple-400', defaultVal: 40 },
                                 ].map((item, i) => (
                                   <motion.div
                                     key={item.id}
@@ -1213,8 +1227,8 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   >
                                     <div className="flex justify-between items-center">
                                       <span className="text-xs text-neutral-600">{item.label}</span>
-                                      {item.id === 'work' && <span className="text-[10px] text-red-400 font-medium">{locale === 'fr' ? 'Beaucoup' : 'A lot'}</span>}
-                                      {item.id === 'rest' && <span className="text-[10px] text-amber-500 font-medium">{locale === 'fr' ? 'Peu' : 'Little'}</span>}
+                                      {item.id === 'work' && <span className="text-[10px] text-red-400 font-medium">{locale === 'fr' ? 'Beaucoup' : locale === 'es' ? 'Mucho' : 'A lot'}</span>}
+                                      {item.id === 'rest' && <span className="text-[10px] text-amber-500 font-medium">{locale === 'fr' ? 'Peu' : locale === 'es' ? 'Poco' : 'Little'}</span>}
                                     </div>
                                     <div className="h-2 bg-neutral-100 rounded-full overflow-hidden">
                                       <motion.div
@@ -1234,7 +1248,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 onClick={() => setInteractiveStep(1)}
                                 className="text-xs text-[#4A9A86] font-medium"
                               >
-                                {locale === 'fr' ? 'Voir ce que ça signifie →' : 'See what this means →'}
+                                {locale === 'fr' ? 'Voir ce que ça signifie →' : locale === 'es' ? 'Ver qué significa esto →' : 'See what this means →'}
                               </motion.button>
                             </motion.div>
                           )}
@@ -1246,16 +1260,16 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               <div className="bg-red-50 rounded-xl p-3 border border-red-100">
                                 <div className="flex items-center gap-2 mb-2">
                                   <div className="w-2 h-2 rounded-full bg-red-400" />
-                                  <span className="text-xs text-red-600 font-medium">{locale === 'fr' ? 'Déséquilibre détecté' : 'Imbalance detected'}</span>
+                                  <span className="text-xs text-red-600 font-medium">{locale === 'fr' ? 'Déséquilibre détecté' : locale === 'es' ? 'Desequilibrio detectado' : 'Imbalance detected'}</span>
                                 </div>
                                 <p className="text-sm text-red-700">
-                                  {locale === 'fr' ? 'Beaucoup de travail, peu de repos' : 'Lots of work, little rest'}
+                                  {locale === 'fr' ? 'Beaucoup de travail, peu de repos' : locale === 'es' ? 'Mucho trabajo, poco descanso' : 'Lots of work, little rest'}
                                 </p>
                               </div>
 
                               {/* Week view - simple dots */}
                               <div className="space-y-1.5">
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Cette semaine' : 'This week'}</p>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Cette semaine' : locale === 'es' ? 'Esta semana' : 'This week'}</p>
                                 <div className="flex gap-1">
                                   {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day, i) => (
                                     <div key={i} className="flex-1 text-center">
@@ -1270,7 +1284,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 onClick={() => setInteractiveStep(2)}
                                 className="text-xs text-[#4A9A86] font-medium"
                               >
-                                {locale === 'fr' ? 'Voir les conseils →' : 'See suggestions →'}
+                                {locale === 'fr' ? 'Voir les conseils →' : locale === 'es' ? 'Ver sugerencias →' : 'See suggestions →'}
                               </button>
                             </motion.div>
                           )}
@@ -1280,7 +1294,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <motion.div key="bal-step2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <Check className="w-5 h-5 text-[#4A9A86]" />
-                                <p className="text-sm text-neutral-700 font-medium">{locale === 'fr' ? 'Bloom comprend' : 'Bloom understands'}</p>
+                                <p className="text-sm text-neutral-700 font-medium">{locale === 'fr' ? 'Bloom comprend' : locale === 'es' ? 'Bloom entiende' : 'Bloom understands'}</p>
                               </div>
 
                               {/* Bloom insight */}
@@ -1298,10 +1312,12 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                     <p className="text-sm text-neutral-700">
                                       {locale === 'fr'
                                         ? '5 jours de travail intense. Ce soir, peut-être un moment pour vous?'
+                                        : locale === 'es'
+                                        ? '5 días de trabajo intenso. Esta noche, ¿quizás un momento para ti?'
                                         : '5 days of intense work. Tonight, maybe a moment for yourself?'}
                                     </p>
                                     <p className="text-xs text-[#4A9A86] mt-1.5">
-                                      {locale === 'fr' ? 'Bloom apprend vos rythmes →' : 'Bloom learns your rhythms →'}
+                                      {locale === 'fr' ? 'Bloom apprend vos rythmes →' : locale === 'es' ? 'Bloom aprende tus ritmos →' : 'Bloom learns your rhythms →'}
                                     </p>
                                   </div>
                                 </div>
@@ -1311,7 +1327,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 onClick={resetBalanceInteractive}
                                 className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
                               >
-                                {locale === 'fr' ? '↺ Recommencer' : '↺ Start again'}
+                                {locale === 'fr' ? '↺ Recommencer' : locale === 'es' ? '↺ Empezar de nuevo' : '↺ Start again'}
                               </button>
                             </motion.div>
                           )}
@@ -1327,13 +1343,13 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <motion.div key="step0" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-[#4A9A86]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Où va votre énergie?' : 'Where does your energy go?'}</p>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Où va votre énergie?' : locale === 'es' ? '¿A dónde va tu energía?' : 'Where does your energy go?'}</p>
                               </div>
                               <div className="space-y-2">
                                 {[
-                                  { label: locale === 'fr' ? 'Travail' : 'Work', color: 'bg-red-400', value: 80 },
-                                  { label: locale === 'fr' ? 'Repos' : 'Rest', color: 'bg-emerald-400', value: 25 },
-                                  { label: locale === 'fr' ? 'Social' : 'Social', color: 'bg-purple-400', value: 45 },
+                                  { label: locale === 'fr' ? 'Travail' : locale === 'es' ? 'Trabajo' : 'Work', color: 'bg-red-400', value: 80 },
+                                  { label: locale === 'fr' ? 'Repos' : locale === 'es' ? 'Descanso' : 'Rest', color: 'bg-emerald-400', value: 25 },
+                                  { label: locale === 'fr' ? 'Social' : locale === 'es' ? 'Social' : 'Social', color: 'bg-purple-400', value: 45 },
                                 ].map((item, i) => (
                                   <motion.div
                                     key={item.label}
@@ -1360,7 +1376,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <motion.div key="step1" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-[#4A9A86]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Bloom remarque les patterns...' : 'Bloom notices patterns...'}</p>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Bloom remarque les patterns...' : locale === 'es' ? 'Bloom nota los patrones...' : 'Bloom notices patterns...'}</p>
                               </div>
                               {/* Imbalance alert */}
                               <motion.div
@@ -1373,8 +1389,8 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                     <span className="text-red-500 text-sm">!</span>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-red-600 font-medium">{locale === 'fr' ? 'Déséquilibre' : 'Imbalance'}</p>
-                                    <p className="text-xs text-red-500">{locale === 'fr' ? 'Trop de travail cette semaine' : 'Too much work this week'}</p>
+                                    <p className="text-xs text-red-600 font-medium">{locale === 'fr' ? 'Déséquilibre' : locale === 'es' ? 'Desequilibrio' : 'Imbalance'}</p>
+                                    <p className="text-xs text-red-500">{locale === 'fr' ? 'Trop de travail cette semaine' : locale === 'es' ? 'Demasiado trabajo esta semana' : 'Too much work this week'}</p>
                                   </div>
                                 </div>
                               </motion.div>
@@ -1384,7 +1400,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <motion.div key="step2" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-[#4A9A86]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Voyez la semaine...' : 'See your week...'}</p>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Voyez la semaine...' : locale === 'es' ? 'Mira tu semana...' : 'See your week...'}</p>
                               </div>
                               {/* Simple week view */}
                               <div className="flex gap-1">
@@ -1409,14 +1425,14 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   </motion.div>
                                 ))}
                               </div>
-                              <p className="text-xs text-neutral-500 text-center">{locale === 'fr' ? '5 jours travail • 2 jours repos' : '5 work days • 2 rest days'}</p>
+                              <p className="text-xs text-neutral-500 text-center">{locale === 'fr' ? '5 jours travail • 2 jours repos' : locale === 'es' ? '5 días de trabajo • 2 días de descanso' : '5 work days • 2 rest days'}</p>
                             </motion.div>
                           )}
                           {demoStep === 3 && (
                             <motion.div key="step3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-[#4A9A86]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Bloom vous aide à équilibrer...' : 'Bloom helps you balance...'}</p>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Bloom vous aide à équilibrer...' : locale === 'es' ? 'Bloom te ayuda a equilibrar...' : 'Bloom helps you balance...'}</p>
                               </div>
                               <motion.div
                                 initial={{ scale: 0.95, opacity: 0 }}
@@ -1432,6 +1448,8 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                     <p className="text-sm text-neutral-700">
                                       {locale === 'fr'
                                         ? 'Semaine chargée. Un moment de repos ce soir vous ferait du bien.'
+                                        : locale === 'es'
+                                        ? 'Semana ocupada. Un momento de descanso esta noche te haría bien.'
                                         : 'Busy week. A moment of rest tonight would do you good.'}
                                     </p>
                                   </div>
@@ -1460,12 +1478,16 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <p className="text-sm text-neutral-700 leading-relaxed">
                               {locale === 'fr'
                                 ? "Ce ne sont pas des habitudes à cocher. Ce sont des petits gestes qui vous ressemblent — regarder par la fenêtre 2 minutes, savourer votre première gorgée, 3 respirations au réveil."
+                                : locale === 'es'
+                                ? "No son hábitos para tachar. Son pequeños gestos que se sienten como tú — mirar por la ventana 2 minutos, saborear tu primer sorbo, 3 respiraciones al despertar."
                                 : "These aren't habits to check off. They're tiny acts that feel like you — gazing out the window for 2 minutes, savoring that first sip, 3 breaths when you wake."
                               }
                             </p>
                             <p className="text-sm text-neutral-600">
                               {locale === 'fr'
                                 ? "Pas de streaks. Pas de pression. Juste de petites invitations, quand vous êtes prêt. Bloom remarque ce qui fonctionne, doucement."
+                                : locale === 'es'
+                                ? "Sin rachas. Sin presión. Solo invitaciones suaves, cuando estés listo. Bloom nota lo que funciona, en silencio."
                                 : "No streaks. No pressure. Just gentle invitations, when you're ready. Bloom notices what works, quietly."
                               }
                             </p>
@@ -1475,12 +1497,16 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <p className="text-sm text-neutral-700 leading-relaxed">
                               {locale === 'fr'
                                 ? "Vous savez ce sentiment quand tout semble déséquilibré? Trop de travail, pas assez de repos. Trop de temps seul, pas assez de connexion."
+                                : locale === 'es'
+                                ? "¿Conoces esa sensación cuando todo parece desequilibrado? Demasiado trabajo, poco descanso. Demasiado tiempo solo, poca conexión."
                                 : "You know that feeling when everything feels off-balance? Too much work, not enough rest. Too much alone time, not enough connection."
                               }
                             </p>
                             <p className="text-sm text-neutral-600">
                               {locale === 'fr'
                                 ? "Balance vous montre où va votre énergie, jour après jour. Pas pour juger, mais pour vous aider à voir — et à ajuster, doucement."
+                                : locale === 'es'
+                                ? "Equilibrio te muestra a dónde va tu energía, día a día. No para juzgar, sino para ayudarte a ver — y ajustar con suavidad."
                                 : "Balance shows you where your energy goes, day by day. Not to judge, but to help you see — and gently adjust."
                               }
                             </p>
@@ -1490,12 +1516,16 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <p className="text-sm text-neutral-700 leading-relaxed">
                               {locale === 'fr'
                                 ? "La vie n'est pas qu'une suite de grandes réussites. Ce sont les petits moments — un café calme, un sourire de votre chat, une balade au lever du soleil — qui façonnent vraiment qui vous êtes."
+                                : locale === 'es'
+                                ? "La vida no se trata solo de grandes logros. Son los pequeños momentos — un café tranquilo, el ronroneo de tu gato, un paseo al amanecer — los que realmente te definen."
                                 : "Life isn't just about big achievements. It's the small moments — a quiet coffee, your cat's purr, a sunrise walk — that truly shape who you are."
                               }
                             </p>
                             <p className="text-sm text-neutral-600">
                               {locale === 'fr'
                                 ? "Moments vous aide à les capturer, à voir les patterns, et à comprendre ce qui vous fait vraiment du bien."
+                                : locale === 'es'
+                                ? "Momentos te ayuda a capturarlos, ver los patrones, y entender lo que realmente te hace sentir bien."
                                 : "Moments helps you capture them, see the patterns, and understand what truly makes you feel good."
                               }
                             </p>
@@ -1505,7 +1535,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                           onClick={() => setShowExplanation(false)}
                           className="text-xs text-neutral-400 hover:text-neutral-600"
                         >
-                          {locale === 'fr' ? '← Retour' : '← Back'}
+                          {locale === 'fr' ? '← Retour' : locale === 'es' ? '← Volver' : '← Back'}
                         </button>
                       </div>
                     </motion.div>
@@ -1519,7 +1549,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                       onClick={handleOpenEarlyAccess}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-[#4A9A86] text-white text-sm font-medium rounded-full hover:bg-[#3d8a76] transition-colors"
                     >
-                      {locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access'}
+                      {locale === 'fr' ? 'Obtenir un accès anticipé' : locale === 'es' ? 'Obtener acceso anticipado' : 'Get Early Access'}
                       <ArrowUp className="w-4 h-4" />
                     </button>
                   </div>
@@ -1534,7 +1564,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                         }
                         className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
                       >
-                        {locale === 'fr' ? '← Recommencer' : '← Start over'}
+                        {locale === 'fr' ? '← Recommencer' : locale === 'es' ? '← Empezar de nuevo' : '← Start over'}
                       </button>
                     )}
                     <button
@@ -1544,7 +1574,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                       }}
                       className="flex items-center gap-2 px-3 py-1.5 border border-neutral-300 text-neutral-500 bg-transparent text-xs font-medium rounded-full hover:bg-neutral-100 transition-colors"
                     >
-                      {locale === 'fr' ? 'Voir un exemple' : 'View example'}
+                      {locale === 'fr' ? 'Voir un exemple' : locale === 'es' ? 'Ver ejemplo' : 'View example'}
                     </button>
                   </div>
                 ) : (
@@ -1557,7 +1587,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                       }}
                       className="flex items-center gap-2 px-4 py-2 border border-[#4A9A86] text-[#4A9A86] bg-transparent text-sm font-medium rounded-full hover:bg-[#4A9A86]/10 transition-colors"
                     >
-                      {locale === 'fr' ? 'À vous' : 'Your turn'}
+                      {locale === 'fr' ? 'À vous' : locale === 'es' ? 'Tu turno' : 'Your turn'}
                       <ArrowUp className="w-4 h-4" />
                     </button>
                   </div>
@@ -1576,13 +1606,13 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                 <div className="flex items-center gap-1 sm:gap-2 mb-3">
                   <Search className="w-4 h-4 text-neutral-400 shrink-0 hidden sm:block" />
                   <span className="hidden sm:inline text-neutral-700 text-sm">
-                    {locale === 'fr' ? 'Voir mes' : 'View my'}
+                    {locale === 'fr' ? 'Voir mes' : locale === 'es' ? 'Ver mis' : 'View my'}
                   </span>
 
                   {/* Members pill tab */}
                   <div className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-2.5 py-1 rounded-full text-xs sm:text-sm transition-all whitespace-nowrap cursor-default bg-[#D4856A]/15 text-[#D4856A] font-medium">
                     <Users className="w-3 h-3" />
-                    {locale === 'fr' ? 'clients' : 'members'}
+                    {locale === 'fr' ? 'clients' : locale === 'es' ? 'miembros' : 'members'}
                   </div>
                 </div>
 
@@ -1597,8 +1627,8 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                           {demoStep === 0 && (
                             <motion.div key="step0" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-3">
                               <div className="flex items-center justify-between">
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Vos clients' : 'Your clients'}</p>
-                                <span className="text-[10px] text-neutral-400">4 {locale === 'fr' ? 'actifs' : 'active'}</span>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Vos clients' : locale === 'es' ? 'Tus clientes' : 'Your clients'}</p>
+                                <span className="text-[10px] text-neutral-400">4 {locale === 'fr' ? 'actifs' : locale === 'es' ? 'activos' : 'active'}</span>
                               </div>
                               {/* Client avatars in a row */}
                               <div className="flex items-center gap-2">
@@ -1631,7 +1661,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   <div className="w-10 h-10 rounded-full bg-neutral-100 border-2 border-dashed border-neutral-300 flex items-center justify-center text-neutral-400 group-hover:border-[#D4856A] group-hover:text-[#D4856A] transition-colors">
                                     <Plus className="w-4 h-4" />
                                   </div>
-                                  <p className="text-[9px] text-neutral-400 group-hover:text-[#D4856A]">{locale === 'fr' ? 'Ajouter' : 'Add'}</p>
+                                  <p className="text-[9px] text-neutral-400 group-hover:text-[#D4856A]">{locale === 'fr' ? 'Ajouter' : locale === 'es' ? 'Añadir' : 'Add'}</p>
                                 </motion.div>
                               </div>
                             </motion.div>
@@ -1651,17 +1681,17 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   </motion.div>
                                   <div className="flex-1">
                                     <p className="text-sm font-medium text-neutral-800">Sarah L.</p>
-                                    <p className="text-[10px] text-neutral-400">{locale === 'fr' ? '12 sessions • Depuis mars' : '12 sessions • Since Mar'}</p>
+                                    <p className="text-[10px] text-neutral-400">{locale === 'fr' ? '12 sessions • Depuis mars' : locale === 'es' ? '12 sesiones • Desde mar' : '12 sessions • Since Mar'}</p>
                                   </div>
                                   {/* Inline stats */}
                                   <div className="flex items-center gap-3 text-center">
                                     <div>
                                       <p className="text-sm font-semibold text-[#D4856A]">12</p>
-                                      <p className="text-[8px] text-neutral-400">{locale === 'fr' ? 'sess.' : 'sess.'}</p>
+                                      <p className="text-[8px] text-neutral-400">{locale === 'fr' ? 'sess.' : locale === 'es' ? 'ses.' : 'sess.'}</p>
                                     </div>
                                     <div>
                                       <p className="text-sm font-semibold text-green-500">↑</p>
-                                      <p className="text-[8px] text-neutral-400">{locale === 'fr' ? 'prog.' : 'prog.'}</p>
+                                      <p className="text-[8px] text-neutral-400">{locale === 'fr' ? 'prog.' : locale === 'es' ? 'prog.' : 'prog.'}</p>
                                     </div>
                                   </div>
                                 </div>
@@ -1675,11 +1705,11 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 <div className="grid grid-cols-2 gap-3">
                                   {/* Key Considerations */}
                                   <div>
-                                    <p className="text-[9px] uppercase tracking-wider text-neutral-400 mb-1.5">{locale === 'fr' ? 'Points clés' : 'Key points'}</p>
+                                    <p className="text-[9px] uppercase tracking-wider text-neutral-400 mb-1.5">{locale === 'fr' ? 'Points clés' : locale === 'es' ? 'Puntos clave' : 'Key points'}</p>
                                     <div className="space-y-1">
                                       {[
-                                        locale === 'fr' ? 'Anxiété sociale' : 'Social anxiety',
-                                        locale === 'fr' ? 'Besoin structure' : 'Needs structure',
+                                        locale === 'fr' ? 'Anxiété sociale' : locale === 'es' ? 'Ansiedad social' : 'Social anxiety',
+                                        locale === 'fr' ? 'Besoin structure' : locale === 'es' ? 'Necesita estructura' : 'Needs structure',
                                       ].map((item, i) => (
                                         <motion.div
                                           key={i}
@@ -1696,12 +1726,12 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   </div>
                                   {/* Objectives */}
                                   <div>
-                                    <p className="text-[9px] uppercase tracking-wider text-neutral-400 mb-1.5">{locale === 'fr' ? 'Objectifs' : 'Goals'}</p>
+                                    <p className="text-[9px] uppercase tracking-wider text-neutral-400 mb-1.5">{locale === 'fr' ? 'Objectifs' : locale === 'es' ? 'Objetivos' : 'Goals'}</p>
                                     <div className="space-y-1">
                                       {[
-                                        { text: locale === 'fr' ? 'Respiration' : 'Breathing', done: true },
-                                        { text: locale === 'fr' ? 'Gestion stress' : 'Stress mgmt', done: true },
-                                        { text: locale === 'fr' ? 'Affirmation' : 'Assertion', done: false },
+                                        { text: locale === 'fr' ? 'Respiration' : locale === 'es' ? 'Respiración' : 'Breathing', done: true },
+                                        { text: locale === 'fr' ? 'Gestion stress' : locale === 'es' ? 'Manejo estrés' : 'Stress mgmt', done: true },
+                                        { text: locale === 'fr' ? 'Affirmation' : locale === 'es' ? 'Afirmación' : 'Assertion', done: false },
                                       ].map((obj, i) => (
                                         <motion.div
                                           key={i}
@@ -1727,13 +1757,13 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <motion.div key="step3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-2">
                               <div className="bg-white rounded-xl p-3 shadow-sm">
                                 <div className="flex items-center justify-between mb-2">
-                                  <p className="text-[9px] uppercase tracking-wider text-neutral-400">{locale === 'fr' ? 'Notes récentes' : 'Recent notes'}</p>
-                                  <span className="text-[9px] text-[#D4856A]">+ {locale === 'fr' ? 'Ajouter' : 'Add'}</span>
+                                  <p className="text-[9px] uppercase tracking-wider text-neutral-400">{locale === 'fr' ? 'Notes récentes' : locale === 'es' ? 'Notas recientes' : 'Recent notes'}</p>
+                                  <span className="text-[9px] text-[#D4856A]">+ {locale === 'fr' ? 'Ajouter' : locale === 'es' ? 'Añadir' : 'Add'}</span>
                                 </div>
                                 <div className="space-y-2">
                                   {[
-                                    { date: locale === 'fr' ? '15 jan' : 'Jan 15', note: locale === 'fr' ? 'Excellent - visualisation réussie' : 'Excellent - visualization success' },
-                                    { date: locale === 'fr' ? '8 jan' : 'Jan 8', note: locale === 'fr' ? 'Progrès anxiété, continue exercices' : 'Anxiety progress, continuing exercises' },
+                                    { date: locale === 'fr' ? '15 jan' : locale === 'es' ? '15 ene' : 'Jan 15', note: locale === 'fr' ? 'Excellent - visualisation réussie' : locale === 'es' ? 'Excelente - visualización exitosa' : 'Excellent - visualization success' },
+                                    { date: locale === 'fr' ? '8 jan' : locale === 'es' ? '8 ene' : 'Jan 8', note: locale === 'fr' ? 'Progrès anxiété, continue exercices' : locale === 'es' ? 'Progreso ansiedad, continúa ejercicios' : 'Anxiety progress, continuing exercises' },
                                   ].map((entry, i) => (
                                     <motion.div
                                       key={i}
@@ -1757,7 +1787,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 className="w-full flex items-center justify-center gap-2 py-2 bg-[#D4856A]/10 text-[#D4856A] text-[10px] font-medium rounded-lg hover:bg-[#D4856A]/20 transition-colors"
                               >
                                 <Share2 className="w-3 h-3" />
-                                {locale === 'fr' ? 'Partager une ressource' : 'Share a resource'}
+                                {locale === 'fr' ? 'Partager une ressource' : locale === 'es' ? 'Compartir un recurso' : 'Share a resource'}
                               </motion.button>
                             </motion.div>
                           )}
@@ -1766,13 +1796,13 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <motion.div key="step4" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-2">
                               <div className="flex items-center gap-2 mb-1">
                                 <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Choisir une ressource...' : 'Choose a resource...'}</p>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Choisir une ressource...' : locale === 'es' ? 'Elegir un recurso...' : 'Choose a resource...'}</p>
                               </div>
                               <div className="space-y-1.5">
                                 {[
-                                  { id: 'breathing', name: locale === 'fr' ? 'Exercice de respiration' : 'Breathing exercise', type: 'PDF' },
-                                  { id: 'gratitude', name: locale === 'fr' ? 'Journal de gratitude' : 'Gratitude journal', type: 'Guide' },
-                                  { id: 'anxiety', name: locale === 'fr' ? 'Gérer l\'anxiété' : 'Managing anxiety', type: 'Article' },
+                                  { id: 'breathing', name: locale === 'fr' ? 'Exercice de respiration' : locale === 'es' ? 'Ejercicio de respiración' : 'Breathing exercise', type: 'PDF' },
+                                  { id: 'gratitude', name: locale === 'fr' ? 'Journal de gratitude' : locale === 'es' ? 'Diario de gratitud' : 'Gratitude journal', type: 'Guide' },
+                                  { id: 'anxiety', name: locale === 'fr' ? 'Gérer l\'anxiété' : locale === 'es' ? 'Manejar la ansiedad' : 'Managing anxiety', type: 'Article' },
                                 ].map((resource, i) => (
                                   <motion.button
                                     key={resource.id}
@@ -1808,11 +1838,13 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               </motion.div>
                               <div className="text-center">
                                 <p className="text-sm font-medium text-neutral-800">
-                                  {locale === 'fr' ? 'Ressource partagée!' : 'Resource shared!'}
+                                  {locale === 'fr' ? 'Ressource partagée!' : locale === 'es' ? '¡Recurso compartido!' : 'Resource shared!'}
                                 </p>
                                 <p className="text-xs text-neutral-500 mt-1">
                                   {locale === 'fr'
                                     ? 'Sarah L. recevra une notification'
+                                    : locale === 'es'
+                                    ? 'Sarah L. recibirá una notificación'
                                     : 'Sarah L. will receive a notification'}
                                 </p>
                               </div>
@@ -1824,7 +1856,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 onClick={() => setDemoStep(6)}
                                 className="w-full flex items-center justify-center gap-2 py-2 bg-[#D4856A]/10 text-[#D4856A] text-[10px] font-medium rounded-lg hover:bg-[#D4856A]/20 transition-colors"
                               >
-                                {locale === 'fr' ? 'Voir la progression →' : 'See progress →'}
+                                {locale === 'fr' ? 'Voir la progression →' : locale === 'es' ? 'Ver progreso →' : 'See progress →'}
                               </motion.button>
                             </motion.div>
                           )}
@@ -1832,14 +1864,14 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                           {demoStep === 6 && (
                             <motion.div key="step6" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5, ease: "easeOut" }} className="space-y-2">
                               <div className="flex items-center justify-between mb-1">
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Progression de Sarah' : "Sarah's Progress"}</p>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Progression de Sarah' : locale === 'es' ? 'Progreso de Sarah' : "Sarah's Progress"}</p>
                               </div>
                               <div className="grid grid-cols-4 gap-1">
                                 {[
-                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : 'Discovery', count: 0, color: 'bg-blue-50 border-blue-200' },
-                                  { id: 'building', label: locale === 'fr' ? 'Construction' : 'Building', count: 1, color: 'bg-amber-50 border-amber-200', hasCard: true },
-                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : 'Thriving', count: 0, color: 'bg-emerald-50 border-emerald-200' },
-                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : 'Independent', count: 0, color: 'bg-purple-50 border-purple-200' },
+                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery', count: 0, color: 'bg-blue-50 border-blue-200' },
+                                  { id: 'building', label: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building', count: 1, color: 'bg-amber-50 border-amber-200', hasCard: true },
+                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : locale === 'es' ? 'Floreciendo' : 'Thriving', count: 0, color: 'bg-emerald-50 border-emerald-200' },
+                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : locale === 'es' ? 'Independiente' : 'Independent', count: 0, color: 'bg-purple-50 border-purple-200' },
                                 ].map((stage, i) => (
                                   <motion.div
                                     key={stage.id}
@@ -1856,7 +1888,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                         transition={{ delay: 0.4, type: "spring" }}
                                         className="bg-white rounded p-1 shadow-sm border border-neutral-100 cursor-grab"
                                       >
-                                        <p className="text-[7px] text-neutral-700 font-medium">{locale === 'fr' ? 'Gestion stress' : 'Stress mgmt'}</p>
+                                        <p className="text-[7px] text-neutral-700 font-medium">{locale === 'fr' ? 'Gestion stress' : locale === 'es' ? 'Manejo estrés' : 'Stress mgmt'}</p>
                                       </motion.div>
                                     )}
                                   </motion.div>
@@ -1868,7 +1900,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 transition={{ delay: 0.6 }}
                                 className="text-[9px] text-center text-neutral-400"
                               >
-                                {locale === 'fr' ? 'Glissez les objectifs entre les colonnes' : 'Drag goals between columns'}
+                                {locale === 'fr' ? 'Glissez les objectifs entre les colonnes' : locale === 'es' ? 'Arrastra los objetivos entre columnas' : 'Drag goals between columns'}
                               </motion.p>
                             </motion.div>
                           )}
@@ -1876,14 +1908,14 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                           {demoStep === 7 && (
                             <motion.div key="step7" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, ease: "easeOut" }} className="space-y-2">
                               <div className="flex items-center justify-between mb-1">
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Progression de Sarah' : "Sarah's Progress"}</p>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Progression de Sarah' : locale === 'es' ? 'Progreso de Sarah' : "Sarah's Progress"}</p>
                               </div>
                               <div className="grid grid-cols-4 gap-1">
                                 {[
-                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : 'Discovery', color: 'bg-blue-50 border-blue-200' },
-                                  { id: 'building', label: locale === 'fr' ? 'Construction' : 'Building', color: 'bg-amber-50 border-amber-200' },
-                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : 'Thriving', color: 'bg-emerald-50 border-emerald-200', hasCard: true },
-                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : 'Independent', color: 'bg-purple-50 border-purple-200' },
+                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery', color: 'bg-blue-50 border-blue-200' },
+                                  { id: 'building', label: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building', color: 'bg-amber-50 border-amber-200' },
+                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : locale === 'es' ? 'Floreciendo' : 'Thriving', color: 'bg-emerald-50 border-emerald-200', hasCard: true },
+                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : locale === 'es' ? 'Independiente' : 'Independent', color: 'bg-purple-50 border-purple-200' },
                                 ].map((stage, i) => (
                                   <motion.div
                                     key={stage.id}
@@ -1900,7 +1932,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                         transition={{ delay: 0.3, type: "spring" }}
                                         className="bg-white rounded p-1 shadow-sm border border-emerald-200"
                                       >
-                                        <p className="text-[7px] text-neutral-700 font-medium">{locale === 'fr' ? 'Gestion stress' : 'Stress mgmt'}</p>
+                                        <p className="text-[7px] text-neutral-700 font-medium">{locale === 'fr' ? 'Gestion stress' : locale === 'es' ? 'Manejo estrés' : 'Stress mgmt'}</p>
                                         <Check className="w-2.5 h-2.5 text-emerald-500 mt-0.5" />
                                       </motion.div>
                                     )}
@@ -1915,7 +1947,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               >
                                 <Check className="w-3 h-3 text-emerald-500" />
                                 <p className="text-[9px] text-emerald-700 font-medium">
-                                  {locale === 'fr' ? 'Objectif avancé vers Épanoui!' : 'Goal moved to Thriving!'}
+                                  {locale === 'fr' ? 'Objectif avancé vers Épanoui!' : locale === 'es' ? '¡Objetivo movido a Floreciendo!' : 'Goal moved to Thriving!'}
                                 </p>
                               </motion.div>
                             </motion.div>
@@ -1932,8 +1964,8 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                           {practitionerStep === 0 && (
                             <motion.div key="int-step0" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-3">
                               <div className="flex items-center justify-between">
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Sélectionnez un client' : 'Select a client'}</p>
-                                <span className="text-[10px] text-neutral-400">3 {locale === 'fr' ? 'actifs' : 'active'}</span>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Sélectionnez un client' : locale === 'es' ? 'Selecciona un cliente' : 'Select a client'}</p>
+                                <span className="text-[10px] text-neutral-400">3 {locale === 'fr' ? 'actifs' : locale === 'es' ? 'activos' : 'active'}</span>
                               </div>
                               {/* Client avatars in a row */}
                               <div className="flex items-center gap-2">
@@ -1975,7 +2007,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   <div className="w-10 h-10 rounded-full bg-neutral-100 border-2 border-dashed border-neutral-300 flex items-center justify-center text-neutral-400 group-hover:border-[#D4856A] group-hover:text-[#D4856A] transition-colors">
                                     <Plus className="w-4 h-4" />
                                   </div>
-                                  <p className="text-[9px] text-neutral-400 group-hover:text-[#D4856A]">{locale === 'fr' ? 'Ajouter' : 'Add'}</p>
+                                  <p className="text-[9px] text-neutral-400 group-hover:text-[#D4856A]">{locale === 'fr' ? 'Ajouter' : locale === 'es' ? 'Añadir' : 'Add'}</p>
                                 </motion.button>
                               </div>
                             </motion.div>
@@ -1983,13 +2015,13 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                           {/* Step 1: Add new client form - Compact */}
                           {practitionerStep === 1 && (
                             <motion.div key="int-step1" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-2">
-                              <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Nouveau client' : 'New client'}</p>
+                              <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Nouveau client' : locale === 'es' ? 'Nuevo cliente' : 'New client'}</p>
                               <div className="bg-white rounded-xl p-3 shadow-sm space-y-2">
                                 <input
                                   type="text"
                                   value={clientName}
                                   onChange={(e) => setClientName(e.target.value)}
-                                  placeholder={locale === 'fr' ? 'Nom du client...' : 'Client name...'}
+                                  placeholder={locale === 'fr' ? 'Nom du client...' : locale === 'es' ? 'Nombre del cliente...' : 'Client name...'}
                                   className="w-full text-sm text-neutral-700 placeholder:text-neutral-300 bg-neutral-50 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#D4856A]/30"
                                 />
                                 <button
@@ -2002,7 +2034,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   className="w-full py-2 bg-[#D4856A] text-white text-xs font-medium rounded-lg hover:bg-[#c27459] transition-colors disabled:opacity-50"
                                   disabled={!clientName.trim()}
                                 >
-                                  {locale === 'fr' ? 'Créer' : 'Create'}
+                                  {locale === 'fr' ? 'Créer' : locale === 'es' ? 'Crear' : 'Create'}
                                 </button>
                               </div>
                             </motion.div>
@@ -2017,17 +2049,17 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   </div>
                                   <div className="flex-1">
                                     <p className="text-xs font-medium text-neutral-800">{clientName || 'New Client'}</p>
-                                    <p className="text-[9px] text-neutral-400">{locale === 'fr' ? '8 sessions' : '8 sessions'}</p>
+                                    <p className="text-[9px] text-neutral-400">{locale === 'fr' ? '8 sessions' : locale === 'es' ? '8 sesiones' : '8 sessions'}</p>
                                   </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                   {/* Key Points */}
                                   <div>
-                                    <p className="text-[8px] uppercase tracking-wider text-neutral-400 mb-1">{locale === 'fr' ? 'Points clés' : 'Key points'}</p>
+                                    <p className="text-[8px] uppercase tracking-wider text-neutral-400 mb-1">{locale === 'fr' ? 'Points clés' : locale === 'es' ? 'Puntos clave' : 'Key points'}</p>
                                     <div className="space-y-0.5">
                                       {[
-                                        locale === 'fr' ? 'Anxiété sociale' : 'Social anxiety',
-                                        locale === 'fr' ? 'Besoin structure' : 'Needs structure',
+                                        locale === 'fr' ? 'Anxiété sociale' : locale === 'es' ? 'Ansiedad social' : 'Social anxiety',
+                                        locale === 'fr' ? 'Besoin structure' : locale === 'es' ? 'Necesita estructura' : 'Needs structure',
                                       ].map((item, i) => (
                                         <div key={i} className="flex items-center gap-1 text-[9px] text-neutral-600">
                                           <div className="w-1 h-1 rounded-full bg-[#D4856A]" />
@@ -2038,11 +2070,11 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   </div>
                                   {/* Goals */}
                                   <div>
-                                    <p className="text-[8px] uppercase tracking-wider text-neutral-400 mb-1">{locale === 'fr' ? 'Objectifs' : 'Goals'}</p>
+                                    <p className="text-[8px] uppercase tracking-wider text-neutral-400 mb-1">{locale === 'fr' ? 'Objectifs' : locale === 'es' ? 'Objetivos' : 'Goals'}</p>
                                     <div className="space-y-0.5">
                                       {[
-                                        { text: locale === 'fr' ? 'Respiration' : 'Breathing', done: true },
-                                        { text: locale === 'fr' ? 'Gestion stress' : 'Stress mgmt', done: false },
+                                        { text: locale === 'fr' ? 'Respiration' : locale === 'es' ? 'Respiración' : 'Breathing', done: true },
+                                        { text: locale === 'fr' ? 'Gestion stress' : locale === 'es' ? 'Manejo estrés' : 'Stress mgmt', done: false },
                                       ].map((obj, i) => (
                                         <div key={i} className="flex items-center gap-1 text-[9px]">
                                           <div className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center ${obj.done ? 'bg-[#D4856A] border-[#D4856A]' : 'border-neutral-300'}`}>
@@ -2059,7 +2091,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 onClick={() => setPractitionerStep(3)}
                                 className="w-full py-1.5 bg-neutral-100 text-neutral-600 text-[10px] font-medium rounded-lg hover:bg-neutral-200 transition-colors"
                               >
-                                {locale === 'fr' ? 'Notes →' : 'Notes →'}
+                                {locale === 'fr' ? 'Notes →' : locale === 'es' ? 'Notas →' : 'Notes →'}
                               </button>
                             </motion.div>
                           )}
@@ -2068,17 +2100,17 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <motion.div key="int-step3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-2">
                               <div className="bg-white rounded-xl p-3 shadow-sm">
                                 <div className="flex items-center justify-between mb-2">
-                                  <p className="text-[9px] uppercase tracking-wider text-neutral-400">{locale === 'fr' ? 'Notes' : 'Notes'}</p>
-                                  <button className="text-[9px] text-[#D4856A] font-medium">+ {locale === 'fr' ? 'Ajouter' : 'Add'}</button>
+                                  <p className="text-[9px] uppercase tracking-wider text-neutral-400">{locale === 'fr' ? 'Notes' : locale === 'es' ? 'Notas' : 'Notes'}</p>
+                                  <button className="text-[9px] text-[#D4856A] font-medium">+ {locale === 'fr' ? 'Ajouter' : locale === 'es' ? 'Añadir' : 'Add'}</button>
                                 </div>
                                 <div className="space-y-1.5">
                                   <div className="flex items-start gap-2">
-                                    <span className="text-[8px] text-[#D4856A] font-medium shrink-0 pt-0.5">{locale === 'fr' ? '15 jan' : 'Jan 15'}</span>
-                                    <p className="text-[9px] text-neutral-600">{locale === 'fr' ? 'Excellent - visualisation réussie' : 'Excellent - visualization success'}</p>
+                                    <span className="text-[8px] text-[#D4856A] font-medium shrink-0 pt-0.5">{locale === 'fr' ? '15 jan' : locale === 'es' ? '15 ene' : 'Jan 15'}</span>
+                                    <p className="text-[9px] text-neutral-600">{locale === 'fr' ? 'Excellent - visualisation réussie' : locale === 'es' ? 'Excelente - visualización exitosa' : 'Excellent - visualization success'}</p>
                                   </div>
                                   <div className="flex items-start gap-2">
-                                    <span className="text-[8px] text-[#D4856A] font-medium shrink-0 pt-0.5">{locale === 'fr' ? '8 jan' : 'Jan 8'}</span>
-                                    <p className="text-[9px] text-neutral-600">{locale === 'fr' ? 'Progrès anxiété, continue' : 'Anxiety progress, continuing'}</p>
+                                    <span className="text-[8px] text-[#D4856A] font-medium shrink-0 pt-0.5">{locale === 'fr' ? '8 jan' : locale === 'es' ? '8 ene' : 'Jan 8'}</span>
+                                    <p className="text-[9px] text-neutral-600">{locale === 'fr' ? 'Progrès anxiété, continue' : locale === 'es' ? 'Progreso ansiedad, continúa' : 'Anxiety progress, continuing'}</p>
                                   </div>
                                 </div>
                               </div>
@@ -2088,7 +2120,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 className="w-full flex items-center justify-center gap-2 py-2 bg-[#D4856A]/10 text-[#D4856A] text-[10px] font-medium rounded-lg hover:bg-[#D4856A]/20 transition-colors"
                               >
                                 <Share2 className="w-3 h-3" />
-                                {locale === 'fr' ? 'Partager une ressource' : 'Share a resource'}
+                                {locale === 'fr' ? 'Partager une ressource' : locale === 'es' ? 'Compartir un recurso' : 'Share a resource'}
                               </button>
                             </motion.div>
                           )}
@@ -2097,13 +2129,13 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                             <motion.div key="int-step4" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-2">
                               <div className="flex items-center gap-2 mb-1">
                                 <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Choisir une ressource...' : 'Choose a resource...'}</p>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? 'Choisir une ressource...' : locale === 'es' ? 'Elegir un recurso...' : 'Choose a resource...'}</p>
                               </div>
                               <div className="space-y-1.5">
                                 {[
-                                  { id: 'breathing', name: locale === 'fr' ? 'Exercice de respiration' : 'Breathing exercise', type: 'PDF' },
-                                  { id: 'gratitude', name: locale === 'fr' ? 'Journal de gratitude' : 'Gratitude journal', type: 'Guide' },
-                                  { id: 'anxiety', name: locale === 'fr' ? 'Gérer l\'anxiété' : 'Managing anxiety', type: 'Article' },
+                                  { id: 'breathing', name: locale === 'fr' ? 'Exercice de respiration' : locale === 'es' ? 'Ejercicio de respiración' : 'Breathing exercise', type: 'PDF' },
+                                  { id: 'gratitude', name: locale === 'fr' ? 'Journal de gratitude' : locale === 'es' ? 'Diario de gratitud' : 'Gratitude journal', type: 'Guide' },
+                                  { id: 'anxiety', name: locale === 'fr' ? 'Gérer l\'anxiété' : locale === 'es' ? 'Manejar la ansiedad' : 'Managing anxiety', type: 'Article' },
                                 ].map((resource, i) => (
                                   <motion.button
                                     key={resource.id}
@@ -2139,11 +2171,13 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               </motion.div>
                               <div className="text-center">
                                 <p className="text-sm font-medium text-neutral-800">
-                                  {locale === 'fr' ? 'Ressource partagée!' : 'Resource shared!'}
+                                  {locale === 'fr' ? 'Ressource partagée!' : locale === 'es' ? '¡Recurso compartido!' : 'Resource shared!'}
                                 </p>
                                 <p className="text-xs text-neutral-500 mt-1">
                                   {locale === 'fr'
                                     ? `${clientName} recevra une notification`
+                                    : locale === 'es'
+                                    ? `${clientName} recibirá una notificación`
                                     : `${clientName} will receive a notification`}
                                 </p>
                               </div>
@@ -2152,7 +2186,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                 onClick={() => setPractitionerStep(6)}
                                 className="w-full flex items-center justify-center gap-2 py-2 bg-[#D4856A]/10 text-[#D4856A] text-[10px] font-medium rounded-lg hover:bg-[#D4856A]/20 transition-colors"
                               >
-                                {locale === 'fr' ? 'Voir la progression →' : 'See progress →'}
+                                {locale === 'fr' ? 'Voir la progression →' : locale === 'es' ? 'Ver progreso →' : 'See progress →'}
                               </button>
                             </motion.div>
                           )}
@@ -2160,14 +2194,14 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                           {practitionerStep === 6 && (
                             <motion.div key="int-step6" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-2">
                               <div className="flex items-center justify-between mb-1">
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? `Progression de ${clientName}` : `${clientName}'s Progress`}</p>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? `Progression de ${clientName}` : locale === 'es' ? `Progreso de ${clientName}` : `${clientName}'s Progress`}</p>
                               </div>
                               <div className="grid grid-cols-4 gap-1">
                                 {[
-                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : 'Discovery', color: 'bg-blue-50 border-blue-200' },
-                                  { id: 'building', label: locale === 'fr' ? 'Construction' : 'Building', color: 'bg-amber-50 border-amber-200', hasCard: true },
-                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : 'Thriving', color: 'bg-emerald-50 border-emerald-200' },
-                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : 'Independent', color: 'bg-purple-50 border-purple-200' },
+                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery', color: 'bg-blue-50 border-blue-200' },
+                                  { id: 'building', label: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building', color: 'bg-amber-50 border-amber-200', hasCard: true },
+                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : locale === 'es' ? 'Floreciendo' : 'Thriving', color: 'bg-emerald-50 border-emerald-200' },
+                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : locale === 'es' ? 'Independiente' : 'Independent', color: 'bg-purple-50 border-purple-200' },
                                 ].map((stage, i) => (
                                   <motion.div
                                     key={stage.id}
@@ -2187,14 +2221,14 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                         onClick={() => setPractitionerStep(7)}
                                         className="bg-white rounded p-1 shadow-sm border border-neutral-100 cursor-grab active:cursor-grabbing"
                                       >
-                                        <p className="text-[7px] text-neutral-700 font-medium">{locale === 'fr' ? 'Gestion stress' : 'Stress mgmt'}</p>
+                                        <p className="text-[7px] text-neutral-700 font-medium">{locale === 'fr' ? 'Gestion stress' : locale === 'es' ? 'Manejo estrés' : 'Stress mgmt'}</p>
                                       </motion.div>
                                     )}
                                   </motion.div>
                                 ))}
                               </div>
                               <p className="text-[9px] text-center text-neutral-400">
-                                {locale === 'fr' ? 'Cliquez sur un objectif pour le déplacer' : 'Click a goal to move it'}
+                                {locale === 'fr' ? 'Cliquez sur un objectif pour le déplacer' : locale === 'es' ? 'Haz clic en un objetivo para moverlo' : 'Click a goal to move it'}
                               </p>
                             </motion.div>
                           )}
@@ -2202,14 +2236,14 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                           {practitionerStep === 7 && (
                             <motion.div key="int-step7" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-2">
                               <div className="flex items-center justify-between mb-1">
-                                <p className="text-xs text-neutral-500">{locale === 'fr' ? `Progression de ${clientName}` : `${clientName}'s Progress`}</p>
+                                <p className="text-xs text-neutral-500">{locale === 'fr' ? `Progression de ${clientName}` : locale === 'es' ? `Progreso de ${clientName}` : `${clientName}'s Progress`}</p>
                               </div>
                               <div className="grid grid-cols-4 gap-1">
                                 {[
-                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : 'Discovery', color: 'bg-blue-50 border-blue-200' },
-                                  { id: 'building', label: locale === 'fr' ? 'Construction' : 'Building', color: 'bg-amber-50 border-amber-200' },
-                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : 'Thriving', color: 'bg-emerald-50 border-emerald-200', hasCard: true },
-                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : 'Independent', color: 'bg-purple-50 border-purple-200' },
+                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery', color: 'bg-blue-50 border-blue-200' },
+                                  { id: 'building', label: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building', color: 'bg-amber-50 border-amber-200' },
+                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : locale === 'es' ? 'Floreciendo' : 'Thriving', color: 'bg-emerald-50 border-emerald-200', hasCard: true },
+                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : locale === 'es' ? 'Independiente' : 'Independent', color: 'bg-purple-50 border-purple-200' },
                                 ].map((stage, i) => (
                                   <motion.div
                                     key={stage.id}
@@ -2226,7 +2260,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                         transition={{ delay: 0.3, type: "spring" }}
                                         className="bg-white rounded p-1 shadow-sm border border-emerald-200"
                                       >
-                                        <p className="text-[7px] text-neutral-700 font-medium">{locale === 'fr' ? 'Gestion stress' : 'Stress mgmt'}</p>
+                                        <p className="text-[7px] text-neutral-700 font-medium">{locale === 'fr' ? 'Gestion stress' : locale === 'es' ? 'Manejo estrés' : 'Stress mgmt'}</p>
                                         <Check className="w-2.5 h-2.5 text-emerald-500 mt-0.5" />
                                       </motion.div>
                                     )}
@@ -2241,7 +2275,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               >
                                 <Check className="w-3 h-3 text-emerald-500" />
                                 <p className="text-[9px] text-emerald-700 font-medium">
-                                  {locale === 'fr' ? 'Objectif avancé vers Épanoui!' : 'Goal moved to Thriving!'}
+                                  {locale === 'fr' ? 'Objectif avancé vers Épanoui!' : locale === 'es' ? '¡Objetivo movido a Floreciendo!' : 'Goal moved to Thriving!'}
                                 </p>
                               </motion.div>
                             </motion.div>
@@ -2266,12 +2300,16 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                         <p className="text-sm text-neutral-700 leading-relaxed">
                           {locale === 'fr'
                             ? "Vos clients ne sont pas des numéros. Ce sont des personnes avec des histoires, des progrès, des défis. Bloom vous aide à garder tout organisé — notes, sessions, jalons — pour que vous puissiez vous concentrer sur ce qui compte."
+                            : locale === 'es'
+                            ? "Tus clientes no son números. Son personas con historias, progresos, desafíos. Bloom te ayuda a mantener todo organizado — notas, sesiones, hitos — para que puedas concentrarte en lo que importa."
                             : "Your clients aren't numbers. They're people with stories, progress, challenges. Bloom helps you keep everything organized — notes, sessions, milestones — so you can focus on what matters."
                           }
                         </p>
                         <p className="text-sm text-neutral-600">
                           {locale === 'fr'
                             ? "Pas de logiciels compliqués. Juste un espace calme pour accompagner chaque parcours."
+                            : locale === 'es'
+                            ? "Sin software complicado. Solo un espacio tranquilo para acompañar cada recorrido."
                             : "No complicated software. Just a calm space to support each journey."
                           }
                         </p>
@@ -2279,7 +2317,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                           onClick={() => setPractitionerExplanation(false)}
                           className="text-xs text-neutral-400 hover:text-neutral-600"
                         >
-                          {locale === 'fr' ? '← Retour' : '← Back'}
+                          {locale === 'fr' ? '← Retour' : locale === 'es' ? '← Volver' : '← Back'}
                         </button>
                       </div>
                     </motion.div>
@@ -2293,7 +2331,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                     className="flex items-center justify-between group w-full"
                   >
                     <span className="text-sm text-[#D4856A] font-medium group-hover:text-[#c27459] transition-colors">
-                      {locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access'}
+                      {locale === 'fr' ? 'Obtenir un accès anticipé' : locale === 'es' ? 'Obtener acceso anticipado' : 'Get Early Access'}
                     </span>
                     <div className="w-8 h-8 bg-[#D4856A] rounded-full flex items-center justify-center group-hover:bg-[#c27459] transition-colors">
                       <ArrowUp className="w-4 h-4 text-white" />
@@ -2306,7 +2344,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                         onClick={resetMembersInteractive}
                         className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
                       >
-                        {locale === 'fr' ? '← Recommencer' : '← Start over'}
+                        {locale === 'fr' ? '← Recommencer' : locale === 'es' ? '← Empezar de nuevo' : '← Start over'}
                       </button>
                     )}
                     <button
@@ -2316,7 +2354,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                       }}
                       className="flex items-center gap-2 px-3 py-1.5 border border-neutral-300 text-neutral-500 bg-transparent text-xs font-medium rounded-full hover:bg-neutral-100 transition-colors"
                     >
-                      {locale === 'fr' ? 'Voir un exemple' : 'View example'}
+                      {locale === 'fr' ? 'Voir un exemple' : locale === 'es' ? 'Ver ejemplo' : 'View example'}
                     </button>
                   </div>
                 ) : (
@@ -2329,7 +2367,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                       }}
                       className="flex items-center gap-2 px-4 py-2 bg-[#D4856A] text-white text-sm font-medium rounded-full hover:bg-[#c27459] transition-colors"
                     >
-                      {locale === 'fr' ? 'À vous' : 'Your turn'}
+                      {locale === 'fr' ? 'À vous' : locale === 'es' ? 'Tu turno' : 'Your turn'}
                       <ArrowUp className="w-4 h-4" />
                     </button>
                   </div>
@@ -2351,7 +2389,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
               onClick={handleOpenEarlyAccess}
               className="px-8 py-3 bg-[#4A9A86] hover:bg-[#3d8a76] text-white font-medium rounded-full shadow-lg shadow-[#4A9A86]/30 hover:shadow-xl transition-all duration-300"
             >
-              {locale === 'fr' ? 'Commencer gratuitement' : 'Get started free'}
+              {locale === 'fr' ? 'Commencer gratuitement' : locale === 'es' ? 'Comenzar gratis' : 'Get started free'}
             </button>
           </motion.div>
         )}
@@ -2368,7 +2406,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
               onClick={handleOpenEarlyAccess}
               className="px-8 py-4 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300"
             >
-              {locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access'}
+              {locale === 'fr' ? 'Obtenir un accès anticipé' : locale === 'es' ? 'Obtener acceso anticipado' : 'Get Early Access'}
             </button>
           </motion.div>
         )}

@@ -9,6 +9,7 @@ import { useLanguage } from '@/lib/i18n/context'
 export interface BreadcrumbItem {
   label: string
   labelFr?: string
+  labelEs?: string
   href?: string
   icon?: React.ReactNode
 }
@@ -28,6 +29,9 @@ export function Breadcrumb({ items, showBack = true, showHome = true, className 
     if (locale === 'fr' && item.labelFr) {
       return item.labelFr
     }
+    if (locale === 'es' && item.labelEs) {
+      return item.labelEs
+    }
     return item.label
   }
 
@@ -44,7 +48,7 @@ export function Breadcrumb({ items, showBack = true, showHome = true, className 
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/80 hover:bg-white border border-gray-200/60 text-gray-600 hover:text-gray-900 transition-all group mr-2"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-          <span className="hidden sm:inline">{locale === 'fr' ? 'Retour' : 'Back'}</span>
+          <span className="hidden sm:inline">{locale === 'fr' ? 'Retour' : locale === 'es' ? 'Volver' : 'Back'}</span>
         </button>
       )}
 
@@ -105,6 +109,9 @@ export function BreadcrumbCompact({ items, className = '' }: { items: Breadcrumb
   const getLabel = (item: BreadcrumbItem) => {
     if (locale === 'fr' && item.labelFr) {
       return item.labelFr
+    }
+    if (locale === 'es' && item.labelEs) {
+      return item.labelEs
     }
     return item.label
   }

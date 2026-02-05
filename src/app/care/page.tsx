@@ -29,7 +29,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
-import { fr, enUS } from 'date-fns/locale'
+import { fr, enUS, es } from 'date-fns/locale'
 
 interface UpcomingSession {
   id: string
@@ -210,10 +210,10 @@ export default function CarePage() {
         prev.map(s => s.id === sessionId ? { ...s, member_confirmed: true, reschedule_requested: false } : s)
       )
 
-      toast.success(locale === 'fr' ? 'Séance confirmée!' : 'Session confirmed!')
+      toast.success(locale === 'fr' ? 'Séance confirmée!' : locale === 'es' ? '¡Sesión confirmada!' : 'Session confirmed!')
     } catch (error) {
       console.error('Error confirming session:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors de la confirmation' : 'Failed to confirm session')
+      toast.error(locale === 'fr' ? 'Erreur lors de la confirmation' : locale === 'es' ? 'Error al confirmar la sesión' : 'Failed to confirm session')
     } finally {
       setActionLoading(null)
     }
@@ -221,7 +221,7 @@ export default function CarePage() {
 
   const handleRequestReschedule = async (sessionId: string) => {
     if (!rescheduleReason.trim()) {
-      toast.error(locale === 'fr' ? 'Veuillez indiquer une raison' : 'Please provide a reason')
+      toast.error(locale === 'fr' ? 'Veuillez indiquer une raison' : locale === 'es' ? 'Por favor indica un motivo' : 'Please provide a reason')
       return
     }
 
@@ -253,10 +253,10 @@ export default function CarePage() {
       setRescheduleReason('')
       setSuggestedDate('')
       setSuggestedTime('')
-      toast.success(locale === 'fr' ? 'Demande de report envoyée' : 'Reschedule request sent')
+      toast.success(locale === 'fr' ? 'Demande de report envoyée' : locale === 'es' ? 'Solicitud de reprogramación enviada' : 'Reschedule request sent')
     } catch (error) {
       console.error('Error requesting reschedule:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors de la demande' : 'Failed to request reschedule')
+      toast.error(locale === 'fr' ? 'Erreur lors de la demande' : locale === 'es' ? 'Error al solicitar reprogramación' : 'Failed to request reschedule')
     } finally {
       setActionLoading(null)
     }
@@ -291,10 +291,10 @@ export default function CarePage() {
         } : s)
       )
 
-      toast.success(locale === 'fr' ? 'Nouvelle date acceptée!' : 'New date accepted!')
+      toast.success(locale === 'fr' ? 'Nouvelle date acceptée!' : locale === 'es' ? '¡Nueva fecha aceptada!' : 'New date accepted!')
     } catch (error) {
       console.error('Error accepting proposed date:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors de l\'acceptation' : 'Failed to accept date')
+      toast.error(locale === 'fr' ? 'Erreur lors de l\'acceptation' : locale === 'es' ? 'Error al aceptar la fecha' : 'Failed to accept date')
     } finally {
       setActionLoading(null)
     }
@@ -321,10 +321,10 @@ export default function CarePage() {
         } : s)
       )
 
-      toast.success(locale === 'fr' ? 'Proposition déclinée' : 'Proposal declined')
+      toast.success(locale === 'fr' ? 'Proposition déclinée' : locale === 'es' ? 'Propuesta rechazada' : 'Proposal declined')
     } catch (error) {
       console.error('Error declining proposed date:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors du déclin' : 'Failed to decline')
+      toast.error(locale === 'fr' ? 'Erreur lors du déclin' : locale === 'es' ? 'Error al rechazar' : 'Failed to decline')
     } finally {
       setActionLoading(null)
     }
@@ -340,11 +340,11 @@ export default function CarePage() {
   }
 
   const getSessionTypeLabel = (type: string) => {
-    const labels: Record<string, { en: string; fr: string }> = {
-      initial: { en: 'Initial Session', fr: 'Séance initiale' },
-      follow_up: { en: 'Follow-up', fr: 'Suivi' },
-      emergency: { en: 'Emergency', fr: 'Urgence' },
-      assessment: { en: 'Assessment', fr: 'Évaluation' },
+    const labels: Record<string, { en: string; fr: string; es: string }> = {
+      initial: { en: 'Initial Session', fr: 'Séance initiale', es: 'Sesión inicial' },
+      follow_up: { en: 'Follow-up', fr: 'Suivi', es: 'Seguimiento' },
+      emergency: { en: 'Emergency', fr: 'Urgence', es: 'Emergencia' },
+      assessment: { en: 'Assessment', fr: 'Évaluation', es: 'Evaluación' },
     }
     return labels[type]?.[locale] || type
   }
@@ -382,12 +382,14 @@ export default function CarePage() {
           </button>
           <div>
             <h1 className="text-xl font-semibold text-gray-900 tracking-tight">
-              {locale === 'fr' ? 'Mes Soins' : 'My Care'}
+              {locale === 'fr' ? 'Mes Soins' : locale === 'es' ? 'Mi Cuidado' : 'My Care'}
             </h1>
             <p className="text-xs text-gray-500">
               {locale === 'fr'
                 ? 'Gérez vos séances et ressources'
-                : 'Manage your sessions and resources'}
+                : locale === 'es'
+                  ? 'Gestiona tus sesiones y recursos'
+                  : 'Manage your sessions and resources'}
             </p>
           </div>
         </motion.div>
@@ -395,7 +397,7 @@ export default function CarePage() {
         {/* Quick Access */}
         <div className="mb-6">
           <h3 className="font-semibold text-gray-900 mb-4">
-            {locale === 'fr' ? 'Accès rapide' : 'Quick Access'}
+            {locale === 'fr' ? 'Accès rapide' : locale === 'es' ? 'Acceso rápido' : 'Quick Access'}
           </h3>
           <div className="space-y-3">
             {/* My Practitioners */}
@@ -413,10 +415,10 @@ export default function CarePage() {
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Mes Praticiens' : 'My Practitioners'}
+                    {locale === 'fr' ? 'Mes Praticiens' : locale === 'es' ? 'Mis Profesionales' : 'My Practitioners'}
                   </h4>
                   <p className="text-sm text-gray-500">
-                    {locale === 'fr' ? 'Voir vos praticiens' : 'View your practitioners'}
+                    {locale === 'fr' ? 'Voir vos praticiens' : locale === 'es' ? 'Ver tus profesionales' : 'View your practitioners'}
                   </p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -438,10 +440,10 @@ export default function CarePage() {
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Mes supports' : 'My Resources'}
+                    {locale === 'fr' ? 'Mes supports' : locale === 'es' ? 'Mis Recursos' : 'My Resources'}
                   </h4>
                   <p className="text-sm text-gray-500">
-                    {locale === 'fr' ? 'Exercices et fiches' : 'Exercises and worksheets'}
+                    {locale === 'fr' ? 'Exercices et fiches' : locale === 'es' ? 'Ejercicios y fichas' : 'Exercises and worksheets'}
                   </p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -463,10 +465,10 @@ export default function CarePage() {
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Mes Histoires' : 'My Stories'}
+                    {locale === 'fr' ? 'Mes Histoires' : locale === 'es' ? 'Mis Historias' : 'My Stories'}
                   </h4>
                   <p className="text-sm text-gray-500">
-                    {locale === 'fr' ? 'Récits thérapeutiques' : 'Therapeutic stories'}
+                    {locale === 'fr' ? 'Récits thérapeutiques' : locale === 'es' ? 'Historias terapéuticas' : 'Therapeutic stories'}
                   </p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -484,14 +486,14 @@ export default function CarePage() {
         >
           <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-emerald-600" />
-            {locale === 'fr' ? 'Séances à venir' : 'Upcoming Sessions'}
+            {locale === 'fr' ? 'Séances à venir' : locale === 'es' ? 'Próximas sesiones' : 'Upcoming Sessions'}
           </h3>
 
           {upcomingSessions.length === 0 ? (
             <div className="bg-gray-50 rounded-2xl p-6 text-center">
               <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500">
-                {locale === 'fr' ? 'Aucune séance prévue' : 'No upcoming sessions'}
+                {locale === 'fr' ? 'Aucune séance prévue' : locale === 'es' ? 'No hay sesiones programadas' : 'No upcoming sessions'}
               </p>
             </div>
           ) : (
@@ -525,11 +527,11 @@ export default function CarePage() {
                           <CalendarCheck className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
                           <div className="flex-1">
                             <p className="font-semibold text-purple-800 text-sm">
-                              {locale === 'fr' ? 'Nouvelle date proposée' : 'New Date Proposed'}
+                              {locale === 'fr' ? 'Nouvelle date proposée' : locale === 'es' ? 'Nueva fecha propuesta' : 'New Date Proposed'}
                             </p>
                             <p className="text-sm text-purple-700 mt-1">
                               {format(new Date(session.practitioner_proposed_date!), "EEEE, MMM d 'at' HH:mm", {
-                                locale: locale === 'fr' ? fr : enUS
+                                locale: locale === 'fr' ? fr : locale === 'es' ? es : enUS
                               })}
                             </p>
                           </div>
@@ -545,7 +547,7 @@ export default function CarePage() {
                             ) : (
                               <>
                                 <Check className="w-4 h-4" />
-                                {locale === 'fr' ? 'Accepter' : 'Accept'}
+                                {locale === 'fr' ? 'Accepter' : locale === 'es' ? 'Aceptar' : 'Accept'}
                               </>
                             )}
                           </button>
@@ -555,7 +557,7 @@ export default function CarePage() {
                             className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50 text-sm"
                           >
                             <X className="w-4 h-4" />
-                            {locale === 'fr' ? 'Refuser' : 'Decline'}
+                            {locale === 'fr' ? 'Refuser' : locale === 'es' ? 'Rechazar' : 'Decline'}
                           </button>
                         </div>
                       </div>
@@ -565,14 +567,14 @@ export default function CarePage() {
                     {needsConfirmation && (
                       <div className="flex items-center gap-2 mb-3">
                         <span className="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                          {locale === 'fr' ? 'En attente de confirmation' : 'Awaiting your confirmation'}
+                          {locale === 'fr' ? 'En attente de confirmation' : locale === 'es' ? 'Esperando tu confirmación' : 'Awaiting your confirmation'}
                         </span>
                       </div>
                     )}
                     {session.reschedule_requested && session.reschedule_status === 'pending' && (
                       <div className="flex items-center gap-2 mb-3">
                         <span className="px-2.5 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
-                          {locale === 'fr' ? 'Report demandé' : 'Reschedule requested'}
+                          {locale === 'fr' ? 'Report demandé' : locale === 'es' ? 'Reprogramación solicitada' : 'Reschedule requested'}
                         </span>
                       </div>
                     )}
@@ -580,7 +582,7 @@ export default function CarePage() {
                       <div className="flex items-center gap-2 mb-3">
                         <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full flex items-center gap-1">
                           <Check className="w-3 h-3" />
-                          {locale === 'fr' ? 'Confirmé' : 'Confirmed'}
+                          {locale === 'fr' ? 'Confirmé' : locale === 'es' ? 'Confirmado' : 'Confirmed'}
                         </span>
                       </div>
                     )}
@@ -589,7 +591,7 @@ export default function CarePage() {
                       {/* Date Box */}
                       <div className="flex-shrink-0 w-14 h-14 bg-white rounded-xl border border-gray-100 flex flex-col items-center justify-center shadow-sm">
                         <span className="text-xs text-gray-500 uppercase">
-                          {format(sessionDate, 'MMM', { locale: locale === 'fr' ? fr : enUS })}
+                          {format(sessionDate, 'MMM', { locale: locale === 'fr' ? fr : locale === 'es' ? es : enUS })}
                         </span>
                         <span className="text-xl font-bold text-gray-900">
                           {format(sessionDate, 'd')}
@@ -611,14 +613,14 @@ export default function CarePage() {
                           <span className="flex items-center gap-1">
                             <FormatIcon className="w-3.5 h-3.5" />
                             {session.session_format === 'video' ? 'Video' :
-                              session.session_format === 'in_person' ? (locale === 'fr' ? 'En personne' : 'In Person') :
-                                (locale === 'fr' ? 'Téléphone' : 'Phone')}
+                              session.session_format === 'in_person' ? (locale === 'fr' ? 'En personne' : locale === 'es' ? 'Presencial' : 'In Person') :
+                                (locale === 'fr' ? 'Téléphone' : locale === 'es' ? 'Teléfono' : 'Phone')}
                           </span>
                           <span>{session.duration_minutes} min</span>
                         </div>
                         {session.practitioner && (
                           <p className="text-sm text-gray-600">
-                            {locale === 'fr' ? 'avec' : 'with'} <span className="font-medium">{session.practitioner.full_name}</span>
+                            {locale === 'fr' ? 'avec' : locale === 'es' ? 'con' : 'with'} <span className="font-medium">{session.practitioner.full_name}</span>
                           </p>
                         )}
                       </div>
@@ -637,7 +639,7 @@ export default function CarePage() {
                           ) : (
                             <>
                               <CalendarCheck className="w-4 h-4" />
-                              {locale === 'fr' ? 'Confirmer' : 'Confirm'}
+                              {locale === 'fr' ? 'Confirmer' : locale === 'es' ? 'Confirmar' : 'Confirm'}
                             </>
                           )}
                         </button>
@@ -647,7 +649,7 @@ export default function CarePage() {
                           className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
                         >
                           <RefreshCw className="w-4 h-4" />
-                          {locale === 'fr' ? 'Reporter' : 'Reschedule'}
+                          {locale === 'fr' ? 'Reporter' : locale === 'es' ? 'Reprogramar' : 'Reschedule'}
                         </button>
                       </div>
                     )}
@@ -677,7 +679,7 @@ export default function CarePage() {
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Demander un report' : 'Request Reschedule'}
+                    {locale === 'fr' ? 'Demander un report' : locale === 'es' ? 'Solicitar reprogramación' : 'Request Reschedule'}
                   </h3>
                   <button
                     onClick={() => setShowRescheduleModal(null)}
@@ -690,13 +692,15 @@ export default function CarePage() {
                 <p className="text-sm text-gray-500 mb-4">
                   {locale === 'fr'
                     ? 'Veuillez indiquer la raison de votre demande de report.'
-                    : 'Please let us know why you need to reschedule.'}
+                    : locale === 'es'
+                      ? 'Por favor indícanos por qué necesitas reprogramar.'
+                      : 'Please let us know why you need to reschedule.'}
                 </p>
 
                 <textarea
                   value={rescheduleReason}
                   onChange={(e) => setRescheduleReason(e.target.value)}
-                  placeholder={locale === 'fr' ? 'Raison du report...' : 'Reason for rescheduling...'}
+                  placeholder={locale === 'fr' ? 'Raison du report...' : locale === 'es' ? 'Motivo de la reprogramación...' : 'Reason for rescheduling...'}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none"
                   rows={2}
                 />
@@ -704,12 +708,12 @@ export default function CarePage() {
                 {/* Suggested Date/Time */}
                 <div className="mt-4 p-4 bg-emerald-50/50 rounded-xl border border-emerald-100">
                   <p className="text-sm font-medium text-gray-700 mb-3">
-                    {locale === 'fr' ? 'Suggérer une nouvelle date (optionnel)' : 'Suggest a new date (optional)'}
+                    {locale === 'fr' ? 'Suggérer une nouvelle date (optionnel)' : locale === 'es' ? 'Sugerir una nueva fecha (opcional)' : 'Suggest a new date (optional)'}
                   </p>
                   <div className="flex gap-3">
                     <div className="flex-1">
                       <label className="text-xs text-gray-500 mb-1 block">
-                        {locale === 'fr' ? 'Date' : 'Date'}
+                        {locale === 'fr' ? 'Date' : locale === 'es' ? 'Fecha' : 'Date'}
                       </label>
                       <input
                         type="date"
@@ -721,7 +725,7 @@ export default function CarePage() {
                     </div>
                     <div className="flex-1">
                       <label className="text-xs text-gray-500 mb-1 block">
-                        {locale === 'fr' ? 'Heure' : 'Time'}
+                        {locale === 'fr' ? 'Heure' : locale === 'es' ? 'Hora' : 'Time'}
                       </label>
                       <input
                         type="time"
@@ -738,7 +742,7 @@ export default function CarePage() {
                     onClick={() => setShowRescheduleModal(null)}
                     className="flex-1 px-4 py-2.5 text-gray-700 font-medium rounded-xl hover:bg-gray-100 transition-colors"
                   >
-                    {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                    {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
                   </button>
                   <button
                     onClick={() => handleRequestReschedule(showRescheduleModal)}
@@ -750,7 +754,7 @@ export default function CarePage() {
                     ) : (
                       <>
                         <RefreshCw className="w-4 h-4" />
-                        {locale === 'fr' ? 'Envoyer' : 'Send Request'}
+                        {locale === 'fr' ? 'Envoyer' : locale === 'es' ? 'Enviar solicitud' : 'Send Request'}
                       </>
                     )}
                   </button>
@@ -769,7 +773,7 @@ export default function CarePage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
               <Clock className="w-5 h-5 text-gray-500" />
-              {locale === 'fr' ? 'Historique des séances' : 'Session History'}
+              {locale === 'fr' ? 'Historique des séances' : locale === 'es' ? 'Historial de sesiones' : 'Session History'}
             </h3>
             {pastSessions.length > 3 && (
               <button
@@ -777,8 +781,8 @@ export default function CarePage() {
                 className="text-sm text-emerald-600 font-medium hover:text-emerald-700"
               >
                 {showAllHistory
-                  ? (locale === 'fr' ? 'Voir moins' : 'Show less')
-                  : (locale === 'fr' ? 'Voir tout' : 'View all')}
+                  ? (locale === 'fr' ? 'Voir moins' : locale === 'es' ? 'Ver menos' : 'Show less')
+                  : (locale === 'fr' ? 'Voir tout' : locale === 'es' ? 'Ver todo' : 'View all')}
               </button>
             )}
           </div>
@@ -787,7 +791,7 @@ export default function CarePage() {
             <div className="bg-gray-50 rounded-2xl p-6 text-center">
               <Clock className="w-10 h-10 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500">
-                {locale === 'fr' ? 'Aucun historique de séances' : 'No session history'}
+                {locale === 'fr' ? 'Aucun historique de séances' : locale === 'es' ? 'No hay historial de sesiones' : 'No session history'}
               </p>
             </div>
           ) : (
@@ -821,7 +825,7 @@ export default function CarePage() {
                         isCompleted ? 'bg-gray-100' : isCancelled ? 'bg-red-100' : 'bg-amber-100'
                       }`}>
                         <span className="text-xs text-gray-500 uppercase">
-                          {format(sessionDate, 'MMM', { locale: locale === 'fr' ? fr : enUS })}
+                          {format(sessionDate, 'MMM', { locale: locale === 'fr' ? fr : locale === 'es' ? es : enUS })}
                         </span>
                         <span className="text-lg font-bold text-gray-700">
                           {format(sessionDate, 'd')}
@@ -837,17 +841,17 @@ export default function CarePage() {
                           {isCompleted && (
                             <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full flex items-center gap-1">
                               <CheckCircle className="w-3 h-3" />
-                              {locale === 'fr' ? 'Terminé' : 'Completed'}
+                              {locale === 'fr' ? 'Terminé' : locale === 'es' ? 'Completado' : 'Completed'}
                             </span>
                           )}
                           {isCancelled && (
                             <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-                              {locale === 'fr' ? 'Annulé' : 'Cancelled'}
+                              {locale === 'fr' ? 'Annulé' : locale === 'es' ? 'Cancelado' : 'Cancelled'}
                             </span>
                           )}
                           {isNoShow && (
                             <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                              {locale === 'fr' ? 'Absent' : 'No Show'}
+                              {locale === 'fr' ? 'Absent' : locale === 'es' ? 'Ausente' : 'No Show'}
                             </span>
                           )}
                         </div>
@@ -859,14 +863,14 @@ export default function CarePage() {
                           <span className="flex items-center gap-1">
                             <FormatIcon className="w-3.5 h-3.5" />
                             {session.session_format === 'video' ? 'Video' :
-                              session.session_format === 'in_person' ? (locale === 'fr' ? 'En personne' : 'In Person') :
-                                (locale === 'fr' ? 'Téléphone' : 'Phone')}
+                              session.session_format === 'in_person' ? (locale === 'fr' ? 'En personne' : locale === 'es' ? 'Presencial' : 'In Person') :
+                                (locale === 'fr' ? 'Téléphone' : locale === 'es' ? 'Teléfono' : 'Phone')}
                           </span>
                           <span>{session.duration_minutes} min</span>
                         </div>
                         {session.practitioner && (
                           <p className="text-sm text-gray-500 mt-1">
-                            {locale === 'fr' ? 'avec' : 'with'} {session.practitioner.full_name}
+                            {locale === 'fr' ? 'avec' : locale === 'es' ? 'con' : 'with'} {session.practitioner.full_name}
                           </p>
                         )}
                       </div>

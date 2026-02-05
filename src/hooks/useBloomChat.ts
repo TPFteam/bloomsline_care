@@ -7,7 +7,7 @@ import type { BloomMessage, BloomState, ContentBlock } from '@/types/bloom'
 export type BloomEntryPoint = 'home' | 'balance' | 'moments' | 'rituals' | 'progress' | 'reflect' | 'general'
 
 interface UseBloomChatOptions {
-  locale?: 'en' | 'fr'
+  locale?: 'en' | 'fr' | 'es'
   entryPoint?: BloomEntryPoint
 }
 
@@ -60,7 +60,9 @@ export function useBloomChat(options: UseBloomChatOptions = {}): UseBloomChatRet
           const hour = new Date().getHours()
           greeting = locale === 'fr'
             ? (hour < 12 ? 'Bonjour. Comment vas-tu ?' : 'Bonsoir. Comment vas-tu ?')
-            : (hour < 12 ? 'Good morning. How are you?' : 'Good evening. How are you?')
+            : locale === 'es'
+              ? (hour < 12 ? 'Buenos dias. Como estas?' : 'Buenas noches. Como estas?')
+              : (hour < 12 ? 'Good morning. How are you?' : 'Good evening. How are you?')
         }
 
         const greetingMessage: BloomMessage = {
@@ -79,7 +81,7 @@ export function useBloomChat(options: UseBloomChatOptions = {}): UseBloomChatRet
         setMessages([greetingMessage])
       } catch {
         // Fallback greeting on error
-        const greeting = locale === 'fr' ? 'Bonjour. Comment vas-tu ?' : 'Hey. How are you?'
+        const greeting = locale === 'fr' ? 'Bonjour. Comment vas-tu ?' : locale === 'es' ? 'Hola. Como estas?' : 'Hey. How are you?'
         const greetingMessage: BloomMessage = {
           id: 'greeting',
           conversation_id: '',

@@ -109,7 +109,7 @@ function SignUpContent() {
               className="flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>{locale === 'fr' ? 'Accueil' : 'Home'}</span>
+              <span>{locale === 'fr' ? 'Accueil' : locale === 'es' ? 'Inicio' : 'Home'}</span>
             </Link>
           </div>
         </div>
@@ -126,12 +126,14 @@ function SignUpContent() {
           {/* Welcome text */}
           <div className="text-center mb-10">
             <h1 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-3">
-              {locale === 'fr' ? 'Commencez ici' : 'Start here'}
+              {locale === 'fr' ? 'Commencez ici' : locale === 'es' ? 'Empieza aquí' : 'Start here'}
             </h1>
             <p className="text-neutral-500">
               {locale === 'fr'
                 ? 'Créez votre compte en quelques secondes.'
-                : 'Create your account in seconds.'}
+                : locale === 'es'
+                  ? 'Crea tu cuenta en segundos.'
+                  : 'Create your account in seconds.'}
             </p>
           </div>
 
@@ -165,7 +167,7 @@ function SignUpContent() {
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  {locale === 'fr' ? 'Continuer avec Google' : 'Continue with Google'}
+                  {locale === 'fr' ? 'Continuer avec Google' : locale === 'es' ? 'Continuar con Google' : 'Continue with Google'}
                 </>
               )}
             </button>
@@ -173,7 +175,7 @@ function SignUpContent() {
             {/* Divider */}
             <div className="flex items-center gap-3 my-4">
               <div className="flex-1 h-px bg-neutral-200" />
-              <span className="text-xs text-neutral-400">{locale === 'fr' ? 'ou' : 'or'}</span>
+              <span className="text-xs text-neutral-400">{locale === 'fr' ? 'ou' : locale === 'es' ? 'o' : 'or'}</span>
               <div className="flex-1 h-px bg-neutral-200" />
             </div>
 
@@ -193,29 +195,29 @@ function SignUpContent() {
                     <path fill="#05a6f0" d="M1 12h10v10H1z" />
                     <path fill="#ffba08" d="M12 12h10v10H12z" />
                   </svg>
-                  {locale === 'fr' ? 'Continuer avec Outlook' : 'Continue with Outlook'}
+                  {locale === 'fr' ? 'Continuer avec Outlook' : locale === 'es' ? 'Continuar con Outlook' : 'Continue with Outlook'}
                 </>
               )}
             </button>
 
             {/* Sign in link */}
             <p className="text-center text-neutral-500 mt-6 text-sm">
-              {locale === 'fr' ? 'Déjà un compte ?' : 'Already have an account?'}{' '}
+              {locale === 'fr' ? 'Déjà un compte ?' : locale === 'es' ? '¿Ya tienes una cuenta?' : 'Already have an account?'}{' '}
               <Link href="/sign-in" className="text-teal-600 hover:text-teal-700 font-medium">
-                {locale === 'fr' ? 'Se connecter' : 'Sign in'}
+                {locale === 'fr' ? 'Se connecter' : locale === 'es' ? 'Iniciar sesión' : 'Sign in'}
               </Link>
             </p>
           </div>
 
           {/* Terms */}
           <p className="text-center text-xs text-neutral-400 mt-6">
-            {locale === 'fr' ? 'En continuant, vous acceptez nos' : 'By continuing, you agree to our'}{' '}
+            {locale === 'fr' ? 'En continuant, vous acceptez nos' : locale === 'es' ? 'Al continuar, aceptas nuestros' : 'By continuing, you agree to our'}{' '}
             <Link href="/terms" className="text-neutral-500 hover:text-neutral-700">
-              {locale === 'fr' ? 'Conditions' : 'Terms'}
+              {locale === 'fr' ? 'Conditions' : locale === 'es' ? 'Términos' : 'Terms'}
             </Link>{' '}
-            {locale === 'fr' ? 'et' : 'and'}{' '}
+            {locale === 'fr' ? 'et' : locale === 'es' ? 'y' : 'and'}{' '}
             <Link href="/privacy" className="text-neutral-500 hover:text-neutral-700">
-              {locale === 'fr' ? 'Confidentialité' : 'Privacy'}
+              {locale === 'fr' ? 'Confidentialité' : locale === 'es' ? 'Privacidad' : 'Privacy'}
             </Link>
           </p>
         </motion.div>
@@ -226,7 +228,7 @@ function SignUpContent() {
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {locale === 'fr' ? 'Compte non trouvé' : 'Account Not Found'}
+              {locale === 'fr' ? 'Compte non trouvé' : locale === 'es' ? 'Cuenta no encontrada' : 'Account Not Found'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {dialogMessage}
@@ -234,13 +236,13 @@ function SignUpContent() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => router.push('/')} className="rounded-xl">
-              {locale === 'fr' ? 'Accueil' : 'Go to Home'}
+              {locale === 'fr' ? 'Accueil' : locale === 'es' ? 'Ir al inicio' : 'Go to Home'}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => setShowDialog(false)}
               className="rounded-xl bg-neutral-900 hover:bg-neutral-800"
             >
-              {locale === 'fr' ? "S'inscrire" : 'Sign Up'}
+              {locale === 'fr' ? "S'inscrire" : locale === 'es' ? 'Registrarse' : 'Sign Up'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -9,10 +9,13 @@ interface SpotlightStep {
   target: string // data-spotlight attribute value
   titleEn: string
   titleFr: string
+  titleEs: string
   descriptionEn: string
   descriptionFr: string
+  descriptionEs: string
   fallbackDescriptionEn?: string
   fallbackDescriptionFr?: string
+  fallbackDescriptionEs?: string
 }
 
 const STEPS: SpotlightStep[] = [
@@ -20,51 +23,67 @@ const STEPS: SpotlightStep[] = [
     target: 'time-indicator',
     titleEn: 'Right Now',
     titleFr: 'En ce moment',
+    titleEs: 'Ahora mismo',
     descriptionEn: 'This green line shows where you are in the day. Everything to the left has already happened, everything to the right is still to come.',
     descriptionFr: 'Cette ligne verte montre où vous en êtes dans la journée. Tout à gauche s\'est déjà passé, tout à droite est encore à venir.',
+    descriptionEs: 'Esta línea verde muestra dónde estás en el día. Todo a la izquierda ya ocurrió, todo a la derecha está por venir.',
   },
   {
     target: 'flow-line',
     titleEn: 'The Flow Line',
     titleFr: 'La ligne de flux',
+    titleEs: 'La línea de flujo',
     descriptionEn: 'This line connects your moments through the day. Higher means you felt more positive, lower means you were processing.',
     descriptionFr: 'Cette ligne relie vos moments au fil de la journée. Plus haut signifie que vous vous sentiez plus positif, plus bas que vous étiez en traitement.',
+    descriptionEs: 'Esta línea conecta tus momentos a lo largo del día. Más arriba significa que te sentiste más positivo, más abajo que estabas procesando.',
     fallbackDescriptionEn: 'When you capture more than one moment, a flowing line will connect them here.',
     fallbackDescriptionFr: 'Quand vous capturerez plus d\'un moment, une ligne fluide les reliera ici.',
+    fallbackDescriptionEs: 'Cuando captures más de un momento, una línea fluida los conectará aquí.',
   },
   {
     target: 'moment-dot',
     titleEn: 'Your Moments',
     titleFr: 'Vos moments',
+    titleEs: 'Tus momentos',
     descriptionEn: 'Each orb is a moment you captured — a photo, voice note, or journal entry. The color reflects your emotion. Tap any to revisit.',
     descriptionFr: 'Chaque orbe est un moment que vous avez capturé — une photo, une note vocale ou une entrée de journal. La couleur reflète votre émotion. Appuyez pour revisiter.',
+    descriptionEs: 'Cada orbe es un momento que capturaste: una foto, nota de voz o entrada de diario. El color refleja tu emoción. Toca cualquiera para revisitar.',
     fallbackDescriptionEn: 'When you capture a moment, it will appear here as a colored orb.',
     fallbackDescriptionFr: 'Quand vous capturerez un moment, il apparaîtra ici sous forme d\'orbe coloré.',
+    fallbackDescriptionEs: 'Cuando captures un momento, aparecerá aquí como un orbe de color.',
   },
   {
     target: 'ritual-dot',
     titleEn: 'Your Rituals',
     titleFr: 'Vos rituels',
+    titleEs: 'Tus rituales',
     descriptionEn: 'These smaller dots are your daily rituals. A green check means completed. Grey means still pending.',
     descriptionFr: 'Ces petits points sont vos rituels quotidiens. Un coche vert signifie complété. Gris signifie en attente.',
+    descriptionEs: 'Estos puntos más pequeños son tus rituales diarios. Una marca verde significa completado. Gris significa pendiente.',
     fallbackDescriptionEn: 'When you add rituals, they will appear here on your timeline.',
     fallbackDescriptionFr: 'Quand vous ajouterez des rituels, ils apparaîtront ici sur votre fil.',
+    fallbackDescriptionEs: 'Cuando agregues rituales, aparecerán aquí en tu línea de tiempo.',
   },
   {
     target: 'seed-dot',
     titleEn: 'Your Little Steps',
     titleFr: 'Vos petits pas',
+    titleEs: 'Tus pequeños pasos',
     descriptionEn: 'These are your seeds — small habits you\'re growing or gently letting go. They appear at the bottom of your flow.',
     descriptionFr: 'Ce sont vos graines — de petites habitudes que vous cultivez ou laissez doucement partir. Elles apparaissent en bas de votre flux.',
+    descriptionEs: 'Estas son tus semillas: pequeños hábitos que estás cultivando o dejando ir suavemente. Aparecen en la parte inferior de tu flujo.',
     fallbackDescriptionEn: 'When you log a seed, it will appear at the bottom of your flow.',
     fallbackDescriptionFr: 'Quand vous enregistrerez une graine, elle apparaîtra en bas de votre flux.',
+    fallbackDescriptionEs: 'Cuando registres una semilla, aparecerá en la parte inferior de tu flujo.',
   },
   {
     target: 'wanna-talk',
     titleEn: 'Talk to Bloom',
     titleFr: 'Parler à Bloom',
+    titleEs: 'Habla con Bloom',
     descriptionEn: 'Whenever you need to process something, Bloom is here. Tap to start a gentle conversation.',
     descriptionFr: 'Chaque fois que vous avez besoin de parler, Bloom est là. Appuyez pour commencer une conversation douce.',
+    descriptionEs: 'Siempre que necesites procesar algo, Bloom está aquí. Toca para iniciar una conversación amable.',
   },
 ]
 
@@ -195,10 +214,10 @@ export function FlowSpotlight({ isOpen, onComplete, onSkip, flowContainerRef }: 
   if (!active || !highlightRect) return null
 
   const description = isFallback
-    ? (locale === 'fr' ? (step.fallbackDescriptionFr || step.descriptionFr) : (step.fallbackDescriptionEn || step.descriptionEn))
-    : (locale === 'fr' ? step.descriptionFr : step.descriptionEn)
+    ? (locale === 'fr' ? (step.fallbackDescriptionFr || step.descriptionFr) : locale === 'es' ? (step.fallbackDescriptionEs || step.descriptionEs) : (step.fallbackDescriptionEn || step.descriptionEn))
+    : (locale === 'fr' ? step.descriptionFr : locale === 'es' ? step.descriptionEs : step.descriptionEn)
 
-  const title = locale === 'fr' ? step.titleFr : step.titleEn
+  const title = locale === 'fr' ? step.titleFr : locale === 'es' ? step.titleEs : step.titleEn
   const isLastStep = currentStep === STEPS.length - 1
 
   // Tooltip positioning — centered horizontally, clamped within viewport
@@ -311,8 +330,8 @@ export function FlowSpotlight({ isOpen, onComplete, onSkip, flowContainerRef }: 
                 >
                   <span>
                     {isLastStep
-                      ? (locale === 'fr' ? 'Compris' : 'Got it')
-                      : (locale === 'fr' ? 'Suivant' : 'Next')
+                      ? (locale === 'fr' ? 'Compris' : locale === 'es' ? 'Entendido' : 'Got it')
+                      : (locale === 'fr' ? 'Suivant' : locale === 'es' ? 'Siguiente' : 'Next')
                     }
                   </span>
                   {!isLastStep && <ChevronRight className="w-3.5 h-3.5" />}

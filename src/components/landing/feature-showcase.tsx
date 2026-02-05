@@ -44,20 +44,20 @@ export function FeatureShowcase() {
   const features = {
     moments: {
       icon: Sun,
-      title: locale === 'fr' ? 'Moments' : 'Moments',
-      tagline: locale === 'fr' ? 'Capturez. Ressentez. Revivez.' : 'Capture. Feel. Relive.',
+      title: locale === 'fr' ? 'Moments' : locale === 'es' ? 'Momentos' : 'Moments',
+      tagline: locale === 'fr' ? 'Capturez. Ressentez. Revivez.' : locale === 'es' ? 'Captura. Siente. Revive.' : 'Capture. Feel. Relive.',
       color: '#4A9A86',
     },
     rituals: {
       icon: Circle,
-      title: locale === 'fr' ? 'Rituels' : 'Rituals',
-      tagline: locale === 'fr' ? 'Des habitudes qui vous ressemblent' : 'Habits that feel like you',
+      title: locale === 'fr' ? 'Rituels' : locale === 'es' ? 'Rituales' : 'Rituals',
+      tagline: locale === 'fr' ? 'Des habitudes qui vous ressemblent' : locale === 'es' ? 'Hábitos que se sienten como tú' : 'Habits that feel like you',
       color: '#4A9A86',
     },
     balance: {
       icon: Smile,
-      title: locale === 'fr' ? 'Équilibre' : 'Balance',
-      tagline: locale === 'fr' ? 'Comprenez vos patterns' : 'Understand your patterns',
+      title: locale === 'fr' ? 'Équilibre' : locale === 'es' ? 'Equilibrio' : 'Balance',
+      tagline: locale === 'fr' ? 'Comprenez vos patterns' : locale === 'es' ? 'Comprende tus patrones' : 'Understand your patterns',
       color: '#4A9A86',
     },
   }
@@ -65,20 +65,20 @@ export function FeatureShowcase() {
   const practitionerFeatures = {
     members: {
       icon: Users,
-      title: locale === 'fr' ? 'Clients' : 'Members',
-      tagline: locale === 'fr' ? 'Tout au même endroit' : 'Everything in one place',
+      title: locale === 'fr' ? 'Clients' : locale === 'es' ? 'Miembros' : 'Members',
+      tagline: locale === 'fr' ? 'Tout au même endroit' : locale === 'es' ? 'Todo en un solo lugar' : 'Everything in one place',
       color: '#D4856A',
     },
     journeys: {
       icon: Target,
-      title: locale === 'fr' ? 'Parcours' : 'Journeys',
-      tagline: locale === 'fr' ? 'Visualisez les progrès' : 'Visualize progress',
+      title: locale === 'fr' ? 'Parcours' : locale === 'es' ? 'Recorridos' : 'Journeys',
+      tagline: locale === 'fr' ? 'Visualisez les progrès' : locale === 'es' ? 'Visualiza el progreso' : 'Visualize progress',
       color: '#D4856A',
     },
     resources: {
       icon: BookOpen,
-      title: locale === 'fr' ? 'Ressources' : 'Resources',
-      tagline: locale === 'fr' ? 'Partagez en un clic' : 'Share with one click',
+      title: locale === 'fr' ? 'Ressources' : locale === 'es' ? 'Recursos' : 'Resources',
+      tagline: locale === 'fr' ? 'Partagez en un clic' : locale === 'es' ? 'Comparte con un clic' : 'Share with one click',
       color: '#D4856A',
     },
   }
@@ -94,11 +94,13 @@ export function FeatureShowcase() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-4">
-            {locale === 'fr' ? 'Découvrez comment ça marche' : 'See how it works'}
+            {locale === 'fr' ? 'Découvrez comment ça marche' : locale === 'es' ? 'Descubre cómo funciona' : 'See how it works'}
           </h2>
           <p className="text-neutral-500 text-lg max-w-2xl mx-auto">
             {locale === 'fr'
               ? 'Des outils simples pour un bien-être authentique'
+              : locale === 'es'
+              ? 'Herramientas simples para un bienestar auténtico'
               : 'Simple tools for authentic wellbeing'}
           </p>
         </motion.div>
@@ -113,7 +115,7 @@ export function FeatureShowcase() {
           <div className="flex items-center gap-2 mb-8">
             <div className="w-2 h-2 rounded-full bg-[#4A9A86]" />
             <span className="text-sm font-medium text-neutral-500 uppercase tracking-wider">
-              {locale === 'fr' ? 'Pour vous' : 'For you'}
+              {locale === 'fr' ? 'Pour vous' : locale === 'es' ? 'Para ti' : 'For you'}
             </span>
           </div>
 
@@ -179,7 +181,7 @@ export function FeatureShowcase() {
           <div className="flex items-center gap-2 mb-8">
             <div className="w-2 h-2 rounded-full bg-[#D4856A]" />
             <span className="text-sm font-medium text-neutral-500 uppercase tracking-wider">
-              {locale === 'fr' ? 'Pour praticiens' : 'For practitioners'}
+              {locale === 'fr' ? 'Pour praticiens' : locale === 'es' ? 'Para profesionales' : 'For practitioners'}
             </span>
           </div>
 
@@ -244,20 +246,20 @@ export function FeatureShowcase() {
 function MomentsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' }) {
   const steps = [
     {
-      title: locale === 'fr' ? 'Capturez un moment' : 'Capture a moment',
-      desc: locale === 'fr' ? 'Photo, note vocale, ou texte' : 'Photo, voice note, or text'
+      title: locale === 'fr' ? 'Capturez un moment' : locale === 'es' ? 'Captura un momento' : 'Capture a moment',
+      desc: locale === 'fr' ? 'Photo, note vocale, ou texte' : locale === 'es' ? 'Foto, nota de voz o texto' : 'Photo, voice note, or text'
     },
     {
-      title: locale === 'fr' ? 'Ajoutez votre ressenti' : 'Add how you feel',
-      desc: locale === 'fr' ? 'Étiquetez vos émotions' : 'Tag your emotions'
+      title: locale === 'fr' ? 'Ajoutez votre ressenti' : locale === 'es' ? 'Añade cómo te sientes' : 'Add how you feel',
+      desc: locale === 'fr' ? 'Étiquetez vos émotions' : locale === 'es' ? 'Etiqueta tus emociones' : 'Tag your emotions'
     },
     {
-      title: locale === 'fr' ? 'Voyez votre flow' : 'See your flow',
-      desc: locale === 'fr' ? 'Une timeline de vos moments' : 'A timeline of your moments'
+      title: locale === 'fr' ? 'Voyez votre flow' : locale === 'es' ? 'Mira tu flujo' : 'See your flow',
+      desc: locale === 'fr' ? 'Une timeline de vos moments' : locale === 'es' ? 'Una línea de tiempo de tus momentos' : 'A timeline of your moments'
     },
     {
-      title: locale === 'fr' ? 'Parlez avec vos souvenirs' : 'Talk with your memories',
-      desc: locale === 'fr' ? 'L\'IA vous aide à réfléchir' : 'AI helps you reflect'
+      title: locale === 'fr' ? 'Parlez avec vos souvenirs' : locale === 'es' ? 'Habla con tus recuerdos' : 'Talk with your memories',
+      desc: locale === 'fr' ? 'L\'IA vous aide à réfléchir' : locale === 'es' ? 'La IA te ayuda a reflexionar' : 'AI helps you reflect'
     },
   ]
 
@@ -304,7 +306,7 @@ function MomentsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
               >
                 <Camera className="w-10 h-10 text-white" />
               </motion.div>
-              <p className="text-sm text-neutral-500">{locale === 'fr' ? 'Appuyez pour capturer' : 'Tap to capture'}</p>
+              <p className="text-sm text-neutral-500">{locale === 'fr' ? 'Appuyez pour capturer' : locale === 'es' ? 'Toca para capturar' : 'Tap to capture'}</p>
             </motion.div>
           )}
 
@@ -360,7 +362,7 @@ function MomentsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
                       <Sun className="w-6 h-6 text-[#4A9A86]/40" />
                     </div>
                     <p className="text-xs text-neutral-400 text-center">
-                      {i === 0 ? (locale === 'fr' ? 'Maintenant' : 'Now') : `${i}h ago`}
+                      {i === 0 ? (locale === 'fr' ? 'Maintenant' : locale === 'es' ? 'Ahora' : 'Now') : `${i}h ago`}
                     </p>
                   </motion.div>
                 ))}
@@ -368,7 +370,7 @@ function MomentsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
               <div className="mt-4 flex items-center justify-center gap-2">
                 <Play className="w-4 h-4 text-[#4A9A86]" />
                 <span className="text-sm text-[#4A9A86] font-medium">
-                  {locale === 'fr' ? 'Voir le flow' : 'View flow'}
+                  {locale === 'fr' ? 'Voir le flow' : locale === 'es' ? 'Ver flujo' : 'View flow'}
                 </span>
               </div>
             </motion.div>
@@ -394,6 +396,8 @@ function MomentsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
                   <p className="text-sm text-neutral-700">
                     {locale === 'fr'
                       ? "J'ai remarqué que vous capturez souvent des moments de gratitude le matin. Qu'est-ce qui vous inspire ces jours-ci?"
+                      : locale === 'es'
+                      ? "He notado que a menudo capturas momentos de gratitud por la mañana. ¿Qué te ha inspirado últimamente?"
                       : "I noticed you often capture gratitude moments in the morning. What's been inspiring you lately?"}
                   </p>
                 </div>
@@ -408,6 +412,8 @@ function MomentsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
                   <p className="text-sm text-white">
                     {locale === 'fr'
                       ? "Le lever du soleil sur ma terrasse..."
+                      : locale === 'es'
+                      ? "El amanecer desde mi balcón..."
                       : "The sunrise from my balcony..."}
                   </p>
                 </div>
@@ -423,9 +429,9 @@ function MomentsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
 // Rituals Demo Component
 function RitualsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' }) {
   const rituals = [
-    { name: locale === 'fr' ? 'Gratitude matinale' : 'Morning gratitude', time: '7:00 AM', done: true },
-    { name: locale === 'fr' ? 'Méditation' : 'Meditation', time: '7:30 AM', done: demoStep >= 1 },
-    { name: locale === 'fr' ? 'Journaling' : 'Journaling', time: '8:00 PM', done: false },
+    { name: locale === 'fr' ? 'Gratitude matinale' : locale === 'es' ? 'Gratitud matutina' : 'Morning gratitude', time: '7:00 AM', done: true },
+    { name: locale === 'fr' ? 'Méditation' : locale === 'es' ? 'Meditación' : 'Meditation', time: '7:30 AM', done: demoStep >= 1 },
+    { name: locale === 'fr' ? 'Journaling' : locale === 'es' ? 'Diario' : 'Journaling', time: '8:00 PM', done: false },
   ]
 
   return (
@@ -438,15 +444,15 @@ function RitualsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
       <div className="flex items-center justify-between mb-6">
         <div>
           <h4 className="text-lg font-medium text-neutral-900">
-            {locale === 'fr' ? 'Mes Rituels' : 'My Rituals'}
+            {locale === 'fr' ? 'Mes Rituels' : locale === 'es' ? 'Mis Rituales' : 'My Rituals'}
           </h4>
           <p className="text-sm text-neutral-500">
-            {locale === 'fr' ? 'Aujourd\'hui' : 'Today'}
+            {locale === 'fr' ? 'Aujourd\'hui' : locale === 'es' ? 'Hoy' : 'Today'}
           </p>
         </div>
         <div className="text-right">
           <p className="text-2xl font-light text-[#4A9A86]">2/3</p>
-          <p className="text-xs text-neutral-400">{locale === 'fr' ? 'complétés' : 'completed'}</p>
+          <p className="text-xs text-neutral-400">{locale === 'fr' ? 'complétés' : locale === 'es' ? 'completados' : 'completed'}</p>
         </div>
       </div>
 
@@ -490,7 +496,7 @@ function RitualsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
       >
         <div className="flex items-center gap-2 text-sm text-[#4A9A86]">
           <TrendingUp className="w-4 h-4" />
-          <span>{locale === 'fr' ? '7 jours de suite!' : '7 day streak!'}</span>
+          <span>{locale === 'fr' ? '7 jours de suite!' : locale === 'es' ? '¡7 días seguidos!' : '7 day streak!'}</span>
         </div>
       </motion.div>
     </motion.div>
@@ -500,9 +506,9 @@ function RitualsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
 // Balance Demo Component
 function BalanceDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' }) {
   const metrics = [
-    { label: locale === 'fr' ? 'Humeur' : 'Mood', value: 8, color: '#4A9A86' },
-    { label: locale === 'fr' ? 'Énergie' : 'Energy', value: 7, color: '#6BB3A0' },
-    { label: locale === 'fr' ? 'Sommeil' : 'Sleep', value: 6, color: '#8DCBB8' },
+    { label: locale === 'fr' ? 'Humeur' : locale === 'es' ? 'Ánimo' : 'Mood', value: 8, color: '#4A9A86' },
+    { label: locale === 'fr' ? 'Énergie' : locale === 'es' ? 'Energía' : 'Energy', value: 7, color: '#6BB3A0' },
+    { label: locale === 'fr' ? 'Sommeil' : locale === 'es' ? 'Sueño' : 'Sleep', value: 6, color: '#8DCBB8' },
   ]
 
   return (
@@ -515,10 +521,10 @@ function BalanceDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
       <div className="flex items-center justify-between mb-6">
         <div>
           <h4 className="text-lg font-medium text-neutral-900">
-            {locale === 'fr' ? 'Mon Équilibre' : 'My Balance'}
+            {locale === 'fr' ? 'Mon Équilibre' : locale === 'es' ? 'Mi Equilibrio' : 'My Balance'}
           </h4>
           <p className="text-sm text-neutral-500">
-            {locale === 'fr' ? 'Cette semaine' : 'This week'}
+            {locale === 'fr' ? 'Cette semaine' : locale === 'es' ? 'Esta semana' : 'This week'}
           </p>
         </div>
         <Smile className="w-8 h-8 text-[#4A9A86]" />
@@ -563,6 +569,8 @@ function BalanceDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
             <p className="text-sm text-neutral-700">
               {locale === 'fr'
                 ? "Votre énergie est plus haute les jours où vous faites votre rituel du matin."
+                : locale === 'es'
+                ? "Tu energía es más alta los días en que completas tu ritual matutino."
                 : "Your energy is higher on days when you complete your morning ritual."}
             </p>
           </div>
@@ -575,9 +583,9 @@ function BalanceDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
 // Members Demo Component
 function MembersDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' }) {
   const members = [
-    { name: 'Sarah L.', initials: 'SL', status: 'active', lastSession: locale === 'fr' ? 'Hier' : 'Yesterday' },
-    { name: 'Marc D.', initials: 'MD', status: 'active', lastSession: locale === 'fr' ? 'Il y a 3 jours' : '3 days ago' },
-    { name: 'Julie T.', initials: 'JT', status: 'pending', lastSession: locale === 'fr' ? 'Prochaine: Demain' : 'Next: Tomorrow' },
+    { name: 'Sarah L.', initials: 'SL', status: 'active', lastSession: locale === 'fr' ? 'Hier' : locale === 'es' ? 'Ayer' : 'Yesterday' },
+    { name: 'Marc D.', initials: 'MD', status: 'active', lastSession: locale === 'fr' ? 'Il y a 3 jours' : locale === 'es' ? 'Hace 3 días' : '3 days ago' },
+    { name: 'Julie T.', initials: 'JT', status: 'pending', lastSession: locale === 'fr' ? 'Prochaine: Demain' : locale === 'es' ? 'Próxima: Mañana' : 'Next: Tomorrow' },
   ]
 
   return (
@@ -590,10 +598,10 @@ function MembersDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
       <div className="flex items-center justify-between mb-6">
         <div>
           <h4 className="text-lg font-medium text-neutral-900">
-            {locale === 'fr' ? 'Mes Clients' : 'My Members'}
+            {locale === 'fr' ? 'Mes Clients' : locale === 'es' ? 'Mis Miembros' : 'My Members'}
           </h4>
           <p className="text-sm text-neutral-500">
-            {locale === 'fr' ? '12 actifs' : '12 active'}
+            {locale === 'fr' ? '12 actifs' : locale === 'es' ? '12 activos' : '12 active'}
           </p>
         </div>
         <Users className="w-8 h-8 text-[#D4856A]" />
@@ -628,10 +636,10 @@ function MembersDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
 // Journeys Demo Component
 function JourneysDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' }) {
   const stages = [
-    { name: locale === 'fr' ? 'Découverte' : 'Discovery', icon: '🌱', completed: true },
-    { name: locale === 'fr' ? 'Construction' : 'Building', icon: '🏗️', completed: true },
-    { name: locale === 'fr' ? 'Épanouissement' : 'Thriving', icon: '🌸', completed: false, current: true },
-    { name: locale === 'fr' ? 'Autonomie' : 'Independent', icon: '🦋', completed: false },
+    { name: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery', icon: '🌱', completed: true },
+    { name: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building', icon: '🏗️', completed: true },
+    { name: locale === 'fr' ? 'Épanouissement' : locale === 'es' ? 'Florecimiento' : 'Thriving', icon: '🌸', completed: false, current: true },
+    { name: locale === 'fr' ? 'Autonomie' : locale === 'es' ? 'Independencia' : 'Independent', icon: '🦋', completed: false },
   ]
 
   return (
@@ -645,7 +653,7 @@ function JourneysDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | '
         <div>
           <h4 className="text-lg font-medium text-neutral-900">Sarah L.</h4>
           <p className="text-sm text-neutral-500">
-            {locale === 'fr' ? 'Parcours thérapeutique' : 'Therapy journey'}
+            {locale === 'fr' ? 'Parcours thérapeutique' : locale === 'es' ? 'Recorrido terapéutico' : 'Therapy journey'}
           </p>
         </div>
         <Target className="w-8 h-8 text-[#D4856A]" />
@@ -688,7 +696,7 @@ function JourneysDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | '
                   {stage.name}
                 </p>
                 {stage.current && (
-                  <p className="text-xs text-neutral-400">{locale === 'fr' ? 'En cours' : 'In progress'}</p>
+                  <p className="text-xs text-neutral-400">{locale === 'fr' ? 'En cours' : locale === 'es' ? 'En progreso' : 'In progress'}</p>
                 )}
               </div>
             </motion.div>
@@ -711,10 +719,10 @@ function ResourcesDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 
       <div className="flex items-center justify-between mb-6">
         <div>
           <h4 className="text-lg font-medium text-neutral-900">
-            {locale === 'fr' ? 'Bibliothèque' : 'Library'}
+            {locale === 'fr' ? 'Bibliothèque' : locale === 'es' ? 'Biblioteca' : 'Library'}
           </h4>
           <p className="text-sm text-neutral-500">
-            {locale === 'fr' ? '24 ressources' : '24 resources'}
+            {locale === 'fr' ? '24 ressources' : locale === 'es' ? '24 recursos' : '24 resources'}
           </p>
         </div>
         <BookOpen className="w-8 h-8 text-[#D4856A]" />
@@ -722,8 +730,8 @@ function ResourcesDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 
 
       <div className="space-y-3 mb-6">
         {[
-          { title: locale === 'fr' ? 'Exercice de respiration' : 'Breathing exercise', type: 'PDF', shared: true },
-          { title: locale === 'fr' ? 'Journal de gratitude' : 'Gratitude journal', type: 'Template', shared: false },
+          { title: locale === 'fr' ? 'Exercice de respiration' : locale === 'es' ? 'Ejercicio de respiración' : 'Breathing exercise', type: 'PDF', shared: true },
+          { title: locale === 'fr' ? 'Journal de gratitude' : locale === 'es' ? 'Diario de gratitud' : 'Gratitude journal', type: 'Template', shared: false },
         ].map((resource, i) => (
           <motion.div
             key={resource.title}
@@ -762,9 +770,11 @@ function ResourcesDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 
             <p className="text-sm text-neutral-700">
               {locale === 'fr'
                 ? 'Partagé avec Sarah L.'
+                : locale === 'es'
+                ? 'Compartido con Sarah L.'
                 : 'Shared with Sarah L.'}
             </p>
-            <p className="text-xs text-neutral-400">{locale === 'fr' ? 'Il y a 2 min' : '2 min ago'}</p>
+            <p className="text-xs text-neutral-400">{locale === 'fr' ? 'Il y a 2 min' : locale === 'es' ? 'Hace 2 min' : '2 min ago'}</p>
           </div>
           <Check className="w-5 h-5 text-[#D4856A]" />
         </div>

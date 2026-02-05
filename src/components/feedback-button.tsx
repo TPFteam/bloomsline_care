@@ -16,24 +16,27 @@ interface FeedbackButtonProps {
   onClose?: () => void
 }
 
-const ticketTypes: { value: TicketType; icon: typeof Bug; labelEn: string; labelFr: string }[] = [
-  { value: 'bug', icon: Bug, labelEn: 'Bug', labelFr: 'Bug' },
-  { value: 'feature', icon: Lightbulb, labelEn: 'Feature', labelFr: 'Idée' },
-  { value: 'question', icon: HelpCircle, labelEn: 'Question', labelFr: 'Question' },
+const ticketTypes: { value: TicketType; icon: typeof Bug; labelEn: string; labelFr: string; labelEs: string }[] = [
+  { value: 'bug', icon: Bug, labelEn: 'Bug', labelFr: 'Bug', labelEs: 'Error' },
+  { value: 'feature', icon: Lightbulb, labelEn: 'Feature', labelFr: 'Idée', labelEs: 'Idea' },
+  { value: 'question', icon: HelpCircle, labelEn: 'Question', labelFr: 'Question', labelEs: 'Pregunta' },
 ]
 
-const successMessages: Record<TicketType, { en: { title: string; message: string }; fr: { title: string; message: string } }> = {
+const successMessages: Record<TicketType, { en: { title: string; message: string }; fr: { title: string; message: string }; es: { title: string; message: string } }> = {
   bug: {
     en: { title: "Bug reported!", message: "Thanks for helping us improve. We'll investigate this and get back to you within 24 hours." },
     fr: { title: "Bug signalé !", message: "Merci de nous aider à nous améliorer. Nous allons examiner ce problème et vous recontacter sous 24 heures." },
+    es: { title: "Error reportado!", message: "Gracias por ayudarnos a mejorar. Investigaremos esto y le responderemos en 24 horas." },
   },
   feature: {
     en: { title: "Great idea!", message: "We love hearing your suggestions. We'll review this and follow up with you within 24-48 hours." },
     fr: { title: "Super idée !", message: "Nous adorons vos suggestions. Nous allons l'examiner et vous recontacter sous 24 à 48 heures." },
+    es: { title: "Gran idea!", message: "Nos encanta escuchar sus sugerencias. Lo revisaremos y le daremos seguimiento en 24 a 48 horas." },
   },
   question: {
     en: { title: "Question received!", message: "We're on it! Expect a response from our team within 24 hours." },
     fr: { title: "Question reçue !", message: "On s'en occupe ! Attendez une réponse de notre équipe sous 24 heures." },
+    es: { title: "Pregunta recibida!", message: "Estamos en ello! Espere una respuesta de nuestro equipo en 24 horas." },
   },
 }
 
@@ -117,7 +120,7 @@ export function FeedbackButton({
     e.preventDefault()
 
     if (!formData.subject.trim() || !formData.description.trim()) {
-      toast.error(locale === 'fr' ? 'Veuillez remplir tous les champs' : 'Please fill in all fields')
+      toast.error(locale === 'fr' ? 'Veuillez remplir tous les champs' : locale === 'es' ? 'Por favor complete todos los campos' : 'Please fill in all fields')
       return
     }
 
@@ -153,7 +156,9 @@ export function FeedbackButton({
       toast.error(
         locale === 'fr'
           ? 'Erreur lors de l\'envoi. Réessayez.'
-          : 'Failed to send. Please try again.'
+          : locale === 'es'
+            ? 'Error al enviar. Inténtelo de nuevo.'
+            : 'Failed to send. Please try again.'
       )
     } finally {
       setLoading(false)
@@ -169,7 +174,7 @@ export function FeedbackButton({
           className="fixed bottom-6 right-6 z-[150] w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-shadow"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          title={locale === 'fr' ? 'Aide & Support' : 'Help & Support'}
+          title={locale === 'fr' ? 'Aide & Support' : locale === 'es' ? 'Ayuda y Soporte' : 'Help & Support'}
         >
           <MessageCircleQuestion className="w-5 h-5" />
         </motion.button>
@@ -197,10 +202,10 @@ export function FeedbackButton({
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Aide & Support' : 'Help & Support'}
+                    {locale === 'fr' ? 'Aide & Support' : locale === 'es' ? 'Ayuda y Soporte' : 'Help & Support'}
                   </h2>
                   <p className="text-sm text-gray-500">
-                    {locale === 'fr' ? 'Bugs, idées, questions — on vous écoute' : 'Bugs, ideas, questions — we\'re listening'}
+                    {locale === 'fr' ? 'Bugs, idées, questions — on vous écoute' : locale === 'es' ? 'Errores, ideas, preguntas — te escuchamos' : 'Bugs, ideas, questions — we\'re listening'}
                   </p>
                 </div>
                 <button
@@ -218,16 +223,16 @@ export function FeedbackButton({
                     <CheckCircle className="w-8 h-8 text-teal-600" />
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    {successMessages[submittedType][locale].title}
+                    {successMessages[submittedType][locale as 'en' | 'fr' | 'es']?.title ?? successMessages[submittedType].en.title}
                   </h3>
                   <p className="text-gray-500 mb-6">
-                    {successMessages[submittedType][locale].message}
+                    {successMessages[submittedType][locale as 'en' | 'fr' | 'es']?.message ?? successMessages[submittedType].en.message}
                   </p>
                   <button
                     onClick={resetAndClose}
                     className="px-6 py-2.5 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-colors"
                   >
-                    {locale === 'fr' ? 'Fermer' : 'Close'}
+                    {locale === 'fr' ? 'Fermer' : locale === 'es' ? 'Cerrar' : 'Close'}
                   </button>
                 </div>
               ) : (
@@ -236,7 +241,7 @@ export function FeedbackButton({
                 {/* Type Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {locale === 'fr' ? 'Type' : 'Type'}
+                    {locale === 'fr' ? 'Type' : locale === 'es' ? 'Tipo' : 'Type'}
                   </label>
                   <div className="flex gap-2">
                     {ticketTypes.map((type) => {
@@ -254,7 +259,7 @@ export function FeedbackButton({
                           }`}
                         >
                           <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span className="truncate">{locale === 'fr' ? type.labelFr : type.labelEn}</span>
+                          <span className="truncate">{locale === 'fr' ? type.labelFr : locale === 'es' ? type.labelEs : type.labelEn}</span>
                         </button>
                       )
                     })}
@@ -264,13 +269,13 @@ export function FeedbackButton({
                 {/* Subject */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {locale === 'fr' ? 'Sujet' : 'Subject'}
+                    {locale === 'fr' ? 'Sujet' : locale === 'es' ? 'Asunto' : 'Subject'}
                   </label>
                   <input
                     type="text"
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    placeholder={locale === 'fr' ? 'Décrivez brièvement...' : 'Briefly describe...'}
+                    placeholder={locale === 'fr' ? 'Décrivez brièvement...' : locale === 'es' ? 'Describa brevemente...' : 'Briefly describe...'}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
                     disabled={loading}
                     required
@@ -280,14 +285,16 @@ export function FeedbackButton({
                 {/* Description */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {locale === 'fr' ? 'Description' : 'Description'}
+                    {locale === 'fr' ? 'Description' : locale === 'es' ? 'Descripcion' : 'Description'}
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder={locale === 'fr'
                       ? 'Donnez-nous plus de détails...'
-                      : 'Tell us more details...'}
+                      : locale === 'es'
+                        ? 'Denos mas detalles...'
+                        : 'Tell us more details...'}
                     rows={4}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 resize-none"
                     disabled={loading}
@@ -298,9 +305,9 @@ export function FeedbackButton({
                 {/* Image Upload */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {locale === 'fr' ? 'Images' : 'Screenshots'}
+                    {locale === 'fr' ? 'Images' : locale === 'es' ? 'Capturas de pantalla' : 'Screenshots'}
                     <span className="text-gray-400 font-normal ml-1">
-                      ({locale === 'fr' ? 'optionnel, max 3' : 'optional, max 3'})
+                      ({locale === 'fr' ? 'optionnel, max 3' : locale === 'es' ? 'opcional, max 3' : 'optional, max 3'})
                     </span>
                   </label>
 
@@ -335,7 +342,7 @@ export function FeedbackButton({
                       className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border border-dashed border-gray-300 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-colors disabled:opacity-50"
                     >
                       <ImagePlus className="w-4 h-4" />
-                      {locale === 'fr' ? 'Ajouter une image' : 'Add screenshot'}
+                      {locale === 'fr' ? 'Ajouter une image' : locale === 'es' ? 'Agregar captura de pantalla' : 'Add screenshot'}
                     </button>
                   )}
                   <input
@@ -351,7 +358,7 @@ export function FeedbackButton({
                 {/* User Info (read-only if available) */}
                 {userEmail && (
                   <p className="text-xs text-gray-400">
-                    {locale === 'fr' ? 'Envoyé en tant que' : 'Sending as'}: {userEmail}
+                    {locale === 'fr' ? 'Envoyé en tant que' : locale === 'es' ? 'Enviando como' : 'Sending as'}: {userEmail}
                   </p>
                 )}
 
@@ -366,7 +373,7 @@ export function FeedbackButton({
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      {locale === 'fr' ? 'Envoyer' : 'Submit'}
+                      {locale === 'fr' ? 'Envoyer' : locale === 'es' ? 'Enviar' : 'Submit'}
                     </>
                   )}
                 </button>

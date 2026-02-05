@@ -109,9 +109,17 @@ const BLOOM_PROMPTS_FR = [
   'Partagez vos pensées...',
 ]
 
+const BLOOM_PROMPTS_ES = [
+  '¿Cómo te sientes?',
+  '¿Qué tienes en mente?',
+  '¿Necesitas hablar con alguien?',
+  'Estoy aquí para escucharte',
+  'Comparte tus pensamientos...',
+]
+
 function BloomPill({ locale, onClick }: { locale: string; onClick: () => void }) {
   const [promptIndex, setPromptIndex] = useState(0)
-  const prompts = locale === 'fr' ? BLOOM_PROMPTS_FR : BLOOM_PROMPTS_EN
+  const prompts = locale === 'fr' ? BLOOM_PROMPTS_FR : locale === 'es' ? BLOOM_PROMPTS_ES : BLOOM_PROMPTS_EN
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -330,9 +338,57 @@ export default function ReflectionPage() {
       saved: 'Enregistré',
       errorSaving: 'Impossible de sauvegarder. Réessayez.',
     },
+    es: {
+      greeting: {
+        morning: 'Buenos días',
+        afternoon: 'Buenas tardes',
+        evening: 'Buenas noches',
+      },
+      title: 'Tu Espacio',
+      subtitle: '¿Qué te trae aquí?',
+      intents: {
+        discovery: 'Descubrí algo',
+        vent: 'Necesito desahogarme',
+        reflect: 'Solo reflexionando',
+        gratitude: 'Agradecido/a',
+      },
+      intentTags: {
+        discovery: 'Descubrimiento',
+        vent: 'Desahogo',
+        reflect: 'Reflexión',
+        gratitude: 'Gratitud',
+      },
+      intentDescriptions: {
+        discovery: 'Un descubrimiento sobre ti',
+        vent: 'Libera lo que te pesa',
+        reflect: 'Procesa tus pensamientos',
+        gratitude: 'Aprecia lo bueno',
+      },
+      placeholders: {
+        discovery: 'Me di cuenta de que...',
+        vent: 'Déjalo salir... este espacio es solo para ti.',
+        reflect: '¿Qué tienes en mente...',
+        gratitude: 'Estoy agradecido/a por...',
+      },
+      addPhoto: 'Agregar foto',
+      changePhoto: 'Cambiar',
+      removePhoto: 'Eliminar',
+      record: 'Grabar',
+      recording: 'Grabando...',
+      stopRecording: 'Detener',
+      howDoYouFeel: '¿Cómo te sientes?',
+      save: 'Guardar',
+      saving: 'Guardando...',
+      back: 'Volver',
+      pastReflections: 'Mirando atrás',
+      emptyState: 'Tus reflexiones aparecerán aquí',
+      emptyStateDescription: 'Este es tu espacio privado para procesar, descubrir y crecer',
+      saved: 'Guardado',
+      errorSaving: 'No se pudo guardar. Inténtalo de nuevo.',
+    },
   }
 
-  const text = locale === 'fr' ? t.fr : t.en
+  const text = locale === 'fr' ? t.fr : locale === 'es' ? t.es : t.en
 
   useEffect(() => {
     fetchReflections()
@@ -569,18 +625,18 @@ export default function ReflectionPage() {
     const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24))
 
     if (diffDays === 0) {
-      return d.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+      return d.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
         hour: 'numeric',
         minute: '2-digit',
       })
     } else if (diffDays === 1) {
-      return locale === 'fr' ? 'Hier' : 'Yesterday'
+      return locale === 'fr' ? 'Hier' : locale === 'es' ? 'Ayer' : 'Yesterday'
     } else if (diffDays < 7) {
-      return d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+      return d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
         weekday: 'long',
       })
     }
-    return d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    return d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
       month: 'short',
       day: 'numeric',
     })
@@ -838,7 +894,7 @@ export default function ReflectionPage() {
                   </button>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-purple-900">
-                      {locale === 'fr' ? 'Note vocale' : 'Voice note'}
+                      {locale === 'fr' ? 'Note vocale' : locale === 'es' ? 'Nota de voz' : 'Voice note'}
                     </p>
                     <p className="text-xs text-purple-600">{formatTime(recordingTime)}</p>
                   </div>
@@ -973,11 +1029,12 @@ export default function ReflectionPage() {
               </div>
               <div>
                 <h4 className="font-medium text-gray-900 text-sm">
-                  {locale === 'fr' ? 'Votre espace sûr' : 'Your safe space'}
+                  {locale === 'fr' ? 'Votre espace sûr' : locale === 'es' ? 'Tu espacio seguro' : 'Your safe space'}
                 </h4>
                 <p className="text-sm text-gray-600">
                   {locale === 'fr'
                     ? 'Tout ce que vous partagez ici reste privé et sécurisé.'
+                    : locale === 'es' ? 'Todo lo que compartes aquí permanece privado y seguro.'
                     : 'Everything you share here stays private and secure.'}
                 </p>
               </div>

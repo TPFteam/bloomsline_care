@@ -200,14 +200,14 @@ export default function RitualHistoryPage() {
     yesterday.setDate(yesterday.getDate() - 1)
 
     if (dateStr === todayStr) {
-      return locale === 'fr' ? "Aujourd'hui" : 'Today'
+      return locale === 'fr' ? "Aujourd'hui" : locale === 'es' ? 'Hoy' : 'Today'
     }
     const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`
     if (dateStr === yesterdayStr) {
-      return locale === 'fr' ? 'Hier' : 'Yesterday'
+      return locale === 'fr' ? 'Hier' : locale === 'es' ? 'Ayer' : 'Yesterday'
     }
 
-    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric'
@@ -217,9 +217,9 @@ export default function RitualHistoryPage() {
   const formatShortDate = (dateStr: string) => {
     const date = new Date(dateStr + 'T00:00:00')
     if (dateStr === todayStr) {
-      return locale === 'fr' ? "Auj." : 'Today'
+      return locale === 'fr' ? "Auj." : locale === 'es' ? 'Hoy' : 'Today'
     }
-    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
       month: 'short',
       day: 'numeric'
     })
@@ -375,21 +375,21 @@ export default function RitualHistoryPage() {
             className="flex items-center gap-1 text-gray-400 mb-4 hover:text-gray-600 transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span className="text-sm">{locale === 'fr' ? 'Rituels' : 'Rituals'}</span>
+            <span className="text-sm">{locale === 'fr' ? 'Rituels' : locale === 'es' ? 'Rituales' : 'Rituals'}</span>
           </button>
 
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-semibold text-gray-900">
                 {historyFilter === 'changes'
-                  ? (locale === 'fr' ? 'Changements' : 'Changes')
-                  : (locale === 'fr' ? 'Historique' : 'History')
+                  ? (locale === 'fr' ? 'Changements' : locale === 'es' ? 'Cambios' : 'Changes')
+                  : (locale === 'fr' ? 'Historique' : locale === 'es' ? 'Historial' : 'History')
                 }
               </h1>
               <p className="text-sm text-gray-500 mt-0.5">
                 {historyFilter === 'changes'
-                  ? `${getChangesTimeline().length} ${locale === 'fr' ? 'changements' : 'changes'}`
-                  : `${history.length} ${locale === 'fr' ? 'rituels complétés' : 'rituals completed'}`
+                  ? `${getChangesTimeline().length} ${locale === 'fr' ? 'changements' : locale === 'es' ? 'cambios' : 'changes'}`
+                  : `${history.length} ${locale === 'fr' ? 'rituels complétés' : locale === 'es' ? 'rituales completados' : 'rituals completed'}`
                 }
               </p>
             </div>
@@ -403,8 +403,8 @@ export default function RitualHistoryPage() {
             >
               <History className="w-4 h-4" />
               {historyFilter === 'changes'
-                ? (locale === 'fr' ? 'Retour' : 'Back')
-                : (locale === 'fr' ? 'Changements' : 'Changes')
+                ? (locale === 'fr' ? 'Retour' : locale === 'es' ? 'Volver' : 'Back')
+                : (locale === 'fr' ? 'Changements' : locale === 'es' ? 'Cambios' : 'Changes')
               }
             </button>
           </div>
@@ -459,7 +459,7 @@ export default function RitualHistoryPage() {
               <div className="text-center">
                 <p className="font-medium text-gray-900">{formatDate(selectedDate)}</p>
                 <p className="text-xs text-gray-400">
-                  {getFilteredHistory().length} / {getRitualCountForDate(selectedDate)} {locale === 'fr' ? 'complétés' : 'completed'}
+                  {getFilteredHistory().length} / {getRitualCountForDate(selectedDate)} {locale === 'fr' ? 'complétés' : locale === 'es' ? 'completados' : 'completed'}
                 </p>
               </div>
               <button
@@ -490,7 +490,7 @@ export default function RitualHistoryPage() {
                     : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
               >
-                {locale === 'fr' ? 'Tous' : 'All'}
+                {locale === 'fr' ? 'Tous' : locale === 'es' ? 'Todos' : 'All'}
               </button>
               {ritualCategories.map((cat) => {
                 const Icon = getCategoryIcon(cat.id)
@@ -525,18 +525,20 @@ export default function RitualHistoryPage() {
                 <Calendar className="w-8 h-8 text-gray-400" />
               </div>
               <p className="text-gray-900 font-medium mb-1">
-                {locale === 'fr' ? 'Pas encore d\'historique' : 'No history yet'}
+                {locale === 'fr' ? 'Pas encore d\'historique' : locale === 'es' ? 'Aún no hay historial' : 'No history yet'}
               </p>
               <p className="text-gray-500 text-sm mb-6">
                 {locale === 'fr'
                   ? 'Complétez des rituels pour voir votre parcours'
-                  : 'Complete rituals to see your journey'}
+                  : locale === 'es'
+                    ? 'Completa rituales para ver tu recorrido'
+                    : 'Complete rituals to see your journey'}
               </p>
               <button
                 onClick={() => router.push('/rituals')}
                 className="px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
               >
-                {locale === 'fr' ? 'Commencer' : 'Get started'}
+                {locale === 'fr' ? 'Commencer' : locale === 'es' ? 'Comenzar' : 'Get started'}
               </button>
             </div>
           ) : historyFilter === 'changes' ? (
@@ -548,10 +550,10 @@ export default function RitualHistoryPage() {
                     <History className="w-7 h-7 text-gray-400" />
                   </div>
                   <p className="text-gray-600 font-medium mb-1">
-                    {locale === 'fr' ? 'Aucun changement' : 'No changes yet'}
+                    {locale === 'fr' ? 'Aucun changement' : locale === 'es' ? 'Aún no hay cambios' : 'No changes yet'}
                   </p>
                   <p className="text-gray-400 text-sm">
-                    {locale === 'fr' ? 'Les ajouts et retraits apparaîtront ici' : 'Additions and removals will appear here'}
+                    {locale === 'fr' ? 'Les ajouts et retraits apparaîtront ici' : locale === 'es' ? 'Las adiciones y eliminaciones aparecerán aquí' : 'Additions and removals will appear here'}
                   </p>
                 </div>
               ) : (
@@ -562,7 +564,7 @@ export default function RitualHistoryPage() {
                         {formatDate(date)}
                       </span>
                       <span className="text-xs text-gray-400">
-                        {changes.length} {locale === 'fr' ? 'changement(s)' : 'change(s)'}
+                        {changes.length} {locale === 'fr' ? 'changement(s)' : locale === 'es' ? 'cambio(s)' : 'change(s)'}
                       </span>
                     </div>
                     <div className="space-y-2">
@@ -600,8 +602,8 @@ export default function RitualHistoryPage() {
                                       : 'bg-red-50 text-red-600'
                                   }`}>
                                     {change.type === 'added'
-                                      ? (locale === 'fr' ? 'Ajouté' : 'Added')
-                                      : (locale === 'fr' ? 'Retiré' : 'Removed')
+                                      ? (locale === 'fr' ? 'Ajouté' : locale === 'es' ? 'Agregado' : 'Added')
+                                      : (locale === 'fr' ? 'Retiré' : locale === 'es' ? 'Eliminado' : 'Removed')
                                     }
                                   </span>
                                   {category && (
@@ -633,7 +635,7 @@ export default function RitualHistoryPage() {
                       {formatDate(date)}
                     </span>
                     <span className="text-xs text-gray-400">
-                      {completions.length} / {getRitualCountForDate(date)} {locale === 'fr' ? 'complétés' : 'completed'}
+                      {completions.length} / {getRitualCountForDate(date)} {locale === 'fr' ? 'complétés' : locale === 'es' ? 'completados' : 'completed'}
                     </span>
                   </div>
                   <div className="space-y-2">
@@ -661,10 +663,10 @@ export default function RitualHistoryPage() {
                       <Calendar className="w-7 h-7 text-gray-400" />
                     </div>
                     <p className="text-gray-600 font-medium mb-1">
-                      {locale === 'fr' ? 'Aucun rituel ce jour' : 'No rituals this day'}
+                      {locale === 'fr' ? 'Aucun rituel ce jour' : locale === 'es' ? 'No hay rituales este día' : 'No rituals this day'}
                     </p>
                     <p className="text-gray-400 text-sm">
-                      {locale === 'fr' ? 'Naviguez vers une autre date' : 'Navigate to another date'}
+                      {locale === 'fr' ? 'Naviguez vers une autre date' : locale === 'es' ? 'Navega a otra fecha' : 'Navigate to another date'}
                     </p>
                   </div>
                 )
@@ -717,7 +719,7 @@ export default function RitualHistoryPage() {
                                   )}
                                   {item.completion?.created_at && (
                                     <span className="text-xs text-gray-400">
-                                      {new Date(item.completion.created_at).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                                      {new Date(item.completion.created_at).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
                                         hour: 'numeric',
                                         minute: '2-digit',
                                         hour12: locale !== 'fr'
@@ -732,7 +734,7 @@ export default function RitualHistoryPage() {
                                 </>
                               ) : (
                                 <span className="text-xs text-gray-400">
-                                  {locale === 'fr' ? 'Non complété' : 'Not completed'}
+                                  {locale === 'fr' ? 'Non complété' : locale === 'es' ? 'No completado' : 'Not completed'}
                                 </span>
                               )}
                             </div>
@@ -764,10 +766,10 @@ export default function RitualHistoryPage() {
                 <Calendar className="w-7 h-7 text-gray-400" />
               </div>
               <p className="text-gray-600 font-medium mb-1">
-                {locale === 'fr' ? 'Aucun rituel' : 'No rituals'}
+                {locale === 'fr' ? 'Aucun rituel' : locale === 'es' ? 'No hay rituales' : 'No rituals'}
               </p>
               <p className="text-gray-400 text-sm">
-                {locale === 'fr' ? 'Essayez un autre thème' : 'Try another theme'}
+                {locale === 'fr' ? 'Essayez un autre thème' : locale === 'es' ? 'Prueba otro tema' : 'Try another theme'}
               </p>
             </div>
           ) : (
@@ -807,7 +809,7 @@ function CompletionCard({
 
   const formatCardDate = (dateStr: string) => {
     const date = new Date(dateStr + 'T00:00:00')
-    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
       month: 'short',
       day: 'numeric'
     })
@@ -856,7 +858,7 @@ function CompletionCard({
             )}
             {completion.created_at && (
               <span className="text-xs text-gray-400">
-                {new Date(completion.created_at).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                {new Date(completion.created_at).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
                   hour: 'numeric',
                   minute: '2-digit',
                   hour12: locale !== 'fr'

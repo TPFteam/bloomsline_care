@@ -130,6 +130,66 @@ export default function DataProtectionPage() {
         title: 'Exercer vos droits',
         content: 'Pour exercer l\'un de ces droits, contactez-nous à hi@bloomsline.com. Nous répondrons à votre demande dans les 30 jours.'
       }
+    },
+    es: {
+      title: 'Protección de Datos',
+      lastUpdated: 'Última actualización: Enero 2025',
+      intro: 'Creemos que usted debe tener control total sobre sus datos personales. Así es como los protegemos y cuáles son sus derechos.',
+      mvpNote: 'Bloomsline está actualmente en desarrollo temprano y pruebas. Nuestras prácticas de protección de datos se alinean con los principios del RGPD y se formalizarán antes del lanzamiento público.',
+      rights: [
+        {
+          icon: UserCheck,
+          title: 'Derecho de acceso',
+          description: 'Puede solicitar una copia de todos los datos personales que tenemos sobre usted en cualquier momento.'
+        },
+        {
+          icon: Database,
+          title: 'Derecho de rectificación',
+          description: 'Puede actualizar o corregir su información personal cuando lo necesite.'
+        },
+        {
+          icon: Trash2,
+          title: 'Derecho de supresión',
+          description: 'Puede solicitar la eliminación de su cuenta y todos los datos asociados.'
+        },
+        {
+          icon: Download,
+          title: 'Derecho a la portabilidad',
+          description: 'Puede exportar sus datos en un formato común para usarlos en otro lugar.'
+        },
+        {
+          icon: Globe,
+          title: 'Derecho a la limitación del tratamiento',
+          description: 'Puede pedirnos que limitemos el uso de sus datos en determinadas circunstancias.'
+        },
+        {
+          icon: HelpCircle,
+          title: 'Derecho de oposición',
+          description: 'Puede oponerse a ciertos tipos de tratamiento de datos, incluido el marketing.'
+        }
+      ],
+      sections: [
+        {
+          title: 'Datos que recopilamos',
+          content: 'Solo recopilamos lo necesario: información de cuenta (nombre, correo electrónico), contenido que usted crea (rituales, momentos, reflexiones) y datos de uso para mejorar nuestro servicio. Nunca recopilamos más de lo necesario.'
+        },
+        {
+          title: 'Tiempo de conservación de datos',
+          content: 'Conservamos sus datos mientras su cuenta esté activa. Si elimina su cuenta, eliminamos sus datos personales en un plazo de 30 días, excepto cuando la ley nos obligue a conservarlos.'
+        },
+        {
+          title: 'Compartición de datos',
+          content: 'No vendemos sus datos. Solo compartimos datos con proveedores de servicios esenciales (alojamiento, correo electrónico) bajo contratos estrictos, o cuando la ley lo requiere.'
+        },
+        {
+          title: 'Transferencias internacionales',
+          content: 'Sus datos pueden ser procesados en diferentes países. Nos aseguramos de que existan las garantías adecuadas para cualquier transferencia internacional de datos.'
+        }
+      ],
+      exercise: {
+        title: 'Ejercer sus derechos',
+        content: 'Para ejercer cualquiera de estos derechos, contáctenos en hi@bloomsline.com. Responderemos a su solicitud en un plazo de 30 días.'
+      }
     }
   }
 
@@ -171,7 +231,7 @@ export default function DataProtectionPage() {
 
             {/* Your Rights Section */}
             <h2 className="text-2xl font-light text-neutral-900 mb-6">
-              {locale === 'fr' ? 'Vos droits' : 'Your Rights'}
+              {locale === 'fr' ? 'Vos droits' : locale === 'es' ? 'Sus derechos' : 'Your Rights'}
             </h2>
             <div className="grid md:grid-cols-2 gap-6 mb-16">
               {t.rights.map((right, index) => (

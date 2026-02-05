@@ -10,29 +10,32 @@ export function BeliefSection() {
   const beliefs = [
     {
       icon: RefreshCw,
-      highlight: { en: 'Change', fr: 'Le changement' },
-      before: { en: '', fr: '' },
+      highlight: { en: 'Change', fr: 'Le changement', es: 'El cambio' },
+      before: { en: '', fr: '', es: '' },
       after: {
         en: ' is not about doing more. It is about showing up, again and again.',
         fr: ', ce n\'est pas en faire plus. C\'est se présenter, encore et encore.',
+        es: ' no se trata de hacer más. Se trata de estar presente, una y otra vez.',
       },
     },
     {
       icon: Footprints,
-      highlight: { en: 'Motivation', fr: 'La motivation' },
-      before: { en: 'You do not need ', fr: 'Vous n\'avez pas besoin de ' },
+      highlight: { en: 'Motivation', fr: 'La motivation', es: 'Motivación' },
+      before: { en: 'You do not need ', fr: 'Vous n\'avez pas besoin de ', es: 'No necesitas ' },
       after: {
         en: '. You need a small step you can take today.',
         fr: '. Vous avez besoin d\'un petit pas à faire aujourd\'hui.',
+        es: '. Necesitas un pequeño paso que puedas dar hoy.',
       },
     },
     {
       icon: Eye,
-      highlight: { en: 'Real support', fr: 'Le vrai soutien' },
-      before: { en: '', fr: '' },
+      highlight: { en: 'Real support', fr: 'Le vrai soutien', es: 'El verdadero apoyo' },
+      before: { en: '', fr: '', es: '' },
       after: {
         en: ' is not a notification. It is someone who sees your journey.',
         fr: ', ce n\'est pas une notification. C\'est quelqu\'un qui voit votre parcours.',
+        es: ' no es una notificación. Es alguien que ve tu camino.',
       },
     },
   ]
@@ -50,6 +53,8 @@ export function BeliefSection() {
           <h2 className="text-3xl sm:text-4xl font-light text-white">
             {locale === 'fr'
               ? 'Nous repensons ce que signifie vraiment grandir.'
+              : locale === 'es'
+              ? 'Estamos repensando lo que realmente significa crecer.'
               : 'We are rethinking what it actually means to grow.'}
           </h2>
         </motion.div>
@@ -82,13 +87,13 @@ export function BeliefSection() {
                   {/* Text */}
                   <p className="text-2xl sm:text-3xl lg:text-4xl font-light leading-snug">
                     <span className="text-neutral-400">
-                      {locale === 'fr' ? belief.before.fr : belief.before.en}
+                      {locale === 'fr' ? belief.before.fr : locale === 'es' ? belief.before.es : belief.before.en}
                     </span>
                     <span className="text-white font-normal">
-                      {locale === 'fr' ? belief.highlight.fr : belief.highlight.en}
+                      {locale === 'fr' ? belief.highlight.fr : locale === 'es' ? belief.highlight.es : belief.highlight.en}
                     </span>
                     <span className="text-neutral-400">
-                      {locale === 'fr' ? belief.after.fr : belief.after.en}
+                      {locale === 'fr' ? belief.after.fr : locale === 'es' ? belief.after.es : belief.after.en}
                     </span>
                   </p>
                 </div>

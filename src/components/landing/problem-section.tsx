@@ -6,7 +6,7 @@ import { useLanguage } from '@/lib/i18n/context'
 
 interface StoryCard {
   id: string
-  text: { en: string; fr: string }
+  text: { en: string; fr: string; es: string }
   avatar: {
     color: string
     initials: string
@@ -23,6 +23,7 @@ export function ProblemSection() {
       text: {
         en: "I wrote things down for a few days in a row. It didn't change my life. Then I stopped, and suddenly it felt like it didn't count anymore. Why does it feel so easy to erase what I did?",
         fr: "J'ai écrit pendant quelques jours d'affilée. Ça n'a rien changé à ma vie. Puis j'ai arrêté, et d'un coup, ça n'avait plus compté. Pourquoi est-ce si facile d'effacer ça de ma mémoire ?",
+        es: "Escribí cosas durante varios días seguidos. No cambió mi vida. Luego dejé de hacerlo, y de repente sentí que ya no contaba. ¿Por qué es tan fácil borrar lo que hice?",
       },
       avatar: { color: 'bg-violet-500', initials: 'SK' },
     },
@@ -31,6 +32,7 @@ export function ProblemSection() {
       text: {
         en: "I wanted to do more today. I really did. But I barely had the energy to get through the day. Is that still something?",
         fr: "Je voulais faire plus aujourd'hui. Vraiment. Mais j'avais à peine l'énergie de traverser la journée. Est-ce que le peu que j'ai fait compte quand même ?",
+        es: "Quería hacer más hoy. De verdad. Pero apenas tenía energía para llegar al final del día. ¿Eso todavía cuenta?",
       },
       avatar: { color: 'bg-emerald-500', initials: 'MR' },
     },
@@ -39,6 +41,7 @@ export function ProblemSection() {
       text: {
         en: "Some days I show up. Some days I don't. I keep thinking one of those versions is the \"right\" one.",
         fr: "Certains jours, je suis au top. D'autres pas du tout. Je continue de croire qu'une seule de ces versions me défini.",
+        es: "Algunos días doy lo mejor de mí. Otros no. Sigo pensando que una de esas versiones es la \"correcta\".",
       },
       avatar: { color: 'bg-amber-500', initials: 'JL' },
     },
@@ -47,6 +50,7 @@ export function ProblemSection() {
       text: {
         en: "I didn't follow what I planned. I adjusted instead. Part of me still thinks that means I failed.",
         fr: "Je n'ai pas suivi ce que j'avais prévu. J'ai fais ce que je pouvais. Mais une partie de moi pense que ce n'est pas assez.",
+        es: "No seguí lo que había planeado. Me adapté. Pero una parte de mí sigue pensando que eso significa que fallé.",
       },
       avatar: { color: 'bg-rose-500', initials: 'AL' },
     },
@@ -55,6 +59,7 @@ export function ProblemSection() {
       text: {
         en: "I keep waiting to feel \"ready\" to take care of myself. I'm starting to wonder if that moment ever really comes.",
         fr: "J'attends toujours de me sentir \"prête\" pour prendre soin de moi. Je commence à me demander si ce moment arrive vraiment un jour.",
+        es: "Sigo esperando sentirme \"lista\" para cuidar de mí misma. Empiezo a preguntarme si ese momento realmente llega.",
       },
       avatar: { color: 'bg-blue-500', initials: 'CM' },
     },
@@ -69,11 +74,13 @@ export function ProblemSection() {
   const headline = {
     en: 'Sound familiar?',
     fr: 'Ça vous parle ?',
+    es: '¿Te suena familiar?',
   }
 
   const subheadline = {
     en: "These moments happen more often than we think. They're often the ones that matter. The ones we go through without naming and forget too quickly.",
     fr: "Ces moments arrivent plus souvent qu'on ne le croit. Ce sont souvent eux qui comptent. Ceux qu'on traverse sans les nommer et qu'on oublie trop vite.",
+    es: "Estos momentos ocurren con más frecuencia de lo que pensamos. A menudo son los que importan. Los que atravesamos sin nombrar y olvidamos demasiado rápido.",
   }
 
   // Card positions for the stacked effect
@@ -125,7 +132,7 @@ export function ProblemSection() {
           className="text-center mb-4"
         >
           <p className="text-sm font-medium uppercase tracking-wider text-neutral-400">
-            {locale === 'fr' ? 'Le problème' : 'The problem'}
+            {locale === 'fr' ? 'Le problème' : locale === 'es' ? 'El problema' : 'The problem'}
           </p>
         </motion.div>
 
@@ -197,11 +204,11 @@ export function ProblemSection() {
                       </div>
                       {/* Text content */}
                       <p className="text-sm sm:text-base leading-relaxed font-light text-white/90 mb-4">
-                        {locale === 'fr' ? card.text.fr : card.text.en}
+                        {locale === 'fr' ? card.text.fr : locale === 'es' ? card.text.es : card.text.en}
                       </p>
                       {/* Relate button */}
                       <button className="text-xs text-white/50 hover:text-white/80 transition-colors border border-white/20 hover:border-white/40 rounded-full px-3 py-1">
-                        {locale === 'fr' ? 'Je ressens ça' : 'I feel this'}
+                        {locale === 'fr' ? 'Je ressens ça' : locale === 'es' ? 'Me identifico' : 'I feel this'}
                       </button>
                     </div>
                   </motion.div>
@@ -210,7 +217,7 @@ export function ProblemSection() {
 
               {/* Click hint */}
               <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs text-neutral-400">
-                {locale === 'fr' ? 'Cliquez pour voir plus' : 'Click to see more'}
+                {locale === 'fr' ? 'Cliquez pour voir plus' : locale === 'es' ? 'Haz clic para ver más' : 'Click to see more'}
               </div>
             </motion.div>
 
@@ -229,7 +236,7 @@ export function ProblemSection() {
               transition={{ duration: 0.4, delay: 0.3 }}
               className="text-3xl sm:text-4xl md:text-5xl font-light text-neutral-900 mb-6"
             >
-              {locale === 'fr' ? headline.fr : headline.en}
+              {locale === 'fr' ? headline.fr : locale === 'es' ? headline.es : headline.en}
             </motion.h2>
 
             <motion.p
@@ -239,7 +246,7 @@ export function ProblemSection() {
               transition={{ duration: 0.4, delay: 0.4 }}
               className="text-lg text-neutral-600 leading-relaxed mb-8"
             >
-              {locale === 'fr' ? subheadline.fr : subheadline.en}
+              {locale === 'fr' ? subheadline.fr : locale === 'es' ? subheadline.es : subheadline.en}
             </motion.p>
 
             {/* Card indicators */}

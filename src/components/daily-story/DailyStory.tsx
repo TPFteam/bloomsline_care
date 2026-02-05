@@ -141,6 +141,10 @@ export function DailyStory({ moments, seedLogs, rituals, locale, onClose }: Dail
       if (hour < 18) return 'Votre journée'
       return 'Bonsoir'
     }
+    if (locale === 'es') {
+      if (hour < 18) return 'Tu día'
+      return 'Buenas tardes'
+    }
     if (hour < 18) return 'Your Day'
     return 'Good evening'
   }
@@ -218,7 +222,7 @@ export function DailyStory({ moments, seedLogs, rituals, locale, onClose }: Dail
 
       {/* Navigation hints */}
       <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-2 text-white/50 text-xs">
-        <span>{locale === 'fr' ? 'Appuyez pour avancer' : 'Tap to continue'}</span>
+        <span>{locale === 'fr' ? 'Appuyez pour avancer' : locale === 'es' ? 'Toca para continuar' : 'Tap to continue'}</span>
       </div>
     </motion.div>
   )
@@ -234,19 +238,25 @@ function IntroSlide({ locale, greeting, momentsCount, seedsCount, ritualsCount }
   if (momentsCount > 0) {
     stats.push(locale === 'fr'
       ? `${momentsCount} moment${momentsCount !== 1 ? 's' : ''}`
-      : `${momentsCount} moment${momentsCount !== 1 ? 's' : ''}`
+      : locale === 'es'
+        ? `${momentsCount} momento${momentsCount !== 1 ? 's' : ''}`
+        : `${momentsCount} moment${momentsCount !== 1 ? 's' : ''}`
     )
   }
   if (ritualsCount > 0) {
     stats.push(locale === 'fr'
       ? `${ritualsCount} rituel${ritualsCount !== 1 ? 's' : ''}`
-      : `${ritualsCount} ritual${ritualsCount !== 1 ? 's' : ''}`
+      : locale === 'es'
+        ? `${ritualsCount} ritual${ritualsCount !== 1 ? 'es' : ''}`
+        : `${ritualsCount} ritual${ritualsCount !== 1 ? 's' : ''}`
     )
   }
   if (seedsCount > 0) {
     stats.push(locale === 'fr'
       ? `${seedsCount} graine${seedsCount !== 1 ? 's' : ''}`
-      : `${seedsCount} seed${seedsCount !== 1 ? 's' : ''}`
+      : locale === 'es'
+        ? `${seedsCount} semilla${seedsCount !== 1 ? 's' : ''}`
+        : `${seedsCount} seed${seedsCount !== 1 ? 's' : ''}`
     )
   }
 
@@ -276,7 +286,7 @@ function IntroSlide({ locale, greeting, momentsCount, seedsCount, ritualsCount }
         transition={{ delay: 0.4 }}
         className="text-white/70 text-lg"
       >
-        {stats.join(' • ') || (locale === 'fr' ? 'Votre journée' : 'Your day')}
+        {stats.join(' • ') || (locale === 'fr' ? 'Votre journée' : locale === 'es' ? 'Tu día' : 'Your day')}
       </motion.p>
 
       <motion.div
@@ -286,7 +296,7 @@ function IntroSlide({ locale, greeting, momentsCount, seedsCount, ritualsCount }
         className="mt-8 flex items-center gap-2 text-white/50 text-sm"
       >
         <Sparkles className="w-4 h-4" />
-        <span>{locale === 'fr' ? 'Votre histoire du jour' : "Here's your day"}</span>
+        <span>{locale === 'fr' ? 'Votre histoire du jour' : locale === 'es' ? 'Aquí está tu día' : "Here's your day"}</span>
       </motion.div>
     </div>
   )
@@ -298,7 +308,7 @@ function MomentSlide({ moment, locale, onPause, onResume }: { moment: Moment; lo
   const audioRef = useRef<HTMLAudioElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
 
-  const time = new Date(moment.created_at).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+  const time = new Date(moment.created_at).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
     hour: 'numeric',
     minute: '2-digit',
   })
@@ -466,7 +476,7 @@ function MomentSlide({ moment, locale, onPause, onResume }: { moment: Moment; lo
           animate={{ opacity: 1 }}
           className="text-white/70 text-sm mb-2"
         >
-          {locale === 'fr' ? 'Note vocale' : 'Voice note'}
+          {locale === 'fr' ? 'Note vocale' : locale === 'es' ? 'Nota de voz' : 'Voice note'}
         </motion.p>
 
         <div className="absolute bottom-0 left-0 right-0 p-6 pb-20 text-center">
@@ -532,7 +542,7 @@ function MomentSlide({ moment, locale, onPause, onResume }: { moment: Moment; lo
   // Fallback for unknown types
   return (
     <div className="relative w-full h-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center">
-      <p className="text-white/50">{locale === 'fr' ? 'Moment' : 'Moment'}</p>
+      <p className="text-white/50">{locale === 'fr' ? 'Moment' : locale === 'es' ? 'Momento' : 'Moment'}</p>
     </div>
   )
 }
@@ -559,7 +569,7 @@ function SeedsSummarySlide({ seeds, locale }: { seeds: SeedLog[]; locale: string
         transition={{ delay: 0.3 }}
         className="text-2xl font-bold text-white mb-6"
       >
-        {locale === 'fr' ? 'Vos petits pas' : 'Your Little Steps'}
+        {locale === 'fr' ? 'Vos petits pas' : locale === 'es' ? 'Tus pequeños pasos' : 'Your Little Steps'}
       </motion.h2>
 
       <div className="space-y-4 w-full max-w-xs">
@@ -571,12 +581,12 @@ function SeedsSummarySlide({ seeds, locale }: { seeds: SeedLog[]; locale: string
             className="bg-[#4A9A86]/20 rounded-2xl p-4"
           >
             <p className="text-[#5AB39C] text-sm font-medium mb-2">
-              {locale === 'fr' ? 'Garder' : 'Keep'} ({growSeeds.length})
+              {locale === 'fr' ? 'Garder' : locale === 'es' ? 'Mantener' : 'Keep'} ({growSeeds.length})
             </p>
             <div className="flex flex-wrap gap-2">
               {growSeeds.slice(0, 5).map((seed, i) => (
                 <span key={i} className="px-3 py-1 bg-white/10 rounded-full text-white text-sm">
-                  {locale === 'fr' ? seed.anchor.labelFr : seed.anchor.labelEn}
+                  {locale === 'fr' ? seed.anchor.labelFr : locale === 'es' ? (seed.anchor.labelEs || seed.anchor.labelEn) : seed.anchor.labelEn}
                 </span>
               ))}
             </div>
@@ -591,12 +601,12 @@ function SeedsSummarySlide({ seeds, locale }: { seeds: SeedLog[]; locale: string
             className="bg-[#D4856A]/20 rounded-2xl p-4"
           >
             <p className="text-[#E8A87C] text-sm font-medium mb-2">
-              {locale === 'fr' ? 'Alléger' : 'Lighten'} ({letGoSeeds.length})
+              {locale === 'fr' ? 'Alléger' : locale === 'es' ? 'Aligerar' : 'Lighten'} ({letGoSeeds.length})
             </p>
             <div className="flex flex-wrap gap-2">
               {letGoSeeds.slice(0, 5).map((seed, i) => (
                 <span key={i} className="px-3 py-1 bg-white/10 rounded-full text-white text-sm">
-                  {locale === 'fr' ? seed.anchor.labelFr : seed.anchor.labelEn}
+                  {locale === 'fr' ? seed.anchor.labelFr : locale === 'es' ? (seed.anchor.labelEs || seed.anchor.labelEn) : seed.anchor.labelEn}
                 </span>
               ))}
             </div>
@@ -619,7 +629,7 @@ function RitualsSummarySlide({ rituals, locale }: { rituals: RitualLog[]; locale
     if (mins === 0) {
       return locale === 'fr' ? `${hours}h` : `${hours}h`
     }
-    return locale === 'fr' ? `${hours}h${mins}` : `${hours}h ${mins}m`
+    return locale === 'fr' ? `${hours}h${mins}` : locale === 'es' ? `${hours}h ${mins}m` : `${hours}h ${mins}m`
   }
 
   return (
@@ -640,7 +650,7 @@ function RitualsSummarySlide({ rituals, locale }: { rituals: RitualLog[]; locale
         transition={{ delay: 0.3 }}
         className="text-2xl font-bold text-white mb-2"
       >
-        {locale === 'fr' ? 'Vos rituels' : 'Your Rituals'}
+        {locale === 'fr' ? 'Vos rituels' : locale === 'es' ? 'Tus rituales' : 'Your Rituals'}
       </motion.h2>
 
       <motion.p
@@ -651,7 +661,9 @@ function RitualsSummarySlide({ rituals, locale }: { rituals: RitualLog[]; locale
       >
         {locale === 'fr'
           ? `${rituals.length} rituel${rituals.length !== 1 ? 's' : ''} complété${rituals.length !== 1 ? 's' : ''} aujourd'hui`
-          : `${rituals.length} ritual${rituals.length !== 1 ? 's' : ''} completed today`
+          : locale === 'es'
+            ? `${rituals.length} ritual${rituals.length !== 1 ? 'es' : ''} completado${rituals.length !== 1 ? 's' : ''} hoy`
+            : `${rituals.length} ritual${rituals.length !== 1 ? 's' : ''} completed today`
         }
       </motion.p>
 
@@ -670,7 +682,7 @@ function RitualsSummarySlide({ rituals, locale }: { rituals: RitualLog[]; locale
             </div>
             <div className="flex-1">
               <p className="text-white font-medium">
-                {locale === 'fr' ? ritual.nameFr : ritual.name}
+                {locale === 'fr' ? ritual.nameFr : locale === 'es' ? (ritual.nameEs || ritual.name) : ritual.name}
               </p>
               {ritual.duration_minutes && (
                 <p className="text-white/70 text-sm flex items-center gap-1">
@@ -697,7 +709,7 @@ function RitualsSummarySlide({ rituals, locale }: { rituals: RitualLog[]; locale
             transition={{ delay: 1 }}
             className="text-center text-white/60 text-sm"
           >
-            +{rituals.length - 4} {locale === 'fr' ? 'autres' : 'more'}
+            +{rituals.length - 4} {locale === 'fr' ? 'autres' : locale === 'es' ? 'más' : 'more'}
           </motion.p>
         )}
       </div>
@@ -744,7 +756,7 @@ function OutroSlide({ locale }: { locale: string }) {
         transition={{ delay: 0.6 }}
         className="text-2xl font-bold text-white mb-2"
       >
-        {locale === 'fr' ? 'Bien joué !' : 'Well done!'}
+        {locale === 'fr' ? 'Bien joué !' : locale === 'es' ? '¡Bien hecho!' : 'Well done!'}
       </motion.h2>
 
       <motion.p
@@ -755,7 +767,9 @@ function OutroSlide({ locale }: { locale: string }) {
       >
         {locale === 'fr'
           ? 'Chaque petit pas compte.'
-          : 'Every small step matters.'
+          : locale === 'es'
+            ? 'Cada pequeño paso cuenta.'
+            : 'Every small step matters.'
         }
       </motion.p>
 
@@ -766,7 +780,7 @@ function OutroSlide({ locale }: { locale: string }) {
         className="mt-8 flex items-center gap-2 text-white/50 text-sm"
       >
         <Heart className="w-4 h-4" fill="currentColor" />
-        <span>{locale === 'fr' ? 'À demain' : 'See you tomorrow'}</span>
+        <span>{locale === 'fr' ? 'À demain' : locale === 'es' ? 'Hasta mañana' : 'See you tomorrow'}</span>
       </motion.div>
     </div>
   )

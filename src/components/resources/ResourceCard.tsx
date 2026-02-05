@@ -70,18 +70,18 @@ const resourceTypeStyles: Record<string, {
   },
 }
 
-const typeLabels: Record<string, { en: string; fr: string }> = {
-  worksheet: { en: 'Worksheet', fr: 'Exercice' },
-  assessment: { en: 'Assessment', fr: 'Évaluation' },
-  exercise: { en: 'Exercise', fr: 'Exercice' },
-  psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
-  table: { en: 'Table', fr: 'Tableau' },
+const typeLabels: Record<string, { en: string; fr: string; es: string }> = {
+  worksheet: { en: 'Worksheet', fr: 'Exercice', es: 'Hoja de trabajo' },
+  assessment: { en: 'Assessment', fr: 'Évaluation', es: 'Evaluación' },
+  exercise: { en: 'Exercise', fr: 'Exercice', es: 'Ejercicio' },
+  psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation', es: 'Psicoeducación' },
+  table: { en: 'Table', fr: 'Tableau', es: 'Tabla' },
 }
 
-const statusLabels: Record<string, { en: string; fr: string }> = {
-  draft: { en: 'Draft', fr: 'Brouillon' },
-  published: { en: 'Published', fr: 'Publié' },
-  archived: { en: 'Archived', fr: 'Archivé' },
+const statusLabels: Record<string, { en: string; fr: string; es: string }> = {
+  draft: { en: 'Draft', fr: 'Brouillon', es: 'Borrador' },
+  published: { en: 'Published', fr: 'Publié', es: 'Publicado' },
+  archived: { en: 'Archived', fr: 'Archivé', es: 'Archivado' },
 }
 
 interface SimpleMember {
@@ -94,7 +94,7 @@ interface SimpleMember {
 
 interface ResourceCardProps {
   resource: Resource
-  locale: 'en' | 'fr'
+  locale: 'en' | 'fr' | 'es'
   variant?: 'owned' | 'library' | 'saved'
   index?: number
   viewMode?: 'grid' | 'list'
@@ -213,12 +213,12 @@ export function ResourceCard({
             {resource.visibility === 'public' ? (
               <>
                 <Globe className="w-3 h-3" />
-                {locale === 'fr' ? 'Public' : 'Public'}
+                {locale === 'fr' ? 'Public' : locale === 'es' ? 'Público' : 'Public'}
               </>
             ) : (
               <>
                 <Lock className="w-3 h-3" />
-                {locale === 'fr' ? 'Privé' : 'Private'}
+                {locale === 'fr' ? 'Privé' : locale === 'es' ? 'Privado' : 'Private'}
               </>
             )}
           </span>
@@ -236,7 +236,7 @@ export function ResourceCard({
           )}
 
           <span className="text-xs text-gray-400">
-            {resource.blocks?.length || 0} {locale === 'fr' ? 'blocs' : 'blocks'}
+            {resource.blocks?.length || 0} {locale === 'fr' ? 'blocs' : locale === 'es' ? 'bloques' : 'blocks'}
           </span>
 
           {/* Menu */}
@@ -249,24 +249,24 @@ export function ResourceCard({
             <DropdownMenuContent align="end" className="w-48 rounded-xl">
               <DropdownMenuItem onClick={handleClick}>
                 <Eye className="w-4 h-4 mr-2 text-gray-400" />
-                {locale === 'fr' ? 'Aperçu' : 'Preview'}
+                {locale === 'fr' ? 'Aperçu' : locale === 'es' ? 'Vista previa' : 'Preview'}
               </DropdownMenuItem>
               {variant === 'owned' && isOwner && onEdit && (
                 <DropdownMenuItem onClick={onEdit}>
                   <Pencil className="w-4 h-4 mr-2 text-gray-400" />
-                  {locale === 'fr' ? 'Modifier' : 'Edit'}
+                  {locale === 'fr' ? 'Modifier' : locale === 'es' ? 'Editar' : 'Edit'}
                 </DropdownMenuItem>
               )}
               {onDuplicate && (
                 <DropdownMenuItem onClick={onDuplicate}>
                   <Copy className="w-4 h-4 mr-2 text-gray-400" />
-                  {locale === 'fr' ? 'Dupliquer' : 'Duplicate'}
+                  {locale === 'fr' ? 'Dupliquer' : locale === 'es' ? 'Duplicar' : 'Duplicate'}
                 </DropdownMenuItem>
               )}
               {(variant === 'owned' || variant === 'saved') && onShare && (
                 <DropdownMenuItem onClick={onShare} className="text-purple-600">
                   <Users className="w-4 h-4 mr-2" />
-                  {locale === 'fr' ? 'Envoyer' : 'Send'}
+                  {locale === 'fr' ? 'Envoyer' : locale === 'es' ? 'Enviar' : 'Send'}
                 </DropdownMenuItem>
               )}
               {(onDelete || onRemove) && (
@@ -275,12 +275,12 @@ export function ResourceCard({
                   {isOwner && onDelete ? (
                     <DropdownMenuItem onClick={onDelete} className="text-red-500">
                       <Trash2 className="w-4 h-4 mr-2" />
-                      {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                      {locale === 'fr' ? 'Supprimer' : locale === 'es' ? 'Eliminar' : 'Delete'}
                     </DropdownMenuItem>
                   ) : onRemove ? (
                     <DropdownMenuItem onClick={onRemove} className="text-amber-500">
                       <Trash2 className="w-4 h-4 mr-2" />
-                      {locale === 'fr' ? 'Retirer' : 'Remove'}
+                      {locale === 'fr' ? 'Retirer' : locale === 'es' ? 'Quitar' : 'Remove'}
                     </DropdownMenuItem>
                   ) : null}
                 </>
@@ -341,7 +341,7 @@ export function ResourceCard({
                   ? 'bg-rose-50 text-rose-400'
                   : 'hover:bg-red-50 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100'
               }`}
-              title={locale === 'fr' ? (isBookmarked ? 'Retirer des favoris' : 'Ajouter aux favoris') : (isBookmarked ? 'Remove from favorites' : 'Add to favorites')}
+              title={locale === 'fr' ? (isBookmarked ? 'Retirer des favoris' : 'Ajouter aux favoris') : locale === 'es' ? (isBookmarked ? 'Quitar de favoritos' : 'Agregar a favoritos') : (isBookmarked ? 'Remove from favorites' : 'Add to favorites')}
             >
               <Heart className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-rose-300' : ''}`} />
             </button>
@@ -357,30 +357,30 @@ export function ResourceCard({
             <DropdownMenuContent align="end" className="w-48 rounded-xl">
               <DropdownMenuItem onClick={handleClick}>
                 <Eye className="w-4 h-4 mr-2 text-gray-400" />
-                {locale === 'fr' ? 'Aperçu' : 'Preview'}
+                {locale === 'fr' ? 'Aperçu' : locale === 'es' ? 'Vista previa' : 'Preview'}
               </DropdownMenuItem>
               {variant === 'owned' && isOwner && onEdit && (
                 <DropdownMenuItem onClick={onEdit}>
                   <Pencil className="w-4 h-4 mr-2 text-gray-400" />
-                  {locale === 'fr' ? 'Modifier' : 'Edit'}
+                  {locale === 'fr' ? 'Modifier' : locale === 'es' ? 'Editar' : 'Edit'}
                 </DropdownMenuItem>
               )}
               {onDuplicate && (
                 <DropdownMenuItem onClick={onDuplicate}>
                   <Copy className="w-4 h-4 mr-2 text-gray-400" />
-                  {locale === 'fr' ? 'Dupliquer' : 'Duplicate'}
+                  {locale === 'fr' ? 'Dupliquer' : locale === 'es' ? 'Duplicar' : 'Duplicate'}
                 </DropdownMenuItem>
               )}
               {(variant === 'owned' || variant === 'saved') && onShare && (
                 <DropdownMenuItem onClick={onShare} className="text-purple-600">
                   <Users className="w-4 h-4 mr-2" />
-                  {locale === 'fr' ? 'Envoyer' : 'Send'}
+                  {locale === 'fr' ? 'Envoyer' : locale === 'es' ? 'Enviar' : 'Send'}
                 </DropdownMenuItem>
               )}
               {variant === 'library' && members.length > 0 && onShareWithMembers && (
                 <DropdownMenuItem onClick={() => setShowShareModal(true)}>
                   <Send className="w-4 h-4 mr-2 text-gray-400" />
-                  {locale === 'fr' ? 'Envoyer' : 'Send'}
+                  {locale === 'fr' ? 'Envoyer' : locale === 'es' ? 'Enviar' : 'Send'}
                 </DropdownMenuItem>
               )}
               {(onDelete || onRemove) && (
@@ -389,12 +389,12 @@ export function ResourceCard({
                   {isOwner && onDelete ? (
                     <DropdownMenuItem onClick={onDelete} className="text-red-500">
                       <Trash2 className="w-4 h-4 mr-2" />
-                      {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                      {locale === 'fr' ? 'Supprimer' : locale === 'es' ? 'Eliminar' : 'Delete'}
                     </DropdownMenuItem>
                   ) : onRemove ? (
                     <DropdownMenuItem onClick={onRemove} className="text-amber-500">
                       <Trash2 className="w-4 h-4 mr-2" />
-                      {locale === 'fr' ? 'Retirer' : 'Remove'}
+                      {locale === 'fr' ? 'Retirer' : locale === 'es' ? 'Quitar' : 'Remove'}
                     </DropdownMenuItem>
                   ) : null}
                 </>
@@ -411,7 +411,7 @@ export function ResourceCard({
 
       {/* Description */}
       <p className="text-sm text-gray-500 mb-4 line-clamp-2">
-        {resource.description || (locale === 'fr' ? 'Aucune description' : 'No description')}
+        {resource.description || (locale === 'fr' ? 'Aucune description' : locale === 'es' ? 'Sin descripción' : 'No description')}
       </p>
 
       {/* Footer: Badges */}
@@ -430,12 +430,12 @@ export function ResourceCard({
           {resource.visibility === 'public' ? (
             <>
               <Globe className="w-3 h-3" />
-              {locale === 'fr' ? 'Public' : 'Public'}
+              {locale === 'fr' ? 'Public' : locale === 'es' ? 'Público' : 'Public'}
             </>
           ) : (
             <>
               <Lock className="w-3 h-3" />
-              {locale === 'fr' ? 'Privé' : 'Private'}
+              {locale === 'fr' ? 'Privé' : locale === 'es' ? 'Privado' : 'Private'}
             </>
           )}
         </span>
@@ -457,13 +457,13 @@ export function ResourceCard({
         {showCuratedBadge && (
           <span className="flex items-center gap-1 text-xs font-medium bg-emerald-50 text-emerald-600 px-2 py-1 rounded-lg">
             <Sparkles className="w-3 h-3" />
-            {locale === 'fr' ? 'Recommandé' : 'Curated'}
+            {locale === 'fr' ? 'Recommandé' : locale === 'es' ? 'Seleccionado' : 'Curated'}
           </span>
         )}
 
         {/* Block count - pushed to right */}
         <span className="text-xs text-gray-400 ml-auto">
-          {resource.blocks?.length || 0} {locale === 'fr' ? 'blocs' : 'blocks'}
+          {resource.blocks?.length || 0} {locale === 'fr' ? 'blocs' : locale === 'es' ? 'bloques' : 'blocks'}
         </span>
       </div>
 
@@ -597,7 +597,7 @@ export function ResourceCardList({
                 ? 'bg-rose-50 text-rose-400'
                 : 'hover:bg-red-50 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100'
             }`}
-            title={locale === 'fr' ? (isBookmarked ? 'Retirer des favoris' : 'Ajouter aux favoris') : (isBookmarked ? 'Remove from favorites' : 'Add to favorites')}
+            title={locale === 'fr' ? (isBookmarked ? 'Retirer des favoris' : 'Ajouter aux favoris') : locale === 'es' ? (isBookmarked ? 'Quitar de favoritos' : 'Agregar a favoritos') : (isBookmarked ? 'Remove from favorites' : 'Add to favorites')}
           >
             <Heart className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-rose-300' : ''}`} />
           </button>
@@ -613,24 +613,24 @@ export function ResourceCardList({
           <DropdownMenuContent align="end" className="w-48 rounded-xl">
             <DropdownMenuItem onClick={handleClick}>
               <Eye className="w-4 h-4 mr-2 text-gray-400" />
-              {locale === 'fr' ? 'Aperçu' : 'Preview'}
+              {locale === 'fr' ? 'Aperçu' : locale === 'es' ? 'Vista previa' : 'Preview'}
             </DropdownMenuItem>
             {variant === 'owned' && isOwner && onEdit && (
               <DropdownMenuItem onClick={onEdit}>
                 <Pencil className="w-4 h-4 mr-2 text-gray-400" />
-                {locale === 'fr' ? 'Modifier' : 'Edit'}
+                {locale === 'fr' ? 'Modifier' : locale === 'es' ? 'Editar' : 'Edit'}
               </DropdownMenuItem>
             )}
             {onDuplicate && (
               <DropdownMenuItem onClick={onDuplicate}>
                 <Copy className="w-4 h-4 mr-2 text-gray-400" />
-                {locale === 'fr' ? 'Dupliquer' : 'Duplicate'}
+                {locale === 'fr' ? 'Dupliquer' : locale === 'es' ? 'Duplicar' : 'Duplicate'}
               </DropdownMenuItem>
             )}
             {variant === 'owned' && onShare && (
               <DropdownMenuItem onClick={onShare} className="text-purple-600">
                 <Users className="w-4 h-4 mr-2" />
-                {locale === 'fr' ? 'Envoyer' : 'Send'}
+                {locale === 'fr' ? 'Envoyer' : locale === 'es' ? 'Enviar' : 'Send'}
               </DropdownMenuItem>
             )}
             {onDelete && (
@@ -638,7 +638,7 @@ export function ResourceCardList({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onDelete} className="text-red-500">
                   <Trash2 className="w-4 h-4 mr-2" />
-                  {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                  {locale === 'fr' ? 'Supprimer' : locale === 'es' ? 'Eliminar' : 'Delete'}
                 </DropdownMenuItem>
               </>
             )}

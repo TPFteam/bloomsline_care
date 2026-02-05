@@ -86,9 +86,29 @@ export default function MemberProfilePage() {
       errorUpdating: 'Erreur lors de la mise à jour',
       removePhoto: 'Supprimer la photo',
     },
+    es: {
+      title: 'Perfil',
+      personalInfo: 'Información personal',
+      firstName: 'Nombre',
+      lastName: 'Apellido',
+      email: 'Correo electrónico',
+      phone: 'Teléfono',
+      notProvided: 'No proporcionado',
+      memberSince: 'Miembro desde',
+      changePhoto: 'Cambiar foto',
+      edit: 'Editar',
+      save: 'Guardar',
+      cancel: 'Cancelar',
+      saving: 'Guardando...',
+      photoUpdated: 'Foto actualizada',
+      photoRemoved: 'Foto eliminada',
+      profileUpdated: 'Perfil actualizado',
+      errorUpdating: 'Error al actualizar el perfil',
+      removePhoto: 'Eliminar foto',
+    },
   }
 
-  const text = locale === 'fr' ? t.fr : t.en
+  const text = locale === 'fr' ? t.fr : locale === 'es' ? t.es : t.en
 
   useEffect(() => {
     fetchProfile()
@@ -219,7 +239,7 @@ export default function MemberProfilePage() {
   }
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    return new Date(date).toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',

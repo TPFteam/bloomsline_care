@@ -38,6 +38,12 @@ export function CookieConsent() {
     privacyPolicy: 'En savoir plus',
     accept: 'Ça me va',
     decline: 'Non merci',
+  } : locale === 'es' ? {
+    title: 'Plot twist: cookies',
+    description: 'Las usamos para entender qué funciona (no para rastrearte, lo prometemos). Solo estadísticas anónimas para mejorar Bloomsline.',
+    privacyPolicy: 'Más información',
+    accept: 'Me apunto',
+    decline: 'No, gracias',
   } : {
     title: 'Plot twist: cookies',
     description: 'We use them to understand what\'s working (not you, we promise). Just anonymous stats to make Bloomsline better.',

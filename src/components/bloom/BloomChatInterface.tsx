@@ -99,13 +99,13 @@ function HistoryPanel({
     const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
 
     if (diffDays === 0) {
-      return locale === 'fr' ? "Aujourd'hui" : 'Today'
+      return locale === 'fr' ? "Aujourd'hui" : locale === 'es' ? 'Hoy' : 'Today'
     } else if (diffDays === 1) {
-      return locale === 'fr' ? 'Hier' : 'Yesterday'
+      return locale === 'fr' ? 'Hier' : locale === 'es' ? 'Ayer' : 'Yesterday'
     } else if (diffDays < 7) {
-      return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long' })
+      return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { weekday: 'long' })
     } else {
-      return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+      return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
         month: 'short',
         day: 'numeric'
       })
@@ -125,7 +125,7 @@ function HistoryPanel({
           <ChevronLeft className="w-5 h-5" />
         </button>
         <h3 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          {locale === 'fr' ? 'Conversations passées' : 'Past Conversations'}
+          {locale === 'fr' ? 'Conversations passées' : locale === 'es' ? 'Conversaciones anteriores' : 'Past Conversations'}
         </h3>
       </div>
 
@@ -138,7 +138,7 @@ function HistoryPanel({
         ) : conversations.length === 0 ? (
           <div className={`text-center py-8 ${isDark ? 'text-white/40' : 'text-gray-400'}`}>
             <p className="text-sm">
-              {locale === 'fr' ? 'Pas encore de conversations' : 'No conversations yet'}
+              {locale === 'fr' ? 'Pas encore de conversations' : locale === 'es' ? 'Aun no hay conversaciones' : 'No conversations yet'}
             </p>
           </div>
         ) : (
@@ -160,13 +160,13 @@ function HistoryPanel({
                   </span>
                   <span className={`text-xs ${isDark ? 'text-white/30' : 'text-gray-300'}`}>
                     {new Date(conv.last_message_at || conv.created_at).toLocaleTimeString(
-                      locale === 'fr' ? 'fr-FR' : 'en-US',
+                      locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US',
                       { hour: '2-digit', minute: '2-digit' }
                     )}
                   </span>
                 </div>
                 <p className={`text-sm truncate ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
-                  {conv.title || (locale === 'fr' ? 'Conversation avec Bloom' : 'Conversation with Bloom')}
+                  {conv.title || (locale === 'fr' ? 'Conversation avec Bloom' : locale === 'es' ? 'Conversacion con Bloom' : 'Conversation with Bloom')}
                 </p>
               </motion.button>
             ))}
@@ -204,7 +204,7 @@ function ConversationView({
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
-    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
@@ -241,7 +241,7 @@ function ConversationView({
         ) : messages.length === 0 ? (
           <div className={`text-center py-8 ${isDark ? 'text-white/40' : 'text-gray-400'}`}>
             <p className="text-sm">
-              {locale === 'fr' ? 'Pas de messages' : 'No messages'}
+              {locale === 'fr' ? 'Pas de messages' : locale === 'es' ? 'No hay mensajes' : 'No messages'}
             </p>
           </div>
         ) : (
@@ -259,7 +259,7 @@ function ConversationView({
       {/* Read-only notice */}
       <div className={`px-4 py-3 text-center border-t ${isDark ? 'border-white/10' : 'border-gray-100'}`}>
         <p className={`text-xs ${isDark ? 'text-white/30' : 'text-gray-400'}`}>
-          {locale === 'fr' ? 'Conversation archivée (lecture seule)' : 'Archived conversation (read-only)'}
+          {locale === 'fr' ? 'Conversation archivée (lecture seule)' : locale === 'es' ? 'Conversacion archivada (solo lectura)' : 'Archived conversation (read-only)'}
         </p>
       </div>
     </div>
@@ -281,6 +281,13 @@ const DEFAULT_SUGGESTIONS_FR = [
   "Comment vont mes ancres",
 ]
 
+const DEFAULT_SUGGESTIONS_ES = [
+  "Como me siento hoy",
+  "Que has notado sobre mi",
+  "Ayudame con mis habitos",
+  "Como van mis anclas",
+]
+
 const TAGLINES_EN = [
   "Listening to you",
   "Here for you",
@@ -299,6 +306,15 @@ const TAGLINES_FR = [
   "Je suis là",
 ]
 
+const TAGLINES_ES = [
+  "Escuchandote",
+  "Aqui para ti",
+  "Siempre a tu lado",
+  "Tu importas",
+  "Tomate tu tiempo",
+  "Estoy aqui",
+]
+
 export default function BloomChatInterface({ isOpen, onClose, isDark = true, entryPoint = 'general' }: BloomChatInterfaceProps) {
   const { locale } = useLanguage()
   const [inputValue, setInputValue] = useState('')
@@ -315,12 +331,12 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true, ent
     error,
     suggestions,
     contentBlocks,
-  } = useBloomChat({ locale: locale as 'en' | 'fr', entryPoint })
+  } = useBloomChat({ locale: locale as 'en' | 'fr' | 'es', entryPoint })
 
   // Use API suggestions if available, otherwise show defaults
-  const defaultSuggestions = locale === 'fr' ? DEFAULT_SUGGESTIONS_FR : DEFAULT_SUGGESTIONS_EN
+  const defaultSuggestions = locale === 'fr' ? DEFAULT_SUGGESTIONS_FR : locale === 'es' ? DEFAULT_SUGGESTIONS_ES : DEFAULT_SUGGESTIONS_EN
   const displaySuggestions = suggestions.length > 0 ? suggestions : defaultSuggestions
-  const taglines = locale === 'fr' ? TAGLINES_FR : TAGLINES_EN
+  const taglines = locale === 'fr' ? TAGLINES_FR : locale === 'es' ? TAGLINES_ES : TAGLINES_EN
   // Show suggestions after each Bloom response (not during loading)
   const showSuggestions = !isLoading && messages.length > 0
 
@@ -448,7 +464,7 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true, ent
                         className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
                           isDark ? 'hover:bg-white/10 text-white/60' : 'hover:bg-gray-100 text-gray-400'
                         }`}
-                        title={locale === 'fr' ? 'Historique' : 'History'}
+                        title={locale === 'fr' ? 'Historique' : locale === 'es' ? 'Historial' : 'History'}
                       >
                         <History className="w-4 h-4" />
                       </button>
@@ -518,7 +534,7 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true, ent
                     className={`px-4 pt-3 border-t ${isDark ? 'border-white/10' : 'border-gray-100'}`}
                   >
                     <p className={`text-xs mb-2 ${isDark ? 'text-white/40' : 'text-gray-400'}`}>
-                      {locale === 'fr' ? 'Suggestions pour vous' : 'Suggestions for you'}
+                      {locale === 'fr' ? 'Suggestions pour vous' : locale === 'es' ? 'Sugerencias para ti' : 'Suggestions for you'}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {displaySuggestions.map((suggestion, i) => (
@@ -551,7 +567,7 @@ export default function BloomChatInterface({ isOpen, onClose, isDark = true, ent
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                        placeholder={locale === 'fr' ? 'Écrivez ici...' : 'Type something...'}
+                        placeholder={locale === 'fr' ? 'Écrivez ici...' : locale === 'es' ? 'Escribe algo...' : 'Type something...'}
                         disabled={isLoading}
                         className={`flex-1 px-4 py-3 rounded-2xl text-[14px] transition-colors focus:outline-none disabled:opacity-50 ${
                           isDark

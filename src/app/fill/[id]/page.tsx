@@ -48,33 +48,33 @@ function AutoSaveIndicator({ status, lastSavedAt }: { status: AutoSaveStatus; la
       case 'pending':
         return {
           icon: Clock,
-          text: locale === 'fr' ? 'Modifications non enregistrées' : 'Unsaved changes',
+          text: locale === 'fr' ? 'Modifications non enregistrées' : locale === 'es' ? 'Cambios sin guardar' : 'Unsaved changes',
           color: 'text-amber-600',
         }
       case 'saving':
         return {
           icon: Loader2,
-          text: locale === 'fr' ? 'Enregistrement...' : 'Saving...',
+          text: locale === 'fr' ? 'Enregistrement...' : locale === 'es' ? 'Guardando...' : 'Saving...',
           color: 'text-blue-600',
           animate: true,
         }
       case 'saved':
         return {
           icon: Cloud,
-          text: locale === 'fr' ? 'Enregistré' : 'Saved',
+          text: locale === 'fr' ? 'Enregistré' : locale === 'es' ? 'Guardado' : 'Saved',
           color: 'text-emerald-600',
         }
       case 'error':
         return {
           icon: CloudOff,
-          text: locale === 'fr' ? 'Erreur de sauvegarde' : 'Save error',
+          text: locale === 'fr' ? 'Erreur de sauvegarde' : locale === 'es' ? 'Error al guardar' : 'Save error',
           color: 'text-red-600',
         }
       default:
         if (lastSavedAt) {
           return {
             icon: CheckCircle,
-            text: locale === 'fr' ? 'Brouillon enregistré' : 'Draft saved',
+            text: locale === 'fr' ? 'Brouillon enregistré' : locale === 'es' ? 'Borrador guardado' : 'Draft saved',
             color: 'text-gray-500',
           }
         }
@@ -139,20 +139,22 @@ function SubmissionConfirmation({
 
           {/* Title */}
           <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
-            {locale === 'fr' ? 'Soumis avec succès!' : 'Successfully Submitted!'}
+            {locale === 'fr' ? 'Soumis avec succès!' : locale === 'es' ? '¡Enviado con éxito!' : 'Successfully Submitted!'}
           </h2>
 
           <p className="text-center text-gray-600 mb-6">
             {locale === 'fr'
               ? `Vos réponses pour "${resourceTitle}" ont été soumises.`
-              : `Your responses for "${resourceTitle}" have been submitted.`}
+              : locale === 'es'
+                ? `Sus respuestas para "${resourceTitle}" han sido enviadas.`
+                : `Your responses for "${resourceTitle}" have been submitted.`}
           </p>
 
           {/* Score Display */}
           {scores && (
             <div className="bg-gradient-to-br from-teal-50 to-lavender-50 rounded-2xl p-6 mb-6 border border-teal-100">
               <h3 className="text-sm font-medium text-gray-600 mb-3 text-center">
-                {locale === 'fr' ? 'Votre Score' : 'Your Score'}
+                {locale === 'fr' ? 'Votre Score' : locale === 'es' ? 'Su Puntuación' : 'Your Score'}
               </h3>
               <div className="text-center">
                 <div className="text-4xl font-bold text-teal-600 mb-1">
@@ -178,13 +180,13 @@ function SubmissionConfirmation({
               onClick={() => router.push('/home')}
               className="flex-1 rounded-full"
             >
-              {locale === 'fr' ? 'Voir mes ressources' : 'View My Resources'}
+              {locale === 'fr' ? 'Voir mes ressources' : locale === 'es' ? 'Ver mis recursos' : 'View My Resources'}
             </Button>
             <Button
               onClick={onClose}
               className="flex-1 rounded-full bg-gradient-to-r from-teal-500 to-teal-600"
             >
-              {locale === 'fr' ? 'Fermer' : 'Close'}
+              {locale === 'fr' ? 'Fermer' : locale === 'es' ? 'Cerrar' : 'Close'}
             </Button>
           </div>
         </motion.div>
@@ -272,7 +274,9 @@ export default function FillResourcePage() {
           toast.error(
             locale === 'fr'
               ? 'Aucun profil membre trouvé'
-              : 'No member profile found'
+              : locale === 'es'
+                ? 'No se encontró perfil de miembro'
+                : 'No member profile found'
           )
           router.push('/dashboard')
           return
@@ -285,7 +289,9 @@ export default function FillResourcePage() {
           toast.error(
             locale === 'fr'
               ? 'Ressource non trouvée'
-              : 'Resource not found'
+              : locale === 'es'
+                ? 'Recurso no encontrado'
+                : 'Resource not found'
           )
           router.push('/home')
           return
@@ -310,7 +316,9 @@ export default function FillResourcePage() {
         toast.error(
           locale === 'fr'
             ? 'Erreur lors du chargement'
-            : 'Error loading resource'
+            : locale === 'es'
+              ? 'Error al cargar el recurso'
+              : 'Error loading resource'
         )
       } finally {
         setLoading(false)
@@ -338,14 +346,18 @@ export default function FillResourcePage() {
       toast.success(
         locale === 'fr'
           ? 'Entrées enregistrées'
-          : 'Entries saved'
+          : locale === 'es'
+            ? 'Entradas guardadas'
+            : 'Entries saved'
       )
     } catch (error) {
       console.error('Error saving:', error)
       toast.error(
         locale === 'fr'
           ? 'Erreur lors de l\'enregistrement'
-          : 'Error saving entries'
+          : locale === 'es'
+            ? 'Error al guardar las entradas'
+            : 'Error saving entries'
       )
     } finally {
       setSubmitting(false)
@@ -373,14 +385,18 @@ export default function FillResourcePage() {
       toast.success(
         locale === 'fr'
           ? 'Marqué comme lu'
-          : 'Marked as read'
+          : locale === 'es'
+            ? 'Marcado como leído'
+            : 'Marked as read'
       )
     } catch (error) {
       console.error('Error marking as read:', error)
       toast.error(
         locale === 'fr'
           ? 'Erreur lors du marquage'
-          : 'Error marking as read'
+          : locale === 'es'
+            ? 'Error al marcar como leído'
+            : 'Error marking as read'
       )
     } finally {
       setSubmitting(false)
@@ -404,7 +420,9 @@ export default function FillResourcePage() {
       toast.error(
         locale === 'fr'
           ? `Veuillez répondre à toutes les questions requises (${unansweredRequired.length} manquantes)`
-          : `Please answer all required questions (${unansweredRequired.length} missing)`
+          : locale === 'es'
+            ? `Por favor responda todas las preguntas requeridas (${unansweredRequired.length} pendientes)`
+            : `Please answer all required questions (${unansweredRequired.length} missing)`
       )
       return
     }
@@ -440,14 +458,18 @@ export default function FillResourcePage() {
       toast.success(
         locale === 'fr'
           ? 'Réponses soumises avec succès'
-          : 'Responses submitted successfully'
+          : locale === 'es'
+            ? 'Respuestas enviadas con éxito'
+            : 'Responses submitted successfully'
       )
     } catch (error) {
       console.error('Error submitting:', error)
       toast.error(
         locale === 'fr'
           ? 'Erreur lors de la soumission'
-          : 'Error submitting responses'
+          : locale === 'es'
+            ? 'Error al enviar las respuestas'
+            : 'Error submitting responses'
       )
     } finally {
       setSubmitting(false)
@@ -467,7 +489,7 @@ export default function FillResourcePage() {
             <Loader2 className="w-6 h-6 text-teal-600 animate-spin" />
           </div>
           <span className="text-gray-500 text-sm">
-            {locale === 'fr' ? 'Chargement...' : 'Loading...'}
+            {locale === 'fr' ? 'Chargement...' : locale === 'es' ? 'Cargando...' : 'Loading...'}
           </span>
         </motion.div>
       </div>
@@ -487,19 +509,21 @@ export default function FillResourcePage() {
             <CheckCircle className="w-7 h-7 text-emerald-600" />
           </div>
           <h2 className="text-lg font-bold text-gray-900 mb-2">
-            {locale === 'fr' ? 'Déjà soumis' : 'Already Submitted'}
+            {locale === 'fr' ? 'Déjà soumis' : locale === 'es' ? 'Ya enviado' : 'Already Submitted'}
           </h2>
           <p className="text-gray-500 text-sm mb-6">
             {locale === 'fr'
               ? 'Vous avez déjà soumis vos réponses.'
-              : 'You have already submitted your responses.'}
+              : locale === 'es'
+                ? 'Ya ha enviado sus respuestas.'
+                : 'You have already submitted your responses.'}
           </p>
           <Button
             onClick={() => router.push('/home')}
             className="w-full h-12 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {locale === 'fr' ? 'Retour' : 'Back'}
+            {locale === 'fr' ? 'Retour' : locale === 'es' ? 'Volver' : 'Back'}
           </Button>
         </motion.div>
       </div>
@@ -550,7 +574,7 @@ export default function FillResourcePage() {
             <div className="mt-3">
               <div className="flex items-center justify-between text-xs mb-1.5">
                 <span className="text-gray-500">
-                  {locale === 'fr' ? 'Progression' : 'Progress'}
+                  {locale === 'fr' ? 'Progression' : locale === 'es' ? 'Progreso' : 'Progress'}
                 </span>
                 <span className="font-semibold text-teal-600">{progress}%</span>
               </div>
@@ -644,7 +668,7 @@ export default function FillResourcePage() {
                 className="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-lg text-base font-semibold"
               >
                 <CheckCircle className="w-5 h-5 mr-2" />
-                {locale === 'fr' ? 'Terminé - Retour' : 'Completed - Back'}
+                {locale === 'fr' ? 'Terminé - Retour' : locale === 'es' ? 'Completado - Volver' : 'Completed - Back'}
               </Button>
             ) : (
               <Button
@@ -656,12 +680,12 @@ export default function FillResourcePage() {
                 {submitting ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    {locale === 'fr' ? 'Marquage...' : 'Marking...'}
+                    {locale === 'fr' ? 'Marquage...' : locale === 'es' ? 'Marcando...' : 'Marking...'}
                   </>
                 ) : (
                   <>
                     <BookOpen className="w-5 h-5 mr-2" />
-                    {locale === 'fr' ? 'Marquer comme lu' : 'Mark as Read'}
+                    {locale === 'fr' ? 'Marquer comme lu' : locale === 'es' ? 'Marcar como leído' : 'Mark as Read'}
                   </>
                 )}
               </Button>
@@ -676,7 +700,7 @@ export default function FillResourcePage() {
                 className="flex-1 h-12 rounded-xl border-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
               >
                 <Eye className="w-5 h-5 mr-2" />
-                {locale === 'fr' ? 'Voir tout' : 'View All'}
+                {locale === 'fr' ? 'Voir tout' : locale === 'es' ? 'Ver todo' : 'View All'}
               </Button>
               <Button
                 onClick={handleSaveTableExercise}
@@ -687,12 +711,12 @@ export default function FillResourcePage() {
                 {submitting ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                    {locale === 'fr' ? 'Enregistrement...' : locale === 'es' ? 'Guardando...' : 'Saving...'}
                   </>
                 ) : (
                   <>
                     <Save className="w-5 h-5 mr-2" />
-                    {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                    {locale === 'fr' ? 'Enregistrer' : locale === 'es' ? 'Guardar' : 'Save'}
                   </>
                 )}
               </Button>
@@ -708,18 +732,18 @@ export default function FillResourcePage() {
               {submitting ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  {locale === 'fr' ? 'Soumission...' : 'Submitting...'}
+                  {locale === 'fr' ? 'Soumission...' : locale === 'es' ? 'Enviando...' : 'Submitting...'}
                 </>
               ) : progress < 100 ? (
                 <>
                   <span>{progress}%</span>
                   <span className="mx-2">•</span>
-                  <span>{locale === 'fr' ? 'Incomplet' : 'Incomplete'}</span>
+                  <span>{locale === 'fr' ? 'Incomplet' : locale === 'es' ? 'Incompleto' : 'Incomplete'}</span>
                 </>
               ) : (
                 <>
                   <Send className="w-5 h-5 mr-2" />
-                  {locale === 'fr' ? 'Soumettre' : 'Submit'}
+                  {locale === 'fr' ? 'Soumettre' : locale === 'es' ? 'Enviar' : 'Submit'}
                 </>
               )}
             </Button>
@@ -763,12 +787,14 @@ export default function FillResourcePage() {
                     </div>
                     <div>
                       <h2 className="font-semibold text-emerald-900">
-                        {locale === 'fr' ? 'Toutes les entrées' : 'All Entries'}
+                        {locale === 'fr' ? 'Toutes les entrées' : locale === 'es' ? 'Todas las entradas' : 'All Entries'}
                       </h2>
                       <p className="text-sm text-emerald-700">
                         {entries.length} {locale === 'fr'
                           ? (entries.length === 1 ? 'entrée' : 'entrées')
-                          : (entries.length === 1 ? 'entry' : 'entries')}
+                          : locale === 'es'
+                            ? (entries.length === 1 ? 'entrada' : 'entradas')
+                            : (entries.length === 1 ? 'entry' : 'entries')}
                       </p>
                     </div>
                   </div>
@@ -785,11 +811,13 @@ export default function FillResourcePage() {
                   {entries.length === 0 ? (
                     <div className="text-center py-12 text-gray-500">
                       <Table2 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                      <p>{locale === 'fr' ? 'Aucune entrée pour le moment' : 'No entries yet'}</p>
+                      <p>{locale === 'fr' ? 'Aucune entrée pour le moment' : locale === 'es' ? 'Aún no hay entradas' : 'No entries yet'}</p>
                       <p className="text-sm mt-1">
                         {locale === 'fr'
                           ? 'Ajoutez des entrées ci-dessous'
-                          : 'Add entries below'}
+                          : locale === 'es'
+                            ? 'Agregue entradas a continuación'
+                            : 'Add entries below'}
                       </p>
                     </div>
                   ) : (

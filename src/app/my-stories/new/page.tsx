@@ -127,12 +127,12 @@ export default function NewStoryPage() {
 
   const handleSave = async (publish: boolean, secretCode?: string) => {
     if (!title.trim()) {
-      toast.error(locale === 'fr' ? 'Veuillez entrer un titre' : 'Please enter a title')
+      toast.error(locale === 'fr' ? 'Veuillez entrer un titre' : locale === 'es' ? 'Por favor ingresa un título' : 'Please enter a title')
       return
     }
 
     if (blocks.length === 0) {
-      toast.error(locale === 'fr' ? 'Veuillez ajouter au moins un bloc' : 'Please add at least one content block')
+      toast.error(locale === 'fr' ? 'Veuillez ajouter au moins un bloc' : locale === 'es' ? 'Por favor agrega al menos un bloque de contenido' : 'Please add at least one content block')
       return
     }
 
@@ -178,12 +178,12 @@ export default function NewStoryPage() {
 
       setShowPublishModal(false)
       toast.success(publish
-        ? (locale === 'fr' ? 'Histoire publiée!' : 'Story published!')
-        : (locale === 'fr' ? 'Brouillon enregistré' : 'Story saved as draft'))
+        ? (locale === 'fr' ? 'Histoire publiée!' : locale === 'es' ? '¡Historia publicada!' : 'Story published!')
+        : (locale === 'fr' ? 'Brouillon enregistré' : locale === 'es' ? 'Borrador guardado' : 'Story saved as draft'))
       router.push('/my-stories')
     } catch (error) {
       console.error('Error saving story:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors de la sauvegarde' : 'Failed to save story')
+      toast.error(locale === 'fr' ? 'Erreur lors de la sauvegarde' : locale === 'es' ? 'Error al guardar la historia' : 'Failed to save story')
     } finally {
       setSaving(false)
     }
@@ -195,7 +195,7 @@ export default function NewStoryPage() {
         <div className="flex items-center justify-between mb-8">
           <Button variant="ghost" onClick={() => router.back()}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {locale === 'fr' ? 'Retour' : 'Back to Stories'}
+            {locale === 'fr' ? 'Retour' : locale === 'es' ? 'Volver a las historias' : 'Back to Stories'}
           </Button>
         </div>
 
@@ -203,7 +203,7 @@ export default function NewStoryPage() {
           <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200 shadow-xl">
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-3xl font-bold text-foreground">
-                {locale === 'fr' ? 'Créer une histoire' : 'Create New Story'}
+                {locale === 'fr' ? 'Créer une histoire' : locale === 'es' ? 'Crear nueva historia' : 'Create New Story'}
               </h1>
 
               {/* Auto-save status */}
@@ -211,30 +211,30 @@ export default function NewStoryPage() {
                 {autoSaveStatus === 'saving' && (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
-                    <span className="text-amber-600">{locale === 'fr' ? 'Enregistrement...' : 'Saving...'}</span>
+                    <span className="text-amber-600">{locale === 'fr' ? 'Enregistrement...' : locale === 'es' ? 'Guardando...' : 'Saving...'}</span>
                   </>
                 )}
                 {autoSaveStatus === 'saved' && (
                   <>
                     <Check className="w-4 h-4 text-emerald-500" />
-                    <span className="text-emerald-600">{locale === 'fr' ? 'Enregistré' : 'Saved'}</span>
+                    <span className="text-emerald-600">{locale === 'fr' ? 'Enregistré' : locale === 'es' ? 'Guardado' : 'Saved'}</span>
                   </>
                 )}
                 {autoSaveStatus === 'error' && (
-                  <span className="text-red-500">{locale === 'fr' ? 'Erreur d\'enregistrement' : 'Save error'}</span>
+                  <span className="text-red-500">{locale === 'fr' ? 'Erreur d\'enregistrement' : locale === 'es' ? 'Error al guardar' : 'Save error'}</span>
                 )}
                 {autoSaveStatus === 'idle' && hasUnsavedChanges && (
                   <>
                     <Cloud className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-500">{locale === 'fr' ? 'Non enregistré' : 'Unsaved'}</span>
+                    <span className="text-gray-500">{locale === 'fr' ? 'Non enregistré' : locale === 'es' ? 'Sin guardar' : 'Unsaved'}</span>
                   </>
                 )}
                 {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
                   <>
                     <Cloud className="w-4 h-4 text-emerald-400" />
                     <span className="text-gray-400">
-                      {locale === 'fr' ? 'Enregistré à ' : 'Saved at '}
-                      {lastSavedAt.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                      {locale === 'fr' ? 'Enregistré à ' : locale === 'es' ? 'Guardado a las ' : 'Saved at '}
+                      {lastSavedAt.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </>
                 )}
@@ -245,23 +245,23 @@ export default function NewStoryPage() {
               {/* Title Input */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {locale === 'fr' ? 'Titre' : 'Title'} <span className="text-red-500">*</span>
+                  {locale === 'fr' ? 'Titre' : locale === 'es' ? 'Título' : 'Title'} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={locale === 'fr' ? 'Donnez un titre à votre histoire...' : 'Give your story a title...'}
+                  placeholder={locale === 'fr' ? 'Donnez un titre à votre histoire...' : locale === 'es' ? 'Dale un título a tu historia...' : 'Give your story a title...'}
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
                   maxLength={200}
                 />
-                <p className="text-xs text-gray-500 mt-1">{title.length}/200 {locale === 'fr' ? 'caractères' : 'characters'}</p>
+                <p className="text-xs text-gray-500 mt-1">{title.length}/200 {locale === 'fr' ? 'caractères' : locale === 'es' ? 'caracteres' : 'characters'}</p>
               </div>
 
               {/* Block Editor */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-4">
-                  {locale === 'fr' ? 'Contenu' : 'Story Content'}
+                  {locale === 'fr' ? 'Contenu' : locale === 'es' ? 'Contenido de la historia' : 'Story Content'}
                 </label>
                 <BlockEditor blocks={blocks} onChange={setBlocks} />
               </div>
@@ -274,14 +274,14 @@ export default function NewStoryPage() {
                   variant="outline"
                   className="flex-1"
                 >
-                  {locale === 'fr' ? 'Enregistrer brouillon' : 'Save as Draft'}
+                  {locale === 'fr' ? 'Enregistrer brouillon' : locale === 'es' ? 'Guardar borrador' : 'Save as Draft'}
                 </Button>
                 <Button
                   onClick={() => setShowPublishModal(true)}
                   disabled={saving}
                   className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
                 >
-                  {locale === 'fr' ? 'Publier' : 'Publish Story'}
+                  {locale === 'fr' ? 'Publier' : locale === 'es' ? 'Publicar historia' : 'Publish Story'}
                 </Button>
               </div>
             </div>

@@ -366,13 +366,13 @@ function getCurrentRitualCategory(): 'morning' | 'midday' | 'evening' {
 
 // Get category label for display
 function getCategoryLabel(category: string, locale: string): string {
-  const labels: Record<string, { en: string; fr: string }> = {
-    morning: { en: 'Morning', fr: 'Matin' },
-    midday: { en: 'Midday', fr: 'Midi' },
-    evening: { en: 'Evening', fr: 'Soir' },
-    selfcare: { en: 'Self-Care', fr: 'Bien-être' },
+  const labels: Record<string, { en: string; fr: string; es: string }> = {
+    morning: { en: 'Morning', fr: 'Matin', es: 'Mañana' },
+    midday: { en: 'Midday', fr: 'Midi', es: 'Mediodía' },
+    evening: { en: 'Evening', fr: 'Soir', es: 'Noche' },
+    selfcare: { en: 'Self-Care', fr: 'Bien-être', es: 'Autocuidado' },
   }
-  return locale === 'fr' ? labels[category]?.fr : labels[category]?.en
+  return locale === 'fr' ? labels[category]?.fr : locale === 'es' ? labels[category]?.es : labels[category]?.en
 }
 
 // Resource type icons
@@ -392,6 +392,12 @@ function getGreeting(locale: string) {
     if (hour < 22) return 'Bonsoir'
     return 'Bonne nuit'
   }
+  if (locale === 'es') {
+    // Spanish: Buenos días (morning), Buenas tardes (afternoon), Buenas noches (evening)
+    if (hour < 12) return 'Buenos días'
+    if (hour < 18) return 'Buenas tardes'
+    return 'Buenas noches'
+  }
   // English
   if (hour < 12) return 'Good morning'
   if (hour < 18) return 'Good afternoon'
@@ -402,7 +408,9 @@ function getGreeting(locale: string) {
 function getMotivationalMessage(locale: string) {
   const messages = locale === 'fr'
     ? ['Ce moment est le vôtre', 'Vous avancez bien', 'Chaque pas compte', 'Prenez soin de vous']
-    : ['This moment is yours', 'You\'re doing great', 'Every step counts', 'Take care of yourself']
+    : locale === 'es'
+      ? ['Este momento es tuyo', 'Lo estás haciendo muy bien', 'Cada paso cuenta', 'Cuídate mucho']
+      : ['This moment is yours', 'You\'re doing great', 'Every step counts', 'Take care of yourself']
   return messages[Math.floor(Math.random() * messages.length)]
 }
 
@@ -554,9 +562,9 @@ export default function MyResourcesPage() {
   // Format date for display
   const formatSelectedDate = () => {
     if (isToday()) {
-      return locale === 'fr' ? "Aujourd'hui" : 'Today'
+      return locale === 'fr' ? "Aujourd'hui" : locale === 'es' ? 'Hoy' : 'Today'
     }
-    return selectedDate.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    return selectedDate.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric'
@@ -698,7 +706,7 @@ export default function MyResourcesPage() {
 
     if (error) {
       console.error('Error logging anchor:', error)
-      toast.error(locale === 'fr' ? 'Erreur' : 'Error')
+      toast.error(locale === 'fr' ? 'Erreur' : locale === 'es' ? 'Error' : 'Error')
       return
     }
 
@@ -709,7 +717,7 @@ export default function MyResourcesPage() {
       [anchorId]: [...(prev[anchorId] || []), now]
     }))
 
-    toast.success(locale === 'fr' ? 'Enregistré!' : 'Logged!', { duration: 1500 })
+    toast.success(locale === 'fr' ? 'Enregistré!' : locale === 'es' ? '¡Registrado!' : 'Logged!', { duration: 1500 })
   }
 
   // Get today's count for an anchor
@@ -739,7 +747,7 @@ export default function MyResourcesPage() {
 
     if (error) {
       console.error('Error adding anchor:', error)
-      toast.error(locale === 'fr' ? 'Erreur' : 'Error')
+      toast.error(locale === 'fr' ? 'Erreur' : locale === 'es' ? 'Error' : 'Error')
       return
     }
 
@@ -755,7 +763,7 @@ export default function MyResourcesPage() {
 
     setShowAddAnchor(false)
     resetCustomAnchorForm()
-    toast.success(locale === 'fr' ? 'Ajouté!' : 'Added!', { duration: 1500 })
+    toast.success(locale === 'fr' ? 'Ajouté!' : locale === 'es' ? '¡Agregado!' : 'Added!', { duration: 1500 })
   }
 
   // Reset custom anchor form
@@ -879,7 +887,7 @@ export default function MyResourcesPage() {
       }
     } catch (error) {
       console.error('Error loading resources:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors du chargement' : 'Error loading resources')
+      toast.error(locale === 'fr' ? 'Erreur lors du chargement' : locale === 'es' ? 'Error al cargar los recursos' : 'Error loading resources')
     } finally {
       setLoading(false)
     }
@@ -907,7 +915,7 @@ export default function MyResourcesPage() {
     setProcessingInvitation(invitationId)
     try {
       await acceptInvitation(invitationId)
-      toast.success(locale === 'fr' ? 'Invitation acceptée!' : 'Invitation accepted!')
+      toast.success(locale === 'fr' ? 'Invitation acceptée!' : locale === 'es' ? '¡Invitación aceptada!' : 'Invitation accepted!')
       window.location.reload()
     } catch (error) {
       console.error('Error accepting invitation:', error)
@@ -921,11 +929,11 @@ export default function MyResourcesPage() {
     setProcessingInvitation(invitationId)
     try {
       await rejectInvitation(invitationId)
-      toast.success(locale === 'fr' ? 'Invitation refusée' : 'Invitation declined')
+      toast.success(locale === 'fr' ? 'Invitation refusée' : locale === 'es' ? 'Invitación rechazada' : 'Invitation declined')
       setInvitations(prev => prev.filter(inv => inv.id !== invitationId))
     } catch (error) {
       console.error('Error rejecting invitation:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors du refus' : 'Error declining invitation')
+      toast.error(locale === 'fr' ? 'Erreur lors du refus' : locale === 'es' ? 'Error al rechazar la invitación' : 'Error declining invitation')
     } finally {
       setProcessingInvitation(null)
     }
@@ -945,14 +953,14 @@ export default function MyResourcesPage() {
       if (blob) {
         const shared = await shareFlow(blob, locale)
         if (shared) {
-          toast.success(locale === 'fr' ? 'Image prête!' : 'Image ready!')
+          toast.success(locale === 'fr' ? 'Image prête!' : locale === 'es' ? '¡Imagen lista!' : 'Image ready!')
         }
       } else {
-        toast.error(locale === 'fr' ? 'Erreur lors de la capture' : 'Error capturing image')
+        toast.error(locale === 'fr' ? 'Erreur lors de la capture' : locale === 'es' ? 'Error al capturar la imagen' : 'Error capturing image')
       }
     } catch (error) {
       console.error('Error sharing flow:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors du partage' : 'Error sharing')
+      toast.error(locale === 'fr' ? 'Erreur lors du partage' : locale === 'es' ? 'Error al compartir' : 'Error sharing')
     } finally {
       setIsSharing(false)
     }
@@ -1021,7 +1029,7 @@ export default function MyResourcesPage() {
               {getGreeting(locale)},
             </h1>
             <h1 className="text-[28px] font-bold text-gray-900 leading-tight">
-              {firstName || (locale === 'fr' ? 'Ami' : 'Friend')}!
+              {firstName || (locale === 'fr' ? 'Ami' : locale === 'es' ? 'Amigo' : 'Friend')}!
             </h1>
             <p className="text-gray-500 mt-1 flex items-center gap-1.5">
               {getMotivationalMessage(locale)}
@@ -1054,7 +1062,7 @@ export default function MyResourcesPage() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-emerald-600 font-medium">
-                    {locale === 'fr' ? 'Nouvelle invitation' : 'New invitation'}
+                    {locale === 'fr' ? 'Nouvelle invitation' : locale === 'es' ? 'Nueva invitación' : 'New invitation'}
                   </p>
                   <p className="font-semibold text-gray-900">
                     {invitation.practitioner_name || invitation.practitioner_email}
@@ -1070,7 +1078,7 @@ export default function MyResourcesPage() {
                   className="flex-1 rounded-full border-gray-200"
                 >
                   <X className="w-4 h-4 mr-1" />
-                  {locale === 'fr' ? 'Refuser' : 'Decline'}
+                  {locale === 'fr' ? 'Refuser' : locale === 'es' ? 'Rechazar' : 'Decline'}
                 </Button>
                 <Button
                   size="sm"
@@ -1083,7 +1091,7 @@ export default function MyResourcesPage() {
                   ) : (
                     <>
                       <Check className="w-4 h-4 mr-1" />
-                      {locale === 'fr' ? 'Accepter' : 'Accept'}
+                      {locale === 'fr' ? 'Accepter' : locale === 'es' ? 'Aceptar' : 'Accept'}
                     </>
                   )}
                 </Button>
@@ -1115,13 +1123,13 @@ export default function MyResourcesPage() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-gray-900 whitespace-nowrap">
-                {locale === 'fr' ? 'Fil du jour' : "Today's Flow"}
+                {locale === 'fr' ? 'Fil du jour' : locale === 'es' ? 'Flujo del día' : "Today's Flow"}
               </h3>
               {/* Info button - hidden from capture */}
               <button
                 onClick={() => setShowFlowGuide(true)}
                 className="p-1 rounded-full hover:bg-gray-100 transition-colors ignore-capture"
-                title={locale === 'fr' ? "Qu'est-ce que c'est?" : "What's this?"}
+                title={locale === 'fr' ? "Qu'est-ce que c'est?" : locale === 'es' ? '¿Qué es esto?' : "What's this?"}
               >
                 <Info className="w-4 h-4 text-gray-400" />
               </button>
@@ -1131,7 +1139,7 @@ export default function MyResourcesPage() {
                   onClick={handleShareFlow}
                   disabled={isSharing}
                   className="p-1 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 ignore-capture"
-                  title={locale === 'fr' ? 'Partager' : 'Share'}
+                  title={locale === 'fr' ? 'Partager' : locale === 'es' ? 'Compartir' : 'Share'}
                 >
                   {isSharing ? (
                     <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
@@ -1296,12 +1304,12 @@ export default function MyResourcesPage() {
                 </div>
                 <p className="text-sm text-gray-400 text-center">
                   {isToday()
-                    ? (locale === 'fr' ? 'Aucun moment capturé' : 'No moments yet')
-                    : (locale === 'fr' ? 'Aucun moment ce jour' : 'No moments on this day')}
+                    ? (locale === 'fr' ? 'Aucun moment capturé' : locale === 'es' ? 'Aún no hay momentos' : 'No moments yet')
+                    : (locale === 'fr' ? 'Aucun moment ce jour' : locale === 'es' ? 'Sin momentos este día' : 'No moments on this day')}
                 </p>
                 {isToday() && (
                   <p className="text-xs text-gray-300 mt-1">
-                    {locale === 'fr' ? 'Capturez votre premier moment' : 'Capture your first moment'}
+                    {locale === 'fr' ? 'Capturez votre premier moment' : locale === 'es' ? 'Captura tu primer momento' : 'Capture your first moment'}
                   </p>
                 )}
               </div>
@@ -1499,7 +1507,7 @@ export default function MyResourcesPage() {
                       // Use actual completion time
                       const completionTime = new Date(completion.created_at)
                       displayHour = completionTime.getHours() + completionTime.getMinutes() / 60
-                      displayTimeLabel = completionTime.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                      displayTimeLabel = completionTime.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
                         hour: 'numeric',
                         minute: '2-digit',
                         hour12: locale !== 'fr'
@@ -1604,7 +1612,7 @@ export default function MyResourcesPage() {
                         transition={{ delay: 0.4 + i * 0.05, type: 'spring', stiffness: 300, damping: 20 }}
                         className="absolute -translate-x-1/2 z-15"
                         style={{ left: `${position}%`, bottom: '8px' }}
-                        title={`${locale === 'fr' ? anchor.labelFr : anchor.labelEn} - ${logTime.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`}
+                        title={`${locale === 'fr' ? anchor.labelFr : locale === 'es' ? anchor.labelEn : anchor.labelEn} - ${logTime.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`}
                       >
                         <motion.div
                           whileHover={{ scale: 1.2 }}
@@ -1656,9 +1664,9 @@ export default function MyResourcesPage() {
                 // Full day view - show Morning, Afternoon, Evening
                 return (
                   <>
-                    <span>{locale === 'fr' ? 'Matin' : 'Morning'}</span>
-                    <span>{locale === 'fr' ? 'Après-midi' : 'Afternoon'}</span>
-                    <span>{locale === 'fr' ? 'Soir' : 'Evening'}</span>
+                    <span>{locale === 'fr' ? 'Matin' : locale === 'es' ? 'Mañana' : 'Morning'}</span>
+                    <span>{locale === 'fr' ? 'Après-midi' : locale === 'es' ? 'Tarde' : 'Afternoon'}</span>
+                    <span>{locale === 'fr' ? 'Soir' : locale === 'es' ? 'Noche' : 'Evening'}</span>
                   </>
                 )
               }
@@ -1681,7 +1689,7 @@ export default function MyResourcesPage() {
               className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-emerald-500 transition-colors"
             >
               <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-              <span>{locale === 'fr' ? 'On parle ?' : 'Wanna talk?'}</span>
+              <span>{locale === 'fr' ? 'On parle ?' : locale === 'es' ? '¿Hablamos?' : 'Wanna talk?'}</span>
             </button>
 
             {/* Zoom and pan controls */}
@@ -1753,14 +1761,14 @@ export default function MyResourcesPage() {
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <h3 className="text-base font-bold text-gray-900">
-                {locale === 'fr' ? 'Mes petits pas' : 'My Little Steps'}
+                {locale === 'fr' ? 'Mes petits pas' : locale === 'es' ? 'Mis pequeños pasos' : 'My Little Steps'}
               </h3>
             </div>
             <button
               onClick={() => router.push('/seeds')}
               className="text-xs text-amber-600 font-medium hover:text-amber-700 flex items-center gap-1"
             >
-              {locale === 'fr' ? 'Voir tout' : 'View all'}
+              {locale === 'fr' ? 'Voir tout' : locale === 'es' ? 'Ver todo' : 'View all'}
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -1792,7 +1800,7 @@ export default function MyResourcesPage() {
                       isGrow ? 'text-emerald-600' : 'text-amber-400'
                     }`} />
                     <span className="text-[10px] text-gray-500 font-medium text-center leading-tight px-1">
-                      {locale === 'fr' ? anchor.labelFr : anchor.labelEn}
+                      {locale === 'fr' ? anchor.labelFr : locale === 'es' ? anchor.labelEn : anchor.labelEn}
                     </span>
                     {/* Count badge */}
                     {todayCount > 0 && (
@@ -1835,7 +1843,9 @@ export default function MyResourcesPage() {
             <p className="text-center text-xs text-gray-400 mt-3">
               {locale === 'fr'
                 ? 'Ajoutez des ancres à suivre'
-                : 'Add anchors to track'}
+                : locale === 'es'
+                  ? 'Agrega anclas para seguir'
+                  : 'Add anchors to track'}
             </p>
           )}
 
@@ -1844,7 +1854,9 @@ export default function MyResourcesPage() {
             <p className="text-center text-xs text-gray-400 mt-3">
               {locale === 'fr'
                 ? 'Tapez pour enregistrer'
-                : 'Tap to log'}
+                : locale === 'es'
+                  ? 'Toca para registrar'
+                  : 'Tap to log'}
             </p>
           )}
         </motion.div>
@@ -1869,8 +1881,8 @@ export default function MyResourcesPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold text-gray-900">
                     {customAnchorMode
-                      ? (locale === 'fr' ? 'Créer une ancre' : 'Create Anchor')
-                      : (locale === 'fr' ? 'Ajouter quelque chose' : 'Add Something')}
+                      ? (locale === 'fr' ? 'Créer une ancre' : locale === 'es' ? 'Crear un ancla' : 'Create Anchor')
+                      : (locale === 'fr' ? 'Ajouter quelque chose' : locale === 'es' ? 'Agregar algo' : 'Add Something')}
                   </h3>
                   <button
                     onClick={() => { setShowAddAnchor(false); resetCustomAnchorForm() }}
@@ -1891,7 +1903,7 @@ export default function MyResourcesPage() {
                     }`}
                   >
                     <Sprout className="w-4 h-4" />
-                    {locale === 'fr' ? 'Garder' : 'Grow'}
+                    {locale === 'fr' ? 'Garder' : locale === 'es' ? 'Cultivar' : 'Grow'}
                   </button>
                   <button
                     onClick={() => setAnchorsTab('letgo')}
@@ -1902,7 +1914,7 @@ export default function MyResourcesPage() {
                     }`}
                   >
                     <Leaf className="w-4 h-4" />
-                    {locale === 'fr' ? 'Alléger' : 'Let Go'}
+                    {locale === 'fr' ? 'Alléger' : locale === 'es' ? 'Soltar' : 'Let Go'}
                   </button>
                 </div>
 
@@ -1912,15 +1924,15 @@ export default function MyResourcesPage() {
                     {/* Custom label input */}
                     <div>
                       <label className="text-sm text-gray-500 mb-2 block">
-                        {locale === 'fr' ? 'Nom de l\'ancre:' : 'Anchor name:'}
+                        {locale === 'fr' ? 'Nom de l\'ancre:' : locale === 'es' ? 'Nombre del ancla:' : 'Anchor name:'}
                       </label>
                       <input
                         type="text"
                         value={customAnchorLabel}
                         onChange={(e) => setCustomAnchorLabel(e.target.value)}
                         placeholder={anchorsTab === 'grow'
-                          ? (locale === 'fr' ? 'Ex: Journaling' : 'Ex: Journaling')
-                          : (locale === 'fr' ? 'Ex: Junk food' : 'Ex: Junk food')}
+                          ? (locale === 'fr' ? 'Ex: Journaling' : locale === 'es' ? 'Ej: Diario personal' : 'Ex: Journaling')
+                          : (locale === 'fr' ? 'Ex: Junk food' : locale === 'es' ? 'Ej: Comida chatarra' : 'Ex: Junk food')}
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none transition-all text-sm"
                         maxLength={30}
                         autoFocus
@@ -1930,7 +1942,7 @@ export default function MyResourcesPage() {
                     {/* Icon picker for custom */}
                     <div>
                       <label className="text-sm text-gray-500 mb-2 block">
-                        {locale === 'fr' ? 'Choisir une icône:' : 'Choose an icon:'}
+                        {locale === 'fr' ? 'Choisir une icône:' : locale === 'es' ? 'Elige un ícono:' : 'Choose an icon:'}
                       </label>
                       <div className="grid grid-cols-6 gap-2">
                         {Object.entries(ANCHOR_ICONS).map(([key, data]) => {
@@ -1961,7 +1973,7 @@ export default function MyResourcesPage() {
                         onClick={() => resetCustomAnchorForm()}
                         className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
                       >
-                        {locale === 'fr' ? 'Retour' : 'Back'}
+                        {locale === 'fr' ? 'Retour' : locale === 'es' ? 'Volver' : 'Back'}
                       </button>
                       <button
                         onClick={addCustomAnchor}
@@ -1974,7 +1986,7 @@ export default function MyResourcesPage() {
                             : 'bg-gray-300 cursor-not-allowed'
                         }`}
                       >
-                        {locale === 'fr' ? 'Ajouter' : 'Add'}
+                        {locale === 'fr' ? 'Ajouter' : locale === 'es' ? 'Agregar' : 'Add'}
                       </button>
                     </div>
                   </div>
@@ -1983,7 +1995,7 @@ export default function MyResourcesPage() {
                   <>
                     {/* Icon selection grid - filtered by type */}
                     <p className="text-sm text-gray-500 mb-3">
-                      {locale === 'fr' ? 'Que souhaitez-vous faire ?' : 'What would you like to do?'}
+                      {locale === 'fr' ? 'Que souhaitez-vous faire ?' : locale === 'es' ? '¿Qué te gustaría hacer?' : 'What would you like to do?'}
                     </p>
                     <div className="grid grid-cols-4 gap-2">
                       {(anchorsTab === 'grow' ? GROW_ANCHOR_OPTIONS : LETGO_ANCHOR_OPTIONS).map((key) => {
@@ -2017,7 +2029,7 @@ export default function MyResourcesPage() {
                             <span className={`text-[9px] font-medium text-center leading-tight ${
                               alreadyAdded ? 'text-gray-300' : 'text-gray-500'
                             }`}>
-                              {locale === 'fr' ? data.labelFr : data.labelEn}
+                              {locale === 'fr' ? data.labelFr : locale === 'es' ? data.labelEn : data.labelEn}
                             </span>
                           </button>
                         )
@@ -2033,7 +2045,7 @@ export default function MyResourcesPage() {
                       >
                         <Plus className={`w-5 h-5 ${anchorsTab === 'grow' ? 'text-emerald-600' : 'text-amber-400'}`} />
                         <span className="text-[9px] font-medium text-center leading-tight text-gray-500">
-                          {locale === 'fr' ? 'Créer' : 'Create'}
+                          {locale === 'fr' ? 'Créer' : locale === 'es' ? 'Crear' : 'Create'}
                         </span>
                       </button>
                     </div>
@@ -2080,7 +2092,7 @@ export default function MyResourcesPage() {
                     <Circle className="w-4 h-4 text-white" />
                   </div>
                   <h3 className="text-lg font-bold text-gray-900">
-                    {locale === 'fr' ? 'Rituels à venir' : 'Upcoming Rituals'}
+                    {locale === 'fr' ? 'Rituels à venir' : locale === 'es' ? 'Próximos rituales' : 'Upcoming Rituals'}
                   </h3>
                 </div>
                 <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
@@ -2114,7 +2126,7 @@ export default function MyResourcesPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900 text-sm">
-                            {locale === 'fr' ? mr.ritual.name_fr : mr.ritual.name}
+                            {locale === 'fr' ? mr.ritual.name_fr : locale === 'es' ? mr.ritual.name : mr.ritual.name}
                           </p>
                           <p className="text-xs text-gray-400">
                             {mr.planned_time && (
@@ -2138,12 +2150,14 @@ export default function MyResourcesPage() {
                     <Check className="w-6 h-6 text-emerald-600" />
                   </motion.div>
                   <p className="text-sm text-gray-600 font-medium">
-                    {locale === 'fr' ? 'Tous les rituels complétés!' : 'All rituals completed!'}
+                    {locale === 'fr' ? 'Tous les rituels complétés!' : locale === 'es' ? '¡Todos los rituales completados!' : 'All rituals completed!'}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
                     {locale === 'fr'
                       ? `${getCategoryLabel(currentCategory, locale)} est fait`
-                      : `${getCategoryLabel(currentCategory, locale)} is done`}
+                      : locale === 'es'
+                        ? `${getCategoryLabel(currentCategory, locale)} está listo`
+                        : `${getCategoryLabel(currentCategory, locale)} is done`}
                   </p>
                 </div>
               )}
@@ -2155,7 +2169,7 @@ export default function MyResourcesPage() {
                   className="w-full mt-3 py-2.5 text-center text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
                   whileTap={{ scale: 0.98 }}
                 >
-                  {locale === 'fr' ? 'Voir tous les rituels' : 'View all rituals'} →
+                  {locale === 'fr' ? 'Voir tous les rituels' : locale === 'es' ? 'Ver todos los rituales' : 'View all rituals'} →
                 </motion.button>
               )}
             </motion.div>
@@ -2173,12 +2187,14 @@ export default function MyResourcesPage() {
               <Leaf className="w-10 h-10 text-emerald-300" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {locale === 'fr' ? 'Bienvenue!' : 'Welcome!'}
+              {locale === 'fr' ? 'Bienvenue!' : locale === 'es' ? '¡Bienvenido!' : 'Welcome!'}
             </h3>
             <p className="text-gray-500 text-sm">
               {locale === 'fr'
                 ? 'Vos ressources apparaîtront ici une fois partagées par votre praticien.'
-                : 'Your resources will appear here once shared by your practitioner.'}
+                : locale === 'es'
+                  ? 'Tus recursos aparecerán aquí una vez que tu profesional los comparta.'
+                  : 'Your resources will appear here once shared by your practitioner.'}
             </p>
           </motion.div>
         )}
@@ -2264,7 +2280,7 @@ export default function MyResourcesPage() {
                   onClick={() => setPreviewMoment(null)}
                   className="w-full py-2.5 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium"
                 >
-                  {locale === 'fr' ? 'Fermer' : 'Close'}
+                  {locale === 'fr' ? 'Fermer' : locale === 'es' ? 'Cerrar' : 'Close'}
                 </button>
               </div>
             </motion.div>
@@ -2312,7 +2328,7 @@ export default function MyResourcesPage() {
                     <RitualIcon className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 text-center">
-                    {locale === 'fr' ? mr.ritual.name_fr : mr.ritual.name}
+                    {locale === 'fr' ? mr.ritual.name_fr : locale === 'es' ? mr.ritual.name : mr.ritual.name}
                   </h3>
                   <span
                     className="mt-2 px-3 py-1 rounded-full text-xs font-medium text-white"
@@ -2327,7 +2343,7 @@ export default function MyResourcesPage() {
                   {/* Description */}
                   {(mr.ritual.description || mr.ritual.description_fr) && (
                     <p className="text-gray-600 text-sm mb-4">
-                      {locale === 'fr' ? mr.ritual.description_fr : mr.ritual.description}
+                      {locale === 'fr' ? mr.ritual.description_fr : locale === 'es' ? mr.ritual.description : mr.ritual.description}
                     </p>
                   )}
 
@@ -2335,10 +2351,10 @@ export default function MyResourcesPage() {
                   {(mr.ritual.benefit || mr.ritual.benefit_fr) && (
                     <div className="bg-emerald-50 rounded-xl p-3 mb-4">
                       <p className="text-xs text-emerald-600 font-medium mb-1">
-                        {locale === 'fr' ? 'Bienfait' : 'Benefit'}
+                        {locale === 'fr' ? 'Bienfait' : locale === 'es' ? 'Beneficio' : 'Benefit'}
                       </p>
                       <p className="text-sm text-emerald-700">
-                        {locale === 'fr' ? mr.ritual.benefit_fr : mr.ritual.benefit}
+                        {locale === 'fr' ? mr.ritual.benefit_fr : locale === 'es' ? mr.ritual.benefit : mr.ritual.benefit}
                       </p>
                     </div>
                   )}
@@ -2348,7 +2364,7 @@ export default function MyResourcesPage() {
                     {mr.planned_time && (
                       <div className="flex items-center gap-1.5">
                         <Clock className="w-4 h-4" />
-                        <span>{locale === 'fr' ? 'Prévu' : 'Planned'}: {mr.planned_time.slice(0, 5)}</span>
+                        <span>{locale === 'fr' ? 'Prévu' : locale === 'es' ? 'Planificado' : 'Planned'}: {mr.planned_time.slice(0, 5)}</span>
                       </div>
                     )}
                     {mr.ritual.duration_suggestion && (
@@ -2364,10 +2380,10 @@ export default function MyResourcesPage() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-emerald-700">
-                          {locale === 'fr' ? 'Complété' : 'Completed'}
+                          {locale === 'fr' ? 'Complété' : locale === 'es' ? 'Completado' : 'Completed'}
                         </p>
                         <p className="text-xs text-emerald-600">
-                          {new Date(completion.created_at).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                          {new Date(completion.created_at).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
                             hour: 'numeric',
                             minute: '2-digit',
                             hour12: locale !== 'fr'
@@ -2382,7 +2398,7 @@ export default function MyResourcesPage() {
                   {completion?.notes && (
                     <div className="bg-gray-50 rounded-xl p-3 mb-4">
                       <p className="text-xs text-gray-500 font-medium mb-1">
-                        {locale === 'fr' ? 'Notes' : 'Notes'}
+                        {locale === 'fr' ? 'Notes' : locale === 'es' ? 'Notas' : 'Notes'}
                       </p>
                       <p className="text-sm text-gray-700">{completion.notes}</p>
                     </div>
@@ -2394,7 +2410,7 @@ export default function MyResourcesPage() {
                       onClick={() => setPreviewRitual(null)}
                       className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium"
                     >
-                      {locale === 'fr' ? 'Fermer' : 'Close'}
+                      {locale === 'fr' ? 'Fermer' : locale === 'es' ? 'Cerrar' : 'Close'}
                     </button>
                     {!isCompleted && (
                       <button
@@ -2405,7 +2421,7 @@ export default function MyResourcesPage() {
                         className="flex-1 py-2.5 rounded-xl text-white text-sm font-medium"
                         style={{ background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }}
                       >
-                        {locale === 'fr' ? 'Commencer' : 'Start'}
+                        {locale === 'fr' ? 'Commencer' : locale === 'es' ? 'Comenzar' : 'Start'}
                       </button>
                     )}
                   </div>

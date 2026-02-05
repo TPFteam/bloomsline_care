@@ -100,15 +100,17 @@ export default function MentorsPage() {
             className="flex items-center gap-1 text-gray-500 mb-4"
           >
             <ChevronLeft className="w-5 h-5" />
-            <span className="text-sm">{locale === 'fr' ? 'Retour' : 'Back'}</span>
+            <span className="text-sm">{locale === 'fr' ? 'Retour' : locale === 'es' ? 'Volver' : 'Back'}</span>
           </button>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            {locale === 'fr' ? 'Mes Mentors' : 'My Mentors'}
+            {locale === 'fr' ? 'Mes Mentors' : locale === 'es' ? 'Mis Mentores' : 'My Mentors'}
           </h1>
           <p className="text-gray-500">
             {locale === 'fr'
               ? 'Vos accompagnants bien-être'
-              : 'Your wellness practitioners'}
+              : locale === 'es'
+                ? 'Tus profesionales de bienestar'
+                : 'Your wellness practitioners'}
           </p>
         </motion.div>
 
@@ -123,12 +125,14 @@ export default function MentorsPage() {
               <Users className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {locale === 'fr' ? 'Aucun mentor' : 'No mentors yet'}
+              {locale === 'fr' ? 'Aucun mentor' : locale === 'es' ? 'Aún no hay mentores' : 'No mentors yet'}
             </h3>
             <p className="text-gray-500">
               {locale === 'fr'
                 ? 'Vous n\'avez pas encore de mentor assigné'
-                : 'You don\'t have any assigned mentors yet'}
+                : locale === 'es'
+                  ? 'Aún no tienes mentores asignados'
+                  : 'You don\'t have any assigned mentors yet'}
             </p>
           </motion.div>
         ) : (
@@ -152,7 +156,7 @@ export default function MentorsPage() {
                     <div className="flex items-center gap-1.5 mb-3">
                       <Crown className="w-4 h-4 text-amber-300" />
                       <span className="text-xs font-medium text-white/90">
-                        {locale === 'fr' ? 'Mentor principal' : 'Primary Mentor'}
+                        {locale === 'fr' ? 'Mentor principal' : locale === 'es' ? 'Mentor principal' : 'Primary Mentor'}
                       </span>
                     </div>
                   )}
@@ -227,7 +231,7 @@ export default function MentorsPage() {
                       onClick={() => router.push(`/p/${mentor.slug || mentor.id}`)}
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
-                      {locale === 'fr' ? 'Voir le profil' : 'View Profile'}
+                      {locale === 'fr' ? 'Voir le profil' : locale === 'es' ? 'Ver perfil' : 'View Profile'}
                     </Button>
 
                     <div className="flex gap-3">
@@ -237,7 +241,7 @@ export default function MentorsPage() {
                         onClick={() => mentor.email && (window.location.href = `mailto:${mentor.email}`)}
                       >
                         <MessageCircle className="w-4 h-4 mr-2" />
-                        {locale === 'fr' ? 'Message' : 'Message'}
+                        {locale === 'fr' ? 'Message' : locale === 'es' ? 'Mensaje' : 'Message'}
                       </Button>
                       <Button
                         className={`flex-1 rounded-xl ${
@@ -248,7 +252,7 @@ export default function MentorsPage() {
                         onClick={() => router.push(`/p/${mentor.slug || mentor.id}/book`)}
                       >
                         <Calendar className="w-4 h-4 mr-2" />
-                        {locale === 'fr' ? 'Réserver' : 'Book'}
+                        {locale === 'fr' ? 'Réserver' : locale === 'es' ? 'Reservar' : 'Book'}
                       </Button>
                     </div>
                   </div>
@@ -271,12 +275,14 @@ export default function MentorsPage() {
             </div>
             <div>
               <h4 className="font-semibold text-gray-900 mb-1">
-                {locale === 'fr' ? 'Besoin d\'aide ?' : 'Need help?'}
+                {locale === 'fr' ? 'Besoin d\'aide ?' : locale === 'es' ? '¿Necesitas ayuda?' : 'Need help?'}
               </h4>
               <p className="text-sm text-gray-600">
                 {locale === 'fr'
                   ? 'Vos mentors sont là pour vous accompagner dans votre parcours de bien-être.'
-                  : 'Your mentors are here to support you on your wellness journey.'}
+                  : locale === 'es'
+                    ? 'Tus mentores están aquí para apoyarte en tu camino de bienestar.'
+                    : 'Your mentors are here to support you on your wellness journey.'}
               </p>
             </div>
           </div>

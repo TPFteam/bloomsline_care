@@ -92,8 +92,8 @@ export default function OnboardingPage() {
     {
       type: 'mentor' as UserType,
       icon: Heart,
-      title: locale === 'fr' ? 'Praticien' : 'Practitioner',
-      description: locale === 'fr' ? 'Je fournis des services thérapeutiques et accompagne des clients' : 'I provide therapeutic services and support clients',
+      title: locale === 'fr' ? 'Praticien' : locale === 'es' ? 'Profesional' : 'Practitioner',
+      description: locale === 'fr' ? 'Je fournis des services thérapeutiques et accompagne des clients' : locale === 'es' ? 'Proporciono servicios terapéuticos y apoyo a clientes' : 'I provide therapeutic services and support clients',
       gradient: 'from-mint-400 to-mint-600',
       bg: 'bg-mint-50',
       border: 'border-mint-200',
@@ -103,8 +103,8 @@ export default function OnboardingPage() {
     {
       type: 'member' as UserType,
       icon: Users,
-      title: locale === 'fr' ? 'Membre' : 'Member',
-      description: locale === 'fr' ? 'Je recherche un accompagnement thérapeutique et des ressources' : 'I seek therapeutic support and resources',
+      title: locale === 'fr' ? 'Membre' : locale === 'es' ? 'Miembro' : 'Member',
+      description: locale === 'fr' ? 'Je recherche un accompagnement thérapeutique et des ressources' : locale === 'es' ? 'Busco apoyo terapéutico y recursos' : 'I seek therapeutic support and resources',
       gradient: 'from-lavender-400 to-lavender-600',
       bg: 'bg-lavender-50',
       border: 'border-lavender-200',

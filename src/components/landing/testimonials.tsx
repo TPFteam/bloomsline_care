@@ -17,7 +17,7 @@ export function Testimonials() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim() || !email.trim()) {
-      setError(locale === 'fr' ? 'Veuillez remplir tous les champs' : 'Please fill in all fields')
+      setError(locale === 'fr' ? 'Veuillez remplir tous les champs' : locale === 'es' ? 'Por favor, completa todos los campos' : 'Please fill in all fields')
       return
     }
 
@@ -39,9 +39,9 @@ export function Testimonials() {
 
       if (!response.ok) {
         if (data.code === 'DUPLICATE') {
-          setError(locale === 'fr' ? 'Cet email est déjà inscrit' : 'This email is already registered')
+          setError(locale === 'fr' ? 'Cet email est déjà inscrit' : locale === 'es' ? 'Este correo ya está registrado' : 'This email is already registered')
         } else {
-          setError(data.error || (locale === 'fr' ? 'Une erreur est survenue' : 'An error occurred'))
+          setError(data.error || (locale === 'fr' ? 'Une erreur est survenue' : locale === 'es' ? 'Ocurrió un error' : 'An error occurred'))
         }
         return
       }
@@ -50,7 +50,7 @@ export function Testimonials() {
       setName('')
       setEmail('')
     } catch {
-      setError(locale === 'fr' ? 'Une erreur est survenue' : 'An error occurred')
+      setError(locale === 'fr' ? 'Une erreur est survenue' : locale === 'es' ? 'Ocurrió un error' : 'An error occurred')
     } finally {
       setLoading(false)
     }
@@ -130,10 +130,10 @@ export function Testimonials() {
                 <Check className="w-6 h-6 text-green-600" />
               </div>
               <p className="text-neutral-900 font-medium">
-                {locale === 'fr' ? 'Merci pour votre inscription !' : 'Thank you for signing up!'}
+                {locale === 'fr' ? 'Merci pour votre inscription !' : locale === 'es' ? '¡Gracias por registrarte!' : 'Thank you for signing up!'}
               </p>
               <p className="text-neutral-500 text-sm mt-1">
-                {locale === 'fr' ? 'Nous vous contacterons bientôt.' : 'We\'ll be in touch soon.'}
+                {locale === 'fr' ? 'Nous vous contacterons bientôt.' : locale === 'es' ? 'Nos pondremos en contacto pronto.' : 'We\'ll be in touch soon.'}
               </p>
             </div>
           ) : (
@@ -168,7 +168,7 @@ export function Testimonials() {
                   suppressHydrationWarning
                 >
                   {loading
-                    ? (locale === 'fr' ? 'Envoi...' : 'Sending...')
+                    ? (locale === 'fr' ? 'Envoi...' : locale === 'es' ? 'Enviando...' : 'Sending...')
                     : ((t.testimonials as { formButton?: string }).formButton || 'Accès anticipé')}
                 </button>
               </form>

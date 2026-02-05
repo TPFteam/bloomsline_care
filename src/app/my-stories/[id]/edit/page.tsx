@@ -226,7 +226,7 @@ export default function EditStoryPage() {
           <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200 shadow-xl">
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-3xl font-bold text-foreground">
-                {locale === 'fr' ? 'Modifier l\'histoire' : 'Edit Story'}
+                {locale === 'fr' ? 'Modifier l\'histoire' : locale === 'es' ? 'Editar historia' : 'Edit Story'}
               </h1>
               <div className="flex items-center gap-4">
                 {/* Auto-save status */}
@@ -234,30 +234,30 @@ export default function EditStoryPage() {
                   {autoSaveStatus === 'saving' && (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
-                      <span className="text-amber-600">{locale === 'fr' ? 'Enregistrement...' : 'Saving...'}</span>
+                      <span className="text-amber-600">{locale === 'fr' ? 'Enregistrement...' : locale === 'es' ? 'Guardando...' : 'Saving...'}</span>
                     </>
                   )}
                   {autoSaveStatus === 'saved' && (
                     <>
                       <Check className="w-4 h-4 text-emerald-500" />
-                      <span className="text-emerald-600">{locale === 'fr' ? 'Enregistré' : 'Saved'}</span>
+                      <span className="text-emerald-600">{locale === 'fr' ? 'Enregistré' : locale === 'es' ? 'Guardado' : 'Saved'}</span>
                     </>
                   )}
                   {autoSaveStatus === 'error' && (
-                    <span className="text-red-500">{locale === 'fr' ? 'Erreur d\'enregistrement' : 'Save error'}</span>
+                    <span className="text-red-500">{locale === 'fr' ? 'Erreur d\'enregistrement' : locale === 'es' ? 'Error al guardar' : 'Save error'}</span>
                   )}
                   {autoSaveStatus === 'idle' && hasUnsavedChanges && (
                     <>
                       <Cloud className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-500">{locale === 'fr' ? 'Non enregistré' : 'Unsaved'}</span>
+                      <span className="text-gray-500">{locale === 'fr' ? 'Non enregistré' : locale === 'es' ? 'Sin guardar' : 'Unsaved'}</span>
                     </>
                   )}
                   {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
                     <>
                       <Cloud className="w-4 h-4 text-emerald-400" />
                       <span className="text-gray-400">
-                        {locale === 'fr' ? 'Enregistré à ' : 'Saved at '}
-                        {lastSavedAt.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                        {locale === 'fr' ? 'Enregistré à ' : locale === 'es' ? 'Guardado a las ' : 'Saved at '}
+                        {lastSavedAt.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </>
                   )}
@@ -265,7 +265,7 @@ export default function EditStoryPage() {
 
                 {story && (
                   <div className={`text-sm px-3 py-1 rounded-full ${story.published ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
-                    {story.published ? (locale === 'fr' ? 'Publié' : 'Published') : (locale === 'fr' ? 'Brouillon' : 'Draft')}
+                    {story.published ? (locale === 'fr' ? 'Publié' : locale === 'es' ? 'Publicado' : 'Published') : (locale === 'fr' ? 'Brouillon' : locale === 'es' ? 'Borrador' : 'Draft')}
                   </div>
                 )}
               </div>

@@ -10,8 +10,8 @@ import type { NotificationPreferences, NotificationType } from '@/lib/notificati
 
 interface NotificationTypeConfig {
   type: NotificationType
-  label: { en: string; fr: string }
-  description: { en: string; fr: string }
+  label: { en: string; fr: string; es: string }
+  description: { en: string; fr: string; es: string }
   category: 'resources' | 'sessions' | 'bookings' | 'general'
 }
 
@@ -20,56 +20,56 @@ const NOTIFICATION_TYPES: NotificationTypeConfig[] = [
   // Resources
   {
     type: 'resource_shared',
-    label: { en: 'Resource Shared', fr: 'Ressource partagee' },
-    description: { en: 'When someone shares a resource with you', fr: 'Quand quelqu\'un partage une ressource avec vous' },
+    label: { en: 'Resource Shared', fr: 'Ressource partagee', es: 'Recurso compartido' },
+    description: { en: 'When someone shares a resource with you', fr: 'Quand quelqu\'un partage une ressource avec vous', es: 'Cuando alguien comparte un recurso contigo' },
     category: 'resources',
   },
   {
     type: 'resource_submitted',
-    label: { en: 'Resource Submitted', fr: 'Ressource soumise' },
-    description: { en: 'When a member submits a worksheet', fr: 'Quand un membre soumet une fiche' },
+    label: { en: 'Resource Submitted', fr: 'Ressource soumise', es: 'Recurso enviado' },
+    description: { en: 'When a member submits a worksheet', fr: 'Quand un membre soumet une fiche', es: 'Cuando un miembro envia una hoja de trabajo' },
     category: 'resources',
   },
   // Sessions
   {
     type: 'session_scheduled',
-    label: { en: 'Session Scheduled', fr: 'Session planifiee' },
-    description: { en: 'When a new session is scheduled', fr: 'Quand une nouvelle session est planifiee' },
+    label: { en: 'Session Scheduled', fr: 'Session planifiee', es: 'Sesion programada' },
+    description: { en: 'When a new session is scheduled', fr: 'Quand une nouvelle session est planifiee', es: 'Cuando se programa una nueva sesion' },
     category: 'sessions',
   },
   {
     type: 'session_reminder_24h',
-    label: { en: '24h Reminder', fr: 'Rappel 24h' },
-    description: { en: 'Reminder 24 hours before session', fr: 'Rappel 24 heures avant la session' },
+    label: { en: '24h Reminder', fr: 'Rappel 24h', es: 'Recordatorio 24h' },
+    description: { en: 'Reminder 24 hours before session', fr: 'Rappel 24 heures avant la session', es: 'Recordatorio 24 horas antes de la sesion' },
     category: 'sessions',
   },
   // Bookings
   {
     type: 'booking_request',
-    label: { en: 'Booking Request', fr: 'Demande de reservation' },
-    description: { en: 'When someone requests a booking', fr: 'Quand quelqu\'un demande une reservation' },
+    label: { en: 'Booking Request', fr: 'Demande de reservation', es: 'Solicitud de reserva' },
+    description: { en: 'When someone requests a booking', fr: 'Quand quelqu\'un demande une reservation', es: 'Cuando alguien solicita una reserva' },
     category: 'bookings',
   },
   {
     type: 'booking_confirmed',
-    label: { en: 'Booking Confirmed', fr: 'Reservation confirmee' },
-    description: { en: 'When a booking is confirmed', fr: 'Quand une reservation est confirmee' },
+    label: { en: 'Booking Confirmed', fr: 'Reservation confirmee', es: 'Reserva confirmada' },
+    description: { en: 'When a booking is confirmed', fr: 'Quand une reservation est confirmee', es: 'Cuando se confirma una reserva' },
     category: 'bookings',
   },
   // General
   {
     type: 'weekly_summary',
-    label: { en: 'Weekly Summary', fr: 'Resume hebdomadaire' },
-    description: { en: 'Weekly wellness and activity summary', fr: 'Resume hebdomadaire de bien-etre et d\'activite' },
+    label: { en: 'Weekly Summary', fr: 'Resume hebdomadaire', es: 'Resumen semanal' },
+    description: { en: 'Weekly wellness and activity summary', fr: 'Resume hebdomadaire de bien-etre et d\'activite', es: 'Resumen semanal de bienestar y actividad' },
     category: 'general',
   },
 ]
 
 const CATEGORIES = {
-  resources: { en: 'Resources', fr: 'Ressources' },
-  sessions: { en: 'Sessions', fr: 'Sessions' },
-  bookings: { en: 'Bookings', fr: 'Reservations' },
-  general: { en: 'General', fr: 'General' },
+  resources: { en: 'Resources', fr: 'Ressources', es: 'Recursos' },
+  sessions: { en: 'Sessions', fr: 'Sessions', es: 'Sesiones' },
+  bookings: { en: 'Bookings', fr: 'Reservations', es: 'Reservas' },
+  general: { en: 'General', fr: 'General', es: 'General' },
 }
 
 export function NotificationSettings() {
@@ -138,13 +138,13 @@ export function NotificationSettings() {
 
       setMessage({
         type: 'success',
-        text: locale === 'fr' ? 'Preferences enregistrees' : 'Preferences saved',
+        text: locale === 'fr' ? 'Preferences enregistrees' : locale === 'es' ? 'Preferencias guardadas' : 'Preferences saved',
       })
     } catch (error) {
       console.error('Error saving preferences:', error)
       setMessage({
         type: 'error',
-        text: locale === 'fr' ? 'Erreur lors de l\'enregistrement' : 'Error saving preferences',
+        text: locale === 'fr' ? 'Erreur lors de l\'enregistrement' : locale === 'es' ? 'Error al guardar preferencias' : 'Error saving preferences',
       })
     } finally {
       setIsSaving(false)
@@ -191,12 +191,14 @@ export function NotificationSettings() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bell className="w-5 h-5 text-teal-600" />
-          {locale === 'fr' ? 'Preferences de notification' : 'Notification Preferences'}
+          {locale === 'fr' ? 'Preferences de notification' : locale === 'es' ? 'Preferencias de notificacion' : 'Notification Preferences'}
         </CardTitle>
         <CardDescription>
           {locale === 'fr'
             ? 'Gerez comment vous recevez les notifications'
-            : 'Manage how you receive notifications'}
+            : locale === 'es'
+              ? 'Administre como recibe las notificaciones'
+              : 'Manage how you receive notifications'}
         </CardDescription>
       </CardHeader>
 
@@ -218,7 +220,7 @@ export function NotificationSettings() {
         {/* Global Channel Settings */}
         <div className="space-y-3">
           <h3 className="font-medium text-gray-900">
-            {locale === 'fr' ? 'Canaux de notification' : 'Notification Channels'}
+            {locale === 'fr' ? 'Canaux de notification' : locale === 'es' ? 'Canales de notificacion' : 'Notification Channels'}
           </h3>
 
           <div className="flex flex-wrap gap-3">
@@ -252,12 +254,14 @@ export function NotificationSettings() {
         <div className="space-y-3">
           <h3 className="font-medium text-gray-900 flex items-center gap-2">
             <Moon className="w-4 h-4 text-gray-500" />
-            {locale === 'fr' ? 'Heures de tranquillite' : 'Quiet Hours'}
+            {locale === 'fr' ? 'Heures de tranquillite' : locale === 'es' ? 'Horas de silencio' : 'Quiet Hours'}
           </h3>
           <p className="text-sm text-gray-500">
             {locale === 'fr'
               ? 'Aucune notification push pendant ces heures'
-              : 'No push notifications during these hours'}
+              : locale === 'es'
+                ? 'Sin notificaciones push durante estas horas'
+                : 'No push notifications during these hours'}
           </p>
           <div className="flex items-center gap-3">
             <input
@@ -268,7 +272,7 @@ export function NotificationSettings() {
               }
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
             />
-            <span className="text-gray-500">{locale === 'fr' ? 'a' : 'to'}</span>
+            <span className="text-gray-500">{locale === 'fr' ? 'a' : locale === 'es' ? 'a' : 'to'}</span>
             <input
               type="time"
               value={preferences?.quiet_hours_end || '08:00'}
@@ -283,7 +287,7 @@ export function NotificationSettings() {
         {/* Per-Type Settings */}
         <div className="space-y-4">
           <h3 className="font-medium text-gray-900">
-            {locale === 'fr' ? 'Parametres par type' : 'Per-type Settings'}
+            {locale === 'fr' ? 'Parametres par type' : locale === 'es' ? 'Configuracion por tipo' : 'Per-type Settings'}
           </h3>
 
           {Object.entries(CATEGORIES).map(([category, label]) => {
@@ -293,7 +297,7 @@ export function NotificationSettings() {
             return (
               <div key={category} className="space-y-2">
                 <h4 className="text-sm font-medium text-gray-700">
-                  {label[locale as 'en' | 'fr']}
+                  {label[locale as 'en' | 'fr' | 'es']}
                 </h4>
                 <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                   {types.map((typeConfig) => (
@@ -303,10 +307,10 @@ export function NotificationSettings() {
                     >
                       <div>
                         <p className="text-sm font-medium text-gray-800">
-                          {typeConfig.label[locale as 'en' | 'fr']}
+                          {typeConfig.label[locale as 'en' | 'fr' | 'es']}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {typeConfig.description[locale as 'en' | 'fr']}
+                          {typeConfig.description[locale as 'en' | 'fr' | 'es']}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -348,12 +352,12 @@ export function NotificationSettings() {
           {isSaving ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+              {locale === 'fr' ? 'Enregistrement...' : locale === 'es' ? 'Guardando...' : 'Saving...'}
             </>
           ) : (
             <>
               <Check className="w-4 h-4 mr-2" />
-              {locale === 'fr' ? 'Enregistrer les preferences' : 'Save Preferences'}
+              {locale === 'fr' ? 'Enregistrer les preferences' : locale === 'es' ? 'Guardar preferencias' : 'Save Preferences'}
             </>
           )}
         </Button>

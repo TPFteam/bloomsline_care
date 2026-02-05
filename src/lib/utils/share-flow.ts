@@ -110,8 +110,8 @@ export async function shareFlow(blob: Blob, locale: string): Promise<boolean> {
     try {
       await navigator.share({
         files: [file],
-        title: locale === 'fr' ? 'Ma journée - Bloomsline' : 'My Day - Bloomsline',
-        text: locale === 'fr' ? 'Voici ma journée sur Bloomsline' : "Here's my day on Bloomsline",
+        title: locale === 'fr' ? 'Ma journée - Bloomsline' : locale === 'es' ? 'Mi día - Bloomsline' : 'My Day - Bloomsline',
+        text: locale === 'fr' ? 'Voici ma journée sur Bloomsline' : locale === 'es' ? 'Aquí está mi día en Bloomsline' : "Here's my day on Bloomsline",
       })
       return true
     } catch (err) {

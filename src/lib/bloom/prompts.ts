@@ -22,11 +22,13 @@ const personalityTraits: Record<BloomPersonality, string> = {
 
 export function getBloomSystemPrompt(
   personality: BloomPersonality = 'gentle',
-  locale: 'en' | 'fr' = 'en'
+  locale: 'en' | 'fr' | 'es' = 'en'
 ): string {
   const languageInstruction = locale === 'fr'
     ? 'Réponds en français. Garde le même ton chaleureux et empathique.'
-    : 'Respond in English.'
+    : locale === 'es'
+      ? 'Responde en español. Mantén el mismo tono cálido y empático.'
+      : 'Respond in English.'
 
   return `You are Bloom.
 
@@ -116,16 +118,20 @@ LANGUAGE:
 ${languageInstruction}`
 }
 
-export function formatMomentsContext(moments: Moment[], locale: 'en' | 'fr' = 'en'): string {
+export function formatMomentsContext(moments: Moment[], locale: 'en' | 'fr' | 'es' = 'en'): string {
   if (!moments.length) {
     return locale === 'fr'
       ? 'L\'utilisateur n\'a pas encore créé de moments.'
-      : 'The user hasn\'t created any moments yet.'
+      : locale === 'es'
+        ? 'El usuario aún no ha creado ningún momento.'
+        : 'The user hasn\'t created any moments yet.'
   }
 
   const header = locale === 'fr'
     ? 'MOMENTS RÉCENTS DE L\'UTILISATEUR:'
-    : 'USER\'S RECENT MOMENTS:'
+    : locale === 'es'
+      ? 'MOMENTOS RECIENTES DEL USUARIO:'
+      : 'USER\'S RECENT MOMENTS:'
 
   const momentDescriptions = moments.slice(0, 5).map((moment, idx) => {
     const date = new Date(moment.created_at).toLocaleDateString(locale, {
@@ -136,7 +142,9 @@ export function formatMomentsContext(moments: Moment[], locale: 'en' | 'fr' = 'e
 
     const typeLabel = locale === 'fr'
       ? { photo: 'Photo', video: 'Vidéo', voice: 'Note vocale', write: 'Écriture' }[moment.type]
-      : { photo: 'Photo', video: 'Video', voice: 'Voice note', write: 'Written' }[moment.type]
+      : locale === 'es'
+        ? { photo: 'Foto', video: 'Video', voice: 'Nota de voz', write: 'Escrito' }[moment.type]
+        : { photo: 'Photo', video: 'Video', voice: 'Voice note', write: 'Written' }[moment.type]
 
     const moods = moment.moods.join(', ')
     const content = moment.text_content
@@ -151,7 +159,7 @@ export function formatMomentsContext(moments: Moment[], locale: 'en' | 'fr' = 'e
   return `${header}\n${momentDescriptions}`
 }
 
-export function getGreeting(locale: 'en' | 'fr' = 'en'): string {
+export function getGreeting(locale: 'en' | 'fr' | 'es' = 'en'): string {
   const hour = new Date().getHours()
 
   if (locale === 'fr') {
@@ -159,6 +167,13 @@ export function getGreeting(locale: 'en' | 'fr' = 'en'): string {
     if (hour < 17) return 'Bonjour. Comment se passe votre journée ?'
     if (hour < 21) return 'Bonsoir. Comment allez-vous ?'
     return 'Bonsoir. Qu\'est-ce qui vous occupe l\'esprit ?'
+  }
+
+  if (locale === 'es') {
+    if (hour < 12) return 'Buenos días. ¿Cómo te sientes esta mañana?'
+    if (hour < 17) return 'Buenas tardes. ¿Cómo va tu día?'
+    if (hour < 21) return 'Buenas tardes. ¿Cómo estás?'
+    return 'Hola. ¿Qué tienes en mente?'
   }
 
   if (hour < 12) return 'Good morning. How are you feeling today?'
@@ -172,22 +187,27 @@ export const BLOOM_PROMPTS = {
     reflection: {
       en: "What's on your mind today?",
       fr: "Qu'est-ce qui vous occupe l'esprit aujourd'hui ?",
+      es: "¿Qué tienes en mente hoy?",
     },
     gratitude: {
       en: "What's something small that made today better?",
       fr: "Qu'est-ce qui a rendu votre journée un peu meilleure ?",
+      es: "¿Qué pequeña cosa hizo mejor tu día hoy?",
     },
     mood_check: {
       en: "How are you feeling right now?",
       fr: "Comment vous sentez-vous en ce moment ?",
+      es: "¿Cómo te sientes en este momento?",
     },
     activity: {
       en: "Would you like to capture a moment?",
       fr: "Voulez-vous capturer un moment ?",
+      es: "¿Te gustaría capturar un momento?",
     },
     affirmation: {
       en: "You're making progress. Keep going.",
       fr: "Vous progressez. Continuez.",
+      es: "Estás progresando. Sigue adelante.",
     },
   },
 }
@@ -198,13 +218,13 @@ export const BLOOM_PROMPTS = {
 
 // Keywords that trigger specific content blocks
 const CONTENT_TRIGGERS = {
-  sleep: ['sleep', 'tired', 'rest', 'sommeil', 'fatigué', 'dormir', 'insomnia', 'insomnie'],
-  balance: ['balance', 'work', 'life', 'équilibre', 'travail', 'vie', 'hours', 'heures'],
-  week: ['week', 'semaine', 'summary', 'résumé', 'how was', 'comment était', 'patterns'],
-  moods: ['mood', 'feeling', 'feel', 'humeur', 'sentiment', 'emotions', 'émotions'],
-  stats: ['stats', 'numbers', 'data', 'statistiques', 'chiffres', 'données', 'show me'],
-  progress: ['progress', 'progrès', 'improving', 'amélioration', 'trend', 'tendance'],
-  anchors: ['anchor', 'anchors', 'habit', 'habits', 'ancre', 'ancres', 'habitude', 'habitudes', 'grow', 'let go', 'grandir', 'lâcher'],
+  sleep: ['sleep', 'tired', 'rest', 'sommeil', 'fatigué', 'dormir', 'insomnia', 'insomnie', 'sueño', 'cansado', 'descanso', 'insomnio'],
+  balance: ['balance', 'work', 'life', 'équilibre', 'travail', 'vie', 'hours', 'heures', 'equilibrio', 'trabajo', 'vida', 'horas'],
+  week: ['week', 'semaine', 'summary', 'résumé', 'how was', 'comment était', 'patterns', 'semana', 'resumen', 'cómo fue', 'patrones'],
+  moods: ['mood', 'feeling', 'feel', 'humeur', 'sentiment', 'emotions', 'émotions', 'ánimo', 'sentimiento', 'sentir', 'emociones'],
+  stats: ['stats', 'numbers', 'data', 'statistiques', 'chiffres', 'données', 'show me', 'estadísticas', 'números', 'datos', 'muéstrame'],
+  progress: ['progress', 'progrès', 'improving', 'amélioration', 'trend', 'tendance', 'progreso', 'mejorando', 'tendencia'],
+  anchors: ['anchor', 'anchors', 'habit', 'habits', 'ancre', 'ancres', 'habitude', 'habitudes', 'grow', 'let go', 'grandir', 'lâcher', 'ancla', 'anclas', 'hábito', 'hábitos', 'crecer', 'soltar'],
 }
 
 /**
@@ -229,7 +249,7 @@ function detectIntent(message: string): string[] {
 export function generateContentBlocks(
   userMessage: string,
   context: BloomContext,
-  locale: 'en' | 'fr' = 'en'
+  locale: 'en' | 'fr' | 'es' = 'en'
 ): ContentBlock[] {
   const intents = detectIntent(userMessage)
   const blocks: ContentBlock[] = []
@@ -283,7 +303,7 @@ export function generateContentBlocks(
  * - Grow: Higher count = better (building positive habits)
  * - Let Go: Lower count = better (avoiding negative habits - show as "avoided" or streak)
  */
-function generateAnchorStats(context: BloomContext, locale: 'en' | 'fr'): StatsContentBlock | null {
+function generateAnchorStats(context: BloomContext, locale: 'en' | 'fr' | 'es'): StatsContentBlock | null {
   const { today, thisWeek } = context
 
   const totalAnchors = today.anchors.totalGrow + today.anchors.totalLetGo
@@ -302,32 +322,34 @@ function generateAnchorStats(context: BloomContext, locale: 'en' | 'fr'): StatsC
 
   return {
     type: 'stats',
-    title: locale === 'fr' ? 'Ancres aujourd\'hui' : 'Today\'s anchors',
+    title: locale === 'fr' ? 'Ancres aujourd\'hui' : locale === 'es' ? 'Anclas de hoy' : 'Today\'s anchors',
     stats: [
       {
-        label: locale === 'fr' ? 'Grandir' : 'Grow',
+        label: locale === 'fr' ? 'Grandir' : locale === 'es' ? 'Crecer' : 'Grow',
         value: `${completedGrow}`,
         icon: '🌱',
         trend: completedGrow === totalGrow ? 'up' : completedGrow > 0 ? 'neutral' : 'down',
         trendValue: locale === 'fr'
           ? `${completedGrow}/${totalGrow} faits`
-          : `${completedGrow}/${totalGrow} done`,
+          : locale === 'es'
+            ? `${completedGrow}/${totalGrow} hechos`
+            : `${completedGrow}/${totalGrow} done`,
       },
       {
-        label: locale === 'fr' ? 'Évité' : 'Avoided',
+        label: locale === 'fr' ? 'Évité' : locale === 'es' ? 'Evitado' : 'Avoided',
         value: letGoSlipped === 0 ? '✓' : `${letGoSlipped}`,
         icon: '🍃',
         trend: letGoSlipped === 0 ? 'up' : 'down',
         trendValue: letGoSlipped === 0
-          ? (locale === 'fr' ? 'Tout évité' : 'All avoided')
-          : (locale === 'fr' ? `${letGoSlipped} écart(s)` : `${letGoSlipped} slip(s)`),
+          ? (locale === 'fr' ? 'Tout évité' : locale === 'es' ? 'Todo evitado' : 'All avoided')
+          : (locale === 'fr' ? `${letGoSlipped} écart(s)` : locale === 'es' ? `${letGoSlipped} recaída(s)` : `${letGoSlipped} slip(s)`),
       },
       {
-        label: locale === 'fr' ? 'Semaine' : 'Week',
+        label: locale === 'fr' ? 'Semaine' : locale === 'es' ? 'Semana' : 'Week',
         value: `${thisWeek.anchors.growCompletionRate}%`,
         icon: '📈',
         trend: thisWeek.anchors.growCompletionRate >= 60 ? 'up' : thisWeek.anchors.growCompletionRate < 30 ? 'down' : 'neutral',
-        trendValue: locale === 'fr' ? 'Progression' : 'Progress',
+        trendValue: locale === 'fr' ? 'Progression' : locale === 'es' ? 'Progreso' : 'Progress',
       },
     ],
   }
@@ -336,7 +358,7 @@ function generateAnchorStats(context: BloomContext, locale: 'en' | 'fr'): StatsC
 /**
  * Generate sleep trend chart
  */
-function generateSleepChart(context: BloomContext, locale: 'en' | 'fr'): ChartContentBlock | null {
+function generateSleepChart(context: BloomContext, locale: 'en' | 'fr' | 'es'): ChartContentBlock | null {
   const { thisWeek, today } = context
 
   if (!today.balance.hasLogged && thisWeek.balance.avgSleep === 0) {
@@ -346,7 +368,9 @@ function generateSleepChart(context: BloomContext, locale: 'en' | 'fr'): ChartCo
   // Create a simple 7-day representation
   const days = locale === 'fr'
     ? ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
-    : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    : locale === 'es'
+      ? ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
   // Generate approximate daily values based on average (simplified)
   const avgHours = thisWeek.balance.avgSleep
@@ -365,10 +389,12 @@ function generateSleepChart(context: BloomContext, locale: 'en' | 'fr'): ChartCo
   return {
     type: 'chart',
     chartType: 'bar',
-    title: locale === 'fr' ? 'Sommeil cette semaine' : 'Sleep this week',
+    title: locale === 'fr' ? 'Sommeil cette semaine' : locale === 'es' ? 'Sueño esta semana' : 'Sleep this week',
     subtitle: locale === 'fr'
       ? `Moyenne: ${avgHours}h • ${thisWeek.balance.sleepTrend === 'improving' ? 'En amélioration' : thisWeek.balance.sleepTrend === 'declining' ? 'En baisse' : 'Stable'}`
-      : `Avg: ${avgHours}h • ${thisWeek.balance.sleepTrend === 'improving' ? 'Improving' : thisWeek.balance.sleepTrend === 'declining' ? 'Declining' : 'Stable'}`,
+      : locale === 'es'
+        ? `Promedio: ${avgHours}h • ${thisWeek.balance.sleepTrend === 'improving' ? 'Mejorando' : thisWeek.balance.sleepTrend === 'declining' ? 'En descenso' : 'Estable'}`
+        : `Avg: ${avgHours}h • ${thisWeek.balance.sleepTrend === 'improving' ? 'Improving' : thisWeek.balance.sleepTrend === 'declining' ? 'Declining' : 'Stable'}`,
     data: {
       labels: days,
       values,
@@ -380,7 +406,7 @@ function generateSleepChart(context: BloomContext, locale: 'en' | 'fr'): ChartCo
 /**
  * Generate balance statistics
  */
-function generateBalanceStats(context: BloomContext, locale: 'en' | 'fr'): StatsContentBlock | null {
+function generateBalanceStats(context: BloomContext, locale: 'en' | 'fr' | 'es'): StatsContentBlock | null {
   const { today } = context
 
   if (!today.balance.hasLogged) {
@@ -391,34 +417,40 @@ function generateBalanceStats(context: BloomContext, locale: 'en' | 'fr'): Stats
 
   return {
     type: 'stats',
-    title: locale === 'fr' ? 'Équilibre aujourd\'hui' : 'Today\'s balance',
+    title: locale === 'fr' ? 'Équilibre aujourd\'hui' : locale === 'es' ? 'Equilibrio de hoy' : 'Today\'s balance',
     stats: [
       {
-        label: locale === 'fr' ? 'Sommeil' : 'Sleep',
+        label: locale === 'fr' ? 'Sommeil' : locale === 'es' ? 'Sueño' : 'Sleep',
         value: formatHours(today.balance.sleep),
         icon: '😴',
         trend: today.balance.sleep >= today.balance.targets.sleep * 0.9 ? 'up' : 'down',
         trendValue: locale === 'fr'
           ? `objectif: ${formatHours(today.balance.targets.sleep)}`
-          : `target: ${formatHours(today.balance.targets.sleep)}`,
+          : locale === 'es'
+            ? `objetivo: ${formatHours(today.balance.targets.sleep)}`
+            : `target: ${formatHours(today.balance.targets.sleep)}`,
       },
       {
-        label: locale === 'fr' ? 'Travail' : 'Work',
+        label: locale === 'fr' ? 'Travail' : locale === 'es' ? 'Trabajo' : 'Work',
         value: formatHours(today.balance.work),
         icon: '💼',
         trend: today.balance.work <= today.balance.targets.work * 1.1 ? 'neutral' : 'down',
         trendValue: locale === 'fr'
           ? `objectif: ${formatHours(today.balance.targets.work)}`
-          : `target: ${formatHours(today.balance.targets.work)}`,
+          : locale === 'es'
+            ? `objetivo: ${formatHours(today.balance.targets.work)}`
+            : `target: ${formatHours(today.balance.targets.work)}`,
       },
       {
-        label: locale === 'fr' ? 'Vie perso' : 'Life',
+        label: locale === 'fr' ? 'Vie perso' : locale === 'es' ? 'Vida personal' : 'Life',
         value: formatHours(today.balance.life),
         icon: '🌿',
         trend: today.balance.life >= today.balance.targets.life * 0.8 ? 'up' : 'down',
         trendValue: locale === 'fr'
           ? `objectif: ${formatHours(today.balance.targets.life)}`
-          : `target: ${formatHours(today.balance.targets.life)}`,
+          : locale === 'es'
+            ? `objetivo: ${formatHours(today.balance.targets.life)}`
+            : `target: ${formatHours(today.balance.targets.life)}`,
       },
     ],
   }
@@ -427,7 +459,7 @@ function generateBalanceStats(context: BloomContext, locale: 'en' | 'fr'): Stats
 /**
  * Generate weekly summary
  */
-function generateWeeklySummary(context: BloomContext, locale: 'en' | 'fr'): WeeklySummaryBlock {
+function generateWeeklySummary(context: BloomContext, locale: 'en' | 'fr' | 'es'): WeeklySummaryBlock {
   const { thisWeek } = context
 
   const highlights: { icon: string; text: string }[] = []
@@ -438,14 +470,18 @@ function generateWeeklySummary(context: BloomContext, locale: 'en' | 'fr'): Week
       icon: '✨',
       text: locale === 'fr'
         ? `Bon sommeil: ${thisWeek.balance.avgSleep}h en moyenne`
-        : `Good sleep: ${thisWeek.balance.avgSleep}h average`,
+        : locale === 'es'
+          ? `Buen sueño: ${thisWeek.balance.avgSleep}h en promedio`
+          : `Good sleep: ${thisWeek.balance.avgSleep}h average`,
     })
   } else if (thisWeek.balance.avgSleep < 6) {
     highlights.push({
       icon: '😴',
       text: locale === 'fr'
         ? `Sommeil insuffisant: ${thisWeek.balance.avgSleep}h en moyenne`
-        : `Low sleep: ${thisWeek.balance.avgSleep}h average`,
+        : locale === 'es'
+          ? `Sueño insuficiente: ${thisWeek.balance.avgSleep}h en promedio`
+          : `Low sleep: ${thisWeek.balance.avgSleep}h average`,
     })
   }
 
@@ -455,7 +491,9 @@ function generateWeeklySummary(context: BloomContext, locale: 'en' | 'fr'): Week
       icon: thisWeek.moods.positive >= 60 ? '🌟' : '💭',
       text: locale === 'fr'
         ? `Humeurs principales: ${thisWeek.moods.topMoods.join(', ')}`
-        : `Top moods: ${thisWeek.moods.topMoods.join(', ')}`,
+        : locale === 'es'
+          ? `Estados de ánimo principales: ${thisWeek.moods.topMoods.join(', ')}`
+          : `Top moods: ${thisWeek.moods.topMoods.join(', ')}`,
     })
   }
 
@@ -465,7 +503,9 @@ function generateWeeklySummary(context: BloomContext, locale: 'en' | 'fr'): Week
       icon: '📸',
       text: locale === 'fr'
         ? `${thisWeek.momentsCount} moments capturés`
-        : `${thisWeek.momentsCount} moments captured`,
+        : locale === 'es'
+          ? `${thisWeek.momentsCount} momentos capturados`
+          : `${thisWeek.momentsCount} moments captured`,
     })
   }
 
@@ -475,7 +515,9 @@ function generateWeeklySummary(context: BloomContext, locale: 'en' | 'fr'): Week
       icon: '🎯',
       text: locale === 'fr'
         ? `${thisWeek.rituals.completionRate}% des rituels complétés`
-        : `${thisWeek.rituals.completionRate}% rituals completed`,
+        : locale === 'es'
+          ? `${thisWeek.rituals.completionRate}% de rituales completados`
+          : `${thisWeek.rituals.completionRate}% rituals completed`,
     })
   }
 
@@ -485,7 +527,9 @@ function generateWeeklySummary(context: BloomContext, locale: 'en' | 'fr'): Week
       icon: '📊',
       text: locale === 'fr'
         ? 'Continue à suivre tes données pour plus d\'insights'
-        : 'Keep tracking for more insights',
+        : locale === 'es'
+          ? 'Sigue registrando tus datos para más información'
+          : 'Keep tracking for more insights',
     })
   }
 
@@ -497,7 +541,9 @@ function generateWeeklySummary(context: BloomContext, locale: 'en' | 'fr'): Week
     type: 'weekly_summary',
     weekLabel: locale === 'fr'
       ? `Semaine du ${weekStart.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' })}`
-      : `Week of ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      : locale === 'es'
+        ? `Semana del ${weekStart.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}`
+        : `Week of ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
     highlights,
     moodBreakdown: {
       positive: thisWeek.moods.positive,
@@ -512,7 +558,7 @@ function generateWeeklySummary(context: BloomContext, locale: 'en' | 'fr'): Week
 /**
  * Generate mood chart
  */
-function generateMoodChart(context: BloomContext, locale: 'en' | 'fr'): ChartContentBlock | null {
+function generateMoodChart(context: BloomContext, locale: 'en' | 'fr' | 'es'): ChartContentBlock | null {
   const { thisWeek } = context
 
   if (thisWeek.moods.topMoods.length === 0) {
@@ -522,15 +568,17 @@ function generateMoodChart(context: BloomContext, locale: 'en' | 'fr'): ChartCon
   return {
     type: 'chart',
     chartType: 'donut',
-    title: locale === 'fr' ? 'Répartition des humeurs' : 'Mood breakdown',
+    title: locale === 'fr' ? 'Répartition des humeurs' : locale === 'es' ? 'Distribución del ánimo' : 'Mood breakdown',
     subtitle: locale === 'fr'
       ? `${thisWeek.moods.positive}% positives cette semaine`
-      : `${thisWeek.moods.positive}% positive this week`,
+      : locale === 'es'
+        ? `${thisWeek.moods.positive}% positivos esta semana`
+        : `${thisWeek.moods.positive}% positive this week`,
     data: {
       labels: [
-        locale === 'fr' ? 'Positives' : 'Positive',
-        locale === 'fr' ? 'Neutres' : 'Neutral',
-        locale === 'fr' ? 'Difficiles' : 'Challenging',
+        locale === 'fr' ? 'Positives' : locale === 'es' ? 'Positivos' : 'Positive',
+        locale === 'fr' ? 'Neutres' : locale === 'es' ? 'Neutros' : 'Neutral',
+        locale === 'fr' ? 'Difficiles' : locale === 'es' ? 'Difíciles' : 'Challenging',
       ],
       values: [
         thisWeek.moods.positive,
@@ -545,27 +593,27 @@ function generateMoodChart(context: BloomContext, locale: 'en' | 'fr'): ChartCon
 /**
  * Generate quick stats overview
  */
-function generateQuickStats(context: BloomContext, locale: 'en' | 'fr'): StatsContentBlock {
+function generateQuickStats(context: BloomContext, locale: 'en' | 'fr' | 'es'): StatsContentBlock {
   const { thisWeek } = context
 
   return {
     type: 'stats',
-    title: locale === 'fr' ? 'Aperçu rapide' : 'Quick overview',
+    title: locale === 'fr' ? 'Aperçu rapide' : locale === 'es' ? 'Resumen rápido' : 'Quick overview',
     stats: [
       {
-        label: locale === 'fr' ? 'Moments' : 'Moments',
+        label: locale === 'fr' ? 'Moments' : locale === 'es' ? 'Momentos' : 'Moments',
         value: thisWeek.momentsCount,
         icon: '📸',
         trend: thisWeek.momentsCount > 3 ? 'up' : 'neutral',
       },
       {
-        label: locale === 'fr' ? 'Rituels' : 'Rituals',
+        label: locale === 'fr' ? 'Rituels' : locale === 'es' ? 'Rituales' : 'Rituals',
         value: `${thisWeek.rituals.completionRate}%`,
         icon: '🎯',
         trend: thisWeek.rituals.completionRate >= 70 ? 'up' : thisWeek.rituals.completionRate < 30 ? 'down' : 'neutral',
       },
       {
-        label: locale === 'fr' ? 'Humeur' : 'Mood',
+        label: locale === 'fr' ? 'Humeur' : locale === 'es' ? 'Ánimo' : 'Mood',
         value: `${thisWeek.moods.positive}%`,
         icon: thisWeek.moods.positive >= 60 ? '😊' : thisWeek.moods.positive >= 40 ? '😐' : '😔',
         trend: thisWeek.moods.positive >= 60 ? 'up' : thisWeek.moods.positive < 40 ? 'down' : 'neutral',
@@ -577,7 +625,7 @@ function generateQuickStats(context: BloomContext, locale: 'en' | 'fr'): StatsCo
 /**
  * Generate progress insight
  */
-function generateProgressInsight(context: BloomContext, locale: 'en' | 'fr'): InsightContentBlock | null {
+function generateProgressInsight(context: BloomContext, locale: 'en' | 'fr' | 'es'): InsightContentBlock | null {
   const { thisWeek, patterns } = context
 
   // Find a meaningful insight
@@ -589,28 +637,34 @@ function generateProgressInsight(context: BloomContext, locale: 'en' | 'fr'): In
   if (thisWeek.balance.sleepTrend === 'improving') {
     insightType = 'achievement'
     icon = '🌟'
-    title = locale === 'fr' ? 'Sommeil en amélioration' : 'Sleep improving'
+    title = locale === 'fr' ? 'Sommeil en amélioration' : locale === 'es' ? 'Sueño mejorando' : 'Sleep improving'
     description = locale === 'fr'
       ? 'Ton sommeil s\'améliore cette semaine. Continue comme ça!'
-      : 'Your sleep is getting better this week. Keep it up!'
+      : locale === 'es'
+        ? 'Tu sueño está mejorando esta semana. ¡Sigue así!'
+        : 'Your sleep is getting better this week. Keep it up!'
   } else if (thisWeek.rituals.completionRate >= 80) {
     insightType = 'achievement'
     icon = '🏆'
-    title = locale === 'fr' ? 'Rituels réguliers' : 'Consistent rituals'
+    title = locale === 'fr' ? 'Rituels réguliers' : locale === 'es' ? 'Rituales constantes' : 'Consistent rituals'
     description = locale === 'fr'
       ? 'Tu es vraiment régulier avec tes rituels. Impressionnant!'
-      : 'You are really consistent with your rituals. Impressive!'
+      : locale === 'es'
+        ? 'Eres muy constante con tus rituales. ¡Impresionante!'
+        : 'You are really consistent with your rituals. Impressive!'
   } else if (thisWeek.moods.positive >= 70) {
     insightType = 'pattern'
     icon = '☀️'
-    title = locale === 'fr' ? 'Semaine positive' : 'Positive week'
+    title = locale === 'fr' ? 'Semaine positive' : locale === 'es' ? 'Semana positiva' : 'Positive week'
     description = locale === 'fr'
       ? 'Beaucoup d\'émotions positives cette semaine. Qu\'est-ce qui contribue à ça?'
-      : 'Lots of positive emotions this week. What is contributing to that?'
+      : locale === 'es'
+        ? 'Muchas emociones positivas esta semana. ¿Qué está contribuyendo a eso?'
+        : 'Lots of positive emotions this week. What is contributing to that?'
   } else if (patterns.insights.length > 0) {
     insightType = 'pattern'
     icon = '🔍'
-    title = locale === 'fr' ? 'Pattern détecté' : 'Pattern detected'
+    title = locale === 'fr' ? 'Pattern détecté' : locale === 'es' ? 'Patrón detectado' : 'Pattern detected'
     description = patterns.insights[0]
   } else {
     return null
@@ -641,7 +695,7 @@ interface SuggestionContext {
 
 export function generateSuggestions(
   context: SuggestionContext,
-  locale: 'en' | 'fr' = 'en'
+  locale: 'en' | 'fr' | 'es' = 'en'
 ): string[] {
   const suggestions: string[] = []
   const hour = context.hourOfDay
@@ -649,39 +703,39 @@ export function generateSuggestions(
 
   // Time-based suggestions
   if (hour >= 6 && hour < 10) {
-    suggestions.push(locale === 'fr' ? 'Comment je me sens ce matin' : 'How am I feeling this morning')
+    suggestions.push(locale === 'fr' ? 'Comment je me sens ce matin' : locale === 'es' ? 'Cómo me siento esta mañana' : 'How am I feeling this morning')
   } else if (hour >= 21 || hour < 6) {
-    suggestions.push(locale === 'fr' ? 'Résume ma journée' : 'Summarize my day')
+    suggestions.push(locale === 'fr' ? 'Résume ma journée' : locale === 'es' ? 'Resume mi día' : 'Summarize my day')
   }
 
   // Mood-based suggestions
   if (context.recentMoodTrend === 'negative') {
-    suggestions.push(locale === 'fr' ? 'Qu\'est-ce qui m\'aide quand je suis stressé' : 'What helps me when I am stressed')
+    suggestions.push(locale === 'fr' ? 'Qu\'est-ce qui m\'aide quand je suis stressé' : locale === 'es' ? 'Qué me ayuda cuando estoy estresado' : 'What helps me when I am stressed')
   } else if (context.recentMoodTrend === 'positive') {
-    suggestions.push(locale === 'fr' ? 'Qu\'est-ce qui va bien pour moi' : 'What is going well for me')
+    suggestions.push(locale === 'fr' ? 'Qu\'est-ce qui va bien pour moi' : locale === 'es' ? 'Qué me está yendo bien' : 'What is going well for me')
   }
 
   // Content-based suggestions
   if (context.hasMoments) {
-    suggestions.push(locale === 'fr' ? 'Montre-moi des patterns dans mes moments' : 'Show me patterns in my moments')
-    suggestions.push(locale === 'fr' ? 'Comment était ma semaine' : 'How was my week')
+    suggestions.push(locale === 'fr' ? 'Montre-moi des patterns dans mes moments' : locale === 'es' ? 'Muéstrame patrones en mis momentos' : 'Show me patterns in my moments')
+    suggestions.push(locale === 'fr' ? 'Comment était ma semaine' : locale === 'es' ? 'Cómo fue mi semana' : 'How was my week')
   } else {
-    suggestions.push(locale === 'fr' ? 'Comment capturer un moment' : 'How do I capture a moment')
+    suggestions.push(locale === 'fr' ? 'Comment capturer un moment' : locale === 'es' ? 'Cómo capturo un momento' : 'How do I capture a moment')
   }
 
   // Balance-based suggestions
   if (context.workLifeBalance === 'work_heavy') {
-    suggestions.push(locale === 'fr' ? 'J\'ai besoin d\'une pause' : 'I need a break')
+    suggestions.push(locale === 'fr' ? 'J\'ai besoin d\'une pause' : locale === 'es' ? 'Necesito un descanso' : 'I need a break')
   }
 
   // Sleep-based suggestions
   if (context.hasSleptWell === false) {
-    suggestions.push(locale === 'fr' ? 'Pourquoi je dors mal' : 'Why am I not sleeping well')
+    suggestions.push(locale === 'fr' ? 'Pourquoi je dors mal' : locale === 'es' ? 'Por qué no duermo bien' : 'Why am I not sleeping well')
   }
 
   // Weekend suggestions
   if (isWeekend) {
-    suggestions.push(locale === 'fr' ? 'Que puis-je faire pour moi aujourd\'hui' : 'What can I do for myself today')
+    suggestions.push(locale === 'fr' ? 'Que puis-je faire pour moi aujourd\'hui' : locale === 'es' ? 'Qué puedo hacer por mí hoy' : 'What can I do for myself today')
   }
 
   // Default suggestions if we don't have enough
@@ -691,11 +745,17 @@ export function generateSuggestions(
         'Donne-moi une perspective',
         'Qu\'est-ce que tu as remarqué chez moi',
       ]
-    : [
-        'How do you see me',
-        'Give me some perspective',
-        'What have you noticed about me',
-      ]
+    : locale === 'es'
+      ? [
+          'Cómo me ves',
+          'Dame una perspectiva',
+          'Qué has notado de mí',
+        ]
+      : [
+          'How do you see me',
+          'Give me some perspective',
+          'What have you noticed about me',
+        ]
 
   // Add defaults to fill up to 3 suggestions
   while (suggestions.length < 3 && defaults.length > 0) {

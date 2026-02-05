@@ -395,9 +395,9 @@ export default function BalancePage() {
         // Format label based on range size
         let dateLabel: string
         if (dayCount <= 7) {
-          dateLabel = date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short' })
+          dateLabel = date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { weekday: 'short' })
         } else {
-          dateLabel = date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })
+          dateLabel = date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { day: 'numeric', month: 'short' })
         }
 
         days.push({
@@ -975,16 +975,16 @@ export default function BalancePage() {
     const yesterdayStr = addDays(todayStr, -1)
 
     if (dateStr === todayStr) {
-      return locale === 'fr' ? "Aujourd'hui" : 'Today'
+      return locale === 'fr' ? "Aujourd'hui" : locale === 'es' ? 'Hoy' : 'Today'
     }
     if (dateStr === yesterdayStr) {
-      return locale === 'fr' ? 'Hier' : 'Yesterday'
+      return locale === 'fr' ? 'Hier' : locale === 'es' ? 'Ayer' : 'Yesterday'
     }
 
     // Parse date for display
     const [year, month, day] = dateStr.split('-').map(Number)
     const date = new Date(year, month - 1, day)
-    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -1129,18 +1129,18 @@ export default function BalancePage() {
   }
 
   const tagColors = {
-    sleep: { bg: 'bg-violet-100', text: 'text-violet-600', label: locale === 'fr' ? 'Sommeil' : 'Sleep' },
-    work: { bg: 'bg-amber-100', text: 'text-amber-600', label: locale === 'fr' ? 'Travail' : 'Work' },
-    life: { bg: 'bg-emerald-100', text: 'text-emerald-600', label: locale === 'fr' ? 'Vie' : 'Life' },
+    sleep: { bg: 'bg-violet-100', text: 'text-violet-600', label: locale === 'fr' ? 'Sommeil' : locale === 'es' ? 'Sueño' : 'Sleep' },
+    work: { bg: 'bg-amber-100', text: 'text-amber-600', label: locale === 'fr' ? 'Travail' : locale === 'es' ? 'Trabajo' : 'Work' },
+    life: { bg: 'bg-emerald-100', text: 'text-emerald-600', label: locale === 'fr' ? 'Vie' : locale === 'es' ? 'Vida' : 'Life' },
   }
 
   // Feeling options for day confirmation
   const feelingOptions = [
-    { id: 'great' as const, icon: Sparkles, labelEn: 'Great', labelFr: 'Super', color: 'bg-emerald-100 text-emerald-600 border-emerald-200', iconColor: 'text-emerald-500' },
-    { id: 'good' as const, icon: ThumbsUp, labelEn: 'Good', labelFr: 'Bien', color: 'bg-teal-100 text-teal-600 border-teal-200', iconColor: 'text-teal-500' },
-    { id: 'okay' as const, icon: Meh, labelEn: 'Okay', labelFr: 'Correct', color: 'bg-amber-100 text-amber-600 border-amber-200', iconColor: 'text-amber-500' },
-    { id: 'tired' as const, icon: Battery, labelEn: 'Tired', labelFr: 'Fatigué', color: 'bg-orange-100 text-orange-600 border-orange-200', iconColor: 'text-orange-500' },
-    { id: 'rough' as const, icon: CloudRain, labelEn: 'Rough', labelFr: 'Difficile', color: 'bg-rose-100 text-rose-600 border-rose-200', iconColor: 'text-rose-500' },
+    { id: 'great' as const, icon: Sparkles, labelEn: 'Great', labelFr: 'Super', labelEs: 'Genial', color: 'bg-emerald-100 text-emerald-600 border-emerald-200', iconColor: 'text-emerald-500' },
+    { id: 'good' as const, icon: ThumbsUp, labelEn: 'Good', labelFr: 'Bien', labelEs: 'Bien', color: 'bg-teal-100 text-teal-600 border-teal-200', iconColor: 'text-teal-500' },
+    { id: 'okay' as const, icon: Meh, labelEn: 'Okay', labelFr: 'Correct', labelEs: 'Regular', color: 'bg-amber-100 text-amber-600 border-amber-200', iconColor: 'text-amber-500' },
+    { id: 'tired' as const, icon: Battery, labelEn: 'Tired', labelFr: 'Fatigué', labelEs: 'Cansado', color: 'bg-orange-100 text-orange-600 border-orange-200', iconColor: 'text-orange-500' },
+    { id: 'rough' as const, icon: CloudRain, labelEn: 'Rough', labelFr: 'Difficile', labelEs: 'Difícil', color: 'bg-rose-100 text-rose-600 border-rose-200', iconColor: 'text-rose-500' },
   ]
 
   // Save day confirmation with feeling
@@ -1220,9 +1220,9 @@ export default function BalancePage() {
   }
 
   const tabs = [
-    { id: 'today' as TabType, labelEn: 'Today', labelFr: 'Aujourd\'hui', icon: Calendar },
-    { id: 'reflect' as TabType, labelEn: 'Reflect', labelFr: 'Réfléchir', icon: Settings },
-    { id: 'trends' as TabType, labelEn: 'Trends', labelFr: 'Tendances', icon: TrendingUp },
+    { id: 'today' as TabType, labelEn: 'Today', labelFr: 'Aujourd\'hui', labelEs: 'Hoy', icon: Calendar },
+    { id: 'reflect' as TabType, labelEn: 'Reflect', labelFr: 'Réfléchir', labelEs: 'Reflexionar', icon: Settings },
+    { id: 'trends' as TabType, labelEn: 'Trends', labelFr: 'Tendances', labelEs: 'Tendencias', icon: TrendingUp },
   ]
 
   // Arc positions based on target hours
@@ -1337,7 +1337,7 @@ export default function BalancePage() {
             <ChevronLeft className="w-5 h-5" />
           </button>
           <h1 className="text-lg font-semibold text-gray-800">
-            {locale === 'fr' ? 'Sommeil, travail et vie' : 'Sleep, work and life overview'}
+            {locale === 'fr' ? 'Sommeil, travail et vie' : locale === 'es' ? 'Sueño, trabajo y vida' : 'Sleep, work and life overview'}
           </h1>
         </motion.div>
 
@@ -1358,7 +1358,7 @@ export default function BalancePage() {
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                {locale === 'fr' ? tab.labelFr : tab.labelEn}
+                {locale === 'fr' ? tab.labelFr : locale === 'es' ? tab.labelEs : tab.labelEn}
               </button>
             ))}
           </div>
@@ -1446,7 +1446,7 @@ export default function BalancePage() {
               >
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Configurer mes 24 heures' : 'Configure my 24 hours'}
+                    {locale === 'fr' ? 'Configurer mes 24 heures' : locale === 'es' ? 'Configurar mis 24 horas' : 'Configure my 24 hours'}
                   </h3>
                   <button
                     onClick={() => setShowConfig(false)}
@@ -1459,7 +1459,7 @@ export default function BalancePage() {
                 {/* Hours remaining indicator */}
                 <div className="mb-6 p-3 bg-gray-50 rounded-xl flex items-center justify-between">
                   <span className="text-sm text-gray-600">
-                    {locale === 'fr' ? 'Heures restantes' : 'Hours remaining'}
+                    {locale === 'fr' ? 'Heures restantes' : locale === 'es' ? 'Horas restantes' : 'Hours remaining'}
                   </span>
                   <span className={`text-lg font-bold ${24 - totalTempTargetHours > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
                     {24 - totalTempTargetHours}h
@@ -1474,7 +1474,7 @@ export default function BalancePage() {
                         <Moon className="w-5 h-5 text-violet-500" />
                       </div>
                       <span className="font-medium text-gray-800">
-                        {locale === 'fr' ? 'Sommeil' : 'Sleep'}
+                        {locale === 'fr' ? 'Sommeil' : locale === 'es' ? 'Sueño' : 'Sleep'}
                       </span>
                     </div>
                     <span className="text-2xl font-bold text-gray-900">{tempTargetHours.sleep}h</span>
@@ -1503,7 +1503,7 @@ export default function BalancePage() {
                         <Briefcase className="w-5 h-5 text-amber-500" />
                       </div>
                       <span className="font-medium text-gray-800">
-                        {locale === 'fr' ? 'Travail' : 'Work'}
+                        {locale === 'fr' ? 'Travail' : locale === 'es' ? 'Trabajo' : 'Work'}
                       </span>
                     </div>
                     <span className="text-2xl font-bold text-gray-900">{tempTargetHours.work}h</span>
@@ -1532,7 +1532,7 @@ export default function BalancePage() {
                         <Heart className="w-5 h-5 text-emerald-500" />
                       </div>
                       <span className="font-medium text-gray-800">
-                        {locale === 'fr' ? 'Vie' : 'Life'}
+                        {locale === 'fr' ? 'Vie' : locale === 'es' ? 'Vida' : 'Life'}
                       </span>
                     </div>
                     <span className="text-2xl font-bold text-gray-900">{tempTargetHours.life}h</span>
@@ -1561,7 +1561,7 @@ export default function BalancePage() {
                     className="w-full py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                    {locale === 'fr' ? 'Enregistrer' : locale === 'es' ? 'Guardar' : 'Save'}
                   </button>
                 </div>
 
@@ -1569,12 +1569,12 @@ export default function BalancePage() {
                 {settingsHistory.length > 0 && (
                   <div className="mt-6 pb-24">
                     <h4 className="text-sm font-medium text-gray-500 mb-3">
-                      {locale === 'fr' ? 'Historique des modifications' : 'Change History'}
+                      {locale === 'fr' ? 'Historique des modifications' : locale === 'es' ? 'Historial de cambios' : 'Change History'}
                     </h4>
                     <div className="space-y-2 max-h-40 overflow-y-auto">
                       {settingsHistory.map((entry) => {
                         const date = new Date(entry.effective_from)
-                        const dateStr = date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                        const dateStr = date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric',
@@ -1626,7 +1626,7 @@ export default function BalancePage() {
               >
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Liste Someday' : 'Someday List'}
+                    {locale === 'fr' ? 'Liste Someday' : locale === 'es' ? 'Lista Algún Día' : 'Someday List'}
                   </h3>
                   <button
                     onClick={() => setShowSomeday(false)}
@@ -1639,7 +1639,7 @@ export default function BalancePage() {
                 {/* Someday items list */}
                 {somedayItems.length === 0 ? (
                   <div className="text-center py-6 text-gray-400 text-sm mb-6">
-                    {locale === 'fr' ? 'Aucun élément pour le moment' : 'No items yet'}
+                    {locale === 'fr' ? 'Aucun élément pour le moment' : locale === 'es' ? 'Sin elementos aún' : 'No items yet'}
                   </div>
                 ) : (
                   <div className="space-y-2 mb-6">
@@ -1662,7 +1662,7 @@ export default function BalancePage() {
                             {item.plannedDate && (
                               <span className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
-                                {new Date(item.plannedDate).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })}
+                                {new Date(item.plannedDate).toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric' })}
                               </span>
                             )}
                             {item.estimatedMinutes && (
@@ -1678,7 +1678,7 @@ export default function BalancePage() {
                             onClick={() => moveToToday(item)}
                             className="px-2 py-1 text-xs font-medium text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
                           >
-                            {locale === 'fr' ? 'Faire' : 'Do'}
+                            {locale === 'fr' ? 'Faire' : locale === 'es' ? 'Hacer' : 'Do'}
                           </button>
                           <button
                             onClick={() => removeSomedayItem(item.id)}
@@ -1696,14 +1696,14 @@ export default function BalancePage() {
                 <div className="p-4 bg-gray-50 rounded-xl space-y-3">
                   <input
                     type="text"
-                    placeholder={locale === 'fr' ? 'Nom de la tâche...' : 'Task name...'}
+                    placeholder={locale === 'fr' ? 'Nom de la tâche...' : locale === 'es' ? 'Nombre de la tarea...' : 'Task name...'}
                     value={newItem.name}
                     onChange={(e) => setNewItem(prev => ({ ...prev, name: e.target.value }))}
                     className="w-full px-3 py-2 bg-white rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
                   />
                   <input
                     type="text"
-                    placeholder={locale === 'fr' ? 'Description (optionnel)' : 'Description (optional)'}
+                    placeholder={locale === 'fr' ? 'Description (optionnel)' : locale === 'es' ? 'Descripción (opcional)' : 'Description (optional)'}
                     value={newItem.description}
                     onChange={(e) => setNewItem(prev => ({ ...prev, description: e.target.value }))}
                     className="w-full px-3 py-2 bg-white rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
@@ -1713,7 +1713,7 @@ export default function BalancePage() {
                   <div className="flex items-center gap-2">
                     <div className="flex-1">
                       <label className="block text-xs text-gray-500 mb-1">
-                        {locale === 'fr' ? 'Date prévue' : 'Planned date'}
+                        {locale === 'fr' ? 'Date prévue' : locale === 'es' ? 'Fecha prevista' : 'Planned date'}
                       </label>
                       <input
                         type="date"
@@ -1724,7 +1724,7 @@ export default function BalancePage() {
                     </div>
                     <div className="flex-1">
                       <label className="block text-xs text-gray-500 mb-1">
-                        {locale === 'fr' ? 'Durée estimée' : 'Estimated time'}
+                        {locale === 'fr' ? 'Durée estimée' : locale === 'es' ? 'Tiempo estimado' : 'Estimated time'}
                       </label>
                       <select
                         value={newItem.estimatedMinutes}
@@ -1765,7 +1765,7 @@ export default function BalancePage() {
                     disabled={!newItem.name.trim()}
                     className="w-full py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {locale === 'fr' ? 'Ajouter' : 'Add'}
+                    {locale === 'fr' ? 'Ajouter' : locale === 'es' ? 'Agregar' : 'Add'}
                   </button>
                 </div>
               </motion.div>
@@ -1792,10 +1792,10 @@ export default function BalancePage() {
               >
                 <div className="text-center mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {locale === 'fr' ? 'Comment te sens-tu ?' : 'How do you feel?'}
+                    {locale === 'fr' ? 'Comment te sens-tu ?' : locale === 'es' ? '¿Cómo te sientes?' : 'How do you feel?'}
                   </h3>
                   <p className="text-sm text-gray-500">
-                    {locale === 'fr' ? 'À propos de ta journée' : 'About your day'}
+                    {locale === 'fr' ? 'À propos de ta journée' : locale === 'es' ? 'Sobre tu día' : 'About your day'}
                   </p>
                 </div>
 
@@ -1812,7 +1812,7 @@ export default function BalancePage() {
                       >
                         <Icon className={`w-6 h-6 ${option.iconColor}`} />
                         <span className="text-[10px] font-medium">
-                          {locale === 'fr' ? option.labelFr : option.labelEn}
+                          {locale === 'fr' ? option.labelFr : locale === 'es' ? option.labelEs : option.labelEn}
                         </span>
                       </motion.button>
                     )
@@ -1823,7 +1823,7 @@ export default function BalancePage() {
                   onClick={() => setShowConfirmModal(false)}
                   className="w-full py-2.5 text-gray-500 text-sm font-medium hover:text-gray-700 transition-colors"
                 >
-                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                  {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
                 </button>
               </motion.div>
             </>
@@ -1849,7 +1849,7 @@ export default function BalancePage() {
               >
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Période personnalisée' : 'Custom Date Range'}
+                    {locale === 'fr' ? 'Période personnalisée' : locale === 'es' ? 'Rango de fechas personalizado' : 'Custom Date Range'}
                   </h3>
                   <button
                     onClick={() => setShowDatePicker(false)}
@@ -1862,7 +1862,7 @@ export default function BalancePage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {locale === 'fr' ? 'Date de début' : 'Start Date'}
+                      {locale === 'fr' ? 'Date de début' : locale === 'es' ? 'Fecha de inicio' : 'Start Date'}
                     </label>
                     <input
                       type="date"
@@ -1875,7 +1875,7 @@ export default function BalancePage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {locale === 'fr' ? 'Date de fin' : 'End Date'}
+                      {locale === 'fr' ? 'Date de fin' : locale === 'es' ? 'Fecha de fin' : 'End Date'}
                     </label>
                     <input
                       type="date"
@@ -1892,7 +1892,7 @@ export default function BalancePage() {
                     disabled={!customDateRange.startDate || !customDateRange.endDate}
                     className="w-full py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {locale === 'fr' ? 'Appliquer' : 'Apply'}
+                    {locale === 'fr' ? 'Appliquer' : locale === 'es' ? 'Aplicar' : 'Apply'}
                   </button>
                 </div>
               </motion.div>
@@ -1951,21 +1951,21 @@ export default function BalancePage() {
                   {isUntrackedDay ? (
                     <>
                       <span className="text-sm text-gray-400">
-                        {locale === 'fr' ? 'Non' : 'Not'}
+                        {locale === 'fr' ? 'Non' : locale === 'es' ? 'No' : 'Not'}
                       </span>
                       <span className="text-xl font-semibold text-gray-400">
-                        {locale === 'fr' ? 'suivi' : 'tracked'}
+                        {locale === 'fr' ? 'suivi' : locale === 'es' ? 'registrado' : 'tracked'}
                       </span>
                     </>
                   ) : (isWorkExceeded || isLifeExceeded || isSleepExceeded) ? (
                     <>
                       <span className="text-xs text-red-400 font-medium">
-                        {locale === 'fr' ? 'Dépassé' : 'Over'}
+                        {locale === 'fr' ? 'Dépassé' : locale === 'es' ? 'Excedido' : 'Over'}
                       </span>
                       <span className="text-lg font-semibold text-red-500">
-                        {isWorkExceeded && (locale === 'fr' ? 'Travail' : 'Work')}
-                        {isLifeExceeded && (locale === 'fr' ? 'Vie' : 'Life')}
-                        {isSleepExceeded && (locale === 'fr' ? 'Sommeil' : 'Sleep')}
+                        {isWorkExceeded && (locale === 'fr' ? 'Travail' : locale === 'es' ? 'Trabajo' : 'Work')}
+                        {isLifeExceeded && (locale === 'fr' ? 'Vie' : locale === 'es' ? 'Vida' : 'Life')}
+                        {isSleepExceeded && (locale === 'fr' ? 'Sommeil' : locale === 'es' ? 'Sueño' : 'Sleep')}
                       </span>
                     </>
                   ) : (
@@ -1974,7 +1974,7 @@ export default function BalancePage() {
                         {formatDateDisplay(selectedDate)}
                       </span>
                       <span className="text-xl font-semibold text-gray-800">
-                        {locale === 'fr' ? 'Équilibre' : 'Balance'}
+                        {locale === 'fr' ? 'Équilibre' : locale === 'es' ? 'Equilibrio' : 'Balance'}
                       </span>
                     </>
                   )}
@@ -1997,7 +1997,7 @@ export default function BalancePage() {
                       <div className="flex items-center gap-1.5 text-amber-600">
                         <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
                         <span className="text-sm font-medium">
-                          {locale === 'fr' ? 'Modification en cours' : 'Making changes'}
+                          {locale === 'fr' ? 'Modification en cours' : locale === 'es' ? 'Haciendo cambios' : 'Making changes'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -2015,15 +2015,15 @@ export default function BalancePage() {
                                 }
                                 return null
                               })()}
-                              {locale === 'fr' ? 'Humeur' : 'Mood'}
+                              {locale === 'fr' ? 'Humeur' : locale === 'es' ? 'Ánimo' : 'Mood'}
                             </span>
-                          ) : (locale === 'fr' ? 'Humeur' : 'Mood')}
+                          ) : (locale === 'fr' ? 'Humeur' : locale === 'es' ? 'Ánimo' : 'Mood')}
                         </button>
                         <button
                           onClick={() => setIsEditing(false)}
                           className="px-3 py-1 text-xs font-medium text-white bg-emerald-500 rounded-full hover:bg-emerald-600 transition-colors shadow-sm"
                         >
-                          {locale === 'fr' ? 'Terminé' : 'Save'}
+                          {locale === 'fr' ? 'Terminé' : locale === 'es' ? 'Guardar' : 'Save'}
                         </button>
                       </div>
                     </div>
@@ -2031,7 +2031,7 @@ export default function BalancePage() {
                     <>
                       <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                       <span className="text-sm font-medium text-emerald-700">
-                        {locale === 'fr' ? 'Confirmé' : 'Confirmed'}
+                        {locale === 'fr' ? 'Confirmé' : locale === 'es' ? 'Confirmado' : 'Confirmed'}
                       </span>
                       {dayConfirmation.feeling && (() => {
                         const feeling = feelingOptions.find(f => f.id === dayConfirmation.feeling)
@@ -2046,7 +2046,7 @@ export default function BalancePage() {
                           onClick={() => setIsEditing(true)}
                           className="ml-1 text-xs text-emerald-600 underline hover:text-emerald-700"
                         >
-                          {locale === 'fr' ? 'Modifier' : 'Edit'}
+                          {locale === 'fr' ? 'Modifier' : locale === 'es' ? 'Editar' : 'Edit'}
                         </button>
                       )}
                     </>
@@ -2061,14 +2061,14 @@ export default function BalancePage() {
                   className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white rounded-full font-medium text-sm shadow-lg hover:bg-gray-800 transition-colors"
                 >
                   <Check className="w-4 h-4" />
-                  {locale === 'fr' ? 'Confirmer la journée' : 'Confirm Day'}
+                  {locale === 'fr' ? 'Confirmer la journée' : locale === 'es' ? 'Confirmar el día' : 'Confirm Day'}
                 </motion.button>
               ) : (
                 // Older day not confirmed - show not tracked indicator
                 <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full border border-gray-200">
                   <X className="w-4 h-4 text-gray-400" />
                   <span className="text-sm font-medium text-gray-500">
-                    {locale === 'fr' ? 'Journée non confirmée' : 'Day not confirmed'}
+                    {locale === 'fr' ? 'Journée non confirmée' : locale === 'es' ? 'Día no confirmado' : 'Day not confirmed'}
                   </span>
                 </div>
               )}
@@ -2095,10 +2095,10 @@ export default function BalancePage() {
                       </div>
                       <div>
                         <span className={`font-medium ${isUntrackedDay ? 'text-gray-400' : 'text-gray-800'}`}>
-                          {locale === 'fr' ? 'Sommeil' : 'Sleep'}
+                          {locale === 'fr' ? 'Sommeil' : locale === 'es' ? 'Sueño' : 'Sleep'}
                         </span>
                         <p className="text-xs text-gray-400">
-                          {locale === 'fr' ? `Cible: ${effectiveTargets.sleep}h` : `Target: ${effectiveTargets.sleep}h`}
+                          {locale === 'fr' ? `Cible: ${effectiveTargets.sleep}h` : locale === 'es' ? `Meta: ${effectiveTargets.sleep}h` : `Target: ${effectiveTargets.sleep}h`}
                         </p>
                       </div>
                     </div>
@@ -2137,7 +2137,7 @@ export default function BalancePage() {
                       onClick={() => setExpandedCategory(expandedCategory === 'sleep' ? null : 'sleep')}
                       className="w-full flex items-center justify-between py-2 text-sm text-gray-500"
                     >
-                      <span>{getCategoryActivities('sleep').length} {locale === 'fr' ? 'activités' : 'activities'}</span>
+                      <span>{getCategoryActivities('sleep').length} {locale === 'fr' ? 'activités' : locale === 'es' ? 'actividades' : 'activities'}</span>
                       {expandedCategory === 'sleep' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
                   )}
@@ -2199,7 +2199,7 @@ export default function BalancePage() {
                           <div className="flex items-center gap-2">
                             <input
                               type="text"
-                              placeholder={locale === 'fr' ? 'Nouvelle activité...' : 'New activity...'}
+                              placeholder={locale === 'fr' ? 'Nouvelle activité...' : locale === 'es' ? 'Nueva actividad...' : 'New activity...'}
                               value={newActivityName}
                               onChange={(e) => setNewActivityName(e.target.value)}
                               onKeyDown={(e) => {
@@ -2242,10 +2242,10 @@ export default function BalancePage() {
                       </div>
                       <div>
                         <span className={`font-medium ${isUntrackedDay ? 'text-gray-400' : 'text-gray-800'}`}>
-                          {locale === 'fr' ? 'Travail' : 'Work'}
+                          {locale === 'fr' ? 'Travail' : locale === 'es' ? 'Trabajo' : 'Work'}
                         </span>
                         <p className="text-xs text-gray-400">
-                          {locale === 'fr' ? `Cible: ${effectiveTargets.work}h` : `Target: ${effectiveTargets.work}h`}
+                          {locale === 'fr' ? `Cible: ${effectiveTargets.work}h` : locale === 'es' ? `Meta: ${effectiveTargets.work}h` : `Target: ${effectiveTargets.work}h`}
                         </p>
                       </div>
                     </div>
@@ -2284,7 +2284,7 @@ export default function BalancePage() {
                       onClick={() => setExpandedCategory(expandedCategory === 'work' ? null : 'work')}
                       className="w-full flex items-center justify-between py-2 text-sm text-gray-500"
                     >
-                      <span>{getCategoryActivities('work').length} {locale === 'fr' ? 'activités' : 'activities'}</span>
+                      <span>{getCategoryActivities('work').length} {locale === 'fr' ? 'activités' : locale === 'es' ? 'actividades' : 'activities'}</span>
                       {expandedCategory === 'work' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
                   )}
@@ -2346,7 +2346,7 @@ export default function BalancePage() {
                           <div className="flex items-center gap-2">
                             <input
                               type="text"
-                              placeholder={locale === 'fr' ? 'Nouvelle activité...' : 'New activity...'}
+                              placeholder={locale === 'fr' ? 'Nouvelle activité...' : locale === 'es' ? 'Nueva actividad...' : 'New activity...'}
                               value={newActivityName}
                               onChange={(e) => setNewActivityName(e.target.value)}
                               onKeyDown={(e) => {
@@ -2389,10 +2389,10 @@ export default function BalancePage() {
                       </div>
                       <div>
                         <span className={`font-medium ${isUntrackedDay ? 'text-gray-400' : 'text-gray-800'}`}>
-                          {locale === 'fr' ? 'Vie' : 'Life'}
+                          {locale === 'fr' ? 'Vie' : locale === 'es' ? 'Vida' : 'Life'}
                         </span>
                         <p className="text-xs text-gray-400">
-                          {locale === 'fr' ? `Cible: ${effectiveTargets.life}h` : `Target: ${effectiveTargets.life}h`}
+                          {locale === 'fr' ? `Cible: ${effectiveTargets.life}h` : locale === 'es' ? `Meta: ${effectiveTargets.life}h` : `Target: ${effectiveTargets.life}h`}
                         </p>
                       </div>
                     </div>
@@ -2431,7 +2431,7 @@ export default function BalancePage() {
                       onClick={() => setExpandedCategory(expandedCategory === 'life' ? null : 'life')}
                       className="w-full flex items-center justify-between py-2 text-sm text-gray-500"
                     >
-                      <span>{getCategoryActivities('life').length} {locale === 'fr' ? 'activités' : 'activities'}</span>
+                      <span>{getCategoryActivities('life').length} {locale === 'fr' ? 'activités' : locale === 'es' ? 'actividades' : 'activities'}</span>
                       {expandedCategory === 'life' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
                   )}
@@ -2493,7 +2493,7 @@ export default function BalancePage() {
                           <div className="flex items-center gap-2">
                             <input
                               type="text"
-                              placeholder={locale === 'fr' ? 'Nouvelle activité...' : 'New activity...'}
+                              placeholder={locale === 'fr' ? 'Nouvelle activité...' : locale === 'es' ? 'Nueva actividad...' : 'New activity...'}
                               value={newActivityName}
                               onChange={(e) => setNewActivityName(e.target.value)}
                               onKeyDown={(e) => {
@@ -2544,10 +2544,10 @@ export default function BalancePage() {
                   </div>
                   <div>
                     <span className="text-sm font-semibold text-gray-800">
-                      {locale === 'fr' ? 'Aperçu Bloom' : 'Bloom Insight'}
+                      {locale === 'fr' ? 'Aperçu Bloom' : locale === 'es' ? 'Perspectiva Bloom' : 'Bloom Insight'}
                     </span>
                     <p className="text-xs text-gray-400">
-                      {locale === 'fr' ? 'Cette semaine' : 'This week'}
+                      {locale === 'fr' ? 'Cette semaine' : locale === 'es' ? 'Esta semana' : 'This week'}
                     </p>
                   </div>
                 </div>
@@ -2563,22 +2563,32 @@ export default function BalancePage() {
                     if (avgSleep >= 7 && avgWork <= 9 && avgLife >= 2) {
                       return locale === 'fr'
                         ? "Vous avez trouvé un bel équilibre cette semaine. Votre rythme de sommeil est régulier et vous prenez du temps pour vous."
+                        : locale === 'es'
+                        ? "Has encontrado un buen equilibrio esta semana. Tu ritmo de sueño es estable y te estás dando tiempo para ti."
                         : "You've found a lovely balance this week. Your sleep rhythm is steady and you're making time for yourself."
                     } else if (avgWork > 10) {
                       return locale === 'fr'
                         ? "Cette semaine a été intense côté travail. N'oubliez pas de prendre soin de vous aussi."
+                        : locale === 'es'
+                        ? "Esta semana ha sido intensa en el trabajo. Recuerda cuidarte también."
                         : "This week has been work-heavy. Remember to take care of yourself too."
                     } else if (avgSleep < 6) {
                       return locale === 'fr'
                         ? "Votre sommeil mérite un peu plus d'attention. Le repos est la base de tout."
+                        : locale === 'es'
+                        ? "Tu sueño merece un poco más de atención. El descanso es la base de todo."
                         : "Your sleep could use some love. Rest is the foundation of everything."
                     } else if (avgLife < 1) {
                       return locale === 'fr'
                         ? "Vous avez été très occupé. Essayez de vous accorder quelques moments de détente."
+                        : locale === 'es'
+                        ? "Has estado muy ocupado/a. Intenta darte algunos momentos de alegría."
                         : "You've been quite busy. Try to give yourself some moments of joy."
                     } else {
                       return locale === 'fr'
                         ? "Vous faites de votre mieux pour équilibrer les différentes facettes de votre vie."
+                        : locale === 'es'
+                        ? "Estás haciendo lo mejor que puedes para equilibrar las diferentes partes de tu vida."
                         : "You're doing your best to balance the different parts of your life."
                     }
                   })()}
@@ -2590,7 +2600,7 @@ export default function BalancePage() {
                   className="flex items-center gap-2 text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  {locale === 'fr' ? 'Envie d\'en parler ?' : 'Want to talk about it?'}
+                  {locale === 'fr' ? 'Envie d\'en parler ?' : locale === 'es' ? '¿Quieres hablar de esto?' : 'Want to talk about it?'}
                 </button>
               </div>
             </motion.div>
@@ -2599,13 +2609,13 @@ export default function BalancePage() {
             <div>
               <div className="flex items-center justify-between mb-3 px-1">
                 <h3 className="font-semibold text-gray-800">
-                  {locale === 'fr' ? 'Résumé de la semaine' : 'Weekly Summary'}
+                  {locale === 'fr' ? 'Résumé de la semaine' : locale === 'es' ? 'Resumen semanal' : 'Weekly Summary'}
                 </h3>
                 <span className="text-xs text-gray-400">
                   {weeklyData.length > 0 && (() => {
                     const firstDate = new Date(weeklyData[0]?.date)
                     const lastDate = new Date(weeklyData[weeklyData.length - 1]?.date)
-                    const formatDate = (d: Date) => d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })
+                    const formatDate = (d: Date) => d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric' })
                     return `${formatDate(firstDate)} - ${formatDate(lastDate)}`
                   })()}
                 </span>
@@ -2625,7 +2635,7 @@ export default function BalancePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-semibold text-gray-800">{locale === 'fr' ? 'Sommeil' : 'Sleep'}</span>
+                        <span className="font-semibold text-gray-800">{locale === 'fr' ? 'Sommeil' : locale === 'es' ? 'Sueño' : 'Sleep'}</span>
                         <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                           (() => {
                             const avg = weeklyData.reduce((sum, d) => sum + d.sleep, 0) / Math.max(weeklyData.length, 1) / 60
@@ -2640,9 +2650,9 @@ export default function BalancePage() {
                             const avg = weeklyData.reduce((sum, d) => sum + d.sleep, 0) / Math.max(weeklyData.length, 1) / 60
                             const target = targetHours.sleep || 8
                             const ratio = avg / target
-                            if (ratio >= 0.9) return locale === 'fr' ? 'Bien reposé' : 'Well rested'
-                            if (ratio >= 0.7) return locale === 'fr' ? 'À améliorer' : 'Room to grow'
-                            return locale === 'fr' ? 'Besoin de repos' : 'Needs attention'
+                            if (ratio >= 0.9) return locale === 'fr' ? 'Bien reposé' : locale === 'es' ? 'Bien descansado' : 'Well rested'
+                            if (ratio >= 0.7) return locale === 'fr' ? 'À améliorer' : locale === 'es' ? 'Puede mejorar' : 'Room to grow'
+                            return locale === 'fr' ? 'Besoin de repos' : locale === 'es' ? 'Necesita atención' : 'Needs attention'
                           })()}
                         </span>
                       </div>
@@ -2652,6 +2662,8 @@ export default function BalancePage() {
                           const target = targetHours.sleep || 8
                           return locale === 'fr'
                             ? `${avg.toFixed(1)}h en moyenne • Objectif: ${target}h`
+                            : locale === 'es'
+                            ? `${avg.toFixed(1)}h promedio • Meta: ${target}h`
                             : `${avg.toFixed(1)}h average • Goal: ${target}h`
                         })()}
                       </p>
@@ -2672,7 +2684,7 @@ export default function BalancePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-semibold text-gray-800">{locale === 'fr' ? 'Travail' : 'Work'}</span>
+                        <span className="font-semibold text-gray-800">{locale === 'fr' ? 'Travail' : locale === 'es' ? 'Trabajo' : 'Work'}</span>
                         <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                           (() => {
                             const avg = weeklyData.reduce((sum, d) => sum + d.work, 0) / Math.max(weeklyData.length, 1) / 60
@@ -2687,9 +2699,9 @@ export default function BalancePage() {
                             const avg = weeklyData.reduce((sum, d) => sum + d.work, 0) / Math.max(weeklyData.length, 1) / 60
                             const target = targetHours.work || 8
                             const ratio = avg / target
-                            if (ratio >= 0.9 && ratio <= 1.1) return locale === 'fr' ? 'Équilibré' : 'Balanced'
-                            if (ratio > 1.1) return locale === 'fr' ? 'Surcharge' : 'Overworking'
-                            return locale === 'fr' ? 'Sous objectif' : 'Under target'
+                            if (ratio >= 0.9 && ratio <= 1.1) return locale === 'fr' ? 'Équilibré' : locale === 'es' ? 'Equilibrado' : 'Balanced'
+                            if (ratio > 1.1) return locale === 'fr' ? 'Surcharge' : locale === 'es' ? 'Sobrecargado' : 'Overworking'
+                            return locale === 'fr' ? 'Sous objectif' : locale === 'es' ? 'Bajo la meta' : 'Under target'
                           })()}
                         </span>
                       </div>
@@ -2699,6 +2711,8 @@ export default function BalancePage() {
                           const target = targetHours.work || 8
                           return locale === 'fr'
                             ? `${avg.toFixed(1)}h en moyenne • Objectif: ${target}h`
+                            : locale === 'es'
+                            ? `${avg.toFixed(1)}h promedio • Meta: ${target}h`
                             : `${avg.toFixed(1)}h average • Goal: ${target}h`
                         })()}
                       </p>
@@ -2719,7 +2733,7 @@ export default function BalancePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-semibold text-gray-800">{locale === 'fr' ? 'Vie perso' : 'Life'}</span>
+                        <span className="font-semibold text-gray-800">{locale === 'fr' ? 'Vie perso' : locale === 'es' ? 'Vida personal' : 'Life'}</span>
                         <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                           (() => {
                             const avg = weeklyData.reduce((sum, d) => sum + d.life, 0) / Math.max(weeklyData.length, 1) / 60
@@ -2734,9 +2748,9 @@ export default function BalancePage() {
                             const avg = weeklyData.reduce((sum, d) => sum + d.life, 0) / Math.max(weeklyData.length, 1) / 60
                             const target = targetHours.life || 8
                             const ratio = avg / target
-                            if (ratio >= 0.8) return locale === 'fr' ? 'Épanoui' : 'Thriving'
-                            if (ratio >= 0.5) return locale === 'fr' ? 'En progrès' : 'Growing'
-                            return locale === 'fr' ? 'À cultiver' : 'Needs love'
+                            if (ratio >= 0.8) return locale === 'fr' ? 'Épanoui' : locale === 'es' ? 'Floreciendo' : 'Thriving'
+                            if (ratio >= 0.5) return locale === 'fr' ? 'En progrès' : locale === 'es' ? 'Creciendo' : 'Growing'
+                            return locale === 'fr' ? 'À cultiver' : locale === 'es' ? 'Necesita amor' : 'Needs love'
                           })()}
                         </span>
                       </div>
@@ -2746,6 +2760,8 @@ export default function BalancePage() {
                           const target = targetHours.life || 8
                           return locale === 'fr'
                             ? `${avg.toFixed(1)}h en moyenne • Objectif: ${target}h`
+                            : locale === 'es'
+                            ? `${avg.toFixed(1)}h promedio • Meta: ${target}h`
                             : `${avg.toFixed(1)}h average • Goal: ${target}h`
                         })()}
                       </p>
@@ -2787,21 +2803,21 @@ export default function BalancePage() {
                 <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-semibold text-gray-800 text-sm">
-                      {locale === 'fr' ? 'Performance quotidienne' : 'Daily Performance'}
+                      {locale === 'fr' ? 'Performance quotidienne' : locale === 'es' ? 'Rendimiento diario' : 'Daily Performance'}
                     </h3>
                     {/* Legend */}
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1">
                         <div className="w-2 h-2 rounded-full bg-violet-500" />
-                        <span className="text-[9px] text-gray-500">{locale === 'fr' ? 'Som.' : 'Sleep'}</span>
+                        <span className="text-[9px] text-gray-500">{locale === 'fr' ? 'Som.' : locale === 'es' ? 'Sueño' : 'Sleep'}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <div className="w-2 h-2 rounded-full bg-amber-500" />
-                        <span className="text-[9px] text-gray-500">{locale === 'fr' ? 'Trav.' : 'Work'}</span>
+                        <span className="text-[9px] text-gray-500">{locale === 'fr' ? 'Trav.' : locale === 'es' ? 'Trab.' : 'Work'}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span className="text-[9px] text-gray-500">{locale === 'fr' ? 'Vie' : 'Life'}</span>
+                        <span className="text-[9px] text-gray-500">{locale === 'fr' ? 'Vie' : locale === 'es' ? 'Vida' : 'Life'}</span>
                       </div>
                     </div>
                   </div>
@@ -2959,11 +2975,11 @@ export default function BalancePage() {
                   <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-center gap-4 text-xs text-gray-500">
                     <div className="flex items-center gap-1.5">
                       <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span>{locale === 'fr' ? 'Complet' : 'Complete'}</span>
+                      <span>{locale === 'fr' ? 'Complet' : locale === 'es' ? 'Completo' : 'Complete'}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <div className="w-2 h-2 rounded-full bg-rose-500" />
-                      <span>{locale === 'fr' ? 'Dépassé' : 'Over'}</span>
+                      <span>{locale === 'fr' ? 'Dépassé' : locale === 'es' ? 'Excedido' : 'Over'}</span>
                     </div>
                   </div>
                 </div>
@@ -2971,7 +2987,7 @@ export default function BalancePage() {
                 {/* Weekly Insights - This Week */}
                 <div className="space-y-3">
                   <h3 className="font-semibold text-gray-800 px-1">
-                    {locale === 'fr' ? 'Cette semaine' : 'This Week'}
+                    {locale === 'fr' ? 'Cette semaine' : locale === 'es' ? 'Esta semana' : 'This Week'}
                   </h3>
 
                   {/* Sleep Insight */}
@@ -2994,8 +3010,8 @@ export default function BalancePage() {
                             const actual = weeklyData.reduce((sum, d) => sum + d.sleep, 0)
                             const target = weeklyData.reduce((sum, d) => sum + d.sleepTarget, 0)
                             const diff = Math.round((actual - target) / 60)
-                            if (diff >= 0) return locale === 'fr' ? `+${diff}h de sommeil` : `+${diff}h sleep`
-                            return locale === 'fr' ? `${diff}h de sommeil` : `${diff}h sleep`
+                            if (diff >= 0) return locale === 'fr' ? `+${diff}h de sommeil` : locale === 'es' ? `+${diff}h de sueño` : `+${diff}h sleep`
+                            return locale === 'fr' ? `${diff}h de sommeil` : locale === 'es' ? `${diff}h de sueño` : `${diff}h sleep`
                           })()}
                         </p>
                       </div>
@@ -3022,9 +3038,9 @@ export default function BalancePage() {
                             const actual = weeklyData.reduce((sum, d) => sum + d.work, 0)
                             const target = weeklyData.reduce((sum, d) => sum + d.workTarget, 0)
                             const diff = Math.round((actual - target) / 60)
-                            if (diff > 0) return locale === 'fr' ? `+${diff}h de travail` : `+${diff}h work`
-                            if (diff < 0) return locale === 'fr' ? `${diff}h de travail` : `${diff}h work`
-                            return locale === 'fr' ? 'Objectif atteint' : 'On target'
+                            if (diff > 0) return locale === 'fr' ? `+${diff}h de travail` : locale === 'es' ? `+${diff}h de trabajo` : `+${diff}h work`
+                            if (diff < 0) return locale === 'fr' ? `${diff}h de travail` : locale === 'es' ? `${diff}h de trabajo` : `${diff}h work`
+                            return locale === 'fr' ? 'Objectif atteint' : locale === 'es' ? 'En la meta' : 'On target'
                           })()}
                         </p>
                       </div>
@@ -3051,8 +3067,8 @@ export default function BalancePage() {
                             const actual = weeklyData.reduce((sum, d) => sum + d.life, 0)
                             const target = weeklyData.reduce((sum, d) => sum + d.lifeTarget, 0)
                             const diff = Math.round((actual - target) / 60)
-                            if (diff >= 0) return locale === 'fr' ? `+${diff}h de vie` : `+${diff}h life`
-                            return locale === 'fr' ? `${diff}h de vie` : `${diff}h life`
+                            if (diff >= 0) return locale === 'fr' ? `+${diff}h de vie` : locale === 'es' ? `+${diff}h de vida` : `+${diff}h life`
+                            return locale === 'fr' ? `${diff}h de vie` : locale === 'es' ? `${diff}h de vida` : `${diff}h life`
                           })()}
                         </p>
                       </div>
@@ -3064,15 +3080,15 @@ export default function BalancePage() {
                 <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-semibold text-gray-800">
-                      {locale === 'fr' ? 'Tendances' : 'Trends'}
+                      {locale === 'fr' ? 'Tendances' : locale === 'es' ? 'Tendencias' : 'Trends'}
                     </h3>
 
                     {/* Time Range Selector */}
                     <div className="flex bg-gray-100 rounded-lg p-0.5">
                       {[
-                        { id: 'weekly' as TimeRange, labelEn: '6D', labelFr: '6J' },
-                        { id: 'monthly' as TimeRange, labelEn: '30D', labelFr: '30J' },
-                        { id: 'custom' as TimeRange, labelEn: 'Custom', labelFr: 'Perso.' },
+                        { id: 'weekly' as TimeRange, labelEn: '6D', labelFr: '6J', labelEs: '6D' },
+                        { id: 'monthly' as TimeRange, labelEn: '30D', labelFr: '30J', labelEs: '30D' },
+                        { id: 'custom' as TimeRange, labelEn: 'Custom', labelFr: 'Perso.', labelEs: 'Person.' },
                       ].map((option) => (
                         <button
                           key={option.id}
@@ -3083,7 +3099,7 @@ export default function BalancePage() {
                               : 'text-gray-500 hover:text-gray-700'
                           }`}
                         >
-                          {locale === 'fr' ? option.labelFr : option.labelEn}
+                          {locale === 'fr' ? option.labelFr : locale === 'es' ? option.labelEs : option.labelEn}
                         </button>
                       ))}
                     </div>
@@ -3100,7 +3116,7 @@ export default function BalancePage() {
                       }`}
                     >
                       <div className={`w-2 h-2 rounded-full ${visibleLines.sleep ? 'bg-violet-500' : 'bg-gray-300'}`} />
-                      {locale === 'fr' ? 'Sommeil' : 'Sleep'}
+                      {locale === 'fr' ? 'Sommeil' : locale === 'es' ? 'Sueño' : 'Sleep'}
                     </button>
                     <button
                       onClick={() => setVisibleLines(prev => ({ ...prev, work: !prev.work }))}
@@ -3111,7 +3127,7 @@ export default function BalancePage() {
                       }`}
                     >
                       <div className={`w-2 h-2 rounded-full ${visibleLines.work ? 'bg-amber-500' : 'bg-gray-300'}`} />
-                      {locale === 'fr' ? 'Travail' : 'Work'}
+                      {locale === 'fr' ? 'Travail' : locale === 'es' ? 'Trabajo' : 'Work'}
                     </button>
                     <button
                       onClick={() => setVisibleLines(prev => ({ ...prev, life: !prev.life }))}
@@ -3122,7 +3138,7 @@ export default function BalancePage() {
                       }`}
                     >
                       <div className={`w-2 h-2 rounded-full ${visibleLines.life ? 'bg-emerald-500' : 'bg-gray-300'}`} />
-                      {locale === 'fr' ? 'Vie' : 'Life'}
+                      {locale === 'fr' ? 'Vie' : locale === 'es' ? 'Vida' : 'Life'}
                     </button>
                   </div>
 
@@ -3158,9 +3174,9 @@ export default function BalancePage() {
                             }}
                             formatter={(value, name) => [
                               `${(value as number)?.toFixed(1) ?? 0}h`,
-                              name === 'sleep' ? (locale === 'fr' ? 'Sommeil' : 'Sleep') :
-                              name === 'work' ? (locale === 'fr' ? 'Travail' : 'Work') :
-                              (locale === 'fr' ? 'Vie' : 'Life')
+                              name === 'sleep' ? (locale === 'fr' ? 'Sommeil' : locale === 'es' ? 'Sueño' : 'Sleep') :
+                              name === 'work' ? (locale === 'fr' ? 'Travail' : locale === 'es' ? 'Trabajo' : 'Work') :
+                              (locale === 'fr' ? 'Vie' : locale === 'es' ? 'Vida' : 'Life')
                             ]}
                           />
                           {visibleLines.sleep && (
@@ -3204,7 +3220,7 @@ export default function BalancePage() {
                       {loadingWeekly ? (
                         <Loader2 className="w-6 h-6 animate-spin" />
                       ) : (
-                        locale === 'fr' ? 'Aucune donnée disponible' : 'No data available'
+                        locale === 'fr' ? 'Aucune donnée disponible' : locale === 'es' ? 'Sin datos disponibles' : 'No data available'
                       )}
                     </div>
                   )}

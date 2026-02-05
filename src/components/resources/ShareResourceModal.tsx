@@ -32,7 +32,7 @@ interface ShareResourceModalProps {
   onClose: () => void
   resource: Resource
   members: SimpleMember[]
-  locale: 'en' | 'fr'
+  locale: 'en' | 'fr' | 'es'
   onShare: (resourceId: string, memberIds: string[], message?: string) => Promise<void>
   onAddMember?: () => void
 }
@@ -53,12 +53,12 @@ const resourceTypeStyles: Record<string, { bg: string; color: string }> = {
   table: { bg: 'bg-emerald-50', color: 'text-emerald-600' },
 }
 
-const typeLabels: Record<string, { en: string; fr: string }> = {
-  worksheet: { en: 'Worksheet', fr: 'Exercice' },
-  assessment: { en: 'Assessment', fr: 'Évaluation' },
-  exercise: { en: 'Exercise', fr: 'Exercice' },
-  psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
-  table: { en: 'Table', fr: 'Tableau' },
+const typeLabels: Record<string, { en: string; fr: string; es: string }> = {
+  worksheet: { en: 'Worksheet', fr: 'Exercice', es: 'Hoja de trabajo' },
+  assessment: { en: 'Assessment', fr: 'Évaluation', es: 'Evaluación' },
+  exercise: { en: 'Exercise', fr: 'Exercice', es: 'Ejercicio' },
+  psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation', es: 'Psicoeducación' },
+  table: { en: 'Table', fr: 'Tableau', es: 'Tabla' },
 }
 
 export function ShareResourceModal({
@@ -163,10 +163,10 @@ export function ShareResourceModal({
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Partager la ressource' : 'Share Resource'}
+                    {locale === 'fr' ? 'Partager la ressource' : locale === 'es' ? 'Compartir recurso' : 'Share Resource'}
                   </h2>
                   <p className="text-sm text-gray-500">
-                    {locale === 'fr' ? 'Sélectionnez les destinataires' : 'Select recipients'}
+                    {locale === 'fr' ? 'Sélectionnez les destinataires' : locale === 'es' ? 'Seleccionar destinatarios' : 'Select recipients'}
                   </p>
                 </div>
               </div>
@@ -207,7 +207,7 @@ export function ShareResourceModal({
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder={locale === 'fr' ? 'Rechercher un patient...' : 'Search members...'}
+                    placeholder={locale === 'fr' ? 'Rechercher un patient...' : locale === 'es' ? 'Buscar miembros...' : 'Search members...'}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
@@ -217,7 +217,7 @@ export function ShareResourceModal({
                   <button
                     onClick={onAddMember}
                     className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors flex-shrink-0"
-                    title={locale === 'fr' ? 'Ajouter un patient' : 'Add member'}
+                    title={locale === 'fr' ? 'Ajouter un patient' : locale === 'es' ? 'Agregar miembro' : 'Add member'}
                   >
                     <UserPlus className="w-5 h-5" />
                   </button>
@@ -233,16 +233,16 @@ export function ShareResourceModal({
                     <Users className="w-6 h-6 text-gray-400" />
                   </div>
                   <p className="text-sm text-gray-500">
-                    {locale === 'fr' ? 'Aucun patient trouvé' : 'No members found'}
+                    {locale === 'fr' ? 'Aucun patient trouvé' : locale === 'es' ? 'No se encontraron miembros' : 'No members found'}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    {locale === 'fr' ? 'Ajoutez des patients pour partager des ressources' : 'Add members to share resources'}
+                    {locale === 'fr' ? 'Ajoutez des patients pour partager des ressources' : locale === 'es' ? 'Agregue miembros para compartir recursos' : 'Add members to share resources'}
                   </p>
                 </div>
               ) : filteredMembers.length === 0 ? (
                 <div className="p-8 text-center">
                   <p className="text-sm text-gray-500">
-                    {locale === 'fr' ? 'Aucun résultat' : 'No results'}
+                    {locale === 'fr' ? 'Aucun résultat' : locale === 'es' ? 'Sin resultados' : 'No results'}
                   </p>
                 </div>
               ) : (
@@ -250,14 +250,14 @@ export function ShareResourceModal({
                   {/* Selection info bar */}
                   <div className="flex items-center justify-between px-5 py-2.5 bg-gray-50 border-b border-gray-100">
                     <span className="text-xs text-gray-500">
-                      {selectedMembers.size}/{MAX_SELECTIONS} {locale === 'fr' ? 'sélectionnés' : 'selected'}
+                      {selectedMembers.size}/{MAX_SELECTIONS} {locale === 'fr' ? 'sélectionnés' : locale === 'es' ? 'seleccionados' : 'selected'}
                     </span>
                     {selectedMembers.size > 0 && (
                       <button
                         onClick={() => setSelectedMembers(new Set())}
                         className="text-xs text-gray-500 hover:text-gray-700 underline"
                       >
-                        {locale === 'fr' ? 'Tout désélectionner' : 'Clear all'}
+                        {locale === 'fr' ? 'Tout désélectionner' : locale === 'es' ? 'Limpiar todo' : 'Clear all'}
                       </button>
                     )}
                   </div>
@@ -315,12 +315,12 @@ export function ShareResourceModal({
             <div className="p-4 border-t border-gray-100">
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-gray-400" />
-                {locale === 'fr' ? 'Message (optionnel)' : 'Message (optional)'}
+                {locale === 'fr' ? 'Message (optionnel)' : locale === 'es' ? 'Mensaje (opcional)' : 'Message (optional)'}
               </label>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder={locale === 'fr' ? 'Ajoutez un message personnalisé...' : 'Add a personal message...'}
+                placeholder={locale === 'fr' ? 'Ajoutez un message personnalisé...' : locale === 'es' ? 'Agregue un mensaje personal...' : 'Add a personal message...'}
                 rows={2}
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm resize-none"
               />
@@ -331,10 +331,10 @@ export function ShareResourceModal({
               <p className="text-sm text-gray-500">
                 {selectedMembers.size > 0 ? (
                   <>
-                    {selectedMembers.size} {locale === 'fr' ? 'sélectionné(s)' : 'selected'}
+                    {selectedMembers.size} {locale === 'fr' ? 'sélectionné(s)' : locale === 'es' ? 'seleccionado(s)' : 'selected'}
                   </>
                 ) : (
-                  locale === 'fr' ? 'Aucun sélectionné' : 'None selected'
+                  locale === 'fr' ? 'Aucun sélectionné' : locale === 'es' ? 'Ninguno seleccionado' : 'None selected'
                 )}
               </p>
               <div className="flex items-center gap-3">
@@ -343,7 +343,7 @@ export function ShareResourceModal({
                   onClick={handleClose}
                   className="rounded-xl"
                 >
-                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                  {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
                 </Button>
                 <Button
                   onClick={handleShare}
@@ -353,12 +353,12 @@ export function ShareResourceModal({
                   {isSharing ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {locale === 'fr' ? 'Envoi...' : 'Sending...'}
+                      {locale === 'fr' ? 'Envoi...' : locale === 'es' ? 'Enviando...' : 'Sending...'}
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4 mr-2" />
-                      {locale === 'fr' ? 'Envoyer' : 'Send'}
+                      {locale === 'fr' ? 'Envoyer' : locale === 'es' ? 'Enviar' : 'Send'}
                     </>
                   )}
                 </Button>

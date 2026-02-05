@@ -61,11 +61,15 @@ function EarlyAccessContent() {
         if (data.code === 'DUPLICATE') {
           setError(locale === 'fr'
             ? 'Cet email est déjà sur la liste d\'attente.'
-            : 'This email is already on the waitlist.')
+            : locale === 'es'
+              ? 'Este correo electrónico ya está en la lista de espera.'
+              : 'This email is already on the waitlist.')
         } else {
           setError(locale === 'fr'
             ? 'Une erreur est survenue. Réessayez.'
-            : 'Something went wrong. Please try again.')
+            : locale === 'es'
+              ? 'Algo salió mal. Por favor, inténtelo de nuevo.'
+              : 'Something went wrong. Please try again.')
         }
         return
       }
@@ -74,7 +78,9 @@ function EarlyAccessContent() {
     } catch (err) {
       setError(locale === 'fr'
         ? 'Une erreur est survenue. Réessayez.'
-        : 'Something went wrong. Please try again.')
+        : locale === 'es'
+          ? 'Algo salió mal. Por favor, inténtelo de nuevo.'
+          : 'Something went wrong. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -84,22 +90,22 @@ function EarlyAccessContent() {
     {
       value: 'member' as UserType,
       Icon: Leaf,
-      label: { en: 'For myself', fr: 'Pour moi' },
-      description: { en: 'I want support for my own wellbeing', fr: 'Je cherche du soutien pour mon bien-être' },
+      label: { en: 'For myself', fr: 'Pour moi', es: 'Para mí' },
+      description: { en: 'I want support for my own wellbeing', fr: 'Je cherche du soutien pour mon bien-être', es: 'Quiero apoyo para mi propio bienestar' },
       color: 'rose',
     },
     {
       value: 'practitioner' as UserType,
       Icon: Heart,
-      label: { en: 'I help others', fr: 'J\'accompagne les autres' },
-      description: { en: 'I\'m a therapist, coach, or practitioner', fr: 'Je suis thérapeute, coach ou praticien' },
+      label: { en: 'I help others', fr: 'J\'accompagne les autres', es: 'Ayudo a otros' },
+      description: { en: 'I\'m a therapist, coach, or practitioner', fr: 'Je suis thérapeute, coach ou praticien', es: 'Soy terapeuta, coach o profesional' },
       color: 'lavender',
     },
     {
       value: 'both' as UserType,
       Icon: Sparkles,
-      label: { en: 'Both', fr: 'Les deux' },
-      description: { en: 'I care for myself and support others', fr: 'Je prends soin de moi et j\'accompagne les autres' },
+      label: { en: 'Both', fr: 'Les deux', es: 'Ambos' },
+      description: { en: 'I care for myself and support others', fr: 'Je prends soin de moi et j\'accompagne les autres', es: 'Me cuido a mí mismo y apoyo a otros' },
       color: 'teal',
     },
   ]
@@ -149,10 +155,10 @@ function EarlyAccessContent() {
                       </motion.div>
                       <div>
                         <p className="font-medium text-neutral-800">
-                          {locale === 'fr' ? 'Rejoindre' : 'Join'}
+                          {locale === 'fr' ? 'Rejoindre' : locale === 'es' ? 'Unirse' : 'Join'}
                         </p>
                         <p className="text-sm text-neutral-500">
-                          {locale === 'fr' ? 'Un espace créé avec soin' : 'A space built with care'}
+                          {locale === 'fr' ? 'Un espace créé avec soin' : locale === 'es' ? 'Un espacio creado con cuidado' : 'A space built with care'}
                         </p>
                       </div>
                     </motion.div>
@@ -183,10 +189,10 @@ function EarlyAccessContent() {
                       </motion.div>
                       <div>
                         <p className="font-medium text-neutral-800">
-                          {locale === 'fr' ? 'Grandir' : 'Grow'}
+                          {locale === 'fr' ? 'Grandir' : locale === 'es' ? 'Crecer' : 'Grow'}
                         </p>
                         <p className="text-sm text-neutral-500">
-                          {locale === 'fr' ? 'Des petits rituels qui comptent' : 'Small rituals that matter'}
+                          {locale === 'fr' ? 'Des petits rituels qui comptent' : locale === 'es' ? 'Pequeños rituales que importan' : 'Small rituals that matter'}
                         </p>
                       </div>
                     </motion.div>
@@ -216,10 +222,10 @@ function EarlyAccessContent() {
                       </motion.div>
                       <div>
                         <p className="font-medium text-neutral-800">
-                          {locale === 'fr' ? 'Se connecter' : 'Connect'}
+                          {locale === 'fr' ? 'Se connecter' : locale === 'es' ? 'Conectar' : 'Connect'}
                         </p>
                         <p className="text-sm text-neutral-500">
-                          {locale === 'fr' ? 'Avec quelqu\'un qui comprend' : 'With someone who understands'}
+                          {locale === 'fr' ? 'Avec quelqu\'un qui comprend' : locale === 'es' ? 'Con alguien que entiende' : 'With someone who understands'}
                         </p>
                       </div>
                     </motion.div>
@@ -253,10 +259,10 @@ function EarlyAccessContent() {
                       </motion.div>
                       <div>
                         <p className="font-medium text-neutral-800">
-                          {locale === 'fr' ? 'S\'épanouir' : 'Flourish'}
+                          {locale === 'fr' ? 'S\'épanouir' : locale === 'es' ? 'Florecer' : 'Flourish'}
                         </p>
                         <p className="text-sm text-neutral-500">
-                          {locale === 'fr' ? 'Voir que vous comptez' : 'See that you matter'}
+                          {locale === 'fr' ? 'Voir que vous comptez' : locale === 'es' ? 'Ver que usted importa' : 'See that you matter'}
                         </p>
                       </div>
                     </motion.div>
@@ -272,7 +278,9 @@ function EarlyAccessContent() {
                     <p className="text-neutral-600 italic text-sm leading-relaxed">
                       {locale === 'fr'
                         ? '"Nous ne cherchons pas à ajouter une app de plus dans votre vie. Nous voulons créer un espace qui a du sens."'
-                        : '"We are not trying to add another app to your life. We want to create a space that matters."'}
+                        : locale === 'es'
+                          ? '"No intentamos agregar otra app a su vida. Queremos crear un espacio que importe."'
+                          : '"We are not trying to add another app to your life. We want to create a space that matters."'}
                     </p>
                   </motion.div>
                 </div>
@@ -306,12 +314,14 @@ function EarlyAccessContent() {
                   {/* Header */}
                   <div className="mb-8">
                     <h1 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-3">
-                      {locale === 'fr' ? 'Rejoignez les premiers.' : 'Join the first ones.'}
+                      {locale === 'fr' ? 'Rejoignez les premiers.' : locale === 'es' ? 'Únase a los primeros.' : 'Join the first ones.'}
                     </h1>
                     <p className="text-neutral-500 leading-relaxed">
                       {locale === 'fr'
                         ? 'Nous construisons Bloomsline avec soin. Dites-nous qui vous êtes.'
-                        : 'We are building Bloomsline with care. Tell us who you are.'}
+                        : locale === 'es'
+                          ? 'Estamos construyendo Bloomsline con cuidado. Cuéntenos quién es usted.'
+                          : 'We are building Bloomsline with care. Tell us who you are.'}
                     </p>
                   </div>
 
@@ -319,7 +329,7 @@ function EarlyAccessContent() {
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
                       <label className="block text-sm font-medium text-neutral-700 mb-2">
-                        {locale === 'fr' ? 'Votre prénom' : 'Your first name'}
+                        {locale === 'fr' ? 'Votre prénom' : locale === 'es' ? 'Su nombre' : 'Your first name'}
                       </label>
                       <input
                         type="text"
@@ -327,13 +337,13 @@ function EarlyAccessContent() {
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-transparent transition-all"
-                        placeholder={locale === 'fr' ? 'Marie' : 'Sarah'}
+                        placeholder={locale === 'fr' ? 'Marie' : locale === 'es' ? 'María' : 'Sarah'}
                       />
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-neutral-700 mb-2">
-                        {locale === 'fr' ? 'Votre email' : 'Your email'}
+                        {locale === 'fr' ? 'Votre email' : locale === 'es' ? 'Su correo electrónico' : 'Your email'}
                       </label>
                       <input
                         type="email"
@@ -341,14 +351,14 @@ function EarlyAccessContent() {
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-transparent transition-all"
-                        placeholder={locale === 'fr' ? 'marie@example.com' : 'sarah@example.com'}
+                        placeholder={locale === 'fr' ? 'marie@example.com' : locale === 'es' ? 'maria@example.com' : 'sarah@example.com'}
                       />
                     </div>
 
                     {/* User Type Selection */}
                     <div>
                       <label className="block text-sm font-medium text-neutral-700 mb-3">
-                        {locale === 'fr' ? 'Comment voulez-vous utiliser Bloomsline?' : 'How do you want to use Bloomsline?'}
+                        {locale === 'fr' ? 'Comment voulez-vous utiliser Bloomsline?' : locale === 'es' ? '¿Cómo quiere usar Bloomsline?' : 'How do you want to use Bloomsline?'}
                       </label>
                       <div className="space-y-3">
                         {userTypeOptions.map((option) => {
@@ -396,10 +406,10 @@ function EarlyAccessContent() {
                                 </div>
                                 <div className="flex-1">
                                   <p className="font-medium text-neutral-800">
-                                    {locale === 'fr' ? option.label.fr : option.label.en}
+                                    {locale === 'fr' ? option.label.fr : locale === 'es' ? option.label.es : option.label.en}
                                   </p>
                                   <p className="text-xs text-neutral-500">
-                                    {locale === 'fr' ? option.description.fr : option.description.en}
+                                    {locale === 'fr' ? option.description.fr : locale === 'es' ? option.description.es : option.description.en}
                                   </p>
                                 </div>
                                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
@@ -422,9 +432,11 @@ function EarlyAccessContent() {
                       <label className="block text-sm font-medium text-neutral-700 mb-2">
                         {locale === 'fr'
                           ? 'Qu\'est-ce qui vous amène ici?'
-                          : 'What brings you here?'}
+                          : locale === 'es'
+                            ? '¿Qué le trae por aquí?'
+                            : 'What brings you here?'}
                         <span className="text-neutral-400 font-normal ml-1">
-                          {locale === 'fr' ? '(optionnel)' : '(optional)'}
+                          {locale === 'fr' ? '(optionnel)' : locale === 'es' ? '(opcional)' : '(optional)'}
                         </span>
                       </label>
                       <textarea
@@ -434,7 +446,9 @@ function EarlyAccessContent() {
                         className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-transparent transition-all resize-none"
                         placeholder={locale === 'fr'
                           ? 'Un moment difficile, une envie de changement, ou juste de la curiosité...'
-                          : 'A hard moment, a desire for change, or just curiosity...'}
+                          : locale === 'es'
+                            ? 'Un momento difícil, un deseo de cambio, o simplemente curiosidad...'
+                            : 'A hard moment, a desire for change, or just curiosity...'}
                       />
                     </div>
 
@@ -448,8 +462,8 @@ function EarlyAccessContent() {
                       className="w-full py-6 bg-neutral-900 text-white hover:bg-neutral-800 rounded-xl font-medium shadow-lg shadow-neutral-900/20 hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting
-                        ? (locale === 'fr' ? 'Envoi...' : 'Sending...')
-                        : (locale === 'fr' ? 'Obtenir un accès anticipé' : 'Get Early Access')}
+                        ? (locale === 'fr' ? 'Envoi...' : locale === 'es' ? 'Enviando...' : 'Sending...')
+                        : (locale === 'fr' ? 'Obtenir un accès anticipé' : locale === 'es' ? 'Obtener acceso anticipado' : 'Get Early Access')}
                     </Button>
                   </form>
 
@@ -457,7 +471,9 @@ function EarlyAccessContent() {
                   <p className="text-center text-xs text-neutral-400 mt-6">
                     {locale === 'fr'
                       ? 'Nous ne partageons jamais vos informations. Promis.'
-                      : 'We never share your information. Promise.'}
+                      : locale === 'es'
+                        ? 'Nunca compartimos su información. Prometido.'
+                        : 'We never share your information. Promise.'}
                   </p>
                 </motion.div>
               ) : (
@@ -471,12 +487,14 @@ function EarlyAccessContent() {
                     <Check className="w-8 h-8 text-emerald-500" />
                   </div>
                   <h2 className="text-2xl font-light text-neutral-900 mb-4">
-                    {locale === 'fr' ? 'Merci, ' + formData.name + '.' : 'Thank you, ' + formData.name + '.'}
+                    {locale === 'fr' ? 'Merci, ' + formData.name + '.' : locale === 'es' ? 'Gracias, ' + formData.name + '.' : 'Thank you, ' + formData.name + '.'}
                   </h2>
                   <p className="text-neutral-500 leading-relaxed max-w-sm mx-auto">
                     {locale === 'fr'
                       ? 'Nous avons reçu votre demande. Nous vous écrirons personnellement quand une place se libère.'
-                      : 'We received your request. We will write to you personally when a spot opens up.'}
+                      : locale === 'es'
+                        ? 'Hemos recibido su solicitud. Le escribiremos personalmente cuando se abra un lugar.'
+                        : 'We received your request. We will write to you personally when a spot opens up.'}
                   </p>
                 </motion.div>
               )}

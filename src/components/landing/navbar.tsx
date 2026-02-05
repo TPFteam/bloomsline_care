@@ -97,7 +97,7 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
                   suppressHydrationWarning
                 >
                   <Calendar className="w-4 h-4" />
-                  {locale === 'fr' ? 'Réserver une démo' : 'Book a Demo'}
+                  {locale === 'fr' ? 'Réserver une démo' : locale === 'es' ? 'Reservar una demo' : 'Book a Demo'}
                 </Button>
               </a>
             )}
@@ -119,7 +119,7 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
               }`}
               suppressHydrationWarning
             >
-              {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
+              {locale === 'fr' ? 'Accès anticipé' : locale === 'es' ? 'Acceso anticipado' : 'Early Access'}
             </Button>
           </motion.div>
 
@@ -179,7 +179,7 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
                       suppressHydrationWarning
                     >
                       <Calendar className="w-4 h-4" />
-                      {locale === 'fr' ? 'Réserver une démo' : 'Book a Demo'}
+                      {locale === 'fr' ? 'Réserver une démo' : locale === 'es' ? 'Reservar una demo' : 'Book a Demo'}
                     </Button>
                   </a>
                 )}
@@ -200,7 +200,7 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
                   }`}
                   suppressHydrationWarning
                 >
-                  {locale === 'fr' ? 'Accès anticipé' : 'Early Access'}
+                  {locale === 'fr' ? 'Accès anticipé' : locale === 'es' ? 'Acceso anticipado' : 'Early Access'}
                 </Button>
               </div>
             </div>

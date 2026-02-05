@@ -17,7 +17,7 @@ export function CommunityNote() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim() || !email.trim()) {
-      setError(locale === 'fr' ? 'Veuillez remplir tous les champs' : 'Please fill in all fields')
+      setError(locale === 'fr' ? 'Veuillez remplir tous les champs' : locale === 'es' ? 'Por favor, complete todos los campos' : 'Please fill in all fields')
       return
     }
 
@@ -39,9 +39,9 @@ export function CommunityNote() {
 
       if (!response.ok) {
         if (data.code === 'DUPLICATE') {
-          setError(locale === 'fr' ? 'Cet email est déjà inscrit' : 'This email is already registered')
+          setError(locale === 'fr' ? 'Cet email est déjà inscrit' : locale === 'es' ? 'Este correo ya está registrado' : 'This email is already registered')
         } else {
-          setError(data.error || (locale === 'fr' ? 'Une erreur est survenue' : 'An error occurred'))
+          setError(data.error || (locale === 'fr' ? 'Une erreur est survenue' : locale === 'es' ? 'Ha ocurrido un error' : 'An error occurred'))
         }
         return
       }
@@ -50,7 +50,7 @@ export function CommunityNote() {
       setName('')
       setEmail('')
     } catch {
-      setError(locale === 'fr' ? 'Une erreur est survenue' : 'An error occurred')
+      setError(locale === 'fr' ? 'Une erreur est survenue' : locale === 'es' ? 'Ha ocurrido un error' : 'An error occurred')
     } finally {
       setLoading(false)
     }
@@ -77,10 +77,10 @@ export function CommunityNote() {
                 <Check className="w-6 h-6 text-green-600" />
               </div>
               <p className="text-neutral-900 font-medium">
-                {locale === 'fr' ? 'Merci pour votre inscription !' : 'Thank you for signing up!'}
+                {locale === 'fr' ? 'Merci pour votre inscription !' : locale === 'es' ? '¡Gracias por registrarte!' : 'Thank you for signing up!'}
               </p>
               <p className="text-neutral-500 text-sm mt-1">
-                {locale === 'fr' ? 'Nous vous contacterons bientôt.' : 'We\'ll be in touch soon.'}
+                {locale === 'fr' ? 'Nous vous contacterons bientôt.' : locale === 'es' ? 'Nos pondremos en contacto pronto.' : 'We\'ll be in touch soon.'}
               </p>
             </div>
           ) : (
@@ -94,7 +94,7 @@ export function CommunityNote() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder={locale === 'fr' ? 'Votre nom' : 'Your name'}
+                  placeholder={locale === 'fr' ? 'Votre nom' : locale === 'es' ? 'Tu nombre' : 'Your name'}
                   className="w-full sm:w-auto px-4 py-3 rounded-full border border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4856A]/30 focus:border-[#D4856A]"
                   disabled={loading}
                   suppressHydrationWarning
@@ -103,7 +103,7 @@ export function CommunityNote() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={locale === 'fr' ? 'Votre email' : 'Your email'}
+                  placeholder={locale === 'fr' ? 'Votre email' : locale === 'es' ? 'Tu correo electrónico' : 'Your email'}
                   className="w-full sm:w-auto px-4 py-3 rounded-full border border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4856A]/30 focus:border-[#D4856A]"
                   disabled={loading}
                   suppressHydrationWarning
@@ -115,8 +115,8 @@ export function CommunityNote() {
                   suppressHydrationWarning
                 >
                   {loading
-                    ? (locale === 'fr' ? 'Envoi...' : 'Sending...')
-                    : (locale === 'fr' ? 'Accès anticipé' : 'Early Access')}
+                    ? (locale === 'fr' ? 'Envoi...' : locale === 'es' ? 'Enviando...' : 'Sending...')
+                    : (locale === 'fr' ? 'Accès anticipé' : locale === 'es' ? 'Acceso anticipado' : 'Early Access')}
                 </button>
               </form>
               {error && (

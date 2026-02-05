@@ -82,9 +82,19 @@ const BLOOM_PROMPTS_FR = [
   'Partage tes pensées...',
 ]
 
+const BLOOM_PROMPTS_ES = [
+  '¿Cómo te sientes?',
+  '¿En qué estás pensando?',
+  'Cuéntame sobre tu día',
+  '¿Necesitas hablar?',
+  '¿Qué te hizo sonreír hoy?',
+  '¿Cómo puedo ayudarte?',
+  'Comparte tus pensamientos...',
+]
+
 function BloomPill({ isDark, locale, onClick }: { isDark: boolean; locale: string; onClick: () => void }) {
   const [promptIndex, setPromptIndex] = useState(0)
-  const prompts = locale === 'fr' ? BLOOM_PROMPTS_FR : BLOOM_PROMPTS_EN
+  const prompts = locale === 'fr' ? BLOOM_PROMPTS_FR : locale === 'es' ? BLOOM_PROMPTS_ES : BLOOM_PROMPTS_EN
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -286,7 +296,9 @@ export default function MomentsPage() {
     const confirmed = window.confirm(
       locale === 'fr'
         ? 'Êtes-vous sûr de vouloir supprimer ce moment ?'
-        : 'Are you sure you want to delete this moment?'
+        : locale === 'es'
+          ? '¿Estás seguro de que quieres eliminar este momento?'
+          : 'Are you sure you want to delete this moment?'
     )
     if (!confirmed) return
 
@@ -295,16 +307,16 @@ export default function MomentsPage() {
     if (success) {
       setMoments(prev => prev.filter(m => m.id !== momentId))
       setSelectedMoment(null)
-      toast.success(locale === 'fr' ? 'Moment supprimé' : 'Moment deleted')
+      toast.success(locale === 'fr' ? 'Moment supprimé' : locale === 'es' ? 'Momento eliminado' : 'Moment deleted')
     } else {
-      toast.error(locale === 'fr' ? 'Erreur lors de la suppression' : 'Error deleting moment')
+      toast.error(locale === 'fr' ? 'Erreur lors de la suppression' : locale === 'es' ? 'Error al eliminar el momento' : 'Error deleting moment')
     }
     setDeleting(null)
   }
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
-    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
       month: 'short',
       day: 'numeric',
     })
@@ -317,9 +329,9 @@ export default function MomentsPage() {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-    if (diffHours < 1) return locale === 'fr' ? "À l'instant" : 'Just now'
+    if (diffHours < 1) return locale === 'fr' ? "À l'instant" : locale === 'es' ? 'Ahora mismo' : 'Just now'
     if (diffHours < 24) return `${diffHours}h`
-    if (diffDays === 1) return locale === 'fr' ? 'Hier' : 'Yesterday'
+    if (diffDays === 1) return locale === 'fr' ? 'Hier' : locale === 'es' ? 'Ayer' : 'Yesterday'
     if (diffDays < 7) return `${diffDays}d`
     return formatDate(dateStr)
   }
@@ -440,11 +452,11 @@ export default function MomentsPage() {
               </button>
               <div>
                 <h1 className={`text-2xl font-semibold ${theme.text} tracking-tight`}>
-                  {locale === 'fr' ? 'Moments' : 'Moments'}
+                  {locale === 'fr' ? 'Moments' : locale === 'es' ? 'Momentos' : 'Moments'}
                 </h1>
                 {stats && stats.total > 0 && (
                   <p className={`text-sm ${theme.textFaint} mt-0.5`}>
-                    {stats.total} {locale === 'fr' ? 'capturés' : 'captured'}
+                    {stats.total} {locale === 'fr' ? 'capturés' : locale === 'es' ? 'capturados' : 'captured'}
                   </p>
                 )}
               </div>
@@ -492,7 +504,7 @@ export default function MomentsPage() {
               <button
                 onClick={() => setShowGuide(true)}
                 className={`p-2.5 rounded-xl ${theme.toggleBg} ${theme.textMuted} hover:scale-105 transition-all`}
-                title={locale === 'fr' ? 'Comment ça marche' : 'How it works'}
+                title={locale === 'fr' ? 'Comment ça marche' : locale === 'es' ? 'Cómo funciona' : 'How it works'}
               >
                 <Info className="w-4 h-4" />
               </button>
@@ -517,7 +529,7 @@ export default function MomentsPage() {
             >
               <SlidersHorizontal className="w-4 h-4" />
               <span className="text-sm">
-                {locale === 'fr' ? 'Filtres' : 'Filters'}
+                {locale === 'fr' ? 'Filtres' : locale === 'es' ? 'Filtros' : 'Filters'}
                 {hasActiveFilters && ` (${selectedMoods.length + (dateFilter !== 'all' ? 1 : 0)})`}
               </span>
             </button>
@@ -529,7 +541,7 @@ export default function MomentsPage() {
               >
                 <Plus className="w-4 h-4" />
                 <span className="text-sm">
-                  {locale === 'fr' ? 'Ajouter' : 'Add'}
+                  {locale === 'fr' ? 'Ajouter' : locale === 'es' ? 'Agregar' : 'Add'}
                 </span>
               </button>
             </Link>
@@ -542,7 +554,7 @@ export default function MomentsPage() {
               >
                 <Sparkles className="w-4 h-4" />
                 <span className="text-sm">
-                  {locale === 'fr' ? 'Revivre' : 'Revisit'}
+                  {locale === 'fr' ? 'Revivre' : locale === 'es' ? 'Revivir' : 'Revisit'}
                 </span>
               </button>
             )}
@@ -562,14 +574,14 @@ export default function MomentsPage() {
                   {/* Date Filter */}
                   <div className="mb-4">
                     <p className={`text-xs ${theme.textMuted} mb-2 uppercase tracking-wide`}>
-                      {locale === 'fr' ? 'Période' : 'Time Period'}
+                      {locale === 'fr' ? 'Période' : locale === 'es' ? 'Período' : 'Time Period'}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {[
-                        { value: 'all', label: locale === 'fr' ? 'Tout' : 'All' },
-                        { value: 'today', label: locale === 'fr' ? "Aujourd'hui" : 'Today' },
-                        { value: 'week', label: locale === 'fr' ? 'Cette semaine' : 'This week' },
-                        { value: 'month', label: locale === 'fr' ? 'Ce mois' : 'This month' },
+                        { value: 'all', label: locale === 'fr' ? 'Tout' : locale === 'es' ? 'Todo' : 'All' },
+                        { value: 'today', label: locale === 'fr' ? "Aujourd'hui" : locale === 'es' ? 'Hoy' : 'Today' },
+                        { value: 'week', label: locale === 'fr' ? 'Cette semaine' : locale === 'es' ? 'Esta semana' : 'This week' },
+                        { value: 'month', label: locale === 'fr' ? 'Ce mois' : locale === 'es' ? 'Este mes' : 'This month' },
                       ].map(option => (
                         <button
                           key={option.value}
@@ -593,7 +605,7 @@ export default function MomentsPage() {
                   {/* Mood Filter */}
                   <div>
                     <p className={`text-xs ${theme.textMuted} mb-2 uppercase tracking-wide`}>
-                      {locale === 'fr' ? 'Émotions' : 'Emotions'}
+                      {locale === 'fr' ? 'Émotions' : locale === 'es' ? 'Emociones' : 'Emotions'}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {MOOD_OPTIONS.map(mood => (
@@ -619,7 +631,7 @@ export default function MomentsPage() {
                       onClick={clearFilters}
                       className={`mt-4 text-sm ${theme.textMuted} hover:${theme.text} transition-colors`}
                     >
-                      {locale === 'fr' ? 'Effacer les filtres' : 'Clear filters'}
+                      {locale === 'fr' ? 'Effacer les filtres' : locale === 'es' ? 'Borrar filtros' : 'Clear filters'}
                     </button>
                   )}
                 </div>
@@ -649,10 +661,10 @@ export default function MomentsPage() {
                 </div>
                 <div>
                   <span className={`text-sm font-semibold ${theme.text}`}>
-                    {locale === 'fr' ? 'Comment tu vas' : 'How you\'re doing'}
+                    {locale === 'fr' ? 'Comment tu vas' : locale === 'es' ? 'Cómo estás' : 'How you\'re doing'}
                   </span>
                   <p className={`text-xs ${theme.textFaint}`}>
-                    {locale === 'fr' ? 'Cette semaine' : 'This week'}
+                    {locale === 'fr' ? 'Cette semaine' : locale === 'es' ? 'Esta semana' : 'This week'}
                   </p>
                 </div>
               </div>
@@ -689,23 +701,33 @@ export default function MomentsPage() {
                 if (recentMoments.length === 0) {
                   insight = locale === 'fr'
                     ? "Pas encore de moments cette semaine. Prends un instant pour capturer ce qui compte."
-                    : "No moments captured this week yet. Take a moment to capture what matters."
+                    : locale === 'es'
+                      ? "Aún no hay momentos esta semana. Tómate un instante para capturar lo que importa."
+                      : "No moments captured this week yet. Take a moment to capture what matters."
                 } else if (positiveRatio >= 0.7) {
                   insight = locale === 'fr'
                     ? `Tu traverses une belle période. ${topMood ? `Tu te sens souvent ${topMood}.` : ''} Continue comme ça.`
-                    : `You're going through a beautiful time. ${topMood ? `You've been feeling ${topMood} a lot.` : ''} Keep it up.`
+                    : locale === 'es'
+                      ? `Estás pasando por un momento hermoso. ${topMood ? `Te has sentido ${topMood} mucho.` : ''} Sigue así.`
+                      : `You're going through a beautiful time. ${topMood ? `You've been feeling ${topMood} a lot.` : ''} Keep it up.`
                 } else if (positiveRatio >= 0.4) {
                   insight = locale === 'fr'
                     ? "Des hauts et des bas, c'est normal. Chaque moment compte dans ton parcours."
-                    : "Ups and downs are normal. Every moment matters in your journey."
+                    : locale === 'es'
+                      ? "Altibajos son normales. Cada momento cuenta en tu camino."
+                      : "Ups and downs are normal. Every moment matters in your journey."
                 } else if (totalMoods > 0) {
                   insight = locale === 'fr'
                     ? "Cette semaine semble difficile. N'hésite pas à prendre soin de toi."
-                    : "This week seems tough. Remember to take care of yourself."
+                    : locale === 'es'
+                      ? "Esta semana parece difícil. No dudes en cuidar de ti."
+                      : "This week seems tough. Remember to take care of yourself."
                 } else {
                   insight = locale === 'fr'
                     ? "Commence à capturer tes émotions pour mieux te comprendre."
-                    : "Start capturing your emotions to better understand yourself."
+                    : locale === 'es'
+                      ? "Empieza a capturar tus emociones para entenderte mejor."
+                      : "Start capturing your emotions to better understand yourself."
                 }
 
                 return (
@@ -741,7 +763,7 @@ export default function MomentsPage() {
                         }`}
                       >
                         <BarChart2 className="w-4 h-4" />
-                        {locale === 'fr' ? 'Voir les tendances' : 'See trends'}
+                        {locale === 'fr' ? 'Voir les tendances' : locale === 'es' ? 'Ver tendencias' : 'See trends'}
                       </button>
                       <button
                         onClick={() => setIsBloomOpen(true)}
@@ -750,7 +772,7 @@ export default function MomentsPage() {
                         }`}
                       >
                         <MessageCircle className="w-4 h-4" />
-                        {locale === 'fr' ? 'En parler' : 'Talk about it'}
+                        {locale === 'fr' ? 'En parler' : locale === 'es' ? 'Hablar de ello' : 'Talk about it'}
                       </button>
                     </div>
                   </>
@@ -773,12 +795,14 @@ export default function MomentsPage() {
               <Sun className={`w-10 h-10 ${theme.textFaint}`} />
             </div>
             <h2 className={`text-lg font-medium ${theme.text} mb-2`}>
-              {locale === 'fr' ? 'Pas encore de moments aujourd\'hui' : 'No moments today yet'}
+              {locale === 'fr' ? 'Pas encore de moments aujourd\'hui' : locale === 'es' ? 'Aún no hay momentos hoy' : 'No moments today yet'}
             </h2>
             <p className={`${theme.textFaint} text-sm max-w-[260px] leading-relaxed mb-8`}>
               {locale === 'fr'
                 ? 'Qu\'est-ce qui vous traverse l\'esprit ? Capturez-le.'
-                : 'What\'s on your mind? Capture it.'}
+                : locale === 'es'
+                  ? '¿Qué tienes en mente? Captúralo.'
+                  : 'What\'s on your mind? Capture it.'}
             </p>
             <Link href="/moments/capture">
               <motion.button
@@ -787,7 +811,7 @@ export default function MomentsPage() {
                 className={`px-6 py-3 rounded-2xl ${theme.accent} font-medium text-sm flex items-center gap-2`}
               >
                 <Plus className="w-4 h-4" />
-                {locale === 'fr' ? 'Capturer un moment' : 'Capture a moment'}
+                {locale === 'fr' ? 'Capturer un moment' : locale === 'es' ? 'Capturar un momento' : 'Capture a moment'}
               </motion.button>
             </Link>
             {/* View past moments link */}
@@ -800,7 +824,7 @@ export default function MomentsPage() {
                 {loadingMore ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
                 ) : null}
-                {locale === 'fr' ? 'Voir les moments passés' : 'View past moments'}
+                {locale === 'fr' ? 'Voir les moments passés' : locale === 'es' ? 'Ver momentos pasados' : 'View past moments'}
               </button>
             )}
           </motion.div>
@@ -815,13 +839,13 @@ export default function MomentsPage() {
               <SlidersHorizontal className={`w-7 h-7 ${theme.textFaint}`} />
             </div>
             <p className={`${theme.textMuted} text-sm mb-4`}>
-              {locale === 'fr' ? 'Aucun moment trouvé' : 'No moments found'}
+              {locale === 'fr' ? 'Aucun moment trouvé' : locale === 'es' ? 'No se encontraron momentos' : 'No moments found'}
             </p>
             <button
               onClick={clearFilters}
               className={`text-sm ${isDark ? 'text-white/70' : 'text-gray-600'} underline`}
             >
-              {locale === 'fr' ? 'Effacer les filtres' : 'Clear filters'}
+              {locale === 'fr' ? 'Effacer les filtres' : locale === 'es' ? 'Borrar filtros' : 'Clear filters'}
             </button>
           </motion.div>
         ) : viewMode === 'grid' ? (
@@ -998,7 +1022,7 @@ export default function MomentsPage() {
                         <span className={theme.textFaint}>
                           {moment.type === 'photo' && 'Photo'}
                           {moment.type === 'video' && 'Video'}
-                          {moment.type === 'voice' && (locale === 'fr' ? 'Note vocale' : 'Voice note')}
+                          {moment.type === 'voice' && (locale === 'fr' ? 'Note vocale' : locale === 'es' ? 'Nota de voz' : 'Voice note')}
                           {moment.type === 'write' && 'Note'}
                         </span>
                       )}
@@ -1047,8 +1071,8 @@ export default function MomentsPage() {
                 <ChevronLeft className="w-4 h-4 rotate-180" />
               )}
               {loadingMore
-                ? (locale === 'fr' ? 'Chargement...' : 'Loading...')
-                : (locale === 'fr' ? 'Voir les moments passés' : 'View past moments')}
+                ? (locale === 'fr' ? 'Chargement...' : locale === 'es' ? 'Cargando...' : 'Loading...')
+                : (locale === 'fr' ? 'Voir les moments passés' : locale === 'es' ? 'Ver momentos pasados' : 'View past moments')}
             </button>
           </motion.div>
         )}
@@ -1095,10 +1119,10 @@ export default function MomentsPage() {
               <div className="flex items-center justify-between px-5 pb-4">
                 <div>
                   <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {locale === 'fr' ? 'Tendances d\'humeur' : 'Mood Trends'}
+                    {locale === 'fr' ? 'Tendances d\'humeur' : locale === 'es' ? 'Tendencias de ánimo' : 'Mood Trends'}
                   </h2>
                   <p className={`text-sm ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
-                    {locale === 'fr' ? 'Score de positivité quotidien' : 'Daily positivity score'}
+                    {locale === 'fr' ? 'Score de positivité quotidien' : locale === 'es' ? 'Puntuación diaria de positividad' : 'Daily positivity score'}
                   </p>
                 </div>
                 <button
@@ -1122,8 +1146,8 @@ export default function MomentsPage() {
                     }`}
                   >
                     {range === 'weekly'
-                      ? (locale === 'fr' ? '7 jours' : '7 days')
-                      : (locale === 'fr' ? '30 jours' : '30 days')
+                      ? (locale === 'fr' ? '7 jours' : locale === 'es' ? '7 días' : '7 days')
+                      : (locale === 'fr' ? '30 jours' : locale === 'es' ? '30 días' : '30 days')
                     }
                   </button>
                 ))}
@@ -1170,8 +1194,8 @@ export default function MomentsPage() {
                     }
 
                     const label = trendsTimeRange === 'weekly'
-                      ? date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short' })
-                      : date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric' })
+                      ? date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { weekday: 'short' })
+                      : date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { day: 'numeric' })
 
                     chartData.push({
                       date: dateStr,
@@ -1222,9 +1246,9 @@ export default function MomentsPage() {
                             formatter={(value, name, props) => {
                               const hasData = props.payload?.hasData
                               if (!hasData) {
-                                return [locale === 'fr' ? 'Pas de données' : 'No data', '']
+                                return [locale === 'fr' ? 'Pas de données' : locale === 'es' ? 'Sin datos' : 'No data', '']
                               }
-                              return [`${value}%`, locale === 'fr' ? 'Positivité' : 'Positivity']
+                              return [`${value}%`, locale === 'fr' ? 'Positivité' : locale === 'es' ? 'Positividad' : 'Positivity']
                             }}
                           />
                           <Line
@@ -1273,7 +1297,9 @@ export default function MomentsPage() {
                 <div className={`mt-4 text-center text-sm ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
                   {locale === 'fr'
                     ? '% d\'émotions positives par jour'
-                    : '% of positive emotions per day'
+                    : locale === 'es'
+                      ? '% de emociones positivas por día'
+                      : '% of positive emotions per day'
                   }
                 </div>
               </div>
@@ -1324,7 +1350,7 @@ export default function MomentsPage() {
                 transition={{ delay: 0.5 }}
                 className="text-white/40 text-sm mb-8 tracking-wide"
               >
-                {locale === 'fr' ? 'Un moment pour vous' : 'A moment for you'}
+                {locale === 'fr' ? 'Un moment pour vous' : locale === 'es' ? 'Un momento para ti' : 'A moment for you'}
               </motion.p>
 
               {/* Media */}
@@ -1413,7 +1439,7 @@ export default function MomentsPage() {
                   onClick={() => setReflectMoment(null)}
                   className="px-6 py-2.5 rounded-full bg-white/10 text-white/70 text-sm hover:bg-white/20 transition-colors"
                 >
-                  {locale === 'fr' ? 'Fermer' : 'Close'}
+                  {locale === 'fr' ? 'Fermer' : locale === 'es' ? 'Cerrar' : 'Close'}
                 </button>
                 <button
                   onClick={() => {
@@ -1422,7 +1448,7 @@ export default function MomentsPage() {
                   }}
                   className="px-6 py-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm hover:opacity-90 transition-opacity"
                 >
-                  {locale === 'fr' ? 'Un autre' : 'Another'}
+                  {locale === 'fr' ? 'Un autre' : locale === 'es' ? 'Otro' : 'Another'}
                 </button>
               </motion.div>
             </motion.div>
@@ -1434,7 +1460,7 @@ export default function MomentsPage() {
               transition={{ delay: 1.5 }}
               className="absolute bottom-8 text-white/20 text-xs"
             >
-              {locale === 'fr' ? 'Tapez n\'importe où pour fermer' : 'Tap anywhere to close'}
+              {locale === 'fr' ? 'Tapez n\'importe où pour fermer' : locale === 'es' ? 'Toca en cualquier lugar para cerrar' : 'Tap anywhere to close'}
             </motion.p>
           </motion.div>
         )}
@@ -1522,7 +1548,7 @@ export default function MomentsPage() {
                   {selectedMoment.moods && selectedMoment.moods.length > 0 && (
                     <div className="pt-3 border-t border-white/10">
                       <p className="text-white/40 text-xs uppercase tracking-wide mb-2">
-                        {locale === 'fr' ? 'Émotions' : 'Emotions'}
+                        {locale === 'fr' ? 'Émotions' : locale === 'es' ? 'Emociones' : 'Emotions'}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {selectedMoment.moods.map(mood => (

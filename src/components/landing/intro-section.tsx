@@ -87,14 +87,14 @@ export function IntroSection() {
               end={0.5 * segmentDuration}
               highlightColor="#6b7280"
             >
-              {locale === 'fr' ? 'Vous savez comment la vie va vite et on oublie les petits' : 'You know how life moves fast and we forget the small'}
+              {locale === 'fr' ? 'Vous savez comment la vie va vite et on oublie les petits' : locale === 'es' ? 'Sabes cómo la vida va rápido y olvidamos los pequeños' : 'You know how life moves fast and we forget the small'}
             </HighlightedSegment>
             {' '}
             <MomentBadge
               scrollYProgress={scrollYProgress}
               start={1 * segmentDuration}
               end={1.5 * segmentDuration}
-              text={locale === 'fr' ? 'moments' : 'moments'}
+              text={locale === 'fr' ? 'moments' : locale === 'es' ? 'momentos' : 'moments'}
             />
             <HighlightedSegment
               scrollYProgress={scrollYProgress}
@@ -113,7 +113,7 @@ export function IntroSection() {
               end={2.5 * segmentDuration}
               highlightColor="#6b7280"
             >
-              {locale === 'fr' ? 'Ouais.' : 'Yeah.'}
+              {locale === 'fr' ? 'Ouais.' : locale === 'es' ? 'Sí.' : 'Yeah.'}
             </HighlightedSegment>
 
             <br /><br />
@@ -124,7 +124,7 @@ export function IntroSection() {
               end={3.5 * segmentDuration}
               highlightColor="#0d9488"
             >
-              {locale === 'fr' ? 'On vous aide à les capturer' : 'We help you capture those'}
+              {locale === 'fr' ? 'On vous aide à les capturer' : locale === 'es' ? 'Te ayudamos a capturar esos' : 'We help you capture those'}
             </HighlightedSegment>
             <HighlightedSegment
               scrollYProgress={scrollYProgress}
@@ -134,6 +134,8 @@ export function IntroSection() {
             >
               {locale === 'fr'
                 ? " — une photo, une note vocale, ou juste ce que vous ressentez."
+                : locale === 'es'
+                ? " — una foto, una nota de voz, o simplemente cómo te sientes."
                 : " — a photo, a voice note, or just how you're feeling."}
             </HighlightedSegment>
 
@@ -145,7 +147,7 @@ export function IntroSection() {
               end={5.5 * segmentDuration}
               highlightColor="#6b7280"
             >
-              {locale === 'fr' ? 'Au fil du temps, vous voyez vos patterns,' : 'Over time, you see your patterns,'}
+              {locale === 'fr' ? 'Au fil du temps, vous voyez vos patterns,' : locale === 'es' ? 'Con el tiempo, ves tus patrones,' : 'Over time, you see your patterns,'}
             </HighlightedSegment>
             {' '}
             <HighlightedSegment
@@ -154,7 +156,7 @@ export function IntroSection() {
               end={6.5 * segmentDuration}
               highlightColor="#0d9488"
             >
-              {locale === 'fr' ? 'vous comprenez mieux,' : 'understand yourself better,'}
+              {locale === 'fr' ? 'vous comprenez mieux,' : locale === 'es' ? 'te entiendes mejor,' : 'understand yourself better,'}
             </HighlightedSegment>
             {' '}
             <HighlightedSegment
@@ -163,7 +165,7 @@ export function IntroSection() {
               end={7.5 * segmentDuration}
               highlightColor="#6b7280"
             >
-              {locale === 'fr' ? 'et vous avancez plus doucement.' : 'and take gentler steps forward.'}
+              {locale === 'fr' ? 'et vous avancez plus doucement.' : locale === 'es' ? 'y avanzas con más suavidad.' : 'and take gentler steps forward.'}
             </HighlightedSegment>
 
             <br /><br />
@@ -174,7 +176,7 @@ export function IntroSection() {
               end={8.5 * segmentDuration}
               highlightColor="#6b7280"
             >
-              {locale === 'fr' ? "Quand vous avez besoin d'un petit coup de pouce," : 'When you need a gentle nudge,'}
+              {locale === 'fr' ? "Quand vous avez besoin d'un petit coup de pouce," : locale === 'es' ? 'Cuando necesitas un pequeño empujón,' : 'When you need a gentle nudge,'}
             </HighlightedSegment>
             {' '}
             <HighlightedSegment
@@ -183,7 +185,7 @@ export function IntroSection() {
               end={9.5 * segmentDuration}
               highlightColor="#0d9488"
             >
-              {locale === 'fr' ? 'Bloom est là.' : 'Bloom is there.'}
+              {locale === 'fr' ? 'Bloom est là.' : locale === 'es' ? 'Bloom está ahí.' : 'Bloom is there.'}
             </HighlightedSegment>
           </p>
         </div>
