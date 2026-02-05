@@ -1450,9 +1450,7 @@ export default function MyResourcesPage() {
                           transition={{ duration: 3, repeat: Infinity, delay: i * 0.3 }}
                           whileHover={{ scale: 1.15 }}
                           whileTap={{ scale: 0.95 }}
-                          className={`relative w-8 h-8 flex items-center justify-center border-2 border-white overflow-hidden ${
-                            moment.type === 'photo' && moment.media_url ? 'rounded-lg' : 'rounded-full'
-                          }`}
+                          className="relative w-8 h-8 rounded-full flex items-center justify-center border-2 border-white overflow-hidden"
                           style={{
                             background: moment.type === 'photo' && moment.media_url
                               ? 'transparent'
