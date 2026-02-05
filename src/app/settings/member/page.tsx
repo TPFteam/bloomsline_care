@@ -139,9 +139,45 @@ export default function MemberSettingsPage() {
       helpSupport: 'Aide & Support',
       helpSupportDescription: 'Signaler des bugs, suggérer des idées ou poser des questions',
     },
+    es: {
+      title: 'Configuración',
+      profile: 'Tu Perfil',
+      viewProfile: 'Ver perfil completo',
+      memberSince: 'Miembro desde',
+      language: 'Idioma',
+      languageDescription: 'Elige tu idioma preferido',
+      english: 'English',
+      french: 'Français',
+      logout: 'Cerrar sesión',
+      logoutDescription: 'Cerrar sesión de tu cuenta',
+      loggingOut: 'Cerrando sesión...',
+      version: 'Versión 1.0.0',
+      madeWith: 'Hecho con cariño',
+      notifications: 'Notificaciones',
+      notificationsDescription: 'Elige cómo recibir actualizaciones',
+      emailNotifications: 'Correo electrónico',
+      pushNotifications: 'Push',
+      saving: 'Guardando...',
+      contactInfo: 'Información de contacto',
+      contactDescription: 'Actualiza tus datos de contacto',
+      phone: 'Número de teléfono',
+      phonePlaceholder: 'Ingresa el número de teléfono',
+      edit: 'Editar',
+      save: 'Guardar',
+      cancel: 'Cancelar',
+      phoneUpdated: 'Número de teléfono actualizado',
+      errorUpdating: 'Error al actualizar el teléfono',
+      notProvided: 'No proporcionado',
+      features: 'Funciones de la app',
+      featuresDescription: 'Personaliza tu experiencia en la app',
+      showAllFeatures: 'Mostrar todas las funciones',
+      showAllFeaturesDesc: 'Habilitar funciones avanzadas como Equilibrio, Cuidado y Reflexión',
+      helpSupport: 'Ayuda y soporte',
+      helpSupportDescription: 'Reportar errores, sugerir funciones o hacer preguntas',
+    },
   }
 
-  const text = locale === 'fr' ? t.fr : t.en
+  const text = locale === 'fr' ? t.fr : locale === 'es' ? t.es : t.en
 
   useEffect(() => {
     fetchProfile()
@@ -190,9 +226,9 @@ export default function MemberSettingsPage() {
     }
   }
 
-  const handleLanguageChange = (newLocale: 'en' | 'fr') => {
+  const handleLanguageChange = (newLocale: 'en' | 'fr' | 'es') => {
     setLocale(newLocale)
-    toast.success(newLocale === 'fr' ? 'Langue changée' : 'Language changed')
+    toast.success(newLocale === 'fr' ? 'Langue changée' : newLocale === 'es' ? 'Idioma cambiado' : 'Language changed')
   }
 
   const handleNotificationToggle = async (type: 'email_enabled' | 'push_enabled') => {
@@ -217,12 +253,12 @@ export default function MemberSettingsPage() {
         })
 
       if (error) throw error
-      toast.success(locale === 'fr' ? 'Préférences enregistrées' : 'Preferences saved')
+      toast.success(locale === 'fr' ? 'Préférences enregistrées' : locale === 'es' ? 'Preferencias guardadas' : 'Preferences saved')
     } catch (error) {
       console.error('Error saving notification preferences:', error)
       // Revert on error
       setNotificationPrefs(notificationPrefs)
-      toast.error(locale === 'fr' ? 'Erreur lors de l\'enregistrement' : 'Error saving preferences')
+      toast.error(locale === 'fr' ? 'Erreur lors de l\'enregistrement' : locale === 'es' ? 'Error al guardar preferencias' : 'Error saving preferences')
     } finally {
       setIsSavingNotifications(false)
     }
@@ -263,13 +299,13 @@ export default function MemberSettingsPage() {
       router.push('/')
     } catch (error) {
       console.error('Error logging out:', error)
-      toast.error(locale === 'fr' ? 'Erreur lors de la déconnexion' : 'Error logging out')
+      toast.error(locale === 'fr' ? 'Erreur lors de la déconnexion' : locale === 'es' ? 'Error al cerrar sesión' : 'Error logging out')
       setIsLoggingOut(false)
     }
   }
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    return new Date(date).toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
       year: 'numeric',
       month: 'long',
     })
@@ -462,7 +498,7 @@ export default function MemberSettingsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <button
                 onClick={() => handleLanguageChange('en')}
                 className={`relative py-4 px-4 rounded-2xl border-2 transition-all ${
@@ -481,7 +517,7 @@ export default function MemberSettingsPage() {
                   </motion.div>
                 )}
                 <span className="text-2xl mb-1 block">🇬🇧</span>
-                <span className={`font-medium ${locale === 'en' ? 'text-emerald-700' : 'text-gray-700'}`}>
+                <span className={`font-medium text-sm ${locale === 'en' ? 'text-emerald-700' : 'text-gray-700'}`}>
                   {text.english}
                 </span>
               </button>
@@ -504,8 +540,31 @@ export default function MemberSettingsPage() {
                   </motion.div>
                 )}
                 <span className="text-2xl mb-1 block">🇫🇷</span>
-                <span className={`font-medium ${locale === 'fr' ? 'text-emerald-700' : 'text-gray-700'}`}>
+                <span className={`font-medium text-sm ${locale === 'fr' ? 'text-emerald-700' : 'text-gray-700'}`}>
                   {text.french}
+                </span>
+              </button>
+
+              <button
+                onClick={() => handleLanguageChange('es')}
+                className={`relative py-4 px-4 rounded-2xl border-2 transition-all ${
+                  locale === 'es'
+                    ? 'border-emerald-500 bg-emerald-50'
+                    : 'border-gray-200 hover:border-gray-300 bg-gray-50'
+                }`}
+              >
+                {locale === 'es' && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute top-2 right-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center"
+                  >
+                    <Check className="w-3 h-3 text-white" />
+                  </motion.div>
+                )}
+                <span className="text-2xl mb-1 block">🇪🇸</span>
+                <span className={`font-medium text-sm ${locale === 'es' ? 'text-emerald-700' : 'text-gray-700'}`}>
+                  Español
                 </span>
               </button>
             </div>
@@ -608,7 +667,7 @@ export default function MemberSettingsPage() {
                 <span className="text-xs text-gray-500">{text.showAllFeaturesDesc}</span>
               </div>
               <span className="text-xs font-medium text-violet-600 bg-violet-100 px-2 py-1 rounded-full">
-                {locale === 'fr' ? 'Bientôt' : 'Coming soon'}
+                {locale === 'fr' ? 'Bientôt' : locale === 'es' ? 'Próximamente' : 'Coming soon'}
               </span>
             </div>
           </motion.div>
