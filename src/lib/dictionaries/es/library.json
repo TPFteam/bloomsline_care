@@ -1,0 +1,215 @@
+{
+  "title": "Biblioteca digital",
+  "subtitle": "Descubre recursos basados en evidencia para tu práctica",
+  "backToDashboard": "Volver al panel",
+  "backToLibrary": "Volver a la biblioteca digital",
+
+  "search": {
+    "placeholder": "Buscar recursos por título, descripción o etiquetas...",
+    "noResults": "No se encontraron recursos",
+    "noResultsDescription": "Intenta ajustar tu búsqueda o filtros",
+    "resultsCount": "Mostrando {count} de {total} recursos"
+  },
+
+  "filters": {
+    "title": "Filtros",
+    "clearAll": "Limpiar todo",
+    "type": "Tipo de recurso",
+    "category": "Categoría",
+    "ageGroup": "Grupo de edad",
+    "difficulty": "Dificultad",
+    "duration": "Duración",
+    "curatedOnly": "Solo curados",
+    "allTypes": "Todos los tipos",
+    "allCategories": "Todas las categorías",
+    "allAges": "Todas las edades",
+    "allDifficulties": "Todos los niveles",
+    "anyDuration": "Cualquier duración",
+    "under15min": "Menos de 15 min",
+    "under30min": "Menos de 30 min",
+    "under60min": "Menos de 1 hora",
+    "over60min": "Más de 1 hora"
+  },
+
+  "types": {
+    "assessment": "Evaluación",
+    "activity": "Actividad",
+    "ritual": "Ritual",
+    "educational": "Educativo",
+    "template": "Plantilla"
+  },
+
+  "typeDescriptions": {
+    "assessment": "Herramientas de evaluación y cuestionarios",
+    "activity": "Ejercicios interactivos y hojas de trabajo",
+    "ritual": "Prácticas y rutinas diarias",
+    "educational": "Hojas informativas y guías",
+    "template": "Plantillas de sesión y formularios"
+  },
+
+  "categories": {
+    "anxiety": "Ansiedad",
+    "depression": "Depresión",
+    "stress": "Manejo del estrés",
+    "relationships": "Relaciones",
+    "self_esteem": "Autoestima",
+    "mindfulness": "Atención plena",
+    "coping_skills": "Habilidades de afrontamiento",
+    "communication": "Comunicación",
+    "grief": "Duelo y pérdida",
+    "trauma": "Trauma",
+    "children": "Niños",
+    "teens": "Adolescentes",
+    "adults": "Adultos",
+    "couples": "Parejas",
+    "family": "Familia",
+    "general": "General"
+  },
+
+  "ageGroups": {
+    "children": "Niños (5-12)",
+    "teens": "Adolescentes (13-17)",
+    "adults": "Adultos (18+)",
+    "all": "Todas las edades"
+  },
+
+  "difficulty": {
+    "beginner": "Principiante",
+    "intermediate": "Intermedio",
+    "advanced": "Avanzado"
+  },
+
+  "resource": {
+    "by": "por",
+    "curated": "Curado",
+    "community": "Comunidad",
+    "saves": "guardados",
+    "uses": "usos",
+    "minutes": "min",
+    "viewDetails": "Ver detalles",
+    "saveToLibrary": "Guardar en mi biblioteca",
+    "saved": "Guardado",
+    "unsave": "Quitar de guardados",
+    "useWithClient": "Usar con cliente",
+    "duplicate": "Duplicar y editar",
+    "share": "Compartir",
+    "preview": "Vista previa"
+  },
+
+  "detail": {
+    "overview": "Resumen",
+    "instructions": "Instrucciones",
+    "materials": "Materiales necesarios",
+    "sections": "Secciones de contenido",
+    "tips": "Consejos para profesionales",
+    "modifications": "Modificaciones y adaptaciones",
+    "reviews": "Reseñas",
+    "relatedResources": "Recursos relacionados",
+    "noMaterials": "No se requieren materiales",
+    "noTips": "No hay consejos disponibles",
+    "noModifications": "No hay modificaciones listadas",
+    "writeReview": "Escribir una reseña",
+    "yourRating": "Tu calificación",
+    "submitReview": "Enviar reseña"
+  },
+
+  "collections": {
+    "title": "Mis colecciones",
+    "favorites": "Favoritos",
+    "createCollection": "Crear colección",
+    "editCollection": "Editar colección",
+    "deleteCollection": "Eliminar colección",
+    "collectionName": "Nombre de la colección",
+    "collectionDescription": "Descripción (opcional)",
+    "selectColor": "Seleccionar color",
+    "noCollections": "Aún no hay colecciones",
+    "noCollectionsDescription": "Crea una colección para organizar tus recursos guardados",
+    "addToCollection": "Agregar a colección",
+    "removeFromCollection": "Quitar de colección",
+    "moveToCollection": "Mover a colección",
+    "confirmDelete": "¿Estás seguro de que deseas eliminar esta colección? Los recursos no serán eliminados."
+  },
+
+  "myResources": {
+    "title": "Mis recursos",
+    "subtitle": "Tu colección personal de recursos",
+    "tabs": {
+      "saved": "Recursos guardados",
+      "created": "Mis creaciones",
+      "shared": "Compartidos conmigo"
+    },
+    "noSaved": "Aún no hay recursos guardados",
+    "noSavedDescription": "Explora la biblioteca y guarda los recursos que te gustaría usar",
+    "noCreated": "Aún no hay recursos creados",
+    "noCreatedDescription": "Crea tus propios recursos para usar con clientes",
+    "noShared": "No hay recursos compartidos",
+    "noSharedDescription": "Los recursos compartidos por colegas aparecerán aquí"
+  },
+
+  "create": {
+    "title": "Crear recurso",
+    "editTitle": "Editar recurso",
+    "subtitle": "Crea algo significativo para tu práctica",
+    "basicInfo": "Información básica",
+    "resourceTitle": "Título",
+    "resourceTitlePlaceholder": "ej., Kit de herramientas para la ansiedad",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Breve descripción de este recurso...",
+    "type": "Tipo de recurso",
+    "category": "Categoría",
+    "content": "Contenido",
+    "contentPlaceholder": "Escribe el contenido de tu recurso aquí...",
+    "tags": "Etiquetas",
+    "tagsPlaceholder": "Agrega una etiqueta y presiona Enter",
+    "thumbnail": "Imagen en miniatura",
+    "uploadThumbnail": "Subir imagen",
+    "attachments": "Adjuntos",
+    "addAttachment": "Agregar adjunto",
+    "save": "Guardar recurso",
+    "saveAndShare": "Guardar y compartir en la práctica",
+    "cancel": "Cancelar",
+    "saving": "Guardando...",
+    "preview": "Vista previa"
+  },
+
+  "share": {
+    "title": "Compartir en la biblioteca de la práctica",
+    "description": "Comparte este recurso con tus colegas. Podrán verlo y duplicarlo.",
+    "shareButton": "Compartir recurso",
+    "unshareButton": "Dejar de compartir",
+    "shared": "Compartido con la práctica",
+    "sharedOn": "Compartido el"
+  },
+
+  "stats": {
+    "totalResources": "Recursos totales",
+    "categories": "Categorías",
+    "savedItems": "Elementos guardados",
+    "myCreations": "Mis creaciones",
+    "collections": "Colecciones"
+  },
+
+  "empty": {
+    "title": "Descubre recursos",
+    "description": "Explora nuestra biblioteca curada de recursos terapéuticos basados en evidencia",
+    "browseButton": "Explorar biblioteca"
+  },
+
+  "errors": {
+    "loadFailed": "Error al cargar recursos",
+    "saveFailed": "Error al guardar recurso",
+    "deleteFailed": "Error al eliminar recurso",
+    "createFailed": "Error al crear recurso",
+    "updateFailed": "Error al actualizar recurso"
+  },
+
+  "success": {
+    "resourceSaved": "Recurso guardado en tu biblioteca",
+    "resourceUnsaved": "Recurso eliminado de tu biblioteca",
+    "resourceCreated": "Recurso creado exitosamente",
+    "resourceUpdated": "Recurso actualizado exitosamente",
+    "resourceDeleted": "Recurso eliminado exitosamente",
+    "collectionCreated": "Colección creada exitosamente",
+    "resourceShared": "Recurso compartido con tu práctica"
+  }
+}

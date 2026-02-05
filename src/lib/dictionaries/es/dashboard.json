@@ -1,0 +1,214 @@
+{
+  "greeting": {
+    "morning": "Buenos días",
+    "afternoon": "Buenas tardes",
+    "evening": "Buenas noches"
+  },
+  "tagline": "Esto es lo que está pasando con tu práctica hoy",
+  "sidebar": {
+    "home": "Inicio",
+    "signOut": "Cerrar sesión"
+  },
+  "sections": {
+    "library": {
+      "title": "Biblioteca digital",
+      "description": "Recursos curados",
+      "detail": "Formularios terapéuticos y actividades listas para usar, curados por expertos. Duplica, edita y personaliza.",
+      "stats": {
+        "resources": "Recursos",
+        "categories": "Categorías"
+      },
+      "tags": {
+        "expertCurated": "Curado por expertos",
+        "customizable": "Personalizable",
+        "evidenceBased": "Basado en evidencia"
+      }
+    },
+    "resources": {
+      "title": "Mis recursos",
+      "description": "Colección personal",
+      "detail": "Tus recursos guardados, contenido creado y colecciones organizadas. Acceso fácil a tu kit de herramientas terapéuticas.",
+      "stats": {
+        "savedItems": "Elementos guardados",
+        "collections": "Colecciones"
+      },
+      "tags": {
+        "personalSaved": "Guardados personales",
+        "collections": "Colecciones",
+        "quickAccess": "Acceso rápido"
+      }
+    },
+    "members": {
+      "title": "Centro de miembros",
+      "description": "Espacio de trabajo del cliente",
+      "detail": "Gestiona pacientes y estudiantes en un espacio de trabajo unificado. Guarda resúmenes de sesiones y sigue el progreso.",
+      "stats": {
+        "activeClients": "Clientes activos",
+        "sessions": "Sesiones"
+      },
+      "tags": {
+        "clientManagement": "Gestión de clientes",
+        "sessionTracking": "Seguimiento de sesiones",
+        "progressNotes": "Notas de progreso"
+      }
+    },
+    "analytics": {
+      "title": "Analítica de la práctica",
+      "description": "Información y métricas",
+      "detail": "Comprende los patrones de tu práctica, el compromiso del cliente y los resultados terapéuticos con datos significativos.",
+      "stats": {
+        "successRate": "Tasa de éxito",
+        "insights": "Información"
+      },
+      "tags": {
+        "analytics": "Analítica",
+        "clientInsights": "Información del cliente",
+        "outcomes": "Resultados"
+      }
+    },
+    "settings": {
+      "title": "Configuración",
+      "description": "Preferencias de cuenta",
+      "detail": "Gestiona las preferencias de tu cuenta y la configuración de la aplicación",
+      "comingSoon": "Próximamente"
+    },
+    "rituals": {
+      "title": "Rituales",
+      "description": "Prácticas diarias",
+      "detail": "Crea y sigue rituales diarios significativos que apoyen tu camino de bienestar.",
+      "stats": {
+        "activeRituals": "Rituales activos",
+        "streak": "Días consecutivos"
+      },
+      "tags": {
+        "dailyPractice": "Práctica diaria",
+        "trackProgress": "Seguir progreso",
+        "buildHabits": "Crear hábitos"
+      }
+    },
+    "moments": {
+      "title": "Momentos",
+      "description": "Captura reflexiones",
+      "detail": "Reflexiona y escribe sobre momentos significativos en tu camino de bienestar.",
+      "stats": {
+        "totalMoments": "Momentos totales",
+        "thisWeek": "Esta semana"
+      },
+      "tags": {
+        "journaling": "Diario",
+        "reflection": "Reflexión",
+        "insights": "Reflexiones"
+      }
+    },
+    "balance": {
+      "title": "Equilibrio",
+      "description": "Seguimiento del bienestar",
+      "detail": "Monitorea diferentes aspectos del equilibrio de tu vida y tu bienestar general.",
+      "stats": {
+        "balanceScore": "Puntuación de equilibrio",
+        "categories": "Categorías"
+      },
+      "tags": {
+        "wellness": "Bienestar",
+        "tracking": "Seguimiento",
+        "holistic": "Holístico"
+      }
+    },
+    "reflection": {
+      "title": "Reflexión",
+      "description": "Perspectivas de crecimiento",
+      "detail": "Explora tus patrones de crecimiento personal y celebra el progreso a lo largo del tiempo.",
+      "stats": {
+        "reflections": "Reflexiones",
+        "growth": "Puntuación de crecimiento"
+      },
+      "tags": {
+        "selfAwareness": "Autoconciencia",
+        "progress": "Progreso",
+        "celebration": "Celebración"
+      }
+    },
+    "stories": {
+      "title": "Historias",
+      "description": "Crear y compartir",
+      "detail": "Crea contenido enriquecido con texto, imágenes, videos y medios. Publica y comparte con un enlace único.",
+      "stats": {
+        "published": "Publicadas",
+        "views": "Vistas"
+      },
+      "tags": {
+        "richContent": "Contenido enriquecido",
+        "shareableLink": "Enlace compartible",
+        "multimedia": "Multimedia"
+      }
+    },
+    "myResources": {
+      "title": "Mis recursos",
+      "description": "Recursos asignados",
+      "detail": "Ve y completa hojas de trabajo y ejercicios asignados por tu profesional.",
+      "stats": {
+        "pending": "Pendientes",
+        "completed": "Completados"
+      },
+      "tags": {
+        "worksheets": "Hojas de trabajo",
+        "exercises": "Ejercicios",
+        "assignments": "Asignaciones"
+      }
+    },
+    "bookings": {
+      "title": "Reservas",
+      "description": "Citas y calendario"
+    }
+  },
+  "stats": {
+    "activeClients": {
+      "label": "Clientes activos",
+      "change": "este mes"
+    },
+    "sessionsThisWeek": {
+      "label": "Sesiones esta semana",
+      "change": "restantes"
+    },
+    "resourcesSaved": {
+      "label": "Recursos guardados",
+      "change": "esta semana"
+    },
+    "completionRate": {
+      "label": "Tasa de finalización",
+      "change": "este mes"
+    }
+  },
+  "quickActions": {
+    "title": "Acciones rápidas",
+    "newSessionNote": "Nueva nota de sesión",
+    "scheduleAppointment": "Agendar cita",
+    "browseResources": "Explorar recursos",
+    "viewAnalytics": "Ver analítica",
+    "addNewMember": "Agregar nuevo miembro"
+  },
+  "schedule": {
+    "title": "Agenda de hoy",
+    "session": "Sesión",
+    "checkIn": "Seguimiento",
+    "viewAll": "Ver todo",
+    "noAppointments": "No hay citas hoy"
+  },
+  "activity": {
+    "title": "Actividad reciente",
+    "completedSession": "Sesión completada con",
+    "addedToLibrary": "Agregado",
+    "toLibrary": "a la biblioteca",
+    "updatedNotes": "Notas del cliente actualizadas para",
+    "reviewedAnalytics": "Panel de analítica revisado",
+    "hoursAgo": "horas atrás",
+    "yesterday": "Ayer",
+    "daysAgo": "días atrás"
+  },
+  "practice": {
+    "title": "Tu práctica"
+  },
+  "loading": "Cargando tu espacio de trabajo...",
+  "backToDashboard": "Volver al panel",
+  "comingSoon": "Próximamente"
+}

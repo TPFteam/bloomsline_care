@@ -16,6 +16,20 @@ import enLibrary from '@/lib/dictionaries/en/library.json'
 import enProfile from '@/lib/dictionaries/en/profile.json'
 import enPersonas from '@/lib/dictionaries/en/personas.json'
 
+// Import Spanish translations
+import esCommon from '@/lib/dictionaries/es/common.json'
+import esHero from '@/lib/dictionaries/es/hero.json'
+import esAuth from '@/lib/dictionaries/es/auth.json'
+import esFeatures from '@/lib/dictionaries/es/features.json'
+import esStakeholders from '@/lib/dictionaries/es/stakeholders.json'
+import esTestimonials from '@/lib/dictionaries/es/testimonials.json'
+import esFooter from '@/lib/dictionaries/es/footer.json'
+import esDashboard from '@/lib/dictionaries/es/dashboard.json'
+import esMembers from '@/lib/dictionaries/es/members.json'
+import esLibrary from '@/lib/dictionaries/es/library.json'
+import esProfile from '@/lib/dictionaries/es/profile.json'
+import esPersonas from '@/lib/dictionaries/es/personas.json'
+
 // Import French translations
 import frCommon from '@/lib/dictionaries/fr/common.json'
 import frHero from '@/lib/dictionaries/fr/hero.json'
@@ -30,7 +44,7 @@ import frLibrary from '@/lib/dictionaries/fr/library.json'
 import frProfile from '@/lib/dictionaries/fr/profile.json'
 import frPersonas from '@/lib/dictionaries/fr/personas.json'
 
-type Locale = 'en' | 'fr'
+export type Locale = 'en' | 'fr' | 'es'
 
 // Merge all translation files
 const enDict = {
@@ -63,11 +77,27 @@ const frDict = {
   personas: frPersonas,
 }
 
+const esDict = {
+  ...esCommon,
+  hero: esHero,
+  auth: esAuth,
+  features: esFeatures,
+  stakeholders: esStakeholders,
+  testimonials: esTestimonials,
+  footer: esFooter,
+  dashboard: esDashboard,
+  members: esMembers,
+  library: esLibrary,
+  profile: esProfile,
+  personas: esPersonas,
+}
+
 type Dictionary = typeof enDict
 
 const dictionaries = {
   en: enDict,
   fr: frDict,
+  es: esDict,
 }
 
 interface LanguageContextType {
@@ -87,7 +117,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setIsHydrated(true)
     const savedLocale = localStorage.getItem('locale') as Locale | null
-    if (savedLocale && (savedLocale === 'en' || savedLocale === 'fr')) {
+    if (savedLocale && (savedLocale === 'en' || savedLocale === 'fr' || savedLocale === 'es')) {
       setLocaleState(savedLocale)
     }
   }, [])

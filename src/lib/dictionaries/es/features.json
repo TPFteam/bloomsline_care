@@ -1,0 +1,18 @@
+{
+  "sectionTitle": "Todo lo que necesitas para prosperar",
+  "sectionSubtitle": "Creado con cariño para profesionales que se preocupan profundamente. Cada función diseñada para darte más tiempo para lo que realmente importa.",
+  "features": [
+    {
+      "title": "Tu santuario de recursos",
+      "description": "Todo lo que necesitas en un solo espacio tranquilo: evaluaciones, actividades, rituales y materiales que apoyan tu enfoque terapéutico único."
+    },
+    {
+      "title": "Encuentra lo que necesitas, al instante",
+      "description": "No más buscar entre carpetas. La búsqueda inteligente y la organización cuidadosa significan que el recurso adecuado siempre está a tu alcance."
+    },
+    {
+      "title": "Visualiza el progreso de tus clientes en tiempo real",
+      "description": "Un panel que analiza tus interacciones y destaca a los clientes que más necesitan tu atención."
+    }
+  ]
+}

@@ -1,0 +1,288 @@
+{
+  "title": "Mi perfil",
+  "subtitle": "Gestiona tu perfil profesional y presencia pública",
+  "editProfile": "Editar perfil",
+  "viewPublicProfile": "Ver perfil público",
+  "profileNotPublic": "Tu perfil aún no es público",
+  "makePublic": "Hacer público",
+
+  "tabs": {
+    "about": "Acerca de",
+    "credentials": "Credenciales",
+    "practice": "Práctica",
+    "contact": "Contacto",
+    "settings": "Configuración"
+  },
+
+  "completeness": {
+    "title": "Completitud del perfil",
+    "description": "Completa tu perfil para aumentar la visibilidad",
+    "complete": "Completo",
+    "tips": {
+      "headline": "Agrega un titular atractivo",
+      "bio": "Escribe una biografía centrada en el cliente",
+      "credentials": "Agrega tus credenciales",
+      "specialties": "Selecciona tus especialidades",
+      "approaches": "Elige tus enfoques terapéuticos"
+    }
+  },
+
+  "about": {
+    "title": "Sobre ti",
+    "headline": {
+      "label": "Titular profesional",
+      "placeholder": "Ayudando a familias a navegar el trauma con compasión",
+      "help": "Un breve lema que capture tu enfoque (máx. 100 caracteres)"
+    },
+    "bio": {
+      "label": "Biografía",
+      "placeholder": "Comparte tu historia y enfoque. Comienza abordando los puntos de dolor de tu cliente, luego explica cómo puedes ayudar...",
+      "help": "Escribe en un tono cálido y centrado en el cliente. Enfócate en 'tú' en lugar de 'yo'."
+    },
+    "introVideo": {
+      "label": "Video de presentación",
+      "help": "Un breve video de presentación ayuda a los clientes a conectar contigo",
+      "upload": "Subir video",
+      "remove": "Eliminar video"
+    }
+  },
+
+  "credentials": {
+    "title": "Credenciales y experiencia",
+    "credentialsList": {
+      "label": "Credenciales profesionales",
+      "placeholder": "ej., LMFT, Ph.D., LPC",
+      "help": "Agrega credenciales que aparecen después de tu nombre"
+    },
+    "yearsExperience": {
+      "label": "Años de experiencia",
+      "placeholder": "Ingresa los años"
+    },
+    "education": {
+      "title": "Educación",
+      "add": "Agregar educación",
+      "degree": "Título",
+      "degreePlaceholder": "Ph.D. en Psicología Clínica",
+      "institution": "Institución",
+      "institutionPlaceholder": "Nombre de la universidad",
+      "year": "Año de finalización"
+    },
+    "licenses": {
+      "title": "Licencias",
+      "add": "Agregar licencia",
+      "type": "Tipo de licencia",
+      "typePlaceholder": "ej., LMFT",
+      "number": "Número de licencia",
+      "state": "Estado/Provincia",
+      "expiration": "Fecha de expiración",
+      "verified": "Verificada"
+    },
+    "certifications": {
+      "title": "Certificaciones",
+      "add": "Agregar certificación",
+      "name": "Nombre de la certificación",
+      "namePlaceholder": "ej., Terapeuta certificado en EMDR",
+      "issuingBody": "Organización emisora",
+      "yearObtained": "Año obtenido"
+    }
+  },
+
+  "practice": {
+    "title": "Detalles de la práctica",
+    "specialties": {
+      "label": "Áreas de especialidad",
+      "help": "Selecciona los problemas en los que te especializas"
+    },
+    "approaches": {
+      "label": "Enfoques terapéuticos",
+      "help": "Selecciona las modalidades que usas en tu práctica"
+    },
+    "ageGroups": {
+      "label": "Grupos de edad atendidos",
+      "help": "Selecciona los grupos de edad con los que trabajas"
+    },
+    "sessionTypes": {
+      "label": "Tipos de sesión",
+      "help": "Selecciona los tipos de terapia que ofreces"
+    },
+    "languages": {
+      "label": "Idiomas",
+      "placeholder": "Agrega los idiomas que hablas",
+      "help": "Idiomas en los que puedes realizar sesiones"
+    },
+    "availability": {
+      "title": "Disponibilidad",
+      "acceptingClients": "Aceptando nuevos clientes",
+      "waitlistOnly": "Solo lista de espera",
+      "notAccepting": "No aceptando nuevos clientes",
+      "telehealth": "Ofrece telesalud",
+      "inPerson": "Ofrece sesiones presenciales"
+    },
+    "location": {
+      "title": "Ubicación de la práctica",
+      "address": "Dirección",
+      "city": "Ciudad",
+      "stateProvince": "Estado/Provincia",
+      "postalCode": "Código postal",
+      "country": "País"
+    },
+    "fees": {
+      "title": "Tarifas y seguros",
+      "showFees": "Mostrar tarifas en el perfil",
+      "sessionFee": "Rango de tarifa por sesión",
+      "min": "Mín",
+      "max": "Máx",
+      "currency": "Moneda",
+      "slidingScale": "Ofrece escala móvil",
+      "insurance": "Seguros aceptados",
+      "insurancePlaceholder": "Agrega proveedores de seguros aceptados"
+    }
+  },
+
+  "contact": {
+    "title": "Información de contacto",
+    "email": {
+      "label": "Correo de contacto público",
+      "help": "Este correo se mostrará en tu perfil público"
+    },
+    "phone": {
+      "label": "Teléfono de contacto",
+      "help": "Número de teléfono opcional para consultas"
+    },
+    "social": {
+      "title": "Enlaces sociales",
+      "website": "Sitio web",
+      "linkedin": "LinkedIn",
+      "twitter": "Twitter/X",
+      "instagram": "Instagram"
+    }
+  },
+
+  "settings": {
+    "title": "Configuración del perfil",
+    "visibility": {
+      "title": "Visibilidad del perfil",
+      "public": "Perfil público",
+      "publicDescription": "Tu perfil será visible para otros profesionales y clientes potenciales",
+      "private": "Perfil privado",
+      "privateDescription": "Solo tú puedes ver tu perfil"
+    },
+    "slug": {
+      "label": "URL del perfil",
+      "help": "Tu URL de perfil única",
+      "preview": "Vista previa"
+    },
+    "verification": {
+      "title": "Estado de verificación",
+      "verified": "Verificado",
+      "notVerified": "No verificado",
+      "requestVerification": "Solicitar verificación"
+    }
+  },
+
+  "endorsements": {
+    "title": "Recomendaciones de colegas",
+    "add": "Agregar recomendación",
+    "empty": "Aún no hay recomendaciones",
+    "emptyDescription": "Pide a tus colegas que recomienden tu trabajo",
+    "authorName": "Nombre del colega",
+    "authorTitle": "Título",
+    "authorOrg": "Organización",
+    "content": "Texto de la recomendación",
+    "approved": "Aprobada",
+    "pending": "Pendiente de aprobación"
+  },
+
+  "stats": {
+    "title": "Estadísticas del perfil",
+    "resourcesPublished": "Recursos publicados",
+    "membersHelped": "Clientes ayudados",
+    "profileViews": "Vistas del perfil"
+  },
+
+  "specialties": {
+    "anxiety": "Ansiedad",
+    "depression": "Depresión",
+    "trauma_ptsd": "Trauma y TEPT",
+    "grief_loss": "Duelo y pérdida",
+    "relationships": "Relaciones",
+    "family": "Problemas familiares",
+    "couples": "Terapia de pareja",
+    "stress": "Manejo del estrés",
+    "self_esteem": "Autoestima",
+    "life_transitions": "Transiciones de vida",
+    "career": "Orientación profesional",
+    "addiction": "Adicción",
+    "eating_disorders": "Trastornos alimentarios",
+    "ocd": "TOC",
+    "adhd": "TDAH",
+    "autism": "Espectro autista",
+    "bipolar": "Trastorno bipolar",
+    "personality_disorders": "Trastornos de personalidad",
+    "anger_management": "Manejo de la ira",
+    "parenting": "Crianza",
+    "lgbtq": "LGBTQ+",
+    "cultural_identity": "Identidad cultural",
+    "spirituality": "Espiritualidad",
+    "chronic_illness": "Enfermedad crónica",
+    "sleep": "Problemas de sueño",
+    "other": "Otro"
+  },
+
+  "approaches": {
+    "cbt": "Cognitivo conductual (TCC)",
+    "dbt": "Dialéctica conductual (TDC)",
+    "emdr": "EMDR",
+    "psychodynamic": "Psicodinámica",
+    "humanistic": "Humanista",
+    "solution_focused": "Centrada en soluciones",
+    "narrative": "Terapia narrativa",
+    "mindfulness": "Basada en atención plena",
+    "art_therapy": "Arteterapia",
+    "play_therapy": "Terapia de juego",
+    "family_systems": "Sistemas familiares",
+    "gestalt": "Gestalt",
+    "acceptance_commitment": "Aceptación y compromiso (ACT)",
+    "motivational_interviewing": "Entrevista motivacional",
+    "trauma_informed": "Informada en trauma",
+    "somatic": "Somática",
+    "other": "Otro"
+  },
+
+  "ageGroups": {
+    "children": "Niños (0-12)",
+    "adolescents": "Adolescentes (13-17)",
+    "young_adults": "Adultos jóvenes (18-25)",
+    "adults": "Adultos (26-64)",
+    "seniors": "Adultos mayores (65+)"
+  },
+
+  "sessionTypes": {
+    "individual": "Individual",
+    "couples": "Pareja",
+    "family": "Familiar",
+    "group": "Grupal"
+  },
+
+  "actions": {
+    "save": "Guardar cambios",
+    "saving": "Guardando...",
+    "saved": "Cambios guardados",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "preview": "Vista previa del perfil"
+  },
+
+  "errors": {
+    "loadFailed": "Error al cargar perfil",
+    "saveFailed": "Error al guardar perfil",
+    "slugTaken": "Esta URL ya está en uso",
+    "invalidSlug": "La URL solo puede contener letras, números y guiones"
+  },
+
+  "success": {
+    "saved": "Perfil guardado exitosamente",
+    "published": "El perfil ahora es público",
+    "unpublished": "El perfil ahora es privado"
+  }
+}

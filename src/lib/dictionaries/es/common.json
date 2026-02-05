@@ -1,0 +1,18 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "features": "Características",
+    "forPractitioners": "Para profesionales",
+    "signIn": "Iniciar sesión",
+    "getStarted": "Comenzar"
+  },
+  "footer": {
+    "copyright": "© 2024 Bloomsline. Todos los derechos reservados."
+  },
+  "buttons": {
+    "tryNow": "Probar ahora",
+    "backToHome": "Volver al inicio",
+    "learnMore": "Más información",
+    "scheduleAppointment": "Agendar cita"
+  }
+}

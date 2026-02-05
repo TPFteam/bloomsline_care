@@ -1,0 +1,22 @@
+{
+  "sectionTitle": "Hecho para profesionales como tú",
+  "sectionSubtitle": "Ya sea que estés construyendo tu práctica en solitario o creciendo con un equipo, Bloomsline crece contigo. Entendemos tu camino porque hemos acompañado a profesionales en cada etapa.",
+  "stakeholders": [
+    {
+      "type": "Profesionales independientes",
+      "tagline": "Tu práctica, bellamente organizada",
+      "description": "Por fin, un espacio que entiende tu enfoque único. Mantén tus recursos cerca, tu flujo de trabajo fluido y tu enfoque donde pertenece: en tus clientes."
+    },
+    {
+      "type": "Equipos clínicos",
+      "tagline": "Haz crecer tu sabiduría colectiva",
+      "description": "Comparte conocimientos, aprende de los demás, mantén la calidad en toda tu práctica. Construye el tipo de entorno colaborativo donde todos prosperan."
+    },
+    {
+      "type": "Prácticas grupales",
+      "tagline": "Escala sin perder tu esencia",
+      "description": "Mantén el toque personal mientras creces. Dale a cada profesional las herramientas que necesita mientras construyes conocimiento compartido y atención consistente."
+    }
+  ],
+  "learnMore": "Más información"
+}

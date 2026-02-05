@@ -1,0 +1,279 @@
+{
+  "title": "Centro de miembros",
+  "subtitle": "Gestiona tus clientes y sigue su progreso",
+  "backToDashboard": "Volver al panel",
+
+  "stats": {
+    "totalMembers": "Miembros totales",
+    "activeMembers": "Miembros activos",
+    "inactiveMembers": "Miembros inactivos",
+    "pendingMembers": "Pendientes",
+    "sessionsThisWeek": "Sesiones esta semana",
+    "engagementRate": "Tasa de compromiso"
+  },
+
+  "filters": {
+    "all": "Todos",
+    "active": "Activos",
+    "inactive": "Inactivos",
+    "pending": "Pendientes",
+    "searchPlaceholder": "Buscar por nombre, correo o teléfono..."
+  },
+
+  "list": {
+    "showing": "Mostrando",
+    "of": "de",
+    "members": "miembros",
+    "noMembers": "Aún no hay miembros",
+    "noMembersDescription": "Comienza agregando tu primer cliente o paciente",
+    "noResults": "No se encontraron miembros",
+    "noResultsDescription": "Intenta ajustar tu búsqueda o filtros",
+    "lastSession": "Última sesión",
+    "never": "Nunca",
+    "engagement": "Compromiso"
+  },
+
+  "actions": {
+    "addMember": "Agregar",
+    "viewDetails": "Ver detalles",
+    "editMember": "Editar",
+    "contact": "Contactar",
+    "deleteMember": "Eliminar",
+    "confirmDelete": "¿Estás seguro de que deseas eliminar este miembro? Esta acción no se puede deshacer."
+  },
+
+  "status": {
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "pending": "Pendiente"
+  },
+
+  "engagement": {
+    "high": "Alto",
+    "medium": "Medio",
+    "low": "Bajo"
+  },
+
+  "form": {
+    "addTitle": "Agregar nuevo miembro",
+    "editTitle": "Editar miembro",
+    "basicInfo": "Información básica",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "dateOfBirth": "Fecha de nacimiento",
+    "status": "Estado",
+    "internalNotes": "Notas internas",
+    "internalNotesPlaceholder": "Notas privadas sobre este cliente...",
+    "preferences": "Preferencias del cliente",
+    "communicationStyle": "Estilo de comunicación",
+    "communicationStylePlaceholder": "¿Cómo prefiere comunicarse este cliente?",
+    "keyStrengths": "Fortalezas clave",
+    "keyStrengthsPlaceholder": "Agrega una fortaleza y presiona Enter",
+    "areasOfSensitivity": "Áreas de sensibilidad",
+    "areasOfSensitivityPlaceholder": "Agrega un área y presiona Enter",
+    "therapeuticContext": "Contexto terapéutico",
+    "therapeuticContextPlaceholder": "Contexto importante para la terapia...",
+    "preferredContactMethod": "Método de contacto preferido",
+    "preferredSessionFormat": "Formato de sesión preferido",
+    "emergencyContact": "Contacto de emergencia",
+    "emergencyName": "Nombre del contacto",
+    "emergencyRelationship": "Relación",
+    "emergencyPhone": "Teléfono",
+    "emergencyEmail": "Correo electrónico",
+    "emergencyNotes": "Notas",
+    "save": "Crear miembro",
+    "cancel": "Cancelar",
+    "saving": "Guardando..."
+  },
+
+  "contactMethods": {
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "text": "Mensaje de texto"
+  },
+
+  "profile": {
+    "title": "Perfil del miembro",
+    "overview": "Resumen",
+    "sessions": "Sesiones",
+    "progress": "Progreso",
+    "files": "Información",
+    "sharedResources": "Recursos",
+    "submissions": "Envíos",
+    "memberSince": "Miembro desde",
+    "lastSession": "Última sesión",
+    "totalSessions": "Sesiones totales",
+    "editProfile": "Editar perfil"
+  },
+
+  "overview": {
+    "aboutClient": "Contexto",
+    "preferences": "Consideraciones clave",
+    "communicationStyle": "Estilo de comunicación",
+    "keyStrengths": "Fortalezas clave",
+    "areasOfSensitivity": "Áreas de sensibilidad",
+    "therapeuticContext": "Contexto terapéutico",
+    "emergencyContact": "Contacto de emergencia",
+    "recentNotes": "Notas recientes",
+    "allNotes": "Ver todas las notas",
+    "addNote": "Agregar nota",
+    "noNotes": "Aún no hay notas",
+    "noNotesDescription": "Agrega tu primera nota sobre este cliente"
+  },
+
+  "sessions": {
+    "title": "Historial de sesiones",
+    "upcomingSessions": "Próximas sesiones",
+    "pastSessions": "Sesiones pasadas",
+    "scheduleSession": "Programar sesión",
+    "addSession": "Agregar sesión",
+    "noSessions": "Aún no hay sesiones",
+    "noSessionsDescription": "Programa tu primera sesión con este cliente",
+    "noUpcoming": "No hay próximas sesiones",
+    "noPast": "No hay sesiones pasadas",
+    "sessionDetails": "Detalles de la sesión",
+    "sessionType": "Tipo de sesión",
+    "sessionFormat": "Formato",
+    "duration": "Duración",
+    "minutes": "minutos",
+    "notes": "Notas",
+    "summary": "Resumen",
+    "mood": "Calificación del ánimo",
+    "goals": "Objetivos de la sesión",
+    "outcomes": "Resultados",
+    "homework": "Tarea",
+    "markComplete": "Marcar como completada",
+    "cancel": "Cancelar sesión",
+    "reschedule": "Reprogramar"
+  },
+
+  "sessionTypes": {
+    "initial_consultation": "Consulta inicial",
+    "follow_up": "Seguimiento",
+    "check_in": "Control",
+    "crisis": "Crisis",
+    "group": "Sesión grupal",
+    "other": "Otro"
+  },
+
+  "sessionFormats": {
+    "in_person": "Presencial",
+    "virtual": "Virtual",
+    "phone": "Llamada telefónica"
+  },
+
+  "sessionStatus": {
+    "scheduled": "Programada",
+    "completed": "Completada",
+    "cancelled": "Cancelada",
+    "no_show": "No se presentó"
+  },
+
+  "progress": {
+    "title": "Progreso y crecimiento",
+    "milestones": "Objetivos",
+    "addMilestone": "Agregar objetivo",
+    "noMilestones": "Aún no hay objetivos",
+    "noMilestonesDescription": "Sigue el progreso de tu cliente agregando objetivos a explorar",
+    "planned": "Planificado",
+    "inProgress": "En progreso",
+    "achieved": "Logrado",
+    "pending": "Pendiente",
+    "targetDate": "Fecha objetivo",
+    "achievedOn": "Logrado el",
+    "markAchieved": "Marcar como logrado",
+    "progressNotes": "Notas de progreso",
+    "growthOverTime": "Crecimiento a lo largo del tiempo",
+    "engagementTrend": "Tendencia de compromiso"
+  },
+
+  "milestoneCategories": {
+    "general": "General",
+    "therapy_goal": "Terapéutico",
+    "behavioral": "Conductual",
+    "emotional": "Emocional",
+    "social": "Social",
+    "other": "Otro"
+  },
+
+  "files": {
+    "title": "Archivos",
+    "uploadFile": "Subir archivo",
+    "noFiles": "Aún no hay archivos",
+    "noFilesDescription": "Sube documentos, formularios u otros archivos",
+    "fileName": "Nombre del archivo",
+    "category": "Categoría",
+    "uploadedOn": "Subido el",
+    "download": "Descargar",
+    "delete": "Eliminar",
+    "confirmDelete": "¿Estás seguro de que deseas eliminar este archivo?"
+  },
+
+  "fileCategories": {
+    "general": "General",
+    "intake": "Formularios de admisión",
+    "assessment": "Evaluaciones",
+    "consent": "Formularios de consentimiento",
+    "insurance": "Seguros",
+    "correspondence": "Correspondencia",
+    "other": "Otro"
+  },
+
+  "shared": {
+    "title": "Recursos compartidos",
+    "shareStory": "Compartir un recurso",
+    "noShared": "Aún no hay recursos compartidos",
+    "noSharedDescription": "Comparte historias y recursos con este cliente",
+    "sharedOn": "Compartido el",
+    "viewedOn": "Visto el",
+    "notViewed": "Aún no visto",
+    "message": "Mensaje",
+    "viewStory": "Ver historia",
+    "unshare": "Dejar de compartir"
+  },
+
+  "notes": {
+    "addNote": "Agregar nota",
+    "editNote": "Editar nota",
+    "noteTitle": "Título (opcional)",
+    "noteContent": "Contenido de la nota",
+    "noteType": "Tipo de nota",
+    "private": "Nota privada",
+    "privateDescription": "Solo visible para ti",
+    "save": "Guardar nota",
+    "delete": "Eliminar nota",
+    "confirmDelete": "¿Estás seguro de que deseas eliminar esta nota?"
+  },
+
+  "noteTypes": {
+    "general": "General",
+    "assessment": "Evaluación",
+    "treatment_plan": "Plan de tratamiento",
+    "milestone": "Hito",
+    "concern": "Preocupación",
+    "observation": "Observación"
+  },
+
+  "errors": {
+    "loadFailed": "Error al cargar miembros",
+    "saveFailed": "Error al guardar miembro",
+    "deleteFailed": "Error al eliminar miembro",
+    "sessionLoadFailed": "Error al cargar sesiones",
+    "sessionSaveFailed": "Error al guardar sesión",
+    "fileUploadFailed": "Error al subir archivo",
+    "noteFailed": "Error al guardar nota"
+  },
+
+  "success": {
+    "memberCreated": "Miembro agregado exitosamente",
+    "memberUpdated": "Miembro actualizado exitosamente",
+    "memberDeleted": "Miembro eliminado exitosamente",
+    "sessionCreated": "Sesión programada exitosamente",
+    "sessionUpdated": "Sesión actualizada exitosamente",
+    "noteAdded": "Nota agregada exitosamente",
+    "fileUploaded": "Archivo subido exitosamente",
+    "resourceShared": "Recurso compartido exitosamente"
+  }
+}
