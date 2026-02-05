@@ -1450,13 +1450,23 @@ export default function MyResourcesPage() {
                           transition={{ duration: 3, repeat: Infinity, delay: i * 0.3 }}
                           whileHover={{ scale: 1.15 }}
                           whileTap={{ scale: 0.95 }}
-                          className="relative w-8 h-8 rounded-full flex items-center justify-center border-2 border-white"
+                          className="relative w-8 h-8 rounded-full flex items-center justify-center border-2 border-white overflow-hidden"
                           style={{
-                            background: `linear-gradient(135deg, ${colors.from} 0%, ${colors.to} 100%)`,
+                            background: moment.type === 'photo' && moment.media_url
+                              ? 'transparent'
+                              : `linear-gradient(135deg, ${colors.from} 0%, ${colors.to} 100%)`,
                             boxShadow: `0 2px 8px rgba(0,0,0,0.15)`,
                           }}
                         >
-                          <Icon className="w-4 h-4 text-white" strokeWidth={2.5} />
+                          {moment.type === 'photo' && moment.media_url ? (
+                            <img
+                              src={moment.media_url}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Icon className="w-4 h-4 text-white" strokeWidth={2.5} />
+                          )}
                         </motion.div>
                       </motion.div>
                     )
