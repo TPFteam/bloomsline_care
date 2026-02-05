@@ -24,7 +24,7 @@ function SignUpContent() {
   const { locale } = useLanguage()
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const [loadingProvider, setLoadingProvider] = useState<'google' | 'azure' | null>(null)
   const [supabase] = useState(() => createClient())
 
   const [showDialog, setShowDialog] = useState(false)
@@ -47,7 +47,7 @@ function SignUpContent() {
 
   const handleGoogleSignUp = async () => {
     try {
-      setIsLoading(true)
+      setLoadingProvider('google')
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -61,10 +61,32 @@ function SignUpContent() {
 
       if (error) {
         toast.error(error.message)
+        setLoadingProvider(null)
       }
     } catch (error) {
       toast.error('An unexpected error occurred')
-      setIsLoading(false)
+      setLoadingProvider(null)
+    }
+  }
+
+  const handleAzureSignUp = async () => {
+    try {
+      setLoadingProvider('azure')
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'azure',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?flow=signup`,
+          scopes: 'openid profile email',
+        },
+      })
+
+      if (error) {
+        toast.error(error.message)
+        setLoadingProvider(null)
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred')
+      setLoadingProvider(null)
     }
   }
 
@@ -118,10 +140,10 @@ function SignUpContent() {
             {/* Google Sign Up */}
             <button
               onClick={handleGoogleSignUp}
-              disabled={isLoading}
+              disabled={loadingProvider !== null}
               className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-neutral-900 text-white rounded-full font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? (
+              {loadingProvider === 'google' ? (
                 <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
@@ -144,6 +166,34 @@ function SignUpContent() {
                     />
                   </svg>
                   {locale === 'fr' ? 'Continuer avec Google' : 'Continue with Google'}
+                </>
+              )}
+            </button>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 my-4">
+              <div className="flex-1 h-px bg-neutral-200" />
+              <span className="text-xs text-neutral-400">{locale === 'fr' ? 'ou' : 'or'}</span>
+              <div className="flex-1 h-px bg-neutral-200" />
+            </div>
+
+            {/* Outlook Sign Up */}
+            <button
+              onClick={handleAzureSignUp}
+              disabled={loadingProvider !== null}
+              className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white text-neutral-900 border border-neutral-200 rounded-full font-medium hover:bg-neutral-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loadingProvider === 'azure' ? (
+                <span className="w-5 h-5 border-2 border-neutral-300 border-t-neutral-900 rounded-full animate-spin" />
+              ) : (
+                <>
+                  <svg className="w-5 h-5" viewBox="0 0 23 23">
+                    <path fill="#f35325" d="M1 1h10v10H1z" />
+                    <path fill="#81bc06" d="M12 1h10v10H12z" />
+                    <path fill="#05a6f0" d="M1 12h10v10H1z" />
+                    <path fill="#ffba08" d="M12 12h10v10H12z" />
+                  </svg>
+                  {locale === 'fr' ? 'Continuer avec Outlook' : 'Continue with Outlook'}
                 </>
               )}
             </button>
