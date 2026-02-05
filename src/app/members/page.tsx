@@ -818,17 +818,30 @@ function MemberCard({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1.5 mt-1">
+          <div className="flex items-center gap-1 mt-1 group/status">
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
+              {t.members.status[member.status] || t.members.status.active}
+            </span>
             <button
               onClick={(e) => {
                 e.stopPropagation()
                 const newStatus = member.status === 'active' ? 'inactive' : 'active'
-                onStatusChange(member.id, newStatus)
+                const newStatusLabel = newStatus === 'active'
+                  ? (locale === 'fr' ? 'Actif' : locale === 'es' ? 'Activo' : 'Active')
+                  : (locale === 'fr' ? 'Inactif' : locale === 'es' ? 'Inactivo' : 'Inactive')
+                const confirmMsg = locale === 'fr'
+                  ? `Changer le statut en "${newStatusLabel}" ?`
+                  : locale === 'es'
+                  ? `¿Cambiar estado a "${newStatusLabel}"?`
+                  : `Change status to "${newStatusLabel}"?`
+                if (confirm(confirmMsg)) {
+                  onStatusChange(member.id, newStatus)
+                }
               }}
-              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.text} ${status.hoverBg} transition-colors cursor-pointer`}
-              title={locale === 'fr' ? 'Cliquer pour changer le statut' : locale === 'es' ? 'Clic para cambiar estado' : 'Click to change status'}
+              className="p-0.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all opacity-0 group-hover/status:opacity-100"
+              title={locale === 'fr' ? 'Changer le statut' : locale === 'es' ? 'Cambiar estado' : 'Change status'}
             >
-              {t.members.status[member.status] || t.members.status.active}
+              <Edit className="w-3 h-3" />
             </button>
           </div>
         </div>
@@ -969,17 +982,32 @@ function MemberListItem({
               {locale === 'fr' ? 'Démo' : locale === 'es' ? 'Demo' : 'Demo'}
             </span>
           )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              const newStatus = member.status === 'active' ? 'inactive' : 'active'
-              onStatusChange(member.id, newStatus)
-            }}
-            className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${status.bg} ${status.text} ${status.hoverBg} transition-colors cursor-pointer`}
-            title={locale === 'fr' ? 'Cliquer pour changer le statut' : locale === 'es' ? 'Clic para cambiar estado' : 'Click to change status'}
-          >
-            {t.members.status[member.status] || t.members.status.active}
-          </button>
+          <div className="flex items-center gap-1 group/status">
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${status.bg} ${status.text}`}>
+              {t.members.status[member.status] || t.members.status.active}
+            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                const newStatus = member.status === 'active' ? 'inactive' : 'active'
+                const newStatusLabel = newStatus === 'active'
+                  ? (locale === 'fr' ? 'Actif' : locale === 'es' ? 'Activo' : 'Active')
+                  : (locale === 'fr' ? 'Inactif' : locale === 'es' ? 'Inactivo' : 'Inactive')
+                const confirmMsg = locale === 'fr'
+                  ? `Changer le statut en "${newStatusLabel}" ?`
+                  : locale === 'es'
+                  ? `¿Cambiar estado a "${newStatusLabel}"?`
+                  : `Change status to "${newStatusLabel}"?`
+                if (confirm(confirmMsg)) {
+                  onStatusChange(member.id, newStatus)
+                }
+              }}
+              className="p-0.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all opacity-0 group-hover/status:opacity-100"
+              title={locale === 'fr' ? 'Changer le statut' : locale === 'es' ? 'Cambiar estado' : 'Change status'}
+            >
+              <Edit className="w-3 h-3" />
+            </button>
+          </div>
         </div>
       </div>
 
