@@ -86,7 +86,7 @@ export type BloomEntryPoint = 'home' | 'balance' | 'moments' | 'rituals' | 'prog
 export interface ChatRequest {
   message: string
   conversationId?: string
-  locale: 'en' | 'fr'
+  locale: 'en' | 'fr' | 'es'
   entryPoint?: BloomEntryPoint
 }
 

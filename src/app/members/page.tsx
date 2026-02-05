@@ -32,7 +32,7 @@ import type { Member, MemberFilter, MemberHubStats, Session } from '@/types/memb
 import { getMemberFullName, getMemberInitials } from '@/types/member'
 
 // Helper function for relative time
-function getRelativeTime(dateString: string, locale: 'en' | 'fr'): string {
+function getRelativeTime(dateString: string, locale: 'en' | 'fr' | 'es' | 'es'): string {
   const date = new Date(dateString)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
@@ -733,7 +733,7 @@ function MemberCard({
   index: number
   onDelete: (id: string) => void
   t: ReturnType<typeof useLanguage>['t']
-  locale: 'en' | 'fr'
+  locale: 'en' | 'fr' | 'es'
   nextSession: Session | null
   lastSharedResource: { title: string; type: string; sharedAt: string } | null
 }) {
@@ -868,7 +868,7 @@ function MemberListItem({
   index: number
   onDelete: (id: string) => void
   t: ReturnType<typeof useLanguage>['t']
-  locale: 'en' | 'fr'
+  locale: 'en' | 'fr' | 'es'
   nextSession: Session | null
   lastSharedResource: { title: string; type: string; sharedAt: string } | null
 }) {

@@ -243,7 +243,7 @@ export function FeatureShowcase() {
 }
 
 // Moments Demo Component
-function MomentsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' }) {
+function MomentsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' | 'es' }) {
   const steps = [
     {
       title: locale === 'fr' ? 'Capturez un moment' : locale === 'es' ? 'Captura un momento' : 'Capture a moment',
@@ -427,7 +427,7 @@ function MomentsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
 }
 
 // Rituals Demo Component
-function RitualsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' }) {
+function RitualsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' | 'es' }) {
   const rituals = [
     { name: locale === 'fr' ? 'Gratitude matinale' : locale === 'es' ? 'Gratitud matutina' : 'Morning gratitude', time: '7:00 AM', done: true },
     { name: locale === 'fr' ? 'Méditation' : locale === 'es' ? 'Meditación' : 'Meditation', time: '7:30 AM', done: demoStep >= 1 },
@@ -504,7 +504,7 @@ function RitualsDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
 }
 
 // Balance Demo Component
-function BalanceDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' }) {
+function BalanceDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' | 'es' }) {
   const metrics = [
     { label: locale === 'fr' ? 'Humeur' : locale === 'es' ? 'Ánimo' : 'Mood', value: 8, color: '#4A9A86' },
     { label: locale === 'fr' ? 'Énergie' : locale === 'es' ? 'Energía' : 'Energy', value: 7, color: '#6BB3A0' },
@@ -581,7 +581,7 @@ function BalanceDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
 }
 
 // Members Demo Component
-function MembersDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' }) {
+function MembersDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' | 'es' }) {
   const members = [
     { name: 'Sarah L.', initials: 'SL', status: 'active', lastSession: locale === 'fr' ? 'Hier' : locale === 'es' ? 'Ayer' : 'Yesterday' },
     { name: 'Marc D.', initials: 'MD', status: 'active', lastSession: locale === 'fr' ? 'Il y a 3 jours' : locale === 'es' ? 'Hace 3 días' : '3 days ago' },
@@ -634,7 +634,7 @@ function MembersDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
 }
 
 // Journeys Demo Component
-function JourneysDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' }) {
+function JourneysDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' | 'es' }) {
   const stages = [
     { name: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery', icon: '🌱', completed: true },
     { name: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building', icon: '🏗️', completed: true },
@@ -708,7 +708,7 @@ function JourneysDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | '
 }
 
 // Resources Demo Component
-function ResourcesDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' }) {
+function ResourcesDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' | 'es' }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
