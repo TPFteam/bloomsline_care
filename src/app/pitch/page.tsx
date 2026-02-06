@@ -66,8 +66,9 @@ const translations = {
       closer: "That's where they need support — and where progress gets lost.",
       stats: [
         { value: '47%', label: 'drop out of therapy early', source: 'PMC Research', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
-        { value: '75%', label: 'lack access to mental health treatment globally', source: 'WHO', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
-        { value: '1 in 5', label: 'young adults use AI for mental health', source: 'Brown University', url: 'https://sph.brown.edu/news/2025-11-18/teens-ai-chatbots' },
+        { value: '75%', label: 'lack access globally', source: 'WHO', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
+        { value: '3x', label: 'faster job growth than average', source: 'HRSA', url: 'https://www.wlfi.com/news/mental-health-jobs-will-grow-3-times-the-rate-of-all-us-jobs-over-the/article_5f51a229-aa55-5ae4-951c-b0b5ec04de32.html' },
+        { value: '1 in 5', label: 'use AI for mental health', source: 'Brown University', url: 'https://sph.brown.edu/news/2025-11-18/teens-ai-chatbots' },
       ],
     },
     solution: {
@@ -402,9 +403,10 @@ const translations = {
       highlight2: '167 de plus.',
       closer: "C'est là qu'ils ont besoin de soutien — et où le progrès se perd.",
       stats: [
-        { value: '47%', label: 'abandonnent la thérapie prématurément', source: 'PMC Research', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
-        { value: '75%', label: 'n\'ont pas accès aux soins de santé mentale', source: 'OMS', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
-        { value: '1 sur 5', label: 'jeunes utilisent l\'IA pour la santé mentale', source: 'Brown University', url: 'https://sph.brown.edu/news/2025-11-18/teens-ai-chatbots' },
+        { value: '47%', label: 'abandonnent la thérapie tôt', source: 'PMC Research', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
+        { value: '75%', label: 'sans accès mondial', source: 'OMS', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
+        { value: '3x', label: 'croissance emploi vs moyenne', source: 'HRSA', url: 'https://www.wlfi.com/news/mental-health-jobs-will-grow-3-times-the-rate-of-all-us-jobs-over-the/article_5f51a229-aa55-5ae4-951c-b0b5ec04de32.html' },
+        { value: '1 sur 5', label: 'utilisent l\'IA santé mentale', source: 'Brown University', url: 'https://sph.brown.edu/news/2025-11-18/teens-ai-chatbots' },
       ],
     },
     solution: {
