@@ -74,14 +74,13 @@ const translations = {
     },
     solution: {
       label: 'THE SOLUTION',
-      title: 'Bloomsline bridges both sides',
-      description: 'One platform. Two sides. The gap closed. Members capture moments, discover patterns, get 24/7 AI support. Practitioners see progress, share resources, extend their impact without extending their hours. Powered by AI that believes',
-      highlight: 'kindness drives consistency',
+      title: 'Bloomsline fills the 167.',
+      subtitle: 'Support that continues after the session ends.',
       pillars: [
-        { title: 'For Members', desc: 'Capture moments • Discover patterns • Get 24/7 support from Bloom AI' },
-        { title: 'For Practitioners', desc: 'See progress • Share resources • Track engagement' },
-        { title: 'The Bridge', desc: 'Real visibility into what happens between sessions' },
+        { title: 'For Members', desc: 'Capture moments, discover patterns, get 24/7 AI support from Bloom' },
+        { title: 'For Practitioners', desc: 'See what happens between sessions, share resources, track progress' },
       ],
+      bridge: 'One platform that connects both sides of care.',
     },
     why: {
       label: 'WHY BLOOMSLINE',
@@ -413,14 +412,13 @@ const translations = {
     },
     solution: {
       label: 'LA SOLUTION',
-      title: 'Bloomsline fait le pont',
-      description: "Une plateforme. Deux côtés. Le fossé comblé. Les membres capturent des moments, découvrent des patterns, ont un soutien IA 24/7. Les praticiens voient le progrès, partagent des ressources, étendent leur impact sans étendre leurs heures. Propulsé par une IA qui croit que",
-      highlight: 'la bienveillance crée la constance',
+      title: 'Bloomsline remplit les 167.',
+      subtitle: 'Un soutien qui continue après la séance.',
       pillars: [
-        { title: 'Pour les Membres', desc: 'Capturer des moments • Découvrir des patterns • Soutien 24/7 avec Bloom IA' },
-        { title: 'Pour les Praticiens', desc: 'Voir le progrès • Partager des ressources • Suivre l\'engagement' },
-        { title: 'Le Pont', desc: 'Vraie visibilité sur ce qui se passe entre les séances' },
+        { title: 'Pour les Membres', desc: 'Capturer des moments, découvrir des patterns, soutien IA 24/7 avec Bloom' },
+        { title: 'Pour les Praticiens', desc: 'Voir ce qui se passe entre les séances, partager des ressources, suivre le progrès' },
       ],
+      bridge: 'Une plateforme qui connecte les deux côtés du soin.',
     },
     why: {
       label: 'POURQUOI BLOOMSLINE',
@@ -1062,7 +1060,7 @@ interface SolutionSlideProps {
 }
 
 function SolutionSlide({ t }: SolutionSlideProps) {
-  const icons = [Sparkles, Brain, Users]
+  const icons = [Sparkles, Brain]
 
   return (
     <div className="h-full w-full flex items-center justify-center px-6">
@@ -1080,7 +1078,7 @@ function SolutionSlide({ t }: SolutionSlideProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 mb-8 leading-[1.1]"
+          className="text-4xl sm:text-5xl lg:text-6xl font-bold text-neutral-900 mb-4 leading-[1.1]"
         >
           {t.title}
         </motion.h2>
@@ -1089,32 +1087,41 @@ function SolutionSlide({ t }: SolutionSlideProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-xl sm:text-2xl text-neutral-600 mb-12 max-w-3xl mx-auto leading-relaxed"
+          className="text-xl sm:text-2xl text-neutral-500 mb-12 max-w-2xl mx-auto"
         >
-          {t.description} <span className="text-teal-600 font-medium">{t.highlight}</span>.
+          {t.subtitle}
         </motion.p>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="grid sm:grid-cols-3 gap-6"
+          className="grid sm:grid-cols-2 gap-8 max-w-3xl mx-auto mb-10"
         >
           {t.pillars.map((pillar, index) => {
             const Icon = icons[index]
-            const bgColors = ['bg-teal-100', 'bg-lavender-100', 'bg-[#D4856A]/20']
-            const textColors = ['text-teal-600', 'text-lavender-600', 'text-[#D4856A]']
+            const bgColors = ['bg-teal-100', 'bg-violet-100']
+            const textColors = ['text-teal-600', 'text-violet-600']
             return (
-              <div key={index} className="p-6 rounded-2xl bg-white border border-neutral-200 shadow-lg">
-                <div className={`w-12 h-12 rounded-xl ${bgColors[index]} flex items-center justify-center mx-auto mb-4`}>
+              <div key={index} className="p-8 rounded-2xl bg-white border border-neutral-200 shadow-lg text-left">
+                <div className={`w-12 h-12 rounded-xl ${bgColors[index]} flex items-center justify-center mb-4`}>
                   <Icon className={`w-6 h-6 ${textColors[index]}`} />
                 </div>
-                <h3 className="font-semibold text-neutral-900 mb-2">{pillar.title}</h3>
-                <p className="text-sm text-neutral-600">{pillar.desc}</p>
+                <h3 className="font-semibold text-neutral-900 text-lg mb-2">{pillar.title}</h3>
+                <p className="text-neutral-600">{pillar.desc}</p>
               </div>
             )
           })}
         </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="text-lg text-neutral-500"
+        >
+          {t.bridge}
+        </motion.p>
       </div>
     </div>
   )
