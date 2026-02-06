@@ -1452,7 +1452,7 @@ export default function MyResourcesPage() {
                           whileTap={{ scale: 0.95 }}
                           className={`relative flex items-center justify-center border-2 border-white overflow-hidden ${
                             moment.type === 'photo' && moment.media_url
-                              ? 'w-10 h-12 rounded-lg'
+                              ? 'w-8 h-10 rounded-lg'
                               : 'w-8 h-8 rounded-full'
                           }`}
                           style={{
