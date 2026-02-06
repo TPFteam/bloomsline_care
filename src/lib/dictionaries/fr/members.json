@@ -186,7 +186,14 @@
     "markAchieved": "Marquer comme Atteint",
     "progressNotes": "Notes de Progrès",
     "growthOverTime": "Croissance au Fil du Temps",
-    "engagementTrend": "Tendance d'Engagement"
+    "engagementTrend": "Tendance d'Engagement",
+    "suggestedGoals": "Objectifs suggérés",
+    "basedOnPulse": "Basé sur Bloom Pulse",
+    "staleWarning": "mis à jour il y a plus de 7 jours",
+    "noSuggestions": "Aucune suggestion disponible",
+    "generatePulseHint": "Générez un Bloom Pulse pour obtenir des recommandations personnalisées",
+    "viewRecommendations": "Voir les recommandations",
+    "goalAdded": "Objectif ajouté"
   },
 
   "milestoneCategories": {
@@ -274,6 +281,32 @@
     "sessionUpdated": "Séance mise à jour avec succès",
     "noteAdded": "Note ajoutée avec succès",
     "fileUploaded": "Fichier téléchargé avec succès",
-    "resourceShared": "Ressource partagée avec succès"
+    "resourceShared": "Ressource partagée avec succès",
+    "summaryGenerated": "Bloom Pulse généré avec succès"
+  },
+
+  "summary": {
+    "title": "Bloom Pulse",
+    "generate": "Générer Bloom Pulse",
+    "regenerate": "Régénérer",
+    "viewFull": "Voir Bloom Pulse",
+    "history": "Historique",
+    "previousSummaries": "Pulses précédents",
+    "noPrevious": "Aucun pulse précédent",
+    "viewing": "Affiché",
+    "generating": "Génération de Bloom Pulse...",
+    "generatingHint": "Cela peut prendre quelques secondes",
+    "noSummary": "Générez un aperçu thérapeutique",
+    "noSummaryHint": "Basé sur les séances et les notes",
+    "createRecap": "Générer Bloom Pulse",
+    "currentStatus": "Statut actuel",
+    "progressHighlights": "Points forts",
+    "keyThemes": "Thèmes clés",
+    "areasOfAttention": "Points d'attention",
+    "recommendations": "Recommandations",
+    "nextSteps": "Prochaines étapes",
+    "disclaimer": "Ce pulse est généré par IA et doit être utilisé comme aide à la documentation clinique, pas comme un substitut au jugement professionnel.",
+    "insufficientData": "Pas assez de données pour générer un pulse. Ajoutez d'abord des séances ou des notes.",
+    "rateLimited": "Trop de requêtes. Veuillez réessayer plus tard."
   }
 }

@@ -20,13 +20,16 @@ import {
   Video,
   BookOpen,
   GripVertical,
+  Sparkles,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
-import type { Member, ProgressNote, NoteType, MemberPreferences, Milestone, MilestoneCategory, Session as MemberSession } from '@/types/member'
-import { formatRelativeTime, getSessionTypeLabel, getSessionFormatLabel } from '@/types/member'
+import type { Member, ProgressNote, NoteType, MemberPreferences, Milestone, MilestoneCategory, Session as MemberSession, MemberSummary, SummaryContent } from '@/types/member'
+import { formatRelativeTime, getSessionTypeLabel, getSessionFormatLabel, getMemberFullName } from '@/types/member'
+import { MemberSummaryModal } from '@/components/members/MemberSummaryModal'
 import { getUserPreferences, updateUserPreferences, DEFAULT_CARD_LAYOUT, type CardLayoutItem } from '@/lib/services/preferences'
 
 type TabId = 'overview' | 'sessions' | 'progress' | 'files' | 'shared'
@@ -46,6 +49,26 @@ function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
     clearTimeout(timeoutId)
     timeoutId = setTimeout(() => fn(...args), delay)
   }
+}
+
+// Helper to extract localized value from bilingual {en, fr} structure
+function getLocalizedValue<T>(value: T | { en: T; fr: T } | null | undefined, locale: string): T | null {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'object' && value !== null && 'en' in value && 'fr' in value) {
+    return (value as { en: T; fr: T })[locale === 'fr' ? 'fr' : 'en']
+  }
+  return value as T
+}
+
+// Helper to extract localized array
+function getLocalizedArray(value: string[] | string | { en: string[]; fr: string[] } | null | undefined, locale: string): string[] {
+  if (!value) return []
+  if (typeof value === 'object' && 'en' in value && 'fr' in value) {
+    return (value as { en: string[]; fr: string[] })[locale === 'fr' ? 'fr' : 'en'] || []
+  }
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string') return [value]
+  return []
 }
 
 export default function OverviewTab({ member, notes, sessions, onMemberUpdate, onNavigateToTab }: OverviewTabProps) {
@@ -69,18 +92,18 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
   // About edit fields
   const [aboutNotes, setAboutNotes] = useState(member.internal_notes || '')
 
-  // Preferences edit fields
+  // Preferences edit fields - handle bilingual structure
   const [commStyles, setCommStyles] = useState<string[]>(
-    Array.isArray(member.preferences.communication_style)
-      ? member.preferences.communication_style
-      : member.preferences.communication_style
-        ? [member.preferences.communication_style]
-        : []
+    getLocalizedArray(member.preferences.communication_style, locale)
   )
   const [commStyleInput, setCommStyleInput] = useState('')
-  const [strengths, setStrengths] = useState<string[]>(member.preferences.key_strengths)
+  const [strengths, setStrengths] = useState<string[]>(
+    getLocalizedArray(member.preferences.key_strengths, locale)
+  )
   const [strengthInput, setStrengthInput] = useState('')
-  const [sensitivities, setSensitivities] = useState<string[]>(member.preferences.areas_of_sensitivity)
+  const [sensitivities, setSensitivities] = useState<string[]>(
+    getLocalizedArray(member.preferences.areas_of_sensitivity, locale)
+  )
   const [sensitivityInput, setSensitivityInput] = useState('')
 
 
@@ -106,14 +129,57 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
   const [allNotes, setAllNotes] = useState<CombinedNote[]>([])
   const [showAllNotesModal, setShowAllNotesModal] = useState(false)
 
+  // AI Summary state
+  const [showSummaryModal, setShowSummaryModal] = useState(false)
+  const [latestSummary, setLatestSummary] = useState<MemberSummary | null>(null)
+  const [loadingSummary, setLoadingSummary] = useState(false)
+
   // Load card layout from preferences
   useEffect(() => {
     getUserPreferences().then(prefs => {
       if (prefs?.overview_card_layout) {
-        setCardLayout(prefs.overview_card_layout)
+        // Add ai_summary card if it doesn't exist (for existing users)
+        const hasAiSummary = prefs.overview_card_layout.some(c => c.id === 'ai_summary')
+        if (!hasAiSummary) {
+          const updatedLayout = [
+            { id: 'ai_summary', column: 0 as const, order: 0 },
+            ...prefs.overview_card_layout.map(c => ({ ...c, order: c.order + 1 }))
+          ]
+          setCardLayout(updatedLayout)
+        } else {
+          setCardLayout(prefs.overview_card_layout)
+        }
       }
     })
   }, [])
+
+  // Fetch latest AI summary
+  useEffect(() => {
+    const fetchLatestSummary = async () => {
+      setLoadingSummary(true)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) return
+
+        const response = await fetch(`/api/members/${member.id}/summary`, {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setLatestSummary(data.summary)
+        }
+      } catch (error) {
+        console.error('Error fetching summary:', error)
+      } finally {
+        setLoadingSummary(false)
+      }
+    }
+
+    fetchLatestSummary()
+  }, [member.id, supabase])
 
   // Debounced save for card layout
   const saveLayoutDebounced = useMemo(
@@ -447,12 +513,17 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
     }
   }
 
-  // Check if preferences section has any data
+  // Check if preferences section has any data - use localized values
+  const localizedCommStyles = getLocalizedArray(member.preferences.communication_style, locale)
+  const localizedStrengths = getLocalizedArray(member.preferences.key_strengths, locale)
+  const localizedSensitivities = getLocalizedArray(member.preferences.areas_of_sensitivity, locale)
+  const localizedTherapeuticContext = getLocalizedValue(member.preferences.therapeutic_context, locale)
+
   const hasPreferencesData =
-    member.preferences.communication_style ||
-    member.preferences.key_strengths.length > 0 ||
-    member.preferences.areas_of_sensitivity.length > 0 ||
-    member.preferences.therapeutic_context
+    localizedCommStyles.length > 0 ||
+    localizedStrengths.length > 0 ||
+    localizedSensitivities.length > 0 ||
+    localizedTherapeuticContext
 
   const noteTypeColors: Record<NoteType, { bg: string; text: string }> = {
     general: { bg: 'bg-gray-100', text: 'text-gray-700' },
@@ -492,6 +563,12 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
 
   // Card titles
   const cardTitles: Record<string, { label: string; icon: React.ReactNode; iconBg: string; iconColor: string }> = {
+    ai_summary: {
+      label: 'Bloom Pulse',
+      icon: <Sparkles className="w-4 h-4" />,
+      iconBg: 'bg-[#D4856A]/10',
+      iconColor: 'text-[#D4856A]',
+    },
     about: {
       label: t.members.overview.aboutClient,
       icon: <User className="w-4 h-4" />,
@@ -533,6 +610,57 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
   // Render card content based on card ID
   const renderCardContent = (cardId: string) => {
     switch (cardId) {
+      case 'ai_summary':
+        return loadingSummary ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-6 h-6 text-[#D4856A] animate-spin" />
+          </div>
+        ) : latestSummary ? (
+          <div className="space-y-3">
+            {/* Current Status Preview */}
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+              <p className="text-sm text-gray-700 line-clamp-3">
+                {(latestSummary.summary_content as SummaryContent).current_status}
+              </p>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {formatRelativeTime(latestSummary.generated_at)}
+              </span>
+            </div>
+
+            {/* View Full Summary Button */}
+            <Button
+              onClick={() => setShowSummaryModal(true)}
+              variant="outline"
+              className="w-full border-[#D4856A]/30 text-[#D4856A] hover:bg-[#D4856A]/5 rounded-lg"
+            >
+              {locale === 'fr' ? 'Voir Bloom Pulse' : locale === 'es' ? 'Ver Bloom Pulse' : 'View Bloom Pulse'}
+            </Button>
+          </div>
+        ) : (
+          <div className="text-center py-6">
+            <div className="w-12 h-12 bg-[#D4856A]/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <Sparkles className="w-6 h-6 text-[#D4856A]" />
+            </div>
+            <p className="text-sm text-gray-600 mb-1">
+              {locale === 'fr' ? 'Générez un aperçu thérapeutique' : locale === 'es' ? 'Genera una vista terapéutica' : 'Generate a therapeutic pulse'}
+            </p>
+            <p className="text-xs text-gray-400 mb-4">
+              {locale === 'fr' ? 'Basé sur les séances et les notes' : locale === 'es' ? 'Basado en sesiones y notas' : 'Based on sessions and notes'}
+            </p>
+            <Button
+              onClick={() => setShowSummaryModal(true)}
+              className="bg-[#D4856A] hover:bg-[#C27459] text-white rounded-lg"
+            >
+              {locale === 'fr' ? 'Générer' : locale === 'es' ? 'Generar' : 'Generate'}
+            </Button>
+          </div>
+        )
+
       case 'about':
         return (
           <AnimatePresence mode="wait">
@@ -878,15 +1006,9 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      setCommStyles(
-                        Array.isArray(member.preferences.communication_style)
-                          ? member.preferences.communication_style
-                          : member.preferences.communication_style
-                            ? [member.preferences.communication_style]
-                            : []
-                      )
-                      setStrengths(member.preferences.key_strengths)
-                      setSensitivities(member.preferences.areas_of_sensitivity)
+                      setCommStyles(getLocalizedArray(member.preferences.communication_style, locale))
+                      setStrengths(getLocalizedArray(member.preferences.key_strengths, locale))
+                      setSensitivities(getLocalizedArray(member.preferences.areas_of_sensitivity, locale))
                       setEditingPreferences(false)
                     }}
                     className="rounded-lg"
@@ -910,16 +1032,13 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                 animate={{ opacity: 1 }}
                 className="space-y-4"
               >
-                {member.preferences.communication_style && (
+                {localizedCommStyles.length > 0 && (
                   <div>
                     <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
                       {t.members.overview.communicationStyle}
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                      {(Array.isArray(member.preferences.communication_style)
-                        ? member.preferences.communication_style
-                        : [member.preferences.communication_style]
-                      ).map((style) => (
+                      {localizedCommStyles.map((style) => (
                         <span
                           key={style}
                           className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-sm"
@@ -931,13 +1050,13 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                   </div>
                 )}
 
-                {member.preferences.key_strengths.length > 0 && (
+                {localizedStrengths.length > 0 && (
                   <div>
                     <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
                       {t.members.overview.keyStrengths}
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                      {member.preferences.key_strengths.map((strength) => (
+                      {localizedStrengths.map((strength) => (
                         <span
                           key={strength}
                           className="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 text-sm"
@@ -949,13 +1068,13 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                   </div>
                 )}
 
-                {member.preferences.areas_of_sensitivity.length > 0 && (
+                {localizedSensitivities.length > 0 && (
                   <div>
                     <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
                       {t.members.overview.areasOfSensitivity}
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                      {member.preferences.areas_of_sensitivity.map((area) => (
+                      {localizedSensitivities.map((area) => (
                         <span
                           key={area}
                           className="inline-flex items-center px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-sm"
@@ -1352,6 +1471,37 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* AI Summary Modal */}
+      <MemberSummaryModal
+        isOpen={showSummaryModal}
+        onClose={() => {
+          setShowSummaryModal(false)
+          // Refresh the latest summary after modal closes
+          const refreshSummary = async () => {
+            try {
+              const { data: { session } } = await supabase.auth.getSession()
+              if (!session) return
+
+              const response = await fetch(`/api/members/${member.id}/summary`, {
+                headers: {
+                  'Authorization': `Bearer ${session.access_token}`,
+                },
+              })
+
+              if (response.ok) {
+                const data = await response.json()
+                setLatestSummary(data.summary)
+              }
+            } catch (error) {
+              console.error('Error refreshing summary:', error)
+            }
+          }
+          refreshSummary()
+        }}
+        memberId={member.id}
+        memberName={getMemberFullName(member)}
+      />
     </div>
   )
 }

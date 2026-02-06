@@ -17,12 +17,13 @@ import {
   ImagePlus,
   Calendar,
   Pencil,
+  Lightbulb,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
-import type { Milestone, MilestoneCategory, MilestoneStatus, MilestoneComment, ProgressNote, NoteType } from '@/types/member'
+import type { Milestone, MilestoneCategory, MilestoneStatus, MilestoneComment, ProgressNote, NoteType, MemberSummary, SummaryContent } from '@/types/member'
 
 interface ProgressTabProps {
   memberId: string
@@ -406,9 +407,38 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
   const [noteImagePreviews, setNoteImagePreviews] = useState<string[]>([])
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
 
+  // Goal suggestions from Bloom Pulse
+  const [latestSummary, setLatestSummary] = useState<MemberSummary | null>(null)
+  const [loadingSummary, setLoadingSummary] = useState(true)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+
   useEffect(() => {
     fetchMilestones()
+    fetchLatestSummary()
   }, [memberId])
+
+  const fetchLatestSummary = async () => {
+    setLoadingSummary(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const response = await fetch(`/api/members/${memberId}/summary`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setLatestSummary(data.summary)
+      }
+    } catch (err) {
+      console.error('Error fetching summary:', err)
+    } finally {
+      setLoadingSummary(false)
+    }
+  }
 
   // Scroll to highlighted milestone
   useEffect(() => {
@@ -516,6 +546,58 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
       console.error('Error fetching milestones:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const [newlyAddedGoalId, setNewlyAddedGoalId] = useState<string | null>(null)
+
+  const handleQuickAddGoal = async (suggestion: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from('milestones')
+        .insert({
+          member_id: memberId,
+          practitioner_id: user.id,
+          title: suggestion,
+          description: null,
+          category: 'general',
+          target_date: null,
+          status: 'discovery',
+          achieved: false,
+          achieved_at: null,
+          shared_with_member: false,
+        })
+        .select('id')
+        .single()
+
+      if (error) throw error
+
+      toast.success(locale === 'fr' ? 'Objectif ajouté' : locale === 'es' ? 'Objetivo añadido' : 'Goal added')
+
+      // Set the newly added goal ID for highlighting
+      if (data?.id) {
+        setNewlyAddedGoalId(data.id)
+        // Clear highlight after animation
+        setTimeout(() => setNewlyAddedGoalId(null), 3000)
+      }
+
+      await fetchMilestones()
+
+      // Scroll to the new goal after DOM updates
+      if (data?.id) {
+        setTimeout(() => {
+          const element = document.getElementById(`milestone-${data.id}`)
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+        }, 150)
+      }
+    } catch (error) {
+      console.error('Error adding goal:', error)
+      toast.error(locale === 'fr' ? 'Échec de l\'ajout' : 'Failed to add goal')
     }
   }
 
@@ -870,8 +952,121 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
     )
   }
 
+  // Get suggestions from summary
+  const summaryContent = latestSummary?.summary_content as SummaryContent | undefined
+  const suggestions = [
+    ...(summaryContent?.recommendations || []),
+    ...(summaryContent?.next_steps || []),
+  ].slice(0, 5) // Limit to 5 suggestions
+
+  // Check if summary is older than 7 days
+  const isSummaryStale = latestSummary
+    ? (Date.now() - new Date(latestSummary.generated_at).getTime()) > 7 * 24 * 60 * 60 * 1000
+    : false
+
   return (
     <div className="space-y-6">
+      {/* Goal Suggestions from Bloom Pulse */}
+      {showSuggestions && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-[#D4856A]/5 to-[#D4856A]/10 rounded-2xl border border-[#D4856A]/20 overflow-hidden"
+        >
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[#D4856A]/10 flex items-center justify-center">
+                  <Lightbulb className="w-4 h-4 text-[#D4856A]" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900 text-sm">
+                    {locale === 'fr' ? 'Objectifs suggérés' : locale === 'es' ? 'Objetivos sugeridos' : 'Suggested Goals'}
+                  </h3>
+                  {latestSummary && (
+                    <p className="text-xs text-gray-500">
+                      {locale === 'fr' ? 'Basé sur Bloom Pulse' : locale === 'es' ? 'Basado en Bloom Pulse' : 'Based on Bloom Pulse'}
+                      {isSummaryStale && (
+                        <span className="text-amber-600 ml-1">
+                          ({locale === 'fr' ? 'mis à jour il y a plus de 7 jours' : locale === 'es' ? 'actualizado hace más de 7 días' : 'updated over 7 days ago'})
+                        </span>
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSuggestions(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-white/50 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {loadingSummary ? (
+              <div className="flex items-center gap-2 py-3">
+                <div className="w-4 h-4 border-2 border-[#D4856A] border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-gray-500">
+                  {locale === 'fr' ? 'Chargement...' : locale === 'es' ? 'Cargando...' : 'Loading...'}
+                </span>
+              </div>
+            ) : suggestions.length > 0 ? (
+              <div className="space-y-2">
+                {suggestions.map((suggestion, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-[#D4856A]/30 hover:shadow-sm transition-all group"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-700 line-clamp-2">{suggestion}</p>
+                    </div>
+                    <button
+                      onClick={() => handleQuickAddGoal(suggestion)}
+                      className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#D4856A] bg-[#D4856A]/10 hover:bg-[#D4856A]/20 rounded-lg transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      {locale === 'fr' ? 'Ajouter' : locale === 'es' ? 'Añadir' : 'Add'}
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <div className="w-10 h-10 rounded-xl bg-[#D4856A]/10 flex items-center justify-center mx-auto mb-2">
+                  <Sparkles className="w-5 h-5 text-[#D4856A]" />
+                </div>
+                <p className="text-sm text-gray-600 mb-1">
+                  {locale === 'fr' ? 'Aucune suggestion disponible' : locale === 'es' ? 'Sin sugerencias disponibles' : 'No suggestions available'}
+                </p>
+                <p className="text-xs text-gray-500 mb-3">
+                  {locale === 'fr'
+                    ? 'Générez un Bloom Pulse pour obtenir des recommandations personnalisées'
+                    : locale === 'es'
+                    ? 'Genere un Bloom Pulse para obtener recomendaciones personalizadas'
+                    : 'Generate a Bloom Pulse to get personalized recommendations'}
+                </p>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* View recommendations button when hidden */}
+      {!showSuggestions && (
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          onClick={() => setShowSuggestions(true)}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-[#D4856A] bg-[#D4856A]/5 hover:bg-[#D4856A]/10 border border-[#D4856A]/20 rounded-xl transition-colors"
+        >
+          <Lightbulb className="w-4 h-4" />
+          {locale === 'fr' ? 'Voir les recommandations' : locale === 'es' ? 'Ver recomendaciones' : 'View recommendations'}
+        </motion.button>
+      )}
+
       {/* Add Milestone Form */}
       <AnimatePresence>
         {showAddMilestone && (
@@ -1062,7 +1257,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
                         onDeleteComment={handleDeleteComment}
                         categoryLabel={t.members.milestoneCategories[milestone.category]}
                         locale={locale}
-                        isHighlighted={highlightMilestoneId === milestone.id}
+                        isHighlighted={highlightMilestoneId === milestone.id || newlyAddedGoalId === milestone.id}
                       />
                     ))}
                   </AnimatePresence>

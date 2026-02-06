@@ -186,7 +186,14 @@
     "markAchieved": "Marcar como logrado",
     "progressNotes": "Notas de progreso",
     "growthOverTime": "Crecimiento a lo largo del tiempo",
-    "engagementTrend": "Tendencia de compromiso"
+    "engagementTrend": "Tendencia de compromiso",
+    "suggestedGoals": "Objetivos sugeridos",
+    "basedOnPulse": "Basado en Bloom Pulse",
+    "staleWarning": "actualizado hace más de 7 días",
+    "noSuggestions": "Sin sugerencias disponibles",
+    "generatePulseHint": "Genere un Bloom Pulse para obtener recomendaciones personalizadas",
+    "viewRecommendations": "Ver recomendaciones",
+    "goalAdded": "Objetivo añadido"
   },
 
   "milestoneCategories": {
@@ -274,6 +281,32 @@
     "sessionUpdated": "Sesión actualizada exitosamente",
     "noteAdded": "Nota agregada exitosamente",
     "fileUploaded": "Archivo subido exitosamente",
-    "resourceShared": "Recurso compartido exitosamente"
+    "resourceShared": "Recurso compartido exitosamente",
+    "summaryGenerated": "Bloom Pulse generado exitosamente"
+  },
+
+  "summary": {
+    "title": "Bloom Pulse",
+    "generate": "Generar Bloom Pulse",
+    "regenerate": "Regenerar",
+    "viewFull": "Ver Bloom Pulse",
+    "history": "Historial",
+    "previousSummaries": "Pulsos anteriores",
+    "noPrevious": "No hay pulsos anteriores",
+    "viewing": "Viendo",
+    "generating": "Generando Bloom Pulse...",
+    "generatingHint": "Esto puede tomar unos segundos",
+    "noSummary": "Genera un pulso terapéutico",
+    "noSummaryHint": "Basado en sesiones y notas",
+    "createRecap": "Generar Bloom Pulse",
+    "currentStatus": "Estado actual",
+    "progressHighlights": "Logros destacados",
+    "keyThemes": "Temas clave",
+    "areasOfAttention": "Áreas de atención",
+    "recommendations": "Recomendaciones",
+    "nextSteps": "Próximos pasos",
+    "disclaimer": "Este pulso es generado por IA y debe usarse como ayuda para la documentación clínica, no como sustituto del juicio profesional.",
+    "insufficientData": "No hay suficientes datos para generar un pulso. Primero añada sesiones o notas.",
+    "rateLimited": "Demasiadas solicitudes. Inténtelo más tarde."
   }
 }

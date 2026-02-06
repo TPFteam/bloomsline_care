@@ -117,6 +117,9 @@ export const RATE_LIMITS = {
 
   // Limit for public endpoints (booking, early access)
   public: { limit: 20, windowSeconds: 60 },
+
+  // AI summary generation (3 per 5 minutes)
+  summary: { limit: 3, windowSeconds: 300 },
 } as const
 
 /**

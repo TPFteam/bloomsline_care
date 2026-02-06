@@ -26,11 +26,15 @@ export type MilestoneStatus = 'discovery' | 'building' | 'thriving' | 'independe
 // INTERFACES
 // ============================================
 
+// Bilingual value type - supports both legacy format and new {en, fr} format
+export type BilingualString = string | { en: string; fr: string }
+export type BilingualStringArray = string[] | { en: string[]; fr: string[] }
+
 export interface MemberPreferences {
-  communication_style: string | string[] | null
-  key_strengths: string[]
-  areas_of_sensitivity: string[]
-  therapeutic_context: string | null
+  communication_style: string | string[] | BilingualStringArray | null
+  key_strengths: string[] | BilingualStringArray
+  areas_of_sensitivity: string[] | BilingualStringArray
+  therapeutic_context: string | BilingualString | null
   preferred_contact_method: 'email' | 'phone' | 'text'
   preferred_session_format: SessionFormat
 }
@@ -434,4 +438,29 @@ export function formatDateTime(date: string | null, locale: 'en' | 'fr' | 'es' =
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+// ============================================
+// MEMBER SUMMARY TYPES
+// ============================================
+
+export interface SummaryContent {
+  current_status: string
+  progress_highlights: string[]
+  key_themes: string[]
+  areas_of_attention: string[]
+  recommendations: string[]
+  next_steps: string[]
+}
+
+export interface MemberSummary {
+  id: string
+  member_id: string
+  practitioner_id: string
+  summary_content: SummaryContent
+  summary_text: string | null
+  model_used: string
+  tokens_used: number | null
+  generated_at: string
+  created_at: string
 }

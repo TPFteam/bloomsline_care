@@ -186,7 +186,14 @@
     "markAchieved": "Mark as Achieved",
     "progressNotes": "Progress Notes",
     "growthOverTime": "Growth Over Time",
-    "engagementTrend": "Engagement Trend"
+    "engagementTrend": "Engagement Trend",
+    "suggestedGoals": "Suggested Goals",
+    "basedOnPulse": "Based on Bloom Pulse",
+    "staleWarning": "updated over 7 days ago",
+    "noSuggestions": "No suggestions available",
+    "generatePulseHint": "Generate a Bloom Pulse to get personalized recommendations",
+    "viewRecommendations": "View recommendations",
+    "goalAdded": "Goal added"
   },
 
   "milestoneCategories": {
@@ -274,6 +281,32 @@
     "sessionUpdated": "Session updated successfully",
     "noteAdded": "Note added successfully",
     "fileUploaded": "File uploaded successfully",
-    "resourceShared": "Resource shared successfully"
+    "resourceShared": "Resource shared successfully",
+    "summaryGenerated": "Bloom Pulse generated successfully"
+  },
+
+  "summary": {
+    "title": "Bloom Pulse",
+    "generate": "Generate Bloom Pulse",
+    "regenerate": "Regenerate",
+    "viewFull": "View Bloom Pulse",
+    "history": "History",
+    "previousSummaries": "Previous Pulses",
+    "noPrevious": "No previous pulses",
+    "viewing": "Viewing",
+    "generating": "Generating Bloom Pulse...",
+    "generatingHint": "This may take a few seconds",
+    "noSummary": "Generate a therapeutic pulse",
+    "noSummaryHint": "Based on sessions and notes",
+    "createRecap": "Generate Bloom Pulse",
+    "currentStatus": "Current Status",
+    "progressHighlights": "Progress Highlights",
+    "keyThemes": "Key Themes",
+    "areasOfAttention": "Areas of Attention",
+    "recommendations": "Recommendations",
+    "nextSteps": "Next Steps",
+    "disclaimer": "This pulse is AI-generated and should be used as an aid to clinical documentation, not as a substitute for professional judgment.",
+    "insufficientData": "Not enough data to generate a pulse. Add sessions or notes first.",
+    "rateLimited": "Too many requests. Please try again later."
   }
 }
