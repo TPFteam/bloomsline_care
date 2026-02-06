@@ -32,6 +32,7 @@ import {
   List,
   Gift,
   Hand,
+  Star,
   Stars,
   CalendarHeart,
   Sofa,
@@ -1663,7 +1664,7 @@ export default function MyResourcesPage() {
                     originY: 0,
                   }}
                 >
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                  <Star className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 text-emerald-500 fill-emerald-500" />
                 </motion.div>
               )
             })()}
