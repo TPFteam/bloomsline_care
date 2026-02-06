@@ -14,12 +14,12 @@ const DEMO_MEMBERS = [
     status: 'active' as const,
     engagement_level: 'high' as const,
     is_demo: true,
-    internal_notes: 'Emma has been working on managing work-related stress and perfectionism. She responds well to reflective exercises and journaling prompts. Making excellent progress with self-awareness.',
+    internal_notes: 'Patiente engagée dans un travail thérapeutique profond. Alliance thérapeutique solide. Sensible aux enjeux de reconnaissance. Travail actuel sur la sécurité interne et le rapport au lien.',
     preferences: {
-      communication_style: 'Prefers gentle, reflective conversations. Appreciates when given time to process before responding.',
-      key_strengths: ['Self-awareness', 'Journaling', 'Openness to growth', 'Commitment to therapy'],
-      areas_of_sensitivity: ['Work-related stress', 'Perfectionism', 'Fear of disappointing others'],
-      therapeutic_context: 'Working on establishing healthier boundaries at work and developing self-compassion practices.',
+      communication_style: ['Besoin de sécurité relationnelle préalable avant toute exploration sensible', 'Tendance à répondre par la pensée plutôt que par l\'affect'],
+      key_strengths: ['Intelligence émotionnelle', 'Capacité de réflexion', 'Engagement thérapeutique'],
+      areas_of_sensitivity: ['Reconnaissance dans le lien', 'Trauma corporel', 'Dissociation'],
+      therapeutic_context: 'Fonctionnement relationnel marqué par une suradaptation précoce et un fort contrôle du lien\n\nHistoire traumatique développementale (trauma corporel à l\'adolescence)\n\nTravail thérapeutique en cours autour de la sécurité interne, du rapport au lien, et de la reconnaissance subjective\n\nSituation de vie actuelle fragile (chômage, précarité matérielle, logement inconfortable) pouvant majorer la dissociation / le gel\n\nThérapie engagée, alliance solide mais sensible aux enjeux de reconnaissance dans le lien',
       preferred_contact_method: 'email',
       preferred_session_format: 'virtual',
     },
@@ -179,8 +179,8 @@ export async function POST(request: NextRequest) {
                 scheduled_at: session1Date.toISOString(),
                 duration_minutes: 60,
                 status: 'completed',
-                notes: 'First session focused on understanding Emma\'s background and current challenges. Discussed her work environment and identified key stressors. She expressed motivation to work on setting boundaries.',
-                summary: 'Initial consultation completed. Established rapport and identified primary focus areas: work stress, perfectionism, and self-compassion.',
+                notes: 'Première rencontre. Recueil de l\'histoire et des motifs de consultation. Alliance thérapeutique en construction. La patiente exprime un besoin de reconnaissance et de sécurité dans le lien.',
+                summary: 'Consultation initiale. Identification des axes de travail: sécurité interne, rapport au lien, reconnaissance subjective.',
                 mood_rating: 6,
               },
               {
@@ -191,8 +191,8 @@ export async function POST(request: NextRequest) {
                 scheduled_at: session2Date.toISOString(),
                 duration_minutes: 50,
                 status: 'completed',
-                notes: 'Reviewed journaling homework from last week. Emma identified several patterns in her stress responses. Introduced breathing techniques for moments of overwhelm.',
-                summary: 'Good progress on self-awareness. Emma has been consistent with journaling. Introduced grounding techniques.',
+                notes: 'Séance centrée sur l\'exploration des mécanismes de protection dans le lien. La patiente identifie sa tendance à anticiper les attentes pour éviter la déception. Travail sur la légitimité de ses besoins propres.',
+                summary: 'Progrès dans la conscience des mécanismes de suradaptation. Ouverture vers l\'expression des besoins authentiques.',
                 mood_rating: 7,
               },
               {
@@ -225,58 +225,32 @@ export async function POST(request: NextRequest) {
               {
                 member_id: emmaMember.id,
                 practitioner_id: user.id,
-                title: 'Develop self-compassion practice',
-                description: 'Build a daily practice of self-compassion, replacing self-critical thoughts with kinder self-talk.',
-                category: 'emotional',
-                status: 'discovery',
-                target_date: targetDate60.toISOString().split('T')[0],
-              },
-              {
-                member_id: emmaMember.id,
-                practitioner_id: user.id,
-                title: 'Set boundaries at work',
-                description: 'Learn to say no to extra tasks and communicate workload limits to manager.',
-                category: 'behavioral',
+                title: 'Accéder à l\'affect',
+                description: 'Accéder à l\'affect sans forçage ni dissociation',
+                category: 'general',
                 status: 'building',
                 target_date: targetDate30.toISOString().split('T')[0],
               },
               {
                 member_id: emmaMember.id,
                 practitioner_id: user.id,
-                title: 'Daily journaling habit',
-                description: 'Maintain a consistent evening journaling practice to process daily experiences and emotions.',
-                category: 'behavioral',
-                status: 'thriving',
-                target_date: targetDate14.toISOString().split('T')[0],
-              },
-              {
-                member_id: emmaMember.id,
-                practitioner_id: user.id,
-                title: 'Identify stress triggers',
-                description: 'Recognize and name the specific situations and thoughts that trigger stress responses.',
-                category: 'therapy_goal',
-                status: 'independent',
-                achieved_at: achievedDate.toISOString(),
+                title: 'Exister dans le lien',
+                description: 'Exister dans le lien sans se protéger par le contrôle ou la performance',
+                category: 'general',
+                status: 'discovery',
+                target_date: targetDate60.toISOString().split('T')[0],
               },
             ]).select('id, title')
 
             // Add milestone comments
             if (milestones) {
-              const journalingMilestone = milestones.find(m => m.title === 'Daily journaling habit')
-              const boundariesMilestone = milestones.find(m => m.title === 'Set boundaries at work')
+              const affectMilestone = milestones.find(m => m.title === 'Accéder à l\'affect')
 
-              if (journalingMilestone) {
+              if (affectMilestone) {
                 await serviceClient.from('milestone_comments').insert({
-                  milestone_id: journalingMilestone.id,
+                  milestone_id: affectMilestone.id,
                   practitioner_id: user.id,
-                  content: 'Emma has been making excellent progress with her journaling. She\'s now consistently writing every evening and finding it helps her process the day.',
-                })
-              }
-              if (boundariesMilestone) {
-                await serviceClient.from('milestone_comments').insert({
-                  milestone_id: boundariesMilestone.id,
-                  practitioner_id: user.id,
-                  content: 'Working on practicing "I" statements when expressing workload concerns. Had a successful conversation with her manager last week.',
+                  content: 'Progrès notables dans la capacité à identifier les états émotionnels. Travail en cours sur l\'accès sans passage par la dissociation.',
                 })
               }
             }
@@ -288,16 +262,24 @@ export async function POST(request: NextRequest) {
               {
                 member_id: emmaMember.id,
                 practitioner_id: user.id,
-                title: 'Initial observations',
-                content: 'Emma presents as articulate and self-aware. She has a strong desire to improve but tends to be self-critical when progress isn\'t immediate. Will focus on normalizing the non-linear nature of growth.',
+                title: 'Session Summary',
+                content: 'Follow-up session. Travail sur l\'accès à l\'affect et la reconnaissance dans le lien. La patiente montre une capacité croissante à identifier ses états émotionnels sans passer par la dissociation. Poursuite du travail sur la sécurité interne.',
+                note_type: 'general',
+                is_private: false,
+              },
+              {
+                member_id: emmaMember.id,
+                practitioner_id: user.id,
+                title: 'Observation clinique',
+                content: 'Bonne capacité de mentalisation quand le cadre est sécurisant. Tendance au gel ou à la suradaptation quand elle perçoit une attente. Le travail sur la reconnaissance subjective progresse.',
                 note_type: 'observation',
                 is_private: true,
               },
               {
                 member_id: emmaMember.id,
                 practitioner_id: user.id,
-                title: 'Treatment approach',
-                content: 'Combining CBT techniques with mindfulness-based approaches. Focus areas: cognitive restructuring for perfectionist thoughts, boundary-setting skills, and self-compassion exercises.',
+                title: 'Plan de traitement',
+                content: 'Axes de travail:\n1. Sécurité interne et régulation émotionnelle\n2. Rapport au lien sans contrôle ni performance\n3. Reconnaissance subjective et validation de l\'expérience\n4. Travail progressif sur le trauma corporel quand la fenêtre de tolérance le permet',
                 note_type: 'treatment_plan',
                 is_private: true,
               },
