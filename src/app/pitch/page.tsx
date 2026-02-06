@@ -982,30 +982,43 @@ function ProblemSlide({ t }: ProblemSlideProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-2xl sm:text-3xl text-neutral-400 mb-6"
+          className="text-2xl sm:text-3xl text-neutral-400 mb-8"
         >
           {t.line1}
         </motion.p>
 
-        {/* Line 2: Therapy is 1 */}
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-600 mb-2 leading-[1.2]"
+        {/* 168 Dots Visual */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="mb-8"
         >
-          {t.line2} <span className="font-bold text-teal-600 text-5xl sm:text-6xl lg:text-7xl">{t.highlight1}</span>
-        </motion.h2>
-
-        {/* Line 3: What about the other 167? */}
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-600 mb-8 leading-[1.2]"
-        >
-          {t.line3} <span className="font-bold text-neutral-300 text-5xl sm:text-6xl lg:text-7xl">{t.highlight2}</span>
-        </motion.h2>
+          <div className="flex flex-wrap justify-center gap-1.5 max-w-3xl mx-auto mb-4">
+            {Array.from({ length: 168 }).map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.2, delay: 0.3 + i * 0.005 }}
+                className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${
+                  i === 0 ? 'bg-teal-500' : 'bg-neutral-200'
+                }`}
+              />
+            ))}
+          </div>
+          {/* Legend */}
+          <div className="flex justify-center gap-8 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-teal-500" />
+              <span className="text-neutral-600"><span className="font-bold">1</span> hour of therapy</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-neutral-200" />
+              <span className="text-neutral-400"><span className="font-bold">167</span> hours on your own</span>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Closing Statement */}
         <motion.p
