@@ -65,10 +65,10 @@ const translations = {
       highlight2: '167 more.',
       closer: "That's where they need support — and where progress gets lost.",
       stats: [
-        { value: '47%', label: 'drop out of therapy early', source: 'PMC Research', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
-        { value: '75%', label: 'lack access globally', source: 'WHO', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
-        { value: '3x', label: 'faster job growth than average', source: 'BLS', url: 'https://www.bls.gov/opub/ted/2024/strong-growth-projected-in-mental-health-related-employment.htm' },
-        { value: '1 in 5', label: 'use AI for mental health', source: 'Brown University', url: 'https://sph.brown.edu/news/2025-11-18/teens-ai-chatbots' },
+        { value: '26%', label: 'drop out of therapy early', source: 'Meta-analysis 2025', url: 'https://www.tandfonline.com/doi/full/10.1080/16506073.2025.2542364' },
+        { value: '86%', label: 'receive no treatment globally', source: 'WHO Sept 2025', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
+        { value: '19%', label: 'job growth projected by 2033', source: 'BLS 2024', url: 'https://www.bls.gov/opub/ted/2024/strong-growth-projected-in-mental-health-related-employment.htm' },
+        { value: '1 in 5', label: 'young adults use AI for mental health', source: 'RAND Nov 2025', url: 'https://www.rand.org/news/press/2025/11/one-in-eight-adolescents-and-young-adults-use-ai-chatbots.html' },
       ],
     },
     solution: {
@@ -403,10 +403,10 @@ const translations = {
       highlight2: '167 de plus.',
       closer: "C'est là qu'ils ont besoin de soutien — et où le progrès se perd.",
       stats: [
-        { value: '47%', label: 'abandonnent la thérapie tôt', source: 'PMC Research', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
-        { value: '75%', label: 'sans accès mondial', source: 'OMS', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
-        { value: '3x', label: 'croissance emploi vs moyenne', source: 'BLS', url: 'https://www.bls.gov/opub/ted/2024/strong-growth-projected-in-mental-health-related-employment.htm' },
-        { value: '1 sur 5', label: 'utilisent l\'IA santé mentale', source: 'Brown University', url: 'https://sph.brown.edu/news/2025-11-18/teens-ai-chatbots' },
+        { value: '26%', label: 'abandonnent la thérapie tôt', source: 'Méta-analyse 2025', url: 'https://www.tandfonline.com/doi/full/10.1080/16506073.2025.2542364' },
+        { value: '86%', label: 'sans traitement mondial', source: 'OMS Sept 2025', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
+        { value: '19%', label: 'croissance emploi d\'ici 2033', source: 'BLS 2024', url: 'https://www.bls.gov/opub/ted/2024/strong-growth-projected-in-mental-health-related-employment.htm' },
+        { value: '1 sur 5', label: 'jeunes utilisent l\'IA santé mentale', source: 'RAND Nov 2025', url: 'https://www.rand.org/news/press/2025/11/one-in-eight-adolescents-and-young-adults-use-ai-chatbots.html' },
       ],
     },
     solution: {
