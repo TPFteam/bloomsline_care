@@ -77,8 +77,8 @@ const translations = {
       title: 'Bloomsline fills the 167.',
       subtitle: 'Support that continues after the session ends.',
       pillars: [
-        { title: 'For Members', desc: 'Capture moments, discover patterns, get 24/7 AI support from Bloom' },
-        { title: 'For Practitioners', desc: 'See what happens between sessions, share resources, track progress' },
+        { title: 'For Members', tagline: 'A wellness companion', desc: 'Track moods, build habits, discover patterns in your journey — with gentle AI support available 24/7.' },
+        { title: 'For Practitioners', tagline: 'Post-session made simple', desc: 'Share resources, see between-session progress, and start every appointment already informed.' },
       ],
       bridge: 'One platform that connects both sides of care.',
     },
@@ -415,8 +415,8 @@ const translations = {
       title: 'Bloomsline remplit les 167.',
       subtitle: 'Un soutien qui continue après la séance.',
       pillars: [
-        { title: 'Pour les Membres', desc: 'Capturer des moments, découvrir des patterns, soutien IA 24/7 avec Bloom' },
-        { title: 'Pour les Praticiens', desc: 'Voir ce qui se passe entre les séances, partager des ressources, suivre le progrès' },
+        { title: 'Pour les Membres', tagline: 'Un compagnon bien-être', desc: 'Suivre son humeur, construire des habitudes, découvrir des patterns — avec un soutien IA bienveillant 24/7.' },
+        { title: 'Pour les Praticiens', tagline: 'L\'après-séance simplifié', desc: 'Partager des ressources, voir le progrès entre les séances, et commencer chaque RDV déjà informé.' },
       ],
       bridge: 'Une plateforme qui connecte les deux côtés du soin.',
     },
@@ -1098,17 +1098,19 @@ function SolutionSlide({ t }: SolutionSlideProps) {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="grid sm:grid-cols-2 gap-8 max-w-3xl mx-auto mb-10"
         >
-          {t.pillars.map((pillar, index) => {
+          {t.pillars.map((pillar: { title: string; tagline: string; desc: string }, index: number) => {
             const Icon = icons[index]
             const bgColors = ['bg-teal-100', 'bg-violet-100']
             const textColors = ['text-teal-600', 'text-violet-600']
+            const taglineColors = ['text-teal-600', 'text-violet-600']
             return (
               <div key={index} className="p-8 rounded-2xl bg-white border border-neutral-200 shadow-lg text-left">
                 <div className={`w-12 h-12 rounded-xl ${bgColors[index]} flex items-center justify-center mb-4`}>
                   <Icon className={`w-6 h-6 ${textColors[index]}`} />
                 </div>
-                <h3 className="font-semibold text-neutral-900 text-lg mb-2">{pillar.title}</h3>
-                <p className="text-neutral-600">{pillar.desc}</p>
+                <p className={`text-sm font-medium ${taglineColors[index]} mb-1`}>{pillar.tagline}</p>
+                <h3 className="font-semibold text-neutral-900 text-xl mb-3">{pillar.title}</h3>
+                <p className="text-neutral-600 leading-relaxed">{pillar.desc}</p>
               </div>
             )
           })}
