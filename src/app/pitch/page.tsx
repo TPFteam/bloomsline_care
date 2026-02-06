@@ -77,7 +77,7 @@ const translations = {
       title: 'Bloomsline fills the 167.',
       subtitle: 'Support that continues after the session ends.',
       pillars: [
-        { title: 'For Members', tagline: 'A wellness companion', desc: 'Track moods, build habits, discover patterns in your journey — with gentle AI support available 24/7.' },
+        { title: 'For Members', tagline: 'Notice what matters', desc: 'Patterns emerge. Progress becomes visible. No streaks, no scores — just clarity.' },
         { title: 'For Practitioners', tagline: 'Post-session made simple', desc: 'Share resources, see between-session progress, and start every appointment already informed.' },
       ],
       bridge: 'One platform that connects both sides of care.',
@@ -415,7 +415,7 @@ const translations = {
       title: 'Bloomsline remplit les 167.',
       subtitle: 'Un soutien qui continue après la séance.',
       pillars: [
-        { title: 'Pour les Membres', tagline: 'Un compagnon bien-être', desc: 'Suivre son humeur, construire des habitudes, découvrir des patterns — avec un soutien IA bienveillant 24/7.' },
+        { title: 'Pour les Membres', tagline: 'Remarquer ce qui compte', desc: 'Les patterns émergent. Le progrès devient visible. Pas de séries, pas de scores — juste de la clarté.' },
         { title: 'Pour les Praticiens', tagline: 'L\'après-séance simplifié', desc: 'Partager des ressources, voir le progrès entre les séances, et commencer chaque RDV déjà informé.' },
       ],
       bridge: 'Une plateforme qui connecte les deux côtés du soin.',
