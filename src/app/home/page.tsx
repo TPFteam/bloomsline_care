@@ -1350,11 +1350,25 @@ export default function MyResourcesPage() {
                   // Build smooth curve path using cubic bezier
                   if (points.length < 2) return null
 
-                  // Clamp first and last point x to visible bounds for clean edges
+                  // Clamp points to visible bounds and ensure minimum horizontal spacing
+                  const minSpacing = 5 // Minimum 5% spacing between points
                   const clampedPoints = points.map((p, i) => ({
                     x: Math.max(0, Math.min(100, p.x)),
                     y: p.y
                   }))
+
+                  // Ensure minimum horizontal spacing between consecutive points
+                  for (let i = 1; i < clampedPoints.length; i++) {
+                    const prev = clampedPoints[i - 1]
+                    const curr = clampedPoints[i]
+                    if (curr.x - prev.x < minSpacing) {
+                      // Spread points apart while keeping them within bounds
+                      const midX = (prev.x + curr.x) / 2
+                      const halfSpacing = minSpacing / 2
+                      clampedPoints[i - 1].x = Math.max(0, midX - halfSpacing)
+                      clampedPoints[i].x = Math.min(100, midX + halfSpacing)
+                    }
+                  }
 
                   let pathD = `M ${clampedPoints[0].x} ${clampedPoints[0].y}`
 
