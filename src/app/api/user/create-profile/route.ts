@@ -14,12 +14,12 @@ const DEMO_MEMBERS = [
     status: 'active' as const,
     engagement_level: 'high' as const,
     is_demo: true,
-    internal_notes: 'Patiente engagée dans un travail thérapeutique profond. Alliance thérapeutique solide. Sensible aux enjeux de reconnaissance. Travail actuel sur la sécurité interne et le rapport au lien.',
+    internal_notes: 'Patient engaged in deep therapeutic work. Solid therapeutic alliance. Sensitive to recognition issues. Current work on internal safety and relationship patterns.',
     preferences: {
-      communication_style: ['Besoin de sécurité relationnelle préalable avant toute exploration sensible', 'Tendance à répondre par la pensée plutôt que par l\'affect'],
-      key_strengths: ['Intelligence émotionnelle', 'Capacité de réflexion', 'Engagement thérapeutique'],
-      areas_of_sensitivity: ['Reconnaissance dans le lien', 'Trauma corporel', 'Dissociation'],
-      therapeutic_context: 'Fonctionnement relationnel marqué par une suradaptation précoce et un fort contrôle du lien\n\nHistoire traumatique développementale (trauma corporel à l\'adolescence)\n\nTravail thérapeutique en cours autour de la sécurité interne, du rapport au lien, et de la reconnaissance subjective\n\nSituation de vie actuelle fragile (chômage, précarité matérielle, logement inconfortable) pouvant majorer la dissociation / le gel\n\nThérapie engagée, alliance solide mais sensible aux enjeux de reconnaissance dans le lien',
+      communication_style: ['Needs relational safety before any sensitive exploration', 'Tends to respond through thinking rather than feeling'],
+      key_strengths: ['Emotional intelligence', 'Reflective capacity', 'Therapeutic engagement'],
+      areas_of_sensitivity: ['Recognition in relationships', 'Body trauma', 'Dissociation'],
+      therapeutic_context: 'Relational functioning marked by early over-adaptation and strong control in relationships\n\nDevelopmental trauma history (body trauma during adolescence)\n\nOngoing therapeutic work around internal safety, relationship patterns, and subjective recognition\n\nCurrent life situation is fragile (unemployment, financial precarity, uncomfortable housing) which may increase dissociation/freezing\n\nEngaged therapy, solid alliance but sensitive to recognition issues in the relationship',
       preferred_contact_method: 'email',
       preferred_session_format: 'virtual',
     },
@@ -179,8 +179,8 @@ export async function POST(request: NextRequest) {
                 scheduled_at: session1Date.toISOString(),
                 duration_minutes: 60,
                 status: 'completed',
-                notes: 'Première rencontre. Recueil de l\'histoire et des motifs de consultation. Alliance thérapeutique en construction. La patiente exprime un besoin de reconnaissance et de sécurité dans le lien.',
-                summary: 'Consultation initiale. Identification des axes de travail: sécurité interne, rapport au lien, reconnaissance subjective.',
+                notes: 'First meeting. Gathered history and reasons for consultation. Therapeutic alliance building. Patient expresses need for recognition and safety in relationships.',
+                summary: 'Initial consultation. Identified focus areas: internal safety, relationship patterns, subjective recognition.',
                 mood_rating: 6,
               },
               {
@@ -191,8 +191,8 @@ export async function POST(request: NextRequest) {
                 scheduled_at: session2Date.toISOString(),
                 duration_minutes: 50,
                 status: 'completed',
-                notes: 'Séance centrée sur l\'exploration des mécanismes de protection dans le lien. La patiente identifie sa tendance à anticiper les attentes pour éviter la déception. Travail sur la légitimité de ses besoins propres.',
-                summary: 'Progrès dans la conscience des mécanismes de suradaptation. Ouverture vers l\'expression des besoins authentiques.',
+                notes: 'Session focused on exploring protective mechanisms in relationships. Patient identifies tendency to anticipate expectations to avoid disappointment. Working on the legitimacy of her own needs.',
+                summary: 'Progress in awareness of over-adaptation patterns. Opening toward expressing authentic needs.',
                 mood_rating: 7,
               },
               {
@@ -216,17 +216,13 @@ export async function POST(request: NextRequest) {
             targetDate60.setDate(targetDate60.getDate() + 60)
             const targetDate30 = new Date(now)
             targetDate30.setDate(targetDate30.getDate() + 30)
-            const targetDate14 = new Date(now)
-            targetDate14.setDate(targetDate14.getDate() + 14)
-            const achievedDate = new Date(now)
-            achievedDate.setDate(achievedDate.getDate() - 5)
 
             const { data: milestones } = await serviceClient.from('milestones').insert([
               {
                 member_id: emmaMember.id,
                 practitioner_id: user.id,
-                title: 'Accéder à l\'affect',
-                description: 'Accéder à l\'affect sans forçage ni dissociation',
+                title: 'Access emotions safely',
+                description: 'Access emotions without forcing or dissociating',
                 category: 'general',
                 status: 'building',
                 target_date: targetDate30.toISOString().split('T')[0],
@@ -234,8 +230,8 @@ export async function POST(request: NextRequest) {
               {
                 member_id: emmaMember.id,
                 practitioner_id: user.id,
-                title: 'Exister dans le lien',
-                description: 'Exister dans le lien sans se protéger par le contrôle ou la performance',
+                title: 'Be present in relationships',
+                description: 'Be present in relationships without protecting through control or performance',
                 category: 'general',
                 status: 'discovery',
                 target_date: targetDate60.toISOString().split('T')[0],
@@ -244,13 +240,13 @@ export async function POST(request: NextRequest) {
 
             // Add milestone comments
             if (milestones) {
-              const affectMilestone = milestones.find(m => m.title === 'Accéder à l\'affect')
+              const affectMilestone = milestones.find(m => m.title === 'Access emotions safely')
 
               if (affectMilestone) {
                 await serviceClient.from('milestone_comments').insert({
                   milestone_id: affectMilestone.id,
                   practitioner_id: user.id,
-                  content: 'Progrès notables dans la capacité à identifier les états émotionnels. Travail en cours sur l\'accès sans passage par la dissociation.',
+                  content: 'Notable progress in ability to identify emotional states. Ongoing work on accessing emotions without dissociating.',
                 })
               }
             }
@@ -263,23 +259,23 @@ export async function POST(request: NextRequest) {
                 member_id: emmaMember.id,
                 practitioner_id: user.id,
                 title: 'Session Summary',
-                content: 'Follow-up session. Travail sur l\'accès à l\'affect et la reconnaissance dans le lien. La patiente montre une capacité croissante à identifier ses états émotionnels sans passer par la dissociation. Poursuite du travail sur la sécurité interne.',
+                content: 'Follow-up session focused on accessing emotions and recognition in relationships. Patient shows increasing ability to identify emotional states without dissociating. Continuing work on internal safety.',
                 note_type: 'general',
                 is_private: false,
               },
               {
                 member_id: emmaMember.id,
                 practitioner_id: user.id,
-                title: 'Observation clinique',
-                content: 'Bonne capacité de mentalisation quand le cadre est sécurisant. Tendance au gel ou à la suradaptation quand elle perçoit une attente. Le travail sur la reconnaissance subjective progresse.',
+                title: 'Clinical Observation',
+                content: 'Good mentalization capacity when the setting feels safe. Tendency to freeze or over-adapt when perceiving expectations. Work on subjective recognition is progressing.',
                 note_type: 'observation',
                 is_private: true,
               },
               {
                 member_id: emmaMember.id,
                 practitioner_id: user.id,
-                title: 'Plan de traitement',
-                content: 'Axes de travail:\n1. Sécurité interne et régulation émotionnelle\n2. Rapport au lien sans contrôle ni performance\n3. Reconnaissance subjective et validation de l\'expérience\n4. Travail progressif sur le trauma corporel quand la fenêtre de tolérance le permet',
+                title: 'Treatment Plan',
+                content: 'Focus areas:\n1. Internal safety and emotional regulation\n2. Relationships without control or performance\n3. Subjective recognition and experience validation\n4. Gradual trauma work when window of tolerance allows',
                 note_type: 'treatment_plan',
                 is_private: true,
               },
