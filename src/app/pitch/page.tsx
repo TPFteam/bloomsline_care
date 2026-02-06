@@ -67,7 +67,7 @@ const translations = {
       stats: [
         { value: '47%', label: 'drop out of therapy early', source: 'PMC Research', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
         { value: '75%', label: 'lack access globally', source: 'WHO', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
-        { value: '3x', label: 'faster job growth than average', source: 'HRSA', url: 'https://www.wlfi.com/news/mental-health-jobs-will-grow-3-times-the-rate-of-all-us-jobs-over-the/article_5f51a229-aa55-5ae4-951c-b0b5ec04de32.html' },
+        { value: '3x', label: 'faster job growth than average', source: 'BLS', url: 'https://www.bls.gov/opub/ted/2024/strong-growth-projected-in-mental-health-related-employment.htm' },
         { value: '1 in 5', label: 'use AI for mental health', source: 'Brown University', url: 'https://sph.brown.edu/news/2025-11-18/teens-ai-chatbots' },
       ],
     },
@@ -405,7 +405,7 @@ const translations = {
       stats: [
         { value: '47%', label: 'abandonnent la thérapie tôt', source: 'PMC Research', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
         { value: '75%', label: 'sans accès mondial', source: 'OMS', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
-        { value: '3x', label: 'croissance emploi vs moyenne', source: 'HRSA', url: 'https://www.wlfi.com/news/mental-health-jobs-will-grow-3-times-the-rate-of-all-us-jobs-over-the/article_5f51a229-aa55-5ae4-951c-b0b5ec04de32.html' },
+        { value: '3x', label: 'croissance emploi vs moyenne', source: 'BLS', url: 'https://www.bls.gov/opub/ted/2024/strong-growth-projected-in-mental-health-related-employment.htm' },
         { value: '1 sur 5', label: 'utilisent l\'IA santé mentale', source: 'Brown University', url: 'https://sph.brown.edu/news/2025-11-18/teens-ai-chatbots' },
       ],
     },
