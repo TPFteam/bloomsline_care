@@ -59,31 +59,16 @@ const translations = {
     },
     problem: {
       label: 'THE PROBLEM',
-      title: 'Therapy works.',
-      subtitle: 'But only',
-      highlight: '1 hour',
-      subtitleEnd: 'a week.',
+      title: 'What happens after the session?',
       gap: {
-        title: 'The Math',
         session: '1',
         sessionLabel: 'hour of therapy',
         life: '167',
-        lifeLabel: 'hours alone',
+        lifeLabel: 'hours on your own',
         total: '168',
         totalLabel: 'hours in a week',
-        arrow: '→',
       },
-      lostTitle: 'What Gets Lost',
-      lost: [
-        { icon: 'camera', label: 'Insights fade by day 3' },
-        { icon: 'eye', label: 'Patterns stay invisible' },
-        { icon: 'refresh', label: 'Sessions restart from scratch' },
-      ],
-      stats: [
-        { number: '73%', label: 'forget session insights within a week' },
-        { number: '50%', label: 'drop out before session 4' },
-      ],
-      cost: 'The gap between sessions is where progress is made—or lost.',
+      cost: "That's where progress is made — or lost.",
     },
     solution: {
       label: 'THE SOLUTION',
@@ -411,31 +396,16 @@ const translations = {
     },
     problem: {
       label: 'LE PROBLÈME',
-      title: 'La thérapie fonctionne.',
-      subtitle: 'Mais seulement',
-      highlight: '1 heure',
-      subtitleEnd: 'par semaine.',
+      title: 'Que se passe-t-il après la séance ?',
       gap: {
-        title: 'Le Calcul',
         session: '1',
         sessionLabel: 'heure de thérapie',
         life: '167',
         lifeLabel: 'heures seul',
         total: '168',
         totalLabel: 'heures par semaine',
-        arrow: '→',
       },
-      lostTitle: 'Ce qui se perd',
-      lost: [
-        { icon: 'camera', label: 'Les insights s\'effacent en 3 jours' },
-        { icon: 'eye', label: 'Les patterns restent invisibles' },
-        { icon: 'refresh', label: 'Les séances repartent de zéro' },
-      ],
-      stats: [
-        { number: '73%', label: 'oublient les insights de séance en une semaine' },
-        { number: '50%', label: 'abandonnent avant la séance 4' },
-      ],
-      cost: 'L\'écart entre les séances est là où le progrès se fait — ou se perd.',
+      cost: "C'est là que le progrès se fait — ou se perd.",
     },
     solution: {
       label: 'LA SOLUTION',
@@ -1010,7 +980,7 @@ function ProblemSlide({ t }: ProblemSlideProps) {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 mb-16 leading-[1.1]"
         >
-          {t.title} <span className="text-neutral-400">{t.subtitle} <span className="text-red-500 font-medium">{t.highlight}</span> {t.subtitleEnd}</span>
+          {t.title}
         </motion.h2>
 
         {/* The Math - Stark Visual */}
