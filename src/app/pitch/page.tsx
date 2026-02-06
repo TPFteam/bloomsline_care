@@ -66,7 +66,7 @@ const translations = {
       closer: "That's where they need support — and where progress gets lost.",
       stats: [
         { value: '47%', label: 'drop out of therapy early', source: 'PMC Research', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
-        { value: '169M', label: 'Americans in therapist shortage areas', source: 'KFF / SAMHSA', url: 'https://www.kff.org/other/state-indicator/mental-health-care-health-professional-shortage-areas-hpsas/' },
+        { value: '75%', label: 'lack access to mental health treatment globally', source: 'WHO', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
         { value: '1 in 5', label: 'young adults use AI for mental health', source: 'Brown University', url: 'https://sph.brown.edu/news/2025-11-18/teens-ai-chatbots' },
       ],
     },
@@ -403,7 +403,7 @@ const translations = {
       closer: "C'est là qu'ils ont besoin de soutien — et où le progrès se perd.",
       stats: [
         { value: '47%', label: 'abandonnent la thérapie prématurément', source: 'PMC Research', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
-        { value: '169M', label: 'Américains en zone de pénurie de psys', source: 'KFF / SAMHSA', url: 'https://www.kff.org/other/state-indicator/mental-health-care-health-professional-shortage-areas-hpsas/' },
+        { value: '75%', label: 'n\'ont pas accès aux soins de santé mentale', source: 'OMS', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
         { value: '1 sur 5', label: 'jeunes utilisent l\'IA pour la santé mentale', source: 'Brown University', url: 'https://sph.brown.edu/news/2025-11-18/teens-ai-chatbots' },
       ],
     },
