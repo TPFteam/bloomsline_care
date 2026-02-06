@@ -20,7 +20,8 @@ import {
   Lightbulb,
   Globe,
   Building2,
-  Zap
+  Zap,
+  Stethoscope
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { Button } from '@/components/ui/button'
@@ -75,12 +76,30 @@ const translations = {
     solution: {
       label: 'THE SOLUTION',
       title: 'Bloomsline fills the 167.',
-      subtitle: 'Support that continues after the session ends.',
+      subtitle: 'A companion app for members. A visibility tool for practitioners.',
       pillars: [
-        { title: 'For Members', tagline: 'Notice what matters', desc: 'Patterns emerge. Progress becomes visible. No streaks, no scores — just clarity.' },
-        { title: 'For Practitioners', tagline: 'Post-session made simple', desc: 'Share resources, see between-session progress, and start every appointment already informed.' },
+        {
+          title: 'For Members',
+          tagline: 'Companion App',
+          features: [
+            'Log moments in 10 seconds (photo, voice, or text)',
+            'See AI-discovered patterns in mood and behavior',
+            'Chat with Bloom — an always-available AI companion',
+          ],
+          outcome: 'They stay engaged between sessions.'
+        },
+        {
+          title: 'For Practitioners',
+          tagline: 'Visibility Dashboard',
+          features: [
+            'Understand their week through what they share',
+            'Share worksheets and resources in one click',
+            'Start sessions already informed',
+          ],
+          outcome: 'Sessions go deeper, faster.'
+        },
       ],
-      bridge: 'One platform that connects both sides of care.',
+      bridge: 'One platform. Two sides of care. Connected.',
     },
     why: {
       label: 'WHY BLOOMSLINE',
@@ -413,12 +432,30 @@ const translations = {
     solution: {
       label: 'LA SOLUTION',
       title: 'Bloomsline remplit les 167.',
-      subtitle: 'Un soutien qui continue après la séance.',
+      subtitle: 'Une app compagnon pour les membres. Un outil de visibilité pour les praticiens.',
       pillars: [
-        { title: 'Pour les Membres', tagline: 'Remarquer ce qui compte', desc: 'Les patterns émergent. Le progrès devient visible. Pas de séries, pas de scores — juste de la clarté.' },
-        { title: 'Pour les Praticiens', tagline: 'L\'après-séance simplifié', desc: 'Partager des ressources, voir le progrès entre les séances, et commencer chaque RDV déjà informé.' },
+        {
+          title: 'Pour les Membres',
+          tagline: 'App Compagnon',
+          features: [
+            'Enregistrer des moments en 10 sec (photo, voix ou texte)',
+            'Voir les patterns découverts par l\'IA dans l\'humeur et le comportement',
+            'Discuter avec Bloom — un compagnon IA toujours disponible',
+          ],
+          outcome: 'Ils restent engagés entre les séances.'
+        },
+        {
+          title: 'Pour les Praticiens',
+          tagline: 'Tableau de Bord Visibilité',
+          features: [
+            'Comprendre leur semaine à travers ce qu\'ils partagent',
+            'Partager fiches et ressources en un clic',
+            'Commencer les séances déjà informé',
+          ],
+          outcome: 'Les séances vont plus loin, plus vite.'
+        },
       ],
-      bridge: 'Une plateforme qui connecte les deux côtés du soin.',
+      bridge: 'Une plateforme. Deux côtés du soin. Connectés.',
     },
     why: {
       label: 'POURQUOI BLOOMSLINE',
@@ -1060,7 +1097,7 @@ interface SolutionSlideProps {
 }
 
 function SolutionSlide({ t }: SolutionSlideProps) {
-  const icons = [Sparkles, Brain]
+  const icons = [Sparkles, Stethoscope]  // Members = teal, Practitioners = peachy
 
   return (
     <div className="h-full w-full flex items-center justify-center px-6">
@@ -1087,7 +1124,7 @@ function SolutionSlide({ t }: SolutionSlideProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-xl sm:text-2xl text-neutral-500 mb-12 max-w-2xl mx-auto"
+          className="text-xl sm:text-2xl text-neutral-500 mb-10 max-w-3xl mx-auto"
         >
           {t.subtitle}
         </motion.p>
@@ -1096,21 +1133,37 @@ function SolutionSlide({ t }: SolutionSlideProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="grid sm:grid-cols-2 gap-8 max-w-3xl mx-auto mb-10"
+          className="grid sm:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8"
         >
-          {t.pillars.map((pillar: { title: string; tagline: string; desc: string }, index: number) => {
+          {t.pillars.map((pillar: { title: string; tagline: string; features: string[]; outcome: string }, index: number) => {
             const Icon = icons[index]
-            const bgColors = ['bg-teal-100', 'bg-violet-100']
-            const textColors = ['text-teal-600', 'text-violet-600']
-            const taglineColors = ['text-teal-600', 'text-violet-600']
+            // Members = teal, Practitioners = #D4856A (peachy)
+            const bgColors = ['bg-teal-50', 'bg-[#D4856A]/10']
+            const borderColors = ['border-teal-200', 'border-[#D4856A]/30']
+            const textColors = ['text-teal-600', 'text-[#D4856A]']
+            const iconBgColors = ['bg-teal-100', 'bg-[#D4856A]/20']
             return (
-              <div key={index} className="p-8 rounded-2xl bg-white border border-neutral-200 shadow-lg text-left">
-                <div className={`w-12 h-12 rounded-xl ${bgColors[index]} flex items-center justify-center mb-4`}>
-                  <Icon className={`w-6 h-6 ${textColors[index]}`} />
+              <div key={index} className={`p-6 rounded-2xl ${bgColors[index]} border ${borderColors[index]} text-left`}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`w-10 h-10 rounded-xl ${iconBgColors[index]} flex items-center justify-center`}>
+                    <Icon className={`w-5 h-5 ${textColors[index]}`} />
+                  </div>
+                  <div>
+                    <p className={`text-xs font-medium ${textColors[index]} uppercase tracking-wide`}>{pillar.tagline}</p>
+                    <h3 className="font-semibold text-neutral-900 text-lg">{pillar.title}</h3>
+                  </div>
                 </div>
-                <p className={`text-sm font-medium ${taglineColors[index]} mb-1`}>{pillar.tagline}</p>
-                <h3 className="font-semibold text-neutral-900 text-xl mb-3">{pillar.title}</h3>
-                <p className="text-neutral-600 leading-relaxed">{pillar.desc}</p>
+                <ul className="space-y-2 mb-4">
+                  {pillar.features.map((feature: string, i: number) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-neutral-700">
+                      <Check className={`w-4 h-4 ${textColors[index]} mt-0.5 flex-shrink-0`} />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className={`text-sm font-medium ${textColors[index]} pt-3 border-t ${borderColors[index]}`}>
+                  → {pillar.outcome}
+                </p>
               </div>
             )
           })}
@@ -1120,7 +1173,7 @@ function SolutionSlide({ t }: SolutionSlideProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.5 }}
-          className="text-lg text-neutral-500"
+          className="text-lg font-medium text-neutral-700"
         >
           {t.bridge}
         </motion.p>

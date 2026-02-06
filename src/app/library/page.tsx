@@ -515,7 +515,7 @@ export default function LibraryPage() {
           leftContent={
             <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <BookOpen className="w-4 h-4" strokeWidth={2.5} />
-              <span>{locale === 'fr' ? 'Ressources' : 'Library'}</span>
+              <span>{locale === 'fr' ? 'Bibliothèque' : 'Library'}</span>
             </div>
           }
         />
