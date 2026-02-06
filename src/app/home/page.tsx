@@ -1317,93 +1317,62 @@ export default function MyResourcesPage() {
               </div>
             )}
 
-            {/* Connecting flowing curve between moments */}
-            {todaysMoments.length > 1 && (
-              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#10b981" />
-                    <stop offset="100%" stopColor="#14b8a6" />
-                  </linearGradient>
-                </defs>
-                {(() => {
-                  const sortedMoments = [...todaysMoments].sort(
-                    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-                  )
+            {/* Connecting line between moments */}
+            {todaysMoments.length > 1 && (() => {
+              const sortedMoments = [...todaysMoments].sort(
+                (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+              )
 
-                  // Calculate all points (with zoom-aware positioning)
-                  // Keep points slightly outside range so curve extends to edge
-                  const allPoints = sortedMoments.map(moment => {
-                    const momentTime = new Date(moment.created_at)
-                    const hours = momentTime.getHours() + momentTime.getMinutes() / 60
-                    const score = getMomentScore(moment)
-                    const x = hourToPosition(hours)
-                    return {
-                      x,
-                      y: 100 - ((score / 100) * 70 + 15),
-                    }
-                  })
+              // Calculate positions for all moments
+              const points = sortedMoments.map(moment => {
+                const momentTime = new Date(moment.created_at)
+                const hours = momentTime.getHours() + momentTime.getMinutes() / 60
+                const score = getMomentScore(moment)
+                const x = Math.max(0, Math.min(100, hourToPosition(hours)))
+                const y = 100 - ((score / 100) * 70 + 15) // Same formula as orb positioning
+                return { x, y }
+              }).filter(p => p.x >= 0 && p.x <= 100)
 
-                  // Filter to points that are in or near visible range
-                  const points = allPoints.filter(p => p.x >= -50 && p.x <= 150)
+              if (points.length < 2) return null
 
-                  // Build smooth curve path using cubic bezier
-                  if (points.length < 2) return null
+              // Build smooth curved SVG path
+              let pathD = `M ${points[0].x} ${points[0].y}`
+              for (let i = 1; i < points.length; i++) {
+                const prev = points[i - 1]
+                const curr = points[i]
+                // Control points for smooth S-curve
+                const cp1x = prev.x + (curr.x - prev.x) * 0.4
+                const cp1y = prev.y
+                const cp2x = prev.x + (curr.x - prev.x) * 0.6
+                const cp2y = curr.y
+                pathD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${curr.x} ${curr.y}`
+              }
 
-                  // Clamp points to visible bounds and ensure minimum horizontal spacing
-                  const minSpacing = 5 // Minimum 5% spacing between points
-                  const clampedPoints = points.map((p, i) => ({
-                    x: Math.max(0, Math.min(100, p.x)),
-                    y: p.y
-                  }))
-
-                  // Ensure minimum horizontal spacing between consecutive points
-                  for (let i = 1; i < clampedPoints.length; i++) {
-                    const prev = clampedPoints[i - 1]
-                    const curr = clampedPoints[i]
-                    if (curr.x - prev.x < minSpacing) {
-                      // Spread points apart while keeping them within bounds
-                      const midX = (prev.x + curr.x) / 2
-                      const halfSpacing = minSpacing / 2
-                      clampedPoints[i - 1].x = Math.max(0, midX - halfSpacing)
-                      clampedPoints[i].x = Math.min(100, midX + halfSpacing)
-                    }
-                  }
-
-                  let pathD = `M ${clampedPoints[0].x} ${clampedPoints[0].y}`
-
-                  for (let i = 1; i < clampedPoints.length; i++) {
-                    const prev = clampedPoints[i - 1]
-                    const curr = clampedPoints[i]
-
-                    // Control points for smooth curve
-                    const midX = (prev.x + curr.x) / 2
-                    const cp1x = midX
-                    const cp1y = prev.y
-                    const cp2x = midX
-                    const cp2y = curr.y
-
-                    pathD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${curr.x} ${curr.y}`
-                  }
-
-                  return (
-                    <motion.path
-                      key={`flow-curve-${zoomLevel}-${centerHour}`}
-                      initial={{ pathLength: 0, opacity: 0 }}
-                      animate={{ pathLength: 1, opacity: 1 }}
-                      transition={{ delay: 0.3, duration: 0.8, ease: "easeInOut" }}
-                      d={pathD}
-                      fill="none"
-                      stroke="url(#flowGradient)"
-                      strokeWidth="0.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      opacity="0.5"
-                    />
-                  )
-                })()}
-              </svg>
-            )}
+              return (
+                <svg
+                  className="absolute inset-0 w-full h-full pointer-events-none z-[5]"
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                  style={{ overflow: 'visible' }}
+                >
+                  <defs>
+                    <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#10b981" />
+                      <stop offset="100%" stopColor="#14b8a6" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d={pathD}
+                    fill="none"
+                    stroke="#10b981"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    opacity="0.6"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </svg>
+              )
+            })()}
 
             {/* Moment orbs - positioned by time and emotion score */}
             {todaysMoments.length > 0 && (
