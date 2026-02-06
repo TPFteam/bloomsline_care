@@ -1664,7 +1664,7 @@ export default function MyResourcesPage() {
                     originY: 0,
                   }}
                 >
-                  <Star className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 text-emerald-500 fill-emerald-500" />
+                  <Star className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 text-emerald-500 fill-emerald-500" />
                 </motion.div>
               )
             })()}
