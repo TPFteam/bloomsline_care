@@ -59,16 +59,11 @@ const translations = {
     },
     problem: {
       label: 'THE PROBLEM',
-      title: 'What happens after the session?',
-      gap: {
-        session: '1',
-        sessionLabel: 'hour of therapy',
-        life: '167',
-        lifeLabel: 'hours on your own',
-        total: '168',
-        totalLabel: 'hours in a week',
-      },
-      cost: "That's where progress is made — or lost.",
+      line1: 'People go to therapy for',
+      highlight1: '1 hour.',
+      line2: "Then they're alone for",
+      highlight2: '167 more.',
+      closer: "That's where they need support — and where progress gets lost.",
     },
     solution: {
       label: 'THE SOLUTION',
@@ -396,16 +391,11 @@ const translations = {
     },
     problem: {
       label: 'LE PROBLÈME',
-      title: 'Que se passe-t-il après la séance ?',
-      gap: {
-        session: '1',
-        sessionLabel: 'heure de thérapie',
-        life: '167',
-        lifeLabel: 'heures seul',
-        total: '168',
-        totalLabel: 'heures par semaine',
-      },
-      cost: "C'est là que le progrès se fait — ou se perd.",
+      line1: 'Les gens vont en thérapie pour',
+      highlight1: '1 heure.',
+      line2: 'Puis ils sont seuls pendant',
+      highlight2: '167 de plus.',
+      closer: "C'est là qu'ils ont besoin de soutien — et où le progrès se perd.",
     },
     solution: {
       label: 'LA SOLUTION',
@@ -968,70 +958,39 @@ function ProblemSlide({ t }: ProblemSlideProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-6"
+          className="text-teal-600 font-medium mb-12"
         >
           {t.label}
         </motion.p>
 
-        {/* Headline */}
+        {/* Line 1 */}
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 mb-16 leading-[1.1]"
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-600 mb-4 leading-[1.2]"
         >
-          {t.title}
+          {t.line1} <span className="font-bold text-teal-600">{t.highlight1}</span>
         </motion.h2>
 
-        {/* The Math - Stark Visual */}
-        <motion.div
+        {/* Line 2 */}
+        <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="mb-16"
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-600 mb-16 leading-[1.2]"
         >
-          {/* Visual Bar */}
-          <div className="relative h-12 w-full max-w-2xl mx-auto mb-8 rounded-full overflow-hidden bg-neutral-100">
-            {/* The 167 hours - empty/dashed */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-neutral-300 text-sm font-medium tracking-widest">· · · · · · · · · · · · · · · · · · · ·</span>
-            </div>
-            {/* The 1 hour - filled */}
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: '0.6%' }}
-              transition={{ duration: 0.8, delay: 0.5 }}
-              className="absolute left-0 top-0 bottom-0 bg-teal-500 rounded-full"
-            />
-          </div>
-
-          {/* Numbers */}
-          <div className="flex justify-center items-baseline gap-4 sm:gap-8">
-            <div className="text-center">
-              <span className="text-6xl sm:text-7xl lg:text-8xl font-extralight text-neutral-200">{t.gap.total}</span>
-              <p className="text-sm text-neutral-400 mt-2">{t.gap.totalLabel}</p>
-            </div>
-            <span className="text-4xl text-neutral-300 font-extralight">=</span>
-            <div className="text-center">
-              <span className="text-6xl sm:text-7xl lg:text-8xl font-bold text-teal-500">{t.gap.session}</span>
-              <p className="text-sm text-neutral-600 mt-2">{t.gap.sessionLabel}</p>
-            </div>
-            <span className="text-4xl text-neutral-300 font-extralight">+</span>
-            <div className="text-center">
-              <span className="text-6xl sm:text-7xl lg:text-8xl font-extralight text-neutral-300">{t.gap.life}</span>
-              <p className="text-sm text-neutral-400 mt-2">{t.gap.lifeLabel}</p>
-            </div>
-          </div>
-        </motion.div>
+          {t.line2} <span className="font-bold text-neutral-300">{t.highlight2}</span>
+        </motion.h2>
 
         {/* Closing Statement */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="text-xl sm:text-2xl text-neutral-600 max-w-2xl mx-auto"
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="text-xl sm:text-2xl text-neutral-500 max-w-2xl mx-auto"
         >
-          {t.cost}
+          {t.closer}
         </motion.p>
       </div>
     </div>
