@@ -20,10 +20,7 @@ import {
   Lightbulb,
   Globe,
   Building2,
-  Zap,
-  Camera,
-  EyeOff,
-  RefreshCw
+  Zap
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { Button } from '@/components/ui/button'
@@ -993,96 +990,79 @@ interface ProblemSlideProps {
 }
 
 function ProblemSlide({ t }: ProblemSlideProps) {
-  const iconMap: Record<string, React.ReactNode> = {
-    camera: <Camera className="w-6 h-6" />,
-    eye: <EyeOff className="w-6 h-6" />,
-    refresh: <RefreshCw className="w-6 h-6" />,
-  }
-
   return (
     <div className="h-full w-full flex items-center justify-center px-8 lg:px-16">
-      <div className="w-full max-w-7xl mx-auto">
-        {/* Top Section - Label + Headline */}
-        <div className="text-center mb-8">
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-teal-600 font-medium mb-4"
-          >
-            {t.label}
-          </motion.p>
+      <div className="w-full max-w-4xl mx-auto text-center">
+        {/* Label */}
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-teal-600 font-medium mb-6"
+        >
+          {t.label}
+        </motion.p>
 
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 mb-2 leading-[1.1]"
-          >
-            {t.title} <span className="text-neutral-400">{t.subtitle} <span className="text-red-500 font-medium">{t.highlight}</span> {t.subtitleEnd}</span>
-          </motion.h2>
-        </div>
+        {/* Headline */}
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 mb-16 leading-[1.1]"
+        >
+          {t.title} <span className="text-neutral-400">{t.subtitle} <span className="text-red-500 font-medium">{t.highlight}</span> {t.subtitleEnd}</span>
+        </motion.h2>
 
-        {/* Two Column Layout - Gap & What's Lost */}
+        {/* The Math - Stark Visual */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8"
+          className="mb-16"
         >
-          {/* Left - Visual Gap */}
-          <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-neutral-50">
-            <p className="text-sm font-medium text-neutral-500 uppercase tracking-wide mb-4">{t.gap.title}</p>
-            <div className="flex items-center gap-6 mb-4">
-              <div className="w-24 h-24 rounded-2xl bg-teal-100 flex items-center justify-center">
-                <span className="text-4xl font-bold text-teal-600">{t.gap.session}</span>
-              </div>
-              <div className="text-neutral-300 text-3xl">{t.gap.arrow}</div>
-              <div className="w-32 h-24 rounded-2xl bg-white border-2 border-dashed border-neutral-300 flex items-center justify-center">
-                <span className="text-4xl font-bold text-neutral-400">{t.gap.life}</span>
-              </div>
+          {/* Visual Bar */}
+          <div className="relative h-12 w-full max-w-2xl mx-auto mb-8 rounded-full overflow-hidden bg-neutral-100">
+            {/* The 167 hours - empty/dashed */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-neutral-300 text-sm font-medium tracking-widest">· · · · · · · · · · · · · · · · · · · ·</span>
             </div>
-            <div className="flex gap-12 text-sm text-neutral-500">
-              <span>{t.gap.sessionLabel}</span>
-              <span>{t.gap.lifeLabel}</span>
-            </div>
+            {/* The 1 hour - filled */}
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: '0.6%' }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              className="absolute left-0 top-0 bottom-0 bg-teal-500 rounded-full"
+            />
           </div>
 
-          {/* Right - What's Lost */}
-          <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-red-50/50">
-            <p className="text-sm font-medium text-red-400 uppercase tracking-wide mb-4">{t.lostTitle}</p>
-            <div className="flex justify-center gap-8">
-              {t.lost.map((item: { icon: string; label: string }, index: number) => (
-                <div key={index} className="flex flex-col items-center gap-3 text-center">
-                  <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-red-400 shadow-sm">
-                    {iconMap[item.icon]}
-                  </div>
-                  <span className="text-sm text-neutral-600 leading-tight max-w-[100px]">{item.label}</span>
-                </div>
-              ))}
+          {/* Numbers */}
+          <div className="flex justify-center items-baseline gap-4 sm:gap-8">
+            <div className="text-center">
+              <span className="text-6xl sm:text-7xl lg:text-8xl font-extralight text-neutral-200">{t.gap.total}</span>
+              <p className="text-sm text-neutral-400 mt-2">{t.gap.totalLabel}</p>
+            </div>
+            <span className="text-4xl text-neutral-300 font-extralight">=</span>
+            <div className="text-center">
+              <span className="text-6xl sm:text-7xl lg:text-8xl font-bold text-teal-500">{t.gap.session}</span>
+              <p className="text-sm text-neutral-600 mt-2">{t.gap.sessionLabel}</p>
+            </div>
+            <span className="text-4xl text-neutral-300 font-extralight">+</span>
+            <div className="text-center">
+              <span className="text-6xl sm:text-7xl lg:text-8xl font-extralight text-neutral-300">{t.gap.life}</span>
+              <p className="text-sm text-neutral-400 mt-2">{t.gap.lifeLabel}</p>
             </div>
           </div>
         </motion.div>
 
-        {/* Bottom Center - Stats with Message */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.35 }}
-          className="text-center"
+        {/* Closing Statement */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+          className="text-xl sm:text-2xl text-neutral-600 max-w-2xl mx-auto"
         >
-          <p className="text-xl text-neutral-600 mb-6">
-            {t.cost}
-          </p>
-          <div className="flex justify-center gap-12 lg:gap-20">
-            {t.stats.map((stat: { number: string; label: string }, index: number) => (
-              <div key={index} className="text-center">
-                <p className="text-5xl lg:text-6xl font-bold text-red-500">{stat.number}</p>
-                <p className="text-sm text-neutral-500 mt-1">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </motion.div>
+          {t.cost}
+        </motion.p>
       </div>
     </div>
   )
