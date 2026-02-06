@@ -65,9 +65,9 @@ const translations = {
       highlight2: '167 more.',
       closer: "That's where they need support — and where progress gets lost.",
       stats: [
-        { value: '47%', label: 'drop out of therapy early', source: 'APA Meta-analysis' },
-        { value: '169M', label: 'Americans in therapist shortage areas', source: 'SAMHSA' },
-        { value: '1 in 5', label: 'young adults use AI for mental health support', source: 'Brown University' },
+        { value: '47%', label: 'drop out of therapy early', source: 'PMC Research', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
+        { value: '169M', label: 'Americans in therapist shortage areas', source: 'KFF / SAMHSA', url: 'https://www.kff.org/other/state-indicator/mental-health-care-health-professional-shortage-areas-hpsas/' },
+        { value: '1 in 5', label: 'young adults use AI for mental health', source: 'Brown University', url: 'https://sph.brown.edu/news/2025-11-18/teens-ai-chatbots' },
       ],
     },
     solution: {
@@ -402,9 +402,9 @@ const translations = {
       highlight2: '167 de plus.',
       closer: "C'est là qu'ils ont besoin de soutien — et où le progrès se perd.",
       stats: [
-        { value: '47%', label: 'abandonnent la thérapie prématurément', source: 'APA Meta-analysis' },
-        { value: '169M', label: 'Américains en zone de pénurie de psys', source: 'SAMHSA' },
-        { value: '1 sur 5', label: 'jeunes adultes utilisent l\'IA pour le soutien mental', source: 'Brown University' },
+        { value: '47%', label: 'abandonnent la thérapie prématurément', source: 'PMC Research', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
+        { value: '169M', label: 'Américains en zone de pénurie de psys', source: 'KFF / SAMHSA', url: 'https://www.kff.org/other/state-indicator/mental-health-care-health-professional-shortage-areas-hpsas/' },
+        { value: '1 sur 5', label: 'jeunes utilisent l\'IA pour la santé mentale', source: 'Brown University', url: 'https://sph.brown.edu/news/2025-11-18/teens-ai-chatbots' },
       ],
     },
     solution: {
@@ -1010,11 +1010,18 @@ function ProblemSlide({ t }: ProblemSlideProps) {
           transition={{ duration: 0.5, delay: 0.7 }}
           className="flex flex-col sm:flex-row justify-center gap-8 sm:gap-12"
         >
-          {t.stats.map((stat: { value: string; label: string; source: string }, index: number) => (
+          {t.stats.map((stat: { value: string; label: string; source: string; url: string }, index: number) => (
             <div key={index} className="text-center">
               <p className="text-3xl sm:text-4xl font-bold text-red-500 mb-1">{stat.value}</p>
               <p className="text-sm text-neutral-600 mb-1">{stat.label}</p>
-              <p className="text-xs text-neutral-400">{stat.source}</p>
+              <a
+                href={stat.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-neutral-400 hover:text-teal-600 underline underline-offset-2 transition-colors"
+              >
+                {stat.source} ↗
+              </a>
             </div>
           ))}
         </motion.div>
