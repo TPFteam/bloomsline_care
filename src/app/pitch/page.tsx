@@ -64,6 +64,11 @@ const translations = {
       line2: "Then they're alone for",
       highlight2: '167 more.',
       closer: "That's where they need support — and where progress gets lost.",
+      stats: [
+        { value: '47%', label: 'drop out of therapy early', source: 'APA Meta-analysis' },
+        { value: '169M', label: 'Americans in therapist shortage areas', source: 'SAMHSA' },
+        { value: '1 in 5', label: 'young adults use AI for mental health support', source: 'Brown University' },
+      ],
     },
     solution: {
       label: 'THE SOLUTION',
@@ -396,6 +401,11 @@ const translations = {
       line2: 'Puis ils sont seuls pendant',
       highlight2: '167 de plus.',
       closer: "C'est là qu'ils ont besoin de soutien — et où le progrès se perd.",
+      stats: [
+        { value: '47%', label: 'abandonnent la thérapie prématurément', source: 'APA Meta-analysis' },
+        { value: '169M', label: 'Américains en zone de pénurie de psys', source: 'SAMHSA' },
+        { value: '1 sur 5', label: 'jeunes adultes utilisent l\'IA pour le soutien mental', source: 'Brown University' },
+      ],
     },
     solution: {
       label: 'LA SOLUTION',
@@ -952,13 +962,13 @@ interface ProblemSlideProps {
 function ProblemSlide({ t }: ProblemSlideProps) {
   return (
     <div className="h-full w-full flex items-center justify-center px-8 lg:px-16">
-      <div className="w-full max-w-4xl mx-auto text-center">
+      <div className="w-full max-w-5xl mx-auto text-center">
         {/* Label */}
         <motion.p
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-12"
+          className="text-teal-600 font-medium mb-8"
         >
           {t.label}
         </motion.p>
@@ -968,7 +978,7 @@ function ProblemSlide({ t }: ProblemSlideProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-600 mb-4 leading-[1.2]"
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-600 mb-2 leading-[1.2]"
         >
           {t.line1} <span className="font-bold text-teal-600">{t.highlight1}</span>
         </motion.h2>
@@ -978,7 +988,7 @@ function ProblemSlide({ t }: ProblemSlideProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-600 mb-16 leading-[1.2]"
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-600 mb-8 leading-[1.2]"
         >
           {t.line2} <span className="font-bold text-neutral-300">{t.highlight2}</span>
         </motion.h2>
@@ -988,10 +998,26 @@ function ProblemSlide({ t }: ProblemSlideProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.5 }}
-          className="text-xl sm:text-2xl text-neutral-500 max-w-2xl mx-auto"
+          className="text-lg sm:text-xl text-neutral-500 max-w-2xl mx-auto mb-12"
         >
           {t.closer}
         </motion.p>
+
+        {/* Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
+          className="flex flex-col sm:flex-row justify-center gap-8 sm:gap-12"
+        >
+          {t.stats.map((stat: { value: string; label: string; source: string }, index: number) => (
+            <div key={index} className="text-center">
+              <p className="text-3xl sm:text-4xl font-bold text-red-500 mb-1">{stat.value}</p>
+              <p className="text-sm text-neutral-600 mb-1">{stat.label}</p>
+              <p className="text-xs text-neutral-400">{stat.source}</p>
+            </div>
+          ))}
+        </motion.div>
       </div>
     </div>
   )
