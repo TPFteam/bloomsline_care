@@ -59,10 +59,11 @@ const translations = {
     },
     problem: {
       label: 'THE PROBLEM',
-      line1: 'People go to therapy for',
-      highlight1: '1 hour.',
-      line2: "Then they're alone for",
-      highlight2: '167 more.',
+      line1: 'There are 168 hours in a week.',
+      line2: 'Therapy is',
+      highlight1: '1.',
+      line3: 'What happens in the other',
+      highlight2: '167?',
       closer: "That's where they need support — and where progress gets lost.",
       stats: [
         { value: '~50%', label: 'of session time spent "catching up"', source: 'APA Practice', url: 'https://www.apa.org/monitor/2024/01/trends-pathways-access-mental-health-care' },
@@ -397,10 +398,11 @@ const translations = {
     },
     problem: {
       label: 'LE PROBLÈME',
-      line1: 'Les gens vont en thérapie pour',
-      highlight1: '1 heure.',
-      line2: 'Puis ils sont seuls pendant',
-      highlight2: '167 de plus.',
+      line1: 'Il y a 168 heures dans une semaine.',
+      line2: 'La thérapie, c\'est',
+      highlight1: '1.',
+      line3: 'Que se passe-t-il dans les',
+      highlight2: '167 autres ?',
       closer: "C'est là qu'ils ont besoin de soutien — et où le progrès se perd.",
       stats: [
         { value: '~50%', label: 'du temps de séance à "rattraper"', source: 'APA Practice', url: 'https://www.apa.org/monitor/2024/01/trends-pathways-access-mental-health-care' },
@@ -975,24 +977,34 @@ function ProblemSlide({ t }: ProblemSlideProps) {
           {t.label}
         </motion.p>
 
-        {/* Line 1 */}
-        <motion.h2
+        {/* Line 1: Context */}
+        <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-600 mb-2 leading-[1.2]"
+          className="text-2xl sm:text-3xl text-neutral-400 mb-6"
         >
-          {t.line1} <span className="font-bold text-teal-600">{t.highlight1}</span>
-        </motion.h2>
+          {t.line1}
+        </motion.p>
 
-        {/* Line 2 */}
+        {/* Line 2: Therapy is 1 */}
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-600 mb-2 leading-[1.2]"
+        >
+          {t.line2} <span className="font-bold text-teal-600 text-5xl sm:text-6xl lg:text-7xl">{t.highlight1}</span>
+        </motion.h2>
+
+        {/* Line 3: What about the other 167? */}
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
           className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-600 mb-8 leading-[1.2]"
         >
-          {t.line2} <span className="font-bold text-neutral-300">{t.highlight2}</span>
+          {t.line3} <span className="font-bold text-neutral-300 text-5xl sm:text-6xl lg:text-7xl">{t.highlight2}</span>
         </motion.h2>
 
         {/* Closing Statement */}
