@@ -279,51 +279,190 @@ function PractitionerNewContent() {
 
       <main>
         {/* Hero Section */}
-        <section className="pt-32 pb-20 bg-gradient-to-b from-orange-50/50 to-white">
+        <section className="pt-32 pb-20 bg-gradient-to-b from-orange-50/50 to-white overflow-hidden">
           <div className="container mx-auto px-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="max-w-4xl mx-auto text-center"
-            >
-              <span className="inline-block px-4 py-2 bg-[#D4856A]/10 text-[#D4856A] rounded-full text-sm font-medium mb-6">
-                {l(content.hero.tagline)}
-              </span>
+            <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-center">
+              {/* Left: Content */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="text-center lg:text-left flex-1"
+              >
+                <span className="inline-block px-4 py-2 bg-[#D4856A]/10 text-[#D4856A] rounded-full text-sm font-medium mb-6">
+                  {l(content.hero.tagline)}
+                </span>
 
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-light text-neutral-900 mb-4 leading-tight">
-                {l(content.hero.headline)}
-                <br />
-                <span className="text-[#D4856A]">{l(content.hero.headlineAccent)}</span>
-              </h1>
+                <h1 className="text-4xl sm:text-5xl lg:text-[3.2rem] xl:text-6xl font-light text-neutral-900 mb-4 leading-tight">
+                  {l(content.hero.headline)}
+                  <br />
+                  <span className="text-[#D4856A] lg:whitespace-nowrap">{l(content.hero.headlineAccent)}</span>
+                </h1>
 
-              <p className="text-lg sm:text-xl text-neutral-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-                {l(content.hero.subtitle)}
-              </p>
+                <p className="text-lg sm:text-xl text-neutral-600 max-w-2xl mx-auto lg:mx-0 mb-10 leading-relaxed">
+                  {l(content.hero.subtitle)}
+                </p>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-                <button
-                  onClick={handleOpenModal}
-                  className="px-8 py-4 bg-[#D4856A] text-white rounded-full font-medium inline-flex items-center gap-2 hover:bg-[#c27459] transition-colors shadow-lg shadow-[#D4856A]/30"
+                <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-6">
+                  <button
+                    onClick={handleOpenModal}
+                    className="px-8 py-4 bg-[#D4856A] text-white rounded-full font-medium inline-flex items-center gap-2 hover:bg-[#c27459] transition-colors shadow-lg shadow-[#D4856A]/30"
+                  >
+                    {l(content.hero.cta)}
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                  <a
+                    href={DEMO_BOOKING_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-8 py-4 rounded-full border-2 border-neutral-300 text-neutral-700 font-medium inline-flex items-center gap-2 hover:border-neutral-400 transition-colors"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    {l(content.hero.ctaSecondary)}
+                  </a>
+                </div>
+
+                <p className="text-sm text-neutral-500">
+                  {l(content.hero.trust)}
+                </p>
+              </motion.div>
+
+              {/* Right: Client Profile Animation */}
+              <div className="hidden lg:block relative h-[380px] w-[440px] flex-shrink-0">
+                {/* Profile card appears */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.6, delay: 2.2 }}
+                  className="absolute inset-0 bg-white rounded-2xl shadow-2xl shadow-neutral-200/50 border border-neutral-100 overflow-hidden"
                 >
-                  {l(content.hero.cta)}
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-                <a
-                  href={DEMO_BOOKING_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-8 py-4 rounded-full border-2 border-neutral-300 text-neutral-700 font-medium inline-flex items-center gap-2 hover:border-neutral-400 transition-colors"
+                  {/* Profile header */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 2.5, duration: 0.4 }}
+                    className="px-5 py-4 border-b border-neutral-100 flex items-center gap-3"
+                  >
+                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#D4856A] to-orange-300 flex items-center justify-center text-white font-medium">
+                      MR
+                    </div>
+                    <div>
+                      <div className="font-medium text-neutral-900">Marie R.</div>
+                      <div className="text-xs text-neutral-500">{locale === 'fr' ? 'Cliente depuis 8 mois' : 'Client for 8 months'}</div>
+                    </div>
+                    <div className="ml-auto px-2 py-1 bg-green-50 text-green-600 text-xs rounded-full font-medium">
+                      {locale === 'fr' ? 'Actif' : 'Active'}
+                    </div>
+                  </motion.div>
+                </motion.div>
+
+                {/* Floating Note */}
+                <motion.div
+                  initial={{ x: -60, y: 40, rotate: -12, opacity: 0 }}
+                  animate={{ x: 16, y: 90, rotate: 0, opacity: 1 }}
+                  transition={{ duration: 2.2, delay: 0.2, ease: "easeOut" }}
+                  className="absolute z-10"
                 >
-                  <Calendar className="w-4 h-4" />
-                  {l(content.hero.ctaSecondary)}
-                </a>
+                  <motion.div
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 2.5 }}
+                    className="bg-amber-50 rounded-xl p-3 shadow-lg border border-amber-100 w-[195px]"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText className="w-3.5 h-3.5 text-amber-600" />
+                      <span className="text-xs font-medium text-amber-700">{locale === 'fr' ? 'Note de séance' : 'Session note'}</span>
+                    </div>
+                    <p className="text-xs text-amber-900/70 leading-relaxed line-clamp-2">
+                      {locale === 'fr' ? 'Progrès notable dans la gestion du stress. Continue les exercices de respiration...' : 'Notable progress in stress management. Continuing breathing exercises...'}
+                    </p>
+                  </motion.div>
+                </motion.div>
+
+                {/* Floating Session */}
+                <motion.div
+                  initial={{ x: 400, y: 20, rotate: 10, opacity: 0 }}
+                  animate={{ x: 224, y: 90, rotate: 0, opacity: 1 }}
+                  transition={{ duration: 2.2, delay: 0.4, ease: "easeOut" }}
+                  className="absolute z-10"
+                >
+                  <motion.div
+                    animate={{ y: [0, -3, 0] }}
+                    transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 2.7 }}
+                    className="bg-blue-50 rounded-xl p-3 shadow-lg border border-blue-100 w-[195px]"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                      <span className="text-xs font-medium text-blue-700">{locale === 'fr' ? 'Prochaine séance' : 'Next session'}</span>
+                    </div>
+                    <p className="text-sm font-medium text-blue-900">{locale === 'fr' ? 'Lundi, 14h00' : 'Monday, 2:00 PM'}</p>
+                    <p className="text-xs text-blue-600">{locale === 'fr' ? 'Suivi mensuel' : 'Monthly follow-up'}</p>
+                  </motion.div>
+                </motion.div>
+
+                {/* Floating Progress */}
+                <motion.div
+                  initial={{ x: -40, y: 280, rotate: -8, opacity: 0 }}
+                  animate={{ x: 16, y: 200, rotate: 0, opacity: 1 }}
+                  transition={{ duration: 2.2, delay: 0.6, ease: "easeOut" }}
+                  className="absolute z-10"
+                >
+                  <motion.div
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 2.9 }}
+                    className="bg-green-50 rounded-xl p-3 shadow-lg border border-green-100 w-[195px]"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <BarChart3 className="w-3.5 h-3.5 text-green-600" />
+                      <span className="text-xs font-medium text-green-700">{locale === 'fr' ? 'Progrès' : 'Progress'}</span>
+                    </div>
+                    <div className="flex gap-1.5">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <div
+                          key={i}
+                          className={`h-8 flex-1 rounded-md ${i <= 4 ? 'bg-green-400' : 'bg-green-200'}`}
+                          style={{ height: `${20 + i * 6}px` }}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-xs text-green-700 mt-2">{locale === 'fr' ? 'En bonne voie' : 'On track'}</p>
+                  </motion.div>
+                </motion.div>
+
+                {/* Floating Bloom Pulse */}
+                <motion.div
+                  initial={{ x: 380, y: 300, rotate: 15, opacity: 0 }}
+                  animate={{ x: 224, y: 200, rotate: 0, opacity: 1 }}
+                  transition={{ duration: 2.2, delay: 0.8, ease: "easeOut" }}
+                  className="absolute z-10"
+                >
+                  <motion.div
+                    animate={{ y: [0, -3, 0] }}
+                    transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 3.1 }}
+                    className="bg-[#D4856A]/10 rounded-xl p-3 shadow-lg border border-[#D4856A]/20 w-[195px]"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="w-3.5 h-3.5 text-[#D4856A]" />
+                      <span className="text-xs font-medium text-[#D4856A]">Bloom Pulse</span>
+                    </div>
+                    <p className="text-xs text-neutral-700 leading-relaxed line-clamp-2">
+                      {locale === 'fr' ? 'Évolution positive. Thèmes clés : confiance, communication...' : 'Positive evolution. Key themes: confidence, communication...'}
+                    </p>
+                  </motion.div>
+                </motion.div>
+
+                {/* Caption */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 3, duration: 0.5 }}
+                  className="absolute bottom-3 left-0 right-0 text-center"
+                >
+                  <span className="text-sm text-[#D4856A] font-medium">
+                    {locale === 'fr' ? 'Un profil complet, une vraie connexion' : 'A complete profile, a real connection'}
+                  </span>
+                </motion.div>
               </div>
-
-              <p className="text-sm text-neutral-500">
-                {l(content.hero.trust)}
-              </p>
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -541,28 +680,93 @@ function PractitionerNewContent() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="max-w-2xl mx-auto"
+              className="max-w-4xl mx-auto"
             >
-              <div className="text-center mb-10">
-                <h2 className="text-3xl font-light text-neutral-900 mb-3">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-3">
                   {l(content.security.headline)}
                 </h2>
-                <p className="text-neutral-600">
+                <p className="text-neutral-600 text-lg">
                   {l(content.security.subtitle)}
                 </p>
               </div>
 
-              <div className="bg-white rounded-2xl p-6 border border-neutral-200">
-                <div className="space-y-4">
-                  {content.security.points.map((point, i) => (
-                    <div key={i} className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center flex-shrink-0">
-                        <point.icon className="w-5 h-5 text-neutral-600" />
-                      </div>
-                      <span className="text-neutral-700">{l(point.text)}</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {/* Encryption */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.1 }}
+                  className="bg-white rounded-2xl p-5 border border-neutral-200"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-4">
+                    <Lock className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <h3 className="font-medium text-neutral-900 mb-1">
+                    {locale === 'fr' ? 'Sécurisé par défaut' : 'Secure by default'}
+                  </h3>
+                  <p className="text-sm text-neutral-500">
+                    {locale === 'fr' ? 'Données chiffrées en transit et au repos' : 'Data encrypted in transit and at rest'}
+                  </p>
+                </motion.div>
+
+                {/* GDPR */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-white rounded-2xl p-5 border border-neutral-200"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center mb-4">
+                    <Shield className="w-6 h-6 text-green-600" />
+                  </div>
+                  <h3 className="font-medium text-neutral-900 mb-1">
+                    {locale === 'fr' ? 'Conforme RGPD' : 'GDPR compliant'}
+                  </h3>
+                  <p className="text-sm text-neutral-500">
+                    {locale === 'fr' ? 'Respect des normes européennes' : 'European standards compliance'}
+                  </p>
+                </motion.div>
+
+                {/* No AI training */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.3 }}
+                  className="bg-white rounded-2xl p-5 border border-neutral-200"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mb-4">
+                    <Eye className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <h3 className="font-medium text-neutral-900 mb-1">
+                    {locale === 'fr' ? 'Vos données restent vôtres' : 'Your data stays yours'}
+                  </h3>
+                  <p className="text-sm text-neutral-500">
+                    {locale === 'fr' ? 'Jamais utilisées pour entraîner l\'IA' : 'Never used to train AI models'}
+                  </p>
+                </motion.div>
+
+                {/* Deletion */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.4 }}
+                  className="bg-white rounded-2xl p-5 border border-neutral-200"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-[#D4856A]/10 flex items-center justify-center mb-4">
+                    <X className="w-6 h-6 text-[#D4856A]" />
+                  </div>
+                  <h3 className="font-medium text-neutral-900 mb-1">
+                    {locale === 'fr' ? 'Suppression complète' : 'Full deletion'}
+                  </h3>
+                  <p className="text-sm text-neutral-500">
+                    {locale === 'fr' ? 'Suppression permanente sur demande' : 'Permanent deletion on request'}
+                  </p>
+                </motion.div>
               </div>
             </motion.div>
           </div>
@@ -576,31 +780,46 @@ function PractitionerNewContent() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="max-w-2xl mx-auto"
+              className="max-w-3xl mx-auto"
             >
-              <h2 className="text-3xl font-light text-neutral-900 text-center mb-10">
-                {l(content.faq.headline)}
-              </h2>
+              <div className="text-center mb-12">
+                <span className="inline-block px-4 py-2 bg-[#D4856A]/10 text-[#D4856A] rounded-full text-sm font-medium mb-4">
+                  FAQ
+                </span>
+                <h2 className="text-3xl sm:text-4xl font-light text-neutral-900">
+                  {locale === 'fr' ? 'Questions fréquentes' : 'Frequently asked questions'}
+                </h2>
+              </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {content.faq.items.map((item, i) => (
-                  <div
+                  <motion.div
                     key={i}
-                    className="bg-neutral-50 rounded-xl overflow-hidden"
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className={`rounded-2xl border transition-all ${openFaq === i ? 'bg-white border-[#D4856A]/30 shadow-lg' : 'bg-neutral-50 border-transparent hover:border-neutral-200'}`}
                   >
                     <button
                       onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                      className="w-full px-6 py-4 flex items-center justify-between text-left"
+                      className="w-full px-6 py-5 flex items-center justify-between text-left"
                     >
-                      <span className="font-medium text-neutral-900">{l(item.q)}</span>
-                      <ChevronDown className={`w-5 h-5 text-neutral-400 transition-transform ${openFaq === i ? 'rotate-180' : ''}`} />
+                      <span className="font-medium text-neutral-900 pr-4">{l(item.q)}</span>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${openFaq === i ? 'bg-[#D4856A] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
+                        <ChevronDown className={`w-4 h-4 transition-transform ${openFaq === i ? 'rotate-180' : ''}`} />
+                      </div>
                     </button>
                     {openFaq === i && (
-                      <div className="px-6 pb-4">
-                        <p className="text-neutral-600">{l(item.a)}</p>
-                      </div>
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="px-6 pb-5"
+                      >
+                        <p className="text-neutral-600 leading-relaxed">{l(item.a)}</p>
+                      </motion.div>
                     )}
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </motion.div>
