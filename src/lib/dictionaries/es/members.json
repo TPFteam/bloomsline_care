@@ -115,6 +115,7 @@
     "keyStrengths": "Fortalezas clave",
     "areasOfSensitivity": "Áreas de sensibilidad",
     "therapeuticContext": "Contexto terapéutico",
+    "currentTreatment": "Tratamiento actual",
     "emergencyContact": "Contacto de emergencia",
     "recentNotes": "Notas recientes",
     "allNotes": "Ver todas las notas",
@@ -215,7 +216,15 @@
     "uploadedOn": "Subido el",
     "download": "Descargar",
     "delete": "Eliminar",
-    "confirmDelete": "¿Estás seguro de que deseas eliminar este archivo?"
+    "confirmDelete": "¿Estás seguro de que deseas eliminar este archivo?",
+    "newFolder": "Nueva carpeta",
+    "folderName": "Nombre de la carpeta",
+    "createFolder": "Crear carpeta",
+    "emptyFolder": "Esta carpeta está vacía",
+    "confirmDeleteFolder": "¿Eliminar esta carpeta y todo su contenido?",
+    "open": "Abrir",
+    "rename": "Renombrar",
+    "view": "Ver"
   },
 
   "fileCategories": {
