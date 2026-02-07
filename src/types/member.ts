@@ -35,6 +35,7 @@ export interface MemberPreferences {
   key_strengths: string[] | BilingualStringArray
   areas_of_sensitivity: string[] | BilingualStringArray
   therapeutic_context: string | BilingualString | null
+  current_treatment: string | BilingualString | null
   preferred_contact_method: 'email' | 'phone' | 'text'
   preferred_session_format: SessionFormat
 }
@@ -186,9 +187,18 @@ export interface MemberFile {
   category: FileCategory
   description: string | null
 
+  // Folder hierarchy
+  is_folder: boolean
+  parent_folder_id: string | null
+
   // Metadata
   created_at: string
   updated_at: string
+}
+
+export interface FolderBreadcrumb {
+  id: string
+  name: string
 }
 
 export interface SharedResource {

@@ -109,12 +109,13 @@
   },
 
   "overview": {
-    "aboutClient": "Contexte",
+    "aboutClient": "Anamnèse",
     "preferences": "Points d'attention",
     "communicationStyle": "Style de Communication",
     "keyStrengths": "Points Forts",
     "areasOfSensitivity": "Zones de Sensibilité",
     "therapeuticContext": "Contexte Thérapeutique",
+    "currentTreatment": "Traitement en cours",
     "emergencyContact": "Contact d'Urgence",
     "recentNotes": "Notes récentes",
     "allNotes": "Voir Toutes les Notes",
@@ -215,7 +216,15 @@
     "uploadedOn": "Téléchargé le",
     "download": "Télécharger",
     "delete": "Supprimer",
-    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce fichier ?"
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce fichier ?",
+    "newFolder": "Nouveau dossier",
+    "folderName": "Nom du dossier",
+    "createFolder": "Créer le dossier",
+    "emptyFolder": "Ce dossier est vide",
+    "confirmDeleteFolder": "Supprimer ce dossier et tout son contenu ?",
+    "open": "Ouvrir",
+    "rename": "Renommer",
+    "view": "Voir"
   },
 
   "fileCategories": {

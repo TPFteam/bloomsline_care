@@ -12,6 +12,7 @@ import {
   FileType,
   Upload,
   Folder,
+  FolderOpen,
   X,
   Info,
   Eye,
@@ -24,12 +25,22 @@ import {
   Calendar,
   Clock,
   Copy,
+  MoreHorizontal,
+  ChevronRight,
+  FolderPlus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
-import type { MemberFile, FileCategory, Member, EmergencyContact } from '@/types/member'
+import type { MemberFile, FileCategory, Member, EmergencyContact, FolderBreadcrumb } from '@/types/member'
 
 interface FilesTabProps {
   memberId: string
@@ -64,12 +75,27 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
 
+  // Folder navigation state
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
+  const [folderPath, setFolderPath] = useState<FolderBreadcrumb[]>([])
+
   // Upload modal state
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileTitle, setFileTitle] = useState('')
   const [fileDescription, setFileDescription] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<FileCategory>('general')
+
+  // New folder modal state
+  const [showNewFolderModal, setShowNewFolderModal] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const [creatingFolder, setCreatingFolder] = useState(false)
+
+  // Rename modal state
+  const [showRenameModal, setShowRenameModal] = useState(false)
+  const [renameItem, setRenameItem] = useState<MemberFile | null>(null)
+  const [renameName, setRenameName] = useState('')
+  const [renaming, setRenaming] = useState(false)
 
   // Emergency contact edit states
   const [editingEmergency, setEditingEmergency] = useState(false)
@@ -81,28 +107,110 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
   const [emergencyNotes, setEmergencyNotes] = useState(member.emergency_contact.notes || '')
 
   useEffect(() => {
-    fetchFiles()
+    fetchFolderContents(null)
   }, [memberId])
 
-  const fetchFiles = async () => {
+  const fetchFolderContents = async (folderId: string | null) => {
     try {
+      setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      // First, try a simple fetch to check if folder columns exist
       const { data, error } = await supabase
         .from('member_files')
         .select('*')
         .eq('member_id', memberId)
         .eq('practitioner_id', user.id)
-        .order('created_at', { ascending: false })
 
       if (error && error.code !== '42P01') throw error
 
-      setFiles(data || [])
+      const allFiles = data || []
+
+      // Check if folder columns exist by looking at the data
+      const hasFolderSupport = allFiles.length === 0 || allFiles[0]?.is_folder !== undefined
+
+      let filteredFiles: MemberFile[]
+
+      if (hasFolderSupport) {
+        // Filter by parent folder
+        if (folderId === null) {
+          // Root level: show files with no parent or null parent
+          filteredFiles = allFiles.filter(f => !f.parent_folder_id)
+        } else {
+          // Subfolder: show files in this folder
+          filteredFiles = allFiles.filter(f => f.parent_folder_id === folderId)
+        }
+      } else {
+        // No folder support yet - show all files at root
+        filteredFiles = allFiles
+      }
+
+      // Add default folder fields for backwards compatibility & sort
+      const sortedData = filteredFiles
+        .map(file => ({
+          ...file,
+          is_folder: file.is_folder ?? false,
+          parent_folder_id: file.parent_folder_id ?? null,
+        }))
+        .sort((a, b) => {
+          // Folders first
+          if (a.is_folder && !b.is_folder) return -1
+          if (!a.is_folder && b.is_folder) return 1
+          // Then by name
+          return a.file_name.localeCompare(b.file_name)
+        })
+
+      setFiles(sortedData)
+      setCurrentFolderId(hasFolderSupport ? folderId : null)
     } catch (error) {
       console.error('Error fetching files:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const buildFolderPath = async (folderId: string): Promise<FolderBreadcrumb[]> => {
+    const path: FolderBreadcrumb[] = []
+    let currentId: string | null = folderId
+
+    while (currentId) {
+      const { data } = await supabase
+        .from('member_files')
+        .select('id, file_name, parent_folder_id')
+        .eq('id', currentId)
+        .single() as { data: { id: string; file_name: string; parent_folder_id: string | null } | null }
+
+      if (data) {
+        path.unshift({ id: data.id, name: data.file_name })
+        currentId = data.parent_folder_id
+      } else {
+        break
+      }
+    }
+
+    return path
+  }
+
+  const navigateToFolder = async (folderId: string | null) => {
+    if (folderId === null) {
+      setFolderPath([])
+    } else {
+      const path = await buildFolderPath(folderId)
+      setFolderPath(path)
+    }
+    await fetchFolderContents(folderId)
+  }
+
+  const navigateToBreadcrumb = async (index: number) => {
+    if (index === -1) {
+      // Navigate to root
+      await navigateToFolder(null)
+    } else {
+      const targetFolder = folderPath[index]
+      const newPath = folderPath.slice(0, index + 1)
+      setFolderPath(newPath)
+      await fetchFolderContents(targetFolder.id)
     }
   }
 
@@ -143,18 +251,28 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
       if (uploadError) throw uploadError
 
       // Save file metadata with title and description
+      // Build insert object - only include folder fields if we're in a folder
+      const insertData: Record<string, unknown> = {
+        member_id: memberId,
+        practitioner_id: user.id,
+        file_name: fileTitle.trim() || selectedFile.name,
+        file_type: selectedFile.type,
+        file_size: selectedFile.size,
+        storage_path: fileName,
+        category: selectedCategory,
+        description: fileDescription.trim() || null,
+      }
+
+      // Only add folder-related fields if migration has been applied
+      // We detect this by checking if we're in a subfolder or if folders exist
+      if (currentFolderId !== null || files.some(f => f.is_folder)) {
+        insertData.is_folder = false
+        insertData.parent_folder_id = currentFolderId
+      }
+
       const { error: dbError } = await supabase
         .from('member_files')
-        .insert({
-          member_id: memberId,
-          practitioner_id: user.id,
-          file_name: fileTitle.trim() || selectedFile.name,
-          file_type: selectedFile.type,
-          file_size: selectedFile.size,
-          storage_path: fileName,
-          category: selectedCategory,
-          description: fileDescription.trim() || null,
-        })
+        .insert(insertData)
 
       if (dbError) throw dbError
 
@@ -163,7 +281,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
       setSelectedFile(null)
       setFileTitle('')
       setFileDescription('')
-      fetchFiles()
+      fetchFolderContents(currentFolderId)
     } catch (error) {
       console.error('Error uploading file:', error)
       toast.error(t.members.errors.fileUploadFailed)
@@ -177,6 +295,80 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
     setSelectedFile(null)
     setFileTitle('')
     setFileDescription('')
+  }
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return
+
+    setCreatingFolder(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { error } = await supabase
+        .from('member_files')
+        .insert({
+          member_id: memberId,
+          practitioner_id: user.id,
+          file_name: newFolderName.trim(),
+          is_folder: true,
+          parent_folder_id: currentFolderId,
+          file_type: '',
+          storage_path: '',
+          category: 'general',
+        })
+
+      if (error) {
+        // If error is about unknown columns, migration hasn't been applied
+        if (error.message?.includes('is_folder') || error.message?.includes('parent_folder_id')) {
+          toast.error(locale === 'fr' ? 'Fonctionnalité de dossiers non disponible' : 'Folder feature not available yet')
+          setShowNewFolderModal(false)
+          return
+        }
+        throw error
+      }
+
+      toast.success(locale === 'fr' ? 'Dossier créé' : 'Folder created')
+      setShowNewFolderModal(false)
+      setNewFolderName('')
+      fetchFolderContents(currentFolderId)
+    } catch (error) {
+      console.error('Error creating folder:', error)
+      toast.error(locale === 'fr' ? 'Échec de la création du dossier' : 'Failed to create folder')
+    } finally {
+      setCreatingFolder(false)
+    }
+  }
+
+  const handleRename = async () => {
+    if (!renameItem || !renameName.trim()) return
+
+    setRenaming(true)
+    try {
+      const { error } = await supabase
+        .from('member_files')
+        .update({ file_name: renameName.trim() })
+        .eq('id', renameItem.id)
+
+      if (error) throw error
+
+      toast.success(locale === 'fr' ? 'Renommé avec succès' : 'Renamed successfully')
+      setShowRenameModal(false)
+      setRenameItem(null)
+      setRenameName('')
+      fetchFolderContents(currentFolderId)
+    } catch (error) {
+      console.error('Error renaming:', error)
+      toast.error(locale === 'fr' ? 'Échec du renommage' : 'Failed to rename')
+    } finally {
+      setRenaming(false)
+    }
+  }
+
+  const openRenameModal = (item: MemberFile) => {
+    setRenameItem(item)
+    setRenameName(item.file_name)
+    setShowRenameModal(true)
   }
 
   const handleView = async (file: MemberFile) => {
@@ -217,17 +409,23 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
   }
 
   const handleDelete = async (file: MemberFile) => {
-    if (!confirm(t.members.files.confirmDelete)) return
+    const confirmMessage = file.is_folder
+      ? t.members.files.confirmDeleteFolder
+      : t.members.files.confirmDelete
+
+    if (!confirm(confirmMessage)) return
 
     try {
-      // Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from('member-files')
-        .remove([file.storage_path])
+      // If it's a file, delete from storage first
+      if (!file.is_folder && file.storage_path) {
+        const { error: storageError } = await supabase.storage
+          .from('member-files')
+          .remove([file.storage_path])
 
-      if (storageError) throw storageError
+        if (storageError) throw storageError
+      }
 
-      // Delete from database
+      // Delete from database (cascade will handle children for folders)
       const { error: dbError } = await supabase
         .from('member_files')
         .delete()
@@ -235,11 +433,14 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
 
       if (dbError) throw dbError
 
-      toast.success('File deleted')
-      fetchFiles()
+      toast.success(file.is_folder
+        ? (locale === 'fr' ? 'Dossier supprimé' : 'Folder deleted')
+        : 'File deleted'
+      )
+      fetchFolderContents(currentFolderId)
     } catch (error) {
-      console.error('Error deleting file:', error)
-      toast.error('Failed to delete file')
+      console.error('Error deleting:', error)
+      toast.error('Failed to delete')
     }
   }
 
@@ -301,6 +502,10 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
       setSavingEmergency(false)
     }
   }
+
+  // Separate folders and files
+  const folders = files.filter(f => f.is_folder)
+  const regularFiles = files.filter(f => !f.is_folder)
 
   if (loading) {
     return (
@@ -435,21 +640,62 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
         )}
       </motion.div>
 
-      {/* Header with Upload */}
+      {/* Header with Breadcrumb + Actions */}
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center ">
-            <FileText className="w-5 h-5 text-blue-600" />
-          </div>
-          {t.members.files.title}
-        </h2>
-        <Button
-          onClick={() => fileInputRef.current?.click()}
-          className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
-        >
-          <Upload className="w-4 h-4 mr-2" />
-          {t.members.files.uploadFile}
-        </Button>
+        {/* Breadcrumb navigation */}
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-blue-600" />
+            </div>
+          </h2>
+          <nav className="flex items-center gap-1 text-sm">
+            <button
+              onClick={() => navigateToBreadcrumb(-1)}
+              className={`font-medium transition-colors ${
+                folderPath.length === 0
+                  ? 'text-gray-900'
+                  : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              {t.members.files.title}
+            </button>
+            {folderPath.map((folder, index) => (
+              <div key={folder.id} className="flex items-center gap-1">
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+                <button
+                  onClick={() => navigateToBreadcrumb(index)}
+                  className={`font-medium transition-colors ${
+                    index === folderPath.length - 1
+                      ? 'text-gray-900'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                >
+                  {folder.name}
+                </button>
+              </div>
+            ))}
+          </nav>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowNewFolderModal(true)}
+            className="rounded-xl border-gray-200 hover:bg-gray-50"
+          >
+            <FolderPlus className="w-4 h-4 mr-2" />
+            {t.members.files.newFolder}
+          </Button>
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            {t.members.files.uploadFile}
+          </Button>
+        </div>
       </div>
 
       {/* Upload Modal */}
@@ -501,6 +747,14 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                     <p className="text-sm text-gray-500">{formatFileSize(selectedFile.size)}</p>
                   </div>
                 </div>
+
+                {/* Current folder info */}
+                {currentFolderId && folderPath.length > 0 && (
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Folder className="w-4 h-4" />
+                    <span>{locale === 'fr' ? 'Dans :' : 'In:'} {folderPath[folderPath.length - 1].name}</span>
+                  </div>
+                )}
 
                 {/* Title */}
                 <div>
@@ -584,115 +838,326 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
         )}
       </AnimatePresence>
 
-      {/* Files List */}
+      {/* New Folder Modal */}
+      <AnimatePresence>
+        {showNewFolderModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowNewFolderModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            >
+              <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FolderPlus className="w-5 h-5 text-blue-500" />
+                  {t.members.files.newFolder}
+                </h3>
+                <button
+                  onClick={() => setShowNewFolderModal(false)}
+                  className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t.members.files.folderName}
+                </label>
+                <input
+                  type="text"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder={locale === 'fr' ? 'Nom du dossier...' : 'Folder name...'}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newFolderName.trim()) {
+                      handleCreateFolder()
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowNewFolderModal(false)}
+                  className="rounded-xl"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateFolder}
+                  disabled={creatingFolder || !newFolderName.trim()}
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
+                >
+                  {creatingFolder ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      {locale === 'fr' ? 'Création...' : 'Creating...'}
+                    </>
+                  ) : (
+                    <>
+                      <FolderPlus className="w-4 h-4 mr-2" />
+                      {t.members.files.createFolder}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Rename Modal */}
+      <AnimatePresence>
+        {showRenameModal && renameItem && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowRenameModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            >
+              <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Edit3 className="w-5 h-5 text-gray-500" />
+                  {t.members.files.rename}
+                </h3>
+                <button
+                  onClick={() => setShowRenameModal(false)}
+                  className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                <input
+                  type="text"
+                  value={renameName}
+                  onChange={(e) => setRenameName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && renameName.trim()) {
+                      handleRename()
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowRenameModal(false)}
+                  className="rounded-xl"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleRename}
+                  disabled={renaming || !renameName.trim()}
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
+                >
+                  {renaming ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    'Save'
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Files Grid */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl  border border-gray-200 overflow-hidden"
+        className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
       >
         {files.length === 0 ? (
           <div className="p-16 text-center">
             <div className="relative inline-block">
               <div className="absolute inset-0 bg-gradient-to-br from-lavender-400/30 to-mint-400/30 rounded-3xl blur-xl" />
               <div className="relative w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <Folder className="w-10 h-10 text-blue-600" />
+                {currentFolderId ? (
+                  <FolderOpen className="w-10 h-10 text-blue-600" />
+                ) : (
+                  <Folder className="w-10 h-10 text-blue-600" />
+                )}
               </div>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-3">
-              {t.members.files.noFiles}
+              {currentFolderId ? t.members.files.emptyFolder : t.members.files.noFiles}
             </h3>
             <p className="text-gray-500 mb-8 max-w-md mx-auto">
-              {t.members.files.noFilesDescription}
+              {currentFolderId
+                ? (locale === 'fr' ? 'Ajoutez des fichiers ou créez des sous-dossiers' : 'Add files or create subfolders')
+                : t.members.files.noFilesDescription
+              }
             </p>
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 px-6 transition-colors hover-lift"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              {t.members.files.uploadFile}
-            </Button>
+            <div className="flex items-center justify-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowNewFolderModal(true)}
+                className="rounded-xl border-gray-200"
+              >
+                <FolderPlus className="w-4 h-4 mr-2" />
+                {t.members.files.newFolder}
+              </Button>
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 px-6 transition-colors hover-lift"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                {t.members.files.uploadFile}
+              </Button>
+            </div>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100/50">
-            {/* Files */}
-            {files.map((file, index) => {
-              const FileIcon = getFileIcon(file.file_type)
-              const catStyle = categoryColors[file.category]
-              return (
+          <div className="p-4">
+            {/* Grid View */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {/* Folders */}
+              {folders.map((folder, index) => (
                 <motion.div
-                  key={file.id}
+                  key={folder.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.03 * index }}
-                  className="p-5 hover:bg-white/60 transition-all group"
+                  className="group relative bg-gray-50 hover:bg-gray-100 rounded-xl p-4 cursor-pointer transition-all border border-transparent hover:border-gray-200"
+                  onClick={() => navigateToFolder(folder.id)}
                 >
-                  <div className="flex items-start gap-4">
-                    {/* File Icon */}
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center flex-shrink-0  group-hover:shadow-md group-hover:scale-105 transition-all">
-                      <FileIcon className="w-6 h-6 text-gray-500" />
-                    </div>
-
-                    {/* File Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <h4 className="font-semibold text-gray-900 truncate">
-                            {file.file_name}
-                          </h4>
-                          {file.description && (
-                            <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                              {file.description}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-3 mt-2 flex-wrap">
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${catStyle.bg} ${catStyle.text}`}>
-                              {t.members.fileCategories[file.category]}
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              {formatFileSize(file.file_size)}
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              {new Date(file.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleView(file)}
-                            className="h-9 w-9 p-0 text-gray-400 hover:text-teal-600 hover:bg-gray-50 rounded-xl transition-colors"
-                            title="View file"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDownload(file)}
-                            className="h-9 w-9 p-0 text-gray-400 hover:text-blue-600 hover:bg-gray-50 rounded-xl transition-colors"
-                            title="Download file"
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(file)}
-                            className="h-9 w-9 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                            title="Delete file"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+                  {/* Three-dot menu */}
+                  <div
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-1.5 rounded-lg hover:bg-white transition-colors">
+                          <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                        <DropdownMenuItem onClick={() => navigateToFolder(folder.id)}>
+                          <FolderOpen className="w-4 h-4 mr-2 text-gray-400" />
+                          {t.members.files.open}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openRenameModal(folder)}>
+                          <Edit3 className="w-4 h-4 mr-2 text-gray-400" />
+                          {t.members.files.rename}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleDelete(folder)}
+                          className="text-red-500"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          {t.members.files.delete}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
+
+                  {/* Folder icon */}
+                  <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform">
+                    <Folder className="w-6 h-6 text-blue-600" />
+                  </div>
+
+                  {/* Folder name */}
+                  <p className="text-sm font-medium text-gray-900 text-center truncate">
+                    {folder.file_name}
+                  </p>
                 </motion.div>
-              )
-            })}
+              ))}
+
+              {/* Files */}
+              {regularFiles.map((file, index) => {
+                const FileIcon = getFileIcon(file.file_type)
+                const catStyle = categoryColors[file.category]
+                return (
+                  <motion.div
+                    key={file.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.03 * (folders.length + index) }}
+                    className="group relative bg-gray-50 hover:bg-gray-100 rounded-xl p-4 cursor-pointer transition-all border border-transparent hover:border-gray-200"
+                    onClick={() => handleView(file)}
+                  >
+                    {/* Three-dot menu */}
+                    <div
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="p-1.5 rounded-lg hover:bg-white transition-colors">
+                            <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                          <DropdownMenuItem onClick={() => handleView(file)}>
+                            <Eye className="w-4 h-4 mr-2 text-gray-400" />
+                            {t.members.files.view}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDownload(file)}>
+                            <Download className="w-4 h-4 mr-2 text-gray-400" />
+                            {t.members.files.download}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openRenameModal(file)}>
+                            <Edit3 className="w-4 h-4 mr-2 text-gray-400" />
+                            {t.members.files.rename}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(file)}
+                            className="text-red-500"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            {t.members.files.delete}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    {/* File icon */}
+                    <div className={`w-12 h-12 rounded-xl ${catStyle.bg} flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform`}>
+                      <FileIcon className={`w-6 h-6 ${catStyle.text}`} />
+                    </div>
+
+                    {/* File name */}
+                    <p className="text-sm font-medium text-gray-900 text-center truncate mb-1">
+                      {file.file_name}
+                    </p>
+
+                    {/* File size */}
+                    <p className="text-xs text-gray-400 text-center">
+                      {formatFileSize(file.file_size)}
+                    </p>
+                  </motion.div>
+                )
+              })}
+            </div>
           </div>
         )}
       </motion.div>
