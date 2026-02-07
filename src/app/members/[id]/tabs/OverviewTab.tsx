@@ -105,7 +105,9 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
     getLocalizedArray(member.preferences.areas_of_sensitivity, locale)
   )
   const [sensitivityInput, setSensitivityInput] = useState('')
-
+  const [currentTreatment, setCurrentTreatment] = useState(
+    getLocalizedValue(member.preferences?.current_treatment, locale) || ''
+  )
 
   // Active Goals state
   const [activeGoals, setActiveGoals] = useState<Milestone[]>([])
@@ -491,6 +493,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
         key_strengths: strengths,
         areas_of_sensitivity: sensitivities,
         therapeutic_context: member.preferences.therapeutic_context,
+        current_treatment: currentTreatment.trim() || null,
         preferred_contact_method: member.preferences.preferred_contact_method,
         preferred_session_format: member.preferences.preferred_session_format,
       }
@@ -518,12 +521,14 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
   const localizedStrengths = getLocalizedArray(member.preferences.key_strengths, locale)
   const localizedSensitivities = getLocalizedArray(member.preferences.areas_of_sensitivity, locale)
   const localizedTherapeuticContext = getLocalizedValue(member.preferences.therapeutic_context, locale)
+  const localizedCurrentTreatment = getLocalizedValue(member.preferences?.current_treatment, locale)
 
   const hasPreferencesData =
     localizedCommStyles.length > 0 ||
     localizedStrengths.length > 0 ||
     localizedSensitivities.length > 0 ||
-    localizedTherapeuticContext
+    localizedTherapeuticContext ||
+    localizedCurrentTreatment
 
   const noteTypeColors: Record<NoteType, { bg: string; text: string }> = {
     general: { bg: 'bg-gray-100', text: 'text-gray-700' },
@@ -1001,6 +1006,20 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                   )}
                 </div>
 
+                {/* Current Treatment */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t.members.overview.currentTreatment}
+                  </label>
+                  <textarea
+                    value={currentTreatment}
+                    onChange={(e) => setCurrentTreatment(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Décrivez le traitement en cours...' : 'Describe current treatment...'}
+                    rows={3}
+                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm resize-none"
+                  />
+                </div>
+
                 <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
                   <Button
                     variant="ghost"
@@ -1009,6 +1028,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                       setCommStyles(getLocalizedArray(member.preferences.communication_style, locale))
                       setStrengths(getLocalizedArray(member.preferences.key_strengths, locale))
                       setSensitivities(getLocalizedArray(member.preferences.areas_of_sensitivity, locale))
+                      setCurrentTreatment(getLocalizedValue(member.preferences?.current_treatment, locale) || '')
                       setEditingPreferences(false)
                     }}
                     className="rounded-lg"
@@ -1083,6 +1103,17 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                         </span>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {localizedCurrentTreatment && (
+                  <div>
+                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                      {t.members.overview.currentTreatment}
+                    </h4>
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">
+                      {localizedCurrentTreatment}
+                    </p>
                   </div>
                 )}
 
