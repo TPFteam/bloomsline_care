@@ -582,7 +582,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
       iconColor: 'text-amber-600',
     },
     past_sessions: {
-      label: locale === 'fr' ? 'Séances passées' : 'Past Sessions',
+      label: locale === 'fr' ? 'Séances' : 'Sessions',
       icon: <Clock className="w-4 h-4" />,
       iconBg: 'bg-blue-50',
       iconColor: 'text-blue-600',

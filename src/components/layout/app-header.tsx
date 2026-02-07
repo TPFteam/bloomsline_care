@@ -112,7 +112,10 @@ export function AppHeader({ user, leftContent }: AppHeaderProps) {
                         <Globe className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                         <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-full p-0.5">
                           <button
-                            onClick={() => setLocale('en')}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setLocale('en')
+                            }}
                             className={`px-2 py-0.5 text-xs font-medium rounded-full transition-all ${
                               locale === 'en'
                                 ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
@@ -122,7 +125,10 @@ export function AppHeader({ user, leftContent }: AppHeaderProps) {
                             EN
                           </button>
                           <button
-                            onClick={() => setLocale('fr')}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setLocale('fr')
+                            }}
                             className={`px-2 py-0.5 text-xs font-medium rounded-full transition-all ${
                               locale === 'fr'
                                 ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
