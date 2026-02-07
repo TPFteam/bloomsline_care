@@ -62,6 +62,7 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
   const [areasOfSensitivity, setAreasOfSensitivity] = useState<string[]>([])
   const [sensitivityInput, setSensitivityInput] = useState('')
   const [therapeuticContext, setTherapeuticContext] = useState('')
+  const [currentTreatment, setCurrentTreatment] = useState('')
   const [preferredContactMethod, setPreferredContactMethod] = useState<ContactMethod>('email')
   const [preferredSessionFormat, setPreferredSessionFormat] = useState<SessionFormat>('in_person')
 
@@ -113,6 +114,7 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
       setKeyStrengths(data.preferences?.key_strengths || [])
       setAreasOfSensitivity(data.preferences?.areas_of_sensitivity || [])
       setTherapeuticContext(data.preferences?.therapeutic_context || '')
+      setCurrentTreatment(data.preferences?.current_treatment || '')
       setPreferredContactMethod(data.preferences?.preferred_contact_method || 'email')
       setPreferredSessionFormat(data.preferences?.preferred_session_format || 'in_person')
 
@@ -169,6 +171,7 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
         key_strengths: keyStrengths,
         areas_of_sensitivity: areasOfSensitivity,
         therapeutic_context: therapeuticContext || null,
+        current_treatment: currentTreatment || null,
         preferred_contact_method: preferredContactMethod,
         preferred_session_format: preferredSessionFormat,
       }
