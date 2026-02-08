@@ -288,7 +288,15 @@ export default function AnalyticsPage() {
       <div className="min-h-screen bg-gray-50 flex">
         <AppSidebar activeItem="analytics" />
         <main className="flex-1 ml-64">
-          <AppHeader user={null} />
+          <AppHeader
+            user={null}
+            leftContent={
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                <Activity className="w-4 h-4" />
+                <span>{locale === 'fr' ? 'Rythme' : locale === 'es' ? 'Tu ritmo' : 'Your Flow'}</span>
+              </div>
+            }
+          />
           <div className="flex items-center justify-center h-[calc(100vh-65px)]">
             <div className="text-center">
               <div className="w-10 h-10 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
