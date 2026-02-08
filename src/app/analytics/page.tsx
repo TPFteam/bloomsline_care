@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users,
   Calendar,
@@ -13,6 +13,11 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  FileText,
+  Shield,
 } from 'lucide-react'
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useLanguage } from '@/lib/i18n/context'
@@ -37,12 +42,16 @@ interface SessionRow {
   status: string
   scheduled_at: string
   session_type: string
+  mood_rating: number | null
+  session_format: string | null
 }
 
 interface MilestoneRow {
   id: string
   status: string
   created_at: string
+  member_id: string
+  updated_at: string
 }
 
 interface UpcomingSession {
@@ -61,6 +70,13 @@ interface MonthlyData {
 interface NoteRow {
   id: string
   created_at: string
+  session_id: string | null
+}
+
+interface ResourceRow {
+  id: string
+  member_id: string
+  status: string
 }
 
 interface AnalyticsState {
@@ -70,6 +86,7 @@ interface AnalyticsState {
   notes: NoteRow[]
   sharedResources: number
   upcomingSessions: UpcomingSession[]
+  resources: ResourceRow[]
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────
@@ -143,6 +160,7 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsState | null>(null)
   const [userProfile, setUserProfile] = useState<User | null>(null)
   const [selectedMonth, setSelectedMonth] = useState(() => new Date())
+  const [hoveredMember, setHoveredMember] = useState<string | null>(null)
 
   const isCurrentMonth =
     selectedMonth.getMonth() === new Date().getMonth() &&
@@ -194,7 +212,7 @@ export default function AnalyticsPage() {
 
       const now = new Date()
 
-      const [membersRes, sessionsRes, milestonesRes, notesRes, sharedRes, upcomingRes] =
+      const [membersRes, sessionsRes, milestonesRes, notesRes, sharedRes, upcomingRes, resourcesRes] =
         await Promise.all([
           supabase
             .from('members')
@@ -202,15 +220,15 @@ export default function AnalyticsPage() {
             .eq('practitioner_id', user.id),
           supabase
             .from('sessions')
-            .select('id, member_id, status, scheduled_at, session_type')
+            .select('id, member_id, status, scheduled_at, session_type, mood_rating, session_format')
             .eq('practitioner_id', user.id),
           supabase
             .from('milestones')
-            .select('id, status, created_at')
+            .select('id, status, created_at, member_id, updated_at')
             .eq('practitioner_id', user.id),
           supabase
             .from('progress_notes')
-            .select('id, created_at')
+            .select('id, created_at, session_id')
             .eq('practitioner_id', user.id),
           supabase
             .from('shared_resources')
@@ -224,6 +242,10 @@ export default function AnalyticsPage() {
             .gte('scheduled_at', now.toISOString())
             .order('scheduled_at', { ascending: true })
             .limit(5),
+          supabase
+            .from('shared_resources')
+            .select('id, member_id, status')
+            .eq('practitioner_id', user.id),
         ])
 
       const members = (membersRes.data || []) as MemberRow[]
@@ -250,6 +272,7 @@ export default function AnalyticsPage() {
         notes: (notesRes.data || []) as NoteRow[],
         sharedResources: sharedRes.data?.length || 0,
         upcomingSessions: enrichedUpcoming,
+        resources: (resourcesRes.data || []) as ResourceRow[],
       })
     } catch (error) {
       console.error('Error fetching analytics:', error)
@@ -283,7 +306,7 @@ export default function AnalyticsPage() {
 
   // ── Derived data ─────────────────────────────────────────────────────
 
-  const { members, sessions, milestones, notes, upcomingSessions } = data
+  const { members, sessions, milestones, notes, upcomingSessions, resources } = data
 
   const activeMembers = members.filter((m) => m.status === 'active').length
   const now = new Date()
@@ -339,6 +362,163 @@ export default function AnalyticsPage() {
 
   const needsAttentionEmpty = staleClients.length === 0 && thisWeekSessions.length === 0
 
+  // ── Session Health Ring data ───────────────────────────────────────
+  const sessionsInMonthArr = sessions.filter((s) => {
+    const d = new Date(s.scheduled_at)
+    return d >= selMonthStart && d <= selMonthEnd
+  })
+  const completedInMonth = sessionsInMonthArr.filter((s) => s.status === 'completed').length
+  const cancelledInMonth = sessionsInMonthArr.filter((s) => s.status === 'cancelled').length
+  const noShowInMonth = sessionsInMonthArr.filter((s) => s.status === 'no_show').length
+  const scheduledInMonth = sessionsInMonthArr.filter((s) => s.status === 'scheduled').length
+  const totalHealthSessions = completedInMonth + cancelledInMonth + noShowInMonth + scheduledInMonth
+
+  const pct = (v: number) => totalHealthSessions > 0 ? Math.round((v / totalHealthSessions) * 100) : 0
+
+  // ── Client Engagement Radar ────────────────────────────────────────
+  const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+
+  interface EngagementEntry {
+    member: MemberRow
+    score: number
+    attendance: number
+    recency: number
+    consistency: number
+    momentum: number
+    riskReason: string
+  }
+
+  const engagementScores: EngagementEntry[] = members
+    .filter((m) => m.status === 'active')
+    .map((m) => {
+      const memberSessions = sessions.filter((s) => s.member_id === m.id)
+      const recentSessions = memberSessions.filter((s) => new Date(s.scheduled_at) >= threeMonthsAgo)
+
+      // Attendance (0-30)
+      const scheduled = recentSessions.filter((s) => s.status !== 'scheduled').length
+      const completed = recentSessions.filter((s) => s.status === 'completed').length
+      const attendanceRate = scheduled > 0 ? completed / scheduled : 0
+      const attendance = scheduled > 0 ? Math.round(attendanceRate * 30) : 15
+
+      // Recency (0-30)
+      const lastD = daysAgo(m.last_session_at)
+      const recency = lastD === null ? 0 : lastD <= 7 ? 30 : lastD <= 14 ? 20 : lastD <= 30 ? 10 : 0
+
+      // Consistency (0-20)
+      const completedDates = memberSessions
+        .filter((s) => s.status === 'completed')
+        .map((s) => new Date(s.scheduled_at).getTime())
+        .sort((a, b) => a - b)
+      let consistency = 10
+      if (completedDates.length >= 3) {
+        const gaps: number[] = []
+        for (let i = 1; i < completedDates.length; i++) {
+          gaps.push((completedDates[i] - completedDates[i - 1]) / (1000 * 60 * 60 * 24))
+        }
+        const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length
+        const stdDev = Math.sqrt(gaps.reduce((sum, g) => sum + (g - avgGap) ** 2, 0) / gaps.length)
+        consistency = stdDev < 3 ? 20 : stdDev < 7 ? 15 : stdDev < 14 ? 10 : 5
+      }
+
+      // Momentum (0-20)
+      const memberMilestones = milestones.filter((ms) => ms.member_id === m.id)
+      let momentum = 10
+      if (memberMilestones.length > 0) {
+        const recentlyMoved = memberMilestones.some((ms) => new Date(ms.updated_at) >= thirtyDaysAgo)
+        momentum = recentlyMoved ? 20 : 5
+      }
+
+      const score = attendance + recency + consistency + momentum
+
+      // Risk reason
+      const cancellations = recentSessions.filter((s) => s.status === 'cancelled').length
+      let riskReason = ''
+      if (lastD === null) {
+        riskReason = locale === 'fr' ? 'Aucune séance' : locale === 'es' ? 'Sin sesiones' : 'No sessions yet'
+      } else if (lastD > 14) {
+        riskReason = locale === 'fr' ? `Pas de séance depuis ${lastD}j` : locale === 'es' ? `Sin sesión en ${lastD} días` : `No session in ${lastD} days`
+      } else if (cancellations >= 2) {
+        riskReason = locale === 'fr' ? `${cancellations} annulations récentes` : locale === 'es' ? `${cancellations} cancelaciones recientes` : `${cancellations} cancellations recently`
+      } else if (momentum <= 5) {
+        riskReason = locale === 'fr' ? 'Objectifs stagnants' : locale === 'es' ? 'Objetivos estancados' : 'Milestones stalled'
+      } else {
+        riskReason = locale === 'fr' ? 'Engagement faible' : locale === 'es' ? 'Bajo compromiso' : 'Low engagement'
+      }
+
+      return { member: m, score, attendance, recency, consistency, momentum, riskReason }
+    })
+    .sort((a, b) => a.score - b.score)
+
+
+  // ── Practitioner Pulse metrics ─────────────────────────────────────
+  const fourWeeksAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000)
+  const eightWeeksAgo = new Date(now.getTime() - 56 * 24 * 60 * 60 * 1000)
+
+  const recentFourWeeks = sessions.filter((s) => new Date(s.scheduled_at) >= fourWeeksAgo && s.status === 'completed')
+  const prevFourWeeks = sessions.filter((s) => {
+    const d = new Date(s.scheduled_at)
+    return d >= eightWeeksAgo && d < fourWeeksAgo && s.status === 'completed'
+  })
+  const sessionsPerWeek = recentFourWeeks.length / 4
+  const prevSessionsPerWeek = prevFourWeeks.length / 4
+  const weekTrend = sessionsPerWeek > prevSessionsPerWeek + 0.5 ? 'up' : sessionsPerWeek < prevSessionsPerWeek - 0.5 ? 'down' : 'flat'
+
+  const pastSessions = sessions.filter((s) => s.status !== 'scheduled')
+  const completionRate = pastSessions.length > 0
+    ? Math.round((pastSessions.filter((s) => s.status === 'completed').length / pastSessions.length) * 100)
+    : 0
+
+  const completedSessions = sessions.filter((s) => s.status === 'completed')
+  const sessionsWithNotes = completedSessions.filter((s) => notes.some((n) => n.session_id === s.id)).length
+  const notesCoverage = completedSessions.length > 0 ? Math.round((sessionsWithNotes / completedSessions.length) * 100) : 0
+
+  const crisisSessions = sessions.filter((s) => s.session_type === 'crisis').length
+  const crisisRatio = sessions.length > 0 ? Math.round((crisisSessions / sessions.length) * 100) : -1
+
+  // ── Journey Velocity ───────────────────────────────────────────────
+  const stageOrder = ['discovery', 'planned', 'building', 'in_progress', 'thriving', 'independent', 'achieved']
+  const stageLabels: Record<string, Record<string, string>> = {
+    discovery: { en: 'Discovery', fr: 'Découverte', es: 'Descubrimiento' },
+    planned: { en: 'Planned', fr: 'Planifié', es: 'Planificado' },
+    building: { en: 'Building', fr: 'Construction', es: 'Construcción' },
+    in_progress: { en: 'In Progress', fr: 'En cours', es: 'En progreso' },
+    thriving: { en: 'Thriving', fr: 'Épanouissement', es: 'Florecimiento' },
+    independent: { en: 'Independent', fr: 'Autonome', es: 'Independiente' },
+    achieved: { en: 'Achieved', fr: 'Atteint', es: 'Logrado' },
+  }
+  const lang = locale === 'fr' ? 'fr' : locale === 'es' ? 'es' : 'en'
+
+  // Avg time per stage: for milestones that have moved past a given stage
+  const stageAvgDays: { stage: string; label: string; avgDays: number }[] = []
+  for (const stage of ['discovery', 'building', 'thriving']) {
+    const pastMs = milestones.filter((ms) => {
+      const idx = stageOrder.indexOf(ms.status)
+      const stageIdx = stageOrder.indexOf(stage)
+      return idx > stageIdx
+    })
+    if (pastMs.length > 0) {
+      const avgMs = pastMs.reduce((sum, ms) => {
+        const days = (new Date(ms.updated_at).getTime() - new Date(ms.created_at).getTime()) / (1000 * 60 * 60 * 24)
+        return sum + days
+      }, 0) / pastMs.length
+      stageAvgDays.push({ stage, label: stageLabels[stage][lang], avgDays: Math.round(avgMs) })
+    }
+  }
+
+  // Stuck milestones: in discovery/building for >30 days with no status change
+  const stuckMilestones = milestones.filter((ms) => {
+    if (ms.status !== 'discovery' && ms.status !== 'building' && ms.status !== 'planned') return false
+    const daysSinceUpdate = (now.getTime() - new Date(ms.updated_at).getTime()) / (1000 * 60 * 60 * 24)
+    return daysSinceUpdate > 30
+  })
+  const stuckMemberIds = [...new Set(stuckMilestones.map((ms) => ms.member_id))]
+  const stuckMemberNames = stuckMemberIds
+    .map((id) => members.find((m) => m.id === id))
+    .filter(Boolean)
+    .map((m) => `${m!.first_name} ${m!.last_name[0]}.`)
+    .slice(0, 3)
+
   const newClientsInMonth = members.filter((m) => {
     const d = new Date(m.created_at)
     return d >= selMonthStart && d <= selMonthEnd
@@ -348,6 +528,83 @@ export default function AnalyticsPage() {
     const d = new Date(n.created_at)
     return d >= selMonthStart && d <= selMonthEnd
   }).length
+
+  // ── Heatmap data ──────────────────────────────────────────────────
+  const heatmapColorMap: Record<string, string> = {
+    completed: '#10b981',
+    cancelled: '#9ca3af',
+    no_show: '#f59e0b',
+    scheduled: '#6366f1',
+    empty: '#f3f4f6',
+  }
+  const heatmapPriority: Record<string, number> = { no_show: 4, cancelled: 3, completed: 2, scheduled: 1 }
+  const daysInSelMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate()
+  const firstDayWeekday = (new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1).getDay() + 6) % 7 // Mon=0
+  const heatmapCells: { day: number; row: number; col: number; status: string; count: number }[] = []
+  for (let day = 1; day <= daysInSelMonth; day++) {
+    const dayStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day)
+    const dayEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day, 23, 59, 59)
+    const daySessions = sessionsInMonthArr.filter((s) => {
+      const d = new Date(s.scheduled_at)
+      return d >= dayStart && d <= dayEnd
+    })
+    let dominant = 'empty'
+    let maxPri = 0
+    for (const s of daySessions) {
+      const p = heatmapPriority[s.status] || 0
+      if (p > maxPri) { maxPri = p; dominant = s.status }
+    }
+    const offset = firstDayWeekday + day - 1
+    heatmapCells.push({ day, row: offset % 7, col: Math.floor(offset / 7), status: dominant, count: daySessions.length })
+  }
+  const totalWeeks = heatmapCells.length > 0 ? heatmapCells[heatmapCells.length - 1].col + 1 : 1
+  const heatmapDayLabels = locale === 'fr'
+    ? ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+    : locale === 'es'
+      ? ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+      : ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+
+  // ── Orbit data ────────────────────────────────────────────────────
+  const orbitMembers = engagementScores.slice(0, 20).map((e, i) => {
+    const distance = 15 + ((100 - e.score) / 100) * 115
+    const angle = (137.508 * i * Math.PI) / 180
+    const offsetX = Math.cos(angle) * distance
+    const offsetY = Math.sin(angle) * distance
+    const color = e.score >= 70 ? 'emerald' : e.score >= 40 ? 'amber' : 'red'
+    const level = e.score >= 70 ? 'ontrack' : e.score >= 40 ? 'watch' : 'atrisk'
+    return { ...e, distance, angle, offsetX, offsetY, color, level, index: i }
+  })
+  const orbitOverflow = Math.max(0, engagementScores.length - 20)
+
+  // ── Weekly bars data ──────────────────────────────────────────────
+  const weeklyBars: number[] = []
+  for (let w = 3; w >= 0; w--) {
+    const weekStart = new Date(now.getTime() - (w + 1) * 7 * 24 * 60 * 60 * 1000)
+    const weekEnd = new Date(now.getTime() - w * 7 * 24 * 60 * 60 * 1000)
+    weeklyBars.push(sessions.filter((s) => {
+      const d = new Date(s.scheduled_at)
+      return s.status === 'completed' && d >= weekStart && d < weekEnd
+    }).length)
+  }
+  const maxWeeklyBar = Math.max(...weeklyBars, 1)
+
+  // ── Journey lanes data ────────────────────────────────────────────
+  const journeyLanesDef = [
+    { key: 'discovery', label: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery', color: 'bg-blue-400', dotColor: 'bg-blue-400', statuses: ['discovery', 'planned'] },
+    { key: 'building', label: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building', color: 'bg-amber-400', dotColor: 'bg-amber-400', statuses: ['building', 'in_progress'] },
+    { key: 'thriving', label: locale === 'fr' ? 'Épanouissement' : locale === 'es' ? 'Florecimiento' : 'Thriving', color: 'bg-emerald-400', dotColor: 'bg-emerald-400', statuses: ['thriving'] },
+    { key: 'independent', label: locale === 'fr' ? 'Autonome' : locale === 'es' ? 'Independiente' : 'Independent', color: 'bg-violet-400', dotColor: 'bg-violet-400', statuses: ['independent', 'achieved'] },
+  ]
+  const journeyLanes = journeyLanesDef.map((lane) => {
+    const laneMilestones = milestonesInRange.filter((ms) => lane.statuses.includes(ms.status)).map((ms) => {
+      const daysSinceUpdate = (now.getTime() - new Date(ms.updated_at).getTime()) / (1000 * 60 * 60 * 24)
+      const isStuck = (ms.status === 'discovery' || ms.status === 'planned' || ms.status === 'building') && daysSinceUpdate > 30
+      const member = members.find((m) => m.id === ms.member_id)
+      const initials = member ? `${member.first_name[0]}${member.last_name[0]}` : '?'
+      return { ...ms, isStuck, initials }
+    })
+    return { ...lane, milestones: laneMilestones }
+  })
 
   // ── Greeting ─────────────────────────────────────────────────────────
 
@@ -414,13 +671,6 @@ export default function AnalyticsPage() {
   }
 
   // ── Render ────────────────────────────────────────────────────────────
-
-  const journeySegments = [
-    { count: discoveryCount, color: 'bg-blue-400', label: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery' },
-    { count: buildingCount, color: 'bg-amber-400', label: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building' },
-    { count: thrivingCount, color: 'bg-emerald-400', label: locale === 'fr' ? 'Épanouissement' : locale === 'es' ? 'Florecimiento' : 'Thriving' },
-    { count: independentCount, color: 'bg-violet-400', label: locale === 'fr' ? 'Autonome' : locale === 'es' ? 'Independiente' : 'Independent' },
-  ].filter((s) => s.count > 0)
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -566,10 +816,10 @@ export default function AnalyticsPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="grid gap-4 mb-6 grid-cols-1 lg:grid-cols-5"
+            className="grid gap-4 mb-6 grid-cols-1 lg:grid-cols-6"
           >
-            {/* Sessions chart — takes 3/5 */}
-            <div className="bg-white border border-gray-100 rounded-xl p-5 lg:col-span-3">
+            {/* Sessions chart — takes 2/6 */}
+            <div className="bg-white border border-gray-100 rounded-xl p-5 lg:col-span-2">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-medium text-gray-900">
@@ -605,7 +855,87 @@ export default function AnalyticsPage() {
               </div>
             </div>
 
-            {/* Journey — takes 2/5 */}
+            {/* Session Rhythm Heatmap — takes 2/6 */}
+            <div className="bg-white border border-gray-100 rounded-xl p-5 lg:col-span-2 flex flex-col">
+              <div className="mb-3">
+                <h3 className="text-sm font-medium text-gray-900">
+                  {locale === 'fr' ? 'Rythme' : locale === 'es' ? 'Ritmo' : 'Rhythm'}
+                </h3>
+                <p className="text-xs text-gray-400">
+                  {locale === 'fr' ? 'Activité par jour' : locale === 'es' ? 'Actividad por día' : 'Activity by day'}
+                </p>
+              </div>
+              {totalHealthSessions > 0 ? (
+                <div className="flex-1 flex flex-col">
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="inline-grid gap-[3px]" style={{ gridTemplateColumns: `10px repeat(${totalWeeks}, 1fr)` }}>
+                      {Array.from({ length: 7 }, (_, row) => (
+                        <Fragment key={`row-${row}`}>
+                          <div className="h-4 flex items-center">
+                            {row % 2 === 0 && <span className="text-[7px] text-gray-400 leading-none">{heatmapDayLabels[row]}</span>}
+                          </div>
+                          {Array.from({ length: totalWeeks }, (_, col) => {
+                            const cell = heatmapCells.find((c) => c.col === col && c.row === row)
+                            return (
+                              <motion.div
+                                key={`${col}-${row}`}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: (col * 7 + row) * 0.008, duration: 0.15 }}
+                                className="w-4 h-4 rounded-[3px] flex items-center justify-center"
+                                style={{
+                                  backgroundColor: cell ? heatmapColorMap[cell.status] : 'transparent',
+                                  opacity: cell ? (cell.status === 'empty' ? 0.7 : 1) : 0,
+                                }}
+                                title={cell ? `${locale === 'fr' ? 'Jour' : locale === 'es' ? 'Día' : 'Day'} ${cell.day}${cell.count > 1 ? ` (${cell.count})` : ''}` : ''}
+                              >
+                                {cell && cell.count > 1 && cell.status !== 'empty' && (
+                                  <span className="text-[7px] font-bold text-white leading-none">{cell.count}</span>
+                                )}
+                              </motion.div>
+                            )
+                          })}
+                        </Fragment>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-0.5 mt-3 pt-3 border-t border-gray-50">
+                    {completedInMonth > 0 && (
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="flex items-center gap-1 text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{locale === 'fr' ? 'Complétées' : locale === 'es' ? 'Completadas' : 'Completed'}</span>
+                        <span className="text-gray-400 tabular-nums">{pct(completedInMonth)}%</span>
+                      </div>
+                    )}
+                    {cancelledInMonth > 0 && (
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="flex items-center gap-1 text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-gray-400" />{locale === 'fr' ? 'Annulées' : locale === 'es' ? 'Canceladas' : 'Cancelled'}</span>
+                        <span className="text-gray-400 tabular-nums">{pct(cancelledInMonth)}%</span>
+                      </div>
+                    )}
+                    {noShowInMonth > 0 && (
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="flex items-center gap-1 text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{locale === 'fr' ? 'Absences' : locale === 'es' ? 'No asistió' : 'No-show'}</span>
+                        <span className="text-gray-400 tabular-nums">{pct(noShowInMonth)}%</span>
+                      </div>
+                    )}
+                    {scheduledInMonth > 0 && (
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="flex items-center gap-1 text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />{locale === 'fr' ? 'Planifiées' : locale === 'es' ? 'Programadas' : 'Scheduled'}</span>
+                        <span className="text-gray-400 tabular-nums">{pct(scheduledInMonth)}%</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <p className="text-xs text-gray-300">
+                    {locale === 'fr' ? 'Aucune séance' : locale === 'es' ? 'Sin sesiones' : 'No sessions'}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Journey Flow Lanes — takes 2/6 */}
             <div className="bg-white border border-gray-100 rounded-xl p-5 lg:col-span-2 flex flex-col">
               <h3 className="text-sm font-medium text-gray-900">
                 {locale === 'fr' ? 'Parcours' : locale === 'es' ? 'Recorrido' : 'Journey'}
@@ -617,27 +947,74 @@ export default function AnalyticsPage() {
               </p>
 
               {totalMilestones > 0 ? (
-                <div className="flex-1 flex flex-col justify-center">
-                  <div className="flex h-4 rounded-full overflow-hidden mb-3">
-                    {journeySegments.map((seg) => (
-                      <div
-                        key={seg.label}
-                        className={seg.color}
-                        style={{ width: `${(seg.count / totalMilestones) * 100}%` }}
-                      />
-                    ))}
-                  </div>
-                  <div className="space-y-1.5">
-                    {journeySegments.map((seg) => (
-                      <div key={seg.label} className="flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-1.5 text-gray-500">
-                          <span className={`w-2 h-2 rounded-full ${seg.color}`} />
-                          {seg.label}
-                        </span>
-                        <span className="text-gray-400 tabular-nums">{seg.count}</span>
+                <div className="flex-1 flex flex-col">
+                  {/* Flow lanes */}
+                  <div className="grid grid-cols-4 gap-1 items-start mb-3">
+                    {journeyLanes.map((lane, laneIdx) => (
+                      <div key={lane.key} className="flex flex-col items-center relative">
+                        {/* Stage label */}
+                        <div className="flex items-center gap-1 mb-2">
+                          <span className={`w-2 h-2 rounded-full ${lane.color}`} />
+                          <span className="text-[10px] font-medium text-gray-600 truncate max-w-[60px]">{lane.label}</span>
+                        </div>
+                        {/* Milestone dots area */}
+                        <div className="flex flex-wrap justify-center gap-1 min-h-[24px] mb-1">
+                          {lane.milestones.length > 0 ? lane.milestones.map((ms, msIdx) => (
+                            <motion.div
+                              key={ms.id}
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: laneIdx * 0.1 + msIdx * 0.03, duration: 0.3 }}
+                              className={`w-4 h-4 rounded-full ${lane.dotColor} flex items-center justify-center ${ms.isStuck ? 'ring-2 ring-amber-400 ring-offset-1 animate-pulse' : ''}`}
+                              title={ms.initials}
+                            >
+                              <span className="text-[6px] font-semibold text-white leading-none">{ms.initials}</span>
+                            </motion.div>
+                          )) : (
+                            <span className="text-[10px] text-gray-300">--</span>
+                          )}
+                        </div>
+                        {/* Count */}
+                        <span className="text-xs font-medium text-gray-500 tabular-nums">{lane.milestones.length}</span>
+                        {/* Arrow between lanes */}
+                        {laneIdx < 3 && (
+                          <ArrowRight className="w-3 h-3 text-gray-200 absolute -right-2 top-1/2 -translate-y-1/2" />
+                        )}
                       </div>
                     ))}
                   </div>
+
+                  {/* Velocity stats */}
+                  {(stageAvgDays.length > 0 || stuckMilestones.length > 0) && (
+                    <div className="mt-auto pt-3 border-t border-gray-100">
+                      {stageAvgDays.length > 0 && (
+                        <div className="mb-2">
+                          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1">
+                            {locale === 'fr' ? 'Moy. par étape' : locale === 'es' ? 'Prom. por etapa' : 'Avg. per stage'}
+                          </p>
+                          <div className="flex gap-2">
+                            {stageAvgDays.map((s) => (
+                              <div key={s.stage} className="text-[10px] text-gray-500">
+                                <span className="font-medium text-gray-700">{s.avgDays}</span>
+                                <span className="text-gray-400">d</span>
+                                {' '}
+                                <span className="text-gray-400">{s.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {stuckMilestones.length > 0 && (
+                        <div className="flex items-start gap-1.5">
+                          <AlertCircle className="w-3 h-3 text-amber-500 mt-0.5 shrink-0" />
+                          <p className="text-[10px] text-amber-600">
+                            {stuckMilestones.length} {locale === 'fr' ? 'bloqués' : locale === 'es' ? 'estancados' : 'stuck'}
+                            {stuckMemberNames.length > 0 && ` · ${stuckMemberNames.join(', ')}`}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex-1 flex items-center justify-center">
@@ -650,6 +1027,125 @@ export default function AnalyticsPage() {
                   </p>
                 </div>
               )}
+            </div>
+          </motion.div>
+
+          {/* ─── Client Engagement Radar ──────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12 }}
+            className="mb-6"
+          >
+            <div className="bg-white border border-gray-100 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900">
+                    {locale === 'fr' ? 'Mes personnes' : locale === 'es' ? 'Mi gente' : 'My People'}
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {locale === 'fr' ? 'Score par distance au centre' : locale === 'es' ? 'Puntuación por distancia al centro' : 'Score by distance to center'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Orbit Map */}
+              <div className="flex flex-col items-center">
+                <div className="relative" style={{ width: 280, height: 280 }}>
+                  {/* Zone rings */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-[260px] h-[260px] rounded-full border border-dashed border-red-200 absolute" />
+                    <div className="w-[180px] h-[180px] rounded-full border border-dashed border-amber-200 absolute" />
+                    <div className="w-[100px] h-[100px] rounded-full border border-dashed border-emerald-200 absolute" />
+                  </div>
+                  {/* Center "You" dot */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center z-10">
+                    <span className="text-[7px] font-bold text-white">
+                      {locale === 'fr' ? 'Vous' : locale === 'es' ? 'Tú' : 'You'}
+                    </span>
+                  </div>
+                  {/* Member dots */}
+                  {orbitMembers.map((om) => {
+                    const bgColor = om.color === 'emerald' ? 'bg-emerald-500' : om.color === 'amber' ? 'bg-amber-500' : 'bg-red-500'
+                    const glowColor = om.color === 'emerald' ? 'rgba(16,185,129,0.3)' : om.color === 'amber' ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)'
+                    return (
+                      <Link key={om.member.id} href={`/members/${om.member.id}`}>
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: om.index * 0.04, duration: 0.4 }}
+                          whileHover={{ scale: 1.2 }}
+                          onHoverStart={() => setHoveredMember(om.member.id)}
+                          onHoverEnd={() => setHoveredMember(null)}
+                          className={`absolute w-7 h-7 rounded-full ${bgColor} flex items-center justify-center cursor-pointer`}
+                          style={{
+                            left: `calc(50% + ${om.offsetX}px - 14px)`,
+                            top: `calc(50% + ${om.offsetY}px - 14px)`,
+                            zIndex: hoveredMember === om.member.id ? 50 : 20,
+                            boxShadow: hoveredMember === om.member.id ? `0 0 12px 4px ${glowColor}` : 'none',
+                          }}
+                        >
+                          <span className="text-[8px] font-semibold text-white leading-none">
+                            {om.member.first_name[0]}{om.member.last_name[0]}
+                          </span>
+                          {/* Tooltip */}
+                          <AnimatePresence>
+                            {hoveredMember === om.member.id && (() => {
+                              const lastD = daysAgo(om.member.last_session_at)
+                              const lastLabel = lastD === null
+                                ? (locale === 'fr' ? 'Jamais vu' : locale === 'es' ? 'Nunca visto' : 'Never seen')
+                                : lastD === 0
+                                  ? (locale === 'fr' ? "Aujourd'hui" : locale === 'es' ? 'Hoy' : 'Today')
+                                  : (locale === 'fr' ? `Il y a ${lastD}j` : locale === 'es' ? `Hace ${lastD}d` : `${lastD}d ago`)
+                              const levelLabel = om.score >= 70
+                                ? (locale === 'fr' ? 'En voie' : locale === 'es' ? 'En camino' : 'On Track')
+                                : om.score >= 40
+                                  ? (locale === 'fr' ? 'À surveiller' : locale === 'es' ? 'Observar' : 'Watch')
+                                  : (locale === 'fr' ? 'À risque' : locale === 'es' ? 'En riesgo' : 'At Risk')
+                              const levelColor = om.score >= 70 ? 'bg-emerald-400' : om.score >= 40 ? 'bg-amber-400' : 'bg-red-400'
+                              return (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 4 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: 4 }}
+                                  className="absolute -top-[72px] left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-3 py-2 rounded-lg shadow-xl whitespace-nowrap z-30 pointer-events-none"
+                                >
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <p className="font-semibold text-[11px]">{om.member.first_name} {om.member.last_name}</p>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${levelColor}`} />
+                                  </div>
+                                  <div className="flex items-center gap-2 text-gray-400">
+                                    <span>{levelLabel}</span>
+                                    <span className="text-gray-600">·</span>
+                                    <span>{lastLabel}</span>
+                                  </div>
+                                  <p className="text-gray-500 mt-1">{om.riskReason}</p>
+                                  <div className="flex items-center gap-1 mt-1 text-gray-400">
+                                    <span>{locale === 'fr' ? 'Voir profil' : locale === 'es' ? 'Ver perfil' : 'View profile'}</span>
+                                    <ArrowRight className="w-2.5 h-2.5" />
+                                  </div>
+                                </motion.div>
+                              )
+                            })()}
+                          </AnimatePresence>
+                        </motion.div>
+                      </Link>
+                    )
+                  })}
+                  {/* Overflow indicator */}
+                  {orbitOverflow > 0 && (
+                    <div className="absolute bottom-0 right-0 text-[10px] text-gray-400 bg-white px-1.5 py-0.5 rounded-full border border-gray-100">
+                      +{orbitOverflow} {locale === 'fr' ? 'de plus' : locale === 'es' ? 'más' : 'more'}
+                    </div>
+                  )}
+                </div>
+                {/* Legend */}
+                <div className="flex items-center gap-4 mt-3">
+                  <span className="flex items-center gap-1 text-[10px] text-gray-400"><span className="w-2 h-2 rounded-full bg-emerald-500" />{locale === 'fr' ? 'En voie' : locale === 'es' ? 'En camino' : 'On Track'}</span>
+                  <span className="flex items-center gap-1 text-[10px] text-gray-400"><span className="w-2 h-2 rounded-full bg-amber-500" />{locale === 'fr' ? 'À surveiller' : locale === 'es' ? 'Observar' : 'Watch'}</span>
+                  <span className="flex items-center gap-1 text-[10px] text-gray-400"><span className="w-2 h-2 rounded-full bg-red-500" />{locale === 'fr' ? 'À risque' : locale === 'es' ? 'En riesgo' : 'At Risk'}</span>
+                </div>
+              </div>
             </div>
           </motion.div>
 
@@ -738,6 +1234,139 @@ export default function AnalyticsPage() {
                 )}
               </div>
             )}
+          </motion.div>
+
+          {/* ─── Practitioner Pulse ──────────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.22 }}
+            className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6"
+          >
+            {/* Sessions/Week — mini bars */}
+            <div className="bg-white border border-gray-100 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                <span className="text-xs font-medium text-gray-500">
+                  {locale === 'fr' ? 'Séances/sem.' : locale === 'es' ? 'Sesiones/sem.' : 'Sessions/Week'}
+                </span>
+              </div>
+              <div className="flex items-end gap-1.5 mb-3">
+                <span className="text-xl font-bold text-gray-900">{sessionsPerWeek.toFixed(1)}</span>
+                {weekTrend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-emerald-500 mb-0.5" />}
+                {weekTrend === 'down' && <TrendingDown className="w-3.5 h-3.5 text-red-500 mb-0.5" />}
+                {weekTrend === 'flat' && <Minus className="w-3.5 h-3.5 text-gray-400 mb-0.5" />}
+              </div>
+              <div className="flex items-end gap-1.5 h-8">
+                {weeklyBars.map((count, i) => (
+                  <motion.div
+                    key={i}
+                    className="w-3 bg-blue-400 rounded-sm"
+                    initial={{ height: 0 }}
+                    animate={{ height: `${(count / maxWeeklyBar) * 100}%` }}
+                    transition={{ delay: i * 0.1, duration: 0.5, ease: 'easeOut' }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Completion Rate — gauge ring */}
+            {(() => {
+              const circumference = 2 * Math.PI * 28
+              const crColor = completionRate > 80 ? '#10b981' : completionRate >= 60 ? '#f59e0b' : '#ef4444'
+              return (
+                <div className="bg-white border border-gray-100 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Activity className="w-3.5 h-3.5 text-emerald-500" />
+                    <span className="text-xs font-medium text-gray-500">
+                      {locale === 'fr' ? 'Taux complétion' : locale === 'es' ? 'Tasa completado' : 'Completion Rate'}
+                    </span>
+                  </div>
+                  <div className="relative flex items-center justify-center">
+                    <svg width={64} height={64} className="-rotate-90">
+                      <circle cx={32} cy={32} r={28} fill="none" stroke="#f3f4f6" strokeWidth={5} />
+                      <motion.circle
+                        cx={32} cy={32} r={28} fill="none" stroke={crColor} strokeWidth={5}
+                        strokeLinecap="round"
+                        strokeDasharray={circumference}
+                        initial={{ strokeDashoffset: circumference }}
+                        animate={{ strokeDashoffset: circumference - (completionRate / 100) * circumference }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                      />
+                    </svg>
+                    <span className={`absolute text-sm font-bold ${completionRate > 80 ? 'text-emerald-600' : completionRate >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
+                      {completionRate}%
+                    </span>
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* Notes Coverage — gauge ring */}
+            {(() => {
+              const circumference = 2 * Math.PI * 28
+              const ncColor = notesCoverage > 80 ? '#10b981' : notesCoverage >= 50 ? '#f59e0b' : '#ef4444'
+              return (
+                <div className="bg-white border border-gray-100 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="w-3.5 h-3.5 text-violet-500" />
+                    <span className="text-xs font-medium text-gray-500">
+                      {locale === 'fr' ? 'Couverture notes' : locale === 'es' ? 'Cobertura notas' : 'Notes Coverage'}
+                    </span>
+                  </div>
+                  <div className="relative flex items-center justify-center">
+                    <svg width={64} height={64} className="-rotate-90">
+                      <circle cx={32} cy={32} r={28} fill="none" stroke="#f3f4f6" strokeWidth={5} />
+                      <motion.circle
+                        cx={32} cy={32} r={28} fill="none" stroke={ncColor} strokeWidth={5}
+                        strokeLinecap="round"
+                        strokeDasharray={circumference}
+                        initial={{ strokeDashoffset: circumference }}
+                        animate={{ strokeDashoffset: circumference - (notesCoverage / 100) * circumference }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                      />
+                    </svg>
+                    <span className={`absolute text-sm font-bold ${notesCoverage > 80 ? 'text-emerald-600' : notesCoverage >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
+                      {notesCoverage}%
+                    </span>
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* Crisis Ratio — gauge ring (inverted: lower = better) */}
+            {(() => {
+              const circumference = 2 * Math.PI * 28
+              const isNoData = crisisRatio < 0
+              const crVal = isNoData ? 0 : crisisRatio
+              const crColor = isNoData ? '#d1d5db' : crVal < 10 ? '#10b981' : crVal <= 25 ? '#f59e0b' : '#ef4444'
+              return (
+                <div className="bg-white border border-gray-100 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="w-3.5 h-3.5 text-rose-500" />
+                    <span className="text-xs font-medium text-gray-500">
+                      {locale === 'fr' ? 'Ratio crise' : locale === 'es' ? 'Ratio crisis' : 'Crisis Ratio'}
+                    </span>
+                  </div>
+                  <div className="relative flex items-center justify-center">
+                    <svg width={64} height={64} className="-rotate-90">
+                      <circle cx={32} cy={32} r={28} fill="none" stroke="#f3f4f6" strokeWidth={5} />
+                      <motion.circle
+                        cx={32} cy={32} r={28} fill="none" stroke={crColor} strokeWidth={5}
+                        strokeLinecap="round"
+                        strokeDasharray={circumference}
+                        initial={{ strokeDashoffset: circumference }}
+                        animate={{ strokeDashoffset: circumference - (crVal / 100) * circumference }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                      />
+                    </svg>
+                    <span className={`absolute text-sm font-bold ${isNoData ? 'text-gray-400' : crVal < 10 ? 'text-emerald-600' : crVal <= 25 ? 'text-amber-600' : 'text-red-600'}`}>
+                      {isNoData ? '—' : `${crisisRatio}%`}
+                    </span>
+                  </div>
+                </div>
+              )
+            })()}
           </motion.div>
 
           {/* ─── 5. Activity Footer ────────────────────────────────────── */}
