@@ -21,6 +21,8 @@ import {
   Sparkles,
   Loader2,
   Save,
+  ScanLine,
+  Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -121,6 +123,12 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [assistLoading, setAssistLoading] = useState(false)
   const [showAssistMenu, setShowAssistMenu] = useState(false)
   const assistMenuRef = useRef<HTMLDivElement>(null)
+
+  // ==============================
+  // IMAGE TEXT EXTRACTION STATE
+  // ==============================
+  const [extractingText, setExtractingText] = useState<number | null>(null) // index of image being extracted
+  const [extractedIndex, setExtractedIndex] = useState<number | null>(null) // brief checkmark display
 
   // Persist notepad context to localStorage when locked
   const savePadContext = useCallback((sessionId: string, noteType: NoteType, locked: boolean) => {
@@ -288,14 +296,27 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     }
   }, [viewMode])
 
+  // Auto-resize textarea when padInput changes programmatically (e.g. text extraction)
+  useEffect(() => {
+    const el = notepadInputRef.current
+    if (el) {
+      el.style.height = '42px'
+      el.style.height = Math.min(el.scrollHeight, 240) + 'px'
+    }
+  }, [padInput])
+
   const handlePadImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length > 0) {
+      const startIndex = padImagePreviews.length
       setPadImages(prev => [...prev, ...files])
-      files.forEach(file => {
+      files.forEach((file, i) => {
         const reader = new FileReader()
         reader.onloadend = () => {
-          setPadImagePreviews(prev => [...prev, reader.result as string])
+          const dataUrl = reader.result as string
+          setPadImagePreviews(prev => [...prev, dataUrl])
+          // Auto-extract text from the image
+          handleExtractText(startIndex + i, dataUrl)
         }
         reader.readAsDataURL(file)
       })
@@ -308,9 +329,76 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     setPadImagePreviews(prev => prev.filter((_, i) => i !== index))
   }
 
+  const handleExtractText = async (imageIndex: number, dataUrl?: string) => {
+    if (extractingText !== null) return
+
+    const url = dataUrl || padImagePreviews[imageIndex]
+    if (!url) return
+
+    // Parse data URL: "data:image/png;base64,..."
+    const match = url.match(/^data:(image\/\w+);base64,(.+)$/)
+    if (!match) {
+      toast.error(t.members.bloomAssist?.error || 'Something went wrong.')
+      return
+    }
+
+    const mimeType = match[1]
+    const imageBase64 = match[2]
+
+    setExtractingText(imageIndex)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+
+      const res = await fetch(`/api/members/${memberId}/notes/extract`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ imageBase64, mimeType, locale }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        if (res.status === 429) {
+          toast.error(t.members.bloomAssist?.rateLimited || 'Too many requests.')
+        } else {
+          toast.error(t.members.bloomAssist?.error || 'Something went wrong.')
+        }
+        return
+      }
+
+      if (!data.isNote) {
+        toast.error(t.members.bloomAssist?.notANote || "This image doesn't appear to contain a note or document.")
+        return
+      }
+
+      // Append extracted text to padInput
+      setPadInput(prev => {
+        if (prev.trim()) return prev + '\n\n' + data.extractedText
+        return data.extractedText
+      })
+
+      // Show brief checkmark
+      setExtractedIndex(imageIndex)
+      setTimeout(() => setExtractedIndex(null), 1500)
+
+      toast.success(t.members.bloomAssist?.extractionDone || 'Text extracted')
+
+      // Focus textarea
+      setTimeout(() => notepadInputRef.current?.focus(), 100)
+    } catch {
+      toast.error(t.members.bloomAssist?.error || 'Something went wrong.')
+    } finally {
+      setExtractingText(null)
+    }
+  }
+
   const handlePadSubmit = useCallback(async () => {
     if (!padInput.trim() && padImages.length === 0) return
-    if (padSaving) return
+    if (padSaving || extractingText !== null) return
 
     setPadSaving(true)
     try {
@@ -351,10 +439,10 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   }, [padInput, padImages, padSaving, padSessionId, padNoteType, memberId])
 
   const handlePadKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Enter to submit, Shift+Enter for newline
+    // Enter to submit, Shift+Enter for newline — block while extracting
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      handlePadSubmit()
+      if (extractingText === null) handlePadSubmit()
     }
   }
 
@@ -1006,11 +1094,33 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 {padImagePreviews.map((preview, index) => (
                   <div key={index} className="relative group">
                     <img src={preview} alt="" className="w-14 h-14 object-cover rounded-lg border border-gray-200" />
+                    {/* Remove button */}
                     <button
                       onClick={() => removePadImage(index)}
                       className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <X className="w-2.5 h-2.5" />
+                    </button>
+                    {/* Extract text button */}
+                    <button
+                      onClick={() => handleExtractText(index)}
+                      disabled={extractingText !== null}
+                      className={`absolute -bottom-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                        extractingText === index
+                          ? 'bg-purple-500 text-white opacity-100'
+                          : extractedIndex === index
+                            ? 'bg-emerald-500 text-white opacity-100'
+                            : 'bg-gray-900 text-white opacity-0 group-hover:opacity-100 hover:bg-purple-600'
+                      }`}
+                      title={t.members.bloomAssist?.extractText || 'Extract text'}
+                    >
+                      {extractingText === index ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : extractedIndex === index ? (
+                        <Check className="w-3 h-3" />
+                      ) : (
+                        <ScanLine className="w-3 h-3" />
+                      )}
                     </button>
                   </div>
                 ))}
@@ -1098,16 +1208,16 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                   placeholder={locale === 'fr' ? 'Écrivez une note... (Entrée pour sauvegarder)' : locale === 'es' ? 'Escribe una nota... (Enter para guardar)' : 'Write a note... (Enter to save, Shift+Enter for new line)'}
                   rows={1}
                   className="w-full bg-transparent px-2 py-2.5 pr-9 text-sm focus:outline-none resize-none leading-relaxed"
-                  style={{ minHeight: '42px', maxHeight: '120px' }}
+                  style={{ minHeight: '42px', maxHeight: '240px' }}
                   onInput={(e) => {
                     const target = e.target as HTMLTextAreaElement
                     target.style.height = '42px'
-                    target.style.height = Math.min(target.scrollHeight, 120) + 'px'
+                    target.style.height = Math.min(target.scrollHeight, 240) + 'px'
                   }}
                 />
                 <button
                   onClick={handlePadSubmit}
-                  disabled={padSaving || (!padInput.trim() && padImages.length === 0)}
+                  disabled={padSaving || extractingText !== null || (!padInput.trim() && padImages.length === 0)}
                   className="absolute right-2 bottom-2 p-1.5 rounded-lg text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:hover:text-gray-400 transition-colors"
                 >
                   {padSaving ? (

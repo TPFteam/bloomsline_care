@@ -337,6 +337,10 @@
       "focus_next": "¿En qué debo enfocarme ahora?",
       "session_reflection": "Reflexión de la sesión",
       "note_suggestions": "Sugerir qué documentar"
-    }
+    },
+    "extractText": "Extraer texto",
+    "extracting": "Extrayendo texto...",
+    "extractionDone": "Texto extraído",
+    "notANote": "Esta imagen no parece contener una nota o documento."
   }
 }
