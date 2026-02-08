@@ -7,107 +7,170 @@ import {
   Users,
   Calendar,
   Clock,
-  Target,
-  TrendingUp,
-  CheckCircle2,
-  XCircle,
-  Sparkles,
-  ArrowRight,
-  Heart,
   Activity,
+  Heart,
+  AlertCircle,
+  ArrowRight,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppSidebar, AppHeader } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
 import type { User } from '@/types/user'
 
-interface AnalyticsData {
-  // Members
-  totalMembers: number
-  activeMembers: number
-  inactiveMembers: number
-  pendingMembers: number
+// ── Types ────────────────────────────────────────────────────────────────
 
-  // Sessions
-  totalSessions: number
-  completedSessions: number
-  cancelledSessions: number
-  noShowSessions: number
-  upcomingSessions: number
-
-  // This month
-  sessionsThisMonth: number
-  newMembersThisMonth: number
-
-  // Journey stages
-  discoveryCount: number
-  buildingCount: number
-  thrivingCount: number
-  independentCount: number
-
-  // Notes
-  totalNotes: number
-  notesThisMonth: number
-
-  // Resources shared
-  totalSharedResources: number
-
-  // Recent members
-  recentMembers: Array<{
-    id: string
-    first_name: string
-    last_name: string
-    status: string
-    last_session_at: string | null
-    created_at: string
-  }>
+interface MemberRow {
+  id: string
+  first_name: string
+  last_name: string
+  status: string
+  last_session_at: string | null
+  created_at: string
 }
+
+interface SessionRow {
+  id: string
+  member_id: string
+  status: string
+  scheduled_at: string
+  session_type: string
+}
+
+interface MilestoneRow {
+  id: string
+  status: string
+  created_at: string
+}
+
+interface UpcomingSession {
+  id: string
+  member_id: string
+  scheduled_at: string
+  session_type: string
+  member_name: string
+}
+
+interface MonthlyData {
+  month: string
+  sessions: number
+}
+
+interface NoteRow {
+  id: string
+  created_at: string
+}
+
+interface AnalyticsState {
+  members: MemberRow[]
+  sessions: SessionRow[]
+  milestones: MilestoneRow[]
+  notes: NoteRow[]
+  sharedResources: number
+  upcomingSessions: UpcomingSession[]
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+function getMonthAbbrev(date: Date, locale: string): string {
+  return date.toLocaleDateString(
+    locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US',
+    { month: 'short' },
+  )
+}
+
+function daysAgo(dateStr: string | null): number | null {
+  if (!dateStr) return null
+  const diff = Date.now() - new Date(dateStr).getTime()
+  return Math.floor(diff / (1000 * 60 * 60 * 24))
+}
+
+function formatSessionType(type: string, locale: string): string {
+  const map: Record<string, Record<string, string>> = {
+    initial_consultation: { en: 'Initial', fr: 'Initiale', es: 'Inicial' },
+    follow_up: { en: 'Follow-up', fr: 'Suivi', es: 'Seguimiento' },
+    check_in: { en: 'Check-in', fr: 'Bilan', es: 'Revisión' },
+    crisis: { en: 'Crisis', fr: 'Crise', es: 'Crisis' },
+    group: { en: 'Group', fr: 'Groupe', es: 'Grupo' },
+    other: { en: 'Session', fr: 'Séance', es: 'Sesión' },
+  }
+  const lang = locale === 'fr' ? 'fr' : locale === 'es' ? 'es' : 'en'
+  return map[type]?.[lang] || map.other[lang]
+}
+
+function buildMonthlyChart(sessions: SessionRow[], locale: string, refDate: Date): MonthlyData[] {
+  const data: MonthlyData[] = []
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(refDate.getFullYear(), refDate.getMonth() - i, 1)
+    const monthStart = new Date(d.getFullYear(), d.getMonth(), 1)
+    const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59)
+    const count = sessions.filter((s) => {
+      const sd = new Date(s.scheduled_at)
+      return s.status === 'completed' && sd >= monthStart && sd <= monthEnd
+    }).length
+    data.push({ month: getMonthAbbrev(d, locale), sessions: count })
+  }
+  return data
+}
+
+// ── Custom tooltip ───────────────────────────────────────────────────────
+
+function ChartTooltip({ active, payload, locale }: { active?: boolean; payload?: Array<{ value: number }>; locale: string }) {
+  if (!active || !payload?.length) return null
+  const v = payload[0].value
+  return (
+    <div className="bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
+      {v} {locale === 'fr' ? 'séances' : locale === 'es' ? 'sesiones' : 'sessions'}
+    </div>
+  )
+}
+
+// ── Locale helper ────────────────────────────────────────────────────────
+
+function localeId(locale: string) {
+  return locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US'
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────
 
 export default function AnalyticsPage() {
   const { locale } = useLanguage()
   const supabase = createClient()
 
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState<AnalyticsData | null>(null)
+  const [data, setData] = useState<AnalyticsState | null>(null)
   const [userProfile, setUserProfile] = useState<User | null>(null)
-  const [selectedMonth, setSelectedMonth] = useState(new Date())
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date())
 
-  useEffect(() => {
-    fetchAnalytics()
-  }, [selectedMonth])
+  const isCurrentMonth =
+    selectedMonth.getMonth() === new Date().getMonth() &&
+    selectedMonth.getFullYear() === new Date().getFullYear()
 
-  const goToPreviousMonth = () => {
-    setSelectedMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
-  }
+  const goToPrev = () =>
+    setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
 
-  const goToNextMonth = () => {
-    const next = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1)
-    if (next <= new Date()) {
-      setSelectedMonth(next)
+  const goToNext = () => {
+    if (!isCurrentMonth) {
+      setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
     }
   }
 
-  const isCurrentMonth = () => {
-    const now = new Date()
-    return selectedMonth.getMonth() === now.getMonth() && selectedMonth.getFullYear() === now.getFullYear()
-  }
+  const formatMonthLabel = (date: Date) =>
+    date.toLocaleDateString(localeId(locale), { month: 'long', year: 'numeric' })
 
-  const formatMonthYear = (date: Date) => {
-    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
-      month: 'long',
-      year: 'numeric',
-    })
-  }
+  useEffect(() => {
+    fetchAnalytics()
+  }, [])
 
   const fetchAnalytics = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) return
 
-      // Fetch user profile
       const { data: profile } = await supabase
         .from('users')
         .select('*')
@@ -117,7 +180,6 @@ export default function AnalyticsPage() {
       if (profile) {
         setUserProfile(profile as User)
       } else {
-        // Fallback to auth user metadata
         setUserProfile({
           id: user.id,
           email: user.email!,
@@ -131,123 +193,63 @@ export default function AnalyticsPage() {
       }
 
       const now = new Date()
-      const startOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1).toISOString()
-      const endOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0, 23, 59, 59).toISOString()
 
-      // Fetch all data in parallel
-      const [
-        membersRes,
-        sessionsRes,
-        milestonesRes,
-        notesRes,
-        sharedRes,
-        sessionsThisMonthRes,
-        newMembersRes,
-        notesThisMonthRes,
-      ] = await Promise.all([
-        // Members
-        supabase
-          .from('members')
-          .select('id, first_name, last_name, status, last_session_at, created_at')
-          .eq('practitioner_id', user.id),
+      const [membersRes, sessionsRes, milestonesRes, notesRes, sharedRes, upcomingRes] =
+        await Promise.all([
+          supabase
+            .from('members')
+            .select('id, first_name, last_name, status, last_session_at, created_at')
+            .eq('practitioner_id', user.id),
+          supabase
+            .from('sessions')
+            .select('id, member_id, status, scheduled_at, session_type')
+            .eq('practitioner_id', user.id),
+          supabase
+            .from('milestones')
+            .select('id, status, created_at')
+            .eq('practitioner_id', user.id),
+          supabase
+            .from('progress_notes')
+            .select('id, created_at')
+            .eq('practitioner_id', user.id),
+          supabase
+            .from('shared_resources')
+            .select('id')
+            .eq('practitioner_id', user.id),
+          supabase
+            .from('sessions')
+            .select('id, member_id, scheduled_at, session_type')
+            .eq('practitioner_id', user.id)
+            .eq('status', 'scheduled')
+            .gte('scheduled_at', now.toISOString())
+            .order('scheduled_at', { ascending: true })
+            .limit(5),
+        ])
 
-        // Sessions
-        supabase
-          .from('sessions')
-          .select('id, status, scheduled_at')
-          .eq('practitioner_id', user.id),
+      const members = (membersRes.data || []) as MemberRow[]
+      const sessions = (sessionsRes.data || []) as SessionRow[]
 
-        // Journeys
-        supabase
-          .from('milestones')
-          .select('id, status')
-          .eq('practitioner_id', user.id),
-
-        // Notes
-        supabase
-          .from('progress_notes')
-          .select('id')
-          .eq('practitioner_id', user.id),
-
-        // Shared resources
-        supabase
-          .from('shared_resources')
-          .select('id')
-          .eq('practitioner_id', user.id),
-
-        // Sessions this month
-        supabase
-          .from('sessions')
-          .select('id')
-          .eq('practitioner_id', user.id)
-          .gte('scheduled_at', startOfMonth)
-          .lte('scheduled_at', endOfMonth),
-
-        // New members this month
-        supabase
-          .from('members')
-          .select('id')
-          .eq('practitioner_id', user.id)
-          .gte('created_at', startOfMonth)
-          .lte('created_at', endOfMonth),
-
-        // Notes this month
-        supabase
-          .from('progress_notes')
-          .select('id')
-          .eq('practitioner_id', user.id)
-          .gte('created_at', startOfMonth)
-          .lte('created_at', endOfMonth),
-      ])
-
-      const members = membersRes.data || []
-      const sessions = sessionsRes.data || []
-      const milestones = milestonesRes.data || []
-
-      // Calculate member stats
-      const activeMembers = members.filter(m => m.status === 'active').length
-      const inactiveMembers = members.filter(m => m.status === 'inactive').length
-      const pendingMembers = members.filter(m => m.status === 'pending').length
-
-      // Calculate session stats
-      const completedSessions = sessions.filter(s => s.status === 'completed').length
-      const cancelledSessions = sessions.filter(s => s.status === 'cancelled').length
-      const noShowSessions = sessions.filter(s => s.status === 'no_show').length
-      const upcomingSessions = sessions.filter(s =>
-        s.status === 'scheduled' && new Date(s.scheduled_at) >= now
-      ).length
-
-      // Calculate journey stages
-      const discoveryCount = milestones.filter(m => m.status === 'discovery' || m.status === 'planned').length
-      const buildingCount = milestones.filter(m => m.status === 'building' || m.status === 'in_progress').length
-      const thrivingCount = milestones.filter(m => m.status === 'thriving').length
-      const independentCount = milestones.filter(m => m.status === 'independent' || m.status === 'achieved').length
-
-      // Recent members (last 5)
-      const recentMembers = [...members]
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 5)
+      const upcoming = (upcomingRes.data || []) as Array<{
+        id: string
+        member_id: string
+        scheduled_at: string
+        session_type: string
+      }>
+      const enrichedUpcoming: UpcomingSession[] = upcoming.map((s) => {
+        const m = members.find((mem) => mem.id === s.member_id)
+        return {
+          ...s,
+          member_name: m ? `${m.first_name} ${m.last_name}` : '—',
+        }
+      })
 
       setData({
-        totalMembers: members.length,
-        activeMembers,
-        inactiveMembers,
-        pendingMembers,
-        totalSessions: sessions.length,
-        completedSessions,
-        cancelledSessions,
-        noShowSessions,
-        upcomingSessions,
-        sessionsThisMonth: sessionsThisMonthRes.data?.length || 0,
-        newMembersThisMonth: newMembersRes.data?.length || 0,
-        discoveryCount,
-        buildingCount,
-        thrivingCount,
-        independentCount,
-        totalNotes: notesRes.data?.length || 0,
-        notesThisMonth: notesThisMonthRes.data?.length || 0,
-        totalSharedResources: sharedRes.data?.length || 0,
-        recentMembers,
+        members,
+        sessions,
+        milestones: (milestonesRes.data || []) as MilestoneRow[],
+        notes: (notesRes.data || []) as NoteRow[],
+        sharedResources: sharedRes.data?.length || 0,
+        upcomingSessions: enrichedUpcoming,
       })
     } catch (error) {
       console.error('Error fetching analytics:', error)
@@ -255,6 +257,8 @@ export default function AnalyticsPage() {
       setLoading(false)
     }
   }
+
+  // ── Loading ──────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -264,8 +268,10 @@ export default function AnalyticsPage() {
           <AppHeader user={null} />
           <div className="flex items-center justify-center h-[calc(100vh-65px)]">
             <div className="text-center">
-              <div className="w-10 h-10 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-500">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</p>
+              <div className="w-10 h-10 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-gray-500">
+                {locale === 'fr' ? 'Chargement...' : locale === 'es' ? 'Cargando...' : 'Loading...'}
+              </p>
             </div>
           </div>
         </main>
@@ -273,15 +279,148 @@ export default function AnalyticsPage() {
     )
   }
 
-  if (!data) {
-    return null
+  if (!data) return null
+
+  // ── Derived data ─────────────────────────────────────────────────────
+
+  const { members, sessions, milestones, notes, upcomingSessions } = data
+
+  const activeMembers = members.filter((m) => m.status === 'active').length
+  const now = new Date()
+
+  // Month boundaries for the selected month
+  const selMonthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1)
+  const selMonthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0, 23, 59, 59)
+
+  const sessionsInMonth = sessions.filter((s) => {
+    const d = new Date(s.scheduled_at)
+    return d >= selMonthStart && d <= selMonthEnd
+  }).length
+
+  const nextSession = upcomingSessions[0] || null
+  const chartData = buildMonthlyChart(sessions, locale, selectedMonth)
+
+  // Only show milestones that existed by the end of the selected month
+  const milestonesInRange = milestones.filter(
+    (m) => new Date(m.created_at) <= selMonthEnd,
+  )
+
+  const discoveryCount = milestonesInRange.filter(
+    (m) => m.status === 'discovery' || m.status === 'planned',
+  ).length
+  const buildingCount = milestonesInRange.filter(
+    (m) => m.status === 'building' || m.status === 'in_progress',
+  ).length
+  const thrivingCount = milestonesInRange.filter((m) => m.status === 'thriving').length
+  const independentCount = milestonesInRange.filter(
+    (m) => m.status === 'independent' || m.status === 'achieved',
+  ).length
+  const totalMilestones = discoveryCount + buildingCount + thrivingCount + independentCount
+
+  const staleClients = members
+    .filter((m) => {
+      if (m.status !== 'active') return false
+      const d = daysAgo(m.last_session_at)
+      return d === null || d >= 14
+    })
+    .sort((a, b) => {
+      const da = daysAgo(a.last_session_at)
+      const db = daysAgo(b.last_session_at)
+      if (da === null) return -1
+      if (db === null) return 1
+      return db - da
+    })
+    .slice(0, 5)
+
+  const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+  const thisWeekSessions = upcomingSessions.filter(
+    (s) => new Date(s.scheduled_at) <= oneWeekFromNow,
+  )
+
+  const needsAttentionEmpty = staleClients.length === 0 && thisWeekSessions.length === 0
+
+  const newClientsInMonth = members.filter((m) => {
+    const d = new Date(m.created_at)
+    return d >= selMonthStart && d <= selMonthEnd
+  }).length
+
+  const notesInMonth = notes.filter((n) => {
+    const d = new Date(n.created_at)
+    return d >= selMonthStart && d <= selMonthEnd
+  }).length
+
+  // ── Greeting ─────────────────────────────────────────────────────────
+
+  const hour = now.getHours()
+  const greeting =
+    locale === 'fr'
+      ? hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir'
+      : locale === 'es'
+        ? hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches'
+        : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+
+  const firstName = userProfile?.full_name?.split(' ')[0] || ''
+
+  // ── Empty state ──────────────────────────────────────────────────────
+
+  if (members.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex">
+        <AppSidebar activeItem="analytics" />
+        <main className="flex-1 ml-64">
+          <AppHeader
+            user={userProfile}
+            leftContent={
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                <Activity className="w-4 h-4" />
+                <span>{locale === 'fr' ? 'Rythme' : locale === 'es' ? 'Tu ritmo' : 'Your Flow'}</span>
+              </div>
+            }
+          />
+          <div className="p-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white border border-gray-200 rounded-xl p-12 text-center"
+            >
+              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {locale === 'fr'
+                  ? 'Commencez votre pratique'
+                  : locale === 'es'
+                    ? 'Comienza tu práctica'
+                    : 'Start your practice'}
+              </h3>
+              <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                {locale === 'fr'
+                  ? 'Ajoutez votre premier client pour voir votre rythme de pratique ici.'
+                  : locale === 'es'
+                    ? 'Agrega tu primer cliente para ver el ritmo de tu práctica aquí.'
+                    : 'Add your first client to see your practice flow here.'}
+              </p>
+              <Link
+                href="/members"
+                className="inline-flex items-center px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-colors"
+              >
+                {locale === 'fr' ? 'Ajouter un client' : locale === 'es' ? 'Agregar un cliente' : 'Add a client'}
+              </Link>
+            </motion.div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
-  const completionRate = data.totalSessions > 0
-    ? Math.round((data.completedSessions / data.totalSessions) * 100)
-    : 0
+  // ── Render ────────────────────────────────────────────────────────────
 
-  const totalJourneys = data.discoveryCount + data.buildingCount + data.thrivingCount + data.independentCount
+  const journeySegments = [
+    { count: discoveryCount, color: 'bg-blue-400', label: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery' },
+    { count: buildingCount, color: 'bg-amber-400', label: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building' },
+    { count: thrivingCount, color: 'bg-emerald-400', label: locale === 'fr' ? 'Épanouissement' : locale === 'es' ? 'Florecimiento' : 'Thriving' },
+    { count: independentCount, color: 'bg-violet-400', label: locale === 'fr' ? 'Autonome' : locale === 'es' ? 'Independiente' : 'Independent' },
+  ].filter((s) => s.count > 0)
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -293,395 +432,327 @@ export default function AnalyticsPage() {
           leftContent={
             <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <Activity className="w-4 h-4" />
-              <span>{locale === 'fr' ? 'Rythme' : 'Your Flow'}</span>
+              <span>{locale === 'fr' ? 'Rythme' : locale === 'es' ? 'Tu ritmo' : 'Your Flow'}</span>
             </div>
           }
         />
 
         <div className="p-8">
-          {/* Welcome Section */}
+          {/* ─── Greeting + Month selector ──────────────────────────────── */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between mb-6">
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">
+                {greeting}{firstName ? `, ${firstName}` : ''}
+              </h1>
+              <p className="text-sm text-gray-400 mt-0.5">
+                {locale === 'fr'
+                  ? 'Voici le pouls de votre pratique.'
+                  : locale === 'es'
+                    ? 'Aquí está el pulso de tu práctica.'
+                    : "Here's the pulse of your practice."}
+              </p>
+            </div>
+
+            {/* Month picker */}
+            <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-1 py-0.5 shrink-0">
+              <button
+                onClick={goToPrev}
+                className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-xs font-medium text-gray-700 min-w-[100px] text-center capitalize select-none">
+                {formatMonthLabel(selectedMonth)}
+              </span>
+              <button
+                onClick={goToNext}
+                disabled={isCurrentMonth}
+                className={`p-1.5 rounded-md transition-colors ${
+                  isCurrentMonth
+                    ? 'text-gray-200 cursor-not-allowed'
+                    : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </motion.div>
+
+          {/* ─── 1. Practice Pulse — borderless stats ──────────────────── */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            transition={{ delay: 0.05 }}
+            className="grid grid-cols-3 gap-8 mb-8"
           >
-            <div className="flex items-center justify-between">
+            {/* People */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                <Users className="w-[18px] h-[18px] text-blue-600" />
+              </div>
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-                  {locale === 'fr' ? 'Votre pratique en un coup d\'œil' : 'Your practice at a glance'}
-                </h1>
-                <p className="text-gray-500">
-                  {locale === 'fr'
-                    ? `Vous accompagnez ${data.totalMembers} ${data.totalMembers === 1 ? 'personne' : 'personnes'} dans leur parcours.`
-                    : `You're supporting ${data.totalMembers} ${data.totalMembers === 1 ? 'person' : 'people'} on their journey.`
-                  }
+                <p className="text-xs font-medium text-gray-500 mb-0.5">
+                  {locale === 'fr' ? 'Personnes accompagnées' : locale === 'es' ? 'Personas que apoyas' : 'People You Support'}
+                </p>
+                <p className="text-2xl font-bold text-gray-900 leading-none">{activeMembers}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {locale === 'fr' ? `${members.length} au total` : locale === 'es' ? `${members.length} en total` : `${members.length} total`}
                 </p>
               </div>
+            </div>
 
-              {/* Month Selector */}
-              <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-2 py-1">
-                <button
-                  onClick={goToPreviousMonth}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500 hover:text-gray-700"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <span className="text-sm font-medium text-gray-900 min-w-[140px] text-center capitalize">
-                  {formatMonthYear(selectedMonth)}
-                </span>
-                <button
-                  onClick={goToNextMonth}
-                  disabled={isCurrentMonth()}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isCurrentMonth()
-                      ? 'text-gray-300 cursor-not-allowed'
-                      : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+            {/* Sessions */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                <Calendar className="w-[18px] h-[18px] text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 mb-0.5">
+                  {locale === 'fr' ? 'Séances' : locale === 'es' ? 'Sesiones' : 'Sessions'}
+                </p>
+                <div className="flex items-end gap-3">
+                  <p className="text-2xl font-bold text-gray-900 leading-none">{sessionsInMonth}</p>
+                  <div className="w-16 h-7 mb-0.5">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData}>
+                        <defs>
+                          <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                            <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <Area type="monotone" dataKey="sessions" stroke="#10b981" strokeWidth={1.5} fill="url(#sparkGrad)" dot={false} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Next session */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center shrink-0">
+                <Clock className="w-[18px] h-[18px] text-violet-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-gray-500 mb-0.5">
+                  {locale === 'fr' ? 'Prochaine séance' : locale === 'es' ? 'Próxima sesión' : 'Next Session'}
+                </p>
+                {nextSession ? (
+                  <Link href={`/members/${nextSession.member_id}`} className="group">
+                    <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-violet-600 transition-colors">
+                      {nextSession.member_name}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {new Date(nextSession.scheduled_at).toLocaleDateString(localeId(locale), { weekday: 'short', month: 'short', day: 'numeric' })}
+                      {' · '}
+                      {new Date(nextSession.scheduled_at).toLocaleTimeString(localeId(locale), { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </Link>
+                ) : (
+                  <p className="text-sm text-gray-400">
+                    {locale === 'fr' ? 'Rien de planifié' : locale === 'es' ? 'Nada programado' : 'Nothing scheduled'}
+                  </p>
+                )}
               </div>
             </div>
           </motion.div>
 
-          {/* Key Numbers */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white border border-gray-200 rounded-xl p-5"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-                  <Users className="w-4 h-4 text-blue-600" />
-                </div>
-                <span className="text-sm text-gray-500">
-                  {locale === 'fr' ? 'Clients actifs' : 'Active clients'}
-                </span>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">{data.activeMembers}</p>
-              <p className="text-xs text-gray-400 mt-1">
-                {locale === 'fr' ? `sur ${data.totalMembers} au total` : `of ${data.totalMembers} total`}
-              </p>
-            </motion.div>
+          {/* ─── Divider ───────────────────────────────────────────────── */}
+          <div className="border-t border-gray-200 mb-6" />
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="bg-white border border-gray-200 rounded-xl p-5"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-                  <Calendar className="w-4 h-4 text-emerald-600" />
-                </div>
-                <span className="text-sm text-gray-500">
-                  {isCurrentMonth()
-                    ? (locale === 'fr' ? 'Ce mois' : 'This month')
-                    : formatMonthYear(selectedMonth)
-                  }
-                </span>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">{data.sessionsThisMonth}</p>
-              <p className="text-xs text-gray-400 mt-1">
-                {locale === 'fr' ? 'séances' : 'sessions'}
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white border border-gray-200 rounded-xl p-5"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center">
-                  <Clock className="w-4 h-4 text-violet-600" />
-                </div>
-                <span className="text-sm text-gray-500">
-                  {locale === 'fr' ? 'À venir' : 'Upcoming'}
-                </span>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">{data.upcomingSessions}</p>
-              <p className="text-xs text-gray-400 mt-1">
-                {locale === 'fr' ? 'séances planifiées' : 'scheduled sessions'}
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="bg-white border border-gray-200 rounded-xl p-5"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
-                  <Target className="w-4 h-4 text-amber-600" />
-                </div>
-                <span className="text-sm text-gray-500">
-                  {locale === 'fr' ? 'Taux de complétion' : 'Completion rate'}
-                </span>
-              </div>
-              <p className="text-3xl font-bold text-gray-900">{completionRate}%</p>
-              <p className="text-xs text-gray-400 mt-1">
-                {locale === 'fr' ? `${data.completedSessions} terminées` : `${data.completedSessions} completed`}
-              </p>
-            </motion.div>
-          </div>
-
-          {/* Journey Progress */}
-          {totalJourneys > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-white border border-gray-200 rounded-xl p-6 mb-8"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-gray-600" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">
-                    {locale === 'fr' ? 'Progrès des objectifs' : 'Goal progress'}
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    {locale === 'fr'
-                      ? `${totalJourneys} objectifs suivis au total`
-                      : `${totalJourneys} goals tracked in total`
-                    }
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-4 gap-4">
-                <div className="text-center p-4 rounded-xl bg-blue-50">
-                  <p className="text-2xl font-bold text-blue-700">{data.discoveryCount}</p>
-                  <p className="text-sm text-blue-600 mt-1">
-                    {locale === 'fr' ? 'Découverte' : 'Discovery'}
-                  </p>
-                </div>
-                <div className="text-center p-4 rounded-xl bg-amber-50">
-                  <p className="text-2xl font-bold text-amber-700">{data.buildingCount}</p>
-                  <p className="text-sm text-amber-600 mt-1">
-                    {locale === 'fr' ? 'Construction' : 'Building'}
-                  </p>
-                </div>
-                <div className="text-center p-4 rounded-xl bg-emerald-50">
-                  <p className="text-2xl font-bold text-emerald-700">{data.thrivingCount}</p>
-                  <p className="text-sm text-emerald-600 mt-1">
-                    {locale === 'fr' ? 'Épanouissement' : 'Thriving'}
-                  </p>
-                </div>
-                <div className="text-center p-4 rounded-xl bg-violet-50">
-                  <p className="text-2xl font-bold text-violet-700">{data.independentCount}</p>
-                  <p className="text-sm text-violet-600 mt-1">
-                    {locale === 'fr' ? 'Autonome' : 'Independent'}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Two Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Session Breakdown */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
-              className="bg-white border border-gray-200 rounded-xl p-6"
-            >
-              <h3 className="font-medium text-gray-900 mb-4">
-                {locale === 'fr' ? 'Résumé des séances' : 'Session summary'}
-              </h3>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                    <span className="text-sm text-gray-600">
-                      {locale === 'fr' ? 'Terminées' : 'Completed'}
-                    </span>
-                  </div>
-                  <span className="font-semibold text-gray-900">{data.completedSessions}</span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <XCircle className="w-5 h-5 text-gray-400" />
-                    <span className="text-sm text-gray-600">
-                      {locale === 'fr' ? 'Annulées' : 'Cancelled'}
-                    </span>
-                  </div>
-                  <span className="font-semibold text-gray-900">{data.cancelledSessions}</span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <XCircle className="w-5 h-5 text-red-400" />
-                    <span className="text-sm text-gray-600">
-                      {locale === 'fr' ? 'Absences' : 'No-shows'}
-                    </span>
-                  </div>
-                  <span className="font-semibold text-gray-900">{data.noShowSessions}</span>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-gray-100">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">
-                    {locale === 'fr' ? 'Total des séances' : 'Total sessions'}
-                  </span>
-                  <span className="font-semibold text-gray-900">{data.totalSessions}</span>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Activity Summary */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-white border border-gray-200 rounded-xl p-6"
-            >
-              <h3 className="font-medium text-gray-900 mb-4">
-                {locale === 'fr' ? 'Votre activité' : 'Your activity'}
-              </h3>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                  <div className="flex items-center gap-3">
-                    <Heart className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">
-                      {locale === 'fr' ? 'Notes rédigées' : 'Notes written'}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-semibold text-gray-900">{data.totalNotes}</span>
-                    <span className="text-xs text-gray-400 ml-2">
-                      ({data.notesThisMonth} {locale === 'fr' ? 'ce mois' : 'this month'})
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                  <div className="flex items-center gap-3">
-                    <TrendingUp className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">
-                      {locale === 'fr' ? 'Nouveaux clients' : 'New clients'}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-semibold text-gray-900">{data.newMembersThisMonth}</span>
-                    <span className="text-xs text-gray-400 ml-2">
-                      {locale === 'fr' ? 'ce mois' : 'this month'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
-                  <div className="flex items-center gap-3">
-                    <Sparkles className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">
-                      {locale === 'fr' ? 'Ressources partagées' : 'Resources shared'}
-                    </span>
-                  </div>
-                  <span className="font-semibold text-gray-900">{data.totalSharedResources}</span>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Recent Members */}
-          {data.recentMembers.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.45 }}
-              className="bg-white border border-gray-200 rounded-xl p-6"
-            >
+          {/* ─── 2 + 3. Chart + Journey side-by-side ──────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="grid gap-4 mb-6 grid-cols-1 lg:grid-cols-5"
+          >
+            {/* Sessions chart — takes 3/5 */}
+            <div className="bg-white border border-gray-100 rounded-xl p-5 lg:col-span-3">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-gray-900">
-                  {locale === 'fr' ? 'Clients récents' : 'Recent clients'}
-                </h3>
-                <Link href="/members">
-                  <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700 rounded-lg">
-                    {locale === 'fr' ? 'Voir tous' : 'View all'}
-                    <ArrowRight className="w-4 h-4 ml-1" />
-                  </Button>
-                </Link>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900">
+                    {locale === 'fr' ? 'Vos séances' : locale === 'es' ? 'Tus sesiones' : 'Your Sessions'}
+                  </h3>
+                  <p className="text-xs text-gray-400">
+                    {locale === 'fr' ? 'Complétées par mois' : locale === 'es' ? 'Completadas por mes' : 'Completed per month'}
+                  </p>
+                </div>
               </div>
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+                    <defs>
+                      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.15} />
+                        <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af' }} />
+                    <Tooltip content={<ChartTooltip locale={locale} />} cursor={false} />
+                    <Area
+                      type="monotone"
+                      dataKey="sessions"
+                      stroke="#6366f1"
+                      strokeWidth={2}
+                      fill="url(#areaGrad)"
+                      dot={false}
+                      activeDot={{ r: 3.5, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
 
-              <div className="space-y-2">
-                {data.recentMembers.map((member) => (
-                  <Link key={member.id} href={`/members/${member.id}`}>
-                    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-gray-900 flex items-center justify-center text-white text-sm font-medium">
-                          {member.first_name[0]}{member.last_name[0]}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900 text-sm">
-                            {member.first_name} {member.last_name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {locale === 'fr' ? 'Ajouté le' : 'Added'}{' '}
-                            {new Date(member.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                      <span className={`px-2 py-1 rounded-md text-xs font-medium ${
-                        member.status === 'active'
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : member.status === 'pending'
-                          ? 'bg-amber-50 text-amber-700'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {member.status === 'active'
-                          ? (locale === 'fr' ? 'Actif' : 'Active')
-                          : member.status === 'pending'
-                          ? (locale === 'fr' ? 'En attente' : 'Pending')
-                          : (locale === 'fr' ? 'Inactif' : 'Inactive')
-                        }
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* Empty State */}
-          {data.totalMembers === 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white border border-gray-200 rounded-xl p-12 text-center"
-            >
-              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {locale === 'fr' ? 'Commencez votre pratique' : 'Start your practice'}
+            {/* Journey — takes 2/5 */}
+            <div className="bg-white border border-gray-100 rounded-xl p-5 lg:col-span-2 flex flex-col">
+              <h3 className="text-sm font-medium text-gray-900">
+                {locale === 'fr' ? 'Parcours' : locale === 'es' ? 'Recorrido' : 'Journey'}
               </h3>
-              <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                {locale === 'fr'
-                  ? 'Ajoutez votre premier client pour commencer à suivre votre pratique.'
-                  : 'Add your first client to start tracking your practice.'
-                }
+              <p className="text-xs text-gray-400 mb-4">
+                {totalMilestones > 0
+                  ? `${totalMilestones} ${locale === 'fr' ? 'objectifs' : locale === 'es' ? 'objetivos' : 'milestones'}`
+                  : locale === 'fr' ? 'Objectifs suivis' : locale === 'es' ? 'Objetivos seguidos' : 'Milestones tracked'}
               </p>
-              <Link href="/members">
-                <Button className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl">
-                  {locale === 'fr' ? 'Ajouter un client' : 'Add a client'}
-                </Button>
-              </Link>
-            </motion.div>
-          )}
+
+              {totalMilestones > 0 ? (
+                <div className="flex-1 flex flex-col justify-center">
+                  <div className="flex h-4 rounded-full overflow-hidden mb-3">
+                    {journeySegments.map((seg) => (
+                      <div
+                        key={seg.label}
+                        className={seg.color}
+                        style={{ width: `${(seg.count / totalMilestones) * 100}%` }}
+                      />
+                    ))}
+                  </div>
+                  <div className="space-y-1.5">
+                    {journeySegments.map((seg) => (
+                      <div key={seg.label} className="flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-1.5 text-gray-500">
+                          <span className={`w-2 h-2 rounded-full ${seg.color}`} />
+                          {seg.label}
+                        </span>
+                        <span className="text-gray-400 tabular-nums">{seg.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <p className="text-xs text-gray-300">
+                    {locale === 'fr'
+                      ? 'Aucune donnée pour cette période'
+                      : locale === 'es'
+                        ? 'Sin datos para este período'
+                        : 'No data for this period'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* ─── 4. Needs Attention ────────────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="mb-6"
+          >
+            {needsAttentionEmpty ? (
+              <div className="flex items-center justify-center gap-2 py-6 text-sm text-gray-400">
+                <Heart className="w-4 h-4 text-emerald-400" />
+                {locale === 'fr'
+                  ? 'Tout est à jour — beau travail !'
+                  : locale === 'es'
+                    ? 'Todo al día — ¡buen trabajo!'
+                    : "All caught up — nice work!"}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Overdue follow-ups */}
+                {staleClients.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                      <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                        {locale === 'fr'
+                          ? 'Suivis en retard'
+                          : locale === 'es'
+                            ? 'Seguimientos pendientes'
+                            : 'Overdue Follow-ups'}
+                      </h3>
+                    </div>
+                    <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50">
+                      {staleClients.map((m) => {
+                        const d = daysAgo(m.last_session_at)
+                        return (
+                          <Link key={m.id} href={`/members/${m.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/50 transition-colors first:rounded-t-xl last:rounded-b-xl">
+                            <div className="w-7 h-7 rounded-full bg-gray-900 flex items-center justify-center text-white text-[10px] font-medium shrink-0">
+                              {m.first_name[0]}{m.last_name[0]}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {m.first_name} {m.last_name}
+                              </p>
+                            </div>
+                            <span className="text-xs text-gray-400 whitespace-nowrap">
+                              {d === null
+                                ? locale === 'fr' ? 'Jamais vu' : locale === 'es' ? 'Nunca visto' : 'Never seen'
+                                : locale === 'fr' ? `${d}j` : `${d}d ago`}
+                            </span>
+                            <ArrowRight className="w-3.5 h-3.5 text-gray-300" />
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Coming up this week */}
+                {thisWeekSessions.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                      <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                        {locale === 'fr' ? 'Cette semaine' : locale === 'es' ? 'Esta semana' : 'Coming up this week'}
+                      </h3>
+                    </div>
+                    <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50">
+                      {thisWeekSessions.map((s) => (
+                        <Link key={s.id} href={`/members/${s.member_id}`} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50/50 transition-colors first:rounded-t-xl last:rounded-b-xl">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{s.member_name}</p>
+                            <p className="text-xs text-gray-400">{formatSessionType(s.session_type, locale)}</p>
+                          </div>
+                          <p className="text-xs text-gray-400 whitespace-nowrap ml-4">
+                            {new Date(s.scheduled_at).toLocaleDateString(localeId(locale), { weekday: 'short', month: 'short', day: 'numeric' })}
+                            {' · '}
+                            {new Date(s.scheduled_at).toLocaleTimeString(localeId(locale), { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </motion.div>
+
+          {/* ─── 5. Activity Footer ────────────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.25 }}
+            className="border-t border-gray-100 pt-4 pb-2 text-xs text-gray-400 text-center"
+          >
+            {locale === 'fr'
+              ? `${notesInMonth} notes · ${data.sharedResources} ressources partagées · ${newClientsInMonth} nouveaux clients`
+              : locale === 'es'
+                ? `${notesInMonth} notas · ${data.sharedResources} recursos compartidos · ${newClientsInMonth} clientes nuevos`
+                : `${notesInMonth} notes · ${data.sharedResources} resources shared · ${newClientsInMonth} new clients`}
+          </motion.div>
         </div>
       </main>
     </div>
