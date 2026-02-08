@@ -170,6 +170,7 @@ export function FeedbackButton({
       {/* Floating Button - only show if enabled */}
       {showFloatingButton && (
         <motion.button
+          data-feedback-button
           onClick={() => setIsOpen(true)}
           className="fixed bottom-6 right-6 z-[150] w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-shadow"
           whileHover={{ scale: 1.05 }}

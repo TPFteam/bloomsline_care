@@ -15,6 +15,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useRouter } from 'next/navigation'
 import type { User as UserType } from '@/types/user'
+import { PractitionerChatPanel } from '@/components/bloom/practitioner-chat-panel'
 
 interface AppHeaderProps {
   user: UserType | null
@@ -26,6 +27,7 @@ export function AppHeader({ user, leftContent }: AppHeaderProps) {
   const router = useRouter()
   const supabase = createClient()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [showPractitionerChat, setShowPractitionerChat] = useState(false)
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -39,14 +41,14 @@ export function AppHeader({ user, leftContent }: AppHeaderProps) {
 
         <div className="flex items-center gap-3">
           {/* Talk to Bloom */}
-          <Link href="/bloom">
+          <button onClick={() => setShowPractitionerChat(true)}>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-sm text-gray-900 dark:text-gray-100 font-medium">
-              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-lavender-400 to-teal-400 flex items-center justify-center">
+              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#D4856A] to-[#E8A87C] flex items-center justify-center">
                 <MessageCircle className="w-3 h-3 text-white" />
               </div>
               <span>{locale === 'fr' ? 'Parler à Bloom' : locale === 'es' ? 'Hablar con Bloom' : 'Talk to Bloom'}</span>
             </div>
-          </Link>
+          </button>
 
           {/* Dark mode toggle - hidden for now */}
           {/* <button
@@ -158,6 +160,11 @@ export function AppHeader({ user, leftContent }: AppHeaderProps) {
           </div>
         </div>
       </div>
+
+      <PractitionerChatPanel
+        isOpen={showPractitionerChat}
+        onClose={() => setShowPractitionerChat(false)}
+      />
     </header>
   )
 }
