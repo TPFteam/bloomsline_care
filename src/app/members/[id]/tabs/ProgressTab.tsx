@@ -575,7 +575,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
 
       if (error) throw error
 
-      toast.success(locale === 'fr' ? 'Objectif ajouté' : locale === 'es' ? 'Objetivo añadido' : 'Goal added')
+      toast.success(locale === 'fr' ? 'Axe de travail ajouté' : locale === 'es' ? 'Objetivo añadido' : 'Goal added')
 
       // Set the newly added goal ID for highlighting
       if (data?.id) {
@@ -904,18 +904,6 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
       items: discoveryMilestones,
     },
     {
-      id: 'building',
-      title: 'Building',
-      titleFr: 'Ancrage',
-      description: 'Actively working through challenges and developing new skills and coping strategies.',
-      descriptionFr: 'Installer des repères stables pour mieux traverser les situations.',
-      icon: Play,
-      color: 'text-emerald-600',
-      bgColor: 'from-emerald-100/50 to-emerald-200/30',
-      borderColor: 'border-emerald-300/50',
-      items: buildingMilestones,
-    },
-    {
       id: 'thriving',
       title: 'Thriving',
       titleFr: 'Évolution',
@@ -926,6 +914,18 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
       bgColor: 'from-emerald-200/50 to-emerald-300/30',
       borderColor: 'border-emerald-400/50',
       items: thrivingMilestones,
+    },
+    {
+      id: 'building',
+      title: 'Building',
+      titleFr: 'Ancrage',
+      description: 'Actively working through challenges and developing new skills and coping strategies.',
+      descriptionFr: 'Installer des repères stables pour mieux traverser les situations.',
+      icon: Play,
+      color: 'text-emerald-600',
+      bgColor: 'from-emerald-100/50 to-emerald-200/30',
+      borderColor: 'border-emerald-300/50',
+      items: buildingMilestones,
     },
     {
       id: 'independent',
@@ -981,7 +981,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-900 text-sm">
-                    {locale === 'fr' ? 'Objectifs suggérés' : locale === 'es' ? 'Objetivos sugeridos' : 'Suggested Goals'}
+                    {locale === 'fr' ? 'Axes suggérés' : locale === 'es' ? 'Objetivos sugeridos' : 'Suggested Goals'}
                   </h3>
                   {latestSummary && (
                     <p className="text-xs text-gray-500">
@@ -1080,7 +1080,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
               <div className="flex items-center justify-between mb-5">
                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                   <Target className="w-5 h-5 text-lavender-500" />
-                  {locale === 'fr' ? 'Nouvel objectif' : 'Add New Goal'}
+                  {locale === 'fr' ? 'Nouvel axe de travail' : 'Add New Goal'}
                 </h3>
                 <button
                   onClick={() => setShowAddMilestone(false)}
@@ -1112,7 +1112,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder={locale === 'fr' ? 'Détails supplémentaires sur cet objectif...' : 'Additional details about this goal...'}
+                    placeholder={locale === 'fr' ? 'Détails supplémentaires sur cet axe de travail...' : 'Additional details about this goal...'}
                     rows={2}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none resize-none bg-white "
                   />
@@ -1199,7 +1199,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
           className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
         >
           <Plus className="w-4 h-4 mr-2" />
-          {locale === 'fr' ? 'Ajouter un objectif' : 'Add Goal'}
+          {locale === 'fr' ? 'Axe de travail' : 'Add Goal'}
         </Button>
       </div>
 
@@ -1266,7 +1266,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
                   {column.items.length === 0 && dragOverColumn !== column.id && (
                     <div className="text-center py-4">
                       <p className="text-sm text-gray-400">
-                        {locale === 'fr' ? 'Aucun objectif' : 'No goals'}
+                        {locale === 'fr' ? 'Aucun axe de travail' : 'No goals'}
                       </p>
                     </div>
                   )}
@@ -1291,7 +1291,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-500 hover:bg-white/50 hover:text-gray-700 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>{locale === 'fr' ? 'Ajouter un objectif' : 'Add a goal'}</span>
+                    <span>{locale === 'fr' ? 'Ajouter un axe de travail' : 'Add a goal'}</span>
                   </button>
                 </div>
               </motion.div>

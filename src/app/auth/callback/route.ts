@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient, createAdminClient } from '@/lib/supabase/server-client'
+import { createDemoMembers } from '@/lib/demo/create-demo-members'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
@@ -199,6 +200,15 @@ export async function GET(request: NextRequest) {
                   avatar_url: data.user?.user_metadata?.avatar_url || null,
                   has_consented: false,
                 }, { onConflict: 'id' })
+
+              // If practitioner, create demo members
+              if (waitlistUserType === 'practitioner') {
+                try {
+                  await createDemoMembers(adminClient, userId)
+                } catch (demoErr) {
+                  console.error('Failed to create demo members:', demoErr)
+                }
+              }
 
               // If member, also create a member record
               if (waitlistUserType === 'member') {

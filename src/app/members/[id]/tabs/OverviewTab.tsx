@@ -419,7 +419,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                 content: comment.content,
                 created_at: comment.created_at,
                 type: 'milestone_comment',
-                source_label: locale === 'fr' ? 'Note d\'objectif' : 'Goal Note',
+                source_label: locale === 'fr' ? 'Note d\'axe de travail' : 'Goal Note',
                 milestone_title: milestoneMap.get(comment.milestone_id),
                 milestone_id: comment.milestone_id,
               })
@@ -581,7 +581,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
       iconColor: 'text-blue-600',
     },
     active_goals: {
-      label: locale === 'fr' ? 'Objectifs actifs' : 'Active Goals',
+      label: locale === 'fr' ? 'Axes de travail actifs' : 'Active Goals',
       icon: <Target className="w-4 h-4" />,
       iconBg: 'bg-amber-50',
       iconColor: 'text-amber-600',
@@ -744,8 +744,8 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
             <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
               <Target className="w-6 h-6 text-gray-400" />
             </div>
-            <p className="text-sm text-gray-500">{locale === 'fr' ? 'Aucun objectif actif' : 'No active goals'}</p>
-            <p className="text-xs text-gray-400 mt-1">{locale === 'fr' ? 'Les objectifs en cours apparaîtront ici' : 'Goals in progress will appear here'}</p>
+            <p className="text-sm text-gray-500">{locale === 'fr' ? 'Aucun axe de travail actif' : 'No active goals'}</p>
+            <p className="text-xs text-gray-400 mt-1">{locale === 'fr' ? 'Les axes de travail en cours apparaîtront ici' : 'Goals in progress will appear here'}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -786,7 +786,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
               onClick={() => onNavigateToTab?.('progress')}
               className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              {locale === 'fr' ? `Voir tous les objectifs (${activeGoals.length})` : `View All Goals (${activeGoals.length})`}
+              {locale === 'fr' ? `Voir tous les axes de travail (${activeGoals.length})` : `View All Goals (${activeGoals.length})`}
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -1162,7 +1162,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
               <MessageSquare className="w-6 h-6 text-gray-400" />
             </div>
             <p className="text-sm text-gray-500">{t.members.overview.noNotes}</p>
-            <p className="text-xs text-gray-400 mt-1">{locale === 'fr' ? 'Les notes de séances et objectifs apparaîtront ici' : 'Session and goal notes will appear here'}</p>
+            <p className="text-xs text-gray-400 mt-1">{locale === 'fr' ? 'Les notes de séances et axes de travail apparaîtront ici' : 'Session and goal notes will appear here'}</p>
           </div>
         ) : (
           <div className="space-y-3">

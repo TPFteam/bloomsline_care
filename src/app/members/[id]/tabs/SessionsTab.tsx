@@ -1121,7 +1121,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                                             </span>
                                           </>
                                         ) : (
-                                          <span className="text-gray-400">{locale === 'fr' ? 'Aucun objectif' : 'No goal linked'}</span>
+                                          <span className="text-gray-400">{locale === 'fr' ? 'Aucun axe de travail' : 'No goal linked'}</span>
                                         )}
                                       </div>
                                       <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${showEditMilestoneDropdown ? 'rotate-180' : ''}`} />
@@ -1144,7 +1144,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                                               className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 flex items-center gap-2 ${!editNoteMilestoneId ? 'bg-gray-50' : ''}`}
                                             >
                                               <X className="w-3 h-3 text-gray-400" />
-                                              <span className="text-gray-500">{locale === 'fr' ? 'Aucun objectif' : 'No goal linked'}</span>
+                                              <span className="text-gray-500">{locale === 'fr' ? 'Aucun axe de travail' : 'No goal linked'}</span>
                                             </button>
                                             {milestones.map((m) => {
                                               const statusInfo = getStatusInfo(m.status)
@@ -1287,7 +1287,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                                     </span>
                                   </>
                                 ) : (
-                                  <span className="text-gray-400">{locale === 'fr' ? 'Lier à un objectif (optionnel)' : 'Link to a goal (optional)'}</span>
+                                  <span className="text-gray-400">{locale === 'fr' ? 'Lier à un axe de travail (optionnel)' : 'Link to a goal (optional)'}</span>
                                 )}
                               </div>
                               <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${showMilestoneDropdown ? 'rotate-180' : ''}`} />
@@ -1310,7 +1310,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                                       className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 flex items-center gap-2 ${!selectedMilestoneId ? 'bg-gray-50' : ''}`}
                                     >
                                       <X className="w-3 h-3 text-gray-400" />
-                                      <span className="text-gray-500">{locale === 'fr' ? 'Aucun objectif' : 'No goal linked'}</span>
+                                      <span className="text-gray-500">{locale === 'fr' ? 'Aucun axe de travail' : 'No goal linked'}</span>
                                     </button>
                                     {milestones.map((m) => {
                                       const statusInfo = getStatusInfo(m.status)

@@ -98,9 +98,9 @@
     "title": "Profil du Client",
     "overview": "Aperçu",
     "sessions": "Séances",
-    "progress": "Progrès",
+    "progress": "Parcours",
     "files": "Informations",
-    "sharedResources": "Ressources",
+    "sharedResources": "Supports partagés",
     "submissions": "Soumissions",
     "memberSince": "Client depuis",
     "lastSession": "Dernière séance",
@@ -174,10 +174,10 @@
 
   "progress": {
     "title": "Progrès et Croissance",
-    "milestones": "Objectifs",
-    "addMilestone": "Ajouter un objectif",
-    "noMilestones": "Aucun objectif pour le moment",
-    "noMilestonesDescription": "Suivez les progrès de votre client en ajoutant des objectifs à explorer",
+    "milestones": "Axes de travail",
+    "addMilestone": "Ajouter un axe de travail",
+    "noMilestones": "Aucun axe de travail pour le moment",
+    "noMilestonesDescription": "Suivez les progrès de votre client en ajoutant des axes de travail à explorer",
     "planned": "Planifié",
     "inProgress": "En Cours",
     "achieved": "Atteint",
@@ -188,13 +188,13 @@
     "progressNotes": "Notes de Progrès",
     "growthOverTime": "Croissance au Fil du Temps",
     "engagementTrend": "Tendance d'Engagement",
-    "suggestedGoals": "Objectifs suggérés",
+    "suggestedGoals": "Axes suggérés",
     "basedOnPulse": "Basé sur Bloom Pulse",
     "staleWarning": "mis à jour il y a plus de 7 jours",
     "noSuggestions": "Aucune suggestion disponible",
     "generatePulseHint": "Générez un Bloom Pulse pour obtenir des recommandations personnalisées",
     "viewRecommendations": "Voir les recommandations",
-    "goalAdded": "Objectif ajouté"
+    "goalAdded": "Axe de travail ajouté"
   },
 
   "milestoneCategories": {
