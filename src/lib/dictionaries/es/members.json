@@ -101,6 +101,7 @@
     "progress": "Progreso",
     "files": "Información",
     "sharedResources": "Apoyos compartidos",
+    "notes": "Notas",
     "submissions": "Envíos",
     "memberSince": "Miembro desde",
     "lastSession": "Última sesión",
@@ -317,5 +318,25 @@
     "disclaimer": "Este pulso es generado por IA y debe usarse como ayuda para la documentación clínica, no como sustituto del juicio profesional.",
     "insufficientData": "No hay suficientes datos para generar un pulso. Primero añada sesiones o notas.",
     "rateLimited": "Demasiadas solicitudes. Inténtelo más tarde."
+  },
+
+  "bloomAssist": {
+    "title": "Bloom Assist",
+    "buttonTooltip": "Sugerencias rápidas de IA",
+    "loading": "Bloom está pensando...",
+    "error": "Algo salió mal. Inténtalo de nuevo.",
+    "dismiss": "Cerrar",
+    "saveAsNote": "Guardar como nota",
+    "savedAsNote": "Guardado como nota",
+    "rateLimited": "Demasiadas solicitudes. Inténtalo de nuevo en un momento.",
+    "insufficientData": "No hay suficientes datos. Añade sesiones o notas primero.",
+    "disclaimer": "Sugerencia generada por IA — revisa antes de usar en documentación.",
+    "prompts": {
+      "summarize_session": "Resumir la sesión de hoy",
+      "key_themes": "Temas clave que observo",
+      "focus_next": "¿En qué debo enfocarme ahora?",
+      "session_reflection": "Reflexión de la sesión",
+      "note_suggestions": "Sugerir qué documentar"
+    }
   }
 }

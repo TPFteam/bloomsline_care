@@ -101,6 +101,7 @@
     "progress": "Parcours",
     "files": "Informations",
     "sharedResources": "Supports partagés",
+    "notes": "Notes",
     "submissions": "Soumissions",
     "memberSince": "Client depuis",
     "lastSession": "Dernière séance",
@@ -317,5 +318,25 @@
     "disclaimer": "Ce pulse est généré par IA et doit être utilisé comme aide à la documentation clinique, pas comme un substitut au jugement professionnel.",
     "insufficientData": "Pas assez de données pour générer un pulse. Ajoutez d'abord des séances ou des notes.",
     "rateLimited": "Trop de requêtes. Veuillez réessayer plus tard."
+  },
+
+  "bloomAssist": {
+    "title": "Bloom Assist",
+    "buttonTooltip": "Suggestions IA rapides",
+    "loading": "Bloom réfléchit...",
+    "error": "Une erreur est survenue. Veuillez réessayer.",
+    "dismiss": "Fermer",
+    "saveAsNote": "Sauvegarder comme note",
+    "savedAsNote": "Sauvegardé comme note",
+    "rateLimited": "Trop de requêtes. Veuillez réessayer dans un instant.",
+    "insufficientData": "Pas assez de données. Ajoutez d'abord des séances ou des notes.",
+    "disclaimer": "Suggestion générée par IA — à vérifier avant utilisation.",
+    "prompts": {
+      "summarize_session": "Résumer la séance d'aujourd'hui",
+      "key_themes": "Thèmes clés que j'observe",
+      "focus_next": "Sur quoi me concentrer ensuite ?",
+      "session_reflection": "Réflexion sur la séance",
+      "note_suggestions": "Suggestions de documentation"
+    }
   }
 }

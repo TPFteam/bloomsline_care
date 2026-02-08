@@ -120,6 +120,9 @@ export const RATE_LIMITS = {
 
   // AI summary generation (3 per 5 minutes)
   summary: { limit: 3, windowSeconds: 300 },
+
+  // Bloom Assist quick actions (15 per minute)
+  assist: { limit: 15, windowSeconds: 60 },
 } as const
 
 /**

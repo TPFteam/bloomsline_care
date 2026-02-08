@@ -101,6 +101,7 @@
     "progress": "Journey",
     "files": "Information",
     "sharedResources": "Shared Support",
+    "notes": "Notes",
     "submissions": "Submissions",
     "memberSince": "Member since",
     "lastSession": "Last session",
@@ -317,5 +318,25 @@
     "disclaimer": "This pulse is AI-generated and should be used as an aid to clinical documentation, not as a substitute for professional judgment.",
     "insufficientData": "Not enough data to generate a pulse. Add sessions or notes first.",
     "rateLimited": "Too many requests. Please try again later."
+  },
+
+  "bloomAssist": {
+    "title": "Bloom Assist",
+    "buttonTooltip": "Quick AI insights",
+    "loading": "Bloom is thinking...",
+    "error": "Something went wrong. Please try again.",
+    "dismiss": "Dismiss",
+    "saveAsNote": "Save as note",
+    "savedAsNote": "Saved as note",
+    "rateLimited": "Too many requests. Please try again in a moment.",
+    "insufficientData": "Not enough data yet. Add sessions or notes first.",
+    "disclaimer": "AI-generated insight — review before using in documentation.",
+    "prompts": {
+      "summarize_session": "Summarize today's session",
+      "key_themes": "Key themes I'm seeing",
+      "focus_next": "What should I focus on next?",
+      "session_reflection": "Session reflection",
+      "note_suggestions": "Suggest what to document"
+    }
   }
 }
