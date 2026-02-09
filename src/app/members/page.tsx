@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -21,6 +21,10 @@ import {
   Save,
   FileText,
   Share2,
+  Upload,
+  Check,
+  AlertCircle,
+  Download,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -30,6 +34,22 @@ import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { Member, MemberFilter, MemberHubStats, Session } from '@/types/member'
 import { getMemberFullName, getMemberInitials } from '@/types/member'
+
+// Import row type for CSV bulk import
+type ImportRow = {
+  first_name: string
+  last_name: string
+  email: string
+  phone?: string
+  date_of_birth?: string
+  status?: string
+  internal_notes?: string
+  valid: boolean
+  error?: string
+}
+
+const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
 
 // Helper function for relative time
 function getRelativeTime(dateString: string, locale: 'en' | 'fr' | 'es'): string {
@@ -88,6 +108,14 @@ export default function MembersPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '' })
   const [saving, setSaving] = useState(false)
+
+  // CSV Import Modal
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importStep, setImportStep] = useState<'upload' | 'preview' | 'result'>('upload')
+  const [importRows, setImportRows] = useState<ImportRow[]>([])
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetchMembers()
@@ -380,6 +408,224 @@ export default function MembersPage() {
     }
   }
 
+  // CSV Import Helpers
+  const downloadTemplate = () => {
+    const headers = 'first_name,last_name,email,phone,date_of_birth,status,internal_notes'
+    const example = 'Jane,Doe,jane@example.com,+1 555-123-4567,1990-01-15,active,Initial intake completed'
+    const blob = new Blob([headers + '\n' + example + '\n'], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'members_template.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const parseCSV = (text: string): { headers: string[]; rows: string[][] } => {
+    const lines = text.split(/\r?\n/).filter(line => line.trim())
+    if (lines.length === 0) return { headers: [], rows: [] }
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+    const rows = lines.slice(1).map(line => {
+      const result: string[] = []
+      let current = ''
+      let inQuotes = false
+      for (const char of line) {
+        if (char === '"') {
+          inQuotes = !inQuotes
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim())
+          current = ''
+        } else {
+          current += char
+        }
+      }
+      result.push(current.trim())
+      return result
+    })
+    return { headers, rows }
+  }
+
+  const validateRows = (headers: string[], rows: string[][]): ImportRow[] => {
+    const firstNameIdx = headers.indexOf('first_name')
+    const lastNameIdx = headers.indexOf('last_name')
+    const emailIdx = headers.indexOf('email')
+    const phoneIdx = headers.indexOf('phone')
+    const dobIdx = headers.indexOf('date_of_birth')
+    const statusIdx = headers.indexOf('status')
+    const notesIdx = headers.indexOf('internal_notes')
+
+    const seenEmails = new Set<string>()
+
+    return rows.map(row => {
+      const firstName = firstNameIdx >= 0 ? (row[firstNameIdx] || '').trim() : ''
+      const lastName = lastNameIdx >= 0 ? (row[lastNameIdx] || '').trim() : ''
+      const email = emailIdx >= 0 ? (row[emailIdx] || '').trim().toLowerCase() : ''
+      const phone = phoneIdx >= 0 ? (row[phoneIdx] || '').trim() : ''
+      const dob = dobIdx >= 0 ? (row[dobIdx] || '').trim() : ''
+      const status = statusIdx >= 0 ? (row[statusIdx] || '').trim().toLowerCase() : ''
+      const notes = notesIdx >= 0 ? (row[notesIdx] || '').trim() : ''
+
+      const base: ImportRow = {
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        phone: phone || undefined,
+        date_of_birth: dob || undefined,
+        status: status || undefined,
+        internal_notes: notes || undefined,
+        valid: true,
+      }
+
+      // Validation
+      if (!firstName) {
+        return { ...base, valid: false, error: locale === 'fr' ? 'Prénom requis' : 'First name required' }
+      }
+      if (!lastName) {
+        return { ...base, valid: false, error: locale === 'fr' ? 'Nom requis' : 'Last name required' }
+      }
+      if (!email) {
+        return { ...base, valid: false, error: locale === 'fr' ? 'Email requis' : 'Email required' }
+      }
+      if (!EMAIL_REGEX.test(email)) {
+        return { ...base, valid: false, error: locale === 'fr' ? 'Email invalide' : 'Invalid email' }
+      }
+      if (seenEmails.has(email)) {
+        return { ...base, valid: false, error: locale === 'fr' ? 'Email en double dans le CSV' : 'Duplicate email in CSV' }
+      }
+      if (dob && !DATE_REGEX.test(dob)) {
+        return { ...base, valid: false, error: locale === 'fr' ? 'Date invalide (AAAA-MM-JJ)' : 'Invalid date (YYYY-MM-DD)' }
+      }
+      if (dob && DATE_REGEX.test(dob)) {
+        const d = new Date(dob)
+        if (isNaN(d.getTime())) {
+          return { ...base, valid: false, error: locale === 'fr' ? 'Date invalide' : 'Invalid date' }
+        }
+      }
+      if (status && !['active', 'inactive', 'pending'].includes(status)) {
+        return { ...base, valid: false, error: locale === 'fr' ? 'Statut invalide (active/inactive/pending)' : 'Invalid status (active/inactive/pending)' }
+      }
+
+      seenEmails.add(email)
+      return base
+    })
+  }
+
+  const handleFileSelect = (file: File) => {
+    if (!file.name.endsWith('.csv')) {
+      toast.error(locale === 'fr' ? 'Veuillez sélectionner un fichier CSV' : 'Please select a CSV file')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const text = e.target?.result as string
+      const { headers, rows } = parseCSV(text)
+
+      // Validate required headers
+      const requiredHeaders = ['first_name', 'last_name', 'email']
+      const missingHeaders = requiredHeaders.filter(h => !headers.includes(h))
+      if (missingHeaders.length > 0) {
+        toast.error(
+          locale === 'fr'
+            ? `Colonnes manquantes : ${missingHeaders.join(', ')}`
+            : `Missing columns: ${missingHeaders.join(', ')}`
+        )
+        return
+      }
+
+      // Check max rows
+      if (rows.length > 50) {
+        toast.error(
+          locale === 'fr'
+            ? `Maximum 50 lignes par import (${rows.length} trouvées)`
+            : `Maximum 50 rows per import (${rows.length} found)`
+        )
+        return
+      }
+
+      if (rows.length === 0) {
+        toast.error(locale === 'fr' ? 'Le fichier CSV est vide' : 'CSV file is empty')
+        return
+      }
+
+      const validated = validateRows(headers, rows)
+      setImportRows(validated)
+      setImportStep('preview')
+    }
+    reader.readAsText(file)
+  }
+
+  const handleBulkImport = async () => {
+    const validRows = importRows.filter(r => r.valid)
+    if (validRows.length === 0) return
+
+    setImporting(true)
+
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) {
+        router.push('/sign-in')
+        return
+      }
+
+      // Check for existing emails
+      const emails = validRows.map(r => r.email)
+      const { data: existing } = await supabase
+        .from('members')
+        .select('email')
+        .eq('practitioner_id', authUser.id)
+        .in('email', emails)
+
+      const existingEmails = new Set((existing || []).map(e => e.email))
+      const newRows = validRows.filter(r => !existingEmails.has(r.email))
+      const skippedCount = validRows.length - newRows.length
+
+      if (newRows.length > 0) {
+        const insertData = newRows.map(row => ({
+          practitioner_id: authUser.id,
+          first_name: row.first_name,
+          last_name: row.last_name,
+          email: row.email,
+          phone: row.phone || null,
+          date_of_birth: row.date_of_birth || null,
+          status: (row.status || 'active') as 'active' | 'inactive' | 'pending',
+          engagement_level: 'medium' as const,
+          internal_notes: row.internal_notes || null,
+        }))
+
+        const { error } = await supabase
+          .from('members')
+          .insert(insertData)
+          .select()
+
+        if (error) throw error
+      }
+
+      setImportResult({ imported: newRows.length, skipped: skippedCount })
+      setImportStep('result')
+
+      // Refresh member list
+      fetchMembers()
+    } catch (error) {
+      console.error('Error importing members:', error)
+      toast.error(locale === 'fr' ? "Erreur lors de l'import" : 'Import failed')
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const dismissImportRow = (index: number) => {
+    setImportRows(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const resetImportModal = () => {
+    setShowImportModal(false)
+    setImportStep('upload')
+    setImportRows([])
+    setImportResult(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const filteredMembers = members.filter(member => {
     if (filter !== 'all' && member.status !== filter) return false
 
@@ -510,6 +756,16 @@ export default function MembersPage() {
                     {locale === 'fr' ? 'Séances' : 'Bookings'}
                   </Button>
                 </Link>
+
+                {/* Import CSV Button */}
+                <Button
+                  variant="outline"
+                  onClick={() => setShowImportModal(true)}
+                  className="rounded-xl px-2.5 border-gray-200"
+                  title={locale === 'fr' ? 'Importer CSV' : locale === 'es' ? 'Importar CSV' : 'Import CSV'}
+                >
+                  <Upload className="w-4 h-4" />
+                </Button>
 
                 {/* Add Member Button */}
                 <Button
@@ -746,6 +1002,224 @@ export default function MembersPage() {
                   </Button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* CSV Import Modal */}
+      <AnimatePresence>
+        {showImportModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-4"
+            onClick={resetImportModal}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-xl w-full max-w-2xl shadow-xl max-h-[80vh] flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {locale === 'fr' ? 'Importer des clients' : locale === 'es' ? 'Importar miembros' : 'Import Members'}
+                </h2>
+                <button
+                  onClick={resetImportModal}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Step 1: Upload */}
+              {importStep === 'upload' && (
+                <div className="p-5">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleFileSelect(file)
+                    }}
+                  />
+
+                  <div
+                    className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center cursor-pointer hover:border-gray-300 hover:bg-gray-50 transition-all"
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-gray-400', 'bg-gray-50') }}
+                    onDragLeave={(e) => { e.currentTarget.classList.remove('border-gray-400', 'bg-gray-50') }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      e.currentTarget.classList.remove('border-gray-400', 'bg-gray-50')
+                      const file = e.dataTransfer.files[0]
+                      if (file) handleFileSelect(file)
+                    }}
+                  >
+                    <Upload className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm font-medium text-gray-700 mb-1">
+                      {locale === 'fr' ? 'Glissez votre fichier CSV ici' : locale === 'es' ? 'Arrastra tu archivo CSV aquí' : 'Drag your CSV file here'}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {locale === 'fr' ? 'ou cliquez pour parcourir' : locale === 'es' ? 'o haz clic para explorar' : 'or click to browse'}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between">
+                    <button
+                      onClick={downloadTemplate}
+                      className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1.5 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      {locale === 'fr' ? 'Télécharger le modèle' : locale === 'es' ? 'Descargar plantilla' : 'Download template'}
+                    </button>
+                    <span className="text-xs text-gray-400">
+                      {locale === 'fr' ? 'Max 50 lignes' : locale === 'es' ? 'Máx 50 filas' : 'Max 50 rows'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Preview */}
+              {importStep === 'preview' && (
+                <div className="flex flex-col min-h-0 flex-1">
+                  {/* Summary */}
+                  <div className="px-5 pt-4 pb-3 flex-shrink-0">
+                    {(() => {
+                      const validCount = importRows.filter(r => r.valid).length
+                      const errorCount = importRows.filter(r => !r.valid).length
+                      return (
+                        <div className="flex items-center gap-3 text-sm">
+                          <span className="flex items-center gap-1.5 text-emerald-600">
+                            <Check className="w-4 h-4" />
+                            {validCount} {locale === 'fr' ? 'valides' : 'valid'}
+                          </span>
+                          {errorCount > 0 && (
+                            <span className="flex items-center gap-1.5 text-red-500">
+                              <AlertCircle className="w-4 h-4" />
+                              {errorCount} {locale === 'fr' ? 'erreurs' : 'errors'}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })()}
+                  </div>
+
+                  {/* Table */}
+                  <div className="px-5 overflow-auto flex-1 min-h-0">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100">
+                          <th className="text-left py-2 pr-2 text-gray-500 font-medium w-8"></th>
+                          <th className="text-left py-2 px-2 text-gray-500 font-medium">{locale === 'fr' ? 'Prénom' : 'First Name'}</th>
+                          <th className="text-left py-2 px-2 text-gray-500 font-medium">{locale === 'fr' ? 'Nom' : 'Last Name'}</th>
+                          <th className="text-left py-2 px-2 text-gray-500 font-medium">Email</th>
+                          <th className="text-left py-2 px-2 text-gray-500 font-medium">{locale === 'fr' ? 'Statut' : 'Status'}</th>
+                          <th className="w-8"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importRows.map((row, idx) => (
+                          <tr key={idx} className={`border-b border-gray-50 ${!row.valid ? 'bg-red-50/50' : ''}`}>
+                            <td className="py-2 pr-2">
+                              {row.valid ? (
+                                <Check className="w-4 h-4 text-emerald-500" />
+                              ) : (
+                                <AlertCircle className="w-4 h-4 text-red-400" />
+                              )}
+                            </td>
+                            <td className="py-2 px-2 text-gray-700">{row.first_name || '—'}</td>
+                            <td className="py-2 px-2 text-gray-700">{row.last_name || '—'}</td>
+                            <td className="py-2 px-2 text-gray-700">{row.email || '—'}</td>
+                            <td className="py-2 px-2">
+                              {row.valid ? (
+                                <span className="text-gray-500">{row.status || 'active'}</span>
+                              ) : (
+                                <span className="text-red-500 text-xs">{row.error}</span>
+                              )}
+                            </td>
+                            <td className="py-2 pl-2">
+                              <button
+                                onClick={() => dismissImportRow(idx)}
+                                className="p-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 flex-shrink-0">
+                    <Button
+                      variant="ghost"
+                      onClick={() => { setImportStep('upload'); setImportRows([]); if (fileInputRef.current) fileInputRef.current.value = '' }}
+                      className="text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+                    >
+                      {locale === 'fr' ? 'Retour' : locale === 'es' ? 'Volver' : 'Back'}
+                    </Button>
+                    <Button
+                      onClick={handleBulkImport}
+                      disabled={importing || importRows.filter(r => r.valid).length === 0}
+                      className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg px-4 text-sm"
+                    >
+                      {importing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          {locale === 'fr' ? 'Import en cours...' : 'Importing...'}
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          {locale === 'fr'
+                            ? `Importer ${importRows.filter(r => r.valid).length} clients`
+                            : locale === 'es'
+                            ? `Importar ${importRows.filter(r => r.valid).length} miembros`
+                            : `Import ${importRows.filter(r => r.valid).length} members`}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Result */}
+              {importStep === 'result' && importResult && (
+                <div className="p-8 text-center">
+                  <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Check className="w-7 h-7 text-emerald-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {locale === 'fr' ? 'Import terminé' : locale === 'es' ? 'Importación completada' : 'Import Complete'}
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-1">
+                    <span className="font-medium text-gray-700">{importResult.imported}</span>{' '}
+                    {locale === 'fr' ? 'importés' : 'imported'}
+                  </p>
+                  {importResult.skipped > 0 && (
+                    <p className="text-sm text-gray-400">
+                      <span className="font-medium">{importResult.skipped}</span>{' '}
+                      {locale === 'fr' ? 'ignorés (email existant)' : 'skipped (duplicate email)'}
+                    </p>
+                  )}
+                  <Button
+                    onClick={resetImportModal}
+                    className="mt-6 bg-gray-900 hover:bg-gray-800 text-white rounded-lg px-6 text-sm"
+                  >
+                    {locale === 'fr' ? 'Terminé' : locale === 'es' ? 'Listo' : 'Done'}
+                  </Button>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
