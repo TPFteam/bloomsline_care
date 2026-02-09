@@ -956,38 +956,50 @@ export default function AnalyticsPage() {
 
               {totalMilestones > 0 ? (
                 <div className="flex-1 flex flex-col">
-                  {/* Flow lanes */}
-                  <div className="grid grid-cols-4 gap-1 items-start mb-3">
-                    {journeyLanes.map((lane, laneIdx) => (
-                      <div key={lane.key} className="flex flex-col items-center relative">
-                        {/* Stage label */}
-                        <div className="flex items-center gap-1 mb-2">
+                  {/* Stacked bar */}
+                  <div className="flex h-3 rounded-full overflow-hidden mb-4">
+                    {journeyLanes.map((lane) => (
+                      lane.milestones.length > 0 && (
+                        <motion.div
+                          key={lane.key}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(lane.milestones.length / totalMilestones) * 100}%` }}
+                          transition={{ duration: 0.5, ease: 'easeOut' }}
+                          className={`${lane.dotColor} first:rounded-l-full last:rounded-r-full`}
+                        />
+                      )
+                    ))}
+                  </div>
+
+                  {/* Stage rows */}
+                  <div className="space-y-2.5">
+                    {journeyLanes.map((lane) => (
+                      <div key={lane.key} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
                           <span className={`w-2 h-2 rounded-full ${lane.color}`} />
-                          <span className="text-[10px] font-medium text-gray-600 truncate max-w-[60px]">{lane.label}</span>
+                          <span className="text-xs text-gray-600">{lane.label}</span>
                         </div>
-                        {/* Milestone dots area */}
-                        <div className="flex flex-wrap justify-center gap-1 min-h-[24px] mb-1">
-                          {lane.milestones.length > 0 ? lane.milestones.map((ms, msIdx) => (
-                            <motion.div
-                              key={ms.id}
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              transition={{ delay: laneIdx * 0.1 + msIdx * 0.03, duration: 0.3 }}
-                              className={`w-4 h-4 rounded-full ${lane.dotColor} flex items-center justify-center ${ms.isStuck ? 'ring-2 ring-amber-400 ring-offset-1 animate-pulse' : ''}`}
-                              title={ms.initials}
-                            >
-                              <span className="text-[6px] font-semibold text-white leading-none">{ms.initials}</span>
-                            </motion.div>
-                          )) : (
-                            <span className="text-[10px] text-gray-300">--</span>
+                        <div className="flex items-center gap-2">
+                          {lane.milestones.length > 0 && (
+                            <div className="flex -space-x-1">
+                              {lane.milestones.slice(0, 4).map((ms) => (
+                                <div
+                                  key={ms.id}
+                                  className={`w-5 h-5 rounded-full ${lane.dotColor} flex items-center justify-center ring-2 ring-white ${ms.isStuck ? 'ring-amber-300 animate-pulse' : ''}`}
+                                  title={ms.initials}
+                                >
+                                  <span className="text-[7px] font-semibold text-white leading-none">{ms.initials}</span>
+                                </div>
+                              ))}
+                              {lane.milestones.length > 4 && (
+                                <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center ring-2 ring-white">
+                                  <span className="text-[7px] font-semibold text-gray-500 leading-none">+{lane.milestones.length - 4}</span>
+                                </div>
+                              )}
+                            </div>
                           )}
+                          <span className="text-xs font-semibold text-gray-700 tabular-nums w-5 text-right">{lane.milestones.length}</span>
                         </div>
-                        {/* Count */}
-                        <span className="text-xs font-medium text-gray-500 tabular-nums">{lane.milestones.length}</span>
-                        {/* Arrow between lanes */}
-                        {laneIdx < 3 && (
-                          <ArrowRight className="w-3 h-3 text-gray-200 absolute -right-2 top-1/2 -translate-y-1/2" />
-                        )}
                       </div>
                     ))}
                   </div>
