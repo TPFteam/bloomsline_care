@@ -102,9 +102,6 @@ function HeroSection() {
             className="absolute left-[12%] sm:left-[15%] top-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5"
           >
             <img src={moments[getIdx(-1)].img} alt="" className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover shadow-md opacity-50" />
-            <span className="text-[10px] text-neutral-400 font-medium">
-              {locale === 'fr' ? moments[getIdx(-1)].label.fr : locale === 'es' ? moments[getIdx(-1)].label.es : moments[getIdx(-1)].label.en}
-            </span>
           </motion.div>
 
           {/* CENTER — glass card */}
@@ -158,9 +155,6 @@ function HeroSection() {
             className="absolute right-[12%] sm:right-[15%] top-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5"
           >
             <img src={moments[getIdx(1)].img} alt="" className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover shadow-md opacity-50" />
-            <span className="text-[10px] text-neutral-400 font-medium">
-              {locale === 'fr' ? moments[getIdx(1)].label.fr : locale === 'es' ? moments[getIdx(1)].label.es : moments[getIdx(1)].label.en}
-            </span>
           </motion.div>
 
           {/* Far right thumbnail */}
