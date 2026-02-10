@@ -26,45 +26,12 @@ const textSizeMap = {
 
 export function Logo({ size = 'sm', className, showText = false, variant = 'light' }: LogoProps) {
   const logoIcon = (
-    <div className={cn(sizeMap[size], 'relative flex-shrink-0')}>
-      {/* Background circle */}
-      <div className={cn(
-        "absolute inset-0 rounded-xl",
-        variant === 'light'
-          ? "bg-gradient-to-br from-[#4A9A86]/20 to-[#D4856A]/20"
-          : "bg-gradient-to-br from-[#4A9A86]/30 to-[#D4856A]/30"
-      )} />
-
-      {/* Animated bloom/flower */}
-      <div className="relative w-full h-full flex items-center justify-center">
-        {/* Center circle - Teal */}
-        <motion.div
-          className="absolute w-2/5 h-2/5 bg-gradient-to-br from-[#4A9A86] to-[#5AB39C] rounded-full z-10"
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        />
-
-        {/* Petals - Coral */}
-        {[0, 60, 120, 180, 240, 300].map((rotation, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1/4 h-2/5 bg-gradient-to-t from-[#D4856A] to-[#E8A87C] rounded-full origin-bottom"
-            style={{
-              transform: `rotate(${rotation}deg) translateY(-35%)`,
-            }}
-            animate={{
-              scale: [1, 1.05, 1],
-              opacity: [0.8, 1, 0.8]
-            }}
-            transition={{
-              duration: 2.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: i * 0.15
-            }}
-          />
-        ))}
-      </div>
+    <div className={cn(sizeMap[size], 'relative flex-shrink-0 flex items-center justify-center')}>
+      <motion.div
+        className="w-3/5 h-3/5 bg-gradient-to-br from-[#4A9A86] to-[#5AB39C] rounded-full"
+        animate={{ scale: [1, 1.1, 1] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+      />
     </div>
   )
 
@@ -73,13 +40,13 @@ export function Logo({ size = 'sm', className, showText = false, variant = 'ligh
   }
 
   return (
-    <div className={cn('flex items-center gap-2.5', className)}>
+    <div className={cn('flex items-center gap-1', className)}>
       {logoIcon}
       <span className={cn(
         textSizeMap[size],
-        'font-bold tracking-tight',
-        variant === 'light' ? 'text-gray-900' : 'text-white'
-      )}>
+        'font-medium tracking-wide',
+        variant === 'dark' ? 'text-white' : ''
+      )} style={variant === 'light' ? { color: '#1F2227', textShadow: '0 1px 3px rgba(0,0,0,0.2)' } : undefined}>
         Bloomsline
       </span>
     </div>
