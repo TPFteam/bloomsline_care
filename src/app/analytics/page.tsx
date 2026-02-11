@@ -9,15 +9,17 @@ import {
   Clock,
   Activity,
   Heart,
-  AlertCircle,
   ArrowRight,
   ChevronLeft,
   ChevronRight,
   TrendingUp,
   TrendingDown,
   Minus,
-  FileText,
-  Shield,
+  Sparkles,
+  MessageCircle,
+  Sun,
+  BarChart3,
+  Grid3X3,
 } from 'lucide-react'
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useLanguage } from '@/lib/i18n/context'
@@ -62,9 +64,17 @@ interface UpcomingSession {
   member_name: string
 }
 
+interface MonthlySessionDetail {
+  memberName: string
+  type: string
+  status: string
+  date: string
+}
+
 interface MonthlyData {
   month: string
   sessions: number
+  details: MonthlySessionDetail[]
 }
 
 interface NoteRow {
@@ -104,6 +114,17 @@ function daysAgo(dateStr: string | null): number | null {
   return Math.floor(diff / (1000 * 60 * 60 * 24))
 }
 
+function humanTimeAgo(d: number | null, locale: string): string {
+  if (d === null) return locale === 'fr' ? 'Pas encore rencontré' : locale === 'es' ? 'Aún no se han visto' : 'Not yet met'
+  if (d === 0) return locale === 'fr' ? "Aujourd'hui" : locale === 'es' ? 'Hoy' : 'Today'
+  if (d === 1) return locale === 'fr' ? 'Hier' : locale === 'es' ? 'Ayer' : 'Yesterday'
+  if (d < 7) return locale === 'fr' ? `Il y a ${d} jours` : locale === 'es' ? `Hace ${d} días` : `${d} days ago`
+  if (d < 14) return locale === 'fr' ? 'Il y a environ 1 semaine' : locale === 'es' ? 'Hace aproximadamente 1 semana' : 'About a week ago'
+  if (d < 21) return locale === 'fr' ? 'Il y a environ 2 semaines' : locale === 'es' ? 'Hace unas 2 semanas' : 'About 2 weeks ago'
+  if (d < 35) return locale === 'fr' ? 'Il y a environ un mois' : locale === 'es' ? 'Hace aproximadamente un mes' : 'About a month ago'
+  return locale === 'fr' ? "Plus d'un mois" : locale === 'es' ? 'Más de un mes' : 'Over a month ago'
+}
+
 function formatSessionType(type: string, locale: string): string {
   const map: Record<string, Record<string, string>> = {
     initial_consultation: { en: 'Initial', fr: 'Initiale', es: 'Inicial' },
@@ -117,29 +138,68 @@ function formatSessionType(type: string, locale: string): string {
   return map[type]?.[lang] || map.other[lang]
 }
 
-function buildMonthlyChart(sessions: SessionRow[], locale: string, refDate: Date): MonthlyData[] {
+function buildMonthlyChart(sessions: SessionRow[], members: MemberRow[], locale: string, refDate: Date): MonthlyData[] {
   const data: MonthlyData[] = []
+  const lid = locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US'
   for (let i = 5; i >= 0; i--) {
     const d = new Date(refDate.getFullYear(), refDate.getMonth() - i, 1)
     const monthStart = new Date(d.getFullYear(), d.getMonth(), 1)
     const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59)
-    const count = sessions.filter((s) => {
+    const monthSessions = sessions.filter((s) => {
       const sd = new Date(s.scheduled_at)
-      return s.status === 'completed' && sd >= monthStart && sd <= monthEnd
-    }).length
-    data.push({ month: getMonthAbbrev(d, locale), sessions: count })
+      return sd >= monthStart && sd <= monthEnd
+    })
+    const completed = monthSessions.filter(s => s.status === 'completed').length
+    const details: MonthlySessionDetail[] = monthSessions
+      .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
+      .slice(0, 8)
+      .map(s => {
+        const m = members.find(mem => mem.id === s.member_id)
+        return {
+          memberName: m ? `${m.first_name} ${m.last_name[0]}.` : '—',
+          type: s.session_type,
+          status: s.status,
+          date: new Date(s.scheduled_at).toLocaleDateString(lid, { day: 'numeric', weekday: 'short' }),
+        }
+      })
+    data.push({ month: getMonthAbbrev(d, locale), sessions: completed, details })
   }
   return data
 }
 
 // ── Custom tooltip ───────────────────────────────────────────────────────
 
-function ChartTooltip({ active, payload, locale }: { active?: boolean; payload?: Array<{ value: number }>; locale: string }) {
+function ChartTooltip({ active, payload, locale }: { active?: boolean; payload?: Array<{ value: number; payload: MonthlyData }>; locale: string }) {
   if (!active || !payload?.length) return null
   const v = payload[0].value
+  const details = payload[0].payload.details || []
+
+  const statusDot: Record<string, string> = {
+    completed: 'bg-emerald-400',
+    cancelled: 'bg-gray-400',
+    no_show: 'bg-amber-400',
+    scheduled: 'bg-indigo-400',
+  }
+
   return (
-    <div className="bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
-      {v} {locale === 'fr' ? 'séances' : locale === 'es' ? 'sesiones' : 'sessions'}
+    <div className="bg-white border border-gray-200 rounded-xl shadow-xl px-4 py-3 min-w-[180px] max-w-[240px]">
+      <p className="text-sm font-semibold text-gray-900 mb-2">
+        {v} {locale === 'fr' ? 'complétées' : locale === 'es' ? 'completadas' : 'completed'}
+      </p>
+      {details.length > 0 && (
+        <div className="space-y-1.5">
+          {details.map((d, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot[d.status] || 'bg-gray-300'}`} />
+              <span className="text-xs text-gray-700 truncate flex-1">{d.memberName}</span>
+              <span className="text-[10px] text-gray-400 shrink-0">{d.date}</span>
+            </div>
+          ))}
+          {details.length >= 8 && (
+            <p className="text-[10px] text-gray-400 pt-0.5">...</p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -161,6 +221,17 @@ export default function AnalyticsPage() {
   const [userProfile, setUserProfile] = useState<User | null>(null)
   const [selectedMonth, setSelectedMonth] = useState(() => new Date())
   const [hoveredMember, setHoveredMember] = useState<string | null>(null)
+  const [sessionView, setSessionView] = useState<'chart' | 'heatmap'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('analytics_session_view') as 'chart' | 'heatmap') || 'chart'
+    }
+    return 'chart'
+  })
+
+  const toggleSessionView = (view: 'chart' | 'heatmap') => {
+    setSessionView(view)
+    localStorage.setItem('analytics_session_view', view)
+  }
 
   const isCurrentMonth =
     selectedMonth.getMonth() === new Date().getMonth() &&
@@ -329,7 +400,7 @@ export default function AnalyticsPage() {
   }).length
 
   const nextSession = upcomingSessions[0] || null
-  const chartData = buildMonthlyChart(sessions, locale, selectedMonth)
+  const chartData = buildMonthlyChart(sessions, members, locale, selectedMonth)
 
   // Only show milestones that existed by the end of the selected month
   const milestonesInRange = milestones.filter(
@@ -443,15 +514,15 @@ export default function AnalyticsPage() {
       const cancellations = recentSessions.filter((s) => s.status === 'cancelled').length
       let riskReason = ''
       if (lastD === null) {
-        riskReason = locale === 'fr' ? 'Aucune séance' : locale === 'es' ? 'Sin sesiones' : 'No sessions yet'
+        riskReason = locale === 'fr' ? 'Pas encore rencontré' : locale === 'es' ? 'Aún no se han visto' : 'Not yet met'
       } else if (lastD > 14) {
-        riskReason = locale === 'fr' ? `Pas de séance depuis ${lastD}j` : locale === 'es' ? `Sin sesión en ${lastD} días` : `No session in ${lastD} days`
+        riskReason = humanTimeAgo(lastD, locale)
       } else if (cancellations >= 2) {
-        riskReason = locale === 'fr' ? `${cancellations} annulations récentes` : locale === 'es' ? `${cancellations} cancelaciones recientes` : `${cancellations} cancellations recently`
+        riskReason = locale === 'fr' ? `${cancellations} séances annulées récemment` : locale === 'es' ? `${cancellations} sesiones canceladas recientemente` : `${cancellations} sessions cancelled recently`
       } else if (momentum <= 5) {
-        riskReason = locale === 'fr' ? 'Objectifs stagnants' : locale === 'es' ? 'Objetivos estancados' : 'Milestones stalled'
+        riskReason = locale === 'fr' ? 'Parcours au ralenti' : locale === 'es' ? 'Recorrido en pausa' : 'Journey has slowed down'
       } else {
-        riskReason = locale === 'fr' ? 'Engagement faible' : locale === 'es' ? 'Bajo compromiso' : 'Low engagement'
+        riskReason = locale === 'fr' ? 'Moins actif récemment' : locale === 'es' ? 'Menos activo recientemente' : 'Less active recently'
       }
 
       return { member: m, score, attendance, recency, consistency, momentum, riskReason }
@@ -477,12 +548,6 @@ export default function AnalyticsPage() {
     ? Math.round((pastSessions.filter((s) => s.status === 'completed').length / pastSessions.length) * 100)
     : 0
 
-  const completedSessions = sessions.filter((s) => s.status === 'completed')
-  const sessionsWithNotes = completedSessions.filter((s) => notes.some((n) => n.session_id === s.id)).length
-  const notesCoverage = completedSessions.length > 0 ? Math.round((sessionsWithNotes / completedSessions.length) * 100) : 0
-
-  const crisisSessions = sessions.filter((s) => s.session_type === 'crisis').length
-  const crisisRatio = sessions.length > 0 ? Math.round((crisisSessions / sessions.length) * 100) : -1
 
   // ── Journey Velocity ───────────────────────────────────────────────
   const stageOrder = ['discovery', 'planned', 'building', 'in_progress', 'thriving', 'independent', 'achieved']
@@ -537,6 +602,77 @@ export default function AnalyticsPage() {
     return d >= selMonthStart && d <= selMonthEnd
   }).length
 
+  // ── Practice Reflection (narrative) ───────────────────────────────
+  interface Reflection {
+    type: 'celebration' | 'observation' | 'nudge'
+    icon: typeof Heart
+    text: string
+  }
+
+  const reflections: Reflection[] = []
+
+  // Celebration: people supported
+  if (completedInMonth > 0) {
+    const uniqueMembers = [...new Set(sessionsInMonthArr
+      .filter(s => s.status === 'completed')
+      .map(s => members.find(m => m.id === s.member_id)?.first_name)
+      .filter(Boolean)
+    )]
+    reflections.push({
+      type: 'celebration',
+      icon: Heart,
+      text: locale === 'fr'
+        ? `Vous avez accompagné ${uniqueMembers.length} personne${uniqueMembers.length > 1 ? 's' : ''} ce mois à travers ${completedInMonth} séance${completedInMonth > 1 ? 's' : ''}.`
+        : locale === 'es'
+          ? `Acompañaste a ${uniqueMembers.length} persona${uniqueMembers.length > 1 ? 's' : ''} este mes a través de ${completedInMonth} sesión${completedInMonth > 1 ? 'es' : ''}.`
+          : `You supported ${uniqueMembers.length} ${uniqueMembers.length === 1 ? 'person' : 'people'} this month through ${completedInMonth} ${completedInMonth === 1 ? 'session' : 'sessions'}.`,
+    })
+  }
+
+  // Celebration: journey progress
+  const recentlyAdvanced = milestones.filter(m => {
+    const updated = new Date(m.updated_at)
+    return updated >= selMonthStart && updated <= selMonthEnd &&
+      ['thriving', 'independent', 'achieved'].includes(m.status)
+  })
+  if (recentlyAdvanced.length > 0) {
+    const advancedNames = [...new Set(recentlyAdvanced.map(m => {
+      const member = members.find(mem => mem.id === m.member_id)
+      return member?.first_name
+    }).filter(Boolean))]
+    reflections.push({
+      type: 'celebration',
+      icon: Sparkles,
+      text: locale === 'fr'
+        ? `${advancedNames.slice(0, 2).join(' et ')}${advancedNames.length > 2 ? ` et ${advancedNames.length - 2} autre(s)` : ''} ${advancedNames.length === 1 ? 'a progressé' : 'ont progressé'} dans leur parcours.`
+        : locale === 'es'
+          ? `${advancedNames.slice(0, 2).join(' y ')}${advancedNames.length > 2 ? ` y ${advancedNames.length - 2} más` : ''} avanzaron en su recorrido.`
+          : `${advancedNames.slice(0, 2).join(' and ')}${advancedNames.length > 2 ? ` and ${advancedNames.length - 2} more` : ''} moved forward in their journey.`,
+    })
+  }
+
+  // Gentle nudge: members who haven't connected
+  if (staleClients.length > 0) {
+    const nudgeNames = staleClients.slice(0, 2).map(m => m.first_name)
+    reflections.push({
+      type: 'nudge',
+      icon: MessageCircle,
+      text: locale === 'fr'
+        ? `${nudgeNames.join(' et ')}${staleClients.length > 2 ? ` et ${staleClients.length - 2} autre(s)` : ''} n'ont pas donné de nouvelles récemment — un petit message pourrait leur faire du bien.`
+        : locale === 'es'
+          ? `${nudgeNames.join(' y ')}${staleClients.length > 2 ? ` y ${staleClients.length - 2} más` : ''} no se han conectado recientemente — podrían apreciar saber de ti.`
+          : `${nudgeNames.join(' and ')}${staleClients.length > 2 ? ` and ${staleClients.length - 2} more` : ''} haven't connected in a while — when you're ready, they might appreciate hearing from you.`,
+    })
+  }
+
+  // Keep max 3 reflections, prioritize celebrations first
+  const sortedReflections = reflections
+    .sort((a, b) => {
+      const order = { celebration: 0, observation: 1, nudge: 2 }
+      return order[a.type] - order[b.type]
+    })
+    .slice(0, 3)
+
   // ── Heatmap data ──────────────────────────────────────────────────
   const heatmapColorMap: Record<string, string> = {
     completed: '#10b981',
@@ -578,8 +714,8 @@ export default function AnalyticsPage() {
     const angle = (137.508 * i * Math.PI) / 180
     const offsetX = Math.cos(angle) * distance
     const offsetY = Math.sin(angle) * distance
-    const color = e.score >= 70 ? 'emerald' : e.score >= 40 ? 'amber' : 'red'
-    const level = e.score >= 70 ? 'ontrack' : e.score >= 40 ? 'watch' : 'atrisk'
+    const color = e.score >= 70 ? 'emerald' : e.score >= 40 ? 'amber' : 'orange'
+    const level = e.score >= 70 ? 'ontrack' : e.score >= 40 ? 'watch' : 'checkin'
     return { ...e, distance, angle, offsetX, offsetY, color, level, index: i }
   })
   const orbitOverflow = Math.max(0, engagementScores.length - 20)
@@ -704,10 +840,10 @@ export default function AnalyticsPage() {
               </h1>
               <p className="text-sm text-gray-400 mt-0.5">
                 {locale === 'fr'
-                  ? 'Voici le pouls de votre pratique.'
+                  ? 'Voici ce qui se passe dans votre pratique.'
                   : locale === 'es'
-                    ? 'Aquí está el pulso de tu práctica.'
-                    : "Here's the pulse of your practice."}
+                    ? 'Esto es lo que está pasando en tu práctica.'
+                    : "Here's what's happening in your practice."}
               </p>
             </div>
 
@@ -735,6 +871,47 @@ export default function AnalyticsPage() {
               </button>
             </div>
           </motion.div>
+
+          {/* ─── Practice Reflection ────────────────────────────────────── */}
+          {sortedReflections.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.04 }}
+              className="mb-6"
+            >
+              <div className="bg-gradient-to-r from-amber-50/60 to-orange-50/40 rounded-2xl border border-amber-100/50 p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-7 h-7 rounded-lg bg-white/80 flex items-center justify-center">
+                    <Sun className="w-4 h-4 text-amber-500" />
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-700">
+                    {locale === 'fr' ? 'Votre réflexion du moment' : locale === 'es' ? 'Tu reflexión del momento' : 'Your practice reflection'}
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {sortedReflections.map((r, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.08 + i * 0.06 }}
+                      className="flex items-start gap-3"
+                    >
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                        r.type === 'celebration' ? 'bg-emerald-100' : r.type === 'nudge' ? 'bg-amber-100' : 'bg-blue-100'
+                      }`}>
+                        <r.icon className={`w-3 h-3 ${
+                          r.type === 'celebration' ? 'text-emerald-600' : r.type === 'nudge' ? 'text-amber-600' : 'text-blue-600'
+                        }`} />
+                      </div>
+                      <p className="text-sm text-gray-600 leading-relaxed">{r.text}</p>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* ─── 1. Practice Pulse — borderless stats ──────────────────── */}
           <motion.div
@@ -766,24 +943,12 @@ export default function AnalyticsPage() {
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 mb-0.5">
-                  {locale === 'fr' ? 'Séances' : locale === 'es' ? 'Sesiones' : 'Sessions'}
+                  {locale === 'fr' ? 'Séances ce mois' : locale === 'es' ? 'Sesiones este mes' : 'Sessions this month'}
                 </p>
-                <div className="flex items-end gap-3">
-                  <p className="text-2xl font-bold text-gray-900 leading-none">{sessionsInMonth}</p>
-                  <div className="w-16 h-7 mb-0.5">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={chartData}>
-                        <defs>
-                          <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
-                            <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <Area type="monotone" dataKey="sessions" stroke="#10b981" strokeWidth={1.5} fill="url(#sparkGrad)" dot={false} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
+                <p className="text-2xl font-bold text-gray-900 leading-none">{sessionsInMonth}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {completedInMonth} {locale === 'fr' ? 'complétées' : locale === 'es' ? 'completadas' : 'completed'}
+                </p>
               </div>
             </div>
 
@@ -826,121 +991,157 @@ export default function AnalyticsPage() {
             transition={{ delay: 0.1 }}
             className="grid gap-4 mb-6 grid-cols-1 lg:grid-cols-6"
           >
-            {/* Sessions chart — takes 2/6 */}
-            <div className="bg-white border border-gray-100 rounded-xl p-5 lg:col-span-2">
+            {/* Sessions — unified chart/heatmap with toggle — takes 4/6 */}
+            <div className="bg-white border border-gray-100 rounded-xl p-5 lg:col-span-4 flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-medium text-gray-900">
                     {locale === 'fr' ? 'Vos séances' : locale === 'es' ? 'Tus sesiones' : 'Your Sessions'}
                   </h3>
                   <p className="text-xs text-gray-400">
-                    {locale === 'fr' ? 'Complétées par mois' : locale === 'es' ? 'Completadas por mes' : 'Completed per month'}
+                    {sessionView === 'chart'
+                      ? (locale === 'fr' ? 'Complétées par mois' : locale === 'es' ? 'Completadas por mes' : 'Completed per month')
+                      : (locale === 'fr' ? 'Activité par jour' : locale === 'es' ? 'Actividad por día' : 'Activity by day')}
                   </p>
                 </div>
+                {/* View toggle */}
+                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                  <button
+                    onClick={() => toggleSessionView('chart')}
+                    className={`p-1.5 rounded-md transition-all ${
+                      sessionView === 'chart'
+                        ? 'bg-white text-gray-700 shadow-sm'
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                    title={locale === 'fr' ? 'Vue courbe' : 'Chart view'}
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => toggleSessionView('heatmap')}
+                    className={`p-1.5 rounded-md transition-all ${
+                      sessionView === 'heatmap'
+                        ? 'bg-white text-gray-700 shadow-sm'
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                    title={locale === 'fr' ? 'Vue calendrier' : 'Calendar view'}
+                  >
+                    <Grid3X3 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-              <div className="h-40">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-                    <defs>
-                      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.15} />
-                        <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af' }} />
-                    <Tooltip content={<ChartTooltip locale={locale} />} cursor={false} />
-                    <Area
-                      type="monotone"
-                      dataKey="sessions"
-                      stroke="#6366f1"
-                      strokeWidth={2}
-                      fill="url(#areaGrad)"
-                      dot={false}
-                      activeDot={{ r: 3.5, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
 
-            {/* Session Rhythm Heatmap — takes 2/6 */}
-            <div className="bg-white border border-gray-100 rounded-xl p-5 lg:col-span-2 flex flex-col">
-              <div className="mb-3">
-                <h3 className="text-sm font-medium text-gray-900">
-                  {locale === 'fr' ? 'Rythme' : locale === 'es' ? 'Ritmo' : 'Rhythm'}
-                </h3>
-                <p className="text-xs text-gray-400">
-                  {locale === 'fr' ? 'Activité par jour' : locale === 'es' ? 'Actividad por día' : 'Activity by day'}
-                </p>
-              </div>
-              {totalHealthSessions > 0 ? (
-                <div className="flex-1 flex flex-col">
-                  <div className="flex-1 flex items-center justify-center">
-                    <div className="inline-grid gap-[3px]" style={{ gridTemplateColumns: `10px repeat(${totalWeeks}, 1fr)` }}>
-                      {Array.from({ length: 7 }, (_, row) => (
-                        <Fragment key={`row-${row}`}>
-                          <div className="h-4 flex items-center">
-                            {row % 2 === 0 && <span className="text-[7px] text-gray-400 leading-none">{heatmapDayLabels[row]}</span>}
+              <AnimatePresence mode="wait">
+                {sessionView === 'chart' ? (
+                  <motion.div
+                    key="chart"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="h-44"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+                        <defs>
+                          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#6366f1" stopOpacity={0.15} />
+                            <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af' }} />
+                        <Tooltip content={<ChartTooltip locale={locale} />} cursor={false} />
+                        <Area
+                          type="monotone"
+                          dataKey="sessions"
+                          stroke="#6366f1"
+                          strokeWidth={2}
+                          fill="url(#areaGrad)"
+                          dot={false}
+                          activeDot={{ r: 3.5, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="heatmap"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex-1 flex flex-col"
+                  >
+                    {totalHealthSessions > 0 ? (
+                      <>
+                        <div className="flex-1 flex items-center justify-center">
+                          <div className="inline-grid gap-1.5" style={{ gridTemplateColumns: `16px repeat(${totalWeeks}, 32px)` }}>
+                            {Array.from({ length: 7 }, (_, row) => (
+                              <Fragment key={`row-${row}`}>
+                                <div className="h-8 flex items-center">
+                                  {row % 2 === 0 && <span className="text-[9px] text-gray-400 leading-none">{heatmapDayLabels[row]}</span>}
+                                </div>
+                                {Array.from({ length: totalWeeks }, (_, col) => {
+                                  const cell = heatmapCells.find((c) => c.col === col && c.row === row)
+                                  return (
+                                    <motion.div
+                                      key={`${col}-${row}`}
+                                      initial={{ scale: 0 }}
+                                      animate={{ scale: 1 }}
+                                      transition={{ delay: (col * 7 + row) * 0.008, duration: 0.15 }}
+                                      className="w-8 h-8 rounded-md flex items-center justify-center"
+                                      style={{
+                                        backgroundColor: cell ? heatmapColorMap[cell.status] : 'transparent',
+                                        opacity: cell ? (cell.status === 'empty' ? 0.5 : 1) : 0,
+                                      }}
+                                      title={cell ? `${locale === 'fr' ? 'Jour' : locale === 'es' ? 'Día' : 'Day'} ${cell.day}${cell.count > 1 ? ` (${cell.count})` : ''}` : ''}
+                                    >
+                                      {cell && (
+                                        <div className="relative flex items-center justify-center w-full h-full">
+                                          <span className={`text-[10px] font-medium leading-none ${
+                                            cell.status === 'empty' ? 'text-gray-400' : 'text-white'
+                                          }`}>
+                                            {cell.day}
+                                          </span>
+                                          {cell.count > 1 && cell.status !== 'empty' && (
+                                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-200">
+                                              <span className="text-[7px] font-bold text-gray-700">{cell.count}</span>
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+                                    </motion.div>
+                                  )
+                                })}
+                              </Fragment>
+                            ))}
                           </div>
-                          {Array.from({ length: totalWeeks }, (_, col) => {
-                            const cell = heatmapCells.find((c) => c.col === col && c.row === row)
-                            return (
-                              <motion.div
-                                key={`${col}-${row}`}
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ delay: (col * 7 + row) * 0.008, duration: 0.15 }}
-                                className="w-4 h-4 rounded-[3px] flex items-center justify-center"
-                                style={{
-                                  backgroundColor: cell ? heatmapColorMap[cell.status] : 'transparent',
-                                  opacity: cell ? (cell.status === 'empty' ? 0.7 : 1) : 0,
-                                }}
-                                title={cell ? `${locale === 'fr' ? 'Jour' : locale === 'es' ? 'Día' : 'Day'} ${cell.day}${cell.count > 1 ? ` (${cell.count})` : ''}` : ''}
-                              >
-                                {cell && cell.count > 1 && cell.status !== 'empty' && (
-                                  <span className="text-[7px] font-bold text-white leading-none">{cell.count}</span>
-                                )}
-                              </motion.div>
-                            )
-                          })}
-                        </Fragment>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-0.5 mt-3 pt-3 border-t border-gray-50">
-                    {completedInMonth > 0 && (
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="flex items-center gap-1 text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{locale === 'fr' ? 'Complétées' : locale === 'es' ? 'Completadas' : 'Completed'}</span>
-                        <span className="text-gray-400 tabular-nums">{pct(completedInMonth)}%</span>
+                        </div>
+                        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-50">
+                          {completedInMonth > 0 && (
+                            <span className="flex items-center gap-1 text-[10px] text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{locale === 'fr' ? 'Complétées' : locale === 'es' ? 'Completadas' : 'Completed'} {pct(completedInMonth)}%</span>
+                          )}
+                          {cancelledInMonth > 0 && (
+                            <span className="flex items-center gap-1 text-[10px] text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-gray-400" />{locale === 'fr' ? 'Annulées' : locale === 'es' ? 'Canceladas' : 'Cancelled'} {pct(cancelledInMonth)}%</span>
+                          )}
+                          {noShowInMonth > 0 && (
+                            <span className="flex items-center gap-1 text-[10px] text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{locale === 'fr' ? 'Absences' : locale === 'es' ? 'No asistió' : 'No-show'} {pct(noShowInMonth)}%</span>
+                          )}
+                          {scheduledInMonth > 0 && (
+                            <span className="flex items-center gap-1 text-[10px] text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />{locale === 'fr' ? 'Planifiées' : locale === 'es' ? 'Programadas' : 'Scheduled'} {pct(scheduledInMonth)}%</span>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center py-8">
+                        <p className="text-xs text-gray-300">
+                          {locale === 'fr' ? 'Aucune séance ce mois' : locale === 'es' ? 'Sin sesiones este mes' : 'No sessions this month'}
+                        </p>
                       </div>
                     )}
-                    {cancelledInMonth > 0 && (
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="flex items-center gap-1 text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-gray-400" />{locale === 'fr' ? 'Annulées' : locale === 'es' ? 'Canceladas' : 'Cancelled'}</span>
-                        <span className="text-gray-400 tabular-nums">{pct(cancelledInMonth)}%</span>
-                      </div>
-                    )}
-                    {noShowInMonth > 0 && (
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="flex items-center gap-1 text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{locale === 'fr' ? 'Absences' : locale === 'es' ? 'No asistió' : 'No-show'}</span>
-                        <span className="text-gray-400 tabular-nums">{pct(noShowInMonth)}%</span>
-                      </div>
-                    )}
-                    {scheduledInMonth > 0 && (
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="flex items-center gap-1 text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />{locale === 'fr' ? 'Planifiées' : locale === 'es' ? 'Programadas' : 'Scheduled'}</span>
-                        <span className="text-gray-400 tabular-nums">{pct(scheduledInMonth)}%</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-1 flex items-center justify-center">
-                  <p className="text-xs text-gray-300">
-                    {locale === 'fr' ? 'Aucune séance' : locale === 'es' ? 'Sin sesiones' : 'No sessions'}
-                  </p>
-                </div>
-              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Journey Flow Lanes — takes 2/6 */}
@@ -1026,9 +1227,9 @@ export default function AnalyticsPage() {
                       )}
                       {stuckMilestones.length > 0 && (
                         <div className="flex items-start gap-1.5">
-                          <AlertCircle className="w-3 h-3 text-amber-500 mt-0.5 shrink-0" />
-                          <p className="text-[10px] text-amber-600">
-                            {stuckMilestones.length} {locale === 'fr' ? 'bloqués' : locale === 'es' ? 'estancados' : 'stuck'}
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                          <p className="text-[10px] text-gray-500">
+                            {stuckMilestones.length} {locale === 'fr' ? "n'ont pas bougé récemment" : locale === 'es' ? 'sin movimiento reciente' : "haven't moved recently"}
                             {stuckMemberNames.length > 0 && ` · ${stuckMemberNames.join(', ')}`}
                           </p>
                         </div>
@@ -1064,7 +1265,7 @@ export default function AnalyticsPage() {
                     {locale === 'fr' ? 'Mes personnes' : locale === 'es' ? 'Mi gente' : 'My People'}
                   </h3>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {locale === 'fr' ? 'Score par distance au centre' : locale === 'es' ? 'Puntuación por distancia al centro' : 'Score by distance to center'}
+                    {locale === 'fr' ? 'Plus proche = plus engagé' : locale === 'es' ? 'Más cerca = más comprometido' : 'Closer to you = more engaged'}
                   </p>
                 </div>
               </div>
@@ -1074,9 +1275,9 @@ export default function AnalyticsPage() {
                 <div className="relative" style={{ width: 280, height: 280 }}>
                   {/* Zone rings */}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-[260px] h-[260px] rounded-full border border-dashed border-red-200 absolute" />
-                    <div className="w-[180px] h-[180px] rounded-full border border-dashed border-amber-200 absolute" />
-                    <div className="w-[100px] h-[100px] rounded-full border border-dashed border-emerald-200 absolute" />
+                    <div className="w-[260px] h-[260px] rounded-full border border-dashed border-orange-200/60 absolute" />
+                    <div className="w-[180px] h-[180px] rounded-full border border-dashed border-amber-200/60 absolute" />
+                    <div className="w-[100px] h-[100px] rounded-full border border-dashed border-emerald-200/60 absolute" />
                   </div>
                   {/* Center "You" dot */}
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center z-10">
@@ -1086,8 +1287,8 @@ export default function AnalyticsPage() {
                   </div>
                   {/* Member dots */}
                   {orbitMembers.map((om) => {
-                    const bgColor = om.color === 'emerald' ? 'bg-emerald-500' : om.color === 'amber' ? 'bg-amber-500' : 'bg-red-500'
-                    const glowColor = om.color === 'emerald' ? 'rgba(16,185,129,0.3)' : om.color === 'amber' ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)'
+                    const bgColor = om.color === 'emerald' ? 'bg-emerald-500' : om.color === 'amber' ? 'bg-amber-400' : 'bg-orange-400'
+                    const glowColor = om.color === 'emerald' ? 'rgba(16,185,129,0.3)' : om.color === 'amber' ? 'rgba(245,158,11,0.3)' : 'rgba(251,146,60,0.3)'
                     return (
                       <Link key={om.member.id} href={`/members/${om.member.id}`}>
                         <motion.div
@@ -1118,11 +1319,11 @@ export default function AnalyticsPage() {
                                   ? (locale === 'fr' ? "Aujourd'hui" : locale === 'es' ? 'Hoy' : 'Today')
                                   : (locale === 'fr' ? `Il y a ${lastD}j` : locale === 'es' ? `Hace ${lastD}d` : `${lastD}d ago`)
                               const levelLabel = om.score >= 70
-                                ? (locale === 'fr' ? 'En voie' : locale === 'es' ? 'En camino' : 'On Track')
+                                ? (locale === 'fr' ? 'En bonne voie' : locale === 'es' ? 'Va bien' : 'Doing well')
                                 : om.score >= 40
-                                  ? (locale === 'fr' ? 'À surveiller' : locale === 'es' ? 'Observar' : 'Watch')
-                                  : (locale === 'fr' ? 'À risque' : locale === 'es' ? 'En riesgo' : 'At Risk')
-                              const levelColor = om.score >= 70 ? 'bg-emerald-400' : om.score >= 40 ? 'bg-amber-400' : 'bg-red-400'
+                                  ? (locale === 'fr' ? 'À noter' : locale === 'es' ? 'Para notar' : 'Worth noticing')
+                                  : (locale === 'fr' ? 'À reconnecter' : locale === 'es' ? 'Para reconectar' : 'Could use a check-in')
+                              const levelColor = om.score >= 70 ? 'bg-emerald-400' : om.score >= 40 ? 'bg-amber-400' : 'bg-orange-400'
                               return (
                                 <motion.div
                                   initial={{ opacity: 0, y: 4 }}
@@ -1161,9 +1362,9 @@ export default function AnalyticsPage() {
                 </div>
                 {/* Legend */}
                 <div className="flex items-center gap-4 mt-3">
-                  <span className="flex items-center gap-1 text-[10px] text-gray-400"><span className="w-2 h-2 rounded-full bg-emerald-500" />{locale === 'fr' ? 'En voie' : locale === 'es' ? 'En camino' : 'On Track'}</span>
-                  <span className="flex items-center gap-1 text-[10px] text-gray-400"><span className="w-2 h-2 rounded-full bg-amber-500" />{locale === 'fr' ? 'À surveiller' : locale === 'es' ? 'Observar' : 'Watch'}</span>
-                  <span className="flex items-center gap-1 text-[10px] text-gray-400"><span className="w-2 h-2 rounded-full bg-red-500" />{locale === 'fr' ? 'À risque' : locale === 'es' ? 'En riesgo' : 'At Risk'}</span>
+                  <span className="flex items-center gap-1 text-[10px] text-gray-400"><span className="w-2 h-2 rounded-full bg-emerald-500" />{locale === 'fr' ? 'En bonne voie' : locale === 'es' ? 'Va bien' : 'Doing well'}</span>
+                  <span className="flex items-center gap-1 text-[10px] text-gray-400"><span className="w-2 h-2 rounded-full bg-amber-400" />{locale === 'fr' ? 'À noter' : locale === 'es' ? 'Para notar' : 'Worth noticing'}</span>
+                  <span className="flex items-center gap-1 text-[10px] text-gray-400"><span className="w-2 h-2 rounded-full bg-orange-400" />{locale === 'fr' ? 'À reconnecter' : locale === 'es' ? 'Para reconectar' : 'Could use a check-in'}</span>
                 </div>
               </div>
             </div>
@@ -1187,17 +1388,17 @@ export default function AnalyticsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Overdue follow-ups */}
+                {/* Members who haven't connected recently */}
                 {staleClients.length > 0 && (
                   <div>
                     <div className="flex items-center gap-1.5 mb-2">
-                      <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                      <Heart className="w-3.5 h-3.5 text-amber-400" />
                       <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                         {locale === 'fr'
-                          ? 'Suivis en retard'
+                          ? 'Pas de nouvelles récemment'
                           : locale === 'es'
-                            ? 'Seguimientos pendientes'
-                            : 'Overdue Follow-ups'}
+                            ? 'Sin noticias recientemente'
+                            : "Haven't connected recently"}
                       </h3>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50">
@@ -1214,9 +1415,7 @@ export default function AnalyticsPage() {
                               </p>
                             </div>
                             <span className="text-xs text-gray-400 whitespace-nowrap">
-                              {d === null
-                                ? locale === 'fr' ? 'Jamais vu' : locale === 'es' ? 'Nunca visto' : 'Never seen'
-                                : locale === 'fr' ? `${d}j` : `${d}d ago`}
+                              {humanTimeAgo(d, locale)}
                             </span>
                             <ArrowRight className="w-3.5 h-3.5 text-gray-300" />
                           </Link>
@@ -1256,137 +1455,81 @@ export default function AnalyticsPage() {
             )}
           </motion.div>
 
-          {/* ─── Practitioner Pulse ──────────────────────────────────── */}
+          {/* ─── Your Rhythm ──────────────────────────────────────────── */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.22 }}
-            className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6"
+            className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6"
           >
-            {/* Sessions/Week — mini bars */}
-            <div className="bg-white border border-gray-100 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-3.5 h-3.5 text-blue-500" />
-                <span className="text-xs font-medium text-gray-500">
-                  {locale === 'fr' ? 'Séances/sem.' : locale === 'es' ? 'Sesiones/sem.' : 'Sessions/Week'}
+            {/* Sessions per week — sentence + mini bars */}
+            <div className="bg-white border border-gray-100 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-4 h-4 text-blue-500" />
+                <span className="text-sm font-medium text-gray-700">
+                  {locale === 'fr' ? 'Votre rythme' : locale === 'es' ? 'Tu ritmo' : 'Your rhythm'}
                 </span>
               </div>
-              <div className="flex items-end gap-1.5 mb-3">
-                <span className="text-xl font-bold text-gray-900">{sessionsPerWeek.toFixed(1)}</span>
-                {weekTrend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-emerald-500 mb-0.5" />}
-                {weekTrend === 'down' && <TrendingDown className="w-3.5 h-3.5 text-red-500 mb-0.5" />}
-                {weekTrend === 'flat' && <Minus className="w-3.5 h-3.5 text-gray-400 mb-0.5" />}
-              </div>
-              <div className="flex items-end gap-1.5 h-8">
+              <p className="text-sm text-gray-600 mb-3">
+                {locale === 'fr'
+                  ? `Environ ${Math.round(sessionsPerWeek)} séance${Math.round(sessionsPerWeek) !== 1 ? 's' : ''} par semaine${weekTrend === 'up' ? ', en hausse' : weekTrend === 'down' ? ', un peu moins que d\'habitude' : ', stable'}.`
+                  : locale === 'es'
+                    ? `Aproximadamente ${Math.round(sessionsPerWeek)} sesión${Math.round(sessionsPerWeek) !== 1 ? 'es' : ''} por semana${weekTrend === 'up' ? ', en aumento' : weekTrend === 'down' ? ', un poco menos de lo habitual' : ', estable'}.`
+                    : `About ${Math.round(sessionsPerWeek)} ${Math.round(sessionsPerWeek) === 1 ? 'session' : 'sessions'} per week${weekTrend === 'up' ? ', trending up' : weekTrend === 'down' ? ', a little less than usual' : ', steady'}.`}
+              </p>
+              <div className="flex items-end gap-2 h-10">
                 {weeklyBars.map((count, i) => (
-                  <motion.div
-                    key={i}
-                    className="w-3 bg-blue-400 rounded-sm"
-                    initial={{ height: 0 }}
-                    animate={{ height: `${(count / maxWeeklyBar) * 100}%` }}
-                    transition={{ delay: i * 0.1, duration: 0.5, ease: 'easeOut' }}
-                  />
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <motion.div
+                      className="w-4 bg-blue-300 rounded-sm"
+                      initial={{ height: 0 }}
+                      animate={{ height: `${Math.max((count / maxWeeklyBar) * 100, 4)}%` }}
+                      transition={{ delay: i * 0.1, duration: 0.5, ease: 'easeOut' }}
+                    />
+                  </div>
                 ))}
+                <div className="ml-2 flex items-center gap-1">
+                  {weekTrend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />}
+                  {weekTrend === 'down' && <TrendingDown className="w-3.5 h-3.5 text-amber-500" />}
+                  {weekTrend === 'flat' && <Minus className="w-3.5 h-3.5 text-gray-300" />}
+                </div>
               </div>
             </div>
 
-            {/* Completion Rate — gauge ring */}
-            {(() => {
-              const circumference = 2 * Math.PI * 28
-              const crColor = completionRate > 80 ? '#10b981' : completionRate >= 60 ? '#f59e0b' : '#ef4444'
-              return (
-                <div className="bg-white border border-gray-100 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Activity className="w-3.5 h-3.5 text-emerald-500" />
-                    <span className="text-xs font-medium text-gray-500">
-                      {locale === 'fr' ? 'Taux complétion' : locale === 'es' ? 'Tasa completado' : 'Completion Rate'}
-                    </span>
+            {/* Sessions completed — sentence format */}
+            <div className="bg-white border border-gray-100 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Activity className="w-4 h-4 text-emerald-500" />
+                <span className="text-sm font-medium text-gray-700">
+                  {locale === 'fr' ? 'Séances complétées' : locale === 'es' ? 'Sesiones completadas' : 'Sessions completed'}
+                </span>
+              </div>
+              {pastSessions.length > 0 ? (
+                <>
+                  <p className="text-sm text-gray-600 mb-3">
+                    {locale === 'fr'
+                      ? `Vous avez complété ${pastSessions.filter(s => s.status === 'completed').length} séance${pastSessions.filter(s => s.status === 'completed').length !== 1 ? 's' : ''} sur ${pastSessions.length} planifiées.`
+                      : locale === 'es'
+                        ? `Completaste ${pastSessions.filter(s => s.status === 'completed').length} de ${pastSessions.length} sesiones programadas.`
+                        : `You completed ${pastSessions.filter(s => s.status === 'completed').length} of ${pastSessions.length} scheduled sessions.`}
+                  </p>
+                  {/* Simple progress bar */}
+                  <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-emerald-400 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${completionRate}%` }}
+                      transition={{ duration: 0.8, ease: 'easeOut' }}
+                    />
                   </div>
-                  <div className="relative flex items-center justify-center">
-                    <svg width={64} height={64} className="-rotate-90">
-                      <circle cx={32} cy={32} r={28} fill="none" stroke="#f3f4f6" strokeWidth={5} />
-                      <motion.circle
-                        cx={32} cy={32} r={28} fill="none" stroke={crColor} strokeWidth={5}
-                        strokeLinecap="round"
-                        strokeDasharray={circumference}
-                        initial={{ strokeDashoffset: circumference }}
-                        animate={{ strokeDashoffset: circumference - (completionRate / 100) * circumference }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
-                      />
-                    </svg>
-                    <span className={`absolute text-sm font-bold ${completionRate > 80 ? 'text-emerald-600' : completionRate >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
-                      {completionRate}%
-                    </span>
-                  </div>
-                </div>
-              )
-            })()}
-
-            {/* Notes Coverage — gauge ring */}
-            {(() => {
-              const circumference = 2 * Math.PI * 28
-              const ncColor = notesCoverage > 80 ? '#10b981' : notesCoverage >= 50 ? '#f59e0b' : '#ef4444'
-              return (
-                <div className="bg-white border border-gray-100 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FileText className="w-3.5 h-3.5 text-violet-500" />
-                    <span className="text-xs font-medium text-gray-500">
-                      {locale === 'fr' ? 'Couverture notes' : locale === 'es' ? 'Cobertura notas' : 'Notes Coverage'}
-                    </span>
-                  </div>
-                  <div className="relative flex items-center justify-center">
-                    <svg width={64} height={64} className="-rotate-90">
-                      <circle cx={32} cy={32} r={28} fill="none" stroke="#f3f4f6" strokeWidth={5} />
-                      <motion.circle
-                        cx={32} cy={32} r={28} fill="none" stroke={ncColor} strokeWidth={5}
-                        strokeLinecap="round"
-                        strokeDasharray={circumference}
-                        initial={{ strokeDashoffset: circumference }}
-                        animate={{ strokeDashoffset: circumference - (notesCoverage / 100) * circumference }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
-                      />
-                    </svg>
-                    <span className={`absolute text-sm font-bold ${notesCoverage > 80 ? 'text-emerald-600' : notesCoverage >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
-                      {notesCoverage}%
-                    </span>
-                  </div>
-                </div>
-              )
-            })()}
-
-            {/* Crisis Ratio — gauge ring (inverted: lower = better) */}
-            {(() => {
-              const circumference = 2 * Math.PI * 28
-              const isNoData = crisisRatio < 0
-              const crVal = isNoData ? 0 : crisisRatio
-              const crColor = isNoData ? '#d1d5db' : crVal < 10 ? '#10b981' : crVal <= 25 ? '#f59e0b' : '#ef4444'
-              return (
-                <div className="bg-white border border-gray-100 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Shield className="w-3.5 h-3.5 text-rose-500" />
-                    <span className="text-xs font-medium text-gray-500">
-                      {locale === 'fr' ? 'Ratio crise' : locale === 'es' ? 'Ratio crisis' : 'Crisis Ratio'}
-                    </span>
-                  </div>
-                  <div className="relative flex items-center justify-center">
-                    <svg width={64} height={64} className="-rotate-90">
-                      <circle cx={32} cy={32} r={28} fill="none" stroke="#f3f4f6" strokeWidth={5} />
-                      <motion.circle
-                        cx={32} cy={32} r={28} fill="none" stroke={crColor} strokeWidth={5}
-                        strokeLinecap="round"
-                        strokeDasharray={circumference}
-                        initial={{ strokeDashoffset: circumference }}
-                        animate={{ strokeDashoffset: circumference - (crVal / 100) * circumference }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
-                      />
-                    </svg>
-                    <span className={`absolute text-sm font-bold ${isNoData ? 'text-gray-400' : crVal < 10 ? 'text-emerald-600' : crVal <= 25 ? 'text-amber-600' : 'text-red-600'}`}>
-                      {isNoData ? '—' : `${crisisRatio}%`}
-                    </span>
-                  </div>
-                </div>
-              )
-            })()}
+                  <p className="text-xs text-gray-400 mt-2">{completionRate}%</p>
+                </>
+              ) : (
+                <p className="text-sm text-gray-400">
+                  {locale === 'fr' ? 'Pas encore de séances' : locale === 'es' ? 'Aún no hay sesiones' : 'No sessions yet'}
+                </p>
+              )}
+            </div>
           </motion.div>
 
           {/* ─── 5. Activity Footer ────────────────────────────────────── */}
