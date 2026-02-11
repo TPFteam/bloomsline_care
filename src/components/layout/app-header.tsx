@@ -15,7 +15,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useRouter } from 'next/navigation'
 import type { User as UserType } from '@/types/user'
-import { PractitionerChatPanel } from '@/components/bloom/practitioner-chat-panel'
+import { BloomInlineChat } from '@/components/bloom/bloom-inline-chat'
 
 interface AppHeaderProps {
   user: UserType | null
@@ -43,7 +43,7 @@ export function AppHeader({ user, leftContent }: AppHeaderProps) {
           {/* Talk to Bloom */}
           <button onClick={() => setShowPractitionerChat(true)}>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-sm text-gray-900 dark:text-gray-100 font-medium">
-              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#D4856A] to-[#E8A87C] flex items-center justify-center">
+              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center">
                 <MessageCircle className="w-3 h-3 text-white" />
               </div>
               <span>{locale === 'fr' ? 'Parler à Bloom' : locale === 'es' ? 'Hablar con Bloom' : 'Talk to Bloom'}</span>
@@ -68,11 +68,13 @@ export function AppHeader({ user, leftContent }: AppHeaderProps) {
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors"
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-lavender-500 rounded-full flex items-center justify-center text-white text-sm font-medium overflow-hidden">
+              <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-medium overflow-hidden">
                 {user?.avatar_url ? (
                   <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : user?.full_name ? (
+                  user.full_name[0]
                 ) : (
-                  user?.full_name?.[0] || 'U'
+                  <div className="w-full h-full bg-gradient-to-br from-teal-400 to-teal-600" />
                 )}
               </div>
             </button>
@@ -161,9 +163,16 @@ export function AppHeader({ user, leftContent }: AppHeaderProps) {
         </div>
       </div>
 
-      <PractitionerChatPanel
+      <BloomInlineChat
         isOpen={showPractitionerChat}
         onClose={() => setShowPractitionerChat(false)}
+        suggestions={
+          locale === 'fr'
+            ? ['Qui devrais-je contacter cette semaine ?', 'Quelles tendances vois-tu ?', 'Comment vont mes membres ?', 'Comment améliorer ma pratique ?']
+            : locale === 'es'
+              ? ['Con quién debería conectarme?', 'Qué patrones ves?', 'Cómo están mis miembros?', 'Cómo puedo mejorar mi práctica?']
+              : ['Who should I check in with this week?', 'What patterns do you notice?', 'How are my members doing?', 'How can I improve my practice?']
+        }
       />
     </header>
   )

@@ -571,8 +571,8 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
     ai_summary: {
       label: 'Bloom Pulse',
       icon: <Sparkles className="w-4 h-4" />,
-      iconBg: 'bg-[#D4856A]/10',
-      iconColor: 'text-[#D4856A]',
+      iconBg: 'bg-teal-500/10',
+      iconColor: 'text-teal-600',
     },
     about: {
       label: t.members.overview.aboutClient,
@@ -618,7 +618,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
       case 'ai_summary':
         return loadingSummary ? (
           <div className="flex items-center justify-center py-6">
-            <Loader2 className="w-6 h-6 text-[#D4856A] animate-spin" />
+            <Loader2 className="w-6 h-6 text-teal-600 animate-spin" />
           </div>
         ) : latestSummary ? (
           <div className="space-y-3">
@@ -641,15 +641,15 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
             <Button
               onClick={() => setShowSummaryModal(true)}
               variant="outline"
-              className="w-full border-[#D4856A]/30 text-[#D4856A] hover:bg-[#D4856A]/5 rounded-lg"
+              className="w-full border-teal-500/30 text-teal-600 hover:bg-teal-500/5 rounded-lg"
             >
               {locale === 'fr' ? 'Voir Bloom Pulse' : locale === 'es' ? 'Ver Bloom Pulse' : 'View Bloom Pulse'}
             </Button>
           </div>
         ) : (
           <div className="text-center py-6">
-            <div className="w-12 h-12 bg-[#D4856A]/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-              <Sparkles className="w-6 h-6 text-[#D4856A]" />
+            <div className="w-12 h-12 bg-teal-500/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <Sparkles className="w-6 h-6 text-teal-600" />
             </div>
             <p className="text-sm text-gray-600 mb-1">
               {locale === 'fr' ? 'Générez un aperçu thérapeutique' : locale === 'es' ? 'Genera una vista terapéutica' : 'Generate a therapeutic pulse'}
@@ -659,7 +659,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
             </p>
             <Button
               onClick={() => setShowSummaryModal(true)}
-              className="bg-[#D4856A] hover:bg-[#C27459] text-white rounded-lg"
+              className="bg-teal-500 hover:bg-teal-600 text-white rounded-lg"
             >
               {locale === 'fr' ? 'Générer' : locale === 'es' ? 'Generar' : 'Generate'}
             </Button>

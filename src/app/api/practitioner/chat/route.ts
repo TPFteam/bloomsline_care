@@ -1,26 +1,211 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createAdminClient } from '@/lib/supabase/server-client'
-import { buildPractitionerContext, formatPractitionerContextForPrompt } from '@/lib/bloom/practitioner-context'
+import { buildPractitionerContext, formatPractitionerContextForPrompt, type PractitionerContext } from '@/lib/bloom/practitioner-context'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit'
 
+// ── Content block types for visual responses ──
+interface PractitionerStatBlock {
+  type: 'stats'
+  title: string
+  stats: { label: string; value: string | number; sub?: string; color?: string }[]
+}
+
+interface PractitionerListBlock {
+  type: 'list'
+  title: string
+  items: { label: string; detail: string; accent?: string }[]
+}
+
+type PractitionerContentBlock = PractitionerStatBlock | PractitionerListBlock
+
+// Detect intent from message and generate relevant visual blocks
+function generatePractitionerBlocks(
+  message: string,
+  ctx: PractitionerContext
+): PractitionerContentBlock[] {
+  const lower = message.toLowerCase()
+  const blocks: PractitionerContentBlock[] = []
+
+  const memberName = new Map(ctx.members.map(m => [m.id, m.name]))
+
+  // Members / caseload
+  if (/member|caseload|client|who|active|inactive|pending/i.test(lower)) {
+    blocks.push({
+      type: 'stats',
+      title: 'Caseload',
+      stats: [
+        { label: 'Active', value: ctx.totals.activeMembers, color: '#10b981' },
+        { label: 'Inactive', value: ctx.totals.inactiveMembers, color: '#6b7280' },
+        { label: 'Pending', value: ctx.totals.pendingMembers, color: '#f59e0b' },
+      ],
+    })
+  }
+
+  // Sessions
+  if (/session|appointment|schedule|cancel|no.?show|completion/i.test(lower)) {
+    const rate = ctx.totals.sessionsThisMonth > 0
+      ? Math.round((ctx.totals.completedSessions / ctx.totals.sessionsThisMonth) * 100)
+      : 0
+    blocks.push({
+      type: 'stats',
+      title: 'Sessions',
+      stats: [
+        { label: 'This week', value: ctx.totals.sessionsThisWeek },
+        { label: 'This month', value: ctx.totals.sessionsThisMonth },
+        { label: 'Completion', value: `${rate}%`, color: rate >= 70 ? '#10b981' : '#f59e0b' },
+      ],
+    })
+  }
+
+  // Milestones / goals
+  if (/milestone|goal|progress|overdue|stuck|achievement/i.test(lower)) {
+    const now = new Date()
+    const overdue = ctx.milestones.filter(m =>
+      m.target_date && new Date(m.target_date) < now && m.status !== 'independent' && m.status !== 'achieved'
+    )
+    const inProgress = ctx.milestones.filter(m => ['building', 'in_progress', 'planned'].includes(m.status))
+    const achieved = ctx.milestones.filter(m => m.status === 'independent' || m.status === 'achieved')
+
+    blocks.push({
+      type: 'stats',
+      title: 'Milestones',
+      stats: [
+        { label: 'In progress', value: inProgress.length, color: '#3b82f6' },
+        { label: 'Achieved', value: achieved.length, color: '#10b981' },
+        { label: 'Overdue', value: overdue.length, color: overdue.length > 0 ? '#ef4444' : '#6b7280' },
+      ],
+    })
+
+    if (overdue.length > 0) {
+      blocks.push({
+        type: 'list',
+        title: 'Overdue milestones',
+        items: overdue.slice(0, 4).map(m => ({
+          label: m.title,
+          detail: memberName.get(m.member_id) || 'Unknown',
+          accent: '#ef4444',
+        })),
+      })
+    }
+  }
+
+  // Follow-up / check-in / reconnect
+  if (/follow.?up|check.?in|reconnect|reach out|contact|haven.?t seen|stale/i.test(lower)) {
+    const twoWeeksAgo = new Date()
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
+    const needFollowUp = ctx.members.filter(m =>
+      m.status === 'active' &&
+      (!m.last_session_at || new Date(m.last_session_at) < twoWeeksAgo)
+    )
+
+    if (needFollowUp.length > 0) {
+      blocks.push({
+        type: 'list',
+        title: 'Need follow-up',
+        items: needFollowUp.slice(0, 5).map(m => ({
+          label: m.name,
+          detail: m.last_session_at
+            ? `Last session ${formatRelativeShort(m.last_session_at)}`
+            : 'No sessions yet',
+          accent: '#f59e0b',
+        })),
+      })
+    }
+  }
+
+  // Overview / patterns / how am I doing
+  if (/overview|pattern|how.*(am|are|doing)|practice|summary/i.test(lower)) {
+    const highEng = ctx.members.filter(m => m.engagement_level === 'high').length
+    const lowEng = ctx.members.filter(m => m.engagement_level === 'low').length
+    blocks.push({
+      type: 'stats',
+      title: 'Practice overview',
+      stats: [
+        { label: 'Members', value: ctx.totals.totalMembers },
+        { label: 'High engagement', value: highEng, color: '#10b981' },
+        { label: 'Low engagement', value: lowEng, color: lowEng > 0 ? '#f59e0b' : '#6b7280' },
+      ],
+    })
+  }
+
+  // Resources
+  if (/resource|assign|worksheet|exercise|library/i.test(lower)) {
+    const published = ctx.resources.filter(r => r.status === 'published').length
+    const completedAssign = ctx.assignments.filter(a => a.status === 'completed').length
+    const totalAssign = ctx.assignments.length
+    const rate = totalAssign > 0 ? Math.round((completedAssign / totalAssign) * 100) : 0
+    blocks.push({
+      type: 'stats',
+      title: 'Resources',
+      stats: [
+        { label: 'Published', value: published },
+        { label: 'Assigned', value: totalAssign },
+        { label: 'Completed', value: `${rate}%`, color: rate >= 50 ? '#10b981' : '#f59e0b' },
+      ],
+    })
+  }
+
+  return blocks.slice(0, 2)
+}
+
+function formatRelativeShort(dateStr: string): string {
+  const diffDays = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000)
+  if (diffDays === 0) return 'today'
+  if (diffDays === 1) return 'yesterday'
+  if (diffDays < 7) return `${diffDays}d ago`
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`
+  return `${Math.floor(diffDays / 30)}mo ago`
+}
+
 function getSystemPrompt(locale: 'en' | 'fr' | 'es' = 'en'): string {
-  return `You are Bloom Assistant, a professional data assistant for healthcare practitioners using Bloomsline Care.
+  const languageInstruction = locale === 'fr'
+    ? 'Réponds en français. Garde le même ton.'
+    : locale === 'es'
+      ? 'Responde en español. Mantén el mismo tono.'
+      : 'Respond in English.'
 
-ROLE:
-- You help practitioners understand their practice data: members, sessions, milestones, resources, and patterns.
-- You reference actual names, dates, and numbers from the practitioner's data provided below.
-- You are warm but professional — like a knowledgeable colleague.
+  return `You are Bloom.
 
-RULES:
-- Keep answers concise: 2-5 sentences for simple questions, more for complex analysis.
-- Always reference specific data when available (member names, counts, dates).
-- If the data doesn't contain what's needed, say so clearly.
-- You CANNOT modify data, schedule sessions, or take actions — only analyze and inform.
-- You CANNOT give clinical advice, diagnoses, or treatment recommendations.
-- Never fabricate data. Only reference what's in the context.
-- FORMATTING: Use plain text only. No markdown, no bold (**), no italics, no bullet points (- or *). Use line breaks and numbered lists (1. 2. 3.) for structure. Use ALL CAPS sparingly for emphasis instead of bold.
-${locale === 'fr' ? '- IMPORTANT: Always respond in French.' : locale === 'es' ? '- IMPORTANT: Always respond in Spanish.' : '- Respond in English by default.'}`
+You are not a chatbot. You are not an "assistant." You are Bloom.
+You are the practitioner's thoughtful colleague. The one who actually looks at the data, notices things, and says what matters.
+You are warm, direct, and honest. You do not sugarcoat. You do not over-explain.
+
+HOW YOU TALK:
+- Like a trusted colleague over coffee
+- KEEP IT SHORT. 1-3 sentences MAX for simple questions.
+- For complex analysis: up to 4-5 sentences, never more.
+- You make observations, not presentations
+- You say names. You say numbers. You are specific.
+- When something looks off, you say it plainly: "Sarah has not had a session in 3 weeks."
+
+RESPONSE LENGTH RULES (CRITICAL):
+- Default response: 1-2 sentences
+- If they ask about a specific member: 2-3 sentences max
+- If they ask for a pattern or overview: 3-5 sentences max
+- NEVER write paragraphs. NEVER write walls of text.
+- Think like texting a colleague, not writing a report
+
+FORMATTING RULES:
+- Plain text only. No markdown, no bold (**), no italics.
+- No bullet points. No numbered lists. Just natural sentences.
+- Use line breaks between thoughts if needed. That is it.
+- Never use em dashes.
+
+WHAT YOU KNOW:
+You have access to their full practice data: members, sessions, milestones, notes, resources.
+Use this naturally. "3 of your members have not had a session in over 2 weeks."
+Make connections. "Alex has 2 overdue milestones and missed the last session. Might be worth a check-in."
+Be specific, not generic.
+
+BOUNDARIES:
+- You CANNOT modify data, schedule sessions, or take actions. Only observe and inform.
+- You CANNOT give clinical advice, diagnoses, or treatment plans.
+- Never fabricate data. If you do not know, say "I do not have data on that."
+- Do not repeat what they said back to them. Just respond.
+- Do not use filler phrases like "That is a great question" or "I am here to help."
+
+${languageInstruction}`
 }
 
 export async function POST(request: NextRequest) {
@@ -161,7 +346,7 @@ ${contextPrompt}`
     // Call Claude API
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
+      max_tokens: 500,
       system: systemPrompt,
       messages,
     })
@@ -187,9 +372,13 @@ ${contextPrompt}`
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', activeConversationId)
 
+    // Generate visual content blocks based on the question
+    const contentBlocks = generatePractitionerBlocks(message, practitionerContext)
+
     return NextResponse.json({
       message: responseText,
       conversationId: activeConversationId,
+      contentBlocks: contentBlocks.length > 0 ? contentBlocks : undefined,
     })
   } catch (error) {
     console.error('Practitioner chat error:', error)

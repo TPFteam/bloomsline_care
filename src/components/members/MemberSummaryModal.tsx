@@ -58,11 +58,11 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
 
   // Section icons and colors - using brand palette
   const sectionConfig: Record<SectionId, { icon: typeof TrendingUp; bgColor: string; textColor: string }> = {
-    status: { icon: Sparkles, bgColor: 'bg-[#D4856A]/10', textColor: 'text-[#D4856A]' },
+    status: { icon: Sparkles, bgColor: 'bg-teal-500/10', textColor: 'text-teal-600' },
     highlights: { icon: TrendingUp, bgColor: 'bg-mint-50', textColor: 'text-mint-700' },
     themes: { icon: Lightbulb, bgColor: 'bg-teal-50', textColor: 'text-teal-700' },
     attention: { icon: AlertTriangle, bgColor: 'bg-amber-50', textColor: 'text-amber-700' },
-    recommendations: { icon: CheckCircle2, bgColor: 'bg-[#D4856A]/10', textColor: 'text-[#D4856A]' },
+    recommendations: { icon: CheckCircle2, bgColor: 'bg-teal-500/10', textColor: 'text-teal-600' },
     nextSteps: { icon: ArrowRight, bgColor: 'bg-mint-50', textColor: 'text-mint-700' },
   }
 
@@ -285,8 +285,8 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#D4856A]/10 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-[#D4856A]" />
+              <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-teal-600" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Bloom Pulse</h2>
@@ -318,14 +318,14 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
           <div className="flex-1 overflow-y-auto p-6">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 text-[#D4856A] animate-spin mb-3" />
+                <Loader2 className="w-8 h-8 text-teal-600 animate-spin mb-3" />
                 <p className="text-gray-500 text-sm">
                   {locale === 'fr' ? 'Chargement...' : locale === 'es' ? 'Cargando...' : 'Loading...'}
                 </p>
               </div>
             ) : generating ? (
               <div className="flex flex-col items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 text-[#D4856A] animate-spin mb-3" />
+                <Loader2 className="w-8 h-8 text-teal-600 animate-spin mb-3" />
                 <p className="text-gray-700 font-medium">
                   {locale === 'fr' ? 'Génération en cours...' : locale === 'es' ? 'Generando...' : 'Generating...'}
                 </p>
@@ -370,7 +370,7 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
                       onClick={() => selectHistorySummary(historySummary)}
                       className={`w-full p-4 rounded-xl border text-left transition-all ${
                         summary?.id === historySummary.id
-                          ? 'border-[#D4856A]/30 bg-[#D4856A]/10'
+                          ? 'border-teal-500/30 bg-teal-500/10'
                           : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
@@ -382,7 +382,7 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
                           </span>
                         </div>
                         {summary?.id === historySummary.id && (
-                          <span className="text-xs text-[#D4856A] font-medium">
+                          <span className="text-xs text-teal-600 font-medium">
                             {locale === 'fr' ? 'Affiché' : locale === 'es' ? 'Mostrado' : 'Viewing'}
                           </span>
                         )}
@@ -407,7 +407,7 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
                     size="sm"
                     onClick={generateSummary}
                     disabled={generating}
-                    className="text-[#D4856A] hover:text-[#D4856A] hover:bg-[#D4856A]/10"
+                    className="text-teal-600 hover:text-teal-600 hover:bg-teal-500/10"
                   >
                     <RefreshCw className={`w-4 h-4 mr-1 ${generating ? 'animate-spin' : ''}`} />
                     {locale === 'fr' ? 'Régénérer' : locale === 'es' ? 'Regenerar' : 'Regenerate'}
@@ -435,8 +435,8 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-10">
-                <div className="w-14 h-14 rounded-xl bg-[#D4856A]/10 flex items-center justify-center mb-4">
-                  <Sparkles className="w-7 h-7 text-[#D4856A]" />
+                <div className="w-14 h-14 rounded-xl bg-teal-500/10 flex items-center justify-center mb-4">
+                  <Sparkles className="w-7 h-7 text-teal-600" />
                 </div>
                 <h3 className="text-base font-semibold text-gray-900 mb-1">
                   {locale === 'fr' ? 'Générer Bloom Pulse' : locale === 'es' ? 'Generar Bloom Pulse' : 'Generate Bloom Pulse'}
@@ -450,7 +450,7 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
                 </p>
                 <Button
                   onClick={generateSummary}
-                  className="bg-[#D4856A] hover:bg-[#C07661] text-white"
+                  className="bg-teal-500 hover:bg-teal-600 text-white"
                 >
                   {locale === 'fr' ? 'Générer' : locale === 'es' ? 'Generar' : 'Generate'}
                 </Button>

@@ -24,6 +24,7 @@ import {
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppSidebar, AppHeader } from '@/components/layout'
+import { BloomInlineChat } from '@/components/bloom/bloom-inline-chat'
 import { createClient } from '@/lib/supabase/browser-client'
 import type { User } from '@/types/user'
 
@@ -221,12 +222,19 @@ export default function AnalyticsPage() {
   const [userProfile, setUserProfile] = useState<User | null>(null)
   const [selectedMonth, setSelectedMonth] = useState(() => new Date())
   const [hoveredMember, setHoveredMember] = useState<string | null>(null)
+  const [bloomOpen, setBloomOpen] = useState(false)
+  const [bloomPrompt, setBloomPrompt] = useState<string | undefined>(undefined)
   const [sessionView, setSessionView] = useState<'chart' | 'heatmap'>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('analytics_session_view') as 'chart' | 'heatmap') || 'chart'
     }
     return 'chart'
   })
+
+  const openBloom = (prompt?: string) => {
+    setBloomPrompt(prompt)
+    setBloomOpen(true)
+  }
 
   const toggleSessionView = (view: 'chart' | 'heatmap') => {
     setSessionView(view)
@@ -881,13 +889,28 @@ export default function AnalyticsPage() {
               className="mb-6"
             >
               <div className="bg-gradient-to-r from-amber-50/60 to-orange-50/40 rounded-2xl border border-amber-100/50 p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-7 h-7 rounded-lg bg-white/80 flex items-center justify-center">
-                    <Sun className="w-4 h-4 text-amber-500" />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-white/80 flex items-center justify-center">
+                      <Sun className="w-4 h-4 text-amber-500" />
+                    </div>
+                    <h3 className="text-sm font-medium text-gray-700">
+                      {locale === 'fr' ? 'Votre réflexion du moment' : locale === 'es' ? 'Tu reflexión del momento' : 'Your practice reflection'}
+                    </h3>
                   </div>
-                  <h3 className="text-sm font-medium text-gray-700">
-                    {locale === 'fr' ? 'Votre réflexion du moment' : locale === 'es' ? 'Tu reflexión del momento' : 'Your practice reflection'}
-                  </h3>
+                  <button
+                    onClick={() => bloomOpen ? setBloomOpen(false) : openBloom()}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all hover:shadow-sm ${
+                      bloomOpen
+                        ? 'bg-teal-500/10 border-teal-500/20 text-teal-600'
+                        : 'bg-white/80 hover:bg-white border-teal-200/50 hover:border-teal-500/30 text-teal-600'
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {bloomOpen
+                      ? (locale === 'fr' ? 'Fermer' : locale === 'es' ? 'Cerrar' : 'Close')
+                      : (locale === 'fr' ? 'Demander à Bloom' : locale === 'es' ? 'Preguntar a Bloom' : 'Ask Bloom')}
+                  </button>
                 </div>
                 <div className="space-y-3">
                   {sortedReflections.map((r, i) => (
@@ -909,6 +932,7 @@ export default function AnalyticsPage() {
                     </motion.div>
                   ))}
                 </div>
+
               </div>
             </motion.div>
           )}
@@ -1536,7 +1560,7 @@ export default function AnalyticsPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.25 }}
+            transition={{ delay: 0.28 }}
             className="border-t border-gray-100 pt-4 pb-2 text-xs text-gray-400 text-center"
           >
             {locale === 'fr'
@@ -1547,6 +1571,23 @@ export default function AnalyticsPage() {
           </motion.div>
         </div>
       </main>
+
+      {/* Bloom overlay */}
+      <BloomInlineChat
+        isOpen={bloomOpen}
+        onClose={() => { setBloomOpen(false); setBloomPrompt(undefined) }}
+        initialMessage={bloomPrompt}
+        suggestions={[
+          ...(staleClients.length > 0 ? [
+            locale === 'fr' ? 'Des idées pour recontacter mes membres ?' : locale === 'es' ? 'Ideas para reconectar?' : 'Tips for reconnecting with my members?'
+          ] : []),
+          ...(stuckMilestones.length > 0 ? [
+            locale === 'fr' ? 'Des objectifs n\'avancent pas, que faire ?' : locale === 'es' ? 'Objetivos estancados, qué hago?' : 'Some goals aren\'t moving — what should I try?'
+          ] : []),
+          locale === 'fr' ? 'Quelles tendances vois-tu ?' : locale === 'es' ? 'Qué patrones ves?' : 'What patterns do you notice?',
+          locale === 'fr' ? 'Comment améliorer ma pratique ?' : locale === 'es' ? 'Cómo mejorar mi práctica?' : 'How can I improve my practice?',
+        ].slice(0, 4)}
+      />
     </div>
   )
 }

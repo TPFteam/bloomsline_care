@@ -410,6 +410,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
   // Goal suggestions from Bloom Pulse
   const [latestSummary, setLatestSummary] = useState<MemberSummary | null>(null)
   const [loadingSummary, setLoadingSummary] = useState(true)
+  const [generatingPulse, setGeneratingPulse] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
 
   useEffect(() => {
@@ -437,6 +438,37 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
       console.error('Error fetching summary:', err)
     } finally {
       setLoadingSummary(false)
+    }
+  }
+
+  const generatePulseInline = async () => {
+    setGeneratingPulse(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const response = await fetch(`/api/members/${memberId}/summary`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ locale }),
+      })
+
+      const data = await response.json()
+      if (response.ok) {
+        setLatestSummary(data.summary)
+        toast.success(locale === 'fr' ? 'Bloom Pulse généré' : locale === 'es' ? 'Bloom Pulse generado' : 'Bloom Pulse generated')
+      } else if (data.code === 'INSUFFICIENT_DATA') {
+        toast.error(locale === 'fr' ? 'Pas assez de données' : locale === 'es' ? 'Datos insuficientes' : 'Not enough data yet')
+      } else {
+        toast.error(data.error || 'Failed to generate')
+      }
+    } catch {
+      toast.error('Something went wrong')
+    } finally {
+      setGeneratingPulse(false)
     }
   }
 
@@ -971,13 +1003,13 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-[#D4856A]/5 to-[#D4856A]/10 rounded-2xl border border-[#D4856A]/20 overflow-hidden"
+          className="bg-gradient-to-r from-teal-500/5 to-teal-500/10 rounded-2xl border border-teal-500/20 overflow-hidden"
         >
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#D4856A]/10 flex items-center justify-center">
-                  <Lightbulb className="w-4 h-4 text-[#D4856A]" />
+                <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center">
+                  <Lightbulb className="w-4 h-4 text-teal-600" />
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-900 text-sm">
@@ -1005,7 +1037,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
 
             {loadingSummary ? (
               <div className="flex items-center gap-2 py-3">
-                <div className="w-4 h-4 border-2 border-[#D4856A] border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
                 <span className="text-sm text-gray-500">
                   {locale === 'fr' ? 'Chargement...' : locale === 'es' ? 'Cargando...' : 'Loading...'}
                 </span>
@@ -1018,14 +1050,14 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-[#D4856A]/30 hover:shadow-sm transition-all group"
+                    className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-teal-500/30 hover:shadow-sm transition-all group"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-700 line-clamp-2">{suggestion}</p>
                     </div>
                     <button
                       onClick={() => handleQuickAddGoal(suggestion)}
-                      className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#D4856A] bg-[#D4856A]/10 hover:bg-[#D4856A]/20 rounded-lg transition-colors"
+                      className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-teal-600 bg-teal-500/10 hover:bg-teal-500/20 rounded-lg transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       {locale === 'fr' ? 'Ajouter' : locale === 'es' ? 'Añadir' : 'Add'}
@@ -1035,19 +1067,36 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
               </div>
             ) : (
               <div className="text-center py-4">
-                <div className="w-10 h-10 rounded-xl bg-[#D4856A]/10 flex items-center justify-center mx-auto mb-2">
-                  <Sparkles className="w-5 h-5 text-[#D4856A]" />
+                <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center mx-auto mb-2">
+                  <Sparkles className="w-5 h-5 text-teal-600" />
                 </div>
                 <p className="text-sm text-gray-600 mb-1">
                   {locale === 'fr' ? 'Aucune suggestion disponible' : locale === 'es' ? 'Sin sugerencias disponibles' : 'No suggestions available'}
                 </p>
-                <p className="text-xs text-gray-500 mb-3">
+                <p className="text-xs text-gray-500 mb-4">
                   {locale === 'fr'
                     ? 'Générez un Bloom Pulse pour obtenir des recommandations personnalisées'
                     : locale === 'es'
                     ? 'Genere un Bloom Pulse para obtener recomendaciones personalizadas'
                     : 'Generate a Bloom Pulse to get personalized recommendations'}
                 </p>
+                <button
+                  onClick={generatePulseInline}
+                  disabled={generatingPulse}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-teal-500 hover:bg-teal-600 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {generatingPulse ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      {locale === 'fr' ? 'Génération...' : locale === 'es' ? 'Generando...' : 'Generating...'}
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      {locale === 'fr' ? 'Générer Bloom Pulse' : locale === 'es' ? 'Generar Bloom Pulse' : 'Generate Bloom Pulse'}
+                    </>
+                  )}
+                </button>
               </div>
             )}
           </div>
@@ -1060,7 +1109,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           onClick={() => setShowSuggestions(true)}
-          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-[#D4856A] bg-[#D4856A]/5 hover:bg-[#D4856A]/10 border border-[#D4856A]/20 rounded-xl transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-teal-600 bg-teal-500/5 hover:bg-teal-500/10 border border-teal-500/20 rounded-xl transition-colors"
         >
           <Lightbulb className="w-4 h-4" />
           {locale === 'fr' ? 'Voir les recommandations' : locale === 'es' ? 'Ver recomendaciones' : 'View recommendations'}
