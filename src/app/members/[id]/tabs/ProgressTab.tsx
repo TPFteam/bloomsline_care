@@ -1186,27 +1186,27 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
                     </button>
                     <button
                       type="button"
-                      onClick={() => setInitialStatus('building')}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
-                        initialStatus === 'building'
-                          ? 'bg-emerald-200 text-emerald-800 border-2 border-emerald-500 shadow-sm'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
-                      }`}
-                    >
-                      {initialStatus === 'building' && <CheckCircle className="w-4 h-4" />}
-                      {locale === 'fr' ? 'Ancrage' : 'Building'}
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => setInitialStatus('thriving')}
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
                         initialStatus === 'thriving'
-                          ? 'bg-emerald-300 text-emerald-900 border-2 border-emerald-600 shadow-sm'
+                          ? 'bg-emerald-200 text-emerald-800 border-2 border-emerald-500 shadow-sm'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
                       }`}
                     >
                       {initialStatus === 'thriving' && <CheckCircle className="w-4 h-4" />}
                       {locale === 'fr' ? 'Évolution' : 'Thriving'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInitialStatus('building')}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 ${
+                        initialStatus === 'building'
+                          ? 'bg-emerald-300 text-emerald-900 border-2 border-emerald-600 shadow-sm'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
+                      }`}
+                    >
+                      {initialStatus === 'building' && <CheckCircle className="w-4 h-4" />}
+                      {locale === 'fr' ? 'Ancrage' : 'Building'}
                     </button>
                     <button
                       type="button"

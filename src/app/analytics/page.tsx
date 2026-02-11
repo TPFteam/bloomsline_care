@@ -572,7 +572,7 @@ export default function AnalyticsPage() {
 
   // Avg time per stage: for milestones that have moved past a given stage
   const stageAvgDays: { stage: string; label: string; avgDays: number }[] = []
-  for (const stage of ['discovery', 'building', 'thriving']) {
+  for (const stage of ['discovery', 'thriving', 'building']) {
     const pastMs = milestones.filter((ms) => {
       const idx = stageOrder.indexOf(ms.status)
       const stageIdx = stageOrder.indexOf(stage)
@@ -743,8 +743,8 @@ export default function AnalyticsPage() {
   // ── Journey lanes data ────────────────────────────────────────────
   const journeyLanesDef = [
     { key: 'discovery', label: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery', color: 'bg-blue-400', dotColor: 'bg-blue-400', statuses: ['discovery', 'planned'] },
-    { key: 'building', label: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building', color: 'bg-amber-400', dotColor: 'bg-amber-400', statuses: ['building', 'in_progress'] },
     { key: 'thriving', label: locale === 'fr' ? 'Épanouissement' : locale === 'es' ? 'Florecimiento' : 'Thriving', color: 'bg-emerald-400', dotColor: 'bg-emerald-400', statuses: ['thriving'] },
+    { key: 'building', label: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building', color: 'bg-amber-400', dotColor: 'bg-amber-400', statuses: ['building', 'in_progress'] },
     { key: 'independent', label: locale === 'fr' ? 'Autonome' : locale === 'es' ? 'Independiente' : 'Independent', color: 'bg-violet-400', dotColor: 'bg-violet-400', statuses: ['independent', 'achieved'] },
   ]
   const journeyLanes = journeyLanesDef.map((lane) => {

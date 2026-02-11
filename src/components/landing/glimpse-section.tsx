@@ -540,7 +540,7 @@ function AnimatedBalance() {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="relative w-[280px] h-[210px]">
+      <div className="relative w-[280px] h-[210px] mx-auto">
         {/* SVG connecting lines */}
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 280 210">
           {/* Connecting arcs between adjacent bubbles */}
@@ -1043,9 +1043,9 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
                   </div>
 
                   {/* Visual */}
-                  <div className={`${index % 2 === 1 ? 'lg:col-start-1' : ''}`}>
+                  <div className={`${index % 2 === 1 ? 'lg:col-start-1' : ''} overflow-hidden`}>
                     <div className={`bg-gradient-to-br ${step.color} rounded-3xl p-6 sm:p-8`}>
-                      <div className="bg-white rounded-2xl p-5 shadow-lg">
+                      <div className="bg-white rounded-2xl p-5 shadow-lg overflow-hidden">
                         {step.visual}
                       </div>
                     </div>
@@ -1127,7 +1127,7 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
           >
             <button
               onClick={openModal}
-              className="inline-block px-8 py-4 bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white font-medium rounded-full shadow-lg shadow-[#D4856A]/30 hover:shadow-xl hover:from-[#c27459] hover:to-[#d4946b] transition-all duration-300"
+              className="inline-block px-8 py-4 bg-gradient-to-r from-teal-600 to-teal-500 text-white font-medium rounded-full shadow-lg shadow-teal-600/30 hover:shadow-xl hover:from-teal-700 hover:to-teal-600 transition-all duration-300"
             >
               {locale === 'fr' ? 'Tester Bloomsline gratuitement' : locale === 'es' ? 'Prueba Bloomsline gratis' : 'Try Bloomsline for free'}
             </button>

@@ -20,11 +20,13 @@ function HeroSection() {
   const { openModal } = useEarlyAccessModal()
 
   const moments = [
-    { img: '/moments/morning.jpg', label: { en: 'Finally slowed down', fr: 'Enfin un moment calme', es: 'Al fin un respiro' } },
-    { img: '/moments/cat.jpg', label: { en: 'She always knows', fr: 'Elle sait toujours', es: 'Ella siempre sabe' } },
-    { img: '/moments/walk.jpg', label: { en: 'Needed this', fr: "J'en avais besoin", es: 'Necesitaba esto' } },
-    { img: '/moments/friends.jpg', label: { en: 'My people', fr: 'Les miens', es: 'Mi gente' } },
-    { img: '/moments/cozy.jpg', label: { en: 'Just me tonight', fr: 'Juste moi ce soir', es: 'Solo yo esta noche' } },
+    { img: '/images/hero/rainy-city.jpg', label: { en: 'Even grey days have their beauty', fr: 'Même les jours gris ont leur beauté', es: 'Incluso los días grises tienen su belleza' } },
+    { img: '/images/hero/blue-harbor.jpg', label: { en: 'Found my calm', fr: 'J\'ai trouvé mon calme', es: 'Encontré mi calma' } },
+    { img: '/images/hero/window-bloom.jpg', label: { en: 'Growing, slowly', fr: 'Grandir, doucement', es: 'Creciendo, despacio' } },
+    { img: '/images/hero/balcony-garden.jpg', label: { en: 'Spring on the windowsill', fr: 'Le printemps au bord de la fenêtre', es: 'Primavera en el alféizar' } },
+    { img: '/images/hero/cozy-morning.jpg', label: { en: 'The best kind of morning', fr: 'Le meilleur genre de matin', es: 'La mejor clase de mañana' } },
+    { img: '/images/hero/nourish.jpg', label: { en: 'Chose something good today', fr: 'Choisi quelque chose de bon aujourd\'hui', es: 'Elegí algo bueno hoy' } },
+    { img: '/images/hero/simple-feast.jpg', label: { en: 'Simple things, big joy', fr: 'Choses simples, grande joie', es: 'Cosas simples, gran alegría' } },
   ]
 
   const n = moments.length
@@ -200,13 +202,6 @@ function HeroSection() {
           >
             {locale === 'fr' ? ctaPrimary.fr : locale === 'es' ? ctaPrimary.es : ctaPrimary.en}
             <ArrowRight className="w-4 h-4" />
-          </button>
-          <button
-            onClick={scrollToGlimpse}
-            className="px-8 py-4 rounded-full border border-neutral-200 text-neutral-500 font-medium inline-flex items-center gap-2 hover:border-neutral-300 hover:text-neutral-700 transition-colors"
-          >
-            <ArrowDown className="w-4 h-4" />
-            {locale === 'fr' ? ctaSecondary.fr : locale === 'es' ? ctaSecondary.es : ctaSecondary.en}
           </button>
         </motion.div>
 
