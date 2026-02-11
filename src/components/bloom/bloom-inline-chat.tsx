@@ -113,7 +113,11 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
     if (!expanded) return
     const handler = (e: MouseEvent) => {
       if (contentRef.current && !contentRef.current.contains(e.target as Node)) {
-        setMinimized(true)
+        if (messages.length > 0) {
+          setMinimized(true)
+        } else {
+          onClose()
+        }
       }
     }
     const timeout = setTimeout(() => document.addEventListener('mousedown', handler), 100)
