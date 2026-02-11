@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/lib/i18n/context'
 import { Sun, Coffee, Heart, Moon, Sparkles, TrendingUp, MessageCircle, Check, Plus, Share2, FolderOpen, BarChart3, FileText, ClipboardList, Dumbbell, User, Calendar, Tag } from 'lucide-react'
@@ -512,64 +512,156 @@ function AnimatedMoments() {
 
 // Animated Balance
 function AnimatedBalance() {
-  const [values, setValues] = useState([0, 0, 0, 0])
-  const [showInsight, setShowInsight] = useState(false)
-  const targets = [70, 45, 80, 60]
+  const [phase, setPhase] = useState(0)
+
   const areas = [
-    { area: 'Rest', color: 'bg-indigo-400' },
-    { area: 'Movement', color: 'bg-emerald-400' },
-    { area: 'Connection', color: 'bg-rose-400' },
-    { area: 'Purpose', color: 'bg-amber-400' },
+    { area: 'Rest', icon: Moon, fill: 0.65, color: '#818cf8', bg: '#eef2ff', state: 'Winding down' },
+    { area: 'Connection', icon: Heart, fill: 0.9, color: '#f472b6', bg: '#fce7f3', state: 'Blooming' },
+    { area: 'Movement', icon: Dumbbell, fill: 0.35, color: '#34d399', bg: '#ecfdf5', state: 'Needs love' },
+    { area: 'Purpose', icon: Sparkles, fill: 0.6, color: '#fbbf24', bg: '#fefce8', state: 'Growing' },
   ]
 
   useEffect(() => {
     const animate = () => {
-      setValues([0, 0, 0, 0])
-      setShowInsight(false)
-      setTimeout(() => setValues(targets), 300)
-      setTimeout(() => setShowInsight(true), 1800)
+      setPhase(0)
+      setTimeout(() => setPhase(1), 300)
+      setTimeout(() => setPhase(2), 1200)
+      setTimeout(() => setPhase(3), 2200)
     }
     animate()
-    const interval = setInterval(animate, 6000)
+    const interval = setInterval(animate, 7000)
     return () => clearInterval(interval)
   }, [])
 
-  return (
-    <div className="space-y-4">
-      {areas.map((item, i) => (
-        <div key={item.area}>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-neutral-600">{item.area}</span>
-            <motion.span
-              key={values[i]}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-neutral-400 text-xs"
-            >
-              {values[i]}%
-            </motion.span>
-          </div>
-          <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
-            <motion.div
-              className={`h-full ${item.color} rounded-full`}
-              animate={{ width: `${values[i]}%` }}
-              transition={{ duration: 1, delay: i * 0.15, ease: "easeOut" }}
-            />
-          </div>
-        </div>
-      ))}
+  // Center of the radial layout
+  const cx = 140, cy = 105
+  const radius = 65
+  const angles = [-60, 30, 150, 210] // degrees for each area
 
-      {/* Insight after bars fill */}
+  return (
+    <div className="flex flex-col items-center gap-4">
+      <div className="relative w-[280px] h-[210px]">
+        {/* SVG connecting lines */}
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 280 210">
+          {/* Connecting arcs between adjacent bubbles */}
+          {areas.map((_, i) => {
+            const next = (i + 1) % areas.length
+            const x1 = cx + radius * Math.cos((angles[i] * Math.PI) / 180)
+            const y1 = cy + radius * Math.sin((angles[i] * Math.PI) / 180)
+            const x2 = cx + radius * Math.cos((angles[next] * Math.PI) / 180)
+            const y2 = cy + radius * Math.sin((angles[next] * Math.PI) / 180)
+            return (
+              <motion.line
+                key={`line-${i}`}
+                x1={x1} y1={y1} x2={x2} y2={y2}
+                stroke="#e5e7eb"
+                strokeWidth="1"
+                strokeDasharray="4 3"
+                animate={{ opacity: phase >= 2 ? 0.6 : 0 }}
+                transition={{ duration: 0.6, delay: i * 0.1 }}
+              />
+            )
+          })}
+        </svg>
+
+        {/* Bubbles */}
+        {areas.map((a, i) => {
+          const x = cx + radius * Math.cos((angles[i] * Math.PI) / 180)
+          const y = cy + radius * Math.sin((angles[i] * Math.PI) / 180)
+          const size = 28 + a.fill * 36 // size based on fill level (28-64px radius range)
+          const isBlooming = a.fill >= 0.8
+          const isLow = a.fill < 0.4
+
+          return (
+            <motion.div
+              key={a.area}
+              className="absolute flex flex-col items-center justify-center"
+              style={{
+                left: x,
+                top: y,
+                width: size * 2,
+                height: size * 2,
+                marginLeft: -size,
+                marginTop: -size,
+              }}
+              animate={{
+                scale: phase >= 1 ? 1 : 0,
+                opacity: phase >= 1 ? 1 : 0,
+              }}
+              transition={{ duration: 0.7, delay: i * 0.12, ease: [0.34, 1.56, 0.64, 1] }}
+            >
+              {/* Glow ring for blooming area */}
+              {isBlooming && (
+                <motion.div
+                  className="absolute inset-0 rounded-full"
+                  style={{ border: `2px solid ${a.color}` }}
+                  animate={{
+                    scale: phase >= 2 ? [1, 1.2, 1] : 1,
+                    opacity: phase >= 2 ? [0.4, 0, 0.4] : 0,
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              )}
+
+              {/* Bubble */}
+              <motion.div
+                className="w-full h-full rounded-full flex flex-col items-center justify-center relative overflow-hidden"
+                style={{ backgroundColor: a.bg }}
+                animate={{
+                  boxShadow: phase >= 2 && isBlooming
+                    ? `0 0 20px ${a.color}30, 0 4px 12px ${a.color}20`
+                    : '0 1px 4px rgba(0,0,0,0.06)',
+                }}
+                transition={{ duration: 0.5 }}
+              >
+                {/* Fill level indicator — bottom fill */}
+                <motion.div
+                  className="absolute bottom-0 left-0 right-0 rounded-b-full"
+                  style={{ backgroundColor: `${a.color}20` }}
+                  animate={{
+                    height: phase >= 2 ? `${a.fill * 100}%` : '0%',
+                  }}
+                  transition={{ duration: 1, delay: 0.3 + i * 0.1, ease: 'easeOut' }}
+                />
+
+                {/* Content */}
+                <a.icon className="w-5 h-5 relative z-10" style={{ color: a.color }} />
+                <span
+                  className="text-[10px] font-semibold mt-0.5 relative z-10"
+                  style={{ color: a.color }}
+                >
+                  {a.area}
+                </span>
+              </motion.div>
+
+              {/* Low indicator dot */}
+              {isLow && (
+                <motion.div
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-amber-400"
+                  animate={{
+                    scale: phase >= 3 ? [1, 1.3, 1] : 0,
+                    opacity: phase >= 3 ? 1 : 0,
+                  }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                />
+              )}
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* Nudge */}
       <motion.div
-        animate={{ opacity: showInsight ? 1 : 0, y: showInsight ? 0 : 10 }}
-        transition={{ duration: 0.4 }}
-        className="pt-3 border-t border-neutral-100"
+        animate={{ opacity: phase >= 3 ? 1 : 0, y: phase >= 3 ? 0 : 8 }}
+        transition={{ duration: 0.5 }}
+        className="text-center space-y-1"
       >
-        <p className="text-sm text-neutral-600 text-center">
-          This month you nurtured <span className="text-rose-500 font-medium">Connection</span> the most
+        <p className="text-sm text-neutral-600">
+          <span className="text-rose-400 font-medium">Connection</span> is blooming
         </p>
-        <p className="text-xs text-neutral-400 text-center mt-1">
-          Maybe Movement needs a little love?
+        <p className="text-xs text-neutral-400 flex items-center justify-center gap-1">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
+          Movement could use a little love
         </p>
       </motion.div>
     </div>
@@ -877,6 +969,14 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
     },
   ]
 
+  // Bridge connectors between personal journey cards
+  const connectors = [
+    { en: 'And as your day unfolds\u2026', fr: 'Et au fil de votre journ\u00e9e\u2026', es: 'Y a medida que transcurre tu d\u00eda\u2026' },
+    { en: 'Together, they paint a picture\u2026', fr: 'Ensemble, ils dessinent un portrait\u2026', es: 'Juntos, pintan un retrato\u2026' },
+    { en: 'And over time, something emerges\u2026', fr: 'Et avec le temps, quelque chose prend forme\u2026', es: 'Y con el tiempo, algo toma forma\u2026' },
+    { en: 'One you can choose to share\u2026', fr: 'Que vous pouvez choisir de partager\u2026', es: 'Que puedes elegir compartir\u2026' },
+  ]
+
   return (
     <section className="py-24 sm:py-32 bg-neutral-50 overflow-hidden">
       <div className="container mx-auto px-6">
@@ -889,66 +989,131 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
         >
           <p className="text-sm font-medium uppercase tracking-wider text-neutral-400 mb-4">
             {isPractitionerPage
-              ? (locale === 'fr' ? 'Pour votre pratique' : locale === 'es' ? 'Para su práctica' : 'For your practice')
-              : (locale === 'fr' ? 'Ce que nous avons créé' : locale === 'es' ? 'Lo que creamos' : 'What we built')}
+              ? (locale === 'fr' ? 'Pour votre pratique' : locale === 'es' ? 'Para su pr\u00e1ctica' : 'For your practice')
+              : (locale === 'fr' ? 'Ce que nous avons cr\u00e9\u00e9' : locale === 'es' ? 'Lo que creamos' : 'What we built')}
           </p>
           <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-4">
             {isPractitionerPage
-              ? (locale === 'fr' ? 'Parce que certains signaux doivent être vus à temps.' : locale === 'es' ? 'Porque algunas señales necesitan ser vistas a tiempo.' : 'Because some signals need to be seen in time.')
+              ? (locale === 'fr' ? 'Parce que certains signaux doivent \u00eatre vus \u00e0 temps.' : locale === 'es' ? 'Porque algunas se\u00f1ales necesitan ser vistas a tiempo.' : 'Because some signals need to be seen in time.')
               : (locale === 'fr' ? 'Voici Bloomsline.' : locale === 'es' ? 'Esto es Bloomsline.' : 'This is Bloomsline.')}
           </h2>
           <p className="text-neutral-500 max-w-2xl mx-auto leading-relaxed">
             {isPractitionerPage
               ? (locale === 'fr'
-                ? 'Des outils pensés pour accompagner vos clients entre les séances, sans alourdir votre quotidien.'
+                ? 'Des outils pens\u00e9s pour accompagner vos clients entre les s\u00e9ances, sans alourdir votre quotidien.'
                 : locale === 'es'
-                ? 'Herramientas diseñadas para acompañar a sus clientes entre sesiones, sin añadir carga a su día a día.'
+                ? 'Herramientas dise\u00f1adas para acompa\u00f1ar a sus clientes entre sesiones, sin a\u00f1adir carga a su d\u00eda a d\u00eda.'
                 : 'Tools designed to support your clients between sessions, without adding to your daily workload.')
               : (locale === 'fr'
-                ? 'Une façon de vous reconnecter à vous-même. De donner du sens aux petits gestes. De voir que ce que vous faites compte.'
+                ? 'Une fa\u00e7on de vous reconnecter \u00e0 vous-m\u00eame. De donner du sens aux petits gestes. De voir que ce que vous faites compte.'
                 : locale === 'es'
-                ? 'Una forma de reconectarte contigo mismo. De encontrar sentido en las pequeñas cosas. De ver que lo que haces importa.'
+                ? 'Una forma de reconectarte contigo mismo. De encontrar sentido en las peque\u00f1as cosas. De ver que lo que haces importa.'
                 : 'A way to reconnect with yourself. To find meaning in the small things. To see that what you do matters.')}
           </p>
         </motion.div>
 
-        <div className="max-w-5xl mx-auto space-y-24">
-          {(isPractitionerPage ? practitionerJourney : journey).map((step, index) => (
-            <motion.div
-              key={step.id}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.6 }}
-              className={`grid lg:grid-cols-2 gap-12 items-center ${
-                index % 2 === 1 ? 'lg:grid-flow-dense' : ''
-              }`}
-            >
-              {/* Content */}
-              <div className={index % 2 === 1 ? 'lg:col-start-2' : ''}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${step.color} flex items-center justify-center shrink-0`}>
-                    <step.icon className="w-5 h-5 text-neutral-700" />
+        <div className="max-w-5xl mx-auto">
+          {/* Main journey demos (first 3 for personal, all for practitioner) */}
+          {(isPractitionerPage ? practitionerJourney : journey.slice(0, 3)).map((step, index) => {
+            const items = isPractitionerPage ? practitionerJourney : journey.slice(0, 3)
+            return (
+              <Fragment key={step.id}>
+                <motion.div
+                  initial={{ opacity: 0, y: 40 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-100px" }}
+                  transition={{ duration: 0.6 }}
+                  className={`grid lg:grid-cols-2 gap-12 items-center ${
+                    index % 2 === 1 ? 'lg:grid-flow-dense' : ''
+                  }`}
+                >
+                  {/* Content */}
+                  <div className={index % 2 === 1 ? 'lg:col-start-2' : ''}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${step.color} flex items-center justify-center shrink-0`}>
+                        <step.icon className="w-5 h-5 text-neutral-700" />
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-light text-neutral-900">
+                        {locale === 'fr' ? step.title.fr : locale === 'es' ? step.title.es : step.title.en}
+                      </h3>
+                    </div>
+                    <p className="text-neutral-600 leading-relaxed">
+                      {locale === 'fr' ? step.description.fr : locale === 'es' ? step.description.es : step.description.en}
+                    </p>
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-light text-neutral-900">
-                    {locale === 'fr' ? step.title.fr : locale === 'es' ? step.title.es : step.title.en}
-                  </h3>
-                </div>
-                <p className="text-neutral-600 leading-relaxed">
-                  {locale === 'fr' ? step.description.fr : locale === 'es' ? step.description.es : step.description.en}
-                </p>
-              </div>
 
-              {/* Visual */}
-              <div className={`${index % 2 === 1 ? 'lg:col-start-1' : ''}`}>
-                <div className={`bg-gradient-to-br ${step.color} rounded-3xl p-6 sm:p-8`}>
-                  <div className="bg-white rounded-2xl p-5 shadow-lg">
-                    {step.visual}
+                  {/* Visual */}
+                  <div className={`${index % 2 === 1 ? 'lg:col-start-1' : ''}`}>
+                    <div className={`bg-gradient-to-br ${step.color} rounded-3xl p-6 sm:p-8`}>
+                      <div className="bg-white rounded-2xl p-5 shadow-lg">
+                        {step.visual}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </motion.div>
+
+                {/* Bridge connector between cards */}
+                {index < items.length - 1 && (
+                  isPractitionerPage ? (
+                    <div className="h-24" />
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.6 }}
+                      className="flex flex-col items-center py-10 lg:py-14"
+                    >
+                      <div className="w-px h-10 bg-gradient-to-b from-transparent to-neutral-200" />
+                      <p className="my-3 text-sm text-neutral-400 italic">
+                        {locale === 'fr' ? connectors[index].fr : locale === 'es' ? connectors[index].es : connectors[index].en}
+                      </p>
+                      <div className="w-px h-10 bg-gradient-to-b from-neutral-200 to-transparent" />
+                    </motion.div>
+                  )
+                )}
+              </Fragment>
+            )
+          })}
+
+          {/* Compact "And more" row for Progress + Connection (personal page only) */}
+          {!isPractitionerPage && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="mt-20"
+            >
+              <p className="text-center text-sm text-neutral-400 italic mb-8">
+                {locale === 'fr' ? 'Et au fil du temps\u2026' : locale === 'es' ? 'Y con el tiempo\u2026' : 'And over time\u2026'}
+              </p>
+              <div className="grid sm:grid-cols-2 gap-6">
+                {journey.slice(3).map((step) => (
+                  <motion.div
+                    key={step.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5 }}
+                    className={`bg-gradient-to-br ${step.color} rounded-2xl p-6`}
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-9 h-9 rounded-lg bg-white/80 flex items-center justify-center shrink-0">
+                        <step.icon className="w-4 h-4 text-neutral-700" />
+                      </div>
+                      <h4 className="text-lg font-light text-neutral-900">
+                        {locale === 'fr' ? step.title.fr : locale === 'es' ? step.title.es : step.title.en}
+                      </h4>
+                    </div>
+                    <p className="text-sm text-neutral-600 leading-relaxed">
+                      {locale === 'fr' ? step.description.fr : locale === 'es' ? step.description.es : step.description.en}
+                    </p>
+                  </motion.div>
+                ))}
               </div>
             </motion.div>
-          ))}
+          )}
         </div>
 
         {/* CTA for practitioner page */}
@@ -966,32 +1131,6 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
             >
               {locale === 'fr' ? 'Tester Bloomsline gratuitement' : locale === 'es' ? 'Prueba Bloomsline gratis' : 'Try Bloomsline for free'}
             </button>
-          </motion.div>
-        )}
-
-        {/* Closing reflection - hidden on practitioner page */}
-        {!isPractitionerPage && (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="max-w-2xl mx-auto text-center mt-32"
-          >
-            <p className="text-2xl sm:text-3xl font-light text-neutral-700 leading-relaxed mb-6">
-              {locale === 'fr'
-                ? 'Le bien-être n\'est pas une liste de tâches à cocher. C\'est avant tout prendre soin de soi sans se forcer.'
-                : locale === 'es'
-                ? 'Esto no son tareas. Son pequeños actos de cuidarte a ti mismo.'
-                : 'These are not tasks. They are small acts of showing up for yourself.'}
-            </p>
-            {locale !== 'fr' && (
-              <p className="text-neutral-500">
-                {locale === 'es'
-                  ? 'Y con el tiempo, se convierten en la prueba de que importas.'
-                  : 'And over time, they become proof that you matter.'}
-              </p>
-            )}
           </motion.div>
         )}
       </div>

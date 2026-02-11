@@ -1264,9 +1264,15 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
 
                   {/* Empty Column State */}
                   {column.items.length === 0 && dragOverColumn !== column.id && (
-                    <div className="text-center py-4">
-                      <p className="text-sm text-gray-400">
-                        {locale === 'fr' ? 'Aucun axe de travail' : 'No goals'}
+                    <div className="text-center py-8 px-4">
+                      <div className={`w-10 h-10 rounded-xl bg-white/80 flex items-center justify-center mx-auto mb-3 shadow-sm`}>
+                        <Icon className={`w-5 h-5 ${column.color} opacity-50`} />
+                      </div>
+                      <p className="text-sm text-gray-400 font-medium">
+                        {locale === 'fr' ? 'Aucun axe de travail' : 'No goals yet'}
+                      </p>
+                      <p className="text-xs text-gray-300 mt-1">
+                        {locale === 'fr' ? 'Glissez ou ajoutez un axe' : 'Drag or add a goal here'}
                       </p>
                     </div>
                   )}
