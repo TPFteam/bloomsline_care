@@ -12,6 +12,7 @@ import {
   TrendingUp,
   Clock,
   Share2,
+  StickyNote,
   Users,
   ChevronRight,
   Edit,
@@ -33,8 +34,9 @@ import SessionsTab from './tabs/SessionsTab'
 import ProgressTab from './tabs/ProgressTab'
 import FilesTab from './tabs/FilesTab'
 import SharedTab from './tabs/SharedTab'
+import NotesTab from './tabs/NotesTab'
 
-type TabId = 'overview' | 'sessions' | 'progress' | 'files' | 'shared'
+type TabId = 'overview' | 'sessions' | 'notes' | 'progress' | 'files' | 'shared'
 
 export default function MemberProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
@@ -45,7 +47,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
 
   // Get initial tab from URL or default to 'overview'
   const tabFromUrl = searchParams.get('tab') as TabId | null
-  const validTabs: TabId[] = ['overview', 'sessions', 'progress', 'files', 'shared']
+  const validTabs: TabId[] = ['overview', 'sessions', 'notes', 'progress', 'files', 'shared']
   const initialTab = tabFromUrl && validTabs.includes(tabFromUrl) ? tabFromUrl : 'overview'
 
   const [member, setMember] = useState<Member | null>(null)
@@ -217,6 +219,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
   const tabs: { id: TabId; label: string; icon: typeof FileText }[] = [
     { id: 'overview', label: t.members.profile.overview, icon: User },
     { id: 'sessions', label: t.members.profile.sessions, icon: Clock },
+    { id: 'notes', label: t.members.profile.notes, icon: StickyNote },
     { id: 'progress', label: t.members.profile.progress, icon: TrendingUp },
     { id: 'files', label: t.members.profile.files, icon: FileText },
     { id: 'shared', label: t.members.profile.sharedResources, icon: Share2 },
@@ -440,6 +443,9 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                   onSessionsUpdate={fetchRelatedData}
                   highlightSessionId={highlightId}
                 />
+              )}
+              {activeTab === 'notes' && (
+                <NotesTab memberId={member.id} sessions={sessions} notes={notes} onNotesUpdate={fetchRelatedData} />
               )}
               {activeTab === 'progress' && (
                 <ProgressTab memberId={member.id} notes={notes} onNotesUpdate={fetchRelatedData} highlightMilestoneId={highlightId} />

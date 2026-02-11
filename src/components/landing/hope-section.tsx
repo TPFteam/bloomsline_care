@@ -110,7 +110,6 @@ export function HopeSection() {
   }
 
   return (
-    <>
     <section className="py-20 sm:py-28 bg-white">
       <div className="container mx-auto px-6">
         {/* Two column layout */}
@@ -278,64 +277,5 @@ export function HopeSection() {
 
       </div>
     </section>
-
-    {/* The Hope - Standalone Section */}
-    <section className="min-h-[60vh] flex items-center justify-center bg-white relative overflow-hidden">
-      {/* Gradient orb background */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 1.5, ease: "easeOut" }}
-        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-      >
-        <motion.div
-          animate={{
-            scale: [1, 1.05, 1],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="w-[500px] h-[500px] sm:w-[600px] sm:h-[600px] rounded-full bg-gradient-to-br from-teal-200/30 via-emerald-100/20 to-cyan-200/30 blur-3xl"
-        />
-      </motion.div>
-
-      <div className="container mx-auto px-6 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 1, ease: "easeOut" }}
-          className="text-center max-w-3xl mx-auto"
-        >
-          <motion.h2
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="text-4xl sm:text-5xl md:text-6xl font-light text-neutral-900 mb-8"
-          >
-            {locale === 'fr' ? 'Il y a une meilleure façon.' : locale === 'es' ? 'Hay una mejor manera.' : "There's a better way."}
-          </motion.h2>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="text-xl sm:text-2xl text-neutral-400 font-light leading-relaxed"
-          >
-            {locale === 'fr'
-              ? "Pas une chose de plus à faire. Juste une façon plus douce de faire ce qui compte."
-              : locale === 'es'
-              ? "No es otra cosa más que hacer. Solo una forma más suave de hacer lo que importa."
-              : "Not another thing to do. Just a softer way to do the things that matter."}
-          </motion.p>
-        </motion.div>
-      </div>
-    </section>
-    </>
   )
 }

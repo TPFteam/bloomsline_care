@@ -210,6 +210,18 @@ function HeroSection() {
           </button>
         </motion.div>
 
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.7, delay: 0.5 }}
+          className="mt-6 text-sm text-neutral-400"
+        >
+          {locale === 'fr' ? 'Vous êtes praticien ?' : locale === 'es' ? '¿Eres profesional?' : 'Are you a practitioner?'}{' '}
+          <a href="/practitioner" className="text-neutral-500 underline underline-offset-2 hover:text-neutral-700 transition-colors">
+            {locale === 'fr' ? 'Par ici' : locale === 'es' ? 'Por aquí' : 'Learn more'}
+          </a>
+        </motion.p>
+
       </div>
     </section>
   )

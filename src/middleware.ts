@@ -20,7 +20,7 @@ const PROTECTED_ROUTES = [
 const AUTH_ROUTES = ['/sign-in', '/sign-up']
 
 // Public routes (no auth check needed)
-const PUBLIC_ROUTES = ['/', '/early-access', '/onboarding', '/p/', '/stories']
+const PUBLIC_ROUTES = ['/', '/early-access', '/onboarding', '/p/', '/stories', '/home-new']
 
 function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_ROUTES.some(route => pathname.startsWith(route))
@@ -30,10 +30,9 @@ function isAuthRoute(pathname: string): boolean {
   return AUTH_ROUTES.some(route => pathname.startsWith(route))
 }
 
-// isPublicRoute kept for reference but not used since public routes just pass through
-// function isPublicRoute(pathname: string): boolean {
-//   return PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route))
-// }
+function isPublicRoute(pathname: string): boolean {
+  return PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route))
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -74,6 +73,11 @@ export async function middleware(request: NextRequest) {
     )
 
     const { data: { user } } = await supabase.auth.getUser()
+
+    // Public routes skip protected-route checks (e.g. /home-new vs /home)
+    if (isPublicRoute(pathname) && pathname !== '/') {
+      return response
+    }
 
     // Handle protected routes - require authentication
     if (isProtectedRoute(pathname)) {
