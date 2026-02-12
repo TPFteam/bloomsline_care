@@ -101,7 +101,7 @@ function HeroConveyor({ locale, l, content, onCta }: { locale: string; l: (obj: 
     if (idx === 3) {
       /* Journey — milestones lighting up */
       const stages = [
-        { label: fr ? 'Découverte' : 'Discovery', color: 'bg-blue-400' },
+        { label: fr ? 'Compréhension' : 'Discovery', color: 'bg-blue-400' },
         { label: fr ? 'Évolution' : 'Thriving', color: 'bg-teal-400' },
         { label: fr ? 'Ancrage' : 'Building', color: 'bg-amber-400' },
         { label: fr ? 'Autonomie' : 'Independent', color: 'bg-violet-400' },

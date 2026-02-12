@@ -1872,10 +1872,10 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               </div>
                               <div className="grid grid-cols-4 gap-1">
                                 {[
-                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery', count: 0, color: 'bg-blue-50 border-blue-200' },
-                                  { id: 'building', label: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building', count: 1, color: 'bg-amber-50 border-amber-200', hasCard: true },
-                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : locale === 'es' ? 'Floreciendo' : 'Thriving', count: 0, color: 'bg-emerald-50 border-emerald-200' },
-                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : locale === 'es' ? 'Independiente' : 'Independent', count: 0, color: 'bg-purple-50 border-purple-200' },
+                                  { id: 'discovery', label: locale === 'fr' ? 'Compréhension' : locale === 'es' ? 'Descubrimiento' : 'Discovery', count: 0, color: 'bg-blue-50 border-blue-200' },
+                                  { id: 'building', label: locale === 'fr' ? 'Ancrage' : locale === 'es' ? 'Construcción' : 'Building', count: 1, color: 'bg-amber-50 border-amber-200', hasCard: true },
+                                  { id: 'thriving', label: locale === 'fr' ? 'Évolution' : locale === 'es' ? 'Floreciendo' : 'Thriving', count: 0, color: 'bg-emerald-50 border-emerald-200' },
+                                  { id: 'independent', label: locale === 'fr' ? 'Autonomie' : locale === 'es' ? 'Independiente' : 'Independent', count: 0, color: 'bg-purple-50 border-purple-200' },
                                 ].map((stage, i) => (
                                   <motion.div
                                     key={stage.id}
@@ -1916,10 +1916,10 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               </div>
                               <div className="grid grid-cols-4 gap-1">
                                 {[
-                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery', color: 'bg-blue-50 border-blue-200' },
-                                  { id: 'building', label: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building', color: 'bg-amber-50 border-amber-200' },
-                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : locale === 'es' ? 'Floreciendo' : 'Thriving', color: 'bg-emerald-50 border-emerald-200', hasCard: true },
-                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : locale === 'es' ? 'Independiente' : 'Independent', color: 'bg-purple-50 border-purple-200' },
+                                  { id: 'discovery', label: locale === 'fr' ? 'Compréhension' : locale === 'es' ? 'Descubrimiento' : 'Discovery', color: 'bg-blue-50 border-blue-200' },
+                                  { id: 'building', label: locale === 'fr' ? 'Ancrage' : locale === 'es' ? 'Construcción' : 'Building', color: 'bg-amber-50 border-amber-200' },
+                                  { id: 'thriving', label: locale === 'fr' ? 'Évolution' : locale === 'es' ? 'Floreciendo' : 'Thriving', color: 'bg-emerald-50 border-emerald-200', hasCard: true },
+                                  { id: 'independent', label: locale === 'fr' ? 'Autonomie' : locale === 'es' ? 'Independiente' : 'Independent', color: 'bg-purple-50 border-purple-200' },
                                 ].map((stage, i) => (
                                   <motion.div
                                     key={stage.id}
@@ -1951,7 +1951,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               >
                                 <Check className="w-3 h-3 text-emerald-500" />
                                 <p className="text-[9px] text-emerald-700 font-medium">
-                                  {locale === 'fr' ? 'Objectif avancé vers Épanoui!' : locale === 'es' ? '¡Objetivo movido a Floreciendo!' : 'Goal moved to Thriving!'}
+                                  {locale === 'fr' ? 'Objectif avancé vers Évolution!' : locale === 'es' ? '¡Objetivo movido a Floreciendo!' : 'Goal moved to Thriving!'}
                                 </p>
                               </motion.div>
                             </motion.div>
@@ -2202,10 +2202,10 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               </div>
                               <div className="grid grid-cols-4 gap-1">
                                 {[
-                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery', color: 'bg-blue-50 border-blue-200' },
-                                  { id: 'building', label: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building', color: 'bg-amber-50 border-amber-200', hasCard: true },
-                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : locale === 'es' ? 'Floreciendo' : 'Thriving', color: 'bg-emerald-50 border-emerald-200' },
-                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : locale === 'es' ? 'Independiente' : 'Independent', color: 'bg-purple-50 border-purple-200' },
+                                  { id: 'discovery', label: locale === 'fr' ? 'Compréhension' : locale === 'es' ? 'Descubrimiento' : 'Discovery', color: 'bg-blue-50 border-blue-200' },
+                                  { id: 'building', label: locale === 'fr' ? 'Ancrage' : locale === 'es' ? 'Construcción' : 'Building', color: 'bg-amber-50 border-amber-200', hasCard: true },
+                                  { id: 'thriving', label: locale === 'fr' ? 'Évolution' : locale === 'es' ? 'Floreciendo' : 'Thriving', color: 'bg-emerald-50 border-emerald-200' },
+                                  { id: 'independent', label: locale === 'fr' ? 'Autonomie' : locale === 'es' ? 'Independiente' : 'Independent', color: 'bg-purple-50 border-purple-200' },
                                 ].map((stage, i) => (
                                   <motion.div
                                     key={stage.id}
@@ -2244,10 +2244,10 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               </div>
                               <div className="grid grid-cols-4 gap-1">
                                 {[
-                                  { id: 'discovery', label: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery', color: 'bg-blue-50 border-blue-200' },
-                                  { id: 'building', label: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building', color: 'bg-amber-50 border-amber-200' },
-                                  { id: 'thriving', label: locale === 'fr' ? 'Épanoui' : locale === 'es' ? 'Floreciendo' : 'Thriving', color: 'bg-emerald-50 border-emerald-200', hasCard: true },
-                                  { id: 'independent', label: locale === 'fr' ? 'Autonome' : locale === 'es' ? 'Independiente' : 'Independent', color: 'bg-purple-50 border-purple-200' },
+                                  { id: 'discovery', label: locale === 'fr' ? 'Compréhension' : locale === 'es' ? 'Descubrimiento' : 'Discovery', color: 'bg-blue-50 border-blue-200' },
+                                  { id: 'building', label: locale === 'fr' ? 'Ancrage' : locale === 'es' ? 'Construcción' : 'Building', color: 'bg-amber-50 border-amber-200' },
+                                  { id: 'thriving', label: locale === 'fr' ? 'Évolution' : locale === 'es' ? 'Floreciendo' : 'Thriving', color: 'bg-emerald-50 border-emerald-200', hasCard: true },
+                                  { id: 'independent', label: locale === 'fr' ? 'Autonomie' : locale === 'es' ? 'Independiente' : 'Independent', color: 'bg-purple-50 border-purple-200' },
                                 ].map((stage, i) => (
                                   <motion.div
                                     key={stage.id}
@@ -2279,7 +2279,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                               >
                                 <Check className="w-3 h-3 text-emerald-500" />
                                 <p className="text-[9px] text-emerald-700 font-medium">
-                                  {locale === 'fr' ? 'Objectif avancé vers Épanoui!' : locale === 'es' ? '¡Objetivo movido a Floreciendo!' : 'Goal moved to Thriving!'}
+                                  {locale === 'fr' ? 'Objectif avancé vers Évolution!' : locale === 'es' ? '¡Objetivo movido a Floreciendo!' : 'Goal moved to Thriving!'}
                                 </p>
                               </motion.div>
                             </motion.div>

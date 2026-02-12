@@ -636,9 +636,9 @@ function MembersDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'f
 // Journeys Demo Component
 function JourneysDemo({ demoStep, locale }: { demoStep: number; locale: 'en' | 'fr' | 'es' }) {
   const stages = [
-    { name: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery', icon: '🌱', completed: true },
-    { name: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building', icon: '🏗️', completed: true },
-    { name: locale === 'fr' ? 'Épanouissement' : locale === 'es' ? 'Florecimiento' : 'Thriving', icon: '🌸', completed: false, current: true },
+    { name: locale === 'fr' ? 'Compréhension' : locale === 'es' ? 'Descubrimiento' : 'Discovery', icon: '🌱', completed: true },
+    { name: locale === 'fr' ? 'Ancrage' : locale === 'es' ? 'Construcción' : 'Building', icon: '🏗️', completed: true },
+    { name: locale === 'fr' ? 'Évolution' : locale === 'es' ? 'Florecimiento' : 'Thriving', icon: '🌸', completed: false, current: true },
     { name: locale === 'fr' ? 'Autonomie' : locale === 'es' ? 'Independencia' : 'Independent', icon: '🦋', completed: false },
   ]
 

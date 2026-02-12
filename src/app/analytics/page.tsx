@@ -560,12 +560,12 @@ export default function AnalyticsPage() {
   // ── Journey Velocity ───────────────────────────────────────────────
   const stageOrder = ['discovery', 'planned', 'building', 'in_progress', 'thriving', 'independent', 'achieved']
   const stageLabels: Record<string, Record<string, string>> = {
-    discovery: { en: 'Discovery', fr: 'Découverte', es: 'Descubrimiento' },
+    discovery: { en: 'Discovery', fr: 'Compréhension', es: 'Descubrimiento' },
     planned: { en: 'Planned', fr: 'Planifié', es: 'Planificado' },
-    building: { en: 'Building', fr: 'Construction', es: 'Construcción' },
+    building: { en: 'Building', fr: 'Ancrage', es: 'Construcción' },
     in_progress: { en: 'In Progress', fr: 'En cours', es: 'En progreso' },
-    thriving: { en: 'Thriving', fr: 'Épanouissement', es: 'Florecimiento' },
-    independent: { en: 'Independent', fr: 'Autonome', es: 'Independiente' },
+    thriving: { en: 'Thriving', fr: 'Évolution', es: 'Florecimiento' },
+    independent: { en: 'Independent', fr: 'Autonomie', es: 'Independiente' },
     achieved: { en: 'Achieved', fr: 'Atteint', es: 'Logrado' },
   }
   const lang = locale === 'fr' ? 'fr' : locale === 'es' ? 'es' : 'en'
@@ -742,10 +742,10 @@ export default function AnalyticsPage() {
 
   // ── Journey lanes data ────────────────────────────────────────────
   const journeyLanesDef = [
-    { key: 'discovery', label: locale === 'fr' ? 'Découverte' : locale === 'es' ? 'Descubrimiento' : 'Discovery', color: 'bg-blue-400', dotColor: 'bg-blue-400', statuses: ['discovery', 'planned'] },
-    { key: 'thriving', label: locale === 'fr' ? 'Épanouissement' : locale === 'es' ? 'Florecimiento' : 'Thriving', color: 'bg-emerald-400', dotColor: 'bg-emerald-400', statuses: ['thriving'] },
-    { key: 'building', label: locale === 'fr' ? 'Construction' : locale === 'es' ? 'Construcción' : 'Building', color: 'bg-amber-400', dotColor: 'bg-amber-400', statuses: ['building', 'in_progress'] },
-    { key: 'independent', label: locale === 'fr' ? 'Autonome' : locale === 'es' ? 'Independiente' : 'Independent', color: 'bg-violet-400', dotColor: 'bg-violet-400', statuses: ['independent', 'achieved'] },
+    { key: 'discovery', label: locale === 'fr' ? 'Compréhension' : locale === 'es' ? 'Descubrimiento' : 'Discovery', color: 'bg-blue-400', dotColor: 'bg-blue-400', statuses: ['discovery', 'planned'] },
+    { key: 'thriving', label: locale === 'fr' ? 'Évolution' : locale === 'es' ? 'Florecimiento' : 'Thriving', color: 'bg-emerald-400', dotColor: 'bg-emerald-400', statuses: ['thriving'] },
+    { key: 'building', label: locale === 'fr' ? 'Ancrage' : locale === 'es' ? 'Construcción' : 'Building', color: 'bg-amber-400', dotColor: 'bg-amber-400', statuses: ['building', 'in_progress'] },
+    { key: 'independent', label: locale === 'fr' ? 'Autonomie' : locale === 'es' ? 'Independiente' : 'Independent', color: 'bg-violet-400', dotColor: 'bg-violet-400', statuses: ['independent', 'achieved'] },
   ]
   const journeyLanes = journeyLanesDef.map((lane) => {
     const laneMilestones = milestonesInRange.filter((ms) => lane.statuses.includes(ms.status)).map((ms) => {
