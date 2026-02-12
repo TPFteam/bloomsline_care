@@ -20,7 +20,7 @@ const PROTECTED_ROUTES = [
 const AUTH_ROUTES = ['/sign-in', '/sign-up']
 
 // Public routes (no auth check needed)
-const PUBLIC_ROUTES = ['/', '/early-access', '/onboarding', '/p/', '/stories', '/home-new']
+const PUBLIC_ROUTES = ['/', '/early-access', '/onboarding', '/p/', '/stories', '/home-new', '/practitioner', '/practitioner-old']
 
 function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_ROUTES.some(route => pathname.startsWith(route))
@@ -53,6 +53,18 @@ export async function middleware(request: NextRequest) {
     },
   })
 
+  const hasAuthCookie = request.cookies.getAll().some(c => c.name.startsWith('sb-'))
+
+  // Public routes (except '/') never need auth — return immediately
+  if (isPublicRoute(pathname) && pathname !== '/') {
+    return response
+  }
+
+  // '/' without auth cookies — show landing page instantly, skip getUser()
+  if (pathname === '/' && !hasAuthCookie) {
+    return response
+  }
+
   try {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -73,11 +85,6 @@ export async function middleware(request: NextRequest) {
     )
 
     const { data: { user } } = await supabase.auth.getUser()
-
-    // Public routes skip protected-route checks (e.g. /home-new vs /home)
-    if (isPublicRoute(pathname) && pathname !== '/') {
-      return response
-    }
 
     // Handle protected routes - require authentication
     if (isProtectedRoute(pathname)) {
