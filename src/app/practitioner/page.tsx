@@ -282,7 +282,7 @@ function HeroConveyor({ locale, l, content, onCta }: { locale: string; l: (obj: 
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3 }}
-          className="mt-8 flex items-center justify-center gap-4"
+          className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
         >
           <button
             onClick={onCta}
