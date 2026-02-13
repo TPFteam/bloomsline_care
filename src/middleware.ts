@@ -37,6 +37,24 @@ function isPublicRoute(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // CORS for bloom API routes (Expo app calls these cross-origin)
+  if (pathname.startsWith('/api/bloom/')) {
+    if (request.method === 'OPTIONS') {
+      return new NextResponse(null, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      })
+    }
+    const response = NextResponse.next()
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    return response
+  }
+
   // Skip middleware for API routes, static files, and auth callback
   if (
     pathname.startsWith('/api/') ||
