@@ -8,7 +8,6 @@ import { ThemeProvider } from "@/lib/theme/context";
 import { FeedbackWrapper } from "@/components/feedback-wrapper";
 import { CookieConsent } from "@/components/cookie-consent";
 import { PostHogProvider } from "@/lib/analytics/posthog-provider";
-import { BottomNavProvider } from "@/lib/contexts/bottom-nav-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,9 +37,7 @@ export default function RootLayout({
         <PostHogProvider>
           <ThemeProvider>
             <LanguageProvider>
-              <BottomNavProvider>
-                <QueryProvider>{children}</QueryProvider>
-              </BottomNavProvider>
+              <QueryProvider>{children}</QueryProvider>
               <FeedbackWrapper />
               <CookieConsent />
               <Toaster position="top-center" richColors />

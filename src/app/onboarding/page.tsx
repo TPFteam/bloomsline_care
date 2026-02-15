@@ -37,7 +37,7 @@ export default function OnboardingPage() {
 
       if (profile?.user_type) {
         if (profile.user_type === 'member') {
-          router.push('/home')
+          window.location.href = 'https://app.bloomsline.com'
         } else {
           router.push('/dashboard')
         }
@@ -77,7 +77,7 @@ export default function OnboardingPage() {
       // Success! Redirect based on user type
       toast.success('Welcome to Bloomsline! 🎉')
       if (selectedType === 'member') {
-        router.push('/home')
+        window.location.href = 'https://app.bloomsline.com'
       } else {
         router.push('/dashboard?welcome=true')
       }

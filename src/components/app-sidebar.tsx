@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -12,14 +11,8 @@ import {
   Settings,
   LogOut,
   Home,
-  Sparkles,
-  Camera,
-  Scale,
-  MessageSquare,
-  FileText,
   User,
   CalendarCheck,
-  type LucideIcon,
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -28,30 +21,11 @@ import { AnimatedIcon } from '@/components/ui/animated-icons'
 import { Logo } from '@/components/ui/logo'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 
-interface AppSidebarProps {
-  userType?: 'mentor' | 'member'
-}
-
-export function AppSidebar({ userType: propUserType }: AppSidebarProps) {
+export function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { t } = useLanguage()
   const supabase = createClient()
-  const [detectedUserType, setDetectedUserType] = useState<'mentor' | 'member'>('mentor')
-
-  // Auto-detect user type from auth session
-  useEffect(() => {
-    async function detectUserType() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user?.user_metadata?.user_type === 'member') {
-        setDetectedUserType('member')
-      }
-    }
-    detectUserType()
-  }, [supabase.auth])
-
-  // Use prop if provided, otherwise use detected type
-  const userType = propUserType || detectedUserType
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -65,8 +39,7 @@ export function AppSidebar({ userType: propUserType }: AppSidebarProps) {
   const secondaryGradient = 'from-lavender-400 to-lavender-600'
   const secondaryShadow = 'shadow-lavender-200/50'
 
-  // Mentor sections (default for all users)
-  const mentorSections = [
+  const sections = [
     {
       title: t.dashboard.sections.library.title,
       icon: BookOpen,
@@ -110,54 +83,6 @@ export function AppSidebar({ userType: propUserType }: AppSidebarProps) {
       href: '/profile',
     },
   ]
-
-  // Member-specific sections
-  const memberSections = [
-    {
-      title: 'My Resources',
-      icon: Heart,
-      gradient: primaryGradient,
-      shadow: primaryShadow,
-      href: '/home',
-    },
-    {
-      title: t.dashboard.sections.rituals.title,
-      icon: Sparkles,
-      gradient: secondaryGradient,
-      shadow: secondaryShadow,
-      href: '/rituals',
-    },
-    {
-      title: t.dashboard.sections.moments.title,
-      icon: Camera,
-      gradient: primaryGradient,
-      shadow: primaryShadow,
-      href: '/moments',
-    },
-    {
-      title: t.dashboard.sections.balance.title,
-      icon: Scale,
-      gradient: primaryGradient,
-      shadow: primaryShadow,
-      href: '/balance',
-    },
-    {
-      title: t.dashboard.sections.reflection.title,
-      icon: MessageSquare,
-      gradient: secondaryGradient,
-      shadow: secondaryShadow,
-      href: '/reflection',
-    },
-    {
-      title: t.dashboard.sections.stories.title,
-      icon: FileText,
-      gradient: primaryGradient,
-      shadow: primaryShadow,
-      href: '/my-stories',
-    },
-  ]
-
-  const displaySections = userType === 'member' ? memberSections : mentorSections
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard'
@@ -207,7 +132,7 @@ export function AppSidebar({ userType: propUserType }: AppSidebarProps) {
             </motion.div>
           </Link>
 
-          {displaySections.map((section) => {
+          {sections.map((section) => {
             const Icon = section.icon
             const active = isActive(section.href)
             return (

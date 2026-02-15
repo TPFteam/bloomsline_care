@@ -25,8 +25,8 @@ function getTemplate(
       'Suivre votre parcours avec votre praticien',
       'Découvrir des exercices guidés et du contenu de soutien',
     ],
-    cta: 'Créer mon compte',
-    ctaNote: 'Cliquez sur le bouton ci-dessous pour créer votre compte et commencer.',
+    cta: 'Ouvrir l\'application',
+    ctaNote: 'Téléchargez l\'application Bloomsline pour commencer.',
     footer: 'Bloomsline Care',
     footerSub: 'Accompagner votre parcours vers le bien-être',
     questions: `Si vous avez des questions, n'hésitez pas à contacter ${practitionerName}.`,
@@ -40,8 +40,8 @@ function getTemplate(
       'Track your journey with your practitioner',
       'Discover guided exercises and supportive content',
     ],
-    cta: 'Create My Account',
-    ctaNote: 'Click the button below to create your account and get started.',
+    cta: 'Open the App',
+    ctaNote: 'Download the Bloomsline app to get started.',
     footer: 'Bloomsline Care',
     footerSub: 'Supporting your journey to wellness',
     questions: `If you have any questions, feel free to reach out to ${practitionerName}.`,
@@ -95,7 +95,7 @@ function getTemplate(
               </p>
 
               <div style="text-align: center; margin-bottom: 24px;">
-                <a href="${siteUrl}/sign-up" style="display: inline-block; background-color: ${accentColor}; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                <a href="https://app.bloomsline.com" style="display: inline-block; background-color: ${accentColor}; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 16px;">
                   ${content.cta}
                 </a>
               </div>

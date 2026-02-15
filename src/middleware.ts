@@ -5,22 +5,18 @@ import { createServerClient } from '@supabase/ssr'
 // Routes that require authentication
 const PROTECTED_ROUTES = [
   '/dashboard',
-  '/home',
-  '/care',
-  '/worksheets',
   '/resources',
   '/members',
   '/settings',
   '/profile',
   '/library',
-  '/my-stories',
 ]
 
 // Routes only for non-authenticated users
 const AUTH_ROUTES = ['/sign-in', '/sign-up']
 
 // Public routes (no auth check needed)
-const PUBLIC_ROUTES = ['/', '/early-access', '/onboarding', '/p/', '/stories', '/home-new', '/practitioner', '/practitioner-old']
+const PUBLIC_ROUTES = ['/', '/early-access', '/onboarding', '/p/', '/stories', '/practitioner']
 
 function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_ROUTES.some(route => pathname.startsWith(route))
@@ -112,6 +108,17 @@ export async function middleware(request: NextRequest) {
         signInUrl.searchParams.set('redirect', pathname)
         return NextResponse.redirect(signInUrl)
       }
+
+      // Members go to mobile app — web is practitioner-only
+      const { data: protectedProfile } = await supabase
+        .from('users')
+        .select('user_type')
+        .eq('id', user.id)
+        .single()
+
+      if (protectedProfile?.user_type === 'member') {
+        return NextResponse.redirect('https://app.bloomsline.com')
+      }
     }
 
     // Handle auth routes - redirect authenticated users away
@@ -123,8 +130,10 @@ export async function middleware(request: NextRequest) {
         .eq('id', user.id)
         .single()
 
-      const redirectUrl = userProfile?.user_type === 'member' ? '/home' : '/dashboard'
-      return NextResponse.redirect(new URL(redirectUrl, request.url))
+      if (userProfile?.user_type === 'member') {
+        return NextResponse.redirect('https://app.bloomsline.com')
+      }
+      return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
     // Handle root path - redirect authenticated users based on type
@@ -136,7 +145,7 @@ export async function middleware(request: NextRequest) {
         .single()
 
       if (userProfile?.user_type === 'member') {
-        return NextResponse.redirect(new URL('/home', request.url))
+        return NextResponse.redirect('https://app.bloomsline.com')
       } else if (userProfile?.user_type) {
         return NextResponse.redirect(new URL('/dashboard', request.url))
       }

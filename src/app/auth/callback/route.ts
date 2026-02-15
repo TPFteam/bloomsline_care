@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
           .single()
 
         if (userProfile?.user_type === 'member') {
-          redirectUrl = `${requestUrl.origin}/home`
+          redirectUrl = 'https://app.bloomsline.com'
         }
       } catch (e) {
         console.error('Error checking user type:', e)
@@ -243,19 +243,19 @@ export async function GET(request: NextRequest) {
 
           // Redirect based on signup source and user type
           if (signupSource === 'practitioner_invite') {
-            // Practitioner-invited members go directly to home (they're members)
-            redirectUrl = `${requestUrl.origin}/home`
+            // Practitioner-invited members go to mobile app
+            redirectUrl = 'https://app.bloomsline.com'
           } else if (signupSource === 'waitlist' && waitlistEntry) {
             const waitlistUserType = waitlistEntry.user_type as 'member' | 'practitioner' | 'both'
 
             if (waitlistUserType === 'member') {
-              // Members go to home
-              redirectUrl = `${requestUrl.origin}/home`
+              // Members go to mobile app
+              redirectUrl = 'https://app.bloomsline.com'
             } else if (waitlistUserType === 'practitioner') {
               // Practitioners go to dashboard
               redirectUrl = `${requestUrl.origin}/dashboard`
             } else {
-              // 'both' type - let them choose in onboarding
+              // 'both' type - default to practitioner onboarding
               redirectUrl = `${requestUrl.origin}/onboarding`
             }
           } else {
