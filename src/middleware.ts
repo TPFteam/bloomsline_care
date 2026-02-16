@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import type { Session } from '@supabase/supabase-js'
+
+/** Build mobile app URL with session tokens for seamless auth handoff */
+function mobileAppUrl(session: Session | null): string {
+  const base = 'https://app.bloomsline.com'
+  if (!session?.access_token || !session?.refresh_token) return base
+  return `${base}/#access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer`
+}
 
 // Routes that require authentication
 const PROTECTED_ROUTES = [
@@ -33,8 +41,8 @@ function isPublicRoute(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // CORS for bloom API routes (Expo app calls these cross-origin)
-  if (pathname.startsWith('/api/bloom/')) {
+  // CORS for Expo app API routes (bloom + auth setup)
+  if (pathname.startsWith('/api/bloom/') || pathname.startsWith('/api/auth/')) {
     if (request.method === 'OPTIONS') {
       return new NextResponse(null, {
         headers: {
@@ -99,6 +107,7 @@ export async function middleware(request: NextRequest) {
     )
 
     const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session } } = await supabase.auth.getSession()
 
     // Handle protected routes - require authentication
     if (isProtectedRoute(pathname)) {
@@ -117,7 +126,7 @@ export async function middleware(request: NextRequest) {
         .single()
 
       if (protectedProfile?.user_type === 'member') {
-        return NextResponse.redirect('https://app.bloomsline.com')
+        return NextResponse.redirect(mobileAppUrl(session))
       }
     }
 
@@ -131,7 +140,7 @@ export async function middleware(request: NextRequest) {
         .single()
 
       if (userProfile?.user_type === 'member') {
-        return NextResponse.redirect('https://app.bloomsline.com')
+        return NextResponse.redirect(mobileAppUrl(session))
       }
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
@@ -145,7 +154,7 @@ export async function middleware(request: NextRequest) {
         .single()
 
       if (userProfile?.user_type === 'member') {
-        return NextResponse.redirect('https://app.bloomsline.com')
+        return NextResponse.redirect(mobileAppUrl(session))
       } else if (userProfile?.user_type) {
         return NextResponse.redirect(new URL('/dashboard', request.url))
       }
