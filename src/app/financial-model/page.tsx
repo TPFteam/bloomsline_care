@@ -86,54 +86,61 @@ interface RunwayInfo {
 
 // ── Scenario Presets ─────────────────────────────────────────────────────
 
+// All scenarios start from 3 real beta testers converting to paid.
+// Costs justified bottom-up:
+//   Team = 2 founders (€1,500 each) + dev (equity + reduced salary) + expert (€1,000)
+//   CAC is low (€50) — organic outreach/content/partnerships, no paid ads
+//   Infra scales with users (Claude Haiku API is primary cost driver)
+//   Gross margin assumes Haiku-primary for Bloom (~€1.80 AI cost per practitioner/mo)
+
 const SCENARIOS: Record<string, Assumptions> = {
   conservative: {
-    startingPractitioners: 12,
-    initialGrowthPct: 18,
+    startingPractitioners: 3,
+    initialGrowthPct: 30,
     endGrowthPct: 6,
-    churnPct: 4,
+    churnPct: 5,
     pricePerMonth: 25,
     membersPerPractitioner: 10,
-    cac: 250,
-    teamCost: 15000,
-    infraCost: 2000,
-    marketingCost: 5000,
-    otherCost: 1000,
-    startingCash: 500000,
-    grossMarginPct: 85,
-    useOfFunds: { product: 45, gtm: 25, team: 20, ops: 10 },
+    cac: 50,
+    teamCost: 5000,    // 2 founders €3K + dev part-time €1.5K avg + expert €500 avg
+    infraCost: 500,
+    marketingCost: 800,
+    otherCost: 400,
+    startingCash: 250000,
+    grossMarginPct: 90,
+    useOfFunds: { product: 40, gtm: 25, team: 25, ops: 10 },
   },
   base: {
-    startingPractitioners: 15,
-    initialGrowthPct: 25,
+    startingPractitioners: 3,
+    initialGrowthPct: 40,
     endGrowthPct: 8,
-    churnPct: 3,
+    churnPct: 4,
     pricePerMonth: 25,
     membersPerPractitioner: 12,
-    cac: 200,
-    teamCost: 12000,
-    infraCost: 1500,
-    marketingCost: 4000,
-    otherCost: 500,
-    startingCash: 625000,
+    cac: 50,
+    teamCost: 6500,    // 2 founders €3K + dev equity+salary €2.5K + expert €1K
+    infraCost: 700,
+    marketingCost: 1000,
+    otherCost: 400,
+    startingCash: 300000,
     grossMarginPct: 90,
     useOfFunds: { product: 40, gtm: 30, team: 20, ops: 10 },
   },
   aggressive: {
-    startingPractitioners: 25,
-    initialGrowthPct: 30,
-    endGrowthPct: 10,
-    churnPct: 2,
+    startingPractitioners: 3,
+    initialGrowthPct: 45,
+    endGrowthPct: 8,
+    churnPct: 3,
     pricePerMonth: 25,
     membersPerPractitioner: 15,
-    cac: 150,
-    teamCost: 10000,
+    cac: 50,
+    teamCost: 8000,    // 2 founders €3K + dev full €3.5K + expert €1K + marketer from M9
     infraCost: 1000,
-    marketingCost: 6000,
+    marketingCost: 1500,
     otherCost: 500,
-    startingCash: 750000,
-    grossMarginPct: 92,
-    useOfFunds: { product: 35, gtm: 35, team: 20, ops: 10 },
+    startingCash: 400000,
+    grossMarginPct: 90,
+    useOfFunds: { product: 35, gtm: 30, team: 25, ops: 10 },
   },
 }
 
