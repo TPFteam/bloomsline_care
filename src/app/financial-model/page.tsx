@@ -33,8 +33,7 @@ interface Assumptions {
   initialGrowthPct: number
   endGrowthPct: number
   churnPct: number
-  tierPrices: [number, number, number]
-  tierLabels: [string, string, string]
+  pricePerMonth: number
   membersPerPractitioner: number
   cac: number
   teamCost: number
@@ -93,8 +92,7 @@ const SCENARIOS: Record<string, Assumptions> = {
     initialGrowthPct: 18,
     endGrowthPct: 6,
     churnPct: 4,
-    tierPrices: [29, 59, 79],
-    tierLabels: ['Starter', 'Professional', 'Clinic'],
+    pricePerMonth: 25,
     membersPerPractitioner: 10,
     cac: 250,
     teamCost: 15000,
@@ -110,8 +108,7 @@ const SCENARIOS: Record<string, Assumptions> = {
     initialGrowthPct: 25,
     endGrowthPct: 8,
     churnPct: 3,
-    tierPrices: [29, 59, 79],
-    tierLabels: ['Starter', 'Professional', 'Clinic'],
+    pricePerMonth: 25,
     membersPerPractitioner: 12,
     cac: 200,
     teamCost: 12000,
@@ -127,8 +124,7 @@ const SCENARIOS: Record<string, Assumptions> = {
     initialGrowthPct: 30,
     endGrowthPct: 10,
     churnPct: 2,
-    tierPrices: [29, 59, 79],
-    tierLabels: ['Starter', 'Professional', 'Clinic'],
+    pricePerMonth: 25,
     membersPerPractitioner: 15,
     cac: 150,
     teamCost: 10000,
@@ -139,15 +135,6 @@ const SCENARIOS: Record<string, Assumptions> = {
     grossMarginPct: 92,
     useOfFunds: { product: 35, gtm: 35, team: 20, ops: 10 },
   },
-}
-
-// ── Blended ARPU helper ──────────────────────────────────────────────────
-
-// Fixed tier mix: 60/30/10 — not user-adjustable (too granular for seed)
-const TIER_MIX = [60, 30, 10] as const
-
-function blendedARPU(prices: [number, number, number]): number {
-  return (prices[0] * TIER_MIX[0] + prices[1] * TIER_MIX[1] + prices[2] * TIER_MIX[2]) / 100
 }
 
 // ── Growth decay: linear interpolation from initial → end over 36 months ─
@@ -165,7 +152,7 @@ function computeProjections(a: Assumptions): MonthProjection[] {
   // This prevents small-number rounding from killing early-stage compounding
   let practFloat = a.startingPractitioners
   let cash = a.startingCash
-  const arpu = blendedARPU(a.tierPrices)
+  const arpu = a.pricePerMonth
 
   for (let m = 1; m <= 36; m++) {
     const growthRate = growthAtMonth(m, a.initialGrowthPct, a.endGrowthPct)
@@ -210,7 +197,7 @@ function computeProjections(a: Assumptions): MonthProjection[] {
 }
 
 function computeUnitEconomics(a: Assumptions): UnitEconomics {
-  const arpu = blendedARPU(a.tierPrices)
+  const arpu = a.pricePerMonth
   const churnRate = a.churnPct / 100
   const avgLifetimeMonths = churnRate > 0 ? 1 / churnRate : 100
   const ltv = arpu * avgLifetimeMonths * (a.grossMarginPct / 100)
@@ -598,36 +585,13 @@ export default function FinancialModelPage() {
                 <div className="mb-5">
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{t.revenue}</h3>
                   <div className="space-y-3">
-                    {/* Tier prices — compact row */}
-                    <div>
-                      <span className="text-xs text-gray-500 mb-2 block">Pricing tiers (€/mo)</span>
-                      <div className="grid grid-cols-3 gap-2">
-                        {assumptions.tierPrices.map((price, i) => (
-                          <div key={i}>
-                            <span className="text-[10px] text-gray-400">{assumptions.tierLabels[i]}</span>
-                            <div className="flex items-center gap-0.5">
-                              <span className="text-[10px] text-gray-400">€</span>
-                              <input
-                                type="number"
-                                min={1}
-                                value={price}
-                                onChange={(e) => {
-                                  const v = Math.max(1, Number(e.target.value))
-                                  const newPrices = [...assumptions.tierPrices] as [number, number, number]
-                                  newPrices[i] = v
-                                  updateAssumption('tierPrices', newPrices)
-                                }}
-                                className="w-full px-1.5 py-1 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-300 tabular-nums"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-[10px] text-gray-400 mt-1.5">
-                        Blended ARPU: <span className="font-semibold text-gray-600">€{unitEconomics.arpu}</span>
-                        <span className="text-gray-300"> (mix: {TIER_MIX[0]}/{TIER_MIX[1]}/{TIER_MIX[2]})</span>
-                      </p>
-                    </div>
+                    <NumberInput
+                      label={locale === 'fr' ? 'Prix / praticien' : 'Price / practitioner'}
+                      value={assumptions.pricePerMonth}
+                      onChange={(v) => updateAssumption('pricePerMonth', Math.max(1, v))}
+                      prefix="€"
+                      suffix="/mo"
+                    />
                     <SliderInput
                       label={t.membersPerPractitioner}
                       value={assumptions.membersPerPractitioner}
