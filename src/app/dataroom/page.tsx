@@ -9,6 +9,7 @@ import {
   Sparkles,
   Calculator,
   FileText,
+  Mic,
   ExternalLink,
   Clock,
   ArrowRight,
@@ -55,6 +56,17 @@ const PAGES = [
     borderColor: 'border-amber-200 hover:border-amber-300',
     tag: 'Shareable',
   },
+  {
+    id: 'interviews',
+    label: 'Practitioner Interviews',
+    description: 'User research recordings — real practitioner discovery interviews',
+    href: 'https://drive.google.com/drive/folders/1PDjVln_6AFeAPuplWgDHUayQo0l8FyYd?usp=sharing',
+    icon: Mic,
+    color: 'bg-rose-50 text-rose-600',
+    borderColor: 'border-rose-200 hover:border-rose-300',
+    tag: 'External',
+    external: true,
+  },
 ] as const
 
 export default function DataroomPage() {
@@ -87,6 +99,32 @@ export default function DataroomPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {PAGES.map((page, i) => {
             const Icon = page.icon
+            const isExternal = 'external' in page && page.external
+            const card = (
+              <div
+                className={`group relative bg-white border rounded-xl p-5 transition-all cursor-pointer ${page.borderColor} hover:shadow-md`}
+                onMouseEnter={() => setHoveredId(page.id)}
+                onMouseLeave={() => setHoveredId(null)}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className={`w-10 h-10 rounded-xl ${page.color} flex items-center justify-center`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-medium text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
+                    {page.tag}
+                  </span>
+                </div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                  {page.label}
+                  <ExternalLink className={`w-3 h-3 text-gray-300 transition-all ${hoveredId === page.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-1'}`} />
+                </h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{page.description}</p>
+                <div className={`absolute bottom-5 right-5 transition-all ${hoveredId === page.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}>
+                  <ArrowRight className="w-4 h-4 text-gray-300" />
+                </div>
+              </div>
+            )
+
             return (
               <motion.div
                 key={page.id}
@@ -94,30 +132,11 @@ export default function DataroomPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.06 }}
               >
-                <Link href={page.href}>
-                  <div
-                    className={`group relative bg-white border rounded-xl p-5 transition-all cursor-pointer ${page.borderColor} hover:shadow-md`}
-                    onMouseEnter={() => setHoveredId(page.id)}
-                    onMouseLeave={() => setHoveredId(null)}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className={`w-10 h-10 rounded-xl ${page.color} flex items-center justify-center`}>
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <span className="text-[10px] font-medium text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
-                        {page.tag}
-                      </span>
-                    </div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1 flex items-center gap-2">
-                      {page.label}
-                      <ExternalLink className={`w-3 h-3 text-gray-300 transition-all ${hoveredId === page.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-1'}`} />
-                    </h3>
-                    <p className="text-xs text-gray-500 leading-relaxed">{page.description}</p>
-                    <div className={`absolute bottom-5 right-5 transition-all ${hoveredId === page.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}>
-                      <ArrowRight className="w-4 h-4 text-gray-300" />
-                    </div>
-                  </div>
-                </Link>
+                {isExternal ? (
+                  <a href={page.href} target="_blank" rel="noopener noreferrer">{card}</a>
+                ) : (
+                  <Link href={page.href}>{card}</Link>
+                )}
               </motion.div>
             )
           })}
