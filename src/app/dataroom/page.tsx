@@ -129,7 +129,7 @@ const PAGES: PageItem[] = [
     icon: Users,
     color: 'bg-gray-100 text-gray-400',
     borderColor: 'border-gray-200',
-    tag: 'Apr 2026',
+    tag: 'To do',
     comingSoon: true,
   },
   {
@@ -140,7 +140,7 @@ const PAGES: PageItem[] = [
     icon: Monitor,
     color: 'bg-gray-100 text-gray-400',
     borderColor: 'border-gray-200',
-    tag: 'Apr 2026',
+    tag: 'To do',
     comingSoon: true,
   },
   {
@@ -151,7 +151,7 @@ const PAGES: PageItem[] = [
     icon: PieChart,
     color: 'bg-gray-100 text-gray-400',
     borderColor: 'border-gray-200',
-    tag: 'Apr 2026',
+    tag: 'To do',
     comingSoon: true,
   },
   {
@@ -162,7 +162,7 @@ const PAGES: PageItem[] = [
     icon: Scale,
     color: 'bg-gray-100 text-gray-400',
     borderColor: 'border-gray-200',
-    tag: 'Apr 2026',
+    tag: 'To do',
     comingSoon: true,
   },
   {
@@ -275,7 +275,7 @@ export default function DataroomPage() {
         >
           <div className="flex items-center gap-2 mb-4">
             <Lock className="w-3.5 h-3.5 text-gray-300" />
-            <h3 className="text-sm font-semibold text-gray-400">Coming April 2026</h3>
+            <h3 className="text-sm font-semibold text-gray-400">Coming Soon</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {comingSoonPages.map((page, i) => {
