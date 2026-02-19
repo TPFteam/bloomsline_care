@@ -16,9 +16,29 @@ import {
   ExternalLink,
   Clock,
   ArrowRight,
+  Users,
+  Monitor,
+  PieChart,
+  Scale,
+  BarChart3,
+  MessageSquare,
+  Lock,
 } from 'lucide-react'
 
-const PAGES = [
+interface PageItem {
+  id: string
+  label: string
+  description: string
+  href: string
+  icon: typeof FolderOpen
+  color: string
+  borderColor: string
+  tag: string
+  external?: boolean
+  comingSoon?: boolean
+}
+
+const PAGES: PageItem[] = [
   {
     id: 'pitch',
     label: 'Pitch Deck',
@@ -100,10 +120,80 @@ const PAGES = [
     tag: 'External',
     external: true,
   },
-] as const
+  // ── Coming Soon — April 2026 ──────────────────────────
+  {
+    id: 'team',
+    label: 'Team',
+    description: 'Founder bios, backgrounds, and why we\'re the right team',
+    href: '#',
+    icon: Users,
+    color: 'bg-gray-100 text-gray-400',
+    borderColor: 'border-gray-200',
+    tag: 'Apr 2026',
+    comingSoon: true,
+  },
+  {
+    id: 'product-demo',
+    label: 'Product Demo',
+    description: 'Visual walkthrough — dashboard, member app, Bloom AI, resource library',
+    href: '#',
+    icon: Monitor,
+    color: 'bg-gray-100 text-gray-400',
+    borderColor: 'border-gray-200',
+    tag: 'Apr 2026',
+    comingSoon: true,
+  },
+  {
+    id: 'cap-table',
+    label: 'Cap Table',
+    description: 'Equity structure, founder allocation, and ESOP pool',
+    href: '#',
+    icon: PieChart,
+    color: 'bg-gray-100 text-gray-400',
+    borderColor: 'border-gray-200',
+    tag: 'Apr 2026',
+    comingSoon: true,
+  },
+  {
+    id: 'legal-docs',
+    label: 'Legal Documents',
+    description: 'Articles of incorporation (SAS), shareholder agreements, RGPD compliance',
+    href: '#',
+    icon: Scale,
+    color: 'bg-gray-100 text-gray-400',
+    borderColor: 'border-gray-200',
+    tag: 'Apr 2026',
+    comingSoon: true,
+  },
+  {
+    id: 'metrics',
+    label: 'Metrics Dashboard',
+    description: 'Live traction data — MRR, users, retention, engagement, NPS',
+    href: '#',
+    icon: BarChart3,
+    color: 'bg-gray-100 text-gray-400',
+    borderColor: 'border-gray-200',
+    tag: 'Apr 2026',
+    comingSoon: true,
+  },
+  {
+    id: 'case-studies',
+    label: 'Customer Case Studies',
+    description: 'Practitioner testimonials, outcomes data, and usage stories',
+    href: '#',
+    icon: MessageSquare,
+    color: 'bg-gray-100 text-gray-400',
+    borderColor: 'border-gray-200',
+    tag: 'Apr 2026',
+    comingSoon: true,
+  },
+]
 
 export default function DataroomPage() {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+
+  const livePages = PAGES.filter((p) => !p.comingSoon)
+  const comingSoonPages = PAGES.filter((p) => p.comingSoon)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -129,10 +219,11 @@ export default function DataroomPage() {
           <p className="text-sm text-gray-500">All fundraising documents in one place. Click any card to open.</p>
         </motion.div>
 
+        {/* ── Live Pages ───────────────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {PAGES.map((page, i) => {
+          {livePages.map((page, i) => {
             const Icon = page.icon
-            const isExternal = 'external' in page && page.external
+            const isExternal = page.external
             const card = (
               <div
                 className={`group relative bg-white border rounded-xl p-5 transition-all cursor-pointer ${page.borderColor} hover:shadow-md`}
@@ -175,11 +266,50 @@ export default function DataroomPage() {
           })}
         </div>
 
+        {/* ── Coming Soon ──────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="mt-10 mb-4"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Lock className="w-3.5 h-3.5 text-gray-300" />
+            <h3 className="text-sm font-semibold text-gray-400">Coming April 2026</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {comingSoonPages.map((page, i) => {
+              const Icon = page.icon
+              return (
+                <motion.div
+                  key={page.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.55 + i * 0.04 }}
+                >
+                  <div className="relative bg-gray-50 border border-dashed border-gray-200 rounded-xl p-4 opacity-60">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className={`w-8 h-8 rounded-lg ${page.color} flex items-center justify-center`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <span className="text-[9px] font-medium text-gray-300 bg-white px-1.5 py-0.5 rounded-full border border-gray-100">
+                        {page.tag}
+                      </span>
+                    </div>
+                    <h4 className="text-xs font-semibold text-gray-400 mb-0.5">{page.label}</h4>
+                    <p className="text-[10px] text-gray-300 leading-relaxed">{page.description}</p>
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+        </motion.div>
+
         {/* Quick access footer */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.7 }}
           className="mt-8 flex items-center gap-2 text-[10px] text-gray-400"
         >
           <Clock className="w-3 h-3" />
