@@ -86,7 +86,9 @@ interface RunwayInfo {
 
 // ── Scenario Presets ─────────────────────────────────────────────────────
 
-// All scenarios start from 3 real beta testers converting to paid.
+// All scenarios start from 10 paying practitioners at time of raise close.
+// Justification: 3-5 beta testers today → 10 paying users by close (~3-6 months of outreach).
+// This signals validated willingness to pay and in-market momentum before capital deploys.
 // Costs justified bottom-up:
 //   Team = 2 founders (€1,500 each) + dev (equity + reduced salary) + expert (€1,000)
 //   CAC is low (€50) — organic outreach/content/partnerships, no paid ads
@@ -95,9 +97,9 @@ interface RunwayInfo {
 
 const SCENARIOS: Record<string, Assumptions> = {
   conservative: {
-    startingPractitioners: 3,
-    initialGrowthPct: 30,
-    endGrowthPct: 6,
+    startingPractitioners: 10,
+    initialGrowthPct: 20,
+    endGrowthPct: 5,
     churnPct: 5,
     pricePerMonth: 25,
     membersPerPractitioner: 10,
@@ -111,9 +113,9 @@ const SCENARIOS: Record<string, Assumptions> = {
     useOfFunds: { product: 40, gtm: 25, team: 25, ops: 10 },
   },
   base: {
-    startingPractitioners: 3,
-    initialGrowthPct: 40,
-    endGrowthPct: 8,
+    startingPractitioners: 10,
+    initialGrowthPct: 30,
+    endGrowthPct: 7,
     churnPct: 4,
     pricePerMonth: 25,
     membersPerPractitioner: 12,
@@ -127,9 +129,9 @@ const SCENARIOS: Record<string, Assumptions> = {
     useOfFunds: { product: 40, gtm: 30, team: 20, ops: 10 },
   },
   aggressive: {
-    startingPractitioners: 3,
-    initialGrowthPct: 45,
-    endGrowthPct: 8,
+    startingPractitioners: 10,
+    initialGrowthPct: 35,
+    endGrowthPct: 7,
     churnPct: 3,
     pricePerMonth: 25,
     membersPerPractitioner: 15,
@@ -566,7 +568,7 @@ export default function FinancialModelPage() {
                       value={assumptions.initialGrowthPct}
                       onChange={(v) => updateAssumption('initialGrowthPct', v)}
                       min={5}
-                      max={40}
+                      max={50}
                       suffix="%"
                     />
                     <SliderInput
