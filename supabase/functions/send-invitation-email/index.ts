@@ -161,7 +161,9 @@ serve(async (req) => {
 
     const { name, email, user_type } = payload.record
     const firstName = name.split(' ')[0]
-    const signupUrl = `${APP_URL}/sign-up`
+    const signupUrl = user_type === 'member'
+      ? 'https://app.bloomsline.com/sign-up'
+      : `${APP_URL}/sign-up`
 
     console.log(`Sending invitation email to ${email}`)
 

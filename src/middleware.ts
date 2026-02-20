@@ -18,7 +18,15 @@ const PROTECTED_ROUTES = [
   '/settings',
   '/profile',
   '/library',
+  '/member',
 ]
+
+// Web routes members are allowed to access (subset of PROTECTED_ROUTES)
+const MEMBER_ROUTES = ['/member']
+
+function isMemberRoute(pathname: string): boolean {
+  return MEMBER_ROUTES.some(route => pathname.startsWith(route))
+}
 
 // Routes only for non-authenticated users
 const AUTH_ROUTES = ['/sign-in', '/sign-up']
@@ -118,7 +126,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(signInUrl)
       }
 
-      // Members go to mobile app — web is practitioner-only
+      // Check user type for members
       const { data: protectedProfile } = await supabase
         .from('users')
         .select('user_type')
@@ -126,7 +134,11 @@ export async function middleware(request: NextRequest) {
         .single()
 
       if (protectedProfile?.user_type === 'member') {
-        return NextResponse.redirect(mobileAppUrl(session))
+        // Allow members on /member routes, redirect others to /member
+        if (isMemberRoute(pathname)) {
+          return response
+        }
+        return NextResponse.redirect(new URL('/member', request.url))
       }
     }
 
@@ -140,7 +152,7 @@ export async function middleware(request: NextRequest) {
         .single()
 
       if (userProfile?.user_type === 'member') {
-        return NextResponse.redirect(mobileAppUrl(session))
+        return NextResponse.redirect(new URL('/member', request.url))
       }
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
@@ -154,7 +166,7 @@ export async function middleware(request: NextRequest) {
         .single()
 
       if (userProfile?.user_type === 'member') {
-        return NextResponse.redirect(mobileAppUrl(session))
+        return NextResponse.redirect(new URL('/member', request.url))
       } else if (userProfile?.user_type) {
         return NextResponse.redirect(new URL('/dashboard', request.url))
       }

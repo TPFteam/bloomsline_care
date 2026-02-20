@@ -293,6 +293,48 @@ export function earlyAccessInvitationTemplate({
   return wrapInLayout(content, isPractitioner)
 }
 
+// Invite practitioner (sent by a member)
+export function invitePractitionerTemplate({
+  memberName,
+  signupUrl,
+}: {
+  memberName: string
+  signupUrl: string
+}) {
+  const content = `
+    <h2 style="margin: 0 0 16px 0; font-size: 20px; color: #333;">
+      You've been invited to Bloomsline
+    </h2>
+
+    <p style="margin: 0 0 24px 0; color: #555;">
+      ${memberName} invites you to try Bloomsline Care — a platform designed to help practitioners support their clients' wellness journeys.
+    </p>
+
+    <div style="background-color: #fdf2f0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+      <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #D4856A;">
+        Why join?
+      </p>
+      <ul style="margin: 0; padding-left: 20px; color: #555; font-size: 14px;">
+        <li style="margin-bottom: 6px;">Share resources and exercises with clients</li>
+        <li style="margin-bottom: 6px;">Track progress and milestones together</li>
+        <li>Strengthen the therapeutic relationship</li>
+      </ul>
+    </div>
+
+    <div style="text-align: center; margin-top: 32px;">
+      <a href="${signupUrl}" style="${practitionerButtonStyle}">
+        Create Your Practitioner Account
+      </a>
+    </div>
+
+    <p style="margin: 24px 0 0 0; color: #888; font-size: 13px; text-align: center;">
+      Free to get started. No credit card required.
+    </p>
+  `
+
+  return wrapInLayout(content, true)
+}
+
 // Session reminder
 export function sessionReminderTemplate({
   clientName,
