@@ -20,8 +20,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bloomsline — Building understanding",
-  description: "A simple space to care for yourself and the people you support.",
+  title: "Bloomsline — Less admin. More presence.",
+  description: "The practice management tool built for mental health practitioners.",
 };
 
 export default function RootLayout({

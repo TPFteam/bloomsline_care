@@ -170,7 +170,7 @@ function HeroConveyor({ locale, l, content, onCta }: { locale: string; l: (obj: 
   const getIdx = (offset: number) => ((activeIdx + offset) % n + n) % n
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-24 sm:pt-16 pb-12 bg-white overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center pt-24 sm:pt-28 pb-12 bg-white overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-neutral-50/80 via-white to-white" />
 
       <div className="relative container mx-auto px-6 text-center">
