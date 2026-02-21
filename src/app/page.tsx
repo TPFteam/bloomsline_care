@@ -170,7 +170,7 @@ function HeroConveyor({ locale, l, content, onCta }: { locale: string; l: (obj: 
   const getIdx = (offset: number) => ((activeIdx + offset) % n + n) % n
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-16 pb-12 bg-white overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center pt-24 sm:pt-16 pb-12 bg-white overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-neutral-50/80 via-white to-white" />
 
       <div className="relative container mx-auto px-6 text-center">
@@ -261,7 +261,7 @@ function HeroConveyor({ locale, l, content, onCta }: { locale: string; l: (obj: 
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.25 }}
-          className="mt-4 text-lg text-neutral-500 max-w-xl mx-auto"
+          className="mt-3 sm:mt-4 text-sm sm:text-lg text-neutral-500 max-w-xl mx-auto"
         >
           {l(content.hero.subtitle)}{' '}
           <span className="text-neutral-700 font-semibold">{l(content.hero.subtitleHighlight)}</span>
@@ -272,11 +272,11 @@ function HeroConveyor({ locale, l, content, onCta }: { locale: string; l: (obj: 
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3 }}
-          className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
+          className="mt-5 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4"
         >
           <button
             onClick={onCta}
-            className="px-8 py-4 rounded-full text-white font-medium tracking-wide inline-flex items-center gap-2 hover:opacity-90 transition-colors shadow-lg shadow-teal-600/25"
+            className="px-6 py-3 sm:px-8 sm:py-4 rounded-full text-white font-medium tracking-wide inline-flex items-center gap-2 hover:opacity-90 transition-colors shadow-lg shadow-teal-600/25 text-sm sm:text-base"
             style={{ background: 'linear-gradient(135deg, #0d9488, #14b8a6)' }}
           >
             {l(content.hero.cta)}
@@ -286,7 +286,7 @@ function HeroConveyor({ locale, l, content, onCta }: { locale: string; l: (obj: 
             href={DEMO_BOOKING_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-8 py-4 rounded-full border border-neutral-200 text-neutral-500 font-medium inline-flex items-center gap-2 hover:border-neutral-300 hover:text-neutral-700 transition-colors"
+            className="px-6 py-3 sm:px-8 sm:py-4 rounded-full border border-neutral-200 text-neutral-500 font-medium inline-flex items-center gap-2 hover:border-neutral-300 hover:text-neutral-700 transition-colors text-sm sm:text-base"
           >
             {locale === 'fr' ? 'Parlons-en' : 'Talk to us'}
             <ArrowRight className="w-4 h-4" />
@@ -296,21 +296,11 @@ function HeroConveyor({ locale, l, content, onCta }: { locale: string; l: (obj: 
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.7, delay: 0.5 }}
-          className="mt-6 text-xs text-neutral-400"
-        >
-          {l(content.hero.trust)}
-        </motion.p>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
           transition={{ duration: 0.7, delay: 0.6 }}
           className="mt-4 text-sm text-neutral-400"
         >
-          {locale === 'fr' ? 'Ici pour vous ?' : 'Here for yourself?'}{' '}
           <a href="/for-everyone" className="text-neutral-500 underline underline-offset-2 hover:text-neutral-700 transition-colors">
-            {locale === 'fr' ? 'Découvrez ce que Bloomsline peut faire pour vous' : 'See what Bloomsline can do for you'}
+            {locale === 'fr' ? 'Pour votre bien-être personnel →' : 'For your personal wellbeing →'}
           </a>
         </motion.p>
       </div>
