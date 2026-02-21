@@ -182,8 +182,8 @@ const translations = {
       research: {
         title: 'Deep Research',
         items: [
-          { value: '50+', desc: 'Practitioner interviews', detail: 'Understanding their daily challenges' },
-          { value: '100+', desc: 'User interviews', detail: 'Learning what people actually need' },
+          { value: '68', desc: 'Practitioner interviews', detail: 'Across 7 countries' },
+          { value: '119', desc: 'User interviews', detail: 'Learning what people actually need' },
         ],
       },
       pivot: {
@@ -207,7 +207,7 @@ const translations = {
       timeline: [
         {
           date: 'Q1 2025',
-          title: 'Doctolink Pivot',
+          title: 'Doctalink Pivot',
           desc: 'Realized our first product wasn\'t viable. Crowded market, no clear business model.',
           status: 'pivot',
         },
@@ -538,8 +538,8 @@ const translations = {
       research: {
         title: 'Recherche Approfondie',
         items: [
-          { value: '50+', desc: 'Entretiens praticiens', detail: 'Comprendre leurs défis quotidiens' },
-          { value: '100+', desc: 'Entretiens utilisateurs', detail: 'Apprendre ce dont les gens ont vraiment besoin' },
+          { value: '68', desc: 'Entretiens praticiens', detail: 'Dans 7 pays' },
+          { value: '119', desc: 'Entretiens utilisateurs', detail: 'Apprendre ce dont les gens ont vraiment besoin' },
         ],
       },
       pivot: {
@@ -563,7 +563,7 @@ const translations = {
       timeline: [
         {
           date: 'T1 2025',
-          title: 'Pivot Doctolink',
+          title: 'Pivot Doctalink',
           desc: 'Réalisé que notre premier produit n\'était pas viable. Marché saturé, pas de modèle clair.',
           status: 'pivot',
         },
