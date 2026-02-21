@@ -301,33 +301,89 @@ export function invitePractitionerTemplate({
   memberName: string
   signupUrl: string
 }) {
+  const demoUrl = 'https://calendar.app.google/DwruLrgYZ6TEegL58'
+
   const content = `
-    <h2 style="margin: 0 0 16px 0; font-size: 20px; color: #333;">
-      You've been invited to Bloomsline
+    <h2 style="margin: 0 0 8px 0; font-size: 22px; color: #333; text-align: center;">
+      ${memberName} wants to work with you on Bloomsline
     </h2>
 
-    <p style="margin: 0 0 24px 0; color: #555;">
-      ${memberName} invites you to try Bloomsline Care — a platform designed to help practitioners support their clients' wellness journeys.
+    <p style="margin: 0 0 28px 0; color: #888; font-size: 14px; text-align: center;">
+      A client of yours is already using Bloomsline Care and would love you to join.
     </p>
 
-    <div style="background-color: #fdf2f0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-      <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #D4856A;">
-        Why join?
+    <!-- The problem -->
+    <div style="margin-bottom: 24px;">
+      <p style="margin: 0 0 8px 0; font-size: 15px; font-weight: 600; color: #333;">
+        Sound familiar?
       </p>
-      <ul style="margin: 0; padding-left: 20px; color: #555; font-size: 14px;">
-        <li style="margin-bottom: 6px;">Share resources and exercises with clients</li>
-        <li style="margin-bottom: 6px;">Track progress and milestones together</li>
-        <li>Strengthen the therapeutic relationship</li>
+      <ul style="margin: 0; padding-left: 20px; color: #555; font-size: 14px; line-height: 1.8;">
+        <li>Clients disengage between sessions and progress stalls</li>
+        <li>Homework and exercises get lost or forgotten</li>
+        <li>You spend admin time on follow-ups instead of clinical work</li>
+        <li>It's hard to see the full picture of a client's journey</li>
       </ul>
     </div>
 
-    <div style="text-align: center; margin-top: 32px;">
-      <a href="${signupUrl}" style="${practitionerButtonStyle}">
-        Create Your Practitioner Account
+    <!-- The solution -->
+    <div style="background: linear-gradient(135deg, #fdf2f0 0%, #fef7f5 100%); border-radius: 14px; padding: 24px; margin-bottom: 24px;">
+      <p style="margin: 0 0 12px 0; font-size: 15px; font-weight: 600; color: #D4856A;">
+        Bloomsline helps you stay connected with clients between sessions
+      </p>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 12px 8px 0; vertical-align: top; width: 28px; font-size: 18px;">📋</td>
+          <td style="padding: 8px 0; color: #555; font-size: 14px;">
+            <strong style="color: #333;">Share worksheets & exercises</strong><br>
+            Assign therapeutic resources your clients can complete on their own time
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 12px 8px 0; vertical-align: top; width: 28px; font-size: 18px;">📊</td>
+          <td style="padding: 8px 0; color: #555; font-size: 14px;">
+            <strong style="color: #333;">Track progress & milestones</strong><br>
+            See how clients are doing between sessions with real engagement data
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 12px 8px 0; vertical-align: top; width: 28px; font-size: 18px;">📖</td>
+          <td style="padding: 8px 0; color: #555; font-size: 14px;">
+            <strong style="color: #333;">Therapeutic stories & psychoeducation</strong><br>
+            Build and share narrative-based resources tailored to each client
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 12px 8px 0; vertical-align: top; width: 28px; font-size: 18px;">🤝</td>
+          <td style="padding: 8px 0; color: #555; font-size: 14px;">
+            <strong style="color: #333;">Strengthen the therapeutic relationship</strong><br>
+            Clients feel supported even outside sessions — improving outcomes and retention
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Social proof -->
+    <div style="background-color: #f8f8f8; border-radius: 12px; padding: 16px; margin-bottom: 28px; text-align: center;">
+      <p style="margin: 0; color: #555; font-size: 14px; font-style: italic;">
+        "Bloomsline bridges the gap between sessions. My clients are more engaged and our work together goes deeper."
+      </p>
+      <p style="margin: 8px 0 0 0; color: #888; font-size: 12px;">— Early access practitioner</p>
+    </div>
+
+    <!-- CTAs -->
+    <div style="text-align: center; margin-bottom: 16px;">
+      <a href="${demoUrl}" style="display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, #D4856A 0%, #c77a5f 100%); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(212, 133, 106, 0.35);">
+        Book a Demo
       </a>
     </div>
 
-    <p style="margin: 24px 0 0 0; color: #888; font-size: 13px; text-align: center;">
+    <div style="text-align: center; margin-bottom: 8px;">
+      <a href="${signupUrl}" style="display: inline-block; padding: 12px 28px; color: #D4856A; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 14px; border: 1px solid #f0d0c4;">
+        Explore the Website →
+      </a>
+    </div>
+
+    <p style="margin: 20px 0 0 0; color: #888; font-size: 13px; text-align: center;">
       Free to get started. No credit card required.
     </p>
   `

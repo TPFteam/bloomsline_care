@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server-client'
-import { sendEmail } from '@/lib/email'
-import { invitePractitionerTemplate } from '@/lib/email/templates'
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,21 +39,20 @@ export async function POST(request: NextRequest) {
       .eq('id', userId)
       .single()
 
-    const memberName = profile?.full_name || 'A Bloomsline member'
-    const signupUrl = 'https://bloomsline.care/practitioner'
+    const memberName = profile?.full_name || null
 
-    const htmlBody = invitePractitionerTemplate({ memberName, signupUrl })
+    // Insert into practitioner_invites — the DB webhook triggers the edge function to send the email
+    const { error: insertError } = await adminClient
+      .from('practitioner_invites')
+      .insert({
+        member_user_id: userId,
+        member_name: memberName,
+        practitioner_email: email.trim().toLowerCase(),
+      })
 
-    const result = await sendEmail({
-      to: email,
-      subject: `${memberName} invites you to try Bloomsline Care`,
-      htmlBody,
-      tag: 'invite-practitioner',
-      metadata: { invitedBy: userId },
-    })
-
-    if (!result.success) {
-      return NextResponse.json({ error: 'Failed to send email' }, { status: 500 })
+    if (insertError) {
+      console.error('Failed to insert invite:', insertError)
+      return NextResponse.json({ error: 'Failed to create invitation' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
