@@ -11,10 +11,10 @@ import { LanguageSwitcher } from '@/components/language-switcher'
 import { useEarlyAccessModal } from '@/lib/landing/early-access-modal-context'
 
 interface NavbarProps {
-  isPractitionerPage?: boolean
+  isMemberPage?: boolean
 }
 
-export function Navbar({ isPractitionerPage = false }: NavbarProps) {
+export function Navbar({ isMemberPage = false }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { t, locale } = useLanguage()
   const { openModal } = useEarlyAccessModal()
@@ -22,12 +22,12 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
   const DEMO_BOOKING_URL = 'https://calendar.app.google/DwruLrgYZ6TEegL58'
 
   const handleOpenModal = () => {
-    openModal(isPractitionerPage ? 'practitioner' : undefined)
+    openModal(isMemberPage ? undefined : 'practitioner')
   }
 
   const navItems = [
-    { label: t.nav.home, href: '/', active: !isPractitionerPage },
-    { label: t.nav.forPractitioners, href: '/practitioner', active: isPractitionerPage },
+    { label: t.nav.home, href: '/', active: !isMemberPage },
+    { label: t.nav.forMembers, href: '/for-everyone', active: isMemberPage },
   ]
 
   return (
@@ -84,7 +84,7 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
             className="hidden md:flex items-center gap-3"
           >
             <LanguageSwitcher />
-            {isPractitionerPage && (
+            {!isMemberPage && (
               <a
                 href={DEMO_BOOKING_URL}
                 target="_blank"
@@ -111,11 +111,7 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
             </Link>
             <Button
               onClick={handleOpenModal}
-              className={`font-medium text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300 ${
-                isPractitionerPage
-                  ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C] shadow-[#D4856A]/30 hover:from-[#c27459] hover:to-[#d4946b]'
-                  : 'bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] shadow-[#4A9A86]/30 hover:from-[#3d8a76] hover:to-[#4da38c]'
-              }`}
+              className="font-medium text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] shadow-[#4A9A86]/30 hover:from-[#3d8a76] hover:to-[#4da38c]"
               suppressHydrationWarning
             >
               {locale === 'fr' ? 'Accès anticipé' : locale === 'es' ? 'Acceso anticipado' : 'Early Access'}
@@ -164,7 +160,7 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-white/60">
                 <LanguageSwitcher />
-                {isPractitionerPage && (
+                {!isMemberPage && (
                   <a
                     href={DEMO_BOOKING_URL}
                     target="_blank"
@@ -192,11 +188,7 @@ export function Navbar({ isPractitionerPage = false }: NavbarProps) {
                     setIsOpen(false)
                     handleOpenModal()
                   }}
-                  className={`w-full font-medium text-white rounded-full shadow-lg ${
-                    isPractitionerPage
-                      ? 'bg-gradient-to-r from-[#D4856A] to-[#E8A87C] hover:from-[#c27459] hover:to-[#d4946b]'
-                      : 'bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] hover:from-[#3d8a76] hover:to-[#4da38c]'
-                  }`}
+                  className="w-full font-medium text-white rounded-full shadow-lg bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] hover:from-[#3d8a76] hover:to-[#4da38c]"
                   suppressHydrationWarning
                 >
                   {locale === 'fr' ? 'Accès anticipé' : locale === 'es' ? 'Acceso anticipado' : 'Early Access'}
