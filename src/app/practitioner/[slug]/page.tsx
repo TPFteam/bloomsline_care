@@ -211,13 +211,13 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-gray-50 flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          <div className="w-16 h-16 border-4 border-lavender-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+          <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
           <p className="text-gray-600 font-medium">{t.dashboard.loading}</p>
         </motion.div>
       </div>
@@ -226,19 +226,19 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
   if (notFound) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-gray-50 flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center bg-white/90 backdrop-blur-xl rounded-3xl p-12 shadow-xl max-w-md mx-4"
+          className="text-center bg-white/90 backdrop-blur-xl rounded-[2rem] p-12 shadow-xl max-w-md mx-4 border border-gray-100"
         >
-          <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Users className="w-10 h-10 text-gray-400" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-3">Profile Not Found</h1>
-          <p className="text-gray-600 mb-6">This practitioner profile doesn't exist or isn't public.</p>
+          <p className="text-gray-600 mb-6">This practitioner profile doesn&apos;t exist or isn&apos;t public.</p>
           <Link href={isLoggedIn ? '/dashboard' : '/'}>
-            <Button className="rounded-xl">
+            <Button className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white">
               <ArrowLeft className="w-4 h-4 mr-2" />
               {isLoggedIn ? 'Go to Dashboard' : 'Go Home'}
             </Button>
@@ -250,18 +250,20 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
   if (!profile) return null
 
-  const acceptanceStatusStyles: Record<string, { bg: string; text: string; label: string }> = {
-    accepting: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Accepting New Clients' },
-    waitlist: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Waitlist Only' },
-    not_accepting: { bg: 'bg-gray-100', text: 'text-gray-600', label: 'Not Accepting' },
+  const acceptanceStatusStyles: Record<string, { bg: string; text: string; dot: string; label: string }> = {
+    accepting: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', label: 'Accepting New Clients' },
+    waitlist: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500', label: 'Waitlist Only' },
+    not_accepting: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400', label: 'Not Accepting' },
   }
 
   const status = profile.client_acceptance_status
     ? acceptanceStatusStyles[profile.client_acceptance_status]
     : acceptanceStatusStyles.not_accepting
 
+  const hasBookingEnabled = profile.slug
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50/60 via-white to-gray-50">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -269,6 +271,14 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
             <Link href={isLoggedIn ? '/dashboard' : '/'}>
               <Logo size="md" showText />
             </Link>
+            {hasBookingEnabled && (
+              <Link href={`/practitioner/${profile.slug}/book`}>
+                <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-md shadow-teal-200/50">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Book Appointment
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -278,102 +288,125 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-gray-200/50 border border-white/60 overflow-hidden mb-8"
+          className="bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-lg shadow-gray-200/30 border border-gray-100 overflow-hidden mb-8"
         >
-          {/* Gradient Bar */}
-          <div className="h-2 bg-gradient-to-r from-lavender-400 via-mint-400 to-coral-400" />
+          {/* Soft teal banner background */}
+          <div className="h-32 sm:h-40 bg-gradient-to-br from-teal-100 via-teal-50 to-emerald-50 relative">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-teal-200/40 via-transparent to-transparent" />
+          </div>
 
-          <div className="p-8 sm:p-12">
-            <div className="flex flex-col md:flex-row gap-8">
+          <div className="px-6 sm:px-10 pb-8 -mt-16 sm:-mt-20 relative">
+            <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-end">
               {/* Avatar */}
-              <div className="flex-shrink-0 flex justify-center md:justify-start">
-                <div className="relative">
-                  <div className="absolute -inset-3 bg-gradient-to-br from-lavender-400/20 to-mint-400/20 rounded-[2rem] blur-xl" />
-                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-[1.75rem] bg-gradient-to-br from-lavender-100 via-lavender-50 to-lavender-200 flex items-center justify-center text-lavender-700 font-bold text-5xl shadow-xl border-3 border-white">
-                    {profile.user?.avatar_url ? (
-                      <img src={profile.user.avatar_url} alt="" className="w-full h-full rounded-[1.75rem] object-cover" />
-                    ) : (
-                      profile.user?.full_name?.charAt(0) || 'P'
-                    )}
-                  </div>
-                  {profile.is_verified && (
-                    <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
-                      <CheckCircle2 className="w-7 h-7 text-emerald-500" />
+              <div className="relative flex-shrink-0">
+                <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-white shadow-xl border-4 border-white overflow-hidden">
+                  {profile.user?.avatar_url ? (
+                    <img src={profile.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-teal-100 to-teal-200 flex items-center justify-center text-teal-700 font-bold text-4xl">
+                      {profile.user?.full_name?.charAt(0) || 'P'}
                     </div>
                   )}
                 </div>
+                {profile.is_verified && (
+                  <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md">
+                    <CheckCircle2 className="w-5 h-5 text-teal-500" />
+                  </div>
+                )}
               </div>
 
-              {/* Info */}
-              <div className="flex-1 text-center md:text-left">
-                <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
+              {/* Name & headline */}
+              <div className="text-center sm:text-left flex-1 pb-1">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                   {profile.user?.full_name}
                   {profile.credentials && profile.credentials.length > 0 && (
-                    <span className="text-gray-500 font-normal">, {profile.credentials.join(', ')}</span>
+                    <span className="text-gray-400 font-normal text-xl">, {profile.credentials.join(', ')}</span>
                   )}
                 </h1>
-
                 {profile.headline && (
-                  <p className="text-lg text-gray-600 italic mb-4">{profile.headline}</p>
+                  <p className="text-gray-500 mt-1 text-base">{profile.headline}</p>
                 )}
-
-                {/* Tags */}
-                <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-6">
-                  <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${status.bg} ${status.text}`}>
-                    <span className="w-2 h-2 rounded-full bg-current mr-2" />
-                    {status.label}
-                  </span>
-
-                  {profile.offers_telehealth && (
-                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-50 text-blue-700">
-                      <Video className="w-3.5 h-3.5 mr-1.5" />
-                      Telehealth
-                    </span>
-                  )}
-
-                  {profile.offers_in_person && (
-                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-purple-50 text-purple-700">
-                      <Building className="w-3.5 h-3.5 mr-1.5" />
-                      In-Person
-                    </span>
-                  )}
-
-                  {profile.years_experience && (
-                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
-                      <Clock className="w-3.5 h-3.5 mr-1.5" />
-                      {profile.years_experience}+ Years
-                    </span>
-                  )}
-                </div>
-
-                {/* Contact Buttons */}
-                <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                  {profile.contact_email && (
-                    <a href={`mailto:${profile.contact_email}`}>
-                      <Button className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-200/50">
-                        <Mail className="w-4 h-4 mr-2" />
-                        Contact
-                      </Button>
-                    </a>
-                  )}
-                  {profile.contact_phone && (
-                    <a href={`tel:${profile.contact_phone}`}>
-                      <Button variant="outline" className="rounded-xl">
-                        <Phone className="w-4 h-4 mr-2" />
-                        Call
-                      </Button>
-                    </a>
-                  )}
-                  {profile.social_links?.website && (
-                    <a href={profile.social_links.website} target="_blank" rel="noopener noreferrer">
-                      <Button variant="outline" className="rounded-xl">
-                        <Globe className="w-4 h-4 mr-2" />
-                        Website
-                      </Button>
-                    </a>
-                  )}
-                </div>
               </div>
+            </div>
+
+            {/* Tags */}
+            <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-5">
+              <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${status.bg} ${status.text}`}>
+                <span className={`w-2 h-2 rounded-full ${status.dot} mr-2`} />
+                {status.label}
+              </span>
+
+              {profile.offers_telehealth && (
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-teal-50 text-teal-700">
+                  <Video className="w-3.5 h-3.5 mr-1.5" />
+                  Telehealth
+                </span>
+              )}
+
+              {profile.offers_in_person && (
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-slate-50 text-slate-700">
+                  <Building className="w-3.5 h-3.5 mr-1.5" />
+                  In-Person
+                </span>
+              )}
+
+              {profile.years_experience && (
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-50 text-gray-600">
+                  <Clock className="w-3.5 h-3.5 mr-1.5" />
+                  {profile.years_experience}+ Years
+                </span>
+              )}
+
+              {profile.practice_location && (
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-50 text-gray-600">
+                  <MapPin className="w-3.5 h-3.5 mr-1.5" />
+                  {[profile.practice_location.city, profile.practice_location.state_province].filter(Boolean).join(', ')}
+                </span>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-wrap justify-center sm:justify-start gap-3 mt-6">
+              {hasBookingEnabled && (
+                <Link href={`/practitioner/${profile.slug}/book`}>
+                  <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-md shadow-teal-200/50 h-11 px-6">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Book a Session
+                  </Button>
+                </Link>
+              )}
+              {profile.contact_email && (
+                <a href={`mailto:${profile.contact_email}`}>
+                  <Button variant="outline" className="rounded-xl h-11 px-6 border-gray-200">
+                    <Mail className="w-4 h-4 mr-2" />
+                    Contact
+                  </Button>
+                </a>
+              )}
+              {profile.contact_phone && (
+                <a href={`tel:${profile.contact_phone}`}>
+                  <Button variant="outline" className="rounded-xl h-11 border-gray-200">
+                    <Phone className="w-4 h-4 mr-2" />
+                    Call
+                  </Button>
+                </a>
+              )}
+              {profile.social_links?.website && (
+                <a href={profile.social_links.website} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" className="rounded-xl h-11 border-gray-200">
+                    <Globe className="w-4 h-4 mr-2" />
+                    Website
+                  </Button>
+                </a>
+              )}
+              {profile.social_links?.linkedin && (
+                <a href={profile.social_links.linkedin} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" className="rounded-xl h-11 border-gray-200">
+                    <Linkedin className="w-4 h-4 mr-2" />
+                    LinkedIn
+                  </Button>
+                </a>
+              )}
             </div>
           </div>
         </motion.div>
@@ -387,15 +420,13 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6 sm:p-8"
+                className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8"
               >
-                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-coral-500" />
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Heart className="w-5 h-5 text-teal-500" />
                   About
                 </h2>
-                <div className="prose prose-gray max-w-none">
-                  <p className="text-gray-600 whitespace-pre-wrap leading-relaxed">{profile.bio}</p>
-                </div>
+                <p className="text-gray-600 whitespace-pre-wrap leading-relaxed">{profile.bio}</p>
               </motion.div>
             )}
 
@@ -405,17 +436,17 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
-                className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6 sm:p-8"
+                className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8"
               >
-                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-lavender-500" />
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-teal-500" />
                   Areas of Specialty
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {profile.specialties.map((specialty) => (
                     <span
                       key={specialty}
-                      className="px-4 py-2 rounded-full text-sm font-medium bg-lavender-50 text-lavender-700 border border-lavender-200"
+                      className="px-3.5 py-1.5 rounded-full text-sm font-medium bg-teal-50 text-teal-700 border border-teal-100"
                     >
                       {getSpecialtyLabel(specialty as Specialty)}
                     </span>
@@ -430,17 +461,17 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6 sm:p-8"
+                className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8"
               >
-                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-mint-500" />
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-teal-500" />
                   Therapeutic Approaches
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {profile.approaches.map((approach) => (
                     <span
                       key={approach}
-                      className="px-4 py-2 rounded-full text-sm font-medium bg-mint-50 text-mint-700 border border-mint-200"
+                      className="px-3.5 py-1.5 rounded-full text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-100"
                     >
                       {getApproachLabel(approach as TherapeuticApproach)}
                     </span>
@@ -455,20 +486,20 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25 }}
-                className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6 sm:p-8"
+                className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8"
               >
-                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-coral-500" />
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-teal-500" />
                   Published Resources
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {publishedResources.map((resource) => (
                     <div
                       key={resource.id}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-gray-50/80 border border-gray-100"
+                      className="flex items-center gap-3 p-3.5 rounded-xl bg-gray-50/80 border border-gray-100 hover:border-teal-200 transition-colors"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-coral-100 flex items-center justify-center">
-                        <Heart className="w-5 h-5 text-coral-500" />
+                      <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center">
+                        <Heart className="w-5 h-5 text-teal-500" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-900 truncate">{resource.title}</p>
@@ -483,23 +514,44 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Book a Session CTA (sidebar) */}
+            {hasBookingEnabled && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl p-6 text-white shadow-lg shadow-teal-200/40"
+              >
+                <h3 className="font-semibold text-lg mb-2">Ready to get started?</h3>
+                <p className="text-teal-100 text-sm mb-4">
+                  Book a session with {profile.user?.full_name?.split(' ')[0]} and take the next step in your journey.
+                </p>
+                <Link href={`/practitioner/${profile.slug}/book`}>
+                  <Button className="w-full bg-white text-teal-700 hover:bg-teal-50 rounded-xl font-semibold h-11">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Book a Session
+                  </Button>
+                </Link>
+              </motion.div>
+            )}
+
             {/* Education & Credentials */}
             {((profile.education && profile.education.length > 0) || (profile.licenses && profile.licenses.length > 0)) && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
-                className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6"
+                className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 p-6"
               >
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-amber-500" />
+                  <GraduationCap className="w-5 h-5 text-teal-500" />
                   Credentials
                 </h2>
 
                 {/* Education */}
                 {profile.education && profile.education.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Education</h3>
+                  <div className="mb-5">
+                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Education</h3>
                     <div className="space-y-3">
                       {profile.education.map((edu: { id: string; degree: string; institution: string; year_completed: number | null }) => (
                         <div key={edu.id} className="text-sm">
@@ -517,11 +569,11 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 {/* Licenses */}
                 {profile.licenses && profile.licenses.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Licenses</h3>
+                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Licenses</h3>
                     <div className="space-y-3">
                       {profile.licenses.map((lic: { id: string; type: string; state_province: string | null; is_verified: boolean }) => (
                         <div key={lic.id} className="flex items-start gap-2">
-                          <Award className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                          <Award className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
                           <div className="text-sm">
                             <p className="font-medium text-gray-900 flex items-center gap-1">
                               {lic.type}
@@ -546,20 +598,20 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6"
+              className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 p-6"
             >
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-purple-500" />
+                <Calendar className="w-5 h-5 text-teal-500" />
                 Session Info
               </h2>
 
               {/* Session Types */}
               {profile.session_types && profile.session_types.length > 0 && (
                 <div className="mb-4">
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Session Types</h3>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Session Types</h3>
                   <div className="flex flex-wrap gap-2">
                     {profile.session_types.map((type) => (
-                      <span key={type} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-purple-50 text-purple-700 capitalize">
+                      <span key={type} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-teal-50 text-teal-700 capitalize">
                         {type}
                       </span>
                     ))}
@@ -570,10 +622,10 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
               {/* Age Groups */}
               {profile.age_groups && profile.age_groups.length > 0 && (
                 <div className="mb-4">
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Ages Served</h3>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Ages Served</h3>
                   <div className="flex flex-wrap gap-2">
                     {profile.age_groups.map((age) => (
-                      <span key={age} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-700">
+                      <span key={age} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-50 text-gray-600">
                         {t.profile.ageGroups[age as keyof typeof t.profile.ageGroups] || age}
                       </span>
                     ))}
@@ -584,7 +636,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
               {/* Languages */}
               {profile.languages && profile.languages.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Languages</h3>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Languages</h3>
                   <p className="text-sm text-gray-700">{profile.languages.join(', ')}</p>
                 </div>
               )}
@@ -596,55 +648,15 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25 }}
-                className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6"
+                className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 p-6"
               >
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-red-500" />
+                <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-teal-500" />
                   Location
                 </h2>
-                <div className="text-sm text-gray-600">
-                  {profile.practice_location.city && <p>{profile.practice_location.city}</p>}
-                  {profile.practice_location.state_province && <p>{profile.practice_location.state_province}</p>}
-                  {profile.practice_location.country && <p>{profile.practice_location.country}</p>}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Social Links */}
-            {profile.social_links && (profile.social_links.linkedin || profile.social_links.website) && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/30 border border-white/60 p-6"
-              >
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Connect</h2>
-                <div className="space-y-2">
-                  {profile.social_links.website && (
-                    <a
-                      href={profile.social_links.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-gray-600 hover:text-lavender-600 transition-colors"
-                    >
-                      <Globe className="w-4 h-4" />
-                      Website
-                      <ExternalLink className="w-3 h-3 ml-auto" />
-                    </a>
-                  )}
-                  {profile.social_links.linkedin && (
-                    <a
-                      href={profile.social_links.linkedin}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-gray-600 hover:text-lavender-600 transition-colors"
-                    >
-                      <Linkedin className="w-4 h-4" />
-                      LinkedIn
-                      <ExternalLink className="w-3 h-3 ml-auto" />
-                    </a>
-                  )}
-                </div>
+                <p className="text-sm text-gray-600">
+                  {[profile.practice_location.city, profile.practice_location.state_province, profile.practice_location.country].filter(Boolean).join(', ')}
+                </p>
               </motion.div>
             )}
           </div>
@@ -657,9 +669,9 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
           transition={{ delay: 0.4 }}
           className="text-center mt-12 py-8 border-t border-gray-100"
         >
-          <p className="text-sm text-gray-500">
-            Profile powered by{' '}
-            <Link href={isLoggedIn ? '/dashboard' : '/'} className="text-lavender-600 hover:text-lavender-700 font-medium">
+          <p className="text-sm text-gray-400">
+            Powered by{' '}
+            <Link href={isLoggedIn ? '/dashboard' : '/'} className="text-teal-600 hover:text-teal-700 font-medium">
               Bloomsline Care
             </Link>
           </p>
