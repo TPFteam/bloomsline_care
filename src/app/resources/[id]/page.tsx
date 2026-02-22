@@ -1811,14 +1811,25 @@ export default function ResourceDetailPage() {
               <Link href="/" className="flex items-center gap-2">
                 <Logo size="sm" showText />
               </Link>
-              <Link href="/early-access">
-                <Button
-                  size="sm"
-                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs h-8 px-3"
-                >
-                  {locale === 'fr' ? 'Rejoindre' : 'Join Bloomsline'}
-                </Button>
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link href="/">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-lg text-xs h-8 px-3 border-gray-200 text-gray-700 hover:bg-gray-50"
+                  >
+                    {locale === 'fr' ? 'Pour les praticiens' : 'For Practitioners'}
+                  </Button>
+                </Link>
+                <Link href="/for-everyone">
+                  <Button
+                    size="sm"
+                    className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs h-8 px-3"
+                  >
+                    {locale === 'fr' ? 'Pour votre bien-être' : 'For Personal Wellbeing'}
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
