@@ -23,6 +23,7 @@ import {
   Save,
   ScanLine,
   Check,
+  Target,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -85,6 +86,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [allNotes, setAllNotes] = useState<ProgressNote[]>(initialNotes)
   const [loading, setLoading] = useState(true)
 
+  // Milestones for linking
+  const [milestones, setMilestones] = useState<{ id: string; title: string; status: string }[]>([])
+
   // ==============================
   // NOTEPAD MODE STATE
   // ==============================
@@ -92,23 +96,25 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
   // Restore locked context from localStorage on mount
   const getInitialPadState = () => {
-    if (typeof window === 'undefined') return { sessionId: '', noteType: 'general' as NoteType, locked: false }
+    if (typeof window === 'undefined') return { sessionId: '', milestoneId: '', noteType: 'general' as NoteType, locked: false }
     try {
       const stored = localStorage.getItem(padStorageKey)
       if (stored) {
         const parsed = JSON.parse(stored)
         return {
           sessionId: parsed.sessionId || '',
+          milestoneId: parsed.milestoneId || '',
           noteType: (parsed.noteType || 'general') as NoteType,
           locked: parsed.locked || false,
         }
       }
     } catch {}
-    return { sessionId: '', noteType: 'general' as NoteType, locked: false }
+    return { sessionId: '', milestoneId: '', noteType: 'general' as NoteType, locked: false }
   }
 
   const initialPad = getInitialPadState()
   const [padSessionId, setPadSessionId] = useState<string>(initialPad.sessionId)
+  const [padMilestoneId, setPadMilestoneId] = useState<string>(initialPad.milestoneId)
   const [padNoteType, setPadNoteType] = useState<NoteType>(initialPad.noteType)
   const [padLocked, setPadLocked] = useState(initialPad.locked)
   const [padInput, setPadInput] = useState('')
@@ -131,10 +137,10 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [extractedIndex, setExtractedIndex] = useState<number | null>(null) // brief checkmark display
 
   // Persist notepad context to localStorage when locked
-  const savePadContext = useCallback((sessionId: string, noteType: NoteType, locked: boolean) => {
+  const savePadContext = useCallback((sessionId: string, milestoneId: string, noteType: NoteType, locked: boolean) => {
     try {
       if (locked) {
-        localStorage.setItem(padStorageKey, JSON.stringify({ sessionId, noteType, locked: true }))
+        localStorage.setItem(padStorageKey, JSON.stringify({ sessionId, milestoneId, noteType, locked: true }))
       } else {
         localStorage.removeItem(padStorageKey)
       }
@@ -144,15 +150,15 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const togglePadLock = () => {
     const newLocked = !padLocked
     setPadLocked(newLocked)
-    savePadContext(padSessionId, padNoteType, newLocked)
+    savePadContext(padSessionId, padMilestoneId, padNoteType, newLocked)
   }
 
-  // Update localStorage when session/type change while locked
+  // Update localStorage when session/type/milestone change while locked
   useEffect(() => {
     if (padLocked) {
-      savePadContext(padSessionId, padNoteType, true)
+      savePadContext(padSessionId, padMilestoneId, padNoteType, true)
     }
-  }, [padSessionId, padNoteType, padLocked, savePadContext])
+  }, [padSessionId, padMilestoneId, padNoteType, padLocked, savePadContext])
 
   // ==============================
   // BROWSE MODE STATE
@@ -164,6 +170,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [noteType, setNoteType] = useState<NoteType>('general')
   const [isPrivate, setIsPrivate] = useState(true)
   const [selectedSessionId, setSelectedSessionId] = useState<string>('')
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string>('')
   const [noteImages, setNoteImages] = useState<File[]>([])
   const [noteImagePreviews, setNoteImagePreviews] = useState<string[]>([])
   const [savingNote, setSavingNote] = useState(false)
@@ -175,6 +182,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [editNoteType, setEditNoteType] = useState<NoteType>('general')
   const [editIsPrivate, setEditIsPrivate] = useState(true)
   const [editSessionId, setEditSessionId] = useState<string>('')
+  const [editMilestoneId, setEditMilestoneId] = useState<string>('')
   const [editImages, setEditImages] = useState<File[]>([])
   const [editImagePreviews, setEditImagePreviews] = useState<string[]>([])
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([])
@@ -199,7 +207,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
       const { data, error } = await supabase
         .from('progress_notes')
-        .select('*')
+        .select('*, milestones(title)')
         .eq('member_id', memberId)
         .eq('practitioner_id', user.id)
         .order('created_at', { ascending: false })
@@ -215,6 +223,16 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
   useEffect(() => {
     fetchAllNotes()
+  }, [memberId])
+
+  // Fetch milestones for linking
+  useEffect(() => {
+    supabase
+      .from('milestones')
+      .select('id, title, status')
+      .eq('member_id', memberId)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => { if (data) setMilestones(data) })
   }, [memberId])
 
   // Upload images helper
@@ -413,6 +431,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
           member_id: memberId,
           practitioner_id: user.id,
           session_id: padSessionId || null,
+          milestone_id: padMilestoneId || null,
           title: null,
           content: padInput.trim(),
           note_type: padNoteType,
@@ -436,7 +455,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     } finally {
       setPadSaving(false)
     }
-  }, [padInput, padImages, padSaving, padSessionId, padNoteType, memberId])
+  }, [padInput, padImages, padSaving, padSessionId, padMilestoneId, padNoteType, memberId])
 
   const handlePadKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter to submit, Shift+Enter for newline — block while extracting
@@ -532,6 +551,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
           member_id: memberId,
           practitioner_id: user.id,
           session_id: padSessionId || null,
+          milestone_id: padMilestoneId || null,
           title: `Bloom Assist: ${promptLabel}`,
           content: msg.response,
           note_type: 'observation',
@@ -655,6 +675,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
           member_id: memberId,
           practitioner_id: user.id,
           session_id: selectedSessionId || null,
+          milestone_id: selectedMilestoneId || null,
           title: noteTitle.trim() || null,
           content: noteContent.trim(),
           note_type: noteType,
@@ -671,6 +692,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       setNoteType('general')
       setIsPrivate(true)
       setSelectedSessionId('')
+      setSelectedMilestoneId('')
       setNoteImages([])
       setNoteImagePreviews([])
       fetchAllNotes()
@@ -691,6 +713,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     setEditNoteType(note.note_type)
     setEditIsPrivate(note.is_private)
     setEditSessionId(note.session_id || '')
+    setEditMilestoneId(note.milestone_id || '')
     setExistingImageUrls(note.image_urls || [])
     setEditImages([])
     setEditImagePreviews([])
@@ -703,6 +726,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     setEditNoteType('general')
     setEditIsPrivate(true)
     setEditSessionId('')
+    setEditMilestoneId('')
     setExistingImageUrls([])
     setEditImages([])
     setEditImagePreviews([])
@@ -731,6 +755,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
           note_type: editNoteType,
           is_private: editIsPrivate,
           session_id: editSessionId || null,
+          milestone_id: editMilestoneId || null,
           image_urls: allImageUrls.length > 0 ? allImageUrls : null,
           updated_at: new Date().toISOString(),
         })
@@ -825,7 +850,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       {viewMode === 'notepad' && (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 340px)', minHeight: '500px' }}>
           {/* Notes stream */}
-          <div ref={notepadStreamRef} className="flex-1 overflow-y-auto px-5 py-4">
+          <div ref={notepadStreamRef} className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-4">
             {notepadNotes.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <BookOpen className="w-12 h-12 text-gray-200 mb-3" />
@@ -876,6 +901,12 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                                       {getSessionLabelShort(note.session_id)}
                                     </span>
                                   )}
+                                  {note.milestone_id && (note as any).milestones?.title && (
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600">
+                                      <Target className="w-2.5 h-2.5" />
+                                      {(note as any).milestones.title}
+                                    </span>
+                                  )}
                                   {note.is_private && (
                                     <Lock className="w-2.5 h-2.5 text-gray-300" />
                                   )}
@@ -884,7 +915,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                                 {note.title && (
                                   <p className="text-sm font-medium text-gray-900">{note.title}</p>
                                 )}
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{note.content}</p>
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap break-all leading-relaxed">{note.content}</p>
 
                                 {/* Images */}
                                 {note.image_urls && note.image_urls.length > 0 && (
@@ -1070,6 +1101,29 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
               >
                 {padLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
               </button>
+
+              {/* Goal / Milestone selector */}
+              {milestones.length > 0 && (
+                <select
+                  value={padMilestoneId}
+                  onChange={(e) => setPadMilestoneId(e.target.value)}
+                  disabled={padLocked}
+                  className={`text-xs border rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-200 max-w-[200px] transition-all ${
+                    padLocked
+                      ? 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed'
+                      : padMilestoneId
+                        ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                        : 'border-gray-200 bg-white text-gray-700'
+                  }`}
+                >
+                  <option value="">{locale === 'fr' ? '🎯 Aucun objectif' : locale === 'es' ? '🎯 Sin objetivo' : '🎯 No goal'}</option>
+                  {milestones.map(m => (
+                    <option key={m.id} value={m.id}>
+                      🎯 {m.title}
+                    </option>
+                  ))}
+                </select>
+              )}
 
               <div className="flex items-center gap-1">
                 {noteTypes.map(type => (
@@ -1316,6 +1370,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       setNoteContent('')
                       setNoteType('general')
                       setSelectedSessionId('')
+                      setSelectedMilestoneId('')
                       setNoteImages([])
                       setNoteImagePreviews([])
                     }} className="text-gray-400 hover:text-gray-600">
@@ -1341,6 +1396,27 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       ))}
                     </select>
                   </div>
+
+                  {/* Goal / Milestone selector */}
+                  {milestones.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {locale === 'fr' ? 'Lier à un objectif (optionnel)' : locale === 'es' ? 'Vincular a un objetivo (opcional)' : 'Link to Goal (optional)'}
+                      </label>
+                      <select
+                        value={selectedMilestoneId}
+                        onChange={(e) => setSelectedMilestoneId(e.target.value)}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                      >
+                        <option value="">{locale === 'fr' ? 'Aucun objectif' : locale === 'es' ? 'Sin objetivo' : 'No goal'}</option>
+                        {milestones.map(m => (
+                          <option key={m.id} value={m.id}>
+                            {m.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   {/* Title */}
                   <div>
@@ -1448,6 +1524,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                         setNoteContent('')
                         setNoteType('general')
                         setSelectedSessionId('')
+                        setSelectedMilestoneId('')
                         setNoteImages([])
                         setNoteImagePreviews([])
                       }}
@@ -1524,6 +1601,27 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                           ))}
                         </select>
                       </div>
+
+                      {/* Goal / Milestone selector */}
+                      {milestones.length > 0 && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {locale === 'fr' ? 'Lier à un objectif (optionnel)' : locale === 'es' ? 'Vincular a un objetivo (opcional)' : 'Link to Goal (optional)'}
+                          </label>
+                          <select
+                            value={editMilestoneId}
+                            onChange={(e) => setEditMilestoneId(e.target.value)}
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                          >
+                            <option value="">{locale === 'fr' ? 'Aucun objectif' : locale === 'es' ? 'Sin objetivo' : 'No goal'}</option>
+                            {milestones.map(m => (
+                              <option key={m.id} value={m.id}>
+                                {m.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">{t.members.notes.noteTitle}</label>
@@ -1662,6 +1760,12 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                                 {getSessionLabel(note.session_id)}
                               </span>
                             )}
+                            {note.milestone_id && (note as any).milestones?.title && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+                                <Target className="w-3 h-3" />
+                                {(note as any).milestones.title}
+                              </span>
+                            )}
                             {note.is_private && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
                                 <Lock className="w-3 h-3" />
@@ -1676,7 +1780,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                           )}
 
                           {/* Content */}
-                          <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.content}</p>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap break-all">{note.content}</p>
 
                           {/* Images */}
                           {note.image_urls && note.image_urls.length > 0 && (

@@ -157,6 +157,7 @@ export interface ProgressNote {
   member_id: string
   practitioner_id: string
   session_id: string | null
+  milestone_id: string | null
 
   // Content
   title: string | null
