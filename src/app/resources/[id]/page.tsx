@@ -28,6 +28,10 @@ import {
   X,
   Table2,
   FolderOpen,
+  Copy,
+  Link2,
+  Send,
+  Calendar,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -39,6 +43,16 @@ import { removeResourceFromAllCollections, isResourceSaved } from '@/lib/service
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { Resource, ResourceType, ResourceBlock } from '@/types/resource'
+import { notifyResourceShared } from '@/lib/notifications'
+import { ShareResourceModal } from '@/components/resources/ShareResourceModal'
+
+interface SimpleMember {
+  id: string
+  first_name: string
+  last_name: string
+  email: string | null
+  avatar_url?: string | null
+}
 
 // Include 'assessment' as legacy type for backwards compatibility
 const typeIcons: Record<ResourceType | 'assessment', React.ElementType> = {
@@ -198,6 +212,9 @@ export default function ResourceDetailPage() {
   const [selectedSubmission, setSelectedSubmission] = useState<ResourceSubmission | null>(null)
   const [reviewNotes, setReviewNotes] = useState('')
   const [savingNotes, setSavingNotes] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [members, setMembers] = useState<SimpleMember[]>([])
   const [accessStatus, setAccessStatus] = useState<'allowed' | 'private' | 'not_found' | null>(null)
   const [privateResourceCreator, setPrivateResourceCreator] = useState<{
     id: string
@@ -239,6 +256,14 @@ export default function ResourceDetailPage() {
           }
           // Fetch submissions if owner
           fetchSubmissions(params.id as string)
+          // Fetch members for share modal
+          const { data: membersData } = await supabase
+            .from('members')
+            .select('id, first_name, last_name, email, avatar_url')
+            .eq('practitioner_id', user.id)
+            .eq('status', 'active')
+            .order('first_name', { ascending: true })
+          setMembers(membersData || [])
         } else if (data) {
           // If not owner, check if the resource is saved in their collections
           const saved = await isResourceSaved(data.id)
@@ -317,6 +342,97 @@ export default function ResourceDetailPage() {
       toast.error(locale === 'fr' ? 'Erreur lors de la sauvegarde' : 'Error saving notes')
     } finally {
       setSavingNotes(false)
+    }
+  }
+
+  const handleCopyLink = async () => {
+    if (!resource) return
+    const url = `${window.location.origin}/resources/${resource.id}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      toast.success(locale === 'fr' ? 'Lien copié' : 'Link copied to clipboard')
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error(locale === 'fr' ? 'Échec de la copie' : 'Failed to copy link')
+    }
+  }
+
+  const handleShareWithMembers = async (resourceId: string, memberIds: string[], message?: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || !resource) return
+
+      const { data: practitionerData } = await supabase
+        .from('users')
+        .select('full_name')
+        .eq('id', user.id)
+        .single()
+
+      let successCount = 0
+      let alreadySharedCount = 0
+
+      for (const memberId of memberIds) {
+        const { error } = await supabase
+          .from('member_shared_resources')
+          .insert({
+            member_id: memberId,
+            resource_id: resourceId,
+            practitioner_id: user.id,
+            shared_at: new Date().toISOString(),
+            message: message || null,
+          })
+
+        if (error) {
+          if (error.code === '23505') {
+            alreadySharedCount++
+            continue
+          }
+          console.error('Error sharing with member:', error)
+          continue
+        }
+
+        successCount++
+
+        try {
+          const { data: memberResult } = await supabase
+            .from('members')
+            .select('user_id')
+            .eq('id', memberId)
+            .single()
+
+          if (memberResult?.user_id) {
+            await notifyResourceShared(supabase, {
+              memberId,
+              memberUserId: memberResult.user_id,
+              resourceId,
+              resourceTitle: typeof resource.title === 'string' ? resource.title : '',
+              resourceType: resource.type,
+              practitionerName: practitionerData?.full_name || 'Your practitioner',
+            })
+          }
+        } catch (notifyError) {
+          console.error('Error sending notification:', notifyError)
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(
+          locale === 'fr'
+            ? `Ressource partagée avec ${successCount} patient${successCount > 1 ? 's' : ''}`
+            : `Resource shared with ${successCount} member${successCount > 1 ? 's' : ''}`
+        )
+      }
+      if (alreadySharedCount > 0) {
+        toast.info(
+          locale === 'fr'
+            ? `Déjà partagée avec ${alreadySharedCount} patient${alreadySharedCount > 1 ? 's' : ''}`
+            : `Already shared with ${alreadySharedCount} member${alreadySharedCount > 1 ? 's' : ''}`
+        )
+      }
+    } catch (error) {
+      console.error('Error sharing resource:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors du partage' : 'Error sharing resource')
     }
   }
 
@@ -549,293 +665,9 @@ export default function ResourceDetailPage() {
   }
   const typeLabel = typeLabels[resource.type as string] || typeLabels.worksheet
 
-  // For non-owners, show simpler public view
-  if (!isOwner) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Public Branding Header */}
-        <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-14">
-              <Link href="/" className="flex items-center gap-2">
-                <Logo size="sm" showText />
-              </Link>
-              <Link href="/early-access">
-                <Button
-                  size="sm"
-                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs h-8 px-3"
-                >
-                  {locale === 'fr' ? 'Rejoindre' : 'Join Bloomsline'}
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Header Card */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200"
-              >
-                {/* Type Header */}
-                <div className={`h-24 bg-gradient-to-br ${config.lightBg} relative flex items-center px-6`}>
-                  <div className={`w-14 h-14 rounded-xl ${config.iconBg} flex items-center justify-center`}>
-                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-md`}>
-                      <TypeIcon className="w-5 h-5 text-white" />
-                    </div>
-                  </div>
-                  <div className="absolute top-4 right-4 flex items-center gap-2">
-                    <Badge className={`${config.bg} ${config.text} ${config.border} border`}>
-                      <TypeIcon className="w-3 h-3 mr-1" />
-                      {typeLabel}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Title & Meta */}
-                <div className="p-6">
-                  <h1 className="text-2xl font-bold text-gray-900 mb-3">{typeof resource.title === 'string' ? resource.title : ''}</h1>
-                  {resource.description && (
-                    <p className="text-gray-600 mb-5 leading-relaxed">{typeof resource.description === 'string' ? resource.description : ''}</p>
-                  )}
-
-                  {/* Meta Row */}
-                  <div className="flex flex-wrap items-center gap-3 mb-5">
-                    {resource.category && (
-                      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600">
-                        {typeof resource.category === 'string' ? resource.category : ''}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Tags */}
-                  {resource.tags && resource.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-5">
-                      {resource.tags.map((tag, idx) => (
-                        <span
-                          key={typeof tag === 'string' ? tag : idx}
-                          className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full"
-                        >
-                          {typeof tag === 'string' ? tag : ''}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Stats */}
-                  <div className="flex items-center gap-6 pt-4 border-t border-gray-100">
-                    <span className="flex items-center gap-2 text-sm text-gray-500">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      {locale === 'fr' ? 'Créé le' : 'Created'} {new Date(resource.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US')}
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Sidebar - Creator Info for public view */}
-            <div className="space-y-6">
-              {resource.creator_profile && (
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
-                >
-                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">
-                    {locale === 'fr' ? 'Créé par' : 'Created by'}
-                  </p>
-                  <Link href={resource.creator_profile.slug ? `/practitioner/${resource.creator_profile.slug}` : `/practitioner/${resource.creator_profile.id}`}>
-                    <div className="flex items-start gap-3 hover:bg-gray-50 rounded-xl p-2 -m-2 transition-colors">
-                      {resource.creator_profile.avatar_url ? (
-                        <img
-                          src={resource.creator_profile.avatar_url}
-                          alt={resource.creator_profile.full_name || ''}
-                          className="w-12 h-12 rounded-xl object-cover"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center">
-                          <span className="text-lg font-bold text-white">
-                            {(resource.creator_profile.full_name || 'P').charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900">
-                          {resource.creator_profile.full_name || (locale === 'fr' ? 'Praticien' : 'Practitioner')}
-                        </p>
-                        {resource.creator_profile.credentials.length > 0 && (
-                          <p className="text-xs text-gray-600 font-medium mt-0.5">
-                            {resource.creator_profile.credentials.slice(0, 3).join(', ')}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-
-                  {/* Remove from library button for non-owners who have saved the resource */}
-                  {isSaved && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <Button
-                        variant="outline"
-                        className="w-full h-10 rounded-xl border-amber-200 hover:border-amber-300 hover:bg-amber-50 text-amber-600"
-                        onClick={handleRemoveFromLibrary}
-                        disabled={removing}
-                      >
-                        {removing ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4 mr-2" />
-                        )}
-                        {locale === 'fr' ? 'Retirer de ma bibliothèque' : 'Remove from library'}
-                      </Button>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Owner view with sidebar
-  return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <AppSidebar activeItem="library" />
-
-      {/* Main Content */}
-      <main className="flex-1 ml-64">
-        <AppHeader
-          user={user as any}
-          leftContent={
-            <div className="flex items-center gap-2 text-sm">
-              <Link href="/resources" className="text-gray-500 hover:text-gray-700 transition-colors">
-                <FolderOpen className="w-4 h-4" />
-              </Link>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-              <span className="font-medium text-gray-900 truncate max-w-[300px]">
-                {typeof resource.title === 'string' ? resource.title : 'Resource'}
-              </span>
-            </div>
-          }
-        />
-
-        {/* Content */}
-        <div className="p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-            {/* Header Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200"
-            >
-              {/* Type Header */}
-              <div className={`h-24 bg-gradient-to-br ${config.lightBg} relative flex items-center px-6`}>
-                <div className={`w-14 h-14 rounded-xl ${config.iconBg} flex items-center justify-center`}>
-                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-md`}>
-                    <TypeIcon className="w-5 h-5 text-white" />
-                  </div>
-                </div>
-                <div className="absolute top-4 right-4 flex items-center gap-2">
-                  <Badge className={`${config.bg} ${config.text} ${config.border} border`}>
-                    <TypeIcon className="w-3 h-3 mr-1" />
-                    {typeLabel}
-                  </Badge>
-                  {/* Status badge - only show for owner */}
-                  {isOwner && (
-                    <Badge className={resource.status === 'published' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 border' : 'bg-amber-50 text-amber-700 border-amber-200 border'}>
-                      {resource.status === 'published'
-                        ? (locale === 'fr' ? 'Publié' : 'Published')
-                        : (locale === 'fr' ? 'Brouillon' : 'Draft')
-                      }
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              {/* Title & Meta */}
-              <div className="p-6">
-                <h1 className="text-2xl font-bold text-gray-900 mb-3">{typeof resource.title === 'string' ? resource.title : ''}</h1>
-                {resource.description && (
-                  <p className="text-gray-600 mb-5 leading-relaxed">{typeof resource.description === 'string' ? resource.description : ''}</p>
-                )}
-
-                {/* Meta Row */}
-                <div className="flex flex-wrap items-center gap-3 mb-5">
-                  {resource.category && (
-                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600">
-                      {typeof resource.category === 'string' ? resource.category : ''}
-                    </span>
-                  )}
-                  {/* Visibility badge - only show for owner */}
-                  {isOwner && (
-                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600">
-                      {resource.visibility === 'public' ? (
-                        <>
-                          <Globe className="w-4 h-4 text-gray-400" />
-                          {locale === 'fr' ? 'Public' : 'Public'}
-                        </>
-                      ) : resource.visibility === 'link_only' ? (
-                        <>
-                          <Globe className="w-4 h-4 text-gray-400" />
-                          {locale === 'fr' ? 'Lien partageable' : 'Shareable link'}
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="w-4 h-4 text-gray-400" />
-                          {locale === 'fr' ? 'Privé' : 'Private'}
-                        </>
-                      )}
-                    </span>
-                  )}
-                  {/* Times assigned - only show for owner */}
-                  {isOwner && resource.times_assigned > 0 && (
-                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600">
-                      <Users className="w-4 h-4 text-gray-400" />
-                      {resource.times_assigned} {locale === 'fr' ? 'assigné(s)' : 'assigned'}
-                    </span>
-                  )}
-                </div>
-
-                {/* Tags */}
-                {resource.tags && resource.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-5">
-                    {resource.tags.map((tag, idx) => (
-                      <span
-                        key={typeof tag === 'string' ? tag : idx}
-                        className="text-xs px-3 py-1.5 bg-lavender-50 text-lavender-700 rounded-full"
-                      >
-                        {typeof tag === 'string' ? tag : ''}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Stats */}
-                <div className="flex items-center gap-6 pt-4 border-t border-gray-100">
-                  <span className="flex items-center gap-2 text-sm text-gray-500">
-                    <Clock className="w-4 h-4 text-gray-400" />
-                    {locale === 'fr' ? 'Créé le' : 'Created'} {new Date(resource.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US')}
-                  </span>
-                  {/* Times completed - only show for owner */}
-                  {isOwner && resource.times_completed > 0 && (
-                    <span className="flex items-center gap-2 text-sm text-gray-500">
-                      <CheckCircle className="w-4 h-4 text-emerald-500" />
-                      {resource.times_completed} {locale === 'fr' ? 'complété(s)' : 'completed'}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-
+  // Shared content blocks for both public and owner views
+  const contentBlocks = (
+    <>
             {/* Table Exercise Preview */}
             {resource.type === 'table' && resource.blocks && resource.blocks.length > 0 && (() => {
               const tableBlock = resource.blocks.find((b: ResourceBlock) => b.type === 'table_exercise')
@@ -851,10 +683,8 @@ export default function ResourceDetailPage() {
                   className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
                 >
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100/80 flex items-center justify-center">
-                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-md">
-                        <Table2 className="w-4 h-4 text-white" />
-                      </div>
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                      <Table2 className="w-5 h-5 text-emerald-600" />
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900">
@@ -935,10 +765,8 @@ export default function ResourceDetailPage() {
                 className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
               >
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-10 h-10 rounded-xl bg-blue-100/80 flex items-center justify-center">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-md">
-                      <ClipboardCheck className="w-4 h-4 text-white" />
-                    </div>
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                    <ClipboardCheck className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900">
@@ -964,7 +792,7 @@ export default function ResourceDetailPage() {
                       className="p-4 bg-gray-50/80 rounded-xl border border-gray-100"
                     >
                       <div className="flex items-start gap-3">
-                        <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-sm font-semibold text-white flex-shrink-0">
+                        <span className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center text-sm font-semibold text-white flex-shrink-0">
                           {index + 1}
                         </span>
                         <div className="flex-1">
@@ -1125,10 +953,8 @@ export default function ResourceDetailPage() {
                 className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
               >
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-100/80 flex items-center justify-center">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shadow-md">
-                      <BarChart2 className="w-4 h-4 text-white" />
-                    </div>
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                    <BarChart2 className="w-5 h-5 text-indigo-600" />
                   </div>
                   <h2 className="text-lg font-semibold text-gray-900">
                     {locale === 'fr' ? 'Interprétation des scores' : 'Score Interpretation'}
@@ -1176,10 +1002,8 @@ export default function ResourceDetailPage() {
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100/80 flex items-center justify-center">
-                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-md">
-                        <Eye className="w-4 h-4 text-white" />
-                      </div>
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                      <Eye className="w-5 h-5 text-emerald-600" />
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900">
@@ -1248,11 +1072,10 @@ export default function ResourceDetailPage() {
                     if (blockType === 'heading') {
                       return (
                         <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                              {infoNumber}
-                            </div>
-                            <span className="text-[9px] text-gray-400 uppercase">{lt(infoTypeLabels.heading, locale)}</span>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs font-medium text-gray-400">{infoNumber}</span>
+                            <span className="text-xs text-gray-300 uppercase tracking-wide">{lt(infoTypeLabels.heading, locale)}</span>
+                            <div className="h-px flex-1 bg-gray-100" />
                           </div>
                           <h3 className="text-xl font-semibold text-gray-900">{blockContent}</h3>
                         </div>
@@ -1262,11 +1085,10 @@ export default function ResourceDetailPage() {
                     if (blockType === 'paragraph') {
                       return (
                         <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                              {infoNumber}
-                            </div>
-                            <span className="text-[9px] text-gray-400 uppercase">{lt(infoTypeLabels.paragraph, locale)}</span>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs font-medium text-gray-400">{infoNumber}</span>
+                            <span className="text-xs text-gray-300 uppercase tracking-wide">{lt(infoTypeLabels.paragraph, locale)}</span>
+                            <div className="h-px flex-1 bg-gray-100" />
                           </div>
                           <p className="text-gray-700 leading-relaxed">{blockContent}</p>
                         </div>
@@ -1276,11 +1098,10 @@ export default function ResourceDetailPage() {
                     if (blockType === 'divider') {
                       return (
                         <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                              {infoNumber}
-                            </div>
-                            <span className="text-[9px] text-gray-400 uppercase">{lt(infoTypeLabels.divider, locale)}</span>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs font-medium text-gray-400">{infoNumber}</span>
+                            <span className="text-xs text-gray-300 uppercase tracking-wide">{lt(infoTypeLabels.divider, locale)}</span>
+                            <div className="h-px flex-1 bg-gray-100" />
                           </div>
                           <hr className="border-gray-200" />
                         </div>
@@ -1290,11 +1111,10 @@ export default function ResourceDetailPage() {
                     if (blockType === 'quote') {
                       return (
                         <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                              {infoNumber}
-                            </div>
-                            <span className="text-[9px] text-gray-400 uppercase">{lt(infoTypeLabels.quote, locale)}</span>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs font-medium text-gray-400">{infoNumber}</span>
+                            <span className="text-xs text-gray-300 uppercase tracking-wide">{lt(infoTypeLabels.quote, locale)}</span>
+                            <div className="h-px flex-1 bg-gray-100" />
                           </div>
                           <blockquote className="border-l-4 border-lavender-300 pl-4 py-2 italic text-gray-700 bg-lavender-50/30 rounded-r-lg">
                             {blockContent}
@@ -1316,11 +1136,10 @@ export default function ResourceDetailPage() {
                       const style = (block as any).style || 'default'
                       return (
                         <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                              {infoNumber}
-                            </div>
-                            <span className="text-[9px] text-gray-400 uppercase">{lt(infoTypeLabels.tip, locale)}</span>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs font-medium text-gray-400">{infoNumber}</span>
+                            <span className="text-xs text-gray-300 uppercase tracking-wide">{lt(infoTypeLabels.tip, locale)}</span>
+                            <div className="h-px flex-1 bg-gray-100" />
                           </div>
                           <div className={`p-4 rounded-xl border ${tipStyles[style as keyof typeof tipStyles] || tipStyles.default}`}>
                             <p className="text-sm">{blockContent}</p>
@@ -1332,11 +1151,10 @@ export default function ResourceDetailPage() {
                     if (blockType === 'affirmation') {
                       return (
                         <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                              {infoNumber}
-                            </div>
-                            <span className="text-[9px] text-gray-400 uppercase">{lt(infoTypeLabels.affirmation, locale)}</span>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs font-medium text-gray-400">{infoNumber}</span>
+                            <span className="text-xs text-gray-300 uppercase tracking-wide">{lt(infoTypeLabels.affirmation, locale)}</span>
+                            <div className="h-px flex-1 bg-gray-100" />
                           </div>
                           <div className="p-5 bg-gradient-to-br from-lavender-50 to-purple-50 rounded-xl border border-lavender-100 text-center">
                             <p className="text-lavender-700 font-medium text-lg">{blockContent}</p>
@@ -1348,11 +1166,10 @@ export default function ResourceDetailPage() {
                     if (blockType === 'image') {
                       return (
                         <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                              {infoNumber}
-                            </div>
-                            <span className="text-[9px] text-gray-400 uppercase">{lt(infoTypeLabels.image, locale)}</span>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs font-medium text-gray-400">{infoNumber}</span>
+                            <span className="text-xs text-gray-300 uppercase tracking-wide">{lt(infoTypeLabels.image, locale)}</span>
+                            <div className="h-px flex-1 bg-gray-100" />
                           </div>
                           <div className="flex flex-col items-start">
                             {(block as any).mediaFile?.url ? (
@@ -1392,7 +1209,7 @@ export default function ResourceDetailPage() {
                       >
                         {/* Question number indicator - inline */}
                         <div className="flex items-center gap-2.5 mb-4">
-                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center text-white text-sm font-semibold shadow-sm flex-shrink-0">
+                          <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
                             {questionNumber}
                           </div>
                           <span className="text-[10px] text-gray-400 font-medium tracking-wide uppercase">{typeLabel}</span>
@@ -1681,10 +1498,8 @@ export default function ResourceDetailPage() {
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-amber-100/80 flex items-center justify-center">
-                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-md">
-                        <Eye className="w-4 h-4 text-white" />
-                      </div>
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                      <Eye className="w-5 h-5 text-amber-600" />
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900">
@@ -1726,11 +1541,10 @@ export default function ResourceDetailPage() {
                       if (blockType === 'heading') {
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                                {sectionNumber}
-                              </div>
-                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
+                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
+                              <div className="h-px flex-1 bg-gray-100" />
                             </div>
                             <h3 className="text-xl font-semibold text-gray-900">{blockContent}</h3>
                           </div>
@@ -1741,11 +1555,10 @@ export default function ResourceDetailPage() {
                       if (blockType === 'paragraph') {
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                                {sectionNumber}
-                              </div>
-                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
+                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
+                              <div className="h-px flex-1 bg-gray-100" />
                             </div>
                             <p className="text-gray-700 leading-relaxed">{blockContent}</p>
                           </div>
@@ -1757,11 +1570,10 @@ export default function ResourceDetailPage() {
                         const points = (block as any).points || []
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                                {sectionNumber}
-                              </div>
-                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
+                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
+                              <div className="h-px flex-1 bg-gray-100" />
                             </div>
                             <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
                               {blockContent && <p className="text-emerald-800 font-medium mb-3">{blockContent}</p>}
@@ -1790,11 +1602,10 @@ export default function ResourceDetailPage() {
                         const style = calloutStyles[calloutType as keyof typeof calloutStyles] || calloutStyles.info
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                                {sectionNumber}
-                              </div>
-                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
+                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
+                              <div className="h-px flex-1 bg-gray-100" />
                             </div>
                             <div className={`p-4 rounded-xl border ${style.bg} ${style.border}`}>
                               <div className="flex items-start gap-3">
@@ -1810,11 +1621,10 @@ export default function ResourceDetailPage() {
                       if (blockType === 'quote') {
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                                {sectionNumber}
-                              </div>
-                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
+                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
+                              <div className="h-px flex-1 bg-gray-100" />
                             </div>
                             <blockquote className="border-l-4 border-amber-300 pl-4 py-2 italic text-gray-700 bg-amber-50/30 rounded-r-lg">
                               "{blockContent}"
@@ -1830,11 +1640,10 @@ export default function ResourceDetailPage() {
                       if (blockType === 'image') {
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                                {sectionNumber}
-                              </div>
-                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
+                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
+                              <div className="h-px flex-1 bg-gray-100" />
                             </div>
                             {(block as any).mediaFile?.url ? (
                               <div
@@ -1868,11 +1677,10 @@ export default function ResourceDetailPage() {
                       if (blockType === 'audio') {
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                                {sectionNumber}
-                              </div>
-                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
+                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
+                              <div className="h-px flex-1 bg-gray-100" />
                             </div>
                             <div className="flex flex-col gap-2">
                               {(block as any).caption && (
@@ -1901,11 +1709,10 @@ export default function ResourceDetailPage() {
                       if (blockType === 'video') {
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                                {sectionNumber}
-                              </div>
-                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
+                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
+                              <div className="h-px flex-1 bg-gray-100" />
                             </div>
                             {(block as any).mediaFile?.url ? (
                               <div
@@ -1949,11 +1756,10 @@ export default function ResourceDetailPage() {
                         const platform = (block as any).linkPlatform || 'other'
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                                {sectionNumber}
-                              </div>
-                              <span className="text-[9px] text-gray-400 uppercase tracking-wide">{typeLabel}</span>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
+                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
+                              <div className="h-px flex-1 bg-gray-100" />
                             </div>
                             <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
                               <a
@@ -1978,11 +1784,10 @@ export default function ResourceDetailPage() {
                       // Default fallback
                       return blockContent ? (
                         <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-5 h-5 rounded bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] font-medium flex-shrink-0">
-                              {sectionNumber}
-                            </div>
-                            <span className="text-[9px] text-gray-400 uppercase tracking-wide">{blockType}</span>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
+                            <span className="text-xs text-gray-300 uppercase tracking-wide">{blockType}</span>
+                            <div className="h-px flex-1 bg-gray-100" />
                           </div>
                           <p className="text-gray-700">{blockContent}</p>
                         </div>
@@ -1992,6 +1797,359 @@ export default function ResourceDetailPage() {
                 </div>
               </motion.div>
             )}
+    </>
+  )
+
+  // For non-owners, show simpler public view
+  if (!isOwner) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Public Branding Header */}
+        <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-14">
+              <Link href="/" className="flex items-center gap-2">
+                <Logo size="sm" showText />
+              </Link>
+              <Link href="/early-access">
+                <Button
+                  size="sm"
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs h-8 px-3"
+                >
+                  {locale === 'fr' ? 'Rejoindre' : 'Join Bloomsline'}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Header Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
+              >
+                <div className="flex items-start gap-4 mb-5">
+                  <div className={`w-12 h-12 rounded-xl ${config.bg} flex items-center justify-center flex-shrink-0`}>
+                    <TypeIcon className={`w-6 h-6 ${config.text}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-1">{typeof resource.title === 'string' ? resource.title : ''}</h1>
+                    {resource.description && (
+                      <p className="text-gray-600 leading-relaxed">{typeof resource.description === 'string' ? resource.description : ''}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Badge className={`${config.bg} ${config.text} ${config.border} border`}>
+                      <TypeIcon className="w-3 h-3 mr-1" />
+                      {typeLabel}
+                    </Badge>
+                  </div>
+                </div>
+
+                  {/* Meta Row */}
+                  <div className="flex flex-wrap items-center gap-3 mb-5">
+                    {resource.category && (
+                      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600">
+                        {typeof resource.category === 'string' ? resource.category : ''}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Tags */}
+                  {resource.tags && resource.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-5">
+                      {resource.tags.map((tag, idx) => (
+                        <span
+                          key={typeof tag === 'string' ? tag : idx}
+                          className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full"
+                        >
+                          {typeof tag === 'string' ? tag : ''}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Stats */}
+                  <div className="flex items-center gap-6 pt-4 border-t border-gray-100">
+                    <span className="flex items-center gap-2 text-sm text-gray-500">
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      {locale === 'fr' ? 'Créé le' : 'Created'} {new Date(resource.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US')}
+                    </span>
+                  </div>
+              </motion.div>
+              {contentBlocks}
+            </div>
+
+            {/* Sidebar - Creator Info for public view */}
+            <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+              {resource.creator_profile && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
+                >
+                  {/* Avatar + Name */}
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="relative flex-shrink-0">
+                      {resource.creator_profile.avatar_url ? (
+                        <img
+                          src={resource.creator_profile.avatar_url}
+                          alt={resource.creator_profile.full_name || ''}
+                          className="w-14 h-14 rounded-xl object-cover"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-xl bg-gray-200 flex items-center justify-center">
+                          <span className="text-xl font-bold text-gray-600">
+                            {(resource.creator_profile.full_name || 'P').charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      {resource.creator_profile.is_verified && (
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                          <CheckCircle className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {resource.creator_profile.full_name || (locale === 'fr' ? 'Praticien' : 'Practitioner')}
+                      </p>
+                      {resource.creator_profile.credentials.length > 0 && (
+                        <p className="text-xs text-gray-500 font-medium mt-0.5">
+                          {resource.creator_profile.credentials.slice(0, 3).join(', ')}
+                        </p>
+                      )}
+                      {resource.creator_profile.years_experience && (
+                        <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                          <Star className="w-3 h-3" />
+                          {resource.creator_profile.years_experience}+ {locale === 'fr' ? 'ans d\'expérience' : 'years experience'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Headline */}
+                  {resource.creator_profile.headline && (
+                    <p className="text-sm text-gray-600 mb-4 leading-relaxed">{resource.creator_profile.headline}</p>
+                  )}
+
+                  {/* Specialties */}
+                  {resource.creator_profile.specialties.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {resource.creator_profile.specialties.slice(0, 4).map((specialty, idx) => (
+                        <span
+                          key={idx}
+                          className="text-xs px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full"
+                        >
+                          {specialty}
+                        </span>
+                      ))}
+                      {resource.creator_profile.specialties.length > 4 && (
+                        <span className="text-xs px-2.5 py-1 text-gray-400">
+                          +{resource.creator_profile.specialties.length - 4}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="space-y-2 pt-4 border-t border-gray-100">
+                    {resource.creator_profile.slug && (
+                      <Link href={`/practitioner/${resource.creator_profile.slug}/book`}>
+                        <Button className="w-full h-10 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-sm">
+                          <Calendar className="w-4 h-4 mr-2" />
+                          {locale === 'fr' ? 'Réserver une séance' : 'Book a Session'}
+                        </Button>
+                      </Link>
+                    )}
+                    <Link href={resource.creator_profile.slug ? `/practitioner/${resource.creator_profile.slug}` : `/practitioner/${resource.creator_profile.id}`}>
+                      <Button variant="outline" className="w-full h-10 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm">
+                        {locale === 'fr' ? 'Voir le profil' : 'View Profile'}
+                      </Button>
+                    </Link>
+                  </div>
+
+                  {/* Remove from library button for non-owners who have saved the resource */}
+                  {isSaved && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <Button
+                        variant="outline"
+                        className="w-full h-10 rounded-xl border border-gray-200 hover:bg-amber-50 text-amber-600 text-sm"
+                        onClick={handleRemoveFromLibrary}
+                        disabled={removing}
+                      >
+                        {removing ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4 mr-2" />
+                        )}
+                        {locale === 'fr' ? 'Retirer de ma bibliothèque' : 'Remove from library'}
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Branding */}
+                  <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-center gap-1.5 text-sm text-gray-400">
+                    <span>{locale === 'fr' ? 'Fait avec soin sur' : 'Made with care on'}</span>
+                    <Link href="/" className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
+                      <Logo size="sm" />
+                      <span className="font-semibold">Bloomsline</span>
+                    </Link>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Share with members modal */}
+        {resource && (
+          <ShareResourceModal
+            isOpen={showShareModal}
+            onClose={() => setShowShareModal(false)}
+            resource={resource}
+            members={members}
+            locale={locale as 'en' | 'fr' | 'es'}
+            onShare={handleShareWithMembers}
+          />
+        )}
+      </div>
+    )
+  }
+
+  // Owner view with sidebar
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      <AppSidebar activeItem="library" />
+
+      {/* Main Content */}
+      <main className="flex-1 ml-64">
+        <AppHeader
+          user={user as any}
+          leftContent={
+            <div className="flex items-center gap-2 text-sm">
+              <Link href="/resources" className="text-gray-500 hover:text-gray-700 transition-colors">
+                <FolderOpen className="w-4 h-4" />
+              </Link>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <span className="font-medium text-gray-900 truncate max-w-[300px]">
+                {typeof resource.title === 'string' ? resource.title : 'Resource'}
+              </span>
+            </div>
+          }
+        />
+
+        {/* Content */}
+        <div className="p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-6">
+            {/* Header Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
+            >
+              <div className="flex items-start gap-4 mb-5">
+                <div className={`w-12 h-12 rounded-xl ${config.bg} flex items-center justify-center flex-shrink-0`}>
+                  <TypeIcon className={`w-6 h-6 ${config.text}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-2xl font-bold text-gray-900 mb-1">{typeof resource.title === 'string' ? resource.title : ''}</h1>
+                  {resource.description && (
+                    <p className="text-gray-600 leading-relaxed">{typeof resource.description === 'string' ? resource.description : ''}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Badge className={`${config.bg} ${config.text} ${config.border} border`}>
+                    <TypeIcon className="w-3 h-3 mr-1" />
+                    {typeLabel}
+                  </Badge>
+                  {isOwner && (
+                    <Badge className={resource.status === 'published' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 border' : 'bg-amber-50 text-amber-700 border-amber-200 border'}>
+                      {resource.status === 'published'
+                        ? (locale === 'fr' ? 'Publié' : 'Published')
+                        : (locale === 'fr' ? 'Brouillon' : 'Draft')
+                      }
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+                {/* Meta Row */}
+                <div className="flex flex-wrap items-center gap-3 mb-5">
+                  {resource.category && (
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600">
+                      {typeof resource.category === 'string' ? resource.category : ''}
+                    </span>
+                  )}
+                  {/* Visibility badge - only show for owner */}
+                  {isOwner && (
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600">
+                      {resource.visibility === 'public' ? (
+                        <>
+                          <Globe className="w-4 h-4 text-gray-400" />
+                          {locale === 'fr' ? 'Public' : 'Public'}
+                        </>
+                      ) : resource.visibility === 'link_only' ? (
+                        <>
+                          <Globe className="w-4 h-4 text-gray-400" />
+                          {locale === 'fr' ? 'Lien partageable' : 'Shareable link'}
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4 text-gray-400" />
+                          {locale === 'fr' ? 'Privé' : 'Private'}
+                        </>
+                      )}
+                    </span>
+                  )}
+                  {/* Times assigned - only show for owner */}
+                  {isOwner && resource.times_assigned > 0 && (
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600">
+                      <Users className="w-4 h-4 text-gray-400" />
+                      {resource.times_assigned} {locale === 'fr' ? 'assigné(s)' : 'assigned'}
+                    </span>
+                  )}
+                </div>
+
+                {/* Tags */}
+                {resource.tags && resource.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-5">
+                    {resource.tags.map((tag, idx) => (
+                      <span
+                        key={typeof tag === 'string' ? tag : idx}
+                        className="text-xs px-3 py-1.5 bg-lavender-50 text-lavender-700 rounded-full"
+                      >
+                        {typeof tag === 'string' ? tag : ''}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Stats */}
+                <div className="flex items-center gap-6 pt-4 border-t border-gray-100">
+                  <span className="flex items-center gap-2 text-sm text-gray-500">
+                    <Clock className="w-4 h-4 text-gray-400" />
+                    {locale === 'fr' ? 'Créé le' : 'Created'} {new Date(resource.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US')}
+                  </span>
+                  {/* Times completed - only show for owner */}
+                  {isOwner && resource.times_completed > 0 && (
+                    <span className="flex items-center gap-2 text-sm text-gray-500">
+                      <CheckCircle className="w-4 h-4 text-emerald-500" />
+                      {resource.times_completed} {locale === 'fr' ? 'complété(s)' : 'completed'}
+                    </span>
+                  )}
+                </div>
+            </motion.div>
+
+            {contentBlocks}
+
           </div>
 
           {/* Sidebar */}
@@ -2005,52 +2163,76 @@ export default function ResourceDetailPage() {
               {/* Only show edit/delete buttons if the user is the owner */}
               {isOwner && (
                 <div className="space-y-3 mb-6 pb-6 border-b border-gray-100">
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <div className="flex items-center gap-2">
                     <Button
-                      className="w-full h-12 rounded-xl bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 shadow-lg shadow-lavender-200/50"
+                      className="flex-1 h-11 rounded-xl bg-gray-900 hover:bg-gray-800 text-white"
                       onClick={() => router.push(`/resources/create/${resource.type}?edit=${resource.id}`)}
                     >
                       <Edit className="w-5 h-5 mr-2" />
                       {locale === 'fr' ? 'Éditer' : 'Edit'}
                     </Button>
-                  </motion.div>
-
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      variant="outline"
-                      className="w-full h-11 rounded-xl border-2 border-red-200 hover:border-red-300 hover:bg-red-50 text-red-600 transition-all"
-                      onClick={handleDelete}
-                      disabled={deleting}
-                    >
-                      {deleting ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4 mr-2" />
-                      )}
-                      {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                    <Button variant="outline" className="h-11 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 transition-all px-3" onClick={() => setShowShareModal(true)}>
+                      <Send className="w-4 h-4" />
                     </Button>
-                  </motion.div>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="w-full h-11 rounded-xl border border-gray-200 hover:bg-red-50 text-red-600 transition-all"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                  >
+                    {deleting ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4 mr-2" />
+                    )}
+                    {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                  </Button>
                 </div>
               )}
 
               {/* Remove from library button for non-owners who have saved the resource */}
               {!isOwner && isSaved && (
                 <div className="mb-6 pb-6 border-b border-gray-100">
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      variant="outline"
-                      className="w-full h-11 rounded-xl border-2 border-amber-200 hover:border-amber-300 hover:bg-amber-50 text-amber-600 transition-all"
-                      onClick={handleRemoveFromLibrary}
-                      disabled={removing}
+                  <Button
+                    variant="outline"
+                    className="w-full h-11 rounded-xl border border-gray-200 hover:bg-amber-50 text-amber-600 transition-all"
+                    onClick={handleRemoveFromLibrary}
+                    disabled={removing}
+                  >
+                    {removing ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4 mr-2" />
+                    )}
+                    {locale === 'fr' ? 'Retirer de ma bibliothèque' : 'Remove from my library'}
+                  </Button>
+                </div>
+              )}
+
+              {/* Share link - show when published and public or link_only */}
+              {resource.status === 'published' && (resource.visibility === 'public' || resource.visibility === 'link_only') && (
+                <div className="mb-6 pb-6 border-b border-gray-100">
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">
+                    {locale === 'fr' ? 'Lien public' : 'Public link'}
+                  </p>
+                  <div className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-xl border border-gray-200">
+                    <Link2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <span className="text-sm text-gray-600 truncate flex-1">
+                      {typeof window !== 'undefined' ? `${window.location.origin}/resources/${resource.id}` : `/resources/${resource.id}`}
+                    </span>
+                    <button
+                      onClick={handleCopyLink}
+                      className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-200 transition-colors flex-shrink-0"
                     >
-                      {removing ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {copied ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                       ) : (
-                        <Trash2 className="w-4 h-4 mr-2" />
+                        <Copy className="w-4 h-4 text-gray-500" />
                       )}
-                      {locale === 'fr' ? 'Retirer de ma bibliothèque' : 'Remove from my library'}
-                    </Button>
-                  </motion.div>
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -2060,10 +2242,10 @@ export default function ResourceDetailPage() {
                   <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
                     {locale === 'fr' ? 'Type' : 'Type'}
                   </p>
-                  <div className={`inline-flex items-center px-3 py-2 ${config.bg} rounded-xl border ${config.border}`}>
-                    <TypeIcon className={`w-4 h-4 mr-2 ${config.text}`} />
-                    <span className={`text-sm font-medium ${config.text}`}>{typeLabel}</span>
-                  </div>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg ${config.bg} ${config.text} text-sm font-medium`}>
+                    <TypeIcon className="w-4 h-4" />
+                    {typeLabel}
+                  </span>
                 </div>
 
                 {/* Status - only show for owner */}
@@ -2126,10 +2308,7 @@ export default function ResourceDetailPage() {
                       {locale === 'fr' ? 'Créé par' : 'Created by'}
                     </p>
                     <Link href={resource.creator_profile.slug ? `/practitioner/${resource.creator_profile.slug}` : `/practitioner/${resource.creator_profile.id}`}>
-                      <motion.div
-                        whileHover={{ scale: 1.02 }}
-                        className="p-4 bg-gradient-to-br from-lavender-50/50 to-purple-50/30 rounded-xl border border-lavender-100 hover:border-lavender-300 transition-all cursor-pointer group"
-                      >
+                      <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-gray-300 transition-all cursor-pointer group">
                         <div className="flex items-start gap-3">
                           {/* Avatar */}
                           <div className="relative flex-shrink-0">
@@ -2202,9 +2381,9 @@ export default function ResourceDetailPage() {
                           </div>
 
                           {/* Arrow */}
-                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-lavender-500 transition-colors flex-shrink-0 mt-1" />
+                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0 mt-1" />
                         </div>
-                      </motion.div>
+                      </div>
                     </Link>
                   </div>
                 )}
@@ -2509,6 +2688,17 @@ export default function ResourceDetailPage() {
           </motion.div>
         )}
         </div>
+        {/* Share with members modal */}
+        {resource && (
+          <ShareResourceModal
+            isOpen={showShareModal}
+            onClose={() => setShowShareModal(false)}
+            resource={resource}
+            members={members}
+            locale={locale as 'en' | 'fr' | 'es'}
+            onShare={handleShareWithMembers}
+          />
+        )}
       </main>
     </div>
   )

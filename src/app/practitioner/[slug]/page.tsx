@@ -172,6 +172,19 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
         return
       }
 
+      // If user data is missing or has fallback name (RLS blocked), fetch via API
+      if (profileData.user_id && (!profileData.user || !profileData.user.full_name || profileData.user.full_name === 'Practitioner')) {
+        try {
+          const res = await fetch(`/api/practitioner/profile-user?userId=${profileData.user_id}`)
+          const { user: userData } = await res.json()
+          if (userData) {
+            profileData = { ...profileData, user: userData }
+          }
+        } catch (e) {
+          // Fallback silently - profile still works without user data
+        }
+      }
+
       setProfile(profileData as PractitionerProfileWithUser)
 
       // Fetch published resources

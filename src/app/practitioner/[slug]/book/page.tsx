@@ -7,9 +7,6 @@ import { motion } from 'framer-motion'
 import { Calendar, Clock, User, Mail, Phone, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
-import {
-  getPractitionerBookingInfo,
-} from '@/lib/services/calendar'
 import type { BookingSettings, SessionType, TimeSlot } from '@/types/calendar'
 
 interface PractitionerInfo {
@@ -78,20 +75,26 @@ export default function BookingPage() {
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
-  // Load practitioner info
+  // Load practitioner info via API route (bypasses RLS for user data)
   useEffect(() => {
     async function loadPractitioner() {
       setIsLoading(true)
-      const info = await getPractitionerBookingInfo(slug)
+      try {
+        const res = await fetch(`/api/practitioner/booking-info?slug=${encodeURIComponent(slug)}`)
+        const info = await res.json()
 
-      if (!info || !info.profile || !info.settings) {
-        setError('This practitioner is not accepting bookings at this time.')
+        if (!info || !info.profile || !info.settings) {
+          setError('This practitioner is not accepting bookings at this time.')
+          setIsLoading(false)
+          return
+        }
+
+        setPractitioner(info as PractitionerInfo)
+      } catch {
+        setError('Failed to load practitioner information.')
+      } finally {
         setIsLoading(false)
-        return
       }
-
-      setPractitioner(info as PractitionerInfo)
-      setIsLoading(false)
     }
 
     loadPractitioner()
