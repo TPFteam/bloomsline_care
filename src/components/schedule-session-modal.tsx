@@ -154,21 +154,24 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   }
 
   const fetchAvailableSlots = async () => {
-    if (!userId || !selectedSessionType) return
+    console.log('[modal] fetchAvailableSlots called', { userId, selectedSessionType, selectedDate })
+    if (!userId || !selectedSessionType) {
+      console.log('[modal] skipping fetch - missing userId or sessionType')
+      return
+    }
 
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd')
-      const { data, error } = await supabase
-        .rpc('get_available_slots', {
-          p_practitioner_id: userId,
-          p_date: dateStr,
-          p_duration: selectedSessionType.duration,
-        })
+      const url = `/api/bookings/available-slots?practitionerId=${userId}&date=${dateStr}&duration=${selectedSessionType.duration}&skipNotice=true`
+      console.log('[modal] fetching:', url)
+      const res = await fetch(url)
+      const json = await res.json()
+      console.log('[modal] response:', json)
 
-      if (error) throw error
-      setAvailableSlots(data || [])
+      if (!res.ok) throw new Error(json.error || 'Failed to fetch slots')
+      setAvailableSlots(json.slots || [])
     } catch (error) {
-      console.error('Error fetching slots:', error)
+      console.error('[modal] Error fetching slots:', error)
       setAvailableSlots([])
     }
   }
@@ -268,7 +271,29 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
         toast.success(`Session scheduled with ${selectedMember.first_name} ${selectedMember.last_name}`)
       } else {
-        // Create the booking (with calendar integration)
+        // Calendar mode: create session + booking + calendar sync
+
+        // 1. Create session entry (for member tracking / upcoming sessions)
+        const sessionData = {
+          practitioner_id: userId,
+          member_id: selectedMember.id,
+          session_type: 'follow_up' as const,
+          session_format: 'virtual' as const,
+          scheduled_at: startTime.toISOString(),
+          duration_minutes: durationToUse,
+          status: 'scheduled',
+          notes: notes ? `${selectedSessionType!.name}\n\n${notes}` : selectedSessionType!.name,
+        }
+
+        const { error: sessionError } = await supabase
+          .from('sessions')
+          .insert(sessionData)
+
+        if (sessionError) {
+          console.warn('Could not create session entry:', sessionError)
+        }
+
+        // 2. Create booking entry (for bookings page + calendar)
         const bookingData = {
           practitioner_id: userId,
           client_name: `${selectedMember.first_name} ${selectedMember.last_name}`,
@@ -279,8 +304,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           end_time: endTime.toISOString(),
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           notes: notes || null,
-          status: 'confirmed', // Auto-confirm since practitioner is booking
-          member_id: selectedMember.id, // Link to member
+          status: 'confirmed',
+          member_id: selectedMember.id,
         }
 
         console.log('Creating booking with data:', bookingData)

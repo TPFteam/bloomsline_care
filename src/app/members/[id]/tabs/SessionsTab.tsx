@@ -21,8 +21,12 @@ import {
   Send,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Target,
+  Loader2,
 } from 'lucide-react'
+import { format, startOfDay, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isBefore } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -60,6 +64,44 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const [editSummary, setEditSummary] = useState('')
   const [editNotes, setEditNotes] = useState('')
   const [editStatus, setEditStatus] = useState<SessionStatus>('scheduled')
+
+  // Edit date/time picker state
+  const [editSelectedDate, setEditSelectedDate] = useState<Date>(startOfDay(new Date()))
+  const [editSelectedTime, setEditSelectedTime] = useState<string | null>(null)
+  const [editCalendarMonth, setEditCalendarMonth] = useState(new Date())
+  const [editAvailableSlots, setEditAvailableSlots] = useState<{ slot_start: string; slot_end: string }[]>([])
+  const [editLoadingSlots, setEditLoadingSlots] = useState(false)
+  const [editUserId, setEditUserId] = useState<string | null>(null)
+
+  // Fetch practitioner ID for edit slot fetching
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setEditUserId(user.id)
+    }
+    getUser()
+  }, [])
+
+  // Fetch available slots when edit date or duration changes
+  useEffect(() => {
+    if (editingSession && editUserId && editSelectedDate) {
+      fetchEditSlots()
+    }
+  }, [editSelectedDate, editDuration, editingSession, editUserId])
+
+  const fetchEditSlots = async () => {
+    if (!editUserId) return
+    setEditLoadingSlots(true)
+    try {
+      const dateStr = format(editSelectedDate, 'yyyy-MM-dd')
+      const res = await fetch(`/api/bookings/available-slots?practitionerId=${editUserId}&date=${dateStr}&duration=${editDuration}&skipNotice=true`)
+      const json = await res.json()
+      setEditAvailableSlots(json.slots || [])
+    } catch {
+      setEditAvailableSlots([])
+    }
+    setEditLoadingSlots(false)
+  }
 
   // Delete state
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
@@ -372,11 +414,17 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     setEditingSession(session)
     setEditSessionType(session.session_type)
     setEditSessionFormat(session.session_format)
-    setEditScheduledAt(session.scheduled_at.slice(0, 16)) // Format for datetime-local
+    setEditScheduledAt(session.scheduled_at.slice(0, 16))
     setEditDuration(session.duration_minutes)
     setEditSummary(session.summary || '')
     setEditNotes(session.notes || '')
     setEditStatus(session.status)
+
+    // Set date picker state from existing session
+    const sessionDate = new Date(session.scheduled_at)
+    setEditSelectedDate(startOfDay(sessionDate))
+    setEditCalendarMonth(sessionDate)
+    setEditSelectedTime(format(sessionDate, 'HH:mm'))
   }
 
   const handleCancelEdit = () => {
@@ -388,12 +436,21 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
     setSaving(true)
     try {
+      // Build scheduled_at from date picker state
+      let scheduledAtValue = editScheduledAt
+      if (editSelectedTime) {
+        const [hours, minutes] = editSelectedTime.split(':').map(Number)
+        const dt = new Date(editSelectedDate)
+        dt.setHours(hours, minutes, 0, 0)
+        scheduledAtValue = dt.toISOString()
+      }
+
       const { error } = await supabase
         .from('sessions')
         .update({
           session_type: editSessionType,
           session_format: editSessionFormat,
-          scheduled_at: editScheduledAt,
+          scheduled_at: scheduledAtValue,
           duration_minutes: editDuration,
           summary: editSummary.trim() || null,
           notes: editNotes.trim() || null,
@@ -551,7 +608,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         </h2>
         <Button
           onClick={() => setShowScheduleModal(true)}
-          className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
+          className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg transition-colors hover-lift"
         >
           <Plus className="w-4 h-4 mr-2" />
           {t.members.sessions.addSession}
@@ -569,7 +626,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
           >
             <div className="bg-white rounded-2xl p-6  border border-gray-200">
               <h3 className="font-semibold text-gray-900 mb-5 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-lavender-500" />
+                <Calendar className="w-5 h-5 text-teal-500" />
                 {t.members.sessions.scheduleSession}
               </h3>
 
@@ -610,7 +667,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-lavender-500" />
+                    <Calendar className="w-4 h-4 text-teal-500" />
                     Date & Time
                   </label>
                   <input
@@ -658,7 +715,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                 <Button
                   onClick={handleAddSession}
                   disabled={saving}
-                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50"
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg"
                 >
                   {saving ? t.members.form.saving : t.members.sessions.scheduleSession}
                 </Button>
@@ -1426,7 +1483,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
               {/* Modal Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-100">
                 <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                  <Pencil className="w-5 h-5 text-lavender-500" />
+                  <Pencil className="w-5 h-5 text-teal-500" />
                   Edit Session
                 </h2>
                 <button
@@ -1491,35 +1548,139 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   </div>
                 </div>
 
-                {/* Date & Duration */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Date & Time
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={editScheduledAt}
-                      onChange={(e) => setEditScheduledAt(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
-                    />
+                {/* Duration */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t.members.sessions.duration}
+                  </label>
+                  <div className="flex gap-2">
+                    {[30, 45, 50, 60, 90].map((d) => (
+                      <button
+                        key={d}
+                        onClick={() => setEditDuration(d)}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                          editDuration === d
+                            ? 'bg-gray-900 text-white'
+                            : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                      >
+                        {d} min
+                      </button>
+                    ))}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t.members.sessions.duration}
-                    </label>
-                    <select
-                      value={editDuration}
-                      onChange={(e) => setEditDuration(Number(e.target.value))}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
-                    >
-                      <option value={30}>30 {t.members.sessions.minutes}</option>
-                      <option value={45}>45 {t.members.sessions.minutes}</option>
-                      <option value={60}>60 {t.members.sessions.minutes}</option>
-                      <option value={90}>90 {t.members.sessions.minutes}</option>
-                      <option value={120}>120 {t.members.sessions.minutes}</option>
-                    </select>
+                </div>
+
+                {/* Date & Time Picker */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date & Time
+                  </label>
+
+                  {/* Mini Calendar */}
+                  <div className="border border-gray-200 rounded-xl p-3 mb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <button
+                        onClick={() => setEditCalendarMonth(subMonths(editCalendarMonth, 1))}
+                        className="p-1 rounded-lg hover:bg-gray-100"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <span className="text-sm font-medium">
+                        {format(editCalendarMonth, 'MMMM yyyy')}
+                      </span>
+                      <button
+                        onClick={() => setEditCalendarMonth(addMonths(editCalendarMonth, 1))}
+                        className="p-1 rounded-lg hover:bg-gray-100"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Day headers */}
+                    <div className="grid grid-cols-7 gap-1 mb-1">
+                      {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((d) => (
+                        <div key={d} className="text-center text-xs text-gray-400 py-1">{d}</div>
+                      ))}
+                    </div>
+
+                    {/* Calendar days */}
+                    <div className="grid grid-cols-7 gap-1">
+                      {(() => {
+                        const monthStart = startOfMonth(editCalendarMonth)
+                        const monthEnd = endOfMonth(editCalendarMonth)
+                        const calStart = startOfWeek(monthStart, { weekStartsOn: 1 })
+                        const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
+                        const days: Date[] = []
+                        let day = calStart
+                        while (day <= calEnd) {
+                          days.push(day)
+                          day = addDays(day, 1)
+                        }
+                        const yesterday = addDays(startOfDay(new Date()), -1)
+                        return days.map((d) => {
+                          const isCurrentMonth = isSameMonth(d, editCalendarMonth)
+                          const isSelected = isSameDay(d, editSelectedDate)
+                          const isPast = isBefore(d, yesterday)
+                          return (
+                            <button
+                              key={d.toISOString()}
+                              disabled={isPast || !isCurrentMonth}
+                              onClick={() => {
+                                setEditSelectedDate(startOfDay(d))
+                                setEditSelectedTime(null)
+                              }}
+                              className={`text-xs py-1.5 rounded-lg transition-all ${
+                                !isCurrentMonth ? 'text-gray-200' :
+                                isPast ? 'text-gray-300 cursor-not-allowed' :
+                                isSelected ? 'bg-gray-900 text-white font-medium' :
+                                'text-gray-700 hover:bg-gray-100'
+                              }`}
+                            >
+                              {format(d, 'd')}
+                            </button>
+                          )
+                        })
+                      })()}
+                    </div>
                   </div>
+
+                  {/* Selected date label */}
+                  <p className="text-sm text-gray-500 mb-2">
+                    {format(editSelectedDate, 'EEEE, MMMM d, yyyy')}
+                  </p>
+
+                  {/* Time Slots */}
+                  {editLoadingSlots ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                    </div>
+                  ) : editAvailableSlots.length === 0 ? (
+                    <div className="text-center py-4 text-sm text-gray-400">
+                      <Clock className="w-5 h-5 mx-auto mb-1 text-gray-300" />
+                      No available slots for this date
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-1.5 max-h-36 overflow-y-auto">
+                      {editAvailableSlots.map((slot) => {
+                        const slotDate = new Date(slot.slot_start)
+                        const timeStr = format(slotDate, 'HH:mm')
+                        const isSelected = editSelectedTime === timeStr
+                        return (
+                          <button
+                            key={slot.slot_start}
+                            onClick={() => setEditSelectedTime(timeStr)}
+                            className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                              isSelected
+                                ? 'bg-gray-900 text-white'
+                                : 'border border-gray-200 text-gray-700 hover:border-gray-300'
+                            }`}
+                          >
+                            {format(slotDate, 'h:mm a')}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Summary */}
@@ -1566,7 +1727,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                 <Button
                   onClick={handleSaveEdit}
                   disabled={saving}
-                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50"
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg"
                 >
                   {saving ? 'Saving...' : 'Save Changes'}
                 </Button>

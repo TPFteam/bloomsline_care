@@ -160,12 +160,26 @@ function HeroConveyor({ locale, l, content, onCta }: { locale: string; l: (obj: 
 
   const n = cards.length
   const [activeIdx, setActiveIdx] = useState(0)
+  const [paused, setPaused] = useState(false)
   useEffect(() => {
+    if (paused) return
     const interval = setInterval(() => {
       setActiveIdx(prev => (prev + 1) % n)
     }, 5000)
     return () => clearInterval(interval)
-  }, [n])
+  }, [n, paused])
+
+  // Resume auto-play after 10s of no interaction
+  useEffect(() => {
+    if (!paused) return
+    const timeout = setTimeout(() => setPaused(false), 10000)
+    return () => clearTimeout(timeout)
+  }, [paused, activeIdx])
+
+  const goTo = (idx: number) => {
+    setPaused(true)
+    setActiveIdx(idx)
+  }
 
   const getIdx = (offset: number) => ((activeIdx + offset) % n + n) % n
 
@@ -189,7 +203,7 @@ function HeroConveyor({ locale, l, content, onCta }: { locale: string; l: (obj: 
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1 }}
           className="relative w-full max-w-4xl mx-auto overflow-hidden"
-          style={{ height: 'clamp(200px, 26vw, 260px)' }}
+          style={{ height: 'clamp(240px, 30vw, 300px)' }}
         >
           {(() => { const c = cards[getIdx(-2)]; const I = c.icon; return (
             <motion.div key={`fl-${activeIdx}`} initial={{ x: -15, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 1.8, ease: [0.25, 0.1, 0.25, 1] }} className="absolute left-0 top-1/2 -translate-y-1/2">
@@ -198,13 +212,13 @@ function HeroConveyor({ locale, l, content, onCta }: { locale: string; l: (obj: 
           ) })()}
 
           {(() => { const c = cards[getIdx(-1)]; const I = c.icon; return (
-            <motion.div key={`l-${activeIdx}`} initial={{ x: 10, opacity: 0.2 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 1.8, ease: [0.25, 0.1, 0.25, 1] }} className="absolute left-[10%] sm:left-[14%] top-1/2 -translate-y-1/2">
-              <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ${c.iconBg} flex items-center justify-center opacity-50 shadow-sm`}><I className={`w-7 h-7 ${c.iconColor}`} /></div>
+            <motion.div key={`l-${activeIdx}`} initial={{ x: 10, opacity: 0.2 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 1.8, ease: [0.25, 0.1, 0.25, 1] }} className="absolute left-[10%] sm:left-[14%] top-1/2 -translate-y-1/2 cursor-pointer" onClick={() => goTo(getIdx(-1))}>
+              <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ${c.iconBg} flex items-center justify-center opacity-50 shadow-sm hover:opacity-70 transition-opacity`}><I className={`w-7 h-7 ${c.iconColor}`} /></div>
             </motion.div>
           ) })()}
 
-          {/* CENTER */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
+          {/* CENTER — card in fixed area */}
+          <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 z-10">
             <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}>
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
@@ -219,24 +233,41 @@ function HeroConveyor({ locale, l, content, onCta }: { locale: string; l: (obj: 
                 </motion.div>
               </AnimatePresence>
             </motion.div>
+          </div>
 
+          {/* Caption + dots — pinned to bottom of carousel area */}
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center">
             <AnimatePresence mode="wait">
               <motion.span
                 key={activeIdx}
-                initial={{ opacity: 0, y: 3 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -3 }}
-                transition={{ duration: 0.7 }}
-                className="mt-3 inline-block text-sm text-neutral-400 italic"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
+                className="inline-block text-sm text-neutral-400 italic"
               >
                 {captions[activeIdx]}
               </motion.span>
             </AnimatePresence>
+
+            <div className="flex items-center gap-2 mt-2">
+              {cards.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => goTo(i)}
+                  className={`rounded-full transition-all duration-300 ${
+                    i === activeIdx
+                      ? 'w-6 h-2 bg-teal-500'
+                      : 'w-2 h-2 bg-neutral-300 hover:bg-neutral-400'
+                  }`}
+                />
+              ))}
+            </div>
           </div>
 
           {(() => { const c = cards[getIdx(1)]; const I = c.icon; return (
-            <motion.div key={`r-${activeIdx}`} initial={{ x: -10, opacity: 0.2 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 1.8, ease: [0.25, 0.1, 0.25, 1] }} className="absolute right-[10%] sm:right-[14%] top-1/2 -translate-y-1/2">
-              <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ${c.iconBg} flex items-center justify-center opacity-50 shadow-sm`}><I className={`w-7 h-7 ${c.iconColor}`} /></div>
+            <motion.div key={`r-${activeIdx}`} initial={{ x: -10, opacity: 0.2 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 1.8, ease: [0.25, 0.1, 0.25, 1] }} className="absolute right-[10%] sm:right-[14%] top-1/2 -translate-y-1/2 cursor-pointer" onClick={() => goTo(getIdx(1))}>
+              <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ${c.iconBg} flex items-center justify-center opacity-50 shadow-sm hover:opacity-70 transition-opacity`}><I className={`w-7 h-7 ${c.iconColor}`} /></div>
             </motion.div>
           ) })()}
 
@@ -322,7 +353,7 @@ function PractitionerContent() {
   const content = {
     hero: {
       tagline: { en: 'For Mental Health Practitioners', fr: 'Pour les praticiens en santé mentale' },
-      headline: { en: 'Every person you sit with is different.', fr: 'Chaque personne que vous accompagnez est différente.' },
+      headline: { en: 'Less admin, more presence.', fr: 'Moins d\'admin, plus de présence.' },
       subtitle: { en: 'Prepare faster, keep everything organized, track real progress, and share the right resources.', fr: 'Préparez plus vite, gardez tout organisé, suivez les vrais progrès et partagez les bonnes ressources.' },
       subtitleHighlight: { en: 'All from one simple place.', fr: 'Le tout depuis un seul endroit.' },
       cta: { en: 'Get Early Access', fr: 'Accès anticipé' },

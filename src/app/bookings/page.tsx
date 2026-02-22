@@ -249,14 +249,28 @@ export default function BookingsPage() {
         )
         setTimezone(schedules[0].timezone)
       } else {
+        // No availability saved yet — save default Mon-Fri 9-5 to database
+        const defaultDays: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+        const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone
+        const defaultSlots = defaultDays.map((day) => ({
+          day_of_week: day,
+          start_time: '09:00:00',
+          end_time: '17:00:00',
+          is_active: true,
+          timezone: detectedTz,
+        }))
+
+        await bulkUpdateAvailability(authUser.id, defaultSlots)
+
         setAvailabilitySlots(
-          ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].map((day) => ({
-            day: day as DayOfWeek,
+          defaultDays.map((day) => ({
+            day: day,
             startTime: '09:00',
             endTime: '17:00',
             isActive: true,
           }))
         )
+        setTimezone(detectedTz)
       }
 
       const bookingSettingsData = await getBookingSettings(authUser.id)
