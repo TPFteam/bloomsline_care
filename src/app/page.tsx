@@ -424,16 +424,16 @@ function PractitionerContent() {
               transition={{ duration: 0.6 }}
               className="max-w-2xl mx-auto text-center"
             >
-              <p className="text-xl sm:text-2xl font-semibold text-neutral-900 mb-3">
+              <h2 className="text-2xl sm:text-3xl font-light text-neutral-900 mb-4">
                 {locale === 'fr'
-                  ? 'Une plateforme clinique tout-en-un pour les professionnels de la santé mentale.'
-                  : 'An all-in-one clinical platform for mental health professionals.'
+                  ? 'Une plateforme clinique tout-en-un.'
+                  : 'An all-in-one clinical platform.'
                 }
-              </p>
-              <p className="text-lg text-neutral-500 leading-relaxed">
+              </h2>
+              <p className="text-base sm:text-lg text-neutral-500 leading-relaxed">
                 {locale === 'fr'
-                  ? <>Séances, suivi des progrès, notes et ressources thérapeutiques dans un seul espace pour passer <span className="font-medium text-neutral-700">moins de temps sur l&apos;administratif</span> et plus sur votre pratique.</>
-                  : <>Sessions, progress tracking, notes, and therapeutic resources in one focused space so you spend <span className="font-medium text-neutral-700">less time on admin work</span> and more on your practice.</>
+                  ? <>Séances, suivi des progrès, notes et ressources thérapeutiques dans un seul espace calme et concentré. <span className="font-medium text-neutral-700">Pour passer moins de temps sur l&apos;administratif et plus à faire ce que vous faites le mieux.</span></>
+                  : <>Sessions, client progress, notes, and therapeutic resources in one calm, focused space. <span className="font-medium text-neutral-700">So you spend less time on admin and more time doing what you do best.</span></>
                 }
               </p>
             </motion.div>
