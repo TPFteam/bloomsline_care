@@ -649,7 +649,7 @@ export default function ResourceDetailPage() {
                   <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">
                     {locale === 'fr' ? 'Créé par' : 'Created by'}
                   </p>
-                  <Link href={resource.creator_profile.slug ? `/p/${resource.creator_profile.slug}` : `/p/${resource.creator_profile.id}`}>
+                  <Link href={resource.creator_profile.slug ? `/practitioner/${resource.creator_profile.slug}` : `/practitioner/${resource.creator_profile.id}`}>
                     <div className="flex items-start gap-3 hover:bg-gray-50 rounded-xl p-2 -m-2 transition-colors">
                       {resource.creator_profile.avatar_url ? (
                         <img
@@ -2125,7 +2125,7 @@ export default function ResourceDetailPage() {
                     <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">
                       {locale === 'fr' ? 'Créé par' : 'Created by'}
                     </p>
-                    <Link href={resource.creator_profile.slug ? `/p/${resource.creator_profile.slug}` : `/p/${resource.creator_profile.id}`}>
+                    <Link href={resource.creator_profile.slug ? `/practitioner/${resource.creator_profile.slug}` : `/practitioner/${resource.creator_profile.id}`}>
                       <motion.div
                         whileHover={{ scale: 1.02 }}
                         className="p-4 bg-gradient-to-br from-lavender-50/50 to-purple-50/30 rounded-xl border border-lavender-100 hover:border-lavender-300 transition-all cursor-pointer group"

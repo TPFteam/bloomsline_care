@@ -3,104 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server-client';
 import type { CreateBookingInput, GoogleCalendarEvent } from '@/types/calendar';
 import { notifyBookingRequest } from '@/lib/notifications';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
-
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
-
-// Helper to get valid access token for a specific user
-async function getAccessTokenForUser(
-  userId: string,
-  supabase: ReturnType<typeof createAdminClient>
-): Promise<string | null> {
-  console.log('Looking up calendar connection for user_id:', userId);
-
-  const { data: connection, error } = await supabase
-    .from('calendar_connections')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('provider', 'google')
-    .single();
-
-  if (error) {
-    console.log('Error fetching calendar connection:', error.message, error.code);
-    return null;
-  }
-
-  if (!connection) {
-    console.log('No calendar connection found for user');
-    return null;
-  }
-
-  console.log('Found calendar connection:', {
-    id: connection.id,
-    provider_email: connection.provider_email,
-    has_access_token: !!connection.access_token,
-    has_refresh_token: !!connection.refresh_token,
-    token_expires_at: connection.token_expires_at,
-  });
-
-  const now = new Date();
-  const expiresAt = new Date(connection.token_expires_at);
-
-  console.log('Token expiry check:', {
-    now: now.toISOString(),
-    expiresAt: expiresAt.toISOString(),
-    isExpired: expiresAt <= now,
-  });
-
-  // If token is still valid, return it
-  if (expiresAt > now) {
-    console.log('Access token is still valid, returning it');
-    return connection.access_token;
-  }
-
-  // Token expired, refresh it
-  console.log('Access token expired, attempting refresh...');
-  if (!connection.refresh_token) {
-    console.log('No refresh token available');
-    return null;
-  }
-
-  try {
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        client_id: GOOGLE_CLIENT_ID,
-        client_secret: GOOGLE_CLIENT_SECRET,
-        refresh_token: connection.refresh_token,
-        grant_type: 'refresh_token',
-      }),
-    });
-
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.error('Token refresh failed:', tokenResponse.status, errorText);
-      return null;
-    }
-
-    const tokens = await tokenResponse.json();
-    console.log('Token refresh successful, got new access token');
-
-    const newExpiresAt = new Date();
-    newExpiresAt.setSeconds(newExpiresAt.getSeconds() + tokens.expires_in);
-
-    await supabase
-      .from('calendar_connections')
-      .update({
-        access_token: tokens.access_token,
-        token_expires_at: newExpiresAt.toISOString(),
-      })
-      .eq('id', connection.id);
-
-    return tokens.access_token;
-  } catch (err) {
-    console.error('Error during token refresh:', err);
-    return null;
-  }
-}
+import { getValidGoogleToken } from '@/lib/services/google-auth';
 
 // POST /api/bookings - Create a new booking (public)
 export async function POST(request: NextRequest) {
@@ -211,24 +114,31 @@ export async function POST(request: NextRequest) {
     let calendarError: string | null = null;
 
     if (bookingStatus === 'confirmed') {
-      console.log('Booking confirmed, attempting Google Calendar sync...');
-      const accessToken = await getAccessTokenForUser(body.practitioner_id, supabase);
+      const googleAuth = await getValidGoogleToken(body.practitioner_id, supabase);
 
-      if (!accessToken) {
-        console.log('No access token found - practitioner may not have connected Google Calendar');
+      if (!googleAuth) {
         calendarError = 'Google Calendar not connected';
       } else {
         try {
+          // Use practitioner's timezone for the calendar event display
+          const { data: scheduleData } = await supabase
+            .from('availability_schedules')
+            .select('timezone')
+            .eq('user_id', body.practitioner_id)
+            .limit(1)
+            .single();
+          const eventTimezone = scheduleData?.timezone || body.timezone;
+
           const calendarEvent: GoogleCalendarEvent = {
             summary: `Session with ${body.client_name}`,
             description: `Session Type: ${sessionType.name}\n\nClient: ${body.client_name}\nEmail: ${body.client_email}${body.client_phone ? `\nPhone: ${body.client_phone}` : ''}${body.notes ? `\n\nNotes: ${body.notes}` : ''}`,
             start: {
               dateTime: body.start_time,
-              timeZone: body.timezone,
+              timeZone: eventTimezone,
             },
             end: {
               dateTime: body.end_time,
-              timeZone: body.timezone,
+              timeZone: eventTimezone,
             },
             attendees: [
               { email: body.client_email, displayName: body.client_name },
@@ -236,28 +146,18 @@ export async function POST(request: NextRequest) {
             reminders: {
               useDefault: false,
               overrides: [
-                { method: 'email', minutes: 1440 }, // 24 hours
+                { method: 'email', minutes: 1440 },
                 { method: 'popup', minutes: 30 },
               ],
             },
           };
 
-          // Get calendar ID
-          const { data: connection } = await supabase
-            .from('calendar_connections')
-            .select('calendar_id')
-            .eq('user_id', body.practitioner_id)
-            .single();
-
-          const calendarId = connection?.calendar_id || 'primary';
-          console.log('Creating Google Calendar event on calendar:', calendarId);
-
           const response = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?sendUpdates=all`,
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all`,
             {
               method: 'POST',
               headers: {
-                Authorization: `Bearer ${accessToken}`,
+                Authorization: `Bearer ${googleAuth.accessToken}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify(calendarEvent),
@@ -266,16 +166,13 @@ export async function POST(request: NextRequest) {
 
           if (response.ok) {
             const event = await response.json();
-            console.log('Google Calendar event created:', event.id);
             calendarSynced = true;
 
-            // Update booking with Google event ID
             await supabase
               .from('bookings')
               .update({ google_event_id: event.id })
               .eq('id', booking.id);
 
-            // Update last_synced_at
             await supabase
               .from('calendar_connections')
               .update({ last_synced_at: new Date().toISOString() })
@@ -286,7 +183,6 @@ export async function POST(request: NextRequest) {
             calendarError = errorData.error?.message || 'Failed to create calendar event';
           }
         } catch (err) {
-          // Log but don't fail the booking if calendar sync fails
           console.error('Failed to create calendar event:', err);
           calendarError = err instanceof Error ? err.message : 'Unknown error';
         }

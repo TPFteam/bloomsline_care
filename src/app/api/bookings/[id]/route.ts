@@ -2,100 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server-client';
 import type { GoogleCalendarEvent } from '@/types/calendar';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
-import { decryptToken, encryptToken, isEncrypted } from '@/lib/security/encryption';
-
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
-
-// Helper to get valid access token for a specific user
-async function getAccessTokenForUser(
-  userId: string,
-  supabase: ReturnType<typeof createAdminClient>
-): Promise<string | null> {
-  const { data: connection, error } = await supabase
-    .from('calendar_connections')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('provider', 'google')
-    .single();
-
-  if (error || !connection) {
-    return null;
-  }
-
-  const now = new Date();
-  const expiresAt = new Date(connection.token_expires_at);
-
-  // Decrypt the stored access token
-  let accessToken: string;
-  try {
-    accessToken = isEncrypted(connection.access_token)
-      ? decryptToken(connection.access_token)
-      : connection.access_token;
-  } catch {
-    console.error('Failed to decrypt access token');
-    return null;
-  }
-
-  // If token is still valid, return it
-  if (expiresAt > now) {
-    return accessToken;
-  }
-
-  // Token expired, refresh it
-  if (!connection.refresh_token) {
-    return null;
-  }
-
-  // Decrypt refresh token
-  let refreshToken: string;
-  try {
-    refreshToken = isEncrypted(connection.refresh_token)
-      ? decryptToken(connection.refresh_token)
-      : connection.refresh_token;
-  } catch {
-    console.error('Failed to decrypt refresh token');
-    return null;
-  }
-
-  try {
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        client_id: GOOGLE_CLIENT_ID,
-        client_secret: GOOGLE_CLIENT_SECRET,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-      }),
-    });
-
-    if (!tokenResponse.ok) {
-      return null;
-    }
-
-    const tokens = await tokenResponse.json();
-    const newExpiresAt = new Date();
-    newExpiresAt.setSeconds(newExpiresAt.getSeconds() + tokens.expires_in);
-
-    // Encrypt new token before storing
-    const encryptedNewToken = encryptToken(tokens.access_token);
-
-    await supabase
-      .from('calendar_connections')
-      .update({
-        access_token: encryptedNewToken,
-        token_expires_at: newExpiresAt.toISOString(),
-      })
-      .eq('id', connection.id);
-
-    return tokens.access_token;
-  } catch {
-    return null;
-  }
-}
+import { getValidGoogleToken } from '@/lib/services/google-auth';
 
 // PATCH /api/bookings/[id] - Update booking status (approve/reject)
 export async function PATCH(
@@ -197,14 +104,12 @@ export async function PATCH(
     let calendarError: string | null = null;
 
     if (status === 'confirmed' && booking.status === 'pending') {
-      console.log('Booking approved, syncing to Google Calendar...');
-      const accessToken = await getAccessTokenForUser(user.id, adminSupabase);
+      const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
 
-      if (!accessToken) {
+      if (!googleAuth) {
         calendarError = 'Google Calendar not connected';
       } else {
         try {
-          // Get session type name from booking settings
           const { data: settings } = await adminSupabase
             .from('booking_settings')
             .select('session_types')
@@ -238,21 +143,12 @@ export async function PATCH(
             },
           };
 
-          // Get calendar ID
-          const { data: connection } = await adminSupabase
-            .from('calendar_connections')
-            .select('calendar_id')
-            .eq('user_id', user.id)
-            .single();
-
-          const calendarId = connection?.calendar_id || 'primary';
-
           const response = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?sendUpdates=all`,
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all`,
             {
               method: 'POST',
               headers: {
-                Authorization: `Bearer ${accessToken}`,
+                Authorization: `Bearer ${googleAuth.accessToken}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify(calendarEvent),
@@ -261,16 +157,13 @@ export async function PATCH(
 
           if (response.ok) {
             const event = await response.json();
-            console.log('Google Calendar event created:', event.id);
             calendarSynced = true;
 
-            // Update booking with Google event ID
             await adminSupabase
               .from('bookings')
               .update({ google_event_id: event.id })
               .eq('id', id);
 
-            // Update last_synced_at
             await adminSupabase
               .from('calendar_connections')
               .update({ last_synced_at: new Date().toISOString() })
@@ -289,27 +182,18 @@ export async function PATCH(
 
     // If cancelling and there's a Google event, delete it
     if (status === 'cancelled' && booking.google_event_id) {
-      const accessToken = await getAccessTokenForUser(user.id, adminSupabase);
-      if (accessToken) {
+      const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
+      if (googleAuth) {
         try {
-          const { data: connection } = await adminSupabase
-            .from('calendar_connections')
-            .select('calendar_id')
-            .eq('user_id', user.id)
-            .single();
-
-          const calendarId = connection?.calendar_id || 'primary';
-
           await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${booking.google_event_id}?sendUpdates=all`,
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${booking.google_event_id}?sendUpdates=all`,
             {
               method: 'DELETE',
               headers: {
-                Authorization: `Bearer ${accessToken}`,
+                Authorization: `Bearer ${googleAuth.accessToken}`,
               },
             }
           );
-          console.log('Google Calendar event deleted');
         } catch (err) {
           console.error('Failed to delete calendar event:', err);
         }

@@ -36,6 +36,7 @@ import type {
   Education,
   License,
 } from '@/types/practitioner-profile'
+import { generateSlug } from '@/types/practitioner-profile'
 
 type TabId = 'about' | 'credentials' | 'practice' | 'contact' | 'settings'
 
@@ -170,15 +171,22 @@ export default function ProfilePage() {
         }
 
         if (profileData) {
+          // If profile exists but has no slug, generate one from the user's name
+          const defaultSlug = !profileData.slug && (userData?.full_name || authUser.user_metadata?.full_name)
+            ? generateSlug(userData?.full_name || authUser.user_metadata?.full_name)
+            : null
           setProfile({
             ...profileData,
             contact_email: profileData.contact_email || userData?.email || authUser.email || '',
+            ...(defaultSlug ? { slug: defaultSlug } : {}),
           })
         } else {
-          // Set default contact email from user
+          // New profile — generate default slug from name
+          const fullName = userData?.full_name || authUser.user_metadata?.full_name || ''
           setProfile(prev => ({
             ...prev,
             contact_email: userData?.email || authUser.email || '',
+            slug: fullName ? generateSlug(fullName) : '',
           }))
         }
       } catch (profileError) {
@@ -227,6 +235,7 @@ export default function ProfilePage() {
         contact_email: profile.contact_email || null,
         contact_phone: profile.contact_phone || null,
         is_public: profile.is_public ?? false,
+        slug: profile.slug || null,
         profile_completeness: profileCompleteness,
       }
 
@@ -420,7 +429,7 @@ export default function ProfilePage() {
           <div className="flex items-center justify-end gap-3 mb-6">
             {user && (
               <Link
-                href={`/p/${profile.is_public && profile.slug ? profile.slug : user.id}`}
+                href={`/practitioner/${profile.is_public && profile.slug ? profile.slug : user.id}`}
                 target="_blank"
               >
                 <Button variant="outline" className="rounded-xl">
@@ -1101,7 +1110,7 @@ export default function ProfilePage() {
                         {t.profile.settings.slug.label}
                       </label>
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500 text-sm">bloomsline.care/p/</span>
+                        <span className="text-gray-500 text-sm">bloomsline.com/practitioner/</span>
                         <input
                           type="text"
                           value={profile.slug || ''}

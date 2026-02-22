@@ -118,7 +118,7 @@ function SettingsContent() {
       }
 
       // Load booking settings
-      const settings = await getBookingSettings()
+      const settings = await getBookingSettings(user.id)
       setBookingSettings(settings)
 
       setIsLoadingConnection(false)
@@ -216,27 +216,35 @@ function SettingsContent() {
 
   // Save booking settings
   const handleSaveBookingSettings = async () => {
-    if (!userId) return
+    if (!userId) {
+      console.error('[handleSave] No userId!')
+      return
+    }
+
+    console.log('[handleSave] Saving with userId:', userId, 'booking_page_enabled:', bookingSettings?.booking_page_enabled)
 
     setIsSavingSettings(true)
     const saved = await saveBookingSettings({
       user_id: userId,
       default_duration: bookingSettings?.default_duration || 60,
-      buffer_before: bookingSettings?.buffer_before || 0,
-      buffer_after: bookingSettings?.buffer_after || 15,
+      buffer_before: bookingSettings?.buffer_before ?? 0,
+      buffer_after: bookingSettings?.buffer_after ?? 15,
       min_notice_hours: bookingSettings?.min_notice_hours || 24,
       max_advance_days: bookingSettings?.max_advance_days || 60,
       session_types: bookingSettings?.session_types || DEFAULT_SESSION_TYPES,
       booking_page_enabled: bookingSettings?.booking_page_enabled ?? true,
       require_approval: bookingSettings?.require_approval ?? false,
+      cancellation_policy: bookingSettings?.cancellation_policy ?? null,
+      booking_instructions: bookingSettings?.booking_instructions ?? null,
       email_notifications: bookingSettings?.email_notifications ?? true,
     })
 
+    console.log('[handleSave] Result:', saved)
     if (saved) {
       setBookingSettings(saved)
       setMessage({ type: 'success', text: 'Booking settings saved!' })
     } else {
-      setMessage({ type: 'error', text: 'Failed to save booking settings' })
+      setMessage({ type: 'error', text: 'Failed to save booking settings. Check console.' })
     }
     setIsSavingSettings(false)
   }
@@ -303,12 +311,12 @@ function SettingsContent() {
               <CardContent>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 bg-white border rounded-lg px-4 py-2.5 font-mono text-sm text-gray-700 truncate">
-                    {typeof window !== 'undefined' ? `${window.location.origin}/p/${practitionerSlug}/book` : `/p/${practitionerSlug}/book`}
+                    bloomsline.com/practitioner/{practitionerSlug}/book
                   </div>
                   <Button
                     variant="outline"
                     onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/p/${practitionerSlug}/book`)
+                      navigator.clipboard.writeText(`https://bloomsline.com/practitioner/${practitionerSlug}/book`)
                       setLinkCopied(true)
                       setTimeout(() => setLinkCopied(false), 2000)
                     }}
@@ -325,7 +333,7 @@ function SettingsContent() {
                       </>
                     )}
                   </Button>
-                  <Link href={`/p/${practitionerSlug}/book`} target="_blank">
+                  <Link href={`/practitioner/${practitionerSlug}/book`} target="_blank">
                     <Button variant="outline">
                       <ExternalLink className="w-4 h-4 mr-2" />
                       Preview
@@ -631,7 +639,7 @@ function SettingsContent() {
                 </div>
               </div>
 
-              <Button onClick={handleSaveBookingSettings} disabled={isSavingSettings}>
+              <Button onClick={() => { console.log('[BUTTON CLICKED]'); handleSaveBookingSettings() }} disabled={isSavingSettings}>
                 {isSavingSettings ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 ) : null}

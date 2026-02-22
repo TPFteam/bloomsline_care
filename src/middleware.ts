@@ -32,7 +32,7 @@ function isMemberRoute(pathname: string): boolean {
 const AUTH_ROUTES = ['/sign-in', '/sign-up']
 
 // Public routes (no auth check needed)
-const PUBLIC_ROUTES = ['/', '/early-access', '/onboarding', '/p/', '/stories', '/practitioner', '/for-everyone']
+const PUBLIC_ROUTES = ['/', '/early-access', '/onboarding', '/practitioner/', '/stories', '/for-everyone']
 
 function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_ROUTES.some(route => pathname.startsWith(route))

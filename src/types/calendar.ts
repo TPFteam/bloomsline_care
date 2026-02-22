@@ -129,6 +129,11 @@ export interface GoogleCalendarEvent {
   };
 }
 
+export interface BusyInterval {
+  start: string;
+  end: string;
+}
+
 export interface GoogleTokenResponse {
   access_token: string;
   refresh_token?: string;

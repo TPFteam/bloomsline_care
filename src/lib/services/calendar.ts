@@ -238,8 +238,11 @@ export async function getBookingSettings(userId?: string): Promise<BookingSettin
   const { data, error } = await query.single();
 
   if (error) {
-    if (error.code === 'PGRST116') return null;
-    console.error('Error fetching booking settings:', error);
+    if (error.code === 'PGRST116') {
+      console.log('[getBookingSettings] No settings found for user:', userId || '(no filter)');
+      return null;
+    }
+    console.error('[getBookingSettings] Error:', error);
     return null;
   }
 
@@ -251,20 +254,42 @@ export async function saveBookingSettings(
 ): Promise<BookingSettings | null> {
   const supabase = createClient();
 
-  const { data, error } = await supabase
+  // Strip read-only fields that shouldn't be sent on insert/update
+  const { id: _id, created_at: _ca, updated_at: _ua, ...settingsToSave } = settings as BookingSettings;
+
+  // Try update first (existing row)
+  const { data: existing } = await supabase
     .from('booking_settings')
-    .upsert(settings, {
-      onConflict: 'user_id',
-    })
-    .select()
+    .select('id')
+    .eq('user_id', settings.user_id)
     .single();
 
-  if (error) {
-    console.error('Error saving booking settings:', error);
-    return null;
-  }
+  if (existing) {
+    const { data, error } = await supabase
+      .from('booking_settings')
+      .update(settingsToSave)
+      .eq('user_id', settings.user_id)
+      .select()
+      .single();
 
-  return data;
+    if (error) {
+      console.error('[saveBookingSettings] Update error:', error.code, error.message, error.details);
+      return null;
+    }
+    return data;
+  } else {
+    const { data, error } = await supabase
+      .from('booking_settings')
+      .insert(settingsToSave)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[saveBookingSettings] Insert error:', error.code, error.message, error.details);
+      return null;
+    }
+    return data;
+  }
 }
 
 // ============================================
@@ -453,6 +478,7 @@ export async function getPractitionerBookingInfo(slug: string): Promise<{
     .select('*')
     .eq('user_id', profile.user_id)
     .eq('booking_page_enabled', true)
+    .limit(1)
     .single();
 
   // Get user info
