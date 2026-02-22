@@ -414,6 +414,32 @@ function PractitionerContent() {
       <main>
         <HeroConveyor locale={locale} l={l} content={content} onCta={handleOpenModal} />
 
+        {/* What is Bloomsline */}
+        <section className="py-16 bg-gray-50">
+          <div className="container mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="max-w-2xl mx-auto text-center"
+            >
+              <p className="text-xl sm:text-2xl font-semibold text-neutral-900 mb-3">
+                {locale === 'fr'
+                  ? 'Une plateforme clinique tout-en-un pour les professionnels de la santé mentale.'
+                  : 'An all-in-one clinical platform for mental health professionals.'
+                }
+              </p>
+              <p className="text-lg text-neutral-500 leading-relaxed">
+                {locale === 'fr'
+                  ? <>Séances, suivi des progrès, notes et ressources thérapeutiques dans un seul espace pour passer <span className="font-medium text-neutral-700">moins de temps sur l&apos;administratif</span> et plus sur votre pratique.</>
+                  : <>Sessions, progress tracking, notes, and therapeutic resources in one focused space so you spend <span className="font-medium text-neutral-700">less time on admin work</span> and more on your practice.</>
+                }
+              </p>
+            </motion.div>
+          </div>
+        </section>
+
         {/* A Day With Bloomsline */}
         <section className="py-20 bg-white">
           <div className="container mx-auto px-6">
