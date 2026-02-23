@@ -44,6 +44,11 @@ import {
   Home,
   Moon,
   Sprout,
+  Layers,
+  Globe,
+  Share2,
+  Flower2,
+  BookOpen,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -435,7 +440,7 @@ export default function MomentsProductDesignPage() {
               { id: 'activation', label: 'Activation Funnel' },
               { id: 'signals', label: 'Predictive Signals' },
               { id: 'pilot-summary', label: 'Pilot Summary' },
-              { id: 'phase-2', label: 'Phase 2 Plan' },
+              { id: 'phase-2', label: 'Phase 2: Evolution' },
             ].map((item) => (
               <a
                 key={item.id}
@@ -1605,27 +1610,27 @@ export default function MomentsProductDesignPage() {
 
             {/* Next 90 days */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-              <p className="text-xs font-semibold text-white mb-3">Next 90 Days: From Product Love to Product Habit</p>
+              <p className="text-xs font-semibold text-white mb-3">Next 90 Days: From Private Journal to Shareable Evolution</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="flex items-start gap-2.5">
                   <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">1</span>
                   <div>
-                    <p className="text-[10px] font-semibold text-white">Native App + Push Notifications</p>
-                    <p className="text-[9px] text-gray-400">Home screen icon, morning capture prompt at 9am, evening &quot;replay your day&quot; nudge at 8pm. Solves the trigger gap.</p>
+                    <p className="text-[10px] font-semibold text-white">Native App + Triggers</p>
+                    <p className="text-[9px] text-gray-400">Home screen icon, push notifications, guided onboarding with first moment. Solve the infrastructure gap.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2.5">
                   <span className="text-[10px] font-bold text-blue-400 bg-blue-400/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">2</span>
                   <div>
-                    <p className="text-[10px] font-semibold text-white">Guided Onboarding + First Moment</p>
-                    <p className="text-[9px] text-gray-400">Capture first moment during signup, show the curve preview, frame the &quot;why.&quot; Users who capture 2+ on day 1 retain better.</p>
+                    <p className="text-[10px] font-semibold text-white">Reflection Layer</p>
+                    <p className="text-[9px] text-gray-400">Evolution View (7d/30d/90d), weekly reflections, monthly pattern maps. Make growth visible — the reason to keep building.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2.5">
-                  <span className="text-[10px] font-bold text-amber-400 bg-amber-400/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">3</span>
+                  <span className="text-[10px] font-bold text-violet-400 bg-violet-400/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">3</span>
                   <div>
-                    <p className="text-[10px] font-semibold text-white">Gentle Growth System</p>
-                    <p className="text-[9px] text-gray-400">Cumulative emotional garden, weekly pattern insights, personal milestones that celebrate progress without punishing pauses.</p>
+                    <p className="text-[10px] font-semibold text-white">Evolution Story</p>
+                    <p className="text-[9px] text-gray-400">Shareable journey cards, public evolution profiles, practitioner impact stories. People follow evolution, not perfection — that&apos;s the growth engine.</p>
                   </div>
                 </div>
               </div>
@@ -1637,53 +1642,225 @@ export default function MomentsProductDesignPage() {
         {/* ── PHASE 2: PILOT READINESS ─────────────────────── */}
         {/* ══════════════════════════════════════════════════ */}
         <motion.section id="phase-2" className="scroll-mt-16" {...fadeUp(0.5)}>
-          <SectionTitle subtitle="From product love to product habit — the plan for the next pilot">Phase 2: Pilot Readiness</SectionTitle>
+          <SectionTitle subtitle="People love evolution, not perfection. Document the journey — good, bad, everything — and it becomes the most authentic story you can tell.">Phase 2: The Evolution Layer</SectionTitle>
 
           <div className="space-y-5">
 
-            {/* Phase 1 → 2 transition */}
-            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-              <div className="bg-gray-50 border-b border-gray-200 px-5 py-3">
-                <p className="text-xs font-bold text-gray-900">Phase 1 proved the product. Phase 2 proves the habit.</p>
-              </div>
-              <div className="p-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">Phase 1 (Done)</p>
-                    <p className="text-[10px] text-gray-500 mb-2">Zero-support stress test — Jan 20 to Feb 23</p>
-                    <div className="space-y-1.5">
-                      <p className="text-[10px] text-gray-600">✓ Capture flow works — 4 steps, fast, complete</p>
-                      <p className="text-[10px] text-gray-600">✓ Emotional curve is the differentiator</p>
-                      <p className="text-[10px] text-gray-600">✓ Users love the story recap</p>
-                      <p className="text-[10px] text-gray-600">✓ Bloom AI + moments conversation is novel</p>
-                      <p className="text-[10px] text-gray-600">✓ Power users emerged organically</p>
-                      <p className="text-[10px] text-red-500 mt-2">✗ No trigger, no onboarding, no progression</p>
-                      <p className="text-[10px] text-red-500">✗ Web-only, buggy, no notifications</p>
-                    </div>
-                    <p className="text-[10px] font-semibold text-gray-700 mt-3">Verdict: Product love exists. Habit doesn&apos;t.</p>
+            {/* The Insight */}
+            <div className="bg-gradient-to-br from-gray-900 via-gray-900 to-violet-950 text-white rounded-2xl overflow-hidden">
+              <div className="p-6">
+                <div className="flex items-start gap-3 mb-5">
+                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                    <Lightbulb className="w-5 h-5 text-amber-300" />
                   </div>
-                  <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
-                    <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider mb-2.5">Phase 2 (Next)</p>
-                    <p className="text-[10px] text-emerald-700 mb-2">Supported pilot — fix the 5 infrastructure gaps</p>
-                    <div className="space-y-1.5">
-                      <p className="text-[10px] text-emerald-700">→ Native app on home screen</p>
-                      <p className="text-[10px] text-emerald-700">→ Push notifications (morning + evening)</p>
-                      <p className="text-[10px] text-emerald-700">→ Guided onboarding with first moment</p>
-                      <p className="text-[10px] text-emerald-700">→ Gentle growth system (insights, milestones)</p>
-                      <p className="text-[10px] text-emerald-700">→ Practitioner connection</p>
-                      <p className="text-[10px] text-emerald-700">→ Bug fixes + performance</p>
-                    </div>
-                    <p className="text-[10px] font-semibold text-emerald-800 mt-3">Goal: Turn product love into daily habit.</p>
+                  <div>
+                    <p className="text-sm font-bold text-white">The Core Insight From Phase 1</p>
+                    <p className="text-[11px] text-gray-400 mt-1">What our users and data told us</p>
                   </div>
+                </div>
+                <div className="space-y-3">
+                  <p className="text-[11px] text-gray-200 leading-relaxed">
+                    If you document what you&apos;re going through — the good, the bad, the right things you&apos;re doing — and you put that out there,
+                    people love it. Not because it&apos;s polished. Because it&apos;s <span className="text-amber-300 font-semibold">real</span>.
+                  </p>
+                  <p className="text-[11px] text-gray-200 leading-relaxed">
+                    People don&apos;t follow perfection. They follow <span className="text-emerald-300 font-semibold">evolution</span>.
+                    If you bring your audience on a journey of who you are and who you&apos;re becoming — they&apos;ll follow you.
+                    That becomes your most authentic brand.
+                  </p>
+                  <p className="text-[11px] text-gray-300 leading-relaxed">
+                    Right now, Moments is a <span className="text-white font-semibold">journal</span>.
+                    Phase 2 turns it into a <span className="text-white font-semibold">story</span>.
+                    The difference: a journal is private and disposable. A story compounds over time, and when shared, becomes magnetic.
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* 5 Build Tracks */}
+            {/* Three Layers */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+              <h3 className="text-xs font-bold text-gray-900 mb-5 flex items-center gap-2">
+                <Layers className="w-3.5 h-3.5 text-gray-400" />
+                The Three Layers of Moments
+              </h3>
+              <div className="space-y-4">
+                {/* Layer 1 */}
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <span className="text-[10px] font-bold bg-emerald-600 text-white w-5 h-5 rounded-full flex items-center justify-center shrink-0">1</span>
+                    <div className="flex items-center gap-2">
+                      <Camera className="w-3.5 h-3.5 text-emerald-600" />
+                      <h4 className="text-xs font-bold text-emerald-800">Capture</h4>
+                      <span className="text-[8px] font-semibold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">EXISTS — WORKS</span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-emerald-700 leading-relaxed">
+                    Photo, video, voice, write. Mood tags. Today&apos;s Flow curve. Your Day story recap.
+                    Phase 1 proved this works — users love the capture experience and the emotional curve is the differentiator.
+                  </p>
+                </div>
+
+                {/* Layer 2 */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <span className="text-[10px] font-bold bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center shrink-0">2</span>
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+                      <h4 className="text-xs font-bold text-blue-800">Reflection</h4>
+                      <span className="text-[8px] font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">PARTIALLY EXISTS — NEEDS DEPTH</span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-blue-700 leading-relaxed mb-2.5">
+                    Your Day story exists, but only for one day at a time. No zoomed-out view. No &quot;here&apos;s how your last 30 days looked.&quot;
+                    No &quot;your mornings shifted from Heavy to Hopeful over 3 weeks.&quot;
+                  </p>
+                  <div className="bg-white/60 rounded-lg p-3 space-y-1.5">
+                    <p className="text-[9px] font-semibold text-blue-500 uppercase tracking-wider">What to Build</p>
+                    <p className="text-[10px] text-blue-700">• <span className="font-semibold">Evolution View</span> — zoom out from today to 7 days, 30 days, 90 days. See the emotional arc of your life, not just your day.</p>
+                    <p className="text-[10px] text-blue-700">• <span className="font-semibold">Weekly Reflection</span> — &quot;This week you felt most peaceful on mornings you walked. Tuesdays tend to be heavy.&quot;</p>
+                    <p className="text-[10px] text-blue-700">• <span className="font-semibold">Monthly Pattern Map</span> — 30-day emotional landscape heatmap. Visual proof of growth over time.</p>
+                    <p className="text-[10px] text-blue-700">• <span className="font-semibold">Bloom AI Memory</span> — &quot;Last Thursday you felt inspired — what sparked that?&quot; Your moments woven into conversations.</p>
+                  </div>
+                </div>
+
+                {/* Layer 3 — THE BIG NEW THING */}
+                <div className="bg-gradient-to-br from-violet-50 to-pink-50 border border-violet-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <span className="text-[10px] font-bold bg-violet-600 text-white w-5 h-5 rounded-full flex items-center justify-center shrink-0">3</span>
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-3.5 h-3.5 text-violet-600" />
+                      <h4 className="text-xs font-bold text-violet-800">Evolution Story</h4>
+                      <span className="text-[8px] font-semibold bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">NEW — THE PHASE 2 DIFFERENTIATOR</span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-violet-700 leading-relaxed mb-3">
+                    The user takes their emotional arc — not individual moments, but the <span className="font-semibold">shape of their change over time</span> — and shares it.
+                    Not &quot;here&apos;s my sad Tuesday.&quot; Instead: &quot;Here&apos;s my month. I started overwhelmed. I ended peaceful. This is what the curve looks like.&quot;
+                  </p>
+                  <div className="bg-white/60 rounded-lg p-3 space-y-2">
+                    <p className="text-[9px] font-semibold text-violet-500 uppercase tracking-wider">What to Build</p>
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2">
+                        <Share2 className="w-3 h-3 text-violet-500 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-semibold text-violet-800">Shareable Journey Cards</p>
+                          <p className="text-[10px] text-violet-600">Auto-generated from your evolution data. Not individual moments — those stay private. The <em>pattern</em> is what you share.</p>
+                          <div className="mt-1.5 space-y-1">
+                            <p className="text-[9px] text-violet-500 italic">&quot;My week: 12 moments, mostly peaceful mornings, one heavy Tuesday, ended with gratitude&quot;</p>
+                            <p className="text-[9px] text-violet-500 italic">&quot;My first 30 days: started with 3 moods, now I use 8 — I&apos;m noticing more of what I feel&quot;</p>
+                            <p className="text-[9px] text-violet-500 italic">&quot;My mornings changed: Week 1 was tired/heavy. Week 4 is calm/hopeful.&quot;</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Flower2 className="w-3 h-3 text-violet-500 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-semibold text-violet-800">My Evolution Profile</p>
+                          <p className="text-[10px] text-violet-600">Opt-in public page showing your emotional growth journey. Not your specific moments. The arc.
+                          Like a fitness tracker shows distance — this shows emotional range, growth in self-awareness, consistency of practice. Other people follow your evolution.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Heart className="w-3 h-3 text-violet-500 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-semibold text-violet-800">Practitioner Impact Stories</p>
+                          <p className="text-[10px] text-violet-600">Practitioners can (with consent) showcase evolution arcs: &quot;After 8 sessions, here&apos;s how this member&apos;s emotional landscape changed.&quot;
+                          Not &quot;I&apos;m a certified therapist&quot; — but &quot;look at the visible change in someone I worked with.&quot;</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* How layers connect */}
+              <div className="mt-5 bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <p className="text-[10px] font-semibold text-gray-700 mb-2.5">How The Layers Connect</p>
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <div className="bg-emerald-100 text-emerald-700 rounded-lg px-3 py-2 text-center">
+                    <Camera className="w-3.5 h-3.5 mx-auto mb-1" />
+                    <p className="text-[9px] font-bold">Capture</p>
+                    <p className="text-[8px]">daily micro-moments</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
+                  <div className="bg-blue-100 text-blue-700 rounded-lg px-3 py-2 text-center">
+                    <BookOpen className="w-3.5 h-3.5 mx-auto mb-1" />
+                    <p className="text-[9px] font-bold">Reflect</p>
+                    <p className="text-[8px]">see patterns + growth</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
+                  <div className="bg-violet-100 text-violet-700 rounded-lg px-3 py-2 text-center">
+                    <Globe className="w-3.5 h-3.5 mx-auto mb-1" />
+                    <p className="text-[9px] font-bold">Share</p>
+                    <p className="text-[8px]">your evolution story</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
+                  <div className="bg-pink-100 text-pink-700 rounded-lg px-3 py-2 text-center">
+                    <Users className="w-3.5 h-3.5 mx-auto mb-1" />
+                    <p className="text-[9px] font-bold">Attract</p>
+                    <p className="text-[8px]">people follow the journey</p>
+                  </div>
+                </div>
+                <p className="text-[9px] text-gray-500 text-center mt-3">
+                  Each layer feeds the next. The more you capture, the richer your reflection. The richer your reflection, the more compelling the story. The more you share, the more people join.
+                </p>
+              </div>
+            </div>
+
+            {/* Why Evolution > Perfection */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+              <h3 className="text-xs font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <TrendingUp className="w-3.5 h-3.5 text-gray-400" />
+                Why This Changes Everything
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="bg-amber-50 border border-amber-100 rounded-lg p-3">
+                    <p className="text-[10px] font-semibold text-amber-800 mb-1">The Motivation Shifts</p>
+                    <p className="text-[10px] text-amber-700 leading-relaxed">
+                      Phase 1 problem: &quot;Why should I open this today?&quot;
+                      Evolution answer: You&apos;re not capturing for today. You&apos;re building a story that compounds. Every moment adds to an arc that gets more interesting over time.
+                    </p>
+                  </div>
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3">
+                    <p className="text-[10px] font-semibold text-emerald-800 mb-1">Bad Days Make It Better</p>
+                    <p className="text-[10px] text-emerald-700 leading-relaxed">
+                      In a streak system, a bad day breaks your progress. In an evolution story, a bad day makes the story <em>richer</em>.
+                      &quot;I had 3 heavy days and then something shifted&quot; is more powerful than any unbroken counter.
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="bg-violet-50 border border-violet-100 rounded-lg p-3">
+                    <p className="text-[10px] font-semibold text-violet-800 mb-1">Organic Distribution</p>
+                    <p className="text-[10px] text-violet-700 leading-relaxed">
+                      People sharing their emotional evolution on social media is free marketing. And it&apos;s the kind of content that resonates — vulnerability + growth.
+                      One person&apos;s evolution card on Instagram is worth more than any ad.
+                    </p>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+                    <p className="text-[10px] font-semibold text-blue-800 mb-1">Network Effect</p>
+                    <p className="text-[10px] text-blue-700 leading-relaxed">
+                      When someone sees a friend&apos;s evolution card, they think: &quot;I want to see my own arc.&quot;
+                      That&apos;s the acquisition loop. Not &quot;download this wellness app&quot; — but &quot;I want to know the shape of my emotional life.&quot;
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 bg-gray-900 rounded-xl p-4">
+                <p className="text-[10px] text-gray-300 leading-relaxed">
+                  <span className="text-white font-semibold">For Investors:</span> The wellness app market is full of private journals that people abandon. Nobody abandons their story once other people are watching.
+                  The evolution framing turns a solo habit into a social identity. &quot;I&apos;m someone who documents my emotional journey&quot; is an identity people <em>want</em> to have.
+                  This is how Moments goes from a feature to a growth engine.
+                </p>
+              </div>
+            </div>
+
+            {/* What We Build — Phase 2 concrete plan */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5">
               <h3 className="text-xs font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <Target className="w-3.5 h-3.5 text-gray-400" />
-                5 Build Tracks for Phase 2
+                Phase 2 Build Tracks
               </h3>
               <div className="space-y-4">
                 {[
@@ -1694,76 +1871,73 @@ export default function MomentsProductDesignPage() {
                     phase1Problem: 'Web-only, no home screen icon, no way to send notifications',
                     whatToBuild: [
                       'React Native or Expo wrapper for iOS + Android',
-                      'Home screen icon with app badge for unread',
+                      'Home screen icon with app badge',
                       'Morning prompt: "How are you starting your day?" (9am)',
-                      'Afternoon nudge: "Capture this moment" (2pm, contextual)',
                       'Evening recap: "Your day had 4 moments — replay?" (8pm)',
-                      'Smart frequency — don\'t over-notify, learn user patterns',
+                      'Smart frequency — learn user patterns, don\'t over-notify',
                     ],
                     successMetric: 'D7 retention jumps from Phase 1 baseline to 40%+',
-                    designChange: 'Same capture flow — just needs to live in a native shell with notification permissions on first launch.',
+                    designChange: 'Same capture flow — lives in a native shell with notification permissions on first launch.',
                   },
                   {
                     num: '2',
-                    title: 'Guided Onboarding',
+                    title: 'Guided Onboarding + First Moment',
                     color: 'blue',
                     phase1Problem: '15-min verbal explanation, no in-app guidance, users saw an empty screen',
                     whatToBuild: [
-                      'Welcome screen: "Bloomsline helps you see the shape of your day"',
-                      'Show the curve preview: "This is what your day will look like after 3 moments"',
-                      'Guided first moment: walk user through capture → mood tag → save',
-                      'Show the timeline with their first dot: "You just started today\'s flow"',
+                      '"Bloomsline helps you see the shape of your day — and over time, the shape of your growth"',
+                      'Show the curve preview + example evolution card: "This is what 30 days looks like"',
+                      'Guided first moment: walk through capture → mood → save',
+                      'Show timeline with first dot: "You just started your story"',
                       'Prompt second moment: "Capture one more to see the curve connect"',
-                      'Enable notifications: "Want a gentle reminder tomorrow morning?"',
                     ],
                     successMetric: '80%+ users capture first moment during onboarding. 50%+ capture second.',
-                    designChange: 'New 4-5 screen onboarding flow before home screen. Ends with first moment on timeline.',
+                    designChange: '4-5 screen onboarding. Ends with first moment on timeline and a glimpse of what the evolution view will look like.',
                   },
                   {
                     num: '3',
-                    title: 'Gentle Growth System',
+                    title: 'Reflection Layer',
                     color: 'amber',
-                    phase1Problem: 'Curve is beautiful but passive. No progression, no personal insight, no "why do this today?"',
+                    phase1Problem: 'Today\'s Flow is beautiful but only shows today. No zoomed-out view, no pattern recognition, no reason to keep building.',
                     whatToBuild: [
-                      'Emotional Garden: each moment grows a bloom — your garden fills over time, never resets',
+                      'Evolution View: zoom out from today → 7 days → 30 days → 90 days. See the emotional arc, not just the day.',
                       'Weekly Reflection: "This week you felt most peaceful on mornings you walked"',
-                      'Monthly Pattern Map: visual heatmap of your emotional landscape over 30 days',
-                      'Gentle milestones: "10 moments captured" → unlock first weekly reflection',
-                      'Bloom AI weaves past moments into conversations: "Last Thursday you felt inspired — what sparked that?"',
-                      'Your Day story ends with "Your garden grew by 3 today" — cumulative, never punitive',
+                      'Monthly Pattern Map: emotional landscape heatmap — visual proof that something is changing',
+                      'Gentle milestones: "10 moments captured" → unlock first weekly reflection. Cumulative, never resets.',
+                      'Bloom AI references your history: "Last Thursday you felt inspired — what was different?"',
                     ],
-                    successMetric: 'Users who receive their first weekly reflection retain 2x better. 40%+ users reach 10 moments in first 14 days.',
-                    designChange: 'Garden visualization on home screen (grows with each moment). Weekly insight card in Moments tab. No counters that reset to zero.',
+                    successMetric: 'Users who see their first weekly reflection retain 2x better. 40%+ users reach 10 moments in 14 days.',
+                    designChange: 'New "My Evolution" tab. Weekly insight card on home. No counters that reset to zero — everything grows.',
                   },
                   {
                     num: '4',
-                    title: 'Practitioner Connection',
+                    title: 'Evolution Story (Shareable)',
                     color: 'violet',
-                    phase1Problem: 'Moments exist in isolation — practitioner has no visibility',
+                    phase1Problem: 'Moments exist in isolation — no one sees the journey except the user. No social proof, no organic growth loop.',
                     whatToBuild: [
-                      'Practitioner dashboard: see member\'s weekly emotional curve',
-                      'Flagged moments: auto-flag when member tags "heavy" 3+ days in a row',
-                      'Session prep: "This week Alex felt overwhelmed on Mon/Tue, peaceful Thu-Sun"',
-                      'Member opt-in sharing: "Share this week with my practitioner?"',
-                      'In-session reference: practitioner can pull up specific moments during session',
+                      'Auto-generated Journey Cards from evolution data — shareable to Instagram, WhatsApp, within Bloomsline',
+                      'Individual moments stay private. The pattern and arc are what you share.',
+                      'My Evolution Profile: opt-in public page showing emotional growth over time',
+                      'Practitioner Impact Stories: "After 8 sessions, here\'s how this member\'s emotional landscape changed" (with consent)',
+                      'Social discovery: follow someone\'s evolution, get inspired by their growth',
                     ],
-                    successMetric: 'Practitioners reference moments in 50%+ of sessions. Members who share retain 2x better.',
-                    designChange: 'New "Shared with practitioner" toggle on weekly summary. Practitioner sees emotional curve on member profile.',
+                    successMetric: '15%+ users share at least one journey card in first 30 days. Each shared card drives 2+ app installs.',
+                    designChange: 'Share button on weekly/monthly reflections. Public evolution profile page. Practitioner dashboard shows shareable impact arcs.',
                   },
                   {
                     num: '5',
-                    title: 'Stability + Performance',
+                    title: 'Practitioner Connection + Stability',
                     color: 'gray',
-                    phase1Problem: 'Buggy, crashes, loading issues on mobile browsers',
+                    phase1Problem: 'Practitioner has no visibility into member\'s emotional journey. App was buggy on mobile.',
                     whatToBuild: [
-                      'Crash reporting and error tracking (Sentry/Crashlytics)',
-                      'Offline capture support — save locally, sync when online',
-                      'Image/video compression before upload',
-                      'Loading states and error recovery for failed uploads',
+                      'Practitioner dashboard: member\'s weekly emotional curve + evolution arc',
+                      'Session prep: "This week Alex felt overwhelmed Mon/Tue, peaceful Thu-Sun"',
+                      'Member opt-in sharing: "Share this week with my practitioner?"',
+                      'Crash reporting (Sentry), offline capture, image compression',
                       'Performance profiling on low-end devices',
                     ],
-                    successMetric: 'Crash rate < 1%. Zero failed captures.',
-                    designChange: 'Add loading/error states to capture flow. Offline indicator on home screen.',
+                    successMetric: 'Practitioners reference moments in 50%+ sessions. Crash rate < 1%.',
+                    designChange: 'Practitioner sees evolution curve on member profile. Loading/error states on capture flow.',
                   },
                 ].map((track) => {
                   const colors: Record<string, { bg: string; border: string; text: string; badge: string; light: string }> = {
@@ -1780,12 +1954,10 @@ export default function MomentsProductDesignPage() {
                         <span className={`text-[10px] font-bold ${c.badge} w-5 h-5 rounded-full flex items-center justify-center shrink-0`}>{track.num}</span>
                         <h4 className={`text-xs font-bold ${c.text}`}>{track.title}</h4>
                       </div>
-
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Phase 1 Problem</p>
                           <p className="text-[10px] text-gray-600 mb-3">{track.phase1Problem}</p>
-
                           <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">What to Build</p>
                           <div className="space-y-1">
                             {track.whatToBuild.map((item, j) => (
@@ -1796,7 +1968,6 @@ export default function MomentsProductDesignPage() {
                         <div>
                           <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Success Metric</p>
                           <p className={`text-[10px] font-semibold ${c.text} mb-3`}>{track.successMetric}</p>
-
                           <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Design Change</p>
                           <p className="text-[10px] text-gray-600">{track.designChange}</p>
                         </div>
@@ -1811,34 +1982,34 @@ export default function MomentsProductDesignPage() {
             <div className="bg-white border border-gray-200 rounded-2xl p-5">
               <h3 className="text-xs font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <Smartphone className="w-3.5 h-3.5 text-gray-400" />
-                Phase 2: New User Flow (What Changes)
+                Phase 2: New User Journey
               </h3>
               <div className="overflow-x-auto">
-                <div className="flex items-start gap-2 min-w-[700px]">
+                <div className="flex items-start gap-2 min-w-[800px]">
                   {[
                     { step: 'Download', desc: 'Native app from App Store', time: '30s', isNew: true },
-                    { step: 'Onboarding', desc: '4 screens → frame the "why" → show curve preview', time: '60s', isNew: true },
+                    { step: 'Onboarding', desc: 'Frame the "why" + show evolution preview', time: '60s', isNew: true },
                     { step: '1st Moment', desc: 'Guided capture during onboarding', time: '30s', isNew: true },
-                    { step: 'Notifications', desc: 'Enable morning + evening prompts', time: '10s', isNew: true },
-                    { step: 'Home', desc: 'See first dot on timeline + first bloom in garden 🌱', time: '15s', isNew: false },
-                    { step: '2nd Moment', desc: 'Prompted by onboarding or notification', time: '30s', isNew: true },
-                    { step: 'Curve Forms', desc: 'Two dots connected — "this is your day taking shape"', time: '10s', isNew: false },
-                    { step: 'Evening', desc: 'Push: "Your day had 2 moments — replay?" → Story', time: '60s', isNew: true },
-                    { step: 'Day 2', desc: 'Morning push: "How are you starting today?" → garden grows 🌿', time: '30s', isNew: true },
+                    { step: 'Home', desc: 'First dot on timeline — "Your story just started"', time: '15s', isNew: false },
+                    { step: '2nd Moment', desc: 'Prompted: "One more to see the curve connect"', time: '30s', isNew: true },
+                    { step: 'Curve Forms', desc: 'Two dots connected — the day takes shape', time: '10s', isNew: false },
+                    { step: 'Evening', desc: 'Push: "Replay your day?" → Story recap', time: '60s', isNew: true },
+                    { step: 'Day 7', desc: 'First weekly reflection unlocks — "Here\'s your week"', time: '90s', isNew: true },
+                    { step: 'Day 14', desc: 'Share prompt: "Your first 2 weeks — share your evolution?"', time: '30s', isNew: true },
+                    { step: 'Day 30', desc: 'Monthly pattern map + evolution profile ready', time: '120s', isNew: true },
                   ].map((s, i) => (
                     <div key={i} className="flex items-start gap-1.5 shrink-0">
-                      <div className={`w-20 rounded-lg p-2 text-center border ${s.isNew ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-200'}`}>
+                      <div className={`w-[76px] rounded-lg p-2 text-center border ${s.isNew ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-200'}`}>
                         {s.isNew && <p className="text-[7px] font-bold text-emerald-600 uppercase mb-0.5">New</p>}
                         <p className="text-[9px] font-bold text-gray-900">{s.step}</p>
                         <p className="text-[7px] text-gray-500 leading-tight mt-0.5">{s.desc}</p>
-                        <p className="text-[7px] text-gray-400 mt-1">{s.time}</p>
                       </div>
-                      {i < 8 && <ChevronRight className="w-3 h-3 text-gray-300 mt-5 shrink-0" />}
+                      {i < 9 && <ChevronRight className="w-3 h-3 text-gray-300 mt-5 shrink-0" />}
                     </div>
                   ))}
                 </div>
               </div>
-              <p className="text-[9px] text-gray-400 mt-3">Green = new in Phase 2. Gray = exists from Phase 1. The first 48 hours are entirely redesigned.</p>
+              <p className="text-[9px] text-gray-400 mt-3">Green = new in Phase 2. Gray = exists from Phase 1. The journey doesn&apos;t just redesign the first day — it creates a 30-day arc where value increases over time.</p>
             </div>
 
             {/* Phase 2 success criteria */}
@@ -1851,7 +2022,7 @@ export default function MomentsProductDesignPage() {
                 {[
                   { metric: 'D7 Retention', target: '> 40%', phase1: `${analytics?.retention.find(r => r.day === 7)?.pct || '—'}%`, color: 'text-emerald-600' },
                   { metric: 'D30 Retention', target: '> 20%', phase1: `${analytics?.retention.find(r => r.day === 30)?.pct || '—'}%`, color: 'text-blue-600' },
-                  { metric: 'Weekly Reflection Unlock', target: '> 60%', phase1: 'N/A', color: 'text-violet-600' },
+                  { metric: 'Evolution Card Shared', target: '> 15%', phase1: 'N/A', color: 'text-violet-600' },
                   { metric: 'Onboarding → 1st Moment', target: '> 80%', phase1: 'N/A', color: 'text-pink-600' },
                 ].map((m, i) => (
                   <div key={i} className="bg-gray-50 rounded-xl p-3.5 border border-gray-100">
@@ -1868,10 +2039,10 @@ export default function MomentsProductDesignPage() {
               <h3 className="text-xs font-bold text-white mb-4">Build Timeline</h3>
               <div className="space-y-3">
                 {[
-                  { phase: 'Weeks 1-2', label: 'Foundation', items: ['Native app shell (Expo/React Native)', 'Push notification infrastructure', 'Bug fixes + crash reporting', 'Offline capture support'], color: 'bg-emerald-400' },
-                  { phase: 'Weeks 3-4', label: 'Onboarding + Triggers', items: ['Guided onboarding flow (4-5 screens)', 'First moment during onboarding', 'Morning, afternoon, evening notification schedule', 'Notification preference settings'], color: 'bg-blue-400' },
-                  { phase: 'Weeks 5-6', label: 'Growth + Depth', items: ['Emotional garden visualization on home', 'Weekly reflection generation (from mood patterns)', 'Monthly pattern map (30-day emotional heatmap)', 'Your Day story ends with garden growth summary'], color: 'bg-amber-400' },
-                  { phase: 'Weeks 7-8', label: 'Practitioner + Launch', items: ['Practitioner emotional curve dashboard', 'Member sharing opt-in', 'Session prep with moment references', 'Phase 2 pilot launch (30-50 users)'], color: 'bg-violet-400' },
+                  { phase: 'Weeks 1-2', label: 'Foundation', items: ['Native app shell (Expo/React Native)', 'Push notification infrastructure', 'Bug fixes + crash reporting + offline support', 'Guided onboarding flow (4-5 screens)'], color: 'bg-emerald-400' },
+                  { phase: 'Weeks 3-4', label: 'Triggers + First Moment', items: ['First moment during onboarding', 'Morning / evening notification schedule', 'Smart frequency — learn user patterns', 'Practitioner dashboard: weekly emotional curve'], color: 'bg-blue-400' },
+                  { phase: 'Weeks 5-6', label: 'Reflection Layer', items: ['Evolution View (7d / 30d / 90d zoom out)', 'Weekly reflection generation from mood patterns', 'Monthly pattern map (emotional landscape heatmap)', 'Bloom AI moment memory integration'], color: 'bg-amber-400' },
+                  { phase: 'Weeks 7-8', label: 'Evolution Story + Launch', items: ['Auto-generated shareable journey cards', 'My Evolution public profile (opt-in)', 'Practitioner impact stories', 'Phase 2 pilot launch (30-50 users)'], color: 'bg-violet-400' },
                 ].map((p, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <div className="flex flex-col items-center shrink-0">
@@ -1894,8 +2065,8 @@ export default function MomentsProductDesignPage() {
               </div>
               <div className="mt-4 pt-4 border-t border-white/10">
                 <p className="text-[10px] text-gray-400">
-                  <span className="text-white font-semibold">Phase 2 pilot launch: Week 8</span> — 30-50 users, native app, full onboarding, notifications enabled, growth system active.
-                  Same test methodology: observe for 30 days, compare retention + engagement against Phase 1 baselines.
+                  <span className="text-white font-semibold">Phase 2 pilot launch: Week 8</span> — 30-50 users, native app, full onboarding, notifications, reflection layer, and evolution sharing active.
+                  Observe for 30 days. The key new metric: do users share their evolution? If yes, Moments is a growth engine, not just a feature.
                 </p>
               </div>
             </div>
