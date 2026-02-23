@@ -406,10 +406,38 @@ export default function MomentsProductDesignPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 sm:px-8 py-10 space-y-14">
+      <div className="max-w-6xl mx-auto flex">
+        {/* ── Left Nav ─────────────────────────────────────── */}
+        <nav className="hidden lg:block w-48 shrink-0 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto border-r border-gray-200 bg-white py-6 px-4">
+          <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Sections</p>
+          <div className="space-y-0.5">
+            {[
+              { id: 'hero', label: 'Overview' },
+              { id: 'flow-1', label: 'Flow 1: Home' },
+              { id: 'flow-2', label: 'Flow 2: Capture' },
+              { id: 'flow-3', label: 'Flow 3: After Save' },
+              { id: 'flow-4', label: 'Flow 4: Full Day' },
+              { id: 'flow-5', label: 'Flow 5: Loop' },
+              { id: 'user-feedback', label: 'What Users Told Us' },
+              { id: 'touchpoints', label: 'Touchpoint Sequence' },
+              { id: 'analytics', label: 'Live Analytics' },
+              { id: 'built-vs-next', label: 'Built vs. Next' },
+            ].map((item) => (
+              <a
+                key={item.id}
+                href={`#${item.id}`}
+                className="block text-[11px] text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-md px-2.5 py-1.5 transition-colors"
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
+        </nav>
+
+        <main className="flex-1 min-w-0 px-6 sm:px-8 py-10 space-y-14">
 
         {/* ── Hero ────────────────────────────────────────── */}
-        <motion.section {...fadeUp()}>
+        <motion.section id="hero" className="scroll-mt-16" {...fadeUp()}>
           <h2 className="text-xl font-bold text-gray-900 mb-2">The complete Moments journey — screen by screen.</h2>
           <p className="text-sm text-gray-500 leading-relaxed max-w-2xl">
             Every interaction mapped from the home screen through capture, mood tagging, the emotional timeline,
@@ -437,7 +465,7 @@ export default function MomentsProductDesignPage() {
         {/* ══════════════════════════════════════════════════ */}
         {/* ── FLOW 1: HOME → CAPTURE ENTRY ───────────────── */}
         {/* ══════════════════════════════════════════════════ */}
-        <motion.section {...fadeUp(0.05)}>
+        <motion.section id="flow-1" className="scroll-mt-16" {...fadeUp(0.05)}>
           <SectionTitle subtitle="User opens the app and decides to capture a moment">Flow 1: Home Screen</SectionTitle>
           <div className="bg-white border border-gray-200 rounded-2xl p-6 overflow-x-auto">
             <div className="flex items-start gap-0 min-w-[300px]">
@@ -455,7 +483,7 @@ export default function MomentsProductDesignPage() {
         {/* ══════════════════════════════════════════════════ */}
         {/* ── FLOW 2: 4-STEP CAPTURE WIZARD ──────────────── */}
         {/* ══════════════════════════════════════════════════ */}
-        <motion.section {...fadeUp(0.1)}>
+        <motion.section id="flow-2" className="scroll-mt-16" {...fadeUp(0.1)}>
           <SectionTitle subtitle="The full capture flow — Type → Capture → Preview → Details → Save">Flow 2: Capture Wizard (4 Steps)</SectionTitle>
 
           <div className="bg-white border border-gray-200 rounded-2xl p-6 overflow-x-auto">
@@ -514,7 +542,7 @@ export default function MomentsProductDesignPage() {
         {/* ══════════════════════════════════════════════════ */}
         {/* ── FLOW 3: POST-SAVE → HOME UPDATE ────────────── */}
         {/* ══════════════════════════════════════════════════ */}
-        <motion.section {...fadeUp(0.15)}>
+        <motion.section id="flow-3" className="scroll-mt-16" {...fadeUp(0.15)}>
           <SectionTitle subtitle="What happens after saving — home updates, timeline shows moment">Flow 3: After Saving</SectionTitle>
           <div className="bg-white border border-gray-200 rounded-2xl p-6 overflow-x-auto">
             <div className="flex items-start gap-0 min-w-[550px]">
@@ -536,7 +564,7 @@ export default function MomentsProductDesignPage() {
         {/* ══════════════════════════════════════════════════ */}
         {/* ── FLOW 4: FULL DAY → CURVE + STORY ───────────── */}
         {/* ══════════════════════════════════════════════════ */}
-        <motion.section {...fadeUp(0.2)}>
+        <motion.section id="flow-4" className="scroll-mt-16" {...fadeUp(0.2)}>
           <SectionTitle subtitle="After capturing multiple moments — the emotional curve and daily story recap">Flow 4: Full Day — Emotional Curve + Story Recap</SectionTitle>
           <div className="bg-white border border-gray-200 rounded-2xl p-6 overflow-x-auto">
             <div className="flex items-start gap-0 min-w-[550px]">
@@ -559,7 +587,7 @@ export default function MomentsProductDesignPage() {
         {/* ══════════════════════════════════════════════════ */}
         {/* ── FLOW 5: ENGAGEMENT LOOP ────────────────────── */}
         {/* ══════════════════════════════════════════════════ */}
-        <motion.section {...fadeUp(0.25)}>
+        <motion.section id="flow-5" className="scroll-mt-16" {...fadeUp(0.25)}>
           <SectionTitle subtitle="The daily habit loop — what brings users back and keeps them capturing">Flow 5: Daily Engagement Loop</SectionTitle>
           <div className="bg-white border border-gray-200 rounded-2xl p-6">
             <div className="flex items-center justify-center">
@@ -613,7 +641,7 @@ export default function MomentsProductDesignPage() {
         {/* ══════════════════════════════════════════════════ */}
         {/* ── USER FEEDBACK: WHY ENGAGEMENT DROPPED ──────── */}
         {/* ══════════════════════════════════════════════════ */}
-        <motion.section {...fadeUp(0.28)}>
+        <motion.section id="user-feedback" className="scroll-mt-16" {...fadeUp(0.28)}>
           <SectionTitle subtitle="Qualitative feedback from 15-20 test users">What Users Told Us</SectionTitle>
 
           <div className="space-y-4">
@@ -731,7 +759,7 @@ export default function MomentsProductDesignPage() {
         {/* ══════════════════════════════════════════════════ */}
         {/* ── COMPLETE TOUCHPOINT MAP ────────────────────── */}
         {/* ══════════════════════════════════════════════════ */}
-        <motion.section {...fadeUp(0.3)}>
+        <motion.section id="touchpoints" className="scroll-mt-16" {...fadeUp(0.3)}>
           <SectionTitle subtitle="Every interaction in the full journey — sequential list">Complete Touchpoint Sequence</SectionTitle>
 
           <div className="space-y-0">
@@ -783,7 +811,7 @@ export default function MomentsProductDesignPage() {
         {/* ══════════════════════════════════════════════════ */}
         {/* ── LIVE ANALYTICS FROM DATABASE ─────────────────── */}
         {/* ══════════════════════════════════════════════════ */}
-        <motion.section {...fadeUp(0.35)}>
+        <motion.section id="analytics" className="scroll-mt-16" {...fadeUp(0.35)}>
           <SectionTitle subtitle="Real data from the moments table — what users actually did">Live Analytics</SectionTitle>
 
           {loading && (
@@ -1049,7 +1077,7 @@ export default function MomentsProductDesignPage() {
         </motion.section>
 
         {/* ── Key Stats ──────────────────────────────────── */}
-        <motion.section {...fadeUp(0.5)}>
+        <motion.section id="built-vs-next" className="scroll-mt-16" {...fadeUp(0.5)}>
           <div className="bg-gray-900 text-white rounded-xl p-6">
             <div className="flex items-center gap-2 mb-5">
               <Lightbulb className="w-4 h-4 text-amber-400" />
@@ -1113,6 +1141,7 @@ export default function MomentsProductDesignPage() {
           <p className="text-[10px] text-gray-400">Product Design — Moments — Feb 2026 — Bloomsline Care</p>
         </motion.div>
       </main>
+      </div>
     </div>
   )
 }
