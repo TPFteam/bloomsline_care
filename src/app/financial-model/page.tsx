@@ -534,38 +534,8 @@ export default function FinancialModelPage() {
     [projections],
   )
 
-  // Waterfall data (per practitioner, per month)
-  const waterfall = useMemo(() => {
-    const arpu = ue.blendedArpu
-    const vc = assumptions.variableCostPerPract
-    const gp = arpu - vc
-    const churnRate = assumptions.churnPct / 100
-    const avgLife = churnRate > 0 ? 1 / churnRate : 100
-    const cacAmort = assumptions.cac / avgLife
-    const cm = gp - cacAmort
-    return [
-      { label: t.revenueArpu, value: arpu, widthPct: 100, color: 'bg-indigo-500', textColor: 'text-indigo-600' },
-      { label: t.aiClaude, value: -(vc * VC_AI_SHARE), widthPct: (vc * VC_AI_SHARE / arpu) * 100, color: 'bg-rose-400', textColor: 'text-rose-500' },
-      { label: t.infrastructure, value: -(vc * VC_INFRA_SHARE), widthPct: (vc * VC_INFRA_SHARE / arpu) * 100, color: 'bg-rose-300', textColor: 'text-rose-400' },
-      { label: t.support, value: -(vc * VC_SUPPORT_SHARE), widthPct: (vc * VC_SUPPORT_SHARE / arpu) * 100, color: 'bg-rose-200', textColor: 'text-rose-300' },
-      { label: t.grossProfit, value: gp, widthPct: (gp / arpu) * 100, color: 'bg-emerald-500', textColor: 'text-emerald-600', isBold: true },
-      { label: t.cacAmortized, value: -cacAmort, widthPct: (cacAmort / arpu) * 100, color: 'bg-amber-400', textColor: 'text-amber-500' },
-      { label: t.contributionMargin, value: cm, widthPct: Math.max(0, (cm / arpu) * 100), color: 'bg-emerald-600', textColor: 'text-emerald-700', isBold: true },
-    ]
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ue.blendedArpu, assumptions.variableCostPerPract, assumptions.churnPct, assumptions.cac, locale])
-
-  // Benchmark values (dynamic)
   const fr = locale === 'fr'
 
-  const benchmarkValues = useMemo(() => [
-    `${ue.grossMarginPct}%`,
-    `${ue.ltvCacRatio}x`,
-    `${ue.paybackMonths} ${fr ? 'mois' : 'mo'}`,
-    `${assumptions.churnPct}%`,
-    `€${ue.cac}`,
-    `€${ue.blendedArpu}`,
-  ], [ue, assumptions.churnPct, fr])
   const t = {
     title: fr ? 'Modèle financier' : 'Financial Model',
     subtitle: fr ? 'Bloomsline Care — Tarification 3 niveaux' : 'Bloomsline Care — 3-Tier Pricing Model',
@@ -863,6 +833,37 @@ export default function FinancialModelPage() {
     tooltipAcquisition: fr ? 'Acquisition' : 'Acquisition',
     tooltipTotal: fr ? 'Total' : 'Total',
   }
+
+  // Waterfall data (per practitioner, per month)
+  const waterfall = useMemo(() => {
+    const arpu = ue.blendedArpu
+    const vc = assumptions.variableCostPerPract
+    const gp = arpu - vc
+    const churnRate = assumptions.churnPct / 100
+    const avgLife = churnRate > 0 ? 1 / churnRate : 100
+    const cacAmort = assumptions.cac / avgLife
+    const cm = gp - cacAmort
+    return [
+      { label: t.revenueArpu, value: arpu, widthPct: 100, color: 'bg-indigo-500', textColor: 'text-indigo-600' },
+      { label: t.aiClaude, value: -(vc * VC_AI_SHARE), widthPct: (vc * VC_AI_SHARE / arpu) * 100, color: 'bg-rose-400', textColor: 'text-rose-500' },
+      { label: t.infrastructure, value: -(vc * VC_INFRA_SHARE), widthPct: (vc * VC_INFRA_SHARE / arpu) * 100, color: 'bg-rose-300', textColor: 'text-rose-400' },
+      { label: t.support, value: -(vc * VC_SUPPORT_SHARE), widthPct: (vc * VC_SUPPORT_SHARE / arpu) * 100, color: 'bg-rose-200', textColor: 'text-rose-300' },
+      { label: t.grossProfit, value: gp, widthPct: (gp / arpu) * 100, color: 'bg-emerald-500', textColor: 'text-emerald-600', isBold: true },
+      { label: t.cacAmortized, value: -cacAmort, widthPct: (cacAmort / arpu) * 100, color: 'bg-amber-400', textColor: 'text-amber-500' },
+      { label: t.contributionMargin, value: cm, widthPct: Math.max(0, (cm / arpu) * 100), color: 'bg-emerald-600', textColor: 'text-emerald-700', isBold: true },
+    ]
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ue.blendedArpu, assumptions.variableCostPerPract, assumptions.churnPct, assumptions.cac, locale])
+
+  // Benchmark values (dynamic)
+  const benchmarkValues = useMemo(() => [
+    `${ue.grossMarginPct}%`,
+    `${ue.ltvCacRatio}x`,
+    `${ue.paybackMonths} ${fr ? 'mois' : 'mo'}`,
+    `${assumptions.churnPct}%`,
+    `€${ue.cac}`,
+    `€${ue.blendedArpu}`,
+  ], [ue, assumptions.churnPct, fr])
 
   const scenarioButtons: Array<{ key: 'conservative' | 'base' | 'aggressive'; label: string }> = [
     { key: 'conservative', label: t.conservative },
