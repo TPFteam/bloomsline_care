@@ -1015,8 +1015,8 @@ export default function MomentsProductDesignPage() {
                   <Camera className="w-3.5 h-3.5 text-gray-400" />
                   Moments by Type
                 </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                  {Object.entries(analytics.byType).sort((a, b) => b[1] - a[1]).map(([type, count]) => {
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {Object.entries(analytics.byType).filter(([type]) => type !== 'mixed').sort((a, b) => b[1] - a[1]).map(([type, count]) => {
                     const t = TYPE_ICONS[type] || TYPE_ICONS.photo
                     const pct = Math.round((count / analytics.totalMoments) * 100)
                     return (
@@ -1029,6 +1029,7 @@ export default function MomentsProductDesignPage() {
                     )
                   })}
                 </div>
+                <p className="text-[9px] text-gray-400 mt-3">Multi-media (mixed) moments launched on 21 Feb — not included in type breakdown.</p>
               </div>
 
               {/* ── Mood Distribution ─────────────────────── */}
