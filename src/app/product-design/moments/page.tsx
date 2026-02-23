@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   Fingerprint,
@@ -319,7 +319,79 @@ function FlowArrow({ label, direction = 'down', critical }: { label?: string; di
 // ── PAGE ────────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════
 
+// ── Analytics types ──────────────────────────────────────────────────────
+
+interface AnalyticsData {
+  empty: boolean
+  totalMoments: number
+  totalUsers: number
+  avgMomentsPerUser: number
+  avgMomentsPerDay: number
+  avgMoodsPerMoment: number
+  captionRate: number
+  moodTagRate: number
+  byType: Record<string, number>
+  moods: { mood: string; count: number; pct: number }[]
+  perUser: {
+    userId: string; total: number; firstMoment: string; lastMoment: string
+    daySpan: number; activeDays: number; avgPerDay: number
+    typesUsed: string[]; topMood: string | null; captionRate: number
+  }[]
+  streaks: { userId: string; maxStreak: number; totalDays: number }[]
+  timeOfDay: Record<string, number>
+  hourly: number[]
+  dayOfWeek: Record<string, number>
+  dailyTimeline: { date: string; count: number }[]
+  totalActiveDays: number
+  dateRange: { first: string; last: string }
+}
+
+const MOOD_EMOJI: Record<string, string> = {
+  grateful: '🙏', peaceful: '🌿', joyful: '✨', inspired: '🌱', loved: '💕',
+  calm: '🧘', hopeful: '☀️', proud: '🏆', overwhelmed: '😮‍💨', tired: '🌙',
+  uncertain: '🌫️', tender: '🌸', restless: '💬', heavy: '🌊',
+}
+const MOOD_VALENCE: Record<string, 'positive' | 'negative'> = {
+  grateful: 'positive', peaceful: 'positive', joyful: 'positive', inspired: 'positive',
+  loved: 'positive', calm: 'positive', hopeful: 'positive', proud: 'positive',
+  overwhelmed: 'negative', tired: 'negative', uncertain: 'negative',
+  tender: 'negative', restless: 'negative', heavy: 'negative',
+}
+const TYPE_ICONS: Record<string, { icon: string; color: string; bg: string }> = {
+  photo: { icon: '📸', color: 'text-pink-600', bg: 'bg-pink-50' },
+  video: { icon: '🎥', color: 'text-purple-600', bg: 'bg-purple-50' },
+  voice: { icon: '🎤', color: 'text-orange-600', bg: 'bg-orange-50' },
+  write: { icon: '✍️', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  mixed: { icon: '🔀', color: 'text-blue-600', bg: 'bg-blue-50' },
+}
+
+function StatCard({ value, label, sub, color = 'text-gray-900' }: { value: string | number; label: string; sub?: string; color?: string }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-4">
+      <p className={`text-2xl font-bold ${color}`}>{value}</p>
+      <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+      {sub && <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>}
+    </div>
+  )
+}
+
+function BarViz({ value, max, color = 'bg-emerald-400' }: { value: number; max: number; color?: string }) {
+  const pct = max > 0 ? (value / max) * 100 : 0
+  return <div className="h-2 bg-gray-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} /></div>
+}
+
 export default function MomentsProductDesignPage() {
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/analytics/moments')
+      .then(r => r.json())
+      .then(d => { setAnalytics(d); setLoading(false) })
+      .catch(() => { setError('Failed to load analytics'); setLoading(false) })
+  }, [])
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="sticky top-0 z-30 bg-white border-b border-gray-200 px-8 py-4">
@@ -588,6 +660,325 @@ export default function MomentsProductDesignPage() {
               )
             ))}
           </div>
+        </motion.section>
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* ── LIVE ANALYTICS FROM DATABASE ─────────────────── */}
+        {/* ══════════════════════════════════════════════════ */}
+        <motion.section {...fadeUp(0.35)}>
+          <SectionTitle subtitle="Real data from the moments table — what users actually did">Live Analytics</SectionTitle>
+
+          {loading && (
+            <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center">
+              <div className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full mx-auto mb-3" />
+              <p className="text-xs text-gray-400">Loading moments data...</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+              <p className="text-xs text-red-600">{error}</p>
+            </div>
+          )}
+
+          {analytics && analytics.empty && (
+            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-12 text-center">
+              <p className="text-sm text-gray-500">No moments captured yet</p>
+              <p className="text-xs text-gray-400 mt-1">Analytics will appear here once users start capturing moments</p>
+            </div>
+          )}
+
+          {analytics && !analytics.empty && (
+            <div className="space-y-6">
+
+              {/* ── Overview Stats ─────────────────────────── */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <StatCard value={analytics.totalMoments} label="Total Moments" sub={`across ${analytics.totalActiveDays} active days`} color="text-violet-600" />
+                <StatCard value={analytics.totalUsers} label="Unique Users" sub={`avg ${analytics.avgMomentsPerUser}/user`} color="text-blue-600" />
+                <StatCard value={analytics.avgMomentsPerDay} label="Avg per Active Day" sub={`peak possible: ${Math.max(...analytics.dailyTimeline.map(d => d.count))}/day`} color="text-emerald-600" />
+                <StatCard value={`${analytics.moodTagRate}%`} label="Tagged a Mood" sub={`${analytics.captionRate}% wrote a note`} color="text-pink-600" />
+              </div>
+
+              {/* ── Date Range ─────────────────────────────── */}
+              <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4">
+                <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-xs text-gray-600">
+                    <span className="font-semibold">First moment:</span> {new Date(analytics.dateRange.first).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    <span className="mx-3 text-gray-300">→</span>
+                    <span className="font-semibold">Last moment:</span> {new Date(analytics.dateRange.last).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+
+              {/* ── Moments by Type ────────────────────────── */}
+              <div className="bg-white border border-gray-200 rounded-2xl p-5">
+                <h3 className="text-xs font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Camera className="w-3.5 h-3.5 text-gray-400" />
+                  Moments by Type
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  {Object.entries(analytics.byType).sort((a, b) => b[1] - a[1]).map(([type, count]) => {
+                    const t = TYPE_ICONS[type] || TYPE_ICONS.photo
+                    const pct = Math.round((count / analytics.totalMoments) * 100)
+                    return (
+                      <div key={type} className={`${t.bg} rounded-xl p-3 text-center`}>
+                        <p className="text-xl mb-0.5">{t.icon}</p>
+                        <p className={`text-lg font-bold ${t.color}`}>{count}</p>
+                        <p className="text-[10px] text-gray-500 capitalize">{type}</p>
+                        <p className="text-[9px] text-gray-400">{pct}%</p>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* ── Mood Distribution ─────────────────────── */}
+              <div className="bg-white border border-gray-200 rounded-2xl p-5">
+                <h3 className="text-xs font-bold text-gray-900 mb-1 flex items-center gap-2">
+                  <Heart className="w-3.5 h-3.5 text-gray-400" />
+                  Mood Distribution
+                </h3>
+                <p className="text-[10px] text-gray-400 mb-4">Avg {analytics.avgMoodsPerMoment} moods per moment</p>
+
+                {analytics.moods.length === 0 ? (
+                  <p className="text-xs text-gray-400 text-center py-4">No moods tagged yet</p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {analytics.moods.map(({ mood, count, pct }) => {
+                      const valence = MOOD_VALENCE[mood]
+                      const barColor = valence === 'positive' ? 'bg-emerald-400' : 'bg-amber-400'
+                      return (
+                        <div key={mood} className="flex items-center gap-3">
+                          <span className="text-sm w-6 text-center shrink-0">{MOOD_EMOJI[mood] || '🔵'}</span>
+                          <span className="text-[10px] text-gray-600 w-20 capitalize shrink-0">{mood}</span>
+                          <div className="flex-1"><BarViz value={count} max={analytics.moods[0].count} color={barColor} /></div>
+                          <span className="text-[10px] text-gray-500 w-8 text-right shrink-0">{count}</span>
+                          <span className="text-[9px] text-gray-400 w-8 text-right shrink-0">{pct}%</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Positive vs Negative summary */}
+                {analytics.moods.length > 0 && (() => {
+                  const pos = analytics.moods.filter(m => MOOD_VALENCE[m.mood] === 'positive').reduce((s, m) => s + m.count, 0)
+                  const neg = analytics.moods.filter(m => MOOD_VALENCE[m.mood] === 'negative').reduce((s, m) => s + m.count, 0)
+                  const total = pos + neg
+                  return (
+                    <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-4">
+                      <div className="flex-1">
+                        <div className="h-3 rounded-full overflow-hidden flex">
+                          <div className="bg-emerald-400 h-full" style={{ width: `${total > 0 ? (pos / total) * 100 : 0}%` }} />
+                          <div className="bg-amber-400 h-full" style={{ width: `${total > 0 ? (neg / total) * 100 : 0}%` }} />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-[10px] text-emerald-600 font-semibold">{total > 0 ? Math.round((pos / total) * 100) : 0}% positive</span>
+                        <span className="text-[10px] text-amber-600 font-semibold">{total > 0 ? Math.round((neg / total) * 100) : 0}% negative</span>
+                      </div>
+                    </div>
+                  )
+                })()}
+              </div>
+
+              {/* ── Time of Day ────────────────────────────── */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-white border border-gray-200 rounded-2xl p-5">
+                  <h3 className="text-xs font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-gray-400" />
+                    Time of Day
+                  </h3>
+                  <div className="space-y-2.5">
+                    {Object.entries(analytics.timeOfDay).map(([slot, count]) => {
+                      const pct = analytics.totalMoments > 0 ? Math.round((count / analytics.totalMoments) * 100) : 0
+                      const maxSlot = Math.max(...Object.values(analytics.timeOfDay))
+                      const colors: Record<string, string> = { 'Morning (6-12)': 'bg-amber-300', 'Afternoon (12-17)': 'bg-orange-400', 'Evening (17-21)': 'bg-violet-400', 'Night (21-6)': 'bg-indigo-500' }
+                      return (
+                        <div key={slot}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-gray-600">{slot}</span>
+                            <span className="text-[10px] text-gray-500 font-semibold">{count} ({pct}%)</span>
+                          </div>
+                          <BarViz value={count} max={maxSlot} color={colors[slot] || 'bg-gray-400'} />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-2xl p-5">
+                  <h3 className="text-xs font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                    Day of Week
+                  </h3>
+                  <div className="space-y-2.5">
+                    {Object.entries(analytics.dayOfWeek).map(([day, count]) => {
+                      const maxDay = Math.max(...Object.values(analytics.dayOfWeek))
+                      return (
+                        <div key={day}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-gray-600">{day}</span>
+                            <span className="text-[10px] text-gray-500 font-semibold">{count}</span>
+                          </div>
+                          <BarViz value={count} max={maxDay} color="bg-blue-400" />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Hourly Heatmap ─────────────────────────── */}
+              <div className="bg-white border border-gray-200 rounded-2xl p-5">
+                <h3 className="text-xs font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <BarChart3 className="w-3.5 h-3.5 text-gray-400" />
+                  Hourly Distribution (24h)
+                </h3>
+                <div className="flex items-end gap-0.5 h-24">
+                  {analytics.hourly.map((count, hour) => {
+                    const maxHour = Math.max(...analytics.hourly)
+                    const heightPct = maxHour > 0 ? (count / maxHour) * 100 : 0
+                    return (
+                      <div key={hour} className="flex-1 flex flex-col items-center justify-end group relative">
+                        <div className="absolute -top-5 hidden group-hover:block bg-gray-900 text-white text-[8px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
+                          {hour}:00 — {count} moments
+                        </div>
+                        <div className="w-full bg-violet-400 rounded-t-sm transition-all" style={{ height: `${Math.max(heightPct, count > 0 ? 4 : 0)}%` }} />
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="flex justify-between mt-1.5">
+                  <span className="text-[8px] text-gray-400">0h</span>
+                  <span className="text-[8px] text-gray-400">6h</span>
+                  <span className="text-[8px] text-gray-400">12h</span>
+                  <span className="text-[8px] text-gray-400">18h</span>
+                  <span className="text-[8px] text-gray-400">23h</span>
+                </div>
+              </div>
+
+              {/* ── Daily Activity Timeline ────────────────── */}
+              <div className="bg-white border border-gray-200 rounded-2xl p-5">
+                <h3 className="text-xs font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <TrendingUp className="w-3.5 h-3.5 text-gray-400" />
+                  Daily Activity Timeline
+                </h3>
+                <div className="flex items-end gap-0.5 h-24">
+                  {analytics.dailyTimeline.map(({ date, count }) => {
+                    const maxDay = Math.max(...analytics.dailyTimeline.map(d => d.count))
+                    const heightPct = maxDay > 0 ? (count / maxDay) * 100 : 0
+                    return (
+                      <div key={date} className="flex-1 flex flex-col items-center justify-end group relative" style={{ minWidth: analytics.dailyTimeline.length > 60 ? '2px' : '6px' }}>
+                        <div className="absolute -top-5 hidden group-hover:block bg-gray-900 text-white text-[8px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
+                          {new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} — {count}
+                        </div>
+                        <div className="w-full bg-emerald-400 rounded-t-sm transition-all" style={{ height: `${Math.max(heightPct, count > 0 ? 4 : 0)}%` }} />
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="flex justify-between mt-1.5">
+                  <span className="text-[8px] text-gray-400">{analytics.dailyTimeline.length > 0 ? new Date(analytics.dailyTimeline[0].date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}</span>
+                  <span className="text-[8px] text-gray-400">{analytics.dailyTimeline.length > 0 ? new Date(analytics.dailyTimeline[analytics.dailyTimeline.length - 1].date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}</span>
+                </div>
+              </div>
+
+              {/* ── Per-User Breakdown ─────────────────────── */}
+              <div className="bg-white border border-gray-200 rounded-2xl p-5">
+                <h3 className="text-xs font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Users className="w-3.5 h-3.5 text-gray-400" />
+                  Per-User Breakdown
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">User</th>
+                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">Total</th>
+                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">Active Days</th>
+                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">Avg/Day</th>
+                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">Types</th>
+                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">Top Mood</th>
+                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">Notes</th>
+                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">First</th>
+                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2">Streak</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analytics.perUser.map((u, i) => {
+                        const streak = analytics.streaks.find(s => s.userId === u.userId)
+                        return (
+                          <tr key={u.userId} className={i % 2 === 0 ? 'bg-gray-50/50' : ''}>
+                            <td className="text-[10px] font-mono text-gray-500 py-2 pr-3">{u.userId}...</td>
+                            <td className="text-[10px] font-bold text-gray-900 py-2 pr-3">{u.total}</td>
+                            <td className="text-[10px] text-gray-600 py-2 pr-3">{u.activeDays} / {u.daySpan}d</td>
+                            <td className="text-[10px] text-gray-600 py-2 pr-3">{u.avgPerDay}</td>
+                            <td className="text-[10px] py-2 pr-3">
+                              {u.typesUsed.map(t => (
+                                <span key={t} className="mr-0.5">{TYPE_ICONS[t]?.icon || t}</span>
+                              ))}
+                            </td>
+                            <td className="text-[10px] py-2 pr-3">
+                              {u.topMood && <span>{MOOD_EMOJI[u.topMood] || '🔵'} <span className="text-gray-500 capitalize">{u.topMood}</span></span>}
+                            </td>
+                            <td className="text-[10px] text-gray-600 py-2 pr-3">{u.captionRate}%</td>
+                            <td className="text-[10px] text-gray-500 py-2 pr-3">{new Date(u.firstMoment).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</td>
+                            <td className="text-[10px] py-2">
+                              {streak && <span className={`font-semibold ${streak.maxStreak >= 3 ? 'text-emerald-600' : 'text-gray-500'}`}>{streak.maxStreak}d</span>}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* ── Insights ──────────────────────────────── */}
+              <div className="bg-violet-50 border border-violet-200 rounded-2xl p-5">
+                <h3 className="text-xs font-bold text-violet-800 mb-3 flex items-center gap-2">
+                  <Lightbulb className="w-3.5 h-3.5 text-violet-500" />
+                  Auto-Generated Insights
+                </h3>
+                <div className="space-y-2">
+                  {/* Most popular type */}
+                  {(() => {
+                    const topType = Object.entries(analytics.byType).sort((a, b) => b[1] - a[1])[0]
+                    if (!topType) return null
+                    const pct = Math.round((topType[1] / analytics.totalMoments) * 100)
+                    return <p className="text-[10px] text-violet-700"><span className="font-semibold">{TYPE_ICONS[topType[0]]?.icon} {topType[0]}</span> is the dominant format at {pct}% — {pct > 70 ? 'consider prompting users to try other formats' : 'good format diversity'}</p>
+                  })()}
+
+                  {/* Mood insights */}
+                  {analytics.moods.length > 0 && (() => {
+                    const posCount = analytics.moods.filter(m => MOOD_VALENCE[m.mood] === 'positive').reduce((s, m) => s + m.count, 0)
+                    const negCount = analytics.moods.filter(m => MOOD_VALENCE[m.mood] === 'negative').reduce((s, m) => s + m.count, 0)
+                    const total = posCount + negCount
+                    const posPct = total > 0 ? Math.round((posCount / total) * 100) : 0
+                    return <p className="text-[10px] text-violet-700"><span className="font-semibold">{posPct}% positive moods</span> — {posPct > 80 ? 'users may be filtering — the 6 negative moods might need to feel more normalized' : posPct > 50 ? 'healthy balance between positive and negative — suggests authentic emotional expression' : 'more negative than positive — users are being vulnerable, which is a good sign for therapeutic use'}</p>
+                  })()}
+
+                  {/* Caption rate */}
+                  <p className="text-[10px] text-violet-700"><span className="font-semibold">{analytics.captionRate}% wrote a note</span> — {analytics.captionRate < 30 ? 'low engagement with text field — consider making it more prominent or adding prompts' : analytics.captionRate > 60 ? 'high text engagement — users value the reflection space' : 'moderate text engagement — optional notes working as designed'}</p>
+
+                  {/* Time-of-day insight */}
+                  {(() => {
+                    const peak = Object.entries(analytics.timeOfDay).sort((a, b) => b[1] - a[1])[0]
+                    if (!peak) return null
+                    return <p className="text-[10px] text-violet-700"><span className="font-semibold">Peak capture: {peak[0]}</span> — {peak[0].includes('Evening') ? 'end-of-day reflection pattern — Your Day story is well-timed' : peak[0].includes('Morning') ? 'morning check-in pattern — consider a morning prompt notification' : 'midday captures suggest real-time emotional logging'}</p>
+                  })()}
+
+                  {/* Average streak */}
+                  {(() => {
+                    const avgStreak = analytics.streaks.length > 0 ? (analytics.streaks.reduce((s, st) => s + st.maxStreak, 0) / analytics.streaks.length) : 0
+                    return <p className="text-[10px] text-violet-700"><span className="font-semibold">Avg max streak: {avgStreak.toFixed(1)} days</span> — {avgStreak < 2 ? 'users aren\'t building daily habits yet — needs a stronger daily trigger mechanism' : avgStreak < 5 ? 'some habit formation — users return but don\'t stick consistently' : 'strong daily habit forming — the engagement loop is working'}</p>
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
         </motion.section>
 
         {/* ── Key Stats ──────────────────────────────────── */}
