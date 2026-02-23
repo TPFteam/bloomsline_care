@@ -724,6 +724,51 @@ export default function MomentsProductDesignPage() {
               ))}
             </div>
 
+            {/* What users loved */}
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5">
+              <h3 className="text-xs font-bold text-emerald-800 mb-4 flex items-center gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                What Users Loved
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  {
+                    icon: '📸',
+                    title: 'Capturing Was Easy',
+                    quote: 'The process of capturing a moment felt natural and quick — users said it was easy to do and didn\'t feel like a chore. The 4-step wizard is lightweight enough to do multiple times a day.',
+                  },
+                  {
+                    icon: '📈',
+                    title: 'The Emotional Curve',
+                    quote: 'Seeing their emotions visualized as a curve throughout the day — lows at the bottom, highs at the top — was the "wow" moment. Users enjoyed watching the line take shape as they captured more.',
+                  },
+                  {
+                    icon: '▶️',
+                    title: 'Your Day Story Recap',
+                    quote: 'The Instagram Stories-style daily recap was a highlight. Users liked replaying their day and seeing all their moments in sequence — it gave a sense of closure and self-reflection.',
+                  },
+                  {
+                    icon: '💬',
+                    title: 'Talking to Moments via Bloom',
+                    quote: 'Users found it interesting that they could go back to a specific moment and talk to Bloom AI about it — turning a captured memory into a conversation about how they felt.',
+                  },
+                  {
+                    icon: '📅',
+                    title: 'Looking Back at Past Days',
+                    quote: 'The ability to navigate to previous days and see what they did — their emotional shape on a Tuesday two weeks ago — made the timeline feel like a personal journal they actually want to revisit.',
+                  },
+                ].map((item, i) => (
+                  <div key={i} className="bg-white rounded-xl border border-emerald-100 p-3.5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-base">{item.icon}</span>
+                      <span className="text-[11px] font-bold text-gray-900">{item.title}</span>
+                    </div>
+                    <p className="text-[10px] text-gray-600 leading-relaxed">{item.quote}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Habit loop diagnosis */}
             <div className="bg-gray-900 rounded-2xl p-5">
               <h3 className="text-xs font-bold text-white mb-4 flex items-center gap-2">
@@ -863,7 +908,7 @@ export default function MomentsProductDesignPage() {
                 <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
                 <div className="flex-1">
                   <p className="text-xs text-gray-600">
-                    <span className="font-semibold">First moment:</span> {new Date(analytics.dateRange.first).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    <span className="font-semibold">First moment:</span> 20 Jan 2026
                     <span className="mx-3 text-gray-300">→</span>
                     <span className="font-semibold">Last moment:</span> {new Date(analytics.dateRange.last).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </p>
