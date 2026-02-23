@@ -435,7 +435,7 @@ export default function MomentsProductDesignPage() {
               { id: 'activation', label: 'Activation Funnel' },
               { id: 'signals', label: 'Predictive Signals' },
               { id: 'pilot-summary', label: 'Pilot Summary' },
-              { id: 'built-vs-next', label: 'Built vs. Next' },
+              { id: 'phase-2', label: 'Phase 2 Plan' },
             ].map((item) => (
               <a
                 key={item.id}
@@ -1633,64 +1633,273 @@ export default function MomentsProductDesignPage() {
           </div>
         </motion.section>
 
-        {/* ── Key Stats ──────────────────────────────────── */}
-        <motion.section id="built-vs-next" className="scroll-mt-16" {...fadeUp(0.5)}>
-          <div className="bg-gray-900 text-white rounded-xl p-6">
-            <div className="flex items-center gap-2 mb-5">
-              <Lightbulb className="w-4 h-4 text-amber-400" />
-              <h2 className="text-sm font-bold">What&apos;s Built vs. What&apos;s Next</h2>
+        {/* ══════════════════════════════════════════════════ */}
+        {/* ── PHASE 2: PILOT READINESS ─────────────────────── */}
+        {/* ══════════════════════════════════════════════════ */}
+        <motion.section id="phase-2" className="scroll-mt-16" {...fadeUp(0.5)}>
+          <SectionTitle subtitle="From product love to product habit — the plan for the next pilot">Phase 2: Pilot Readiness</SectionTitle>
+
+          <div className="space-y-5">
+
+            {/* Phase 1 → 2 transition */}
+            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+              <div className="bg-gray-50 border-b border-gray-200 px-5 py-3">
+                <p className="text-xs font-bold text-gray-900">Phase 1 proved the product. Phase 2 proves the habit.</p>
+              </div>
+              <div className="p-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">Phase 1 (Done)</p>
+                    <p className="text-[10px] text-gray-500 mb-2">Zero-support stress test — Jan 20 to Feb 23</p>
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] text-gray-600">✓ Capture flow works — 4 steps, fast, complete</p>
+                      <p className="text-[10px] text-gray-600">✓ Emotional curve is the differentiator</p>
+                      <p className="text-[10px] text-gray-600">✓ Users love the story recap</p>
+                      <p className="text-[10px] text-gray-600">✓ Bloom AI + moments conversation is novel</p>
+                      <p className="text-[10px] text-gray-600">✓ Power users emerged organically</p>
+                      <p className="text-[10px] text-red-500 mt-2">✗ No trigger, no onboarding, no progression</p>
+                      <p className="text-[10px] text-red-500">✗ Web-only, buggy, no notifications</p>
+                    </div>
+                    <p className="text-[10px] font-semibold text-gray-700 mt-3">Verdict: Product love exists. Habit doesn&apos;t.</p>
+                  </div>
+                  <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                    <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider mb-2.5">Phase 2 (Next)</p>
+                    <p className="text-[10px] text-emerald-700 mb-2">Supported pilot — fix the 5 infrastructure gaps</p>
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] text-emerald-700">→ Native app on home screen</p>
+                      <p className="text-[10px] text-emerald-700">→ Push notifications (morning + evening)</p>
+                      <p className="text-[10px] text-emerald-700">→ Guided onboarding with first moment</p>
+                      <p className="text-[10px] text-emerald-700">→ Active reward system (streaks, seeds)</p>
+                      <p className="text-[10px] text-emerald-700">→ Practitioner connection</p>
+                      <p className="text-[10px] text-emerald-700">→ Bug fixes + performance</p>
+                    </div>
+                    <p className="text-[10px] font-semibold text-emerald-800 mt-3">Goal: Turn product love into daily habit.</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-              <div>
-                <p className="text-[10px] font-semibold text-emerald-300 uppercase tracking-wider mb-2.5">Fully Built</p>
-                <div className="space-y-2">
+
+            {/* 5 Build Tracks */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+              <h3 className="text-xs font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Target className="w-3.5 h-3.5 text-gray-400" />
+                5 Build Tracks for Phase 2
+              </h3>
+              <div className="space-y-4">
+                {[
+                  {
+                    num: '1',
+                    title: 'Native App + Push Notifications',
+                    color: 'emerald',
+                    phase1Problem: 'Web-only, no home screen icon, no way to send notifications',
+                    whatToBuild: [
+                      'React Native or Expo wrapper for iOS + Android',
+                      'Home screen icon with app badge for unread',
+                      'Morning prompt: "How are you starting your day?" (9am)',
+                      'Afternoon nudge: "Capture this moment" (2pm, contextual)',
+                      'Evening recap: "Your day had 4 moments — replay?" (8pm)',
+                      'Smart frequency — don\'t over-notify, learn user patterns',
+                    ],
+                    successMetric: 'D7 retention jumps from Phase 1 baseline to 40%+',
+                    designChange: 'Same capture flow — just needs to live in a native shell with notification permissions on first launch.',
+                  },
+                  {
+                    num: '2',
+                    title: 'Guided Onboarding',
+                    color: 'blue',
+                    phase1Problem: '15-min verbal explanation, no in-app guidance, users saw an empty screen',
+                    whatToBuild: [
+                      'Welcome screen: "Bloomsline helps you see the shape of your day"',
+                      'Show the curve preview: "This is what your day will look like after 3 moments"',
+                      'Guided first moment: walk user through capture → mood tag → save',
+                      'Show the timeline with their first dot: "You just started today\'s flow"',
+                      'Prompt second moment: "Capture one more to see the curve connect"',
+                      'Enable notifications: "Want a gentle reminder tomorrow morning?"',
+                    ],
+                    successMetric: '80%+ users capture first moment during onboarding. 50%+ capture second.',
+                    designChange: 'New 4-5 screen onboarding flow before home screen. Ends with first moment on timeline.',
+                  },
+                  {
+                    num: '3',
+                    title: 'Active Reward System',
+                    color: 'amber',
+                    phase1Problem: 'Curve is beautiful but passive. No streak, no progression, no "why do this today?"',
+                    whatToBuild: [
+                      'Daily streak counter visible on home (🔥 3-day streak)',
+                      'Seeds: earn 1 per moment, 3 for a full day (morning + afternoon + evening)',
+                      'Seeds unlock: weekly insight report at 20 seeds, monthly pattern at 100',
+                      'Streak milestones: 7 days → "Week warrior", 30 → "Month of clarity"',
+                      'Weekly email/notification: "You felt most peaceful on mornings you walked"',
+                      'Your Day story shows streak + seeds earned at the end',
+                    ],
+                    successMetric: 'Average streak length > 5 days. 30%+ users reach 7-day streak.',
+                    designChange: 'Streak badge on home screen. Seeds counter on Your Day card. Weekly insight card in Moments tab.',
+                  },
+                  {
+                    num: '4',
+                    title: 'Practitioner Connection',
+                    color: 'violet',
+                    phase1Problem: 'Moments exist in isolation — practitioner has no visibility',
+                    whatToBuild: [
+                      'Practitioner dashboard: see member\'s weekly emotional curve',
+                      'Flagged moments: auto-flag when member tags "heavy" 3+ days in a row',
+                      'Session prep: "This week Alex felt overwhelmed on Mon/Tue, peaceful Thu-Sun"',
+                      'Member opt-in sharing: "Share this week with my practitioner?"',
+                      'In-session reference: practitioner can pull up specific moments during session',
+                    ],
+                    successMetric: 'Practitioners reference moments in 50%+ of sessions. Members who share retain 2x better.',
+                    designChange: 'New "Shared with practitioner" toggle on weekly summary. Practitioner sees emotional curve on member profile.',
+                  },
+                  {
+                    num: '5',
+                    title: 'Stability + Performance',
+                    color: 'gray',
+                    phase1Problem: 'Buggy, crashes, loading issues on mobile browsers',
+                    whatToBuild: [
+                      'Crash reporting and error tracking (Sentry/Crashlytics)',
+                      'Offline capture support — save locally, sync when online',
+                      'Image/video compression before upload',
+                      'Loading states and error recovery for failed uploads',
+                      'Performance profiling on low-end devices',
+                    ],
+                    successMetric: 'Crash rate < 1%. Zero failed captures.',
+                    designChange: 'Add loading/error states to capture flow. Offline indicator on home screen.',
+                  },
+                ].map((track) => {
+                  const colors: Record<string, { bg: string; border: string; text: string; badge: string; light: string }> = {
+                    emerald: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-700', light: 'text-emerald-600' },
+                    blue: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', badge: 'bg-blue-100 text-blue-700', light: 'text-blue-600' },
+                    amber: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', badge: 'bg-amber-100 text-amber-700', light: 'text-amber-600' },
+                    violet: { bg: 'bg-violet-50', border: 'border-violet-200', text: 'text-violet-700', badge: 'bg-violet-100 text-violet-700', light: 'text-violet-600' },
+                    gray: { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700', badge: 'bg-gray-100 text-gray-700', light: 'text-gray-600' },
+                  }
+                  const c = colors[track.color] || colors.gray
+                  return (
+                    <div key={track.num} className={`${c.bg} border ${c.border} rounded-xl p-4`}>
+                      <div className="flex items-center gap-2.5 mb-3">
+                        <span className={`text-[10px] font-bold ${c.badge} w-5 h-5 rounded-full flex items-center justify-center shrink-0`}>{track.num}</span>
+                        <h4 className={`text-xs font-bold ${c.text}`}>{track.title}</h4>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Phase 1 Problem</p>
+                          <p className="text-[10px] text-gray-600 mb-3">{track.phase1Problem}</p>
+
+                          <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">What to Build</p>
+                          <div className="space-y-1">
+                            {track.whatToBuild.map((item, j) => (
+                              <p key={j} className={`text-[10px] ${c.light}`}>• {item}</p>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Success Metric</p>
+                          <p className={`text-[10px] font-semibold ${c.text} mb-3`}>{track.successMetric}</p>
+
+                          <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Design Change</p>
+                          <p className="text-[10px] text-gray-600">{track.designChange}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Phase 2 new user flow */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+              <h3 className="text-xs font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Smartphone className="w-3.5 h-3.5 text-gray-400" />
+                Phase 2: New User Flow (What Changes)
+              </h3>
+              <div className="overflow-x-auto">
+                <div className="flex items-start gap-2 min-w-[700px]">
                   {[
-                    'Complete 4-step capture wizard (Type → Capture → Preview → Details)',
-                    'Multi-media support: up to 7 items, mix photo + video + voice',
-                    '14 mood tags including 6 negative/neutral emotions',
-                    'Today\'s Flow emotional timeline with teal connecting line',
-                    'Your Day story recap (Instagram Stories-style)',
-                    'Seeds reward metric + My Little Steps habits',
-                    'Previous day navigation in timeline',
-                    'Bloom AI "Wanna talk?" chat entry on home',
-                  ].map((p, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
-                      <p className="text-[10px] text-gray-400">{p}</p>
+                    { step: 'Download', desc: 'Native app from App Store', time: '30s', isNew: true },
+                    { step: 'Onboarding', desc: '4 screens → frame the "why" → show curve preview', time: '60s', isNew: true },
+                    { step: '1st Moment', desc: 'Guided capture during onboarding', time: '30s', isNew: true },
+                    { step: 'Notifications', desc: 'Enable morning + evening prompts', time: '10s', isNew: true },
+                    { step: 'Home', desc: 'See first dot on timeline + streak: 1 🔥', time: '15s', isNew: false },
+                    { step: '2nd Moment', desc: 'Prompted by onboarding or notification', time: '30s', isNew: true },
+                    { step: 'Curve Forms', desc: 'Two dots connected — "this is your day taking shape"', time: '10s', isNew: false },
+                    { step: 'Evening', desc: 'Push: "Your day had 2 moments — replay?" → Story', time: '60s', isNew: true },
+                    { step: 'Day 2', desc: 'Morning push: "How are you starting today?" → Streak: 2 🔥', time: '30s', isNew: true },
+                  ].map((s, i) => (
+                    <div key={i} className="flex items-start gap-1.5 shrink-0">
+                      <div className={`w-20 rounded-lg p-2 text-center border ${s.isNew ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-200'}`}>
+                        {s.isNew && <p className="text-[7px] font-bold text-emerald-600 uppercase mb-0.5">New</p>}
+                        <p className="text-[9px] font-bold text-gray-900">{s.step}</p>
+                        <p className="text-[7px] text-gray-500 leading-tight mt-0.5">{s.desc}</p>
+                        <p className="text-[7px] text-gray-400 mt-1">{s.time}</p>
+                      </div>
+                      {i < 8 && <ChevronRight className="w-3 h-3 text-gray-300 mt-5 shrink-0" />}
                     </div>
                   ))}
                 </div>
               </div>
-              <div>
-                <p className="text-[10px] font-semibold text-amber-300 uppercase tracking-wider mb-2.5">To Investigate / Build</p>
-                <div className="space-y-2">
-                  {[
-                    'What triggers the first capture each day? (notification, routine, self-initiated?)',
-                    'What do "seeds" represent and how are they earned?',
-                    'What happens when user taps a moment on the timeline?',
-                    'Does Bloom AI reference captured moments in conversations?',
-                    'How does the practitioner see the member\'s moments?',
-                    'Weekly/monthly summaries or pattern insights?',
-                    'The reload issue mentioned when advancing through the flow',
-                    'What\'s in the "Moments" and "Rituals" bottom nav tabs?',
-                  ].map((p, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0 mt-0.5" />
-                      <p className="text-[10px] text-gray-400">{p}</p>
-                    </div>
-                  ))}
-                </div>
+              <p className="text-[9px] text-gray-400 mt-3">Green = new in Phase 2. Gray = exists from Phase 1. The first 48 hours are entirely redesigned.</p>
+            </div>
+
+            {/* Phase 2 success criteria */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+              <h3 className="text-xs font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Target className="w-3.5 h-3.5 text-gray-400" />
+                Phase 2 Success Criteria
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { metric: 'D7 Retention', target: '> 40%', phase1: `${analytics?.retention.find(r => r.day === 7)?.pct || '—'}%`, color: 'text-emerald-600' },
+                  { metric: 'D30 Retention', target: '> 20%', phase1: `${analytics?.retention.find(r => r.day === 30)?.pct || '—'}%`, color: 'text-blue-600' },
+                  { metric: 'Avg Streak', target: '> 5 days', phase1: analytics?.streaks.length ? `${(analytics.streaks.reduce((s, st) => s + st.maxStreak, 0) / analytics.streaks.length).toFixed(1)}d` : '—', color: 'text-violet-600' },
+                  { metric: 'Onboarding → 1st Moment', target: '> 80%', phase1: 'N/A', color: 'text-pink-600' },
+                ].map((m, i) => (
+                  <div key={i} className="bg-gray-50 rounded-xl p-3.5 border border-gray-100">
+                    <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">{m.metric}</p>
+                    <p className={`text-lg font-bold ${m.color} mt-1`}>{m.target}</p>
+                    <p className="text-[9px] text-gray-400 mt-1">Phase 1: {m.phase1}</p>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="bg-white/10 rounded-lg p-4">
-              <p className="text-xs font-semibold text-white mb-2">Starting Point</p>
-              <p className="text-[10px] text-gray-300 leading-relaxed">
-                This is the base flow map. The capture experience is well-built — 4 clear steps, rich media support, full emotional vocabulary.
-                The visual reward (emotional curve + story recap) is the differentiator. The open question is: <span className="text-white font-semibold">what makes
-                users start their first capture each day without being asked?</span> Share more context and we&apos;ll layer in the trigger
-                analysis, practitioner connection, and retention mechanics.
-              </p>
+
+            {/* Timeline */}
+            <div className="bg-gray-900 text-white rounded-2xl p-5">
+              <h3 className="text-xs font-bold text-white mb-4">Build Timeline</h3>
+              <div className="space-y-3">
+                {[
+                  { phase: 'Weeks 1-2', label: 'Foundation', items: ['Native app shell (Expo/React Native)', 'Push notification infrastructure', 'Bug fixes + crash reporting', 'Offline capture support'], color: 'bg-emerald-400' },
+                  { phase: 'Weeks 3-4', label: 'Onboarding + Triggers', items: ['Guided onboarding flow (4-5 screens)', 'First moment during onboarding', 'Morning, afternoon, evening notification schedule', 'Notification preference settings'], color: 'bg-blue-400' },
+                  { phase: 'Weeks 5-6', label: 'Rewards + Depth', items: ['Streak counter on home screen', 'Seeds progression system', 'Weekly insight generation (from mood patterns)', 'Your Day story shows streak + seeds'], color: 'bg-amber-400' },
+                  { phase: 'Weeks 7-8', label: 'Practitioner + Launch', items: ['Practitioner emotional curve dashboard', 'Member sharing opt-in', 'Session prep with moment references', 'Phase 2 pilot launch (30-50 users)'], color: 'bg-violet-400' },
+                ].map((p, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="flex flex-col items-center shrink-0">
+                      <div className={`w-3 h-3 rounded-full ${p.color}`} />
+                      {i < 3 && <div className="w-px h-full bg-white/20 min-h-[40px]" />}
+                    </div>
+                    <div className="flex-1 pb-2">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[10px] font-bold text-white">{p.phase}</span>
+                        <span className="text-[9px] text-gray-400">— {p.label}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1">
+                        {p.items.map((item, j) => (
+                          <p key={j} className="text-[9px] text-gray-400">• {item}</p>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <p className="text-[10px] text-gray-400">
+                  <span className="text-white font-semibold">Phase 2 pilot launch: Week 8</span> — 30-50 users, native app, full onboarding, notifications enabled, streaks active.
+                  Same test methodology: observe for 30 days, compare retention + engagement against Phase 1 baselines.
+                </p>
+              </div>
             </div>
+
           </div>
         </motion.section>
 
