@@ -1372,78 +1372,165 @@ export default function MomentsProductDesignPage() {
         {/* ══════════════════════════════════════════════════ */}
         <motion.section id="pilot-summary" className="scroll-mt-16" {...fadeUp(0.46)}>
           <SectionTitle subtitle="The one-slide summary an investor skims first">1-Month Pilot Summary</SectionTitle>
-          <div className="bg-gray-900 text-white rounded-2xl p-6">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-              <div className="text-center">
+          <div className="bg-gray-900 text-white rounded-2xl p-6 space-y-6">
+
+            {/* Headline */}
+            <div>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Jan 20 — Feb 23, 2026 · Closed Beta</p>
+              <p className="text-base font-bold text-white leading-snug">The capture experience works. The infrastructure around it doesn&apos;t — yet.</p>
+            </div>
+
+            {/* Top-line metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-white/10 rounded-xl p-3.5 text-center">
                 <p className="text-2xl font-bold text-white">{analytics?.totalUsers || '—'}</p>
                 <p className="text-[10px] text-gray-400">Test Users</p>
               </div>
-              <div className="text-center">
+              <div className="bg-white/10 rounded-xl p-3.5 text-center">
                 <p className="text-2xl font-bold text-emerald-400">{analytics?.totalMoments || '—'}</p>
                 <p className="text-[10px] text-gray-400">Moments Captured</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-blue-400">{analytics?.totalActiveDays || '—'}</p>
-                <p className="text-[10px] text-gray-400">Active Days</p>
+              <div className="bg-white/10 rounded-xl p-3.5 text-center">
+                <p className="text-2xl font-bold text-blue-400">{analytics ? `${analytics.avgMomentsPerUser}` : '—'}</p>
+                <p className="text-[10px] text-gray-400">Avg per User</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-amber-400">{analytics ? `${analytics.avgMomentsPerUser}` : '—'}</p>
-                <p className="text-[10px] text-gray-400">Avg Moments/User</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-              <div className="bg-white/10 rounded-xl p-4">
-                <p className="text-[10px] font-semibold text-emerald-300 uppercase tracking-wider mb-2">What Worked</p>
-                <div className="space-y-1.5">
-                  <p className="text-[10px] text-gray-300">• Capture flow: users who started it, completed it</p>
-                  <p className="text-[10px] text-gray-300">• Mood tagging: {analytics?.moodTagRate || '—'}% tagged at least one mood</p>
-                  <p className="text-[10px] text-gray-300">• Emotional vocabulary: all 14 moods used including negative</p>
-                  <p className="text-[10px] text-gray-300">• Power users emerged organically ({analytics?.userSegments.powerUsers || '—'} users, 10+ moments)</p>
-                </div>
-              </div>
-              <div className="bg-white/10 rounded-xl p-4">
-                <p className="text-[10px] font-semibold text-red-300 uppercase tracking-wider mb-2">What Broke</p>
-                <div className="space-y-1.5">
-                  <p className="text-[10px] text-gray-300">• No daily trigger — web-only, zero push notifications</p>
-                  <p className="text-[10px] text-gray-300">• No structured onboarding — verbal explanation only</p>
-                  <p className="text-[10px] text-gray-300">• Reward loop too passive — curve is beautiful but not enough</p>
-                  <p className="text-[10px] text-gray-300">• {analytics?.userSegments.trialUsers || '—'} users tried once and left</p>
-                </div>
-              </div>
-              <div className="bg-white/10 rounded-xl p-4">
-                <p className="text-[10px] font-semibold text-blue-300 uppercase tracking-wider mb-2">What We Learned</p>
-                <div className="space-y-1.5">
-                  <p className="text-[10px] text-gray-300">• The product works — the infrastructure around it doesn&apos;t</p>
-                  <p className="text-[10px] text-gray-300">• Users need triggers (notifications) not features</p>
-                  <p className="text-[10px] text-gray-300">• Early multi-capture predicts retention</p>
-                  <p className="text-[10px] text-gray-300">• Emotional self-awareness varies — mood step is also educational</p>
-                </div>
+              <div className="bg-white/10 rounded-xl p-3.5 text-center">
+                <p className="text-2xl font-bold text-violet-400">{analytics?.moodTagRate || '—'}%</p>
+                <p className="text-[10px] text-gray-400">Tagged a Mood</p>
               </div>
             </div>
 
+            {/* Engagement tiers + retention at a glance */}
+            {analytics && !analytics.empty && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">User Engagement Tiers</p>
+                  <div className="space-y-2.5">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-emerald-300 font-semibold">Power Users (10+)</span>
+                        <span className="text-[10px] text-white font-bold">{analytics.userSegments.powerUsers} ({Math.round((analytics.userSegments.powerUsers / analytics.totalUsers) * 100)}%)</span>
+                      </div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden"><div className="h-full bg-emerald-400 rounded-full" style={{ width: `${(analytics.userSegments.powerUsers / analytics.totalUsers) * 100}%` }} /></div>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-blue-300 font-semibold">Casual (3-9)</span>
+                        <span className="text-[10px] text-white font-bold">{analytics.userSegments.casualUsers} ({Math.round((analytics.userSegments.casualUsers / analytics.totalUsers) * 100)}%)</span>
+                      </div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden"><div className="h-full bg-blue-400 rounded-full" style={{ width: `${(analytics.userSegments.casualUsers / analytics.totalUsers) * 100}%` }} /></div>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-gray-400 font-semibold">Trial Only (1-2)</span>
+                        <span className="text-[10px] text-white font-bold">{analytics.userSegments.trialUsers} ({Math.round((analytics.userSegments.trialUsers / analytics.totalUsers) * 100)}%)</span>
+                      </div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden"><div className="h-full bg-gray-500 rounded-full" style={{ width: `${(analytics.userSegments.trialUsers / analytics.totalUsers) * 100}%` }} /></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Retention Snapshot</p>
+                  <div className="space-y-2.5">
+                    {analytics.retention.filter(r => [1, 3, 7, 14, 30].includes(r.day)).map(r => (
+                      <div key={r.day}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] text-gray-300">Day {r.day}</span>
+                          <span className={`text-[10px] font-bold ${r.pct >= 30 ? 'text-emerald-400' : r.pct >= 15 ? 'text-amber-400' : 'text-red-400'}`}>{r.pct}% ({r.retained}/{r.total})</span>
+                        </div>
+                        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${r.pct >= 30 ? 'bg-emerald-400' : r.pct >= 15 ? 'bg-amber-400' : 'bg-red-400'}`} style={{ width: `${r.pct}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Strongest predictive signal */}
+            {analytics && !analytics.empty && analytics.signals.length > 0 && (() => {
+              const best = [...analytics.signals].sort((a, b) => (b.withSignalPct - b.withoutSignalPct) - (a.withSignalPct - a.withoutSignalPct))[0]
+              const lift = best.withSignalPct - best.withoutSignalPct
+              return (
+                <div className="bg-violet-500/15 border border-violet-400/30 rounded-xl p-4">
+                  <p className="text-[10px] font-semibold text-violet-300 uppercase tracking-wider mb-1">Strongest Retention Signal</p>
+                  <p className="text-sm font-bold text-white mb-1">Users who <span className="text-violet-300">{best.signal.toLowerCase()}</span> retain at {best.withSignalPct}% vs {best.withoutSignalPct}%</p>
+                  <p className="text-[10px] text-gray-400">+{lift}pp lift — this is the behavior to optimize for in onboarding.</p>
+                </div>
+              )
+            })()}
+
+            {/* 3 columns: worked, loved, broke */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white/10 rounded-xl p-4">
+                <p className="text-[10px] font-semibold text-emerald-300 uppercase tracking-wider mb-2.5">What Worked</p>
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-gray-300">• 4-step capture is fast (10-30s) and users complete it</p>
+                  <p className="text-[10px] text-gray-300">• {analytics?.moodTagRate || '—'}% voluntarily tagged moods — all 14 used including negative</p>
+                  <p className="text-[10px] text-gray-300">• {analytics?.captionRate || '—'}% wrote optional notes — reflection happens naturally</p>
+                  <p className="text-[10px] text-gray-300">• {analytics?.userSegments.powerUsers || '—'} power users emerged organically (10+ moments)</p>
+                  {analytics && !analytics.empty && (() => {
+                    const topType = Object.entries(analytics.byType).sort((a, b) => b[1] - a[1])[0]
+                    return topType ? <p className="text-[10px] text-gray-300">• {topType[0]} is the dominant format ({Math.round((topType[1] / analytics.totalMoments) * 100)}%) — visual capture is intuitive</p> : null
+                  })()}
+                </div>
+              </div>
+              <div className="bg-white/10 rounded-xl p-4">
+                <p className="text-[10px] font-semibold text-blue-300 uppercase tracking-wider mb-2.5">What Users Loved</p>
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-gray-300">• Capturing felt easy and natural — not a chore</p>
+                  <p className="text-[10px] text-gray-300">• The emotional curve (highs up, lows down) was the &quot;wow&quot; moment</p>
+                  <p className="text-[10px] text-gray-300">• Your Day story recap gave closure and self-reflection</p>
+                  <p className="text-[10px] text-gray-300">• Going back to past days felt like a personal journal</p>
+                  <p className="text-[10px] text-gray-300">• Talking to Bloom AI about a specific moment was novel</p>
+                </div>
+              </div>
+              <div className="bg-white/10 rounded-xl p-4">
+                <p className="text-[10px] font-semibold text-red-300 uppercase tracking-wider mb-2.5">What Broke</p>
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-gray-300">• Web-only — no home screen presence, no app switcher</p>
+                  <p className="text-[10px] text-gray-300">• Zero push notifications — no daily trigger mechanism</p>
+                  <p className="text-[10px] text-gray-300">• Verbal onboarding only — no guided first-time experience</p>
+                  <p className="text-[10px] text-gray-300">• No motivation to self-initiate without being asked</p>
+                  <p className="text-[10px] text-gray-300">• {analytics?.userSegments.trialUsers || '—'} users tried 1-2 times and never returned</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Key learning */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-              <p className="text-xs font-semibold text-white mb-2">Next 90 Days: 3 Fixes That Change Everything</p>
+              <p className="text-[10px] font-semibold text-amber-300 uppercase tracking-wider mb-2">Core Learning</p>
+              <p className="text-[11px] text-gray-200 leading-relaxed">
+                The product has <span className="text-emerald-300 font-semibold">product love</span> — users who captured moments liked the experience, the curve, the story, and the Bloom conversations.
+                It does not yet have <span className="text-red-300 font-semibold">product habit</span> — there&apos;s no trigger to open the app, no progression to come back tomorrow, and no onboarding to form the mental model.
+                This is a distribution and infrastructure problem, not a product problem. The fix is specific and buildable.
+              </p>
+            </div>
+
+            {/* Next 90 days */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+              <p className="text-xs font-semibold text-white mb-3">Next 90 Days: From Product Love to Product Habit</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="flex items-start gap-2">
-                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0">1</span>
+                <div className="flex items-start gap-2.5">
+                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">1</span>
                   <div>
-                    <p className="text-[10px] font-semibold text-white">Native app + push notifications</p>
-                    <p className="text-[9px] text-gray-400">Daily trigger at 9am, evening recap at 8pm</p>
+                    <p className="text-[10px] font-semibold text-white">Native App + Push Notifications</p>
+                    <p className="text-[9px] text-gray-400">Home screen icon, morning capture prompt at 9am, evening &quot;replay your day&quot; nudge at 8pm. Solves the trigger gap.</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-[10px] font-bold text-blue-400 bg-blue-400/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0">2</span>
+                <div className="flex items-start gap-2.5">
+                  <span className="text-[10px] font-bold text-blue-400 bg-blue-400/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">2</span>
                   <div>
-                    <p className="text-[10px] font-semibold text-white">Guided onboarding</p>
-                    <p className="text-[9px] text-gray-400">First moment in onboarding, show the curve preview</p>
+                    <p className="text-[10px] font-semibold text-white">Guided Onboarding + First Moment</p>
+                    <p className="text-[9px] text-gray-400">Capture first moment during signup, show the curve preview, frame the &quot;why.&quot; Users who capture 2+ on day 1 retain better.</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-[10px] font-bold text-amber-400 bg-amber-400/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0">3</span>
+                <div className="flex items-start gap-2.5">
+                  <span className="text-[10px] font-bold text-amber-400 bg-amber-400/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">3</span>
                   <div>
-                    <p className="text-[10px] font-semibold text-white">Active reward system</p>
-                    <p className="text-[9px] text-gray-400">Streaks, seeds progression, weekly insight reports</p>
+                    <p className="text-[10px] font-semibold text-white">Active Reward System</p>
+                    <p className="text-[9px] text-gray-400">Streaks with visual progress, seeds that unlock insights, weekly emotional pattern reports, practitioner sharing.</p>
                   </div>
                 </div>
               </div>
