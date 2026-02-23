@@ -668,7 +668,7 @@ export default function MomentsProductDesignPage() {
                   severity: 'critical' as const,
                   icon: '🔋',
                   finding: 'Users captured moments when asked, but couldn\'t find their own reason to continue. The emotional curve and story recap weren\'t enough to drive self-initiated behavior.',
-                  rootCause: 'The reward is passive (you see a pretty timeline) not active (you gain something). No progression, no streak incentive, no "why should I do this today?" trigger.',
+                  rootCause: 'The reward is passive (you see a pretty timeline) not active (you gain something). No progression, no personal insight, no "why should I do this today?" trigger.',
                   implication: 'The capture flow works — the motivation layer doesn\'t exist yet.',
                 },
                 {
@@ -808,7 +808,7 @@ export default function MomentsProductDesignPage() {
                   </div>
                   <p className="text-[10px] font-bold text-amber-400">REWARD</p>
                   <p className="text-[9px] text-amber-300">Weak</p>
-                  <p className="text-[8px] text-gray-500 mt-1">Curve is beautiful but passive — no progression, streak, or social proof</p>
+                  <p className="text-[8px] text-gray-500 mt-1">Curve is beautiful but passive — no progression, personal insight, or forward pull</p>
                 </div>
               </div>
               <div className="bg-white/10 rounded-lg p-3">
@@ -817,7 +817,7 @@ export default function MomentsProductDesignPage() {
                   The breakdown is on both ends: nothing <span className="text-red-400 font-semibold">triggers</span> them to open the app,
                   and the <span className="text-amber-400 font-semibold">reward</span> isn&apos;t strong enough to create anticipation for tomorrow.
                   The fix isn&apos;t in the capture flow — it&apos;s in the infrastructure around it: native app with push notifications, structured onboarding,
-                  and a reward system that creates forward momentum (streaks, seeds, practitioner connection, weekly insights).
+                  and a reward system that creates forward momentum (personal insights, emotional growth, practitioner connection, weekly reflections).
                 </p>
               </div>
             </div>
@@ -1624,8 +1624,8 @@ export default function MomentsProductDesignPage() {
                 <div className="flex items-start gap-2.5">
                   <span className="text-[10px] font-bold text-amber-400 bg-amber-400/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">3</span>
                   <div>
-                    <p className="text-[10px] font-semibold text-white">Active Reward System</p>
-                    <p className="text-[9px] text-gray-400">Streaks with visual progress, seeds that unlock insights, weekly emotional pattern reports, practitioner sharing.</p>
+                    <p className="text-[10px] font-semibold text-white">Gentle Growth System</p>
+                    <p className="text-[9px] text-gray-400">Cumulative emotional garden, weekly pattern insights, personal milestones that celebrate progress without punishing pauses.</p>
                   </div>
                 </div>
               </div>
@@ -1669,7 +1669,7 @@ export default function MomentsProductDesignPage() {
                       <p className="text-[10px] text-emerald-700">→ Native app on home screen</p>
                       <p className="text-[10px] text-emerald-700">→ Push notifications (morning + evening)</p>
                       <p className="text-[10px] text-emerald-700">→ Guided onboarding with first moment</p>
-                      <p className="text-[10px] text-emerald-700">→ Active reward system (streaks, seeds)</p>
+                      <p className="text-[10px] text-emerald-700">→ Gentle growth system (insights, milestones)</p>
                       <p className="text-[10px] text-emerald-700">→ Practitioner connection</p>
                       <p className="text-[10px] text-emerald-700">→ Bug fixes + performance</p>
                     </div>
@@ -1721,19 +1721,19 @@ export default function MomentsProductDesignPage() {
                   },
                   {
                     num: '3',
-                    title: 'Active Reward System',
+                    title: 'Gentle Growth System',
                     color: 'amber',
-                    phase1Problem: 'Curve is beautiful but passive. No streak, no progression, no "why do this today?"',
+                    phase1Problem: 'Curve is beautiful but passive. No progression, no personal insight, no "why do this today?"',
                     whatToBuild: [
-                      'Daily streak counter visible on home (🔥 3-day streak)',
-                      'Seeds: earn 1 per moment, 3 for a full day (morning + afternoon + evening)',
-                      'Seeds unlock: weekly insight report at 20 seeds, monthly pattern at 100',
-                      'Streak milestones: 7 days → "Week warrior", 30 → "Month of clarity"',
-                      'Weekly email/notification: "You felt most peaceful on mornings you walked"',
-                      'Your Day story shows streak + seeds earned at the end',
+                      'Emotional Garden: each moment grows a bloom — your garden fills over time, never resets',
+                      'Weekly Reflection: "This week you felt most peaceful on mornings you walked"',
+                      'Monthly Pattern Map: visual heatmap of your emotional landscape over 30 days',
+                      'Gentle milestones: "10 moments captured" → unlock first weekly reflection',
+                      'Bloom AI weaves past moments into conversations: "Last Thursday you felt inspired — what sparked that?"',
+                      'Your Day story ends with "Your garden grew by 3 today" — cumulative, never punitive',
                     ],
-                    successMetric: 'Average streak length > 5 days. 30%+ users reach 7-day streak.',
-                    designChange: 'Streak badge on home screen. Seeds counter on Your Day card. Weekly insight card in Moments tab.',
+                    successMetric: 'Users who receive their first weekly reflection retain 2x better. 40%+ users reach 10 moments in first 14 days.',
+                    designChange: 'Garden visualization on home screen (grows with each moment). Weekly insight card in Moments tab. No counters that reset to zero.',
                   },
                   {
                     num: '4',
@@ -1820,11 +1820,11 @@ export default function MomentsProductDesignPage() {
                     { step: 'Onboarding', desc: '4 screens → frame the "why" → show curve preview', time: '60s', isNew: true },
                     { step: '1st Moment', desc: 'Guided capture during onboarding', time: '30s', isNew: true },
                     { step: 'Notifications', desc: 'Enable morning + evening prompts', time: '10s', isNew: true },
-                    { step: 'Home', desc: 'See first dot on timeline + streak: 1 🔥', time: '15s', isNew: false },
+                    { step: 'Home', desc: 'See first dot on timeline + first bloom in garden 🌱', time: '15s', isNew: false },
                     { step: '2nd Moment', desc: 'Prompted by onboarding or notification', time: '30s', isNew: true },
                     { step: 'Curve Forms', desc: 'Two dots connected — "this is your day taking shape"', time: '10s', isNew: false },
                     { step: 'Evening', desc: 'Push: "Your day had 2 moments — replay?" → Story', time: '60s', isNew: true },
-                    { step: 'Day 2', desc: 'Morning push: "How are you starting today?" → Streak: 2 🔥', time: '30s', isNew: true },
+                    { step: 'Day 2', desc: 'Morning push: "How are you starting today?" → garden grows 🌿', time: '30s', isNew: true },
                   ].map((s, i) => (
                     <div key={i} className="flex items-start gap-1.5 shrink-0">
                       <div className={`w-20 rounded-lg p-2 text-center border ${s.isNew ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-200'}`}>
@@ -1851,7 +1851,7 @@ export default function MomentsProductDesignPage() {
                 {[
                   { metric: 'D7 Retention', target: '> 40%', phase1: `${analytics?.retention.find(r => r.day === 7)?.pct || '—'}%`, color: 'text-emerald-600' },
                   { metric: 'D30 Retention', target: '> 20%', phase1: `${analytics?.retention.find(r => r.day === 30)?.pct || '—'}%`, color: 'text-blue-600' },
-                  { metric: 'Avg Streak', target: '> 5 days', phase1: analytics?.streaks.length ? `${(analytics.streaks.reduce((s, st) => s + st.maxStreak, 0) / analytics.streaks.length).toFixed(1)}d` : '—', color: 'text-violet-600' },
+                  { metric: 'Weekly Reflection Unlock', target: '> 60%', phase1: 'N/A', color: 'text-violet-600' },
                   { metric: 'Onboarding → 1st Moment', target: '> 80%', phase1: 'N/A', color: 'text-pink-600' },
                 ].map((m, i) => (
                   <div key={i} className="bg-gray-50 rounded-xl p-3.5 border border-gray-100">
@@ -1870,7 +1870,7 @@ export default function MomentsProductDesignPage() {
                 {[
                   { phase: 'Weeks 1-2', label: 'Foundation', items: ['Native app shell (Expo/React Native)', 'Push notification infrastructure', 'Bug fixes + crash reporting', 'Offline capture support'], color: 'bg-emerald-400' },
                   { phase: 'Weeks 3-4', label: 'Onboarding + Triggers', items: ['Guided onboarding flow (4-5 screens)', 'First moment during onboarding', 'Morning, afternoon, evening notification schedule', 'Notification preference settings'], color: 'bg-blue-400' },
-                  { phase: 'Weeks 5-6', label: 'Rewards + Depth', items: ['Streak counter on home screen', 'Seeds progression system', 'Weekly insight generation (from mood patterns)', 'Your Day story shows streak + seeds'], color: 'bg-amber-400' },
+                  { phase: 'Weeks 5-6', label: 'Growth + Depth', items: ['Emotional garden visualization on home', 'Weekly reflection generation (from mood patterns)', 'Monthly pattern map (30-day emotional heatmap)', 'Your Day story ends with garden growth summary'], color: 'bg-amber-400' },
                   { phase: 'Weeks 7-8', label: 'Practitioner + Launch', items: ['Practitioner emotional curve dashboard', 'Member sharing opt-in', 'Session prep with moment references', 'Phase 2 pilot launch (30-50 users)'], color: 'bg-violet-400' },
                 ].map((p, i) => (
                   <div key={i} className="flex items-start gap-3">
@@ -1894,7 +1894,7 @@ export default function MomentsProductDesignPage() {
               </div>
               <div className="mt-4 pt-4 border-t border-white/10">
                 <p className="text-[10px] text-gray-400">
-                  <span className="text-white font-semibold">Phase 2 pilot launch: Week 8</span> — 30-50 users, native app, full onboarding, notifications enabled, streaks active.
+                  <span className="text-white font-semibold">Phase 2 pilot launch: Week 8</span> — 30-50 users, native app, full onboarding, notifications enabled, growth system active.
                   Same test methodology: observe for 30 days, compare retention + engagement against Phase 1 baselines.
                 </p>
               </div>
