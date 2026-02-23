@@ -6,9 +6,11 @@ export async function GET() {
     const supabase = createAdminClient()
 
     // Fetch all moments (admin bypasses RLS)
+    // Snapshot cutoff: only include moments up to 23 Feb 2026
     const { data: moments, error } = await supabase
       .from('moments')
       .select('id, user_id, type, moods, caption, text_content, duration_seconds, file_size_bytes, mime_type, created_at')
+      .lte('created_at', '2026-02-23T23:59:59+00:00')
       .order('created_at', { ascending: true })
 
     if (error) {
