@@ -1003,57 +1003,6 @@ export default function MomentsProductDesignPage() {
                 </div>
               </div>
 
-              {/* ── Per-User Breakdown ─────────────────────── */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-5">
-                <h3 className="text-xs font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Users className="w-3.5 h-3.5 text-gray-400" />
-                  Per-User Breakdown
-                </h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="border-b border-gray-100">
-                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">User</th>
-                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">Total</th>
-                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">Active Days</th>
-                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">Avg/Day</th>
-                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">Types</th>
-                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">Top Mood</th>
-                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">Notes</th>
-                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2 pr-3">First</th>
-                        <th className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider pb-2">Streak</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {analytics.perUser.map((u, i) => {
-                        const streak = analytics.streaks.find(s => s.userId === u.userId)
-                        return (
-                          <tr key={u.userId} className={i % 2 === 0 ? 'bg-gray-50/50' : ''}>
-                            <td className="text-[10px] font-mono text-gray-500 py-2 pr-3">{u.userId}...</td>
-                            <td className="text-[10px] font-bold text-gray-900 py-2 pr-3">{u.total}</td>
-                            <td className="text-[10px] text-gray-600 py-2 pr-3">{u.activeDays} / {u.daySpan}d</td>
-                            <td className="text-[10px] text-gray-600 py-2 pr-3">{u.avgPerDay}</td>
-                            <td className="text-[10px] py-2 pr-3">
-                              {u.typesUsed.map(t => (
-                                <span key={t} className="mr-0.5">{TYPE_ICONS[t]?.icon || t}</span>
-                              ))}
-                            </td>
-                            <td className="text-[10px] py-2 pr-3">
-                              {u.topMood && <span>{MOOD_EMOJI[u.topMood] || '🔵'} <span className="text-gray-500 capitalize">{u.topMood}</span></span>}
-                            </td>
-                            <td className="text-[10px] text-gray-600 py-2 pr-3">{u.captionRate}%</td>
-                            <td className="text-[10px] text-gray-500 py-2 pr-3">{new Date(u.firstMoment).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</td>
-                            <td className="text-[10px] py-2">
-                              {streak && <span className={`font-semibold ${streak.maxStreak >= 3 ? 'text-emerald-600' : 'text-gray-500'}`}>{streak.maxStreak}d</span>}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
               {/* ── Insights ──────────────────────────────── */}
               <div className="bg-violet-50 border border-violet-200 rounded-2xl p-5">
                 <h3 className="text-xs font-bold text-violet-800 mb-3 flex items-center gap-2">
