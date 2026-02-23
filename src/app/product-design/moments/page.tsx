@@ -698,6 +698,15 @@ export default function MomentsProductDesignPage() {
                   rootCause: 'Without onboarding, users don\'t form the mental model of "capture → tag mood → see curve build → replay at night." They just see an empty screen.',
                   implication: 'First-time experience is the entire conversion funnel. No onboarding = no habit formation.',
                 },
+                {
+                  id: 'F5',
+                  title: 'App Was Buggy',
+                  severity: 'high' as const,
+                  icon: '🐛',
+                  finding: 'The app had bugs and rough edges during the test — crashes, loading issues, and UI glitches that interrupted the capture flow and broke user trust.',
+                  rootCause: 'Early-stage build running as a web app on mobile browsers. Not optimized for all devices, no crash reporting, no error recovery flows.',
+                  implication: 'Bugs add friction on top of an already frictionful experience (web-only, no onboarding). Users who hit a bug on their first try are unlikely to come back.',
+                },
               ].map((feedback) => (
                 <div key={feedback.id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
                   <div className={`px-4 py-2.5 flex items-center justify-between ${feedback.severity === 'critical' ? 'bg-red-50 border-b border-red-100' : 'bg-amber-50 border-b border-amber-100'}`}>
@@ -861,6 +870,7 @@ export default function MomentsProductDesignPage() {
                     'No check-in messages',
                     'No incentives or rewards',
                     'No native app (web URL only)',
+                    'App was buggy — early build, rough edges',
                   ].map((item, i) => (
                     <div key={i} className="flex items-center gap-2 bg-red-50 rounded-lg px-3 py-2">
                       <XCircle className="w-3 h-3 text-red-400 shrink-0" />
