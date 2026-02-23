@@ -611,6 +611,124 @@ export default function MomentsProductDesignPage() {
         </motion.section>
 
         {/* ══════════════════════════════════════════════════ */}
+        {/* ── USER FEEDBACK: WHY ENGAGEMENT DROPPED ──────── */}
+        {/* ══════════════════════════════════════════════════ */}
+        <motion.section {...fadeUp(0.28)}>
+          <SectionTitle subtitle="Qualitative feedback from 15-20 test users — what broke the habit loop">User Feedback: Why They Stopped</SectionTitle>
+
+          <div className="space-y-4">
+            {/* The 4 root causes */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                {
+                  id: 'F1',
+                  title: 'No Intrinsic Motivation',
+                  severity: 'critical' as const,
+                  icon: '🔋',
+                  finding: 'Users captured moments when asked, but couldn\'t find their own reason to continue. The emotional curve and story recap weren\'t enough to drive self-initiated behavior.',
+                  rootCause: 'The reward is passive (you see a pretty timeline) not active (you gain something). No progression, no streak incentive, no "why should I do this today?" trigger.',
+                  implication: 'The capture flow works — the motivation layer doesn\'t exist yet.',
+                },
+                {
+                  id: 'F2',
+                  title: 'Web App, Not Native',
+                  severity: 'critical' as const,
+                  icon: '🌐',
+                  finding: 'Users opened Moments in their mobile browser (Chrome/Safari) as a URL. Not installed as a native app or PWA on their home screen.',
+                  rootCause: 'Browser-based = no home screen icon, no app switcher presence, no "muscle memory" of tapping an app icon. Out of sight, out of mind.',
+                  implication: 'Even if motivation existed, the friction of "open browser → type URL / find bookmark" kills spontaneous captures.',
+                },
+                {
+                  id: 'F3',
+                  title: 'Zero Notifications',
+                  severity: 'critical' as const,
+                  icon: '🔕',
+                  finding: 'The app sent no push notifications — no morning prompt, no evening recap nudge, no "you haven\'t captured today" reminder.',
+                  rootCause: 'Web apps can\'t send native push notifications without PWA setup + user permission. The daily trigger mechanism was completely absent.',
+                  implication: 'Without a trigger, the habit loop has no entry point. Users relied on remembering, which fails after day 2-3.',
+                },
+                {
+                  id: 'F4',
+                  title: 'No Proper Onboarding',
+                  severity: 'high' as const,
+                  icon: '🚪',
+                  finding: 'Users were verbally explained the feature instead of being guided through a structured first-time experience. No in-app walkthrough, no first-moment tutorial, no "why this matters" framing.',
+                  rootCause: 'Without onboarding, users don\'t form the mental model of "capture → tag mood → see curve build → replay at night." They just see an empty screen.',
+                  implication: 'First-time experience is the entire conversion funnel. No onboarding = no habit formation.',
+                },
+              ].map((feedback) => (
+                <div key={feedback.id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                  <div className={`px-4 py-2.5 flex items-center justify-between ${feedback.severity === 'critical' ? 'bg-red-50 border-b border-red-100' : 'bg-amber-50 border-b border-amber-100'}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{feedback.icon}</span>
+                      <span className="text-xs font-bold text-gray-900">{feedback.title}</span>
+                    </div>
+                    <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${feedback.severity === 'critical' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{feedback.severity}</span>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <div>
+                      <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">What Users Said</p>
+                      <p className="text-[10px] text-gray-700 leading-relaxed">{feedback.finding}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Root Cause</p>
+                      <p className="text-[10px] text-gray-600 leading-relaxed">{feedback.rootCause}</p>
+                    </div>
+                    <div className={`rounded-lg p-2.5 ${feedback.severity === 'critical' ? 'bg-red-50' : 'bg-amber-50'}`}>
+                      <p className={`text-[9px] font-semibold ${feedback.severity === 'critical' ? 'text-red-700' : 'text-amber-700'} mb-0.5`}>Implication</p>
+                      <p className={`text-[10px] ${feedback.severity === 'critical' ? 'text-red-600' : 'text-amber-600'} leading-relaxed`}>{feedback.implication}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Habit loop diagnosis */}
+            <div className="bg-gray-900 rounded-2xl p-5">
+              <h3 className="text-xs font-bold text-white mb-4 flex items-center gap-2">
+                <Target className="w-3.5 h-3.5 text-red-400" />
+                Habit Loop Diagnosis
+              </h3>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="text-center">
+                  <div className="w-10 h-10 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center mx-auto mb-2">
+                    <Bell className="w-4 h-4 text-red-400" />
+                  </div>
+                  <p className="text-[10px] font-bold text-red-400">TRIGGER</p>
+                  <p className="text-[9px] text-red-300">Missing</p>
+                  <p className="text-[8px] text-gray-500 mt-1">No notifications, no home screen icon, no daily prompt</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center mx-auto mb-2">
+                    <Zap className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <p className="text-[10px] font-bold text-emerald-400">ACTION</p>
+                  <p className="text-[9px] text-emerald-300">Working</p>
+                  <p className="text-[8px] text-gray-500 mt-1">4-step wizard is clear, fast (10-30s), low friction</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/20 border-2 border-amber-500 flex items-center justify-center mx-auto mb-2">
+                    <Star className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <p className="text-[10px] font-bold text-amber-400">REWARD</p>
+                  <p className="text-[9px] text-amber-300">Weak</p>
+                  <p className="text-[8px] text-gray-500 mt-1">Curve is beautiful but passive — no progression, streak, or social proof</p>
+                </div>
+              </div>
+              <div className="bg-white/10 rounded-lg p-3">
+                <p className="text-[10px] text-gray-300 leading-relaxed">
+                  <span className="text-white font-semibold">Diagnosis:</span> The capture experience (Action) is solid — users who started it, completed it.
+                  The breakdown is on both ends: nothing <span className="text-red-400 font-semibold">triggers</span> them to open the app,
+                  and the <span className="text-amber-400 font-semibold">reward</span> isn&apos;t strong enough to create anticipation for tomorrow.
+                  The fix isn&apos;t in the capture flow — it&apos;s in the infrastructure around it: native app with push notifications, structured onboarding,
+                  and a reward system that creates forward momentum (streaks, seeds, practitioner connection, weekly insights).
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* ══════════════════════════════════════════════════ */}
         {/* ── COMPLETE TOUCHPOINT MAP ────────────────────── */}
         {/* ══════════════════════════════════════════════════ */}
         <motion.section {...fadeUp(0.3)}>
