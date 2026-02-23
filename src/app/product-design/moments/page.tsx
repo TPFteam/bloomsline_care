@@ -614,7 +614,7 @@ export default function MomentsProductDesignPage() {
         {/* ── USER FEEDBACK: WHY ENGAGEMENT DROPPED ──────── */}
         {/* ══════════════════════════════════════════════════ */}
         <motion.section {...fadeUp(0.28)}>
-          <SectionTitle subtitle="Qualitative feedback from 15-20 test users — what broke the habit loop">User Feedback: Why They Stopped</SectionTitle>
+          <SectionTitle subtitle="Qualitative feedback from 15-20 test users">What Users Told Us</SectionTitle>
 
           <div className="space-y-4">
             {/* The 4 root causes */}
