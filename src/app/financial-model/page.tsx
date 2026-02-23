@@ -337,59 +337,63 @@ function fmtNumber(value: number): string {
 
 // ── Chart Tooltips ───────────────────────────────────────────────────────
 
-function RevenueTooltip({ active, payload }: { active?: boolean; payload?: Array<{ value: number; payload: MonthProjection }> }) {
+function RevenueTooltip({ active, payload, locale }: { active?: boolean; payload?: Array<{ value: number; payload: MonthProjection }>; locale?: string }) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
+  const isFr = locale === 'fr'
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-xl px-4 py-3 text-xs">
       <p className="font-semibold text-gray-900 mb-1">{d.label}</p>
       <p className="text-indigo-600">MRR: {fmtEuro(d.mrr)}</p>
       <p className="text-violet-500">B2B: {fmtEuro(d.b2bMrr)} | B2C: {fmtEuro(d.b2cMrr)}</p>
       <p className="text-gray-500">ARR: {fmtEuro(d.arr)}</p>
-      <p className="text-gray-400">Growth: {d.growthRate}%/mo</p>
+      <p className="text-gray-400">{isFr ? 'Croissance' : 'Growth'}: {d.growthRate}%/{isFr ? 'mois' : 'mo'}</p>
     </div>
   )
 }
 
-function GrowthTooltip({ active, payload }: { active?: boolean; payload?: Array<{ value: number; payload: MonthProjection }> }) {
+function GrowthTooltip({ active, payload, locale }: { active?: boolean; payload?: Array<{ value: number; payload: MonthProjection }>; locale?: string }) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
+  const isFr = locale === 'fr'
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-xl px-4 py-3 text-xs">
       <p className="font-semibold text-gray-900 mb-1">{d.label}</p>
-      <p className="text-blue-600">Practitioners: {d.practitioners}</p>
-      <p className="text-emerald-600">Members: {d.members}</p>
-      <p className="text-gray-400">Growth: {d.growthRate}%/mo</p>
+      <p className="text-blue-600">{isFr ? 'Praticiens' : 'Practitioners'}: {d.practitioners}</p>
+      <p className="text-emerald-600">{isFr ? 'Membres' : 'Members'}: {d.members}</p>
+      <p className="text-gray-400">{isFr ? 'Croissance' : 'Growth'}: {d.growthRate}%/{isFr ? 'mois' : 'mo'}</p>
     </div>
   )
 }
 
-function ExpenseTooltip({ active, payload }: { active?: boolean; payload?: Array<{ value: number; payload: MonthProjection }> }) {
+function ExpenseTooltip({ active, payload, locale }: { active?: boolean; payload?: Array<{ value: number; payload: MonthProjection }>; locale?: string }) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
+  const isFr = locale === 'fr'
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-xl px-4 py-3 text-xs">
       <p className="font-semibold text-gray-900 mb-1">{d.label}</p>
       <p className="text-rose-600">COGS: {fmtEuro(d.variableCosts)}</p>
-      <p className="text-blue-600">Team: {fmtEuro(d.teamExp)}</p>
+      <p className="text-blue-600">{isFr ? 'Équipe' : 'Team'}: {fmtEuro(d.teamExp)}</p>
       <p className="text-violet-600">Infra: {fmtEuro(d.infraExp)}</p>
       <p className="text-amber-600">Marketing: {fmtEuro(d.marketingExp)}</p>
-      <p className="text-gray-500">Other: {fmtEuro(d.otherExp)}</p>
+      <p className="text-gray-500">{isFr ? 'Autres' : 'Other'}: {fmtEuro(d.otherExp)}</p>
       <p className="text-orange-600">Acquisition: {fmtEuro(d.acquisitionExp)}</p>
       <p className="font-medium text-gray-900 mt-1 pt-1 border-t border-gray-100">Total: {fmtEuro(d.expenses)}</p>
     </div>
   )
 }
 
-function RunwayTooltip({ active, payload }: { active?: boolean; payload?: Array<{ value: number; payload: MonthProjection }> }) {
+function RunwayTooltip({ active, payload, locale }: { active?: boolean; payload?: Array<{ value: number; payload: MonthProjection }>; locale?: string }) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
+  const isFr = locale === 'fr'
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-xl px-4 py-3 text-xs">
       <p className="font-semibold text-gray-900 mb-1">{d.label}</p>
-      <p className="text-emerald-600">Cash: {fmtEuro(d.cumulativeCash)}</p>
-      <p className="text-gray-500">Net burn: {fmtEuro(d.netBurn)}</p>
-      <p className="text-gray-400">Margin: {d.grossMarginPct}%</p>
+      <p className="text-emerald-600">{isFr ? 'Trésorerie' : 'Cash'}: {fmtEuro(d.cumulativeCash)}</p>
+      <p className="text-gray-500">{isFr ? 'Burn net' : 'Net burn'}: {fmtEuro(d.netBurn)}</p>
+      <p className="text-gray-400">{isFr ? 'Marge' : 'Margin'}: {d.grossMarginPct}%</p>
     </div>
   )
 }
@@ -489,21 +493,10 @@ function InfoLine({ label, value, valueClass, info }: { label: string; value: st
   )
 }
 
-// ── Benchmarks Data ──────────────────────────────────────────────────────
-
-const BENCHMARKS = [
-  { metric: 'Gross Margin', median: '70-75%', top: '85-90%' },
-  { metric: 'LTV/CAC', median: '3-5x', top: '10-15x' },
-  { metric: 'CAC Payback', median: '12-18 mo', top: '5-6 mo' },
-  { metric: 'Monthly Churn', median: '5-7%', top: '2-3%' },
-  { metric: 'CAC', median: '€200-500', top: '€50-100' },
-  { metric: 'ARPU', median: '€50-100', top: 'Varies' },
-]
-
 // ── Page ─────────────────────────────────────────────────────────────────
 
 export default function FinancialModelPage() {
-  const { locale } = useLanguage()
+  const { locale, setLocale } = useLanguage()
   const [scenario, setScenario] = useState<'conservative' | 'base' | 'aggressive'>('base')
   const [assumptions, setAssumptions] = useState<Assumptions>(SCENARIOS.base)
 
@@ -551,49 +544,324 @@ export default function FinancialModelPage() {
     const cacAmort = assumptions.cac / avgLife
     const cm = gp - cacAmort
     return [
-      { label: 'Revenue (ARPU)', value: arpu, widthPct: 100, color: 'bg-indigo-500', textColor: 'text-indigo-600' },
-      { label: 'AI (Claude Haiku)', value: -(vc * VC_AI_SHARE), widthPct: (vc * VC_AI_SHARE / arpu) * 100, color: 'bg-rose-400', textColor: 'text-rose-500' },
-      { label: 'Infrastructure', value: -(vc * VC_INFRA_SHARE), widthPct: (vc * VC_INFRA_SHARE / arpu) * 100, color: 'bg-rose-300', textColor: 'text-rose-400' },
-      { label: 'Support', value: -(vc * VC_SUPPORT_SHARE), widthPct: (vc * VC_SUPPORT_SHARE / arpu) * 100, color: 'bg-rose-200', textColor: 'text-rose-300' },
-      { label: 'Gross Profit', value: gp, widthPct: (gp / arpu) * 100, color: 'bg-emerald-500', textColor: 'text-emerald-600', isBold: true },
-      { label: 'CAC amortized', value: -cacAmort, widthPct: (cacAmort / arpu) * 100, color: 'bg-amber-400', textColor: 'text-amber-500' },
-      { label: 'Contribution Margin', value: cm, widthPct: Math.max(0, (cm / arpu) * 100), color: 'bg-emerald-600', textColor: 'text-emerald-700', isBold: true },
+      { label: t.revenueArpu, value: arpu, widthPct: 100, color: 'bg-indigo-500', textColor: 'text-indigo-600' },
+      { label: t.aiClaude, value: -(vc * VC_AI_SHARE), widthPct: (vc * VC_AI_SHARE / arpu) * 100, color: 'bg-rose-400', textColor: 'text-rose-500' },
+      { label: t.infrastructure, value: -(vc * VC_INFRA_SHARE), widthPct: (vc * VC_INFRA_SHARE / arpu) * 100, color: 'bg-rose-300', textColor: 'text-rose-400' },
+      { label: t.support, value: -(vc * VC_SUPPORT_SHARE), widthPct: (vc * VC_SUPPORT_SHARE / arpu) * 100, color: 'bg-rose-200', textColor: 'text-rose-300' },
+      { label: t.grossProfit, value: gp, widthPct: (gp / arpu) * 100, color: 'bg-emerald-500', textColor: 'text-emerald-600', isBold: true },
+      { label: t.cacAmortized, value: -cacAmort, widthPct: (cacAmort / arpu) * 100, color: 'bg-amber-400', textColor: 'text-amber-500' },
+      { label: t.contributionMargin, value: cm, widthPct: Math.max(0, (cm / arpu) * 100), color: 'bg-emerald-600', textColor: 'text-emerald-700', isBold: true },
     ]
-  }, [ue.blendedArpu, assumptions.variableCostPerPract, assumptions.churnPct, assumptions.cac])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ue.blendedArpu, assumptions.variableCostPerPract, assumptions.churnPct, assumptions.cac, locale])
 
   // Benchmark values (dynamic)
+  const fr = locale === 'fr'
+
   const benchmarkValues = useMemo(() => [
     `${ue.grossMarginPct}%`,
     `${ue.ltvCacRatio}x`,
-    `${ue.paybackMonths} mo`,
+    `${ue.paybackMonths} ${fr ? 'mois' : 'mo'}`,
     `${assumptions.churnPct}%`,
     `€${ue.cac}`,
     `€${ue.blendedArpu}`,
-  ], [ue, assumptions.churnPct])
-
+  ], [ue, assumptions.churnPct, fr])
   const t = {
-    title: locale === 'fr' ? 'Modèle financier' : locale === 'es' ? 'Modelo financiero' : 'Financial Model',
-    conservative: locale === 'fr' ? 'Prudent' : locale === 'es' ? 'Conservador' : 'Conservative',
-    base: locale === 'fr' ? 'Base' : locale === 'es' ? 'Base' : 'Base',
-    aggressive: locale === 'fr' ? 'Ambitieux' : locale === 'es' ? 'Agresivo' : 'Aggressive',
-    growth: locale === 'fr' ? 'Croissance' : locale === 'es' ? 'Crecimiento' : 'Growth',
-    pricing: locale === 'fr' ? 'Tarification' : locale === 'es' ? 'Precios' : 'Pricing',
-    costs: locale === 'fr' ? 'Coûts' : locale === 'es' ? 'Costos' : 'Costs',
-    funding: locale === 'fr' ? 'Financement' : locale === 'es' ? 'Financiación' : 'Funding',
-    assumptions: locale === 'fr' ? 'Hypothèses' : locale === 'es' ? 'Supuestos' : 'Assumptions',
-    startingPractitioners: locale === 'fr' ? 'Praticiens initiaux' : locale === 'es' ? 'Practicantes iniciales' : 'Starting practitioners',
-    initialGrowth: locale === 'fr' ? 'Croissance initiale' : locale === 'es' ? 'Crecimiento inicial' : 'Initial growth (M1)',
-    endGrowth: locale === 'fr' ? 'Croissance finale' : locale === 'es' ? 'Crecimiento final' : 'Mature growth (M36)',
-    churn: locale === 'fr' ? 'Attrition mensuelle' : locale === 'es' ? 'Deserción mensual' : 'Monthly churn',
-    membersPerPract: locale === 'fr' ? 'Membres/praticien' : locale === 'es' ? 'Miembros/practicante' : 'Members/practitioner',
-    team: locale === 'fr' ? 'Équipe' : locale === 'es' ? 'Equipo' : 'Team',
-    infra: locale === 'fr' ? 'Infra fixe' : locale === 'es' ? 'Infra fija' : 'Fixed infra',
+    title: fr ? 'Modèle financier' : 'Financial Model',
+    subtitle: fr ? 'Bloomsline Care — Tarification 3 niveaux' : 'Bloomsline Care — 3-Tier Pricing Model',
+    conservative: fr ? 'Prudent' : 'Conservative',
+    base: fr ? 'Base' : 'Base',
+    aggressive: fr ? 'Ambitieux' : 'Aggressive',
+    growth: fr ? 'Croissance' : 'Growth',
+    pricing: fr ? 'Tarification' : 'Pricing',
+    costs: fr ? 'Coûts' : 'Costs',
+    funding: fr ? 'Financement' : 'Funding',
+    assumptions: fr ? 'Hypothèses' : 'Assumptions',
+    startingPractitioners: fr ? 'Praticiens initiaux' : 'Starting practitioners',
+    initialGrowth: fr ? 'Croissance initiale (M1)' : 'Initial growth (M1)',
+    endGrowth: fr ? 'Croissance mature (M36)' : 'Mature growth (M36)',
+    churn: fr ? 'Attrition mensuelle' : 'Monthly churn',
+    membersPerPract: fr ? 'Membres/praticien' : 'Members/practitioner',
+    team: fr ? 'Équipe' : 'Team',
+    infra: fr ? 'Infra fixe' : 'Fixed infra',
     marketing: 'Marketing',
-    other: locale === 'fr' ? 'Autres' : locale === 'es' ? 'Otros' : 'Other',
-    startingCash: locale === 'fr' ? 'Trésorerie initiale' : locale === 'es' ? 'Caja inicial' : 'Seed raise',
-    practitionersLabel: locale === 'fr' ? 'Praticiens' : locale === 'es' ? 'Practicantes' : 'Practitioners',
-    monthLabel: locale === 'fr' ? 'mois' : locale === 'es' ? 'mes' : 'mo',
-    never: locale === 'fr' ? '> 36 mois' : locale === 'es' ? '> 36 meses' : '> 36 months',
+    other: fr ? 'Autres' : 'Other',
+    startingCash: fr ? 'Levée Seed' : 'Seed raise',
+    practitionersLabel: fr ? 'Praticiens' : 'Practitioners',
+    monthLabel: fr ? 'mois' : 'mo',
+    never: fr ? '> 36 mois' : '> 36 months',
+    members: fr ? 'Membres' : 'Members',
+    // Info tooltips — Growth section
+    infoStartingPract: fr
+      ? "Combien de thérapeutes nous paient au moment de la clôture. Nous avons 3-5 en test actuellement — nous prévoyons 10 utilisateurs payants d'ici la clôture. Pourquoi c'est important : cela prouve que les gens paient réellement avant de dépenser l'argent des investisseurs. Bonus : chaque thérapeute amène environ 12 de ses patients sur l'application gratuitement."
+      : "How many therapists are paying us when we close the raise. We have 3-5 testing now — we expect 10 paying users by close. Why it matters: it proves people will actually pay before we spend investor money. Bonus: each therapist brings ~12 of their clients onto the app for free.",
+    infoInitialGrowth: fr
+      ? "Vitesse de croissance le premier mois — en % de nouveaux thérapeutes ajoutés chaque mois. Les applications en phase de démarrage croissent typiquement de 20-50% par mois. Nous grandissons via LinkedIn, le parrainage et le contenu. Ce taux ralentit progressivement sur 36 mois."
+      : "How fast we grow in the first month — as a % of new therapists added each month. Early-stage apps typically grow 20-50% per month. We grow by reaching out on LinkedIn, getting referrals, and writing content. This rate slows down gradually over 36 months as the easy wins dry up.",
+    infoEndGrowth: fr
+      ? "Vitesse de croissance au mois 36. La croissance ralentit toujours quand on grandit — 7% par mois signifie encore doubler chaque année, ce qui est sain. À ce stade, la croissance vient du référencement Google, du bouche-à-oreille et des partenariats."
+      : "How fast we're still growing by month 36. Growth always slows as you get bigger — 7% per month still means doubling every year, which is healthy. By this point, growth comes from Google search, word-of-mouth, and partnerships instead of founders doing outreach.",
+    infoChurn: fr
+      ? "Quel % de thérapeutes se désabonnent chaque mois. La moyenne du secteur est de 2-10%. Le nôtre devrait être bas car les thérapeutes ne changent pas d'outil en cours de traitement — trop perturbant. À 4%, le client moyen reste environ 25 mois. C'est le chiffre le plus important du modèle : 1% de plus d'attrition réduit le revenu à vie d'environ 1 800 € par client."
+      : "What % of therapists cancel each month. Industry average is 2-10%. Ours should be low because therapists won't switch tools while treating patients — too disruptive. At 4%, the average customer stays ~25 months. This is the #1 most important number in the model: just 1% more churn cuts lifetime revenue by ~€1,800 per customer.",
+    // Info tooltips — Pricing section
+    infoEssentiel: fr
+      ? "Notre plan le moins cher — 19 €/mois pour jusqu'à 10 patients. Conçu pour les thérapeutes qui débutent ou veulent essayer la plateforme. C'est moins que ce qu'ils gagnent en 20 minutes, donc c'est un oui facile. Nous prévoyons qu'environ 20% des utilisateurs resteront sur ce plan."
+      : "Our cheapest plan — €19/mo for up to 10 clients. Made for solo therapists who are just starting or want to try the platform. It's less than what they earn in 20 minutes, so it's an easy yes. We expect about 20% of users to stay on this plan.",
+    infoPro: fr
+      ? "Notre plan principal — 29 €/mois avec clients illimités et toutes les fonctionnalités IA. Nous prévoyons que 70% des utilisateurs choisiront celui-ci. Tarifé juste en dessous de 30 € (semble moins cher). Ça coûte moins qu'une séance annulée (60-80 €), donc les thérapeutes le voient comme évident. Ce plan génère la majorité de notre chiffre d'affaires."
+      : "Our main plan — €29/mo with unlimited clients and full AI features. We expect 70% of users to pick this one. Priced just under €30 (feels cheaper than €30). It costs less than one cancelled therapy session (€60-80), so therapists see it as a no-brainer. This plan drives most of our revenue.",
+    infoCabinet: fr
+      ? "Notre plan premium pour les cabinets de groupe — 49 €/mois pour le référent + 19 € par thérapeute supplémentaire. Inclut les tableaux de bord d'équipe, les notes partagées et les recommandations croisées. Ces contrats sont plus importants mais prennent plus de temps (6-12 semaines). Ce % est calculé automatiquement."
+      : "Our premium plan for group practices — €49/mo for the lead + €19 per extra therapist. Includes team dashboards, shared notes, and cross-referrals. These deals are bigger but take longer to close (6-12 weeks) because the whole team needs to try it first. This % is auto-calculated from the other two tiers.",
+    infoBlendedArpu: fr
+      ? "Le prix moyen que nous gagnons réellement par thérapeute par mois. C'est un mélange des trois plans : si 20% paient 19 €, 70% paient 29 € et 10% paient 49 €, la moyenne est de 29 €. Déplacez les curseurs pour voir comment le mix change ce chiffre. Le revenu premium des membres (3 €/mois) est en plus — non compté ici."
+      : "The average price we actually earn per therapist per month. It's a mix of all three plans: if 20% pay €19, 70% pay €29, and 10% pay €49, the average comes out to €29. Move the sliders above to see how the mix changes this number. Member premium revenue (€3/mo) is extra on top — not counted here.",
+    infoMembersPerPract: fr
+      ? "Combien de patients chaque thérapeute amène sur l'appli. Un thérapeute typique suit 15-25 patients. Environ 75% vont la télécharger quand leur thérapeute la recommande, soit environ 12 par thérapeute. Le point clé : nous ne payons rien pour acquérir ces utilisateurs — le thérapeute les invite. C'est notre volant de croissance."
+      : "How many clients each therapist brings onto the app. A typical therapist sees 15-25 clients. About 75% will actually download it when their therapist recommends it, so ~12 per therapist. The key insight: we don't pay anything to get these users — the therapist invites them. This is our growth flywheel.",
+    premiumConversion: fr ? 'Conversion premium' : 'Premium conversion',
+    infoPremiumConversion: fr
+      ? "Quel % des patients gratuits passent à la version premium à 3 €/mois (meilleur journal intime, insights IA sur l'humeur). La plupart ne le feront pas — et c'est normal. Même 3-5% c'est bien. Spotify et Headspace convertissent 5-8% des utilisateurs gratuits. C'est un revenu bonus en plus de ce que les thérapeutes paient déjà — pur potentiel de hausse."
+      : "What % of free clients upgrade to the €3/mo premium version (better journaling, AI mood insights). Most won't — and that's fine. Even 3-5% is good. Spotify and Headspace convert 5-8% of free users. This is bonus revenue on top of what therapists already pay us — pure upside.",
+    // Info tooltips — Costs section
+    variableCostLabel: fr ? 'Coût variable / prat.' : 'Variable cost / pract.',
+    infoVariableCost: fr
+      ? "Ce qu'il nous coûte de servir chaque thérapeute par mois. Trois parties : moteur IA (1,80 € — alimente Bloom, notre assistant IA), serveurs et bases de données (0,95 € — hébergement, stockage, analytics), et support client (1,50 € — aide au démarrage, diminue avec le self-service). Total : 4,25 €. Les coûts de l'IA baissent chaque année, donc ce nombre devrait diminuer."
+      : "What it costs us to serve each therapist per month. Three parts: AI engine (€1.80 — powers Bloom, our AI assistant), servers and databases (€0.95 — hosting, storage, analytics), and customer support (€1.50 — helping therapists get started, drops as we build self-serve). Total: €4.25. AI costs keep getting cheaper every year, so this number should shrink.",
+    grossMarginLabel: fr ? 'Marge brute' : 'Gross margin',
+    infoGrossMargin: fr
+      ? "Combien de chaque euro nous conservons après avoir payé le service. Si nous facturons 29 € et que ça nous coûte 4,25 € à livrer, nous gardons 85%. C'est excellent — la plupart des sociétés de logiciel gardent 70-75%. Les meilleures gardent 85-90%, ce qui est notre cas. Calculé automatiquement à partir du ARPU et du coût variable ci-dessus."
+      : "How much of each euro we keep after paying for the service. If we charge €29 and it costs us €4.25 to deliver, we keep 85%. That's really good — most software companies keep 70-75%. The best keep 85-90%, which is where we are. Calculated automatically from ARPU and variable cost above.",
+    infoCAC: fr
+      ? "Combien nous dépensons pour acquérir un nouveau thérapeute payant. Nous ne faisons pas de publicité — les thérapeutes ne font pas confiance aux pubs. Au lieu de cela : messages LinkedIn (35-50 € par inscription), parrainages (29 € — nous offrons un mois gratuit), articles de blog et SEO (15-25 €), et stands en conférence (60-100 €). Moyenne pondérée : environ 50 €. Cela augmentera à 60-80 € en grandissant, ce qui reste très bas pour du logiciel."
+      : "How much we spend to get one new paying therapist. We don't run ads — therapists don't trust ads. Instead: LinkedIn messages (€35-50 per signup), referrals from existing users (€29 — we give a free month), blog articles and SEO (€15-25), and conference booths (€60-100). Blended average: ~€50. This will rise to €60-80 as we grow, which is still very low for software.",
+    infoTeam: fr
+      ? "Ce que nous payons l'équipe chaque mois. Prudent (8K €) : 2 fondateurs × 2K € + dev temps partiel 2K € + commercial 1,5K € + conseiller 500 €. Base (10,5K €) : 2 fondateurs × 2,5K € + dev 2,5K € + commercial 2K € + conseiller 1K €. Ambitieux (14,5K €) : 2 fondateurs × 3K € + dev temps plein 3,5K € + commercial 2,5K € + conseiller 1K € + marketeur 1,5K €. Le commercial se concentre sur la prospection LinkedIn, les démos en conférence et la conversion des thérapeutes en essai. Tous les salaires sont en dessous du marché — les fondateurs misent sur l'equity."
+      : "What we pay the team each month. Conservative (€8K): 2 founders × €2K + part-time dev €2K + sales €1.5K + advisor €500. Base (€10.5K): 2 founders × €2.5K + dev €2.5K + sales €2K + advisor €1K. Aggressive (€14.5K): 2 founders × €3K + full-time dev €3.5K + sales €2.5K + advisor €1K + marketer €1.5K. The sales hire focuses on LinkedIn outreach, conference demos, and converting trial therapists into paying users. All salaries below market — founders are betting on equity.",
+    infoInfra: fr
+      ? "Factures mensuelles pour les outils que nous payons quel que soit le nombre d'utilisateurs — base de données (25 €), outils de monitoring (20 €), nom de domaine, service d'email. Ça reste identique que nous ayons 10 ou 1 000 utilisateurs. Les coûts qui évoluent avec les utilisateurs (IA et stockage) sont déjà comptés dans le « coût variable » ci-dessus."
+      : "Monthly bills for tools we pay no matter how many users we have — database (€25), monitoring tools (€20), domain name, email service. This stays the same whether we have 10 or 1,000 users. The costs that grow with users (like AI and storage) are already counted in the 'variable cost' above.",
+    infoMarketing: fr
+      ? "Ce que nous dépensons pour nous faire connaître — articles de blog, participation aux congrès de thérapie, outils de prospection LinkedIn, construction de communauté. Nous ne faisons pas de publicité payante car les thérapeutes n'y répondent pas. Ils font confiance aux recommandations de pairs et au contenu éducatif, c'est donc là que nous concentrons nos efforts."
+      : "What we spend on getting the word out — blog posts, attending therapy conferences, LinkedIn outreach tools, building our community. We don't run paid ads because therapists don't respond to them. They trust peer recommendations and educational content, so that's where we focus.",
+    infoOther: fr
+      ? "Tout le reste — frais d'avocat, comptable, assurance et administration. Cela augmente quand nous obtenons la certification hébergement de données de santé (HDS), requise pour héberger des données patients en France. Cela ajoute environ 200-400 €/mois mais est indispensable pour travailler avec les thérapeutes."
+      : "Everything else — lawyer fees, accountant, insurance, and admin. This goes up when we get our health data certification (HDS), which is required to host patient data in France. That adds about €200-400/mo but is essential for working with therapists.",
+    infoStartingCash: fr
+      ? "Combien d'argent nous levons auprès des investisseurs. Prudent : 300K €. Base : 400K €. Ambitieux : 500K €. Normal pour un pré-seed en Europe. C'est notre carburant — ça détermine combien de mois nous pouvons fonctionner avant d'être rentables ou de lever à nouveau. Chaque scénario nous donne 33-38 mois de trésorerie, suffisant pour atteindre la rentabilité."
+      : "How much money we raise from investors. Conservative: €300K. Base: €400K. Aggressive: €500K. All normal for a pre-seed in Europe. This is our fuel — it decides how many months we can run before we need to be profitable or raise again. Each scenario gives us 33-38 months of runway, enough to reach profitability before running out.",
+    equityOffered: fr ? 'Equity proposée' : 'Equity offered',
+    infoEquity: fr
+      ? "Quel % de la société les investisseurs obtiennent pour leur argent. Le standard pré-seed en UE est 10-20%. Prudent : 17% pour 300K €. Base : 15% pour 400K €. Ambitieux : 13% pour 500K €. Moins de dilution = les fondateurs gardent plus de parts mais implique une valorisation plus élevée à justifier. La valorisation pré-money se met à jour automatiquement ci-dessous."
+      : "What % of the company investors get for their money. EU pre-seed standard is 10-20%. Conservative: 17% for €300K. Base: 15% for €400K. Aggressive: 13% for €500K. Lower dilution = founders keep more ownership but means a higher valuation you need to justify. The pre-money valuation updates automatically below.",
+    preMoneyVal: fr ? 'Valorisation pré-money' : 'Pre-money valuation',
+    infoPreMoney: fr
+      ? "Ce que vaut la société avant l'investissement. Calculé comme : Levée ÷ Dilution% × (100% - Dilution%). Pour une startup pré-revenu, 1,5M-3M € est normal en Europe. Nos solides unit economics (85% de marge, 72x LTV/CAC) justifient d'être dans la fourchette haute."
+      : "What the company is worth before the investment goes in. Calculated as: Raise ÷ Dilution% × (100% - Dilution%). For a pre-revenue startup, €1.5M-€3M is normal in Europe. Our strong unit economics (85% margin, 72x LTV/CAC) justify being at the higher end of that range.",
+    // Burn & Runway section
+    monthlyBurnRunway: fr ? 'Burn mensuel & Trésorerie' : 'Monthly Burn & Runway',
+    burnSubtitle: fr ? "Combien de temps l'argent dure au rythme actuel" : 'How long the money lasts at current spend',
+    months: fr ? 'mois' : 'months',
+    seedWindowCovered: fr ? 'Fenêtre seed couverte (18 mois+)' : 'Seed window covered (18mo+)',
+    seedWindowWarning: fr ? 'Attention : < 18 mois de trésorerie' : 'Warning: < 18mo runway',
+    whereBurnGoes: fr ? 'Où va le burn :' : 'Where the burn goes:',
+    burnTeamDesc: fr ? '2 co-fondateurs + dev + conseiller' : '2 co-founders + dev + advisor',
+    burnMarketingDesc: fr ? 'contenu, LinkedIn, conférences' : 'content, LinkedIn, conferences',
+    burnInfraDesc: fr ? 'Supabase, Vercel, PostHog' : 'Supabase, Vercel, PostHog',
+    burnOpsDesc: fr ? 'juridique, comptabilité, assurance' : 'legal, accounting, insurance',
+    variableCostsScale: fr ? 'Les coûts variables (IA, hébergement par utilisateur) évoluent avec la croissance.' : 'Variable costs (AI, hosting per user) scale with growth.',
+    whyComfortable: fr ? 'Pourquoi c\'est confortable :' : 'Why this is comfortable:',
+    burnComfort36: (months: number) => fr
+      ? `${months} mois nous donnent bien au-delà de la fenêtre seed de 18 mois. Même si la croissance est plus lente que prévu, nous avons le temps de nous ajuster avant d'avoir besoin de plus de capital.`
+      : `${months} months gives us well beyond the 18-month seed window. Even if growth is slower than planned, we have time to adjust before needing more capital.`,
+    burnComfort18: (months: number, beMonth: number | null) => fr
+      ? `${months} mois couvrent la fenêtre seed standard de 18 mois. Nous atteignons la rentabilité${beMonth ? ` vers M${beMonth}` : ''} avant que l'argent ne s'épuise.`
+      : `${months} months covers the standard 18-month seed window. We reach break-even${beMonth ? ` around M${beMonth}` : ''} before the money runs out.`,
+    burnTight: (months: number) => fr
+      ? `${months} mois c'est serré — moins que la fenêtre seed de 18 mois. Nous devrions soit lever plus, soit réduire les dépenses pour étendre la trésorerie.`
+      : `${months} months is tight — less than the 18-month seed window. We should either raise more or cut spend to extend runway.`,
+    // Use of Funds section
+    useOfFunds: fr ? 'Utilisation des fonds' : 'Use of Funds',
+    useOfFundsSubtitle: fr ? 'Comment nous prévoyons de dépenser chaque euro levé' : 'How we plan to spend every euro raised',
+    product: fr ? 'Produit' : 'Product',
+    goToMarket: fr ? 'Mise en marché' : 'Go-to-market',
+    operations: fr ? 'Opérations' : 'Operations',
+    uofProductDesc: fr
+      ? "Construire la plateforme principale — tableau de bord praticien, assistant IA Bloom, application membre, bibliothèque de ressources. Couvre les salaires développeur et les coûts IA/cloud pour 18+ mois de développement."
+      : "Build the core platform — practitioner dashboard, Bloom AI assistant, member app, resource library. Covers developer salaries and AI/cloud costs for 18+ months of development.",
+    uofGtmDesc: fr
+      ? "Acquérir les 100+ premiers praticiens via la prospection LinkedIn, le contenu SEO, le sponsoring de congrès de thérapie et la construction de communauté. Pas de publicité payante — les thérapeutes font confiance aux pairs, pas aux pubs."
+      : "Acquire first 100+ practitioners through LinkedIn outreach, SEO content, therapy conference sponsorships, and community building. No paid ads — therapists trust peers, not ads.",
+    uofTeamDesc: fr
+      ? "Salaires des fondateurs (en dessous du marché), conseiller clinique, et un recrutement supplémentaire vers M12 quand nous dépasserons 100 praticiens."
+      : "Founder salaries (below market), clinical advisor, and one additional hire around M12 as we scale past 100 practitioners.",
+    uofOpsDesc: fr
+      ? "Juridique (constitution SAS, conformité RGPD), certification hébergement de données de santé (HDS — obligatoire pour les données patients en France), comptabilité et assurance."
+      : "Legal (SAS incorporation, RGPD compliance), health data certification (HDS — required for patient data in France), accounting, and insurance.",
+    // The Ask section
+    theAsk: fr ? 'La demande' : 'The Ask',
+    theAskSubtitle: fr ? "Ce que nous levons, ce que les investisseurs obtiennent, et le chemin vers les retours" : "What we're raising, what investors get, and the path to returns",
+    raising: fr ? 'Levée' : 'Raising',
+    forEquity: fr ? 'Pour equity' : 'For equity',
+    preMoney: fr ? 'Pré-money' : 'Pre-money',
+    postMoney: fr ? 'Post-money' : 'Post-money',
+    whyThisValuation: fr ? 'Pourquoi cette valorisation ?' : 'Why this valuation?',
+    valuationJustification: fr
+      ? "Nous sommes pré-revenu, ce qui signifie normalement une valorisation plus basse. Mais nos unit economics sont déjà prouvés sur le papier : 85% de marge brute (top décile SaaS), {ltvCac}x LTV/CAC (la cible sectorielle est 3x), et {payback} mois de retour sur CAC. Le marché SaaS santé mentale croît de 25%+ par an en Europe, et aucun concurrent basé en UE n'a un modèle B2B2C centré praticien avec IA intégrée. La pré-money de {preMoney} est en ligne avec les standards pré-seed UE (1,5M-3M €) et reflète à la fois le stade précoce et les fondamentaux solides."
+      : "We're pre-revenue, which normally means a lower valuation. But our unit economics are already proven on paper: 85% gross margin (top-decile SaaS), {ltvCac}x LTV/CAC (industry target is 3x), and {payback}-month CAC payback. The mental health SaaS market is growing 25%+ per year in Europe, and no EU-based competitor has a practitioner-first B2B2C model with built-in AI. Pre-money of {preMoney} is in line with EU pre-seed standards (€1.5M-€3M) and reflects both the early stage and the strong fundamentals.",
+    ownershipAfterRound: fr ? 'Répartition du capital après le tour' : 'Ownership after round',
+    founders: fr ? 'Fondateurs' : 'Founders',
+    investors: fr ? 'Investisseurs' : 'Investors',
+    foundersKeep: (pct: number) => fr
+      ? `Les fondateurs gardent ${pct}% après ce tour. Nous prévoyons de réserver un pool ESOP de 10% en Série A (pas encore créé — préserve votre participation à ce stade). Après la dilution Série A (~15-20%), vos parts pré-seed représenteront toujours ${100 - pct}% d'un gâteau bien plus gros.`
+      : `Founders keep ${pct}% after this round. We plan to reserve a 10% ESOP pool at Series A (not created yet — keeps your ownership undiluted at this stage). After Series A dilution (~15-20%), your pre-seed shares will still represent ${100 - pct}% of a much larger pie.`,
+    whatYourInvestmentBecomes: fr ? 'Ce que vos {amount} pourraient devenir' : 'What your {amount} could become',
+    pricePer1Pct: fr ? 'Prix par 1%' : 'Price per 1%',
+    entryPriceToday: fr ? "prix d'entrée aujourd'hui" : 'entry price today',
+    atSeriesA: fr ? '3x en Série A' : '3x at Series A',
+    exitScenario10x: fr ? 'Scénario sortie 10x' : '10x exit scenario',
+    seriesAPath: fr ? 'Chemin Série A (18 mois) :' : 'Series A path (18 months):',
+    seriesAPathDesc: (pract: string, arr: string, dilution: number, value: string, perMonth: number) => fr
+      ? `Si nous atteignons nos objectifs M18 — ${pract} praticiens, ${arr} ARR — nous prévoyons un step-up 3x en Série A, standard pour un seed-to-A en SaaS européen. Vos ${dilution}% vaudraient ${value} sur le papier. Ces objectifs nécessitent environ ${perMonth} nouveaux praticiens par mois, réalisable par la prospection LinkedIn et les parrainages seuls.`
+      : `If we hit our M18 targets — ${pract} practitioners, ${arr} ARR — we expect a 3x step-up at Series A, which is standard for seed-to-A in European SaaS. Your ${dilution}% would be worth ${value} on paper. These targets require ~${perMonth} new practitioners per month, achievable through LinkedIn outreach and referrals alone.`,
+    dealStructure: fr ? 'Structure du deal :' : 'Deal structure:',
+    dealStructureDesc: fr
+      ? "Conditions standard pré-seed UE — SAFE note ou tour pricé, avec droits pro-rata standards, droits d'information (rapports mensuels) et gouvernance favorable aux investisseurs. Pas de siège au conseil requis à ce stade, mais nous accueillons l'implication stratégique."
+      : "Standard EU pre-seed terms — SAFE note or priced equity round, with standard pro-rata rights, information rights (monthly updates), and investor-friendly governance. No board seat required at this stage, but we welcome strategic involvement.",
+    whyNow: fr ? 'Pourquoi maintenant :' : 'Why now:',
+    whyNowDesc: fr
+      ? "Le marché français de la santé mentale est à un point d'inflexion — les programmes de remboursement gouvernementaux ont été lancés en 2022, le burnout des praticiens est à des niveaux records, et il n'y a pas encore de plateforme dominante en UE. Investir avant que le product-market fit soit confirmé vous donne le meilleur prix d'entrée. Une fois que nous aurons 100+ praticiens et un MRR croissant, le prochain tour sera à 3-5x cette valorisation."
+      : "France's mental health market is at an inflection point — government reimbursement programs launched in 2022, practitioner burnout is at record highs, and there's no dominant EU platform yet. Getting in before product-market fit is confirmed gives you the best entry price. Once we have 100+ practitioners and growing MRR, the next round will be at 3-5x this valuation.",
+    // Path to Series A
+    pathToSeriesA: fr ? 'Chemin vers la Série A' : 'Path to Series A',
+    pathToSeriesASubtitle: fr ? 'Jalons clés sur la fenêtre seed de 18 mois' : 'Key milestones across the 18-month seed window',
+    seedRaiseMilestone: fr ? 'Levée Seed' : 'Seed Raise',
+    breakEven: fr ? 'Rentabilité' : 'Break-even',
+    seriesAReady: fr ? 'Prêt Série A' : 'Series A Ready',
+    now: fr ? 'Maintenant' : 'Now',
+    month: fr ? 'Mois' : 'Month',
+    pract: fr ? 'prat.' : 'pract.',
+    m18Target: fr ? 'Objectif M18' : 'M18 target',
+    m0m6Title: fr ? 'M0-M6 — Construire & valider :' : 'M0-M6 — Build & validate:',
+    m0m6Desc: fr
+      ? "Livrer le MVP, embarquer les 30-50 premiers thérapeutes par démarchage personnel. Se concentrer sur la rétention plutôt que l'acquisition — si les thérapeutes restent après le mois 3, c'est un signal de product-market fit."
+      : "Ship the MVP, onboard first 30-50 therapists through personal outreach. Focus on retention over acquisition — if therapists stay past month 3, we have product-market fit signal.",
+    m6m12Title: fr ? 'M6-M12 — Accélérer ce qui marche :' : 'M6-M12 — Scale what works:',
+    m6m12Desc: (mrr: string) => fr
+      ? `Doubler sur les canaux qui convertissent (LinkedIn, parrainages). Atteindre 100+ praticiens, ${mrr}+ MRR. Commencer à voir le bouche-à-oreille organique des utilisateurs satisfaits.`
+      : `Double down on channels that convert (LinkedIn, peer referrals). Hit 100+ practitioners, ${mrr}+ MRR. Start seeing organic word-of-mouth from happy users.`,
+    m12m18Title: fr ? 'M12-M18 — Prêt pour la Série A :' : 'M12-M18 — Series A ready:',
+    m12m18Desc: (pract: string, arr: string) => fr
+      ? `Atteindre ${pract} praticiens, ${arr} ARR, et des métriques de rétention solides. À ce stade, nous avons les données pour lever une Série A de 1,5-3M € avec un step-up de 3-5x par rapport à la valorisation actuelle.`
+      : `Reach ${pract} practitioners, ${arr} ARR, and strong retention metrics. At this point we have the data to raise a €1.5-3M Series A at a 3-5x step-up from today's valuation.`,
+    // Key metrics cards
+    mrrAtM18: fr ? 'MRR @ M18' : 'MRR @ M18',
+    practAtM18: fr ? 'Praticiens @ M18' : 'Practitioners @ M18',
+    atPractitioners: (n: number) => fr ? `À environ ${n} praticiens` : `At ~${n} practitioners`,
+    monthsRunway: (n: number) => fr ? `${n} mois de trésorerie` : `${n} months runway`,
+    // Waterfall section
+    marginWaterfall: fr ? 'Cascade de marge' : 'Margin Waterfall',
+    waterfallSubtitle: fr ? 'Par praticien par mois — du revenu à la marge de contribution' : 'Per practitioner per month — from revenue to contribution margin',
+    revenueArpu: fr ? 'Revenu (ARPU)' : 'Revenue (ARPU)',
+    aiClaude: fr ? 'IA (Claude Haiku)' : 'AI (Claude Haiku)',
+    infrastructure: fr ? 'Infrastructure' : 'Infrastructure',
+    support: 'Support',
+    grossProfit: fr ? 'Marge brute' : 'Gross Profit',
+    cacAmortized: fr ? 'CAC amorti' : 'CAC amortized',
+    contributionMargin: fr ? 'Marge de contribution' : 'Contribution Margin',
+    b2cPremiumUpside: fr
+      ? `+ Potentiel premium B2C : €{amount}/praticien/mois ({members} membres × {pct}% × €{price}/mois) — non inclus dans la marge ci-dessus.`
+      : `+ B2C premium upside: €{amount}/practitioner/mo ({members} members × {pct}% × €{price}/mo) — not included in margin above.`,
+    // B2B2C Advantage
+    b2b2cTitle: fr ? 'Avantage B2B2C — Pourquoi notre CAC est différent' : 'B2B2C Advantage — Why Our CAC is Different',
+    b2b2cSubtitle: fr ? "Notre arme secrète : les praticiens font l'acquisition d'utilisateurs pour nous" : 'Our secret weapon: practitioners do the user acquisition for us',
+    practitionerCAC: fr ? 'CAC praticien' : 'Practitioner CAC',
+    onePractitioner: fr ? '1 praticien' : '1 practitioner',
+    effectiveMemberCAC: fr ? 'CAC membre effectif' : 'Effective member CAC',
+    vsB2CApps: fr ? 'vs. 30-50 € pour les apps B2C' : 'vs. €30-50 for B2C apps',
+    membersOnboardedZeroCost: fr ? 'Membres embarqués par le praticien — zéro coût d\'acquisition' : 'Members onboarded by practitioner — zero acquisition cost',
+    howItWorks: fr ? 'Comment ça marche :' : 'How it works:',
+    howItWorksDesc: (cac: number, membersPerPract: number) => fr
+      ? `Nous vendons uniquement aux thérapeutes (B2B). Chaque thérapeute invite ensuite ses propres patients sur l'application — nous ne dépensons pas un centime pour acquérir ces utilisateurs. Un thérapeute avec 15-25 patients actifs en amène environ ${membersPerPract} sur la plateforme. Donc pour chaque ${cac} € dépensé, nous obtenons 1 client payant + ${membersPerPract} utilisateurs engagés gratuitement.`
+      : `We only sell to therapists (B2B). Each therapist then invites their own clients onto the app — we never spend a cent acquiring those users. A therapist with 15-25 active clients brings ~${membersPerPract} onto the platform. So for every €${cac} we spend, we get 1 paying customer + ${membersPerPract} engaged users for free.`,
+    whyItCompounds: fr ? 'Pourquoi ça compose :' : 'Why it compounds:',
+    whyItCompoundsDesc: (effectiveMemberCAC: number) => fr
+      ? `Les membres qui aiment l'application disent à leurs amis en thérapie de demander à leur thérapeute Bloomsline. Les thérapeutes entendent parler de nous par leurs pairs en congrès ou en supervision. Cela crée un volant : plus de thérapeutes → plus de membres → plus de bouche-à-oreille → plus de thérapeutes. Headspace et Calm dépensent 30-50 € par utilisateur. Nous dépensons ${effectiveMemberCAC} €.`
+      : `Members who love the app tell friends in therapy to ask their therapist about Bloomsline. Therapists hear about us from peers at conferences or in supervision groups. This creates a flywheel: more therapists → more members → more word-of-mouth → more therapists. Headspace and Calm spend €30-50 per user. We spend €${effectiveMemberCAC}.`,
+    // Revenue projection
+    revenueProjection: fr ? 'Projection de revenus' : 'Revenue Projection',
+    revenueProjectionDesc: (arpu: string, initialGrowth: number, endGrowth: number) => fr
+      ? `MRR sur 36 mois — ${arpu} € ARPU pondéré, croissance ${initialGrowth}% → ${endGrowth}%/mois`
+      : `MRR over 36 months — €${arpu} blended ARPU, growth ${initialGrowth}% → ${endGrowth}%/mo`,
+    // Customer growth
+    customerGrowth: fr ? 'Croissance clients' : 'Customer Growth',
+    customerGrowthDesc: (membersPerPract: number) => fr
+      ? `Praticiens et membres (multiplicateur B2B2C : 1 prat. = ${membersPerPract} membres)`
+      : `Practitioners and members (B2B2C multiplier: 1 pract. = ${membersPerPract} members)`,
+    m18SeedWindow: fr ? 'Fenêtre seed M18' : 'M18 seed window',
+    // Unit economics
+    unitEconomics: fr ? 'Unit economics' : 'Unit Economics',
+    blendedArpu: fr ? 'ARPU pondéré' : 'Blended ARPU',
+    perPractMoB2B: fr ? '/praticien/mois (B2B uniquement)' : '/practitioner/mo (B2B only)',
+    ltv: 'LTV',
+    moLifetime: fr ? 'mois de durée de vie' : 'mo lifetime',
+    cac: 'CAC',
+    organicAcquisition: fr ? 'acquisition organique' : 'organic acquisition',
+    ltvCac: 'LTV/CAC',
+    target3x: fr ? 'cible : >3x' : 'target: >3x',
+    payback: fr ? 'Retour sur CAC' : 'Payback',
+    targetLt12mo: fr ? 'cible : <12 mois' : 'target: <12mo',
+    variableCost: fr ? 'coût variable' : 'variable cost',
+    // Expense breakdown
+    expenseBreakdown: fr ? 'Répartition des dépenses' : 'Expense Breakdown',
+    expenseBreakdownDesc: fr ? 'Dépenses trimestrielles par catégorie (inclut le COGS)' : 'Quarterly expenses by category (includes COGS)',
+    // Runway & Cash
+    runwayCash: fr ? 'Trésorerie & Position de caisse' : 'Runway & Cash Position',
+    runwayCashDesc: fr ? 'Trésorerie cumulée avec jalons' : 'Cumulative cash with milestones',
+    seedWindow: fr ? 'Fenêtre seed' : 'Seed window',
+    // Industry benchmarks
+    industryBenchmarks: fr ? 'Benchmarks sectoriels' : 'Industry Benchmarks',
+    vsSaasStandards: fr ? 'vs. standards SaaS' : 'vs. SaaS standards',
+    metric: fr ? 'Métrique' : 'Metric',
+    saasMedian: fr ? 'Médiane SaaS' : 'SaaS Median',
+    topDecile: fr ? 'Top décile' : 'Top Decile',
+    benchmarkFooter: fr
+      ? 'Les valeurs se mettent à jour en temps réel quand vous ajustez les hypothèses. Voir'
+      : 'Values update in real-time as you adjust assumptions. See',
+    unitEconomicsLink: fr ? 'Unit Economics' : 'Unit Economics',
+    forDetailedAnalysis: fr ? "pour l'analyse détaillée." : 'for detailed analysis.',
+    // Benchmark metric names
+    benchGrossMargin: fr ? 'Marge brute' : 'Gross Margin',
+    benchLtvCac: 'LTV/CAC',
+    benchCacPayback: fr ? 'Retour sur CAC' : 'CAC Payback',
+    benchMonthlyChurn: fr ? 'Attrition mensuelle' : 'Monthly Churn',
+    benchCAC: 'CAC',
+    benchARPU: 'ARPU',
+    benchCacPaybackMo: fr ? 'mois' : 'mo',
+    // Narrative summary
+    narrativeRaising: fr ? 'Nous levons' : "We're raising",
+    narrativeBurnRate: fr ? 'À un burn rate de' : 'At a burn rate of',
+    narrativeRunway: fr ? "c'est" : "that's",
+    narrativeRunwayPlus: fr ? '+ mois de trésorerie.' : '+ months of runway.',
+    narrativeTierPricing: fr ? 'Notre tarification 3 niveaux' : 'Our 3-tier pricing',
+    narrativeYieldsBlended: fr ? 'produit un' : 'yields a blended',
+    narrativeArpu: 'ARPU',
+    narrativeWith: fr ? 'avec' : 'with',
+    narrativeGrossMargin: fr ? 'de marge brute' : 'gross margin',
+    narrativePayback: fr ? 'de retour sur CAC' : 'payback',
+    narrativeIn18Months: fr ? 'En 18 mois nous visons' : 'In 18 months we target',
+    narrativeAnd: fr ? 'et' : 'and',
+    // Chart tooltips
+    tooltipGrowth: fr ? 'Croissance' : 'Growth',
+    tooltipPractitioners: fr ? 'Praticiens' : 'Practitioners',
+    tooltipMembers: fr ? 'Membres' : 'Members',
+    tooltipCash: fr ? 'Trésorerie' : 'Cash',
+    tooltipNetBurn: fr ? 'Burn net' : 'Net burn',
+    tooltipMargin: fr ? 'Marge' : 'Margin',
+    tooltipCOGS: 'COGS',
+    tooltipAcquisition: fr ? 'Acquisition' : 'Acquisition',
+    tooltipTotal: fr ? 'Total' : 'Total',
   }
 
   const scenarioButtons: Array<{ key: 'conservative' | 'base' | 'aggressive'; label: string }> = [
@@ -604,17 +872,17 @@ export default function FinancialModelPage() {
 
   const uof = assumptions.useOfFunds
   const fundSegments = [
-    { label: 'Product', pct: uof.product, color: 'bg-indigo-500', amount: Math.round(assumptions.startingCash * uof.product / 100) },
-    { label: 'Go-to-market', pct: uof.gtm, color: 'bg-emerald-500', amount: Math.round(assumptions.startingCash * uof.gtm / 100) },
-    { label: 'Team', pct: uof.team, color: 'bg-blue-500', amount: Math.round(assumptions.startingCash * uof.team / 100) },
-    { label: 'Operations', pct: uof.ops, color: 'bg-gray-400', amount: Math.round(assumptions.startingCash * uof.ops / 100) },
+    { label: t.product, pct: uof.product, color: 'bg-indigo-500', amount: Math.round(assumptions.startingCash * uof.product / 100) },
+    { label: t.goToMarket, pct: uof.gtm, color: 'bg-emerald-500', amount: Math.round(assumptions.startingCash * uof.gtm / 100) },
+    { label: t.team, pct: uof.team, color: 'bg-blue-500', amount: Math.round(assumptions.startingCash * uof.team / 100) },
+    { label: t.operations, pct: uof.ops, color: 'bg-gray-400', amount: Math.round(assumptions.startingCash * uof.ops / 100) },
   ]
 
   const milestones = [
-    { label: locale === 'fr' ? 'Levée Seed' : 'Seed Raise', value: fmtEuro(assumptions.startingCash), done: true, month: 'Now' },
-    { label: '€100K ARR', value: runway.arr100kMonth ? `M${runway.arr100kMonth}` : t.never, done: false, month: runway.arr100kMonth ? `Month ${runway.arr100kMonth}` : '' },
-    { label: locale === 'fr' ? 'Rentabilité' : 'Break-even', value: runway.breakEvenMonth ? `M${runway.breakEvenMonth}` : t.never, done: false, month: runway.breakEvenPractitioners ? `${runway.breakEvenPractitioners} pract.` : '' },
-    { label: locale === 'fr' ? 'Prêt Série A' : 'Series A Ready', value: `${fmtNumber(m18.practitioners)} pract.`, done: false, month: 'M18 target' },
+    { label: t.seedRaiseMilestone, value: fmtEuro(assumptions.startingCash), done: true, month: t.now },
+    { label: '€100K ARR', value: runway.arr100kMonth ? `M${runway.arr100kMonth}` : t.never, done: false, month: runway.arr100kMonth ? `${t.month} ${runway.arr100kMonth}` : '' },
+    { label: t.breakEven, value: runway.breakEvenMonth ? `M${runway.breakEvenMonth}` : t.never, done: false, month: runway.breakEvenPractitioners ? `${runway.breakEvenPractitioners} ${t.pract}` : '' },
+    { label: t.seriesAReady, value: `${fmtNumber(m18.practitioners)} ${t.pract}`, done: false, month: t.m18Target },
   ]
 
   return (
@@ -626,7 +894,7 @@ export default function FinancialModelPage() {
           </div>
           <div>
             <h1 className="text-sm font-semibold text-gray-900">{t.title}</h1>
-            <p className="text-[10px] text-gray-400">Bloomsline Care — 3-Tier Pricing Model</p>
+            <p className="text-[10px] text-gray-400">{t.subtitle}</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
@@ -643,6 +911,12 @@ export default function FinancialModelPage() {
               {s.label}
             </button>
           ))}
+          <button
+            onClick={() => setLocale(locale === 'en' ? 'fr' : 'en', false)}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+          >
+            {locale === 'en' ? 'FR' : 'EN'}
+          </button>
         </div>
       </header>
 
@@ -655,15 +929,15 @@ export default function FinancialModelPage() {
             className="bg-white border border-gray-200 rounded-xl p-6 mb-6"
           >
             <p className="text-sm text-gray-600 leading-relaxed">
-              We&apos;re raising <span className="font-semibold text-gray-900">{fmtEuro(assumptions.startingCash)}</span>.
-              {' '}At a burn rate of <span className="font-semibold text-gray-900">{fmtEuro(runway.monthlyBurn)}/mo</span>,
-              {' '}that&apos;s <span className="font-semibold text-gray-900">{runway.runwayMonths}+ months</span> of runway.
-              {' '}Our 3-tier pricing (€{TIER_PRICES.essentiel}/€{TIER_PRICES.pro}/€{TIER_PRICES.cabinet}) yields a blended
-              {' '}<span className="font-semibold text-gray-900">€{ue.blendedArpu.toFixed(0)} ARPU</span> with
-              {' '}<span className="font-semibold text-emerald-600">{ue.grossMarginPct}% gross margin</span>,
+              {t.narrativeRaising} <span className="font-semibold text-gray-900">{fmtEuro(assumptions.startingCash)}</span>.
+              {' '}{t.narrativeBurnRate} <span className="font-semibold text-gray-900">{fmtEuro(runway.monthlyBurn)}/{fr ? 'mois' : 'mo'}</span>,
+              {' '}{t.narrativeRunway} <span className="font-semibold text-gray-900">{runway.runwayMonths} {t.narrativeRunwayPlus}</span>
+              {' '}{t.narrativeTierPricing} (€{TIER_PRICES.essentiel}/€{TIER_PRICES.pro}/€{TIER_PRICES.cabinet}) {t.narrativeYieldsBlended}
+              {' '}<span className="font-semibold text-gray-900">€{ue.blendedArpu.toFixed(0)} {t.narrativeArpu}</span> {t.narrativeWith}
+              {' '}<span className="font-semibold text-emerald-600">{ue.grossMarginPct}% {t.narrativeGrossMargin}</span>,
               {' '}<span className="font-semibold text-emerald-600">{ue.ltvCacRatio}x LTV/CAC</span>,
-              {' '}<span className="font-semibold text-emerald-600">{ue.paybackMonths}{t.monthLabel} payback</span>.
-              {' '}In 18 months we target <span className="font-semibold text-gray-900">{fmtNumber(m18.practitioners)} practitioners</span> and
+              {' '}<span className="font-semibold text-emerald-600">{ue.paybackMonths} {t.monthLabel} {t.narrativePayback}</span>.
+              {' '}{t.narrativeIn18Months} <span className="font-semibold text-gray-900">{fmtNumber(m18.practitioners)} {t.practitionersLabel.toLowerCase()}</span> {t.narrativeAnd}
               {' '}<span className="font-semibold text-gray-900">{fmtEuro(m18.arr)} ARR</span>.
             </p>
           </motion.div>
@@ -688,25 +962,25 @@ export default function FinancialModelPage() {
                       value={assumptions.startingPractitioners}
                       onChange={(v) => updateAssumption('startingPractitioners', Math.max(1, v))}
                       min={1} max={100}
-                      info="How many therapists are paying us when we close the raise. We have 3-5 testing now — we expect 10 paying users by close. Why it matters: it proves people will actually pay before we spend investor money. Bonus: each therapist brings ~12 of their clients onto the app for free."
+                      info={t.infoStartingPract}
                     />
                     <SliderInput
                       label={t.initialGrowth} value={assumptions.initialGrowthPct}
                       onChange={(v) => updateAssumption('initialGrowthPct', v)}
                       min={5} max={50} suffix="%"
-                      info="How fast we grow in the first month — as a % of new therapists added each month. Early-stage apps typically grow 20-50% per month. We grow by reaching out on LinkedIn, getting referrals, and writing content. This rate slows down gradually over 36 months as the easy wins dry up."
+                      info={t.infoInitialGrowth}
                     />
                     <SliderInput
                       label={t.endGrowth} value={assumptions.endGrowthPct}
                       onChange={(v) => updateAssumption('endGrowthPct', v)}
                       min={1} max={15} suffix="%"
-                      info="How fast we're still growing by month 36. Growth always slows as you get bigger — 7% per month still means doubling every year, which is healthy. By this point, growth comes from Google search, word-of-mouth, and partnerships instead of founders doing outreach."
+                      info={t.infoEndGrowth}
                     />
                     <SliderInput
                       label={t.churn} value={assumptions.churnPct}
                       onChange={(v) => updateAssumption('churnPct', v)}
                       min={1} max={15} suffix="%"
-                      info="What % of therapists cancel each month. Industry average is 2-10%. Ours should be low because therapists won't switch tools while treating patients — too disruptive. At 4%, the average customer stays ~25 months. This is the #1 most important number in the model: just 1% more churn cuts lifetime revenue by ~€1,800 per customer."
+                      info={t.infoChurn}
                     />
                   </div>
                 </div>
@@ -719,19 +993,19 @@ export default function FinancialModelPage() {
                       label={`Essentiel (€${TIER_PRICES.essentiel})`} value={assumptions.essentielPct}
                       onChange={(v) => updateTierMix('essentielPct', v)}
                       min={0} max={100} suffix="%"
-                      info="Our cheapest plan — €19/mo for up to 10 clients. Made for solo therapists who are just starting or want to try the platform. It's less than what they earn in 20 minutes, so it's an easy yes. We expect about 20% of users to stay on this plan."
+                      info={t.infoEssentiel}
                     />
                     <SliderInput
                       label={`Pro (€${TIER_PRICES.pro})`} value={assumptions.proPct}
                       onChange={(v) => updateTierMix('proPct', v)}
                       min={0} max={100 - assumptions.essentielPct} suffix="%"
-                      info="Our main plan — €29/mo with unlimited clients and full AI features. We expect 70% of users to pick this one. Priced just under €30 (feels cheaper than €30). It costs less than one cancelled therapy session (€60-80), so therapists see it as a no-brainer. This plan drives most of our revenue."
+                      info={t.infoPro}
                     />
                     {/* Cabinet computed */}
                     <InfoLine
                       label={`Cabinet (€${TIER_PRICES.cabinet})`}
                       value={`${cabinetPct}%`}
-                      info="Our premium plan for group practices — €49/mo for the lead + €19 per extra therapist. Includes team dashboards, shared notes, and cross-referrals. These deals are bigger but take longer to close (6-12 weeks) because the whole team needs to try it first. This % is auto-calculated from the other two tiers."
+                      info={t.infoCabinet}
                     />
 
                     {/* Tier mix visual bar */}
@@ -748,10 +1022,10 @@ export default function FinancialModelPage() {
                         )}
                       </div>
                       <InfoLine
-                        label="Blended ARPU"
-                        value={`€${ue.blendedArpu.toFixed(2)}/mo`}
+                        label={t.blendedArpu}
+                        value={`€${ue.blendedArpu.toFixed(2)}/${fr ? 'mois' : 'mo'}`}
                         valueClass="text-gray-900"
-                        info="The average price we actually earn per therapist per month. It's a mix of all three plans: if 20% pay €19, 70% pay €29, and 10% pay €49, the average comes out to €29. Move the sliders above to see how the mix changes this number. Member premium revenue (€3/mo) is extra on top — not counted here."
+                        info={t.infoBlendedArpu}
                       />
                     </div>
 
@@ -759,13 +1033,13 @@ export default function FinancialModelPage() {
                       label={t.membersPerPract} value={assumptions.membersPerPractitioner}
                       onChange={(v) => updateAssumption('membersPerPractitioner', v)}
                       min={1} max={50}
-                      info="How many clients each therapist brings onto the app. A typical therapist sees 15-25 clients. About 75% will actually download it when their therapist recommends it, so ~12 per therapist. The key insight: we don't pay anything to get these users — the therapist invites them. This is our growth flywheel."
+                      info={t.infoMembersPerPract}
                     />
                     <SliderInput
-                      label="Premium conversion" value={assumptions.memberPremiumPct}
+                      label={t.premiumConversion} value={assumptions.memberPremiumPct}
                       onChange={(v) => updateAssumption('memberPremiumPct', v)}
                       min={0} max={20} suffix="%"
-                      info="What % of free clients upgrade to the €3/mo premium version (better journaling, AI mood insights). Most won't — and that's fine. Even 3-5% is good. Spotify and Headspace convert 5-8% of free users. This is bonus revenue on top of what therapists already pay us — pure upside."
+                      info={t.infoPremiumConversion}
                     />
                   </div>
                 </div>
@@ -775,46 +1049,46 @@ export default function FinancialModelPage() {
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{t.costs}</h3>
                   <div className="space-y-3">
                     <SliderInput
-                      label="Variable cost / pract." value={assumptions.variableCostPerPract}
+                      label={t.variableCostLabel} value={assumptions.variableCostPerPract}
                       onChange={(v) => updateAssumption('variableCostPerPract', v)}
                       min={1} max={15} step={0.25} prefix="€"
-                      info="What it costs us to serve each therapist per month. Three parts: AI engine (€1.80 — powers Bloom, our AI assistant), servers and databases (€0.95 — hosting, storage, analytics), and customer support (€1.50 — helping therapists get started, drops as we build self-serve). Total: €4.25. AI costs keep getting cheaper every year, so this number should shrink."
+                      info={t.infoVariableCost}
                     />
                     <InfoLine
-                      label="Gross margin"
+                      label={t.grossMarginLabel}
                       value={`${ue.grossMarginPct}%`}
                       valueClass={ue.grossMarginPct >= 70 ? 'text-emerald-600' : 'text-amber-600'}
-                      info="How much of each euro we keep after paying for the service. If we charge €29 and it costs us €4.25 to deliver, we keep 85%. That's really good — most software companies keep 70-75%. The best keep 85-90%, which is where we are. Calculated automatically from ARPU and variable cost above."
+                      info={t.infoGrossMargin}
                     />
                     <NumberInput
                       label="CAC" value={assumptions.cac}
                       onChange={(v) => updateAssumption('cac', Math.max(0, v))}
                       prefix="€"
-                      info="How much we spend to get one new paying therapist. We don't run ads — therapists don't trust ads. Instead: LinkedIn messages (€35-50 per signup), referrals from existing users (€29 — we give a free month), blog articles and SEO (€15-25), and conference booths (€60-100). Blended average: ~€50. This will rise to €60-80 as we grow, which is still very low for software."
+                      info={t.infoCAC}
                     />
                     <NumberInput
-                      label={`${t.team} (/mo)`} value={assumptions.teamCost}
+                      label={`${t.team} (/${fr ? 'mois' : 'mo'})`} value={assumptions.teamCost}
                       onChange={(v) => updateAssumption('teamCost', Math.max(0, v))}
                       prefix="€"
-                      info="What we pay the team each month. Conservative (€8K): 2 founders × €2K + part-time dev €2K + sales €1.5K + advisor €500. Base (€10.5K): 2 founders × €2.5K + dev €2.5K + sales €2K + advisor €1K. Aggressive (€14.5K): 2 founders × €3K + full-time dev €3.5K + sales €2.5K + advisor €1K + marketer €1.5K. The sales hire focuses on LinkedIn outreach, conference demos, and converting trial therapists into paying users. All salaries below market — founders are betting on equity."
+                      info={t.infoTeam}
                     />
                     <NumberInput
-                      label={`${t.infra} (/mo)`} value={assumptions.infraCost}
+                      label={`${t.infra} (/${fr ? 'mois' : 'mo'})`} value={assumptions.infraCost}
                       onChange={(v) => updateAssumption('infraCost', Math.max(0, v))}
                       prefix="€"
-                      info="Monthly bills for tools we pay no matter how many users we have — database (€25), monitoring tools (€20), domain name, email service. This stays the same whether we have 10 or 1,000 users. The costs that grow with users (like AI and storage) are already counted in the 'variable cost' above."
+                      info={t.infoInfra}
                     />
                     <NumberInput
-                      label={`${t.marketing} (/mo)`} value={assumptions.marketingCost}
+                      label={`${t.marketing} (/${fr ? 'mois' : 'mo'})`} value={assumptions.marketingCost}
                       onChange={(v) => updateAssumption('marketingCost', Math.max(0, v))}
                       prefix="€"
-                      info="What we spend on getting the word out — blog posts, attending therapy conferences, LinkedIn outreach tools, building our community. We don't run paid ads because therapists don't respond to them. They trust peer recommendations and educational content, so that's where we focus."
+                      info={t.infoMarketing}
                     />
                     <NumberInput
-                      label={`${t.other} (/mo)`} value={assumptions.otherCost}
+                      label={`${t.other} (/${fr ? 'mois' : 'mo'})`} value={assumptions.otherCost}
                       onChange={(v) => updateAssumption('otherCost', Math.max(0, v))}
                       prefix="€"
-                      info="Everything else — lawyer fees, accountant, insurance, and admin. This goes up when we get our health data certification (HDS), which is required to host patient data in France. That adds about €200-400/mo but is essential for working with therapists."
+                      info={t.infoOther}
                     />
                   </div>
                 </div>
@@ -827,19 +1101,19 @@ export default function FinancialModelPage() {
                       label={t.startingCash} value={assumptions.startingCash}
                       onChange={(v) => updateAssumption('startingCash', Math.max(0, v))}
                       prefix="€"
-                      info="How much money we raise from investors. Conservative: €300K. Base: €400K. Aggressive: €500K. All normal for a pre-seed in Europe. This is our fuel — it decides how many months we can run before we need to be profitable or raise again. Each scenario gives us 33-38 months of runway, enough to reach profitability before running out."
+                      info={t.infoStartingCash}
                     />
                     <SliderInput
-                      label="Equity offered" value={assumptions.dilutionPct}
+                      label={t.equityOffered} value={assumptions.dilutionPct}
                       onChange={(v) => updateAssumption('dilutionPct', v)}
                       min={5} max={25} suffix="%"
-                      info="What % of the company investors get for their money. EU pre-seed standard is 10-20%. Conservative: 17% for €300K. Base: 15% for €400K. Aggressive: 13% for €500K. Lower dilution = founders keep more ownership but means a higher valuation you need to justify. The pre-money valuation updates automatically below."
+                      info={t.infoEquity}
                     />
                     <InfoLine
-                      label="Pre-money valuation"
+                      label={t.preMoneyVal}
                       value={`€${(assumptions.startingCash * (100 / assumptions.dilutionPct - 1) / 1000).toFixed(0)}K`}
                       valueClass="text-indigo-600"
-                      info="What the company is worth before the investment goes in. Calculated as: Raise ÷ Dilution% × (100% - Dilution%). For a pre-revenue startup, €1.5M-€3M is normal in Europe. Our strong unit economics (85% margin, 72x LTV/CAC) justify being at the higher end of that range."
+                      info={t.infoPreMoney}
                     />
                   </div>
                 </div>
@@ -862,14 +1136,14 @@ export default function FinancialModelPage() {
                       <Flame className="w-4 h-4 text-red-500" />
                     </div>
                     <div>
-                      <span className="text-xs font-medium text-gray-900">Monthly Burn & Runway</span>
-                      <p className="text-[10px] text-gray-400">How long the money lasts at current spend</p>
+                      <span className="text-xs font-medium text-gray-900">{t.monthlyBurnRunway}</span>
+                      <p className="text-[10px] text-gray-400">{t.burnSubtitle}</p>
                     </div>
                   </div>
                   <div className="flex items-baseline gap-3 mb-3 mt-3">
-                    <p className="text-2xl font-bold text-gray-900">{fmtEuro(runway.monthlyBurn)}<span className="text-sm font-normal text-gray-400">/mo</span></p>
+                    <p className="text-2xl font-bold text-gray-900">{fmtEuro(runway.monthlyBurn)}<span className="text-sm font-normal text-gray-400">/{fr ? 'mois' : 'mo'}</span></p>
                     <span className="text-gray-300">|</span>
-                    <p className="text-lg font-bold text-gray-900">{runway.runwayMonths}<span className="text-sm font-normal text-gray-400"> months</span></p>
+                    <p className="text-lg font-bold text-gray-900">{runway.runwayMonths}<span className="text-sm font-normal text-gray-400"> {t.months}</span></p>
                   </div>
                   <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
                     <motion.div
@@ -882,26 +1156,26 @@ export default function FinancialModelPage() {
                   <div className="flex justify-between text-[10px] text-gray-400 mb-3">
                     <span>M0</span>
                     <span className="font-medium text-gray-500">
-                      {runway.runwayMonths >= 18 ? 'Seed window covered (18mo+)' : 'Warning: < 18mo runway'}
+                      {runway.runwayMonths >= 18 ? t.seedWindowCovered : t.seedWindowWarning}
                     </span>
                     <span>M36</span>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3 space-y-1.5">
                     <p className="text-[10px] text-gray-500 leading-relaxed">
-                      <span className="font-semibold text-gray-700">Where the burn goes:</span>{' '}
-                      Team ({fmtEuro(assumptions.teamCost)}/mo — 2 co-founders + dev + advisor),
-                      marketing ({fmtEuro(assumptions.marketingCost)}/mo — content, LinkedIn, conferences),
-                      infrastructure ({fmtEuro(assumptions.infraCost)}/mo — Supabase, Vercel, PostHog),
-                      and operations ({fmtEuro(assumptions.otherCost)}/mo — legal, accounting, insurance).
-                      Variable costs (AI, hosting per user) scale with growth.
+                      <span className="font-semibold text-gray-700">{t.whereBurnGoes}</span>{' '}
+                      {t.team} ({fmtEuro(assumptions.teamCost)}/{fr ? 'mois' : 'mo'} — {t.burnTeamDesc}),
+                      {' '}{t.marketing.toLowerCase()} ({fmtEuro(assumptions.marketingCost)}/{fr ? 'mois' : 'mo'} — {t.burnMarketingDesc}),
+                      {' '}{t.infra.toLowerCase()} ({fmtEuro(assumptions.infraCost)}/{fr ? 'mois' : 'mo'} — {t.burnInfraDesc}),
+                      {' '}{fr ? 'et' : 'and'} {t.operations.toLowerCase()} ({fmtEuro(assumptions.otherCost)}/{fr ? 'mois' : 'mo'} — {t.burnOpsDesc}).
+                      {' '}{t.variableCostsScale}
                     </p>
                     <p className="text-[10px] text-gray-500 leading-relaxed">
-                      <span className="font-semibold text-gray-700">Why this is comfortable:</span>{' '}
+                      <span className="font-semibold text-gray-700">{t.whyComfortable}</span>{' '}
                       {runway.runwayMonths >= 24
-                        ? `${runway.runwayMonths} months gives us well beyond the 18-month seed window. Even if growth is slower than planned, we have time to adjust before needing more capital.`
+                        ? t.burnComfort36(runway.runwayMonths)
                         : runway.runwayMonths >= 18
-                        ? `${runway.runwayMonths} months covers the standard 18-month seed window. We reach break-even${runway.breakEvenMonth ? ` around M${runway.breakEvenMonth}` : ''} before the money runs out.`
-                        : `${runway.runwayMonths} months is tight — less than the 18-month seed window. We should either raise more or cut spend to extend runway.`
+                        ? t.burnComfort18(runway.runwayMonths, runway.breakEvenMonth)
+                        : t.burnTight(runway.runwayMonths)
                       }
                     </p>
                   </div>
@@ -913,8 +1187,8 @@ export default function FinancialModelPage() {
                       <DollarSign className="w-4 h-4 text-indigo-600" />
                     </div>
                     <div>
-                      <span className="text-xs font-medium text-gray-900">Use of Funds — {fmtEuro(assumptions.startingCash)}</span>
-                      <p className="text-[10px] text-gray-400">How we plan to spend every euro raised</p>
+                      <span className="text-xs font-medium text-gray-900">{t.useOfFunds} — {fmtEuro(assumptions.startingCash)}</span>
+                      <p className="text-[10px] text-gray-400">{t.useOfFundsSubtitle}</p>
                     </div>
                   </div>
                   <div className="flex h-3 rounded-full overflow-hidden mb-4 mt-3">
@@ -939,20 +1213,20 @@ export default function FinancialModelPage() {
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3 space-y-1.5">
                     <p className="text-[10px] text-gray-500 leading-relaxed">
-                      <span className="font-semibold text-gray-700">Product ({assumptions.useOfFunds.product}%):</span>{' '}
-                      Build the core platform — practitioner dashboard, Bloom AI assistant, member app, resource library. Covers developer salaries and AI/cloud costs for 18+ months of development.
+                      <span className="font-semibold text-gray-700">{t.product} ({assumptions.useOfFunds.product}%) :</span>{' '}
+                      {t.uofProductDesc}
                     </p>
                     <p className="text-[10px] text-gray-500 leading-relaxed">
-                      <span className="font-semibold text-gray-700">Go-to-market ({assumptions.useOfFunds.gtm}%):</span>{' '}
-                      Acquire first 100+ practitioners through LinkedIn outreach, SEO content, therapy conference sponsorships, and community building. No paid ads — therapists trust peers, not ads.
+                      <span className="font-semibold text-gray-700">{t.goToMarket} ({assumptions.useOfFunds.gtm}%) :</span>{' '}
+                      {t.uofGtmDesc}
                     </p>
                     <p className="text-[10px] text-gray-500 leading-relaxed">
-                      <span className="font-semibold text-gray-700">Team ({assumptions.useOfFunds.team}%):</span>{' '}
-                      Founder salaries (below market), clinical advisor, and one additional hire around M12 as we scale past 100 practitioners.
+                      <span className="font-semibold text-gray-700">{t.team} ({assumptions.useOfFunds.team}%) :</span>{' '}
+                      {t.uofTeamDesc}
                     </p>
                     <p className="text-[10px] text-gray-500 leading-relaxed">
-                      <span className="font-semibold text-gray-700">Operations ({assumptions.useOfFunds.ops}%):</span>{' '}
-                      Legal (SAS incorporation, RGPD compliance), health data certification (HDS — required for patient data in France), accounting, and insurance.
+                      <span className="font-semibold text-gray-700">{t.operations} ({assumptions.useOfFunds.ops}%) :</span>{' '}
+                      {t.uofOpsDesc}
                     </p>
                   </div>
                 </div>
@@ -970,8 +1244,8 @@ export default function FinancialModelPage() {
                     <TrendingUp className="w-4 h-4 text-violet-600" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-gray-900">The Ask</h3>
-                    <p className="text-[10px] text-gray-400">What we&apos;re raising, what investors get, and the path to returns</p>
+                    <h3 className="text-sm font-medium text-gray-900">{t.theAsk}</h3>
+                    <p className="text-[10px] text-gray-400">{t.theAskSubtitle}</p>
                   </div>
                 </div>
 
@@ -995,38 +1269,37 @@ export default function FinancialModelPage() {
                       {/* Main numbers */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div className="text-center p-3 bg-violet-50 rounded-xl">
-                          <p className="text-[10px] text-violet-400">Raising</p>
+                          <p className="text-[10px] text-violet-400">{t.raising}</p>
                           <p className="text-lg font-bold text-violet-700">{fmtEuro(raise)}</p>
                         </div>
                         <div className="text-center p-3 bg-gray-50 rounded-xl">
-                          <p className="text-[10px] text-gray-400">For equity</p>
+                          <p className="text-[10px] text-gray-400">{t.forEquity}</p>
                           <p className="text-lg font-bold text-gray-900">{dilution}%</p>
                         </div>
                         <div className="text-center p-3 bg-gray-50 rounded-xl">
-                          <p className="text-[10px] text-gray-400">Pre-money</p>
+                          <p className="text-[10px] text-gray-400">{t.preMoney}</p>
                           <p className="text-lg font-bold text-gray-900">{fmtEuro(preMoney)}</p>
                         </div>
                         <div className="text-center p-3 bg-indigo-50 rounded-xl">
-                          <p className="text-[10px] text-indigo-400">Post-money</p>
+                          <p className="text-[10px] text-indigo-400">{t.postMoney}</p>
                           <p className="text-lg font-bold text-indigo-700">{fmtEuro(postMoney)}</p>
                         </div>
                       </div>
 
                       {/* Valuation justification */}
                       <div className="bg-violet-50/50 rounded-lg p-3">
-                        <p className="text-[10px] font-semibold text-gray-700 mb-1">Why this valuation?</p>
+                        <p className="text-[10px] font-semibold text-gray-700 mb-1">{t.whyThisValuation}</p>
                         <p className="text-[10px] text-gray-500 leading-relaxed">
-                          We&apos;re pre-revenue, which normally means a lower valuation. But our unit economics are already proven on paper:
-                          85% gross margin (top-decile SaaS), {ue.ltvCacRatio}x LTV/CAC (industry target is 3x), and {ue.paybackMonths}-month
-                          CAC payback. The mental health SaaS market is growing 25%+ per year in Europe, and no EU-based competitor
-                          has a practitioner-first B2B2C model with built-in AI. Pre-money of {fmtEuro(preMoney)} is in line with
-                          EU pre-seed standards (€1.5M-€3M) and reflects both the early stage and the strong fundamentals.
+                          {t.valuationJustification
+                            .replace('{ltvCac}', String(ue.ltvCacRatio))
+                            .replace('{payback}', String(ue.paybackMonths))
+                            .replace('{preMoney}', fmtEuro(preMoney))}
                         </p>
                       </div>
 
                       {/* Cap table visual */}
                       <div>
-                        <p className="text-[10px] text-gray-400 mb-1.5">Ownership after round</p>
+                        <p className="text-[10px] text-gray-400 mb-1.5">{t.ownershipAfterRound}</p>
                         <div className="flex h-4 rounded-full overflow-hidden">
                           <motion.div
                             className="bg-gray-800"
@@ -1044,38 +1317,36 @@ export default function FinancialModelPage() {
                         <div className="flex justify-between mt-1.5">
                           <span className="flex items-center gap-1.5 text-[10px] text-gray-600">
                             <span className="w-2 h-2 rounded-full bg-gray-800" />
-                            Founders — {foundersAfter}%
+                            {t.founders} — {foundersAfter}%
                           </span>
                           <span className="flex items-center gap-1.5 text-[10px] text-violet-600">
                             <span className="w-2 h-2 rounded-full bg-violet-500" />
-                            Investors — {dilution}%
+                            {t.investors} — {dilution}%
                           </span>
                         </div>
                         <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">
-                          Founders keep {foundersAfter}% after this round. We plan to reserve a 10% ESOP pool at Series A
-                          (not created yet — keeps your ownership undiluted at this stage). After Series A dilution (~15-20%),
-                          your pre-seed shares will still represent {dilution}% of a much larger pie.
+                          {t.foundersKeep(foundersAfter)}
                         </p>
                       </div>
 
                       {/* Return scenarios */}
                       <div className="pt-2 border-t border-gray-100">
-                        <p className="text-[10px] font-semibold text-gray-700 mb-2">What your {fmtEuro(raise)} could become</p>
+                        <p className="text-[10px] font-semibold text-gray-700 mb-2">{t.whatYourInvestmentBecomes.replace('{amount}', fmtEuro(raise))}</p>
                         <div className="grid grid-cols-3 gap-3">
                           <div className="text-center p-3 bg-gray-50 rounded-xl">
-                            <p className="text-[10px] text-gray-400">Price per 1%</p>
+                            <p className="text-[10px] text-gray-400">{t.pricePer1Pct}</p>
                             <p className="text-sm font-bold text-gray-900">{fmtEuro(pricePerPct)}</p>
-                            <p className="text-[9px] text-gray-400">entry price today</p>
+                            <p className="text-[9px] text-gray-400">{t.entryPriceToday}</p>
                           </div>
                           <div className="text-center p-3 bg-emerald-50 rounded-xl">
-                            <p className="text-[10px] text-emerald-500">3x at Series A</p>
+                            <p className="text-[10px] text-emerald-500">{t.atSeriesA}</p>
                             <p className="text-sm font-bold text-emerald-600">{fmtEuro(investorSeriesAValue)}</p>
-                            <p className="text-[9px] text-gray-400">{dilution}% of {fmtEuro(impliedSeriesAVal)}</p>
+                            <p className="text-[9px] text-gray-400">{dilution}% {fr ? 'de' : 'of'} {fmtEuro(impliedSeriesAVal)}</p>
                           </div>
                           <div className="text-center p-3 bg-emerald-50 rounded-xl">
-                            <p className="text-[10px] text-emerald-500">10x exit scenario</p>
+                            <p className="text-[10px] text-emerald-500">{t.exitScenario10x}</p>
                             <p className="text-sm font-bold text-emerald-600">{fmtEuro(investor10xValue)}</p>
-                            <p className="text-[9px] text-gray-400">{dilution}% of {fmtEuro(tenXVal)}</p>
+                            <p className="text-[9px] text-gray-400">{dilution}% {fr ? 'de' : 'of'} {fmtEuro(tenXVal)}</p>
                           </div>
                         </div>
                       </div>
@@ -1083,24 +1354,16 @@ export default function FinancialModelPage() {
                       {/* Detailed return narrative */}
                       <div className="bg-gray-50 rounded-lg p-3 space-y-1.5">
                         <p className="text-[10px] text-gray-500 leading-relaxed">
-                          <span className="font-semibold text-gray-700">Series A path (18 months):</span>{' '}
-                          If we hit our M18 targets — {fmtNumber(m18.practitioners)} practitioners, {fmtEuro(m18.arr)} ARR — we expect
-                          a 3x step-up at Series A, which is standard for seed-to-A in European SaaS. Your {dilution}% would be
-                          worth {fmtEuro(investorSeriesAValue)} on paper. These targets require ~{Math.round(m18.practitioners / 18)} new practitioners
-                          per month, achievable through LinkedIn outreach and referrals alone.
+                          <span className="font-semibold text-gray-700">{t.seriesAPath}</span>{' '}
+                          {t.seriesAPathDesc(fmtNumber(m18.practitioners), fmtEuro(m18.arr), dilution, fmtEuro(investorSeriesAValue), Math.round(m18.practitioners / 18))}
                         </p>
                         <p className="text-[10px] text-gray-500 leading-relaxed">
-                          <span className="font-semibold text-gray-700">Deal structure:</span>{' '}
-                          Standard EU pre-seed terms — SAFE note or priced equity round, with standard pro-rata rights,
-                          information rights (monthly updates), and investor-friendly governance. No board seat required
-                          at this stage, but we welcome strategic involvement.
+                          <span className="font-semibold text-gray-700">{t.dealStructure}</span>{' '}
+                          {t.dealStructureDesc}
                         </p>
                         <p className="text-[10px] text-gray-500 leading-relaxed">
-                          <span className="font-semibold text-gray-700">Why now:</span>{' '}
-                          France&apos;s mental health market is at an inflection point — government reimbursement programs launched in 2022,
-                          practitioner burnout is at record highs, and there&apos;s no dominant EU platform yet. Getting in before product-market fit
-                          is confirmed gives you the best entry price. Once we have 100+ practitioners and growing MRR, the next round will
-                          be at 3-5x this valuation.
+                          <span className="font-semibold text-gray-700">{t.whyNow}</span>{' '}
+                          {t.whyNowDesc}
                         </p>
                       </div>
                     </div>
@@ -1118,8 +1381,8 @@ export default function FinancialModelPage() {
                 <div className="flex items-center gap-2 mb-1">
                   <Rocket className="w-4 h-4 text-indigo-500" />
                   <div>
-                    <h3 className="text-sm font-medium text-gray-900">Path to Series A</h3>
-                    <p className="text-[10px] text-gray-400">Key milestones across the 18-month seed window</p>
+                    <h3 className="text-sm font-medium text-gray-900">{t.pathToSeriesA}</h3>
+                    <p className="text-[10px] text-gray-400">{t.pathToSeriesASubtitle}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-0 mt-4">
@@ -1147,16 +1410,16 @@ export default function FinancialModelPage() {
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3 mt-4 space-y-1.5">
                   <p className="text-[10px] text-gray-500 leading-relaxed">
-                    <span className="font-semibold text-gray-700">M0-M6 — Build & validate:</span>{' '}
-                    Ship the MVP, onboard first 30-50 therapists through personal outreach. Focus on retention over acquisition — if therapists stay past month 3, we have product-market fit signal.
+                    <span className="font-semibold text-gray-700">{t.m0m6Title}</span>{' '}
+                    {t.m0m6Desc}
                   </p>
                   <p className="text-[10px] text-gray-500 leading-relaxed">
-                    <span className="font-semibold text-gray-700">M6-M12 — Scale what works:</span>{' '}
-                    Double down on channels that convert (LinkedIn, peer referrals). Hit 100+ practitioners, {fmtEuro(m18.mrr ? m18.mrr / 3 : 0)}+ MRR. Start seeing organic word-of-mouth from happy users.
+                    <span className="font-semibold text-gray-700">{t.m6m12Title}</span>{' '}
+                    {t.m6m12Desc(fmtEuro(m18.mrr ? m18.mrr / 3 : 0))}
                   </p>
                   <p className="text-[10px] text-gray-500 leading-relaxed">
-                    <span className="font-semibold text-gray-700">M12-M18 — Series A ready:</span>{' '}
-                    Reach {fmtNumber(m18.practitioners)} practitioners, {fmtEuro(m18.arr)} ARR, and strong retention metrics. At this point we have the data to raise a €1.5-3M Series A at a 3-5x step-up from today&apos;s valuation.
+                    <span className="font-semibold text-gray-700">{t.m12m18Title}</span>{' '}
+                    {t.m12m18Desc(fmtNumber(m18.practitioners), fmtEuro(m18.arr))}
                   </p>
                 </div>
               </motion.div>
@@ -1173,7 +1436,7 @@ export default function FinancialModelPage() {
                     <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
                       <DollarSign className="w-4 h-4 text-indigo-600" />
                     </div>
-                    <span className="text-xs text-gray-500">MRR @ M18</span>
+                    <span className="text-xs text-gray-500">{t.mrrAtM18}</span>
                   </div>
                   <p className="text-xl font-bold text-gray-900">{fmtEuro(m18.mrr)}</p>
                   <p className="text-[10px] text-gray-400 mt-1">M36: {fmtEuro(lastMonth.mrr)} ({fmtEuro(lastMonth.arr)} ARR)</p>
@@ -1184,10 +1447,10 @@ export default function FinancialModelPage() {
                     <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                       <Users className="w-4 h-4 text-blue-600" />
                     </div>
-                    <span className="text-xs text-gray-500">{t.practitionersLabel} @ M18</span>
+                    <span className="text-xs text-gray-500">{t.practAtM18}</span>
                   </div>
                   <p className="text-xl font-bold text-gray-900">{fmtNumber(m18.practitioners)}</p>
-                  <p className="text-[10px] text-gray-400 mt-1">M36: {fmtNumber(lastMonth.practitioners)} ({fmtNumber(lastMonth.members)} members)</p>
+                  <p className="text-[10px] text-gray-400 mt-1">M36: {fmtNumber(lastMonth.practitioners)} ({fmtNumber(lastMonth.members)} {t.members.toLowerCase()})</p>
                 </div>
 
                 <div className="bg-white border border-gray-200 rounded-xl p-4">
@@ -1208,13 +1471,13 @@ export default function FinancialModelPage() {
                     <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
                       <Zap className="w-4 h-4 text-amber-600" />
                     </div>
-                    <span className="text-xs text-gray-500">Break-even</span>
+                    <span className="text-xs text-gray-500">{t.breakEven}</span>
                   </div>
                   <p className="text-xl font-bold text-gray-900">
                     {runway.breakEvenMonth ? `M${runway.breakEvenMonth}` : t.never}
                   </p>
                   <p className="text-[10px] text-gray-400 mt-1">
-                    {runway.breakEvenPractitioners ? `At ~${runway.breakEvenPractitioners} practitioners` : `${runway.runwayMonths} months runway`}
+                    {runway.breakEvenPractitioners ? t.atPractitioners(runway.breakEvenPractitioners) : t.monthsRunway(runway.runwayMonths)}
                   </p>
                 </div>
               </motion.div>
@@ -1228,9 +1491,9 @@ export default function FinancialModelPage() {
               >
                 <div className="flex items-center gap-2 mb-1">
                   <ArrowDown className="w-4 h-4 text-emerald-500" />
-                  <h3 className="text-sm font-medium text-gray-900">Margin Waterfall</h3>
+                  <h3 className="text-sm font-medium text-gray-900">{t.marginWaterfall}</h3>
                 </div>
-                <p className="text-xs text-gray-400 mb-4">Per practitioner per month — from revenue to contribution margin</p>
+                <p className="text-xs text-gray-400 mb-4">{t.waterfallSubtitle}</p>
                 <div className="space-y-2">
                   {waterfall.map((row, i) => (
                     <div key={i}>
@@ -1259,8 +1522,11 @@ export default function FinancialModelPage() {
                 </div>
                 {ue.b2cRevenuePerPract > 0 && (
                   <p className="text-[10px] text-gray-400 mt-3 pt-2 border-t border-gray-100">
-                    + B2C premium upside: €{ue.b2cRevenuePerPract.toFixed(2)}/practitioner/mo
-                    ({assumptions.membersPerPractitioner} members × {assumptions.memberPremiumPct}% × €{MEMBER_PREMIUM}/mo) — not included in margin above.
+                    {t.b2cPremiumUpside
+                      .replace('{amount}', ue.b2cRevenuePerPract.toFixed(2))
+                      .replace('{members}', String(assumptions.membersPerPractitioner))
+                      .replace('{pct}', String(assumptions.memberPremiumPct))
+                      .replace('{price}', String(MEMBER_PREMIUM))}
                   </p>
                 )}
               </motion.div>
@@ -1273,40 +1539,36 @@ export default function FinancialModelPage() {
                 className="bg-gradient-to-r from-indigo-50/50 to-emerald-50/50 border border-indigo-100/50 rounded-xl p-5"
               >
                 <div className="mb-1">
-                  <h3 className="text-sm font-medium text-gray-900">B2B2C Advantage — Why Our CAC is Different</h3>
-                  <p className="text-[10px] text-gray-400">Our secret weapon: practitioners do the user acquisition for us</p>
+                  <h3 className="text-sm font-medium text-gray-900">{t.b2b2cTitle}</h3>
+                  <p className="text-[10px] text-gray-400">{t.b2b2cSubtitle}</p>
                 </div>
                 <div className="grid grid-cols-3 gap-4 mt-3">
                   <div className="text-center">
                     <p className="text-2xl font-bold text-gray-900">€{ue.cac}</p>
-                    <p className="text-xs text-gray-500 mt-1">Practitioner CAC</p>
+                    <p className="text-xs text-gray-500 mt-1">{t.practitionerCAC}</p>
                   </div>
                   <div className="text-center flex flex-col items-center justify-center">
                     <div className="flex items-center gap-2 text-xs text-gray-400">
-                      <span>1 practitioner</span>
+                      <span>{t.onePractitioner}</span>
                       <ArrowRight className="w-3 h-3" />
-                      <span className="font-semibold text-gray-600">{assumptions.membersPerPractitioner} members</span>
+                      <span className="font-semibold text-gray-600">{assumptions.membersPerPractitioner} {t.members.toLowerCase()}</span>
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-1">Members onboarded by practitioner — zero acquisition cost</p>
+                    <p className="text-[10px] text-gray-400 mt-1">{t.membersOnboardedZeroCost}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold text-emerald-600">€{ue.effectiveMemberCAC}</p>
-                    <p className="text-xs text-gray-500 mt-1">Effective member CAC</p>
-                    <p className="text-[10px] text-gray-400">vs. €30-50 for B2C apps</p>
+                    <p className="text-xs text-gray-500 mt-1">{t.effectiveMemberCAC}</p>
+                    <p className="text-[10px] text-gray-400">{t.vsB2CApps}</p>
                   </div>
                 </div>
                 <div className="bg-white/60 rounded-lg p-3 mt-3 space-y-1.5">
                   <p className="text-[10px] text-gray-500 leading-relaxed">
-                    <span className="font-semibold text-gray-700">How it works:</span>{' '}
-                    We only sell to therapists (B2B). Each therapist then invites their own clients onto the app — we never spend a cent acquiring those users.
-                    A therapist with 15-25 active clients brings ~{assumptions.membersPerPractitioner} onto the platform. So for every €{ue.cac} we spend,
-                    we get 1 paying customer + {assumptions.membersPerPractitioner} engaged users for free.
+                    <span className="font-semibold text-gray-700">{t.howItWorks}</span>{' '}
+                    {t.howItWorksDesc(ue.cac, assumptions.membersPerPractitioner)}
                   </p>
                   <p className="text-[10px] text-gray-500 leading-relaxed">
-                    <span className="font-semibold text-gray-700">Why it compounds:</span>{' '}
-                    Members who love the app tell friends in therapy to ask their therapist about Bloomsline. Therapists hear about us from peers
-                    at conferences or in supervision groups. This creates a flywheel: more therapists → more members → more word-of-mouth → more therapists.
-                    Headspace and Calm spend €30-50 per user. We spend €{ue.effectiveMemberCAC}.
+                    <span className="font-semibold text-gray-700">{t.whyItCompounds}</span>{' '}
+                    {t.whyItCompoundsDesc(ue.effectiveMemberCAC)}
                   </p>
                 </div>
               </motion.div>
@@ -1318,9 +1580,9 @@ export default function FinancialModelPage() {
                 transition={{ delay: 0.3 }}
                 className="bg-white border border-gray-200 rounded-xl p-5"
               >
-                <h3 className="text-sm font-medium text-gray-900">Revenue Projection</h3>
+                <h3 className="text-sm font-medium text-gray-900">{t.revenueProjection}</h3>
                 <p className="text-xs text-gray-400 mb-4">
-                  MRR over 36 months — €{ue.blendedArpu.toFixed(0)} blended ARPU, growth {assumptions.initialGrowthPct}% → {assumptions.endGrowthPct}%/mo
+                  {t.revenueProjectionDesc(ue.blendedArpu.toFixed(0), assumptions.initialGrowthPct, assumptions.endGrowthPct)}
                 </p>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1333,10 +1595,10 @@ export default function FinancialModelPage() {
                       </defs>
                       <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} interval={5} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} tickFormatter={(v) => fmtEuro(v)} width={50} />
-                      <Tooltip content={<RevenueTooltip />} cursor={false} />
+                      <Tooltip content={<RevenueTooltip locale={locale} />} cursor={false} />
                       <ReferenceLine x="M18" stroke="#6366f1" strokeDasharray="3 3" strokeWidth={1} label={{ value: 'M18', position: 'top', fontSize: 9, fill: '#6366f1' }} />
                       {runway.breakEvenMonth && (
-                        <ReferenceLine x={`M${runway.breakEvenMonth}`} stroke="#10b981" strokeDasharray="3 3" strokeWidth={1} label={{ value: 'Break-even', position: 'top', fontSize: 9, fill: '#10b981' }} />
+                        <ReferenceLine x={`M${runway.breakEvenMonth}`} stroke="#10b981" strokeDasharray="3 3" strokeWidth={1} label={{ value: t.breakEven, position: 'top', fontSize: 9, fill: '#10b981' }} />
                       )}
                       <Area type="monotone" dataKey="mrr" stroke="#6366f1" strokeWidth={2} fill="url(#mrrGrad)" dot={false} activeDot={{ r: 3, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }} />
                     </AreaChart>
@@ -1351,8 +1613,8 @@ export default function FinancialModelPage() {
                 transition={{ delay: 0.35 }}
                 className="bg-white border border-gray-200 rounded-xl p-5"
               >
-                <h3 className="text-sm font-medium text-gray-900">Customer Growth</h3>
-                <p className="text-xs text-gray-400 mb-4">Practitioners and members (B2B2C multiplier: 1 pract. = {assumptions.membersPerPractitioner} members)</p>
+                <h3 className="text-sm font-medium text-gray-900">{t.customerGrowth}</h3>
+                <p className="text-xs text-gray-400 mb-4">{t.customerGrowthDesc(assumptions.membersPerPractitioner)}</p>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={projections} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
@@ -1368,7 +1630,7 @@ export default function FinancialModelPage() {
                       </defs>
                       <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} interval={5} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} tickFormatter={(v) => fmtNumber(v)} width={50} />
-                      <Tooltip content={<GrowthTooltip />} cursor={false} />
+                      <Tooltip content={<GrowthTooltip locale={locale} />} cursor={false} />
                       <ReferenceLine x="M18" stroke="#6366f1" strokeDasharray="3 3" strokeWidth={1} />
                       <Area type="monotone" dataKey="members" stroke="#10b981" strokeWidth={2} fill="url(#memberGrad)" dot={false} />
                       <Area type="monotone" dataKey="practitioners" stroke="#3b82f6" strokeWidth={2} fill="url(#practGrad)" dot={false} />
@@ -1380,10 +1642,10 @@ export default function FinancialModelPage() {
                     <span className="w-2 h-2 rounded-full bg-blue-500" /> {t.practitionersLabel}
                   </span>
                   <span className="flex items-center gap-1.5 text-[10px] text-gray-500">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" /> Members
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" /> {t.members}
                   </span>
                   <span className="flex items-center gap-1.5 text-[10px] text-gray-500">
-                    <span className="w-1 h-3 border-l border-dashed border-indigo-400" /> M18 seed window
+                    <span className="w-1 h-3 border-l border-dashed border-indigo-400" /> {t.m18SeedWindow}
                   </span>
                 </div>
               </motion.div>
@@ -1394,45 +1656,45 @@ export default function FinancialModelPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
               >
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Unit Economics</h3>
+                <h3 className="text-sm font-medium text-gray-900 mb-3">{t.unitEconomics}</h3>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                   <div className="bg-white border border-gray-200 rounded-xl p-4">
-                    <span className="text-xs text-gray-500">Blended ARPU</span>
+                    <span className="text-xs text-gray-500">{t.blendedArpu}</span>
                     <p className="text-lg font-bold text-gray-900 mt-1">€{ue.blendedArpu.toFixed(2)}</p>
-                    <p className="text-[10px] text-gray-400">/practitioner/mo (B2B only)</p>
+                    <p className="text-[10px] text-gray-400">{t.perPractMoB2B}</p>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-4">
-                    <span className="text-xs text-gray-500">LTV</span>
+                    <span className="text-xs text-gray-500">{t.ltv}</span>
                     <p className="text-lg font-bold text-emerald-600 mt-1">{fmtEuro(ue.ltv)}</p>
                     <p className="text-[10px] text-gray-400">
-                      {(1 / (assumptions.churnPct / 100)).toFixed(0)} mo lifetime × €{ue.totalArpu.toFixed(0)} × {ue.grossMarginPct}%
+                      {(1 / (assumptions.churnPct / 100)).toFixed(0)} {t.moLifetime} × €{ue.totalArpu.toFixed(0)} × {ue.grossMarginPct}%
                     </p>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-4">
-                    <span className="text-xs text-gray-500">CAC</span>
+                    <span className="text-xs text-gray-500">{t.cac}</span>
                     <p className="text-lg font-bold text-gray-900 mt-1">€{ue.cac}</p>
-                    <p className="text-[10px] text-gray-400">organic acquisition</p>
+                    <p className="text-[10px] text-gray-400">{t.organicAcquisition}</p>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-4">
-                    <span className="text-xs text-gray-500">LTV/CAC</span>
+                    <span className="text-xs text-gray-500">{t.ltvCac}</span>
                     <p className={`text-lg font-bold mt-1 ${ue.ltvCacRatio >= 3 ? 'text-emerald-600' : ue.ltvCacRatio >= 1 ? 'text-amber-600' : 'text-red-600'}`}>
                       {ue.ltvCacRatio}x
                     </p>
-                    <p className="text-[10px] text-gray-400">target: &gt;3x</p>
+                    <p className="text-[10px] text-gray-400">{t.target3x}</p>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-4">
-                    <span className="text-xs text-gray-500">Payback</span>
+                    <span className="text-xs text-gray-500">{t.payback}</span>
                     <p className={`text-lg font-bold mt-1 ${ue.paybackMonths <= 12 ? 'text-emerald-600' : 'text-amber-600'}`}>
                       {ue.paybackMonths} {t.monthLabel}
                     </p>
-                    <p className="text-[10px] text-gray-400">target: &lt;12mo</p>
+                    <p className="text-[10px] text-gray-400">{t.targetLt12mo}</p>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-4">
-                    <span className="text-xs text-gray-500">Gross Margin</span>
+                    <span className="text-xs text-gray-500">{t.grossMarginLabel}</span>
                     <p className={`text-lg font-bold mt-1 ${ue.grossMarginPct >= 70 ? 'text-emerald-600' : 'text-amber-600'}`}>
                       {ue.grossMarginPct}%
                     </p>
-                    <p className="text-[10px] text-gray-400">€{ue.variableCost.toFixed(2)} variable cost</p>
+                    <p className="text-[10px] text-gray-400">€{ue.variableCost.toFixed(2)} {t.variableCost}</p>
                   </div>
                 </div>
               </motion.div>
@@ -1444,14 +1706,14 @@ export default function FinancialModelPage() {
                 transition={{ delay: 0.45 }}
                 className="bg-white border border-gray-200 rounded-xl p-5"
               >
-                <h3 className="text-sm font-medium text-gray-900">Expense Breakdown</h3>
-                <p className="text-xs text-gray-400 mb-4">Quarterly expenses by category (includes COGS)</p>
+                <h3 className="text-sm font-medium text-gray-900">{t.expenseBreakdown}</h3>
+                <p className="text-xs text-gray-400 mb-4">{t.expenseBreakdownDesc}</p>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={barChartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
                       <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} tickFormatter={(v) => fmtEuro(v)} width={50} />
-                      <Tooltip content={<ExpenseTooltip />} cursor={false} />
+                      <Tooltip content={<ExpenseTooltip locale={locale} />} cursor={false} />
                       <Bar dataKey="variableCosts" stackId="a" fill="#f43f5e" name="COGS" />
                       <Bar dataKey="teamExp" stackId="a" fill="#3b82f6" name="Team" />
                       <Bar dataKey="infraExp" stackId="a" fill="#8b5cf6" name="Infra" />
@@ -1478,8 +1740,8 @@ export default function FinancialModelPage() {
                 transition={{ delay: 0.5 }}
                 className="bg-white border border-gray-200 rounded-xl p-5"
               >
-                <h3 className="text-sm font-medium text-gray-900">Runway & Cash Position</h3>
-                <p className="text-xs text-gray-400 mb-4">Cumulative cash with milestones</p>
+                <h3 className="text-sm font-medium text-gray-900">{t.runwayCash}</h3>
+                <p className="text-xs text-gray-400 mb-4">{t.runwayCashDesc}</p>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={projections} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
@@ -1491,11 +1753,11 @@ export default function FinancialModelPage() {
                       </defs>
                       <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} interval={5} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} tickFormatter={(v) => fmtEuro(v)} width={55} />
-                      <Tooltip content={<RunwayTooltip />} cursor={false} />
+                      <Tooltip content={<RunwayTooltip locale={locale} />} cursor={false} />
                       <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={1} />
-                      <ReferenceLine x="M18" stroke="#6366f1" strokeDasharray="3 3" strokeWidth={1} label={{ value: 'Seed window', position: 'top', fontSize: 9, fill: '#6366f1' }} />
+                      <ReferenceLine x="M18" stroke="#6366f1" strokeDasharray="3 3" strokeWidth={1} label={{ value: t.seedWindow, position: 'top', fontSize: 9, fill: '#6366f1' }} />
                       {runway.breakEvenMonth && (
-                        <ReferenceLine x={`M${runway.breakEvenMonth}`} stroke="#10b981" strokeDasharray="3 3" strokeWidth={1} label={{ value: 'Break-even', position: 'top', fontSize: 9, fill: '#10b981' }} />
+                        <ReferenceLine x={`M${runway.breakEvenMonth}`} stroke="#10b981" strokeDasharray="3 3" strokeWidth={1} label={{ value: t.breakEven, position: 'top', fontSize: 9, fill: '#10b981' }} />
                       )}
                       {runway.arr100kMonth && (
                         <ReferenceLine x={`M${runway.arr100kMonth}`} stroke="#f59e0b" strokeDasharray="3 3" strokeWidth={1} label={{ value: '€100K ARR', position: 'insideTopRight', fontSize: 9, fill: '#f59e0b' }} />
@@ -1515,21 +1777,28 @@ export default function FinancialModelPage() {
               >
                 <div className="flex items-center gap-2 mb-4">
                   <BarChart3 className="w-4 h-4 text-gray-500" />
-                  <h3 className="text-sm font-medium text-gray-900">Industry Benchmarks</h3>
-                  <span className="text-[10px] text-gray-400">vs. SaaS standards</span>
+                  <h3 className="text-sm font-medium text-gray-900">{t.industryBenchmarks}</h3>
+                  <span className="text-[10px] text-gray-400">{t.vsSaasStandards}</span>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="bg-gray-50">
-                        <th className="text-left p-2.5 font-semibold text-gray-600">Metric</th>
+                        <th className="text-left p-2.5 font-semibold text-gray-600">{t.metric}</th>
                         <th className="text-center p-2.5 font-semibold text-indigo-600">Bloomsline</th>
-                        <th className="text-center p-2.5 font-semibold text-gray-500">SaaS Median</th>
-                        <th className="text-center p-2.5 font-semibold text-emerald-600">Top Decile</th>
+                        <th className="text-center p-2.5 font-semibold text-gray-500">{t.saasMedian}</th>
+                        <th className="text-center p-2.5 font-semibold text-emerald-600">{t.topDecile}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {BENCHMARKS.map((b, i) => (
+                      {[
+                        { metric: t.benchGrossMargin, median: '70-75%', top: '85-90%' },
+                        { metric: t.benchLtvCac, median: '3-5x', top: '10-15x' },
+                        { metric: t.benchCacPayback, median: `12-18 ${t.benchCacPaybackMo}`, top: `5-6 ${t.benchCacPaybackMo}` },
+                        { metric: t.benchMonthlyChurn, median: '5-7%', top: '2-3%' },
+                        { metric: t.benchCAC, median: '€200-500', top: '€50-100' },
+                        { metric: t.benchARPU, median: '€50-100', top: fr ? 'Variable' : 'Varies' },
+                      ].map((b, i) => (
                         <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
                           <td className="p-2.5 font-medium text-gray-900 border-b border-gray-50">{b.metric}</td>
                           <td className="p-2.5 text-center font-mono font-bold text-indigo-600 border-b border-gray-50">{benchmarkValues[i]}</td>
@@ -1541,7 +1810,7 @@ export default function FinancialModelPage() {
                   </table>
                 </div>
                 <p className="text-[10px] text-gray-400 mt-3">
-                  Values update in real-time as you adjust assumptions. See <a href="/unit-economics" className="text-indigo-500 underline">Unit Economics</a> for detailed analysis.
+                  {t.benchmarkFooter} <a href="/unit-economics" className="text-indigo-500 underline">{t.unitEconomicsLink}</a> {t.forDetailedAnalysis}
                 </p>
               </motion.div>
             </div>

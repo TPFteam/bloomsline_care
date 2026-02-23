@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   DollarSign,
@@ -632,6 +633,9 @@ const MONETIZATION: MonetizationOp[] = [
 // ══════════════════════════════════════════════════════════════════════════
 
 export default function PricingAnalysisPage() {
+  const [lang, setLang] = useState<'en' | 'fr'>('en')
+  const t = (en: string, fr: string) => lang === 'fr' ? fr : en
+
   const totalCostPerPractitioner = COST_STRUCTURE.reduce((sum, c) => {
     const val = parseFloat(c.monthly.replace('€', ''))
     return sum + val
@@ -641,28 +645,47 @@ export default function PricingAnalysisPage() {
     <div className="min-h-screen bg-gray-50">
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-white border-b border-gray-200 px-6 sm:px-8 py-4">
-        <div className="max-w-5xl mx-auto flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
-            <DollarSign className="w-4 h-4 text-white" />
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h1 className="text-sm font-semibold text-gray-900">{t('Pricing Strategy', 'Strategie tarifaire')}</h1>
+              <p className="text-[10px] text-gray-400">{t('Bloomsline Care — Comprehensive Pricing Analysis', 'Bloomsline Care — Analyse tarifaire complete')}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-sm font-semibold text-gray-900">Pricing Strategy</h1>
-            <p className="text-[10px] text-gray-400">Bloomsline Care — Comprehensive Pricing Analysis</p>
-          </div>
+          <button
+            onClick={() => setLang(lang === 'en' ? 'fr' : 'en')}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+          >
+            {lang === 'en' ? '\u{1F1EB}\u{1F1F7} Fran\u00e7ais' : '\u{1F1EC}\u{1F1E7} English'}
+          </button>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-6 sm:px-8 py-10 space-y-14">
         {/* ── Hero ──────────────────────────────────────────── */}
         <motion.div {...fadeUp(0)}>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Pricing Strategy & Revenue Architecture</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{t('Pricing Strategy & Revenue Architecture', 'Strategie tarifaire et architecture des revenus')}</h2>
           <p className="text-sm text-gray-500 leading-relaxed max-w-3xl">
-            A comprehensive pricing analysis grounded in competitor benchmarks, value-based methodology,
-            cost-floor economics, and behavioral pricing psychology. All recommendations calibrated for
-            pre-seed stage with a French-first B2B2C mental health platform.
+            {t(
+              'A comprehensive pricing analysis grounded in competitor benchmarks, value-based methodology, cost-floor economics, and behavioral pricing psychology. All recommendations calibrated for pre-seed stage with a French-first B2B2C mental health platform.',
+              'Une analyse tarifaire complete fondee sur les benchmarks concurrentiels, la methodologie basee sur la valeur, l\'economie du prix plancher et la psychologie comportementale des prix. Toutes les recommandations sont calibrees pour le stade pre-seed d\'une plateforme B2B2C de sante mentale francophone.'
+            )}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            {['Competitor Audit', 'Value-Based Model', 'Cost-Plus Floor', 'Price Elasticity', 'Psychological Tactics', '3-Tier Design', 'Discount Rules', '3 Revenue Scenarios', 'Monetization Map'].map((tag) => (
+            {[
+              t('Competitor Audit', 'Audit concurrentiel'),
+              t('Value-Based Model', 'Modele base sur la valeur'),
+              t('Cost-Plus Floor', 'Prix plancher'),
+              t('Price Elasticity', 'Elasticite des prix'),
+              t('Psychological Tactics', 'Tactiques psychologiques'),
+              t('3-Tier Design', 'Structure 3 niveaux'),
+              t('Discount Rules', 'Regles de remise'),
+              t('3 Revenue Scenarios', '3 scenarios de revenus'),
+              t('Monetization Map', 'Carte de monetisation'),
+            ].map((tag) => (
               <span key={tag} className="text-[10px] font-medium bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full">
                 {tag}
               </span>
@@ -674,21 +697,21 @@ export default function PricingAnalysisPage() {
         {/* 1. COMPETITOR PRICING AUDIT                          */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.1)}>
-          <SectionTitle subtitle="What everyone else charges — and what they don't offer">
-            1. Competitor Pricing Audit
+          <SectionTitle subtitle={t('What everyone else charges — and what they don\'t offer', 'Ce que les concurrents facturent — et ce qu\'ils n\'offrent pas')}>
+            {t('1. Competitor Pricing Audit', '1. Audit tarifaire concurrentiel')}
           </SectionTitle>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Competitor</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Category</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Starter</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Mid</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Top</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">AI Add-on</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Member App</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Competitor', 'Concurrent')}</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Category', 'Categorie')}</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Starter', 'Debutant')}</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Mid', 'Intermediaire')}</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Top', 'Premium')}</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('AI Add-on', 'Module IA')}</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Member App', 'App membre')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -702,7 +725,7 @@ export default function PricingAnalysisPage() {
                     <td className="p-3 text-gray-500 border-b border-gray-100">{c.aiAddon}</td>
                     <td className="p-3 border-b border-gray-100">
                       <span className={c.memberApp === 'None' ? 'text-red-400' : 'text-emerald-600 font-medium'}>
-                        {c.memberApp}
+                        {c.memberApp === 'None' ? t('None', 'Aucune') : c.memberApp}
                       </span>
                     </td>
                   </tr>
@@ -710,13 +733,13 @@ export default function PricingAnalysisPage() {
                 {/* Bloomsline row */}
                 <tr className="bg-indigo-50/60 border-t-2 border-indigo-200">
                   <td className="p-3 font-bold text-indigo-700 border-b border-indigo-100">Bloomsline</td>
-                  <td className="p-3 text-indigo-600 font-medium border-b border-indigo-100">B2B2C Care Platform</td>
-                  <td className="p-3 font-mono font-bold text-indigo-700 border-b border-indigo-100">€19/mo</td>
-                  <td className="p-3 font-mono font-bold text-indigo-700 border-b border-indigo-100">€29/mo</td>
-                  <td className="p-3 font-mono font-bold text-indigo-700 border-b border-indigo-100">€49+€19/head</td>
-                  <td className="p-3 text-indigo-600 font-medium border-b border-indigo-100">Included (all tiers)</td>
+                  <td className="p-3 text-indigo-600 font-medium border-b border-indigo-100">{t('B2B2C Care Platform', 'Plateforme de soins B2B2C')}</td>
+                  <td className="p-3 font-mono font-bold text-indigo-700 border-b border-indigo-100">{t('€19/mo', '€19/mois')}</td>
+                  <td className="p-3 font-mono font-bold text-indigo-700 border-b border-indigo-100">{t('€29/mo', '€29/mois')}</td>
+                  <td className="p-3 font-mono font-bold text-indigo-700 border-b border-indigo-100">{t('€49+€19/head', '€49+€19/praticien')}</td>
+                  <td className="p-3 text-indigo-600 font-medium border-b border-indigo-100">{t('Included (all tiers)', 'Inclus (tous les niveaux)')}</td>
                   <td className="p-3 border-b border-indigo-100">
-                    <span className="text-indigo-700 font-bold">Free + €3/mo premium</span>
+                    <span className="text-indigo-700 font-bold">{t('Free + €3/mo premium', 'Gratuit + €3/mois premium')}</span>
                   </td>
                 </tr>
               </tbody>
@@ -725,12 +748,14 @@ export default function PricingAnalysisPage() {
 
           <div className="mt-4 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
             <h4 className="text-xs font-bold text-indigo-800 mb-2 flex items-center gap-1.5">
-              <Target className="w-3.5 h-3.5" /> Key Insight
+              <Target className="w-3.5 h-3.5" /> {t('Key Insight', 'Point cle')}
             </h4>
             <p className="text-xs text-indigo-700 leading-relaxed">
-              No competitor offers AI + member app + practitioner tools in a single subscription. SimplePractice charges $49-99
-              with no AI or member app. Doctolib charges €139 with no AI (€99 add-on for phone AI only). TherapyNotes charges $40/mo extra for AI scribe alone.
-              <strong> Bloomsline at €29/mo with AI included is a category-creating price point.</strong>
+              {t(
+                'No competitor offers AI + member app + practitioner tools in a single subscription. SimplePractice charges $49-99 with no AI or member app. Doctolib charges €139 with no AI (€99 add-on for phone AI only). TherapyNotes charges $40/mo extra for AI scribe alone.',
+                'Aucun concurrent ne propose IA + application membre + outils praticien dans un seul abonnement. SimplePractice facture $49-99 sans IA ni application membre. Doctolib facture €139 sans IA (€99 en supplement pour l\'IA telephonique uniquement). TherapyNotes facture $40/mois de plus pour la seule transcription IA.'
+              )}
+              <strong> {t('Bloomsline at €29/mo with AI included is a category-creating price point.', 'Bloomsline a €29/mois avec l\'IA incluse est un positionnement tarifaire qui cree une nouvelle categorie.')}</strong>
             </p>
           </div>
         </motion.section>
@@ -739,8 +764,8 @@ export default function PricingAnalysisPage() {
         {/* 2. VALUE-BASED PRICING MODEL                         */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.15)}>
-          <SectionTitle subtitle="Price justified by measurable value delivered to practitioners">
-            2. Value-Based Pricing Model
+          <SectionTitle subtitle={t('Price justified by measurable value delivered to practitioners', 'Prix justifie par la valeur mesurable apportee aux praticiens')}>
+            {t('2. Value-Based Pricing Model', '2. Modele tarifaire base sur la valeur')}
           </SectionTitle>
 
           <div className="space-y-3">
@@ -749,21 +774,21 @@ export default function PricingAnalysisPage() {
                 <div className="flex items-start justify-between mb-2">
                   <h4 className="text-sm font-semibold text-gray-900">{v.dimension}</h4>
                   <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                    {v.valueMultiple} value
+                    {v.valueMultiple} {t('value', 'valeur')}
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 mb-3">{v.practitionerValue}</p>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="text-center p-2 bg-red-50 rounded-lg">
-                    <p className="text-[10px] text-red-400 mb-0.5">Cost Without</p>
-                    <p className="text-xs font-bold text-red-600">{v.annualSavings}/yr</p>
+                    <p className="text-[10px] text-red-400 mb-0.5">{t('Cost Without', 'Cout sans')}</p>
+                    <p className="text-xs font-bold text-red-600">{v.annualSavings}/{t('yr', 'an')}</p>
                   </div>
                   <div className="text-center p-2 bg-emerald-50 rounded-lg">
-                    <p className="text-[10px] text-emerald-400 mb-0.5">Bloomsline Cost</p>
+                    <p className="text-[10px] text-emerald-400 mb-0.5">{t('Bloomsline Cost', 'Cout Bloomsline')}</p>
                     <p className="text-xs font-bold text-emerald-600">{v.bloomslinePrice}</p>
                   </div>
                   <div className="text-center p-2 bg-indigo-50 rounded-lg">
-                    <p className="text-[10px] text-indigo-400 mb-0.5">Value Multiple</p>
+                    <p className="text-[10px] text-indigo-400 mb-0.5">{t('Value Multiple', 'Multiple de valeur')}</p>
                     <p className="text-xs font-bold text-indigo-600">{v.valueMultiple}</p>
                   </div>
                 </div>
@@ -773,12 +798,20 @@ export default function PricingAnalysisPage() {
 
           <div className="mt-4 p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
             <h4 className="text-xs font-bold text-emerald-800 mb-2 flex items-center gap-1.5">
-              <Calculator className="w-3.5 h-3.5" /> Total Value Delivered
+              <Calculator className="w-3.5 h-3.5" /> {t('Total Value Delivered', 'Valeur totale apportee')}
             </h4>
             <p className="text-xs text-emerald-700 leading-relaxed">
-              Combined annual value to a solo practitioner: <strong>€23,300+ in time savings, retention, and revenue enablement</strong>.
-              Bloomsline Pro at €348/yr captures just <strong>1.5% of the value created</strong>. This is deliberate underpricing for
-              adoption velocity — the value gap is your strongest sales argument.
+              {t(
+                'Combined annual value to a solo practitioner:',
+                'Valeur annuelle combinee pour un praticien independant :'
+              )} <strong>{t('€23,300+ in time savings, retention, and revenue enablement', '€23 300+ en economies de temps, retention et generation de revenus')}</strong>.
+              {t(
+                ' Bloomsline Pro at €348/yr captures just',
+                ' Bloomsline Pro a €348/an ne capte que'
+              )} <strong>{t('1.5% of the value created', '1,5 % de la valeur creee')}</strong>. {t(
+                'This is deliberate underpricing for adoption velocity — the value gap is your strongest sales argument.',
+                'C\'est une sous-tarification deliberee pour accelerer l\'adoption — l\'ecart de valeur est votre meilleur argument commercial.'
+              )}
             </p>
           </div>
         </motion.section>
@@ -787,17 +820,17 @@ export default function PricingAnalysisPage() {
         {/* 3. COST-PLUS ANALYSIS                                 */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.2)}>
-          <SectionTitle subtitle="Determine the absolute floor price from variable cost structure">
-            3. Cost-Plus Analysis — The Price Floor
+          <SectionTitle subtitle={t('Determine the absolute floor price from variable cost structure', 'Determiner le prix plancher absolu a partir de la structure de couts variables')}>
+            {t('3. Cost-Plus Analysis — The Price Floor', '3. Analyse cout-plus — Le prix plancher')}
           </SectionTitle>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Cost Item</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Per Practitioner/mo</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Note</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Cost Item', 'Poste de cout')}</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Per Practitioner/mo', 'Par praticien/mois')}</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Note', 'Remarque')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -809,9 +842,9 @@ export default function PricingAnalysisPage() {
                   </tr>
                 ))}
                 <tr className="bg-gray-900 text-white">
-                  <td className="p-3 font-bold">Total Variable Cost / Practitioner</td>
-                  <td className="p-3 font-mono font-bold">€{totalCostPerPractitioner.toFixed(2)}/mo</td>
-                  <td className="p-3 text-gray-300">This is the absolute floor. Below this, you lose money per user.</td>
+                  <td className="p-3 font-bold">{t('Total Variable Cost / Practitioner', 'Cout variable total / Praticien')}</td>
+                  <td className="p-3 font-mono font-bold">€{totalCostPerPractitioner.toFixed(2)}/{t('mo', 'mois')}</td>
+                  <td className="p-3 text-gray-300">{t('This is the absolute floor. Below this, you lose money per user.', 'C\'est le plancher absolu. En dessous, vous perdez de l\'argent par utilisateur.')}</td>
                 </tr>
               </tbody>
             </table>
@@ -819,27 +852,31 @@ export default function PricingAnalysisPage() {
 
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-center">
-              <p className="text-[10px] text-red-400 mb-1">Cost Floor</p>
-              <p className="text-lg font-bold text-red-600">€{totalCostPerPractitioner.toFixed(2)}/mo</p>
-              <p className="text-[10px] text-red-400 mt-1">Never price below this</p>
+              <p className="text-[10px] text-red-400 mb-1">{t('Cost Floor', 'Prix plancher')}</p>
+              <p className="text-lg font-bold text-red-600">€{totalCostPerPractitioner.toFixed(2)}/{t('mo', 'mois')}</p>
+              <p className="text-[10px] text-red-400 mt-1">{t('Never price below this', 'Ne jamais tarifer en dessous')}</p>
             </div>
             <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-center">
-              <p className="text-[10px] text-amber-400 mb-1">3x Markup (Min Viable)</p>
-              <p className="text-lg font-bold text-amber-600">€{(totalCostPerPractitioner * 3).toFixed(0)}/mo</p>
-              <p className="text-[10px] text-amber-400 mt-1">~67% gross margin</p>
+              <p className="text-[10px] text-amber-400 mb-1">{t('3x Markup (Min Viable)', 'Marge 3x (minimum viable)')}</p>
+              <p className="text-lg font-bold text-amber-600">€{(totalCostPerPractitioner * 3).toFixed(0)}/{t('mo', 'mois')}</p>
+              <p className="text-[10px] text-amber-400 mt-1">{t('~67% gross margin', '~67 % de marge brute')}</p>
             </div>
             <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
-              <p className="text-[10px] text-emerald-400 mb-1">Target Margin (90%)</p>
-              <p className="text-lg font-bold text-emerald-600">€{(totalCostPerPractitioner / 0.1).toFixed(0)}/mo</p>
-              <p className="text-[10px] text-emerald-400 mt-1">SaaS-grade unit economics</p>
+              <p className="text-[10px] text-emerald-400 mb-1">{t('Target Margin (90%)', 'Marge cible (90 %)')}</p>
+              <p className="text-lg font-bold text-emerald-600">€{(totalCostPerPractitioner / 0.1).toFixed(0)}/{t('mo', 'mois')}</p>
+              <p className="text-[10px] text-emerald-400 mt-1">{t('SaaS-grade unit economics', 'Economie unitaire niveau SaaS')}</p>
             </div>
           </div>
 
           <div className="mt-4 p-4 bg-gray-100 border border-gray-200 rounded-xl">
             <p className="text-xs text-gray-600 leading-relaxed">
-              <strong>Verdict:</strong> At €29/mo with a €4.25 variable cost, Bloomsline achieves <strong>85% gross margin</strong> per
-              practitioner — well within SaaS best-in-class (70-90%). The AI cost (€1.80/mo) is the largest variable component
-              but is optimized on Claude Haiku. Even at €19/mo (Essentiel), gross margin is 78%. <strong>There is no cost-floor problem.</strong>
+              <strong>{t('Verdict:', 'Verdict :')}</strong> {t(
+                'At €29/mo with a €4.25 variable cost, Bloomsline achieves',
+                'A €29/mois avec un cout variable de €4,25, Bloomsline atteint'
+              )} <strong>{t('85% gross margin', '85 % de marge brute')}</strong> {t(
+                'per practitioner — well within SaaS best-in-class (70-90%). The AI cost (€1.80/mo) is the largest variable component but is optimized on Claude Haiku. Even at €19/mo (Essentiel), gross margin is 78%.',
+                'par praticien — bien dans les standards SaaS de reference (70-90 %). Le cout IA (€1,80/mois) est le principal poste variable, mais il est optimise sur Claude Haiku. Meme a €19/mois (Essentiel), la marge brute est de 78 %.'
+              )} <strong>{t('There is no cost-floor problem.', 'Il n\'y a pas de probleme de prix plancher.')}</strong>
             </p>
           </div>
         </motion.section>
@@ -848,8 +885,8 @@ export default function PricingAnalysisPage() {
         {/* 4. PRICE ELASTICITY ESTIMATE                          */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.25)}>
-          <SectionTitle subtitle="How sensitive is practitioner demand to price changes?">
-            4. Price Elasticity Estimate
+          <SectionTitle subtitle={t('How sensitive is practitioner demand to price changes?', 'Quelle est la sensibilite de la demande des praticiens aux variations de prix ?')}>
+            {t('4. Price Elasticity Estimate', '4. Estimation de l\'elasticite des prix')}
           </SectionTitle>
 
           <div className="space-y-2">
@@ -857,7 +894,7 @@ export default function PricingAnalysisPage() {
               <div key={p.price} className="bg-white border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold text-gray-900 font-mono w-16">€{p.price}/mo</span>
+                    <span className="text-sm font-bold text-gray-900 font-mono w-16">€{p.price}/{t('mo', 'mois')}</span>
                     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                       p.price === 29 ? 'bg-emerald-100 text-emerald-700' :
                       p.price === 39 ? 'bg-blue-100 text-blue-700' :
@@ -871,11 +908,11 @@ export default function PricingAnalysisPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-[10px] text-gray-400 mb-1">Demand Index</p>
+                    <p className="text-[10px] text-gray-400 mb-1">{t('Demand Index', 'Indice de demande')}</p>
                     <ScoreBar score={p.demandIndex} max={100} color="bg-blue-400" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400 mb-1">Revenue Index</p>
+                    <p className="text-[10px] text-gray-400 mb-1">{t('Revenue Index', 'Indice de revenu')}</p>
                     <ScoreBar score={p.revenueIndex} max={110} color="bg-emerald-400" />
                   </div>
                 </div>
@@ -885,13 +922,21 @@ export default function PricingAnalysisPage() {
 
           <div className="mt-4 p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
             <h4 className="text-xs font-bold text-emerald-800 mb-2 flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5" /> Recommendation
+              <TrendingUp className="w-3.5 h-3.5" /> {t('Recommendation', 'Recommandation')}
             </h4>
             <p className="text-xs text-emerald-700 leading-relaxed">
-              Revenue is maximized at <strong>€39/mo</strong> but adoption is maximized at <strong>€19-25/mo</strong>.
-              For a pre-seed startup that needs adoption velocity over revenue optimization,
-              <strong> €29/mo is the optimal balance</strong> — a charm price below the €30 psychological barrier with
-              85% gross margin and strong adoption. Revisit at 500+ practitioners when you have pricing power.
+              {t(
+                'Revenue is maximized at',
+                'Le revenu est maximise a'
+              )} <strong>{t('€39/mo', '€39/mois')}</strong> {t('but adoption is maximized at', 'mais l\'adoption est maximisee a')} <strong>{t('€19-25/mo', '€19-25/mois')}</strong>.
+              {t(
+                ' For a pre-seed startup that needs adoption velocity over revenue optimization,',
+                ' Pour une startup en pre-seed qui a besoin de velocite d\'adoption plutot que d\'optimisation des revenus,'
+              )}
+              <strong> {t('€29/mo is the optimal balance', '€29/mois est l\'equilibre optimal')}</strong> — {t(
+                'a charm price below the €30 psychological barrier with 85% gross margin and strong adoption. Revisit at 500+ practitioners when you have pricing power.',
+                'un prix psychologique sous la barriere des €30 avec 85 % de marge brute et une forte adoption. A revoir a 500+ praticiens quand vous aurez un pouvoir de prix.'
+              )}
             </p>
           </div>
         </motion.section>
@@ -900,23 +945,23 @@ export default function PricingAnalysisPage() {
         {/* 5. PSYCHOLOGICAL PRICING TACTICS                      */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.3)}>
-          <SectionTitle subtitle="Behavioral economics applied to pricing presentation">
-            5. Psychological Pricing Tactics
+          <SectionTitle subtitle={t('Behavioral economics applied to pricing presentation', 'L\'economie comportementale appliquee a la presentation des prix')}>
+            {t('5. Psychological Pricing Tactics', '5. Tactiques de tarification psychologique')}
           </SectionTitle>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {PSYCH_TACTICS.map((t, i) => (
+            {PSYCH_TACTICS.map((tactic, i) => (
               <div key={i} className="bg-white border border-gray-200 rounded-xl p-4">
                 <div className="flex items-start justify-between mb-2">
-                  <h4 className="text-sm font-semibold text-gray-900">{t.tactic}</h4>
+                  <h4 className="text-sm font-semibold text-gray-900">{tactic.tactic}</h4>
                   <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full whitespace-nowrap">
-                    {t.expectedLift}
+                    {tactic.expectedLift}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 mb-2">{t.mechanism}</p>
+                <p className="text-xs text-gray-500 mb-2">{tactic.mechanism}</p>
                 <div className="p-2.5 bg-indigo-50 rounded-lg">
                   <p className="text-[10px] font-medium text-indigo-600">
-                    <span className="text-indigo-400">Implementation →</span> {t.implementation}
+                    <span className="text-indigo-400">{t('Implementation', 'Mise en oeuvre')} →</span> {tactic.implementation}
                   </p>
                 </div>
               </div>
@@ -928,8 +973,8 @@ export default function PricingAnalysisPage() {
         {/* 6. TIERING RECOMMENDATION                             */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.35)}>
-          <SectionTitle subtitle="Three tiers designed with decoy effect and clear upgrade paths">
-            6. Recommended Pricing Tiers
+          <SectionTitle subtitle={t('Three tiers designed with decoy effect and clear upgrade paths', 'Trois niveaux concus avec l\'effet leurre et des parcours de mise a niveau clairs')}>
+            {t('6. Recommended Pricing Tiers', '6. Niveaux tarifaires recommandes')}
           </SectionTitle>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -943,7 +988,7 @@ export default function PricingAnalysisPage() {
                 {tier.badge && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <span className="bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                      <Star className="w-3 h-3" /> {tier.badge}
+                      <Star className="w-3 h-3" /> {t(tier.badge, 'Le plus populaire')}
                     </span>
                   </div>
                 )}
@@ -980,7 +1025,7 @@ export default function PricingAnalysisPage() {
 
                 <div className="mt-4 p-2.5 bg-gray-50 rounded-lg">
                   <p className="text-[10px] text-gray-500 leading-relaxed">
-                    <span className="font-semibold text-gray-600">Target: </span>{tier.target}
+                    <span className="font-semibold text-gray-600">{t('Target:', 'Cible :')} </span>{tier.target}
                   </p>
                 </div>
               </div>
@@ -991,52 +1036,66 @@ export default function PricingAnalysisPage() {
           <div className="mt-4 bg-violet-50 border border-violet-200 rounded-xl p-5">
             <div className="flex items-center gap-2 mb-3">
               <Crown className="w-4 h-4 text-violet-600" />
-              <h4 className="text-sm font-bold text-violet-800">Member Premium — €3/mo</h4>
-              <span className="text-[10px] bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full">B2C Upside</span>
+              <h4 className="text-sm font-bold text-violet-800">{t('Member Premium — €3/mo', 'Membre Premium — €3/mois')}</h4>
+              <span className="text-[10px] bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full">{t('B2C Upside', 'Potentiel B2C')}</span>
             </div>
             <p className="text-xs text-violet-600 mb-3">
-              Opt-in for members who want advanced AI, extra rituals, priority pattern detection, and premium journal features.
-              Free tier remains generous — this is gravy, not the meal.
+              {t(
+                'Opt-in for members who want advanced AI, extra rituals, priority pattern detection, and premium journal features. Free tier remains generous — this is gravy, not the meal.',
+                'Option pour les membres souhaitant l\'IA avancee, des rituels supplementaires, la detection prioritaire de tendances et des fonctionnalites de journal premium. Le niveau gratuit reste genereux — c\'est un bonus, pas le plat principal.'
+              )}
             </p>
             <div className="grid grid-cols-4 gap-3">
               <div className="text-center p-2 bg-white rounded-lg">
-                <p className="text-[10px] text-violet-400">Base price</p>
-                <p className="text-sm font-bold text-violet-700">€0/mo</p>
+                <p className="text-[10px] text-violet-400">{t('Base price', 'Prix de base')}</p>
+                <p className="text-sm font-bold text-violet-700">{t('€0/mo', '€0/mois')}</p>
               </div>
               <div className="text-center p-2 bg-white rounded-lg">
                 <p className="text-[10px] text-violet-400">Premium</p>
-                <p className="text-sm font-bold text-violet-700">€3/mo</p>
+                <p className="text-sm font-bold text-violet-700">{t('€3/mo', '€3/mois')}</p>
               </div>
               <div className="text-center p-2 bg-white rounded-lg">
-                <p className="text-[10px] text-violet-400">Conversion rate</p>
+                <p className="text-[10px] text-violet-400">{t('Conversion rate', 'Taux de conversion')}</p>
                 <p className="text-sm font-bold text-violet-700">5-8%</p>
               </div>
               <div className="text-center p-2 bg-white rounded-lg">
-                <p className="text-[10px] text-violet-400">vs Headspace</p>
-                <p className="text-sm font-bold text-violet-700">77% cheaper</p>
+                <p className="text-[10px] text-violet-400">{t('vs Headspace', 'vs Headspace')}</p>
+                <p className="text-sm font-bold text-violet-700">{t('77% cheaper', '77 % moins cher')}</p>
               </div>
             </div>
           </div>
 
           {/* Rationale block */}
           <div className="mt-4 p-4 bg-gray-100 border border-gray-200 rounded-xl">
-            <h4 className="text-xs font-bold text-gray-700 mb-2">Why this tier structure works</h4>
+            <h4 className="text-xs font-bold text-gray-700 mb-2">{t('Why this tier structure works', 'Pourquoi cette structure tarifaire fonctionne')}</h4>
             <div className="space-y-1.5 text-xs text-gray-600">
               <div className="flex items-start gap-2">
                 <ChevronRight className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
-                <span><strong>Essentiel (€19)</strong> exists to get practitioners in the door. 10-client cap creates natural upgrade pressure within 60 days.</span>
+                <span><strong>Essentiel (€19)</strong> {t(
+                  'exists to get practitioners in the door. 10-client cap creates natural upgrade pressure within 60 days.',
+                  'existe pour attirer les praticiens. Le plafond de 10 clients cree une pression naturelle de mise a niveau en 60 jours.'
+                )}</span>
               </div>
               <div className="flex items-start gap-2">
                 <ChevronRight className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
-                <span><strong>Pro (€29)</strong> is the hero tier. "Most Popular" badge + charm pricing + unlimited clients = 70% of signups. Less than 1 cancelled session/month.</span>
+                <span><strong>Pro (€29)</strong> {t(
+                  'is the hero tier. "Most Popular" badge + charm pricing + unlimited clients = 70% of signups. Less than 1 cancelled session/month.',
+                  'est le niveau phare. Badge "Le plus populaire" + prix psychologique + clients illimites = 70 % des inscriptions. Moins d\'une seance annulee par mois.'
+                )}</span>
               </div>
               <div className="flex items-start gap-2">
                 <ChevronRight className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
-                <span><strong>Cabinet (€49+€19/head)</strong> is the anchor. Makes Pro look like a steal. 5-practitioner group = €144/mo total (~€29/head with volume baked in).</span>
+                <span><strong>Cabinet (€49+€19/{t('head', 'praticien')})</strong> {t(
+                  'is the anchor. Makes Pro look like a steal. 5-practitioner group = €144/mo total (~€29/head with volume baked in).',
+                  'est l\'ancrage. Rend le Pro imbattable. Groupe de 5 praticiens = €144/mois au total (~€29/praticien avec remise volume integree).'
+                )}</span>
               </div>
               <div className="flex items-start gap-2">
                 <ChevronRight className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
-                <span><strong>Member Premium (€3)</strong> is pure upside. 5-8% of members = meaningful secondary revenue at zero incremental CAC.</span>
+                <span><strong>Member Premium (€3)</strong> {t(
+                  'is pure upside. 5-8% of members = meaningful secondary revenue at zero incremental CAC.',
+                  'est un pur bonus. 5-8 % des membres = revenus secondaires significatifs sans cout d\'acquisition supplementaire.'
+                )}</span>
               </div>
             </div>
           </div>
@@ -1046,8 +1105,8 @@ export default function PricingAnalysisPage() {
         {/* 7. DISCOUNT STRATEGY                                  */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.4)}>
-          <SectionTitle subtitle="When to discount, how much, and for whom — with guardrails">
-            7. Discount Strategy
+          <SectionTitle subtitle={t('When to discount, how much, and for whom — with guardrails', 'Quand accorder une remise, combien et pour qui — avec des garde-fous')}>
+            {t('7. Discount Strategy', '7. Strategie de remise')}
           </SectionTitle>
 
           <div className="space-y-3">
@@ -1064,9 +1123,9 @@ export default function PricingAnalysisPage() {
                 </div>
                 <p className="text-xs text-gray-500 mb-2">{d.mechanism}</p>
                 <div className="flex items-center gap-3 text-[10px]">
-                  <span className="text-gray-400"><strong className="text-gray-600">Duration:</strong> {d.duration}</span>
+                  <span className="text-gray-400"><strong className="text-gray-600">{t('Duration:', 'Duree :')}</strong> {d.duration}</span>
                   <span className="text-gray-300">|</span>
-                  <span className="text-amber-500"><strong>Guard:</strong> {d.guard}</span>
+                  <span className="text-amber-500"><strong>{t('Guard:', 'Garde-fou :')}</strong> {d.guard}</span>
                 </div>
               </div>
             ))}
@@ -1075,7 +1134,7 @@ export default function PricingAnalysisPage() {
           {/* Never discount */}
           <div className="mt-4 p-4 bg-red-50 border border-red-100 rounded-xl">
             <h4 className="text-xs font-bold text-red-700 mb-2 flex items-center gap-1.5">
-              <AlertTriangle className="w-3.5 h-3.5" /> Never Discount Rules
+              <AlertTriangle className="w-3.5 h-3.5" /> {t('Never Discount Rules', 'Regles de non-remise')}
             </h4>
             <div className="space-y-1.5">
               {NEVER_DISCOUNT.map((rule, i) => (
@@ -1092,8 +1151,8 @@ export default function PricingAnalysisPage() {
         {/* 8. REVENUE PROJECTIONS (3 SCENARIOS)                  */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.45)}>
-          <SectionTitle subtitle="Three scenarios modeling different pricing mixes and growth rates">
-            8. Revenue Projections — 36 Months
+          <SectionTitle subtitle={t('Three scenarios modeling different pricing mixes and growth rates', 'Trois scenarios modelisant differents mix tarifaires et taux de croissance')}>
+            {t('8. Revenue Projections — 36 Months', '8. Projections de revenus — 36 mois')}
           </SectionTitle>
 
           <div className="space-y-6">
@@ -1101,16 +1160,16 @@ export default function PricingAnalysisPage() {
               <div key={s.name} className={`${s.bgColor} border border-gray-200 rounded-xl p-5`}>
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h4 className={`text-sm font-bold ${s.color}`}>{s.name} Scenario</h4>
+                    <h4 className={`text-sm font-bold ${s.color}`}>{s.name} {t('Scenario', 'Scenario')}</h4>
                     <p className="text-[10px] text-gray-500 mt-0.5">{s.pricing}</p>
                   </div>
                   <div className="flex gap-3">
                     <div className="text-center">
-                      <p className="text-[10px] text-gray-400">M18 ARR</p>
+                      <p className="text-[10px] text-gray-400">{t('M18 ARR', 'ARR M18')}</p>
                       <p className={`text-sm font-bold ${s.color}`}>{s.m18Arr}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[10px] text-gray-400">M36 ARR</p>
+                      <p className="text-[10px] text-gray-400">{t('M36 ARR', 'ARR M36')}</p>
                       <p className={`text-sm font-bold ${s.color}`}>{s.m36Arr}</p>
                     </div>
                   </div>
@@ -1128,11 +1187,11 @@ export default function PricingAnalysisPage() {
                   <table className="w-full text-xs border-collapse">
                     <thead>
                       <tr>
-                        <th className="text-left p-2 font-semibold text-gray-600 border-b border-gray-200/50">Month</th>
-                        <th className="text-right p-2 font-semibold text-gray-600 border-b border-gray-200/50">Practitioners</th>
-                        <th className="text-right p-2 font-semibold text-gray-600 border-b border-gray-200/50">B2B MRR</th>
-                        <th className="text-right p-2 font-semibold text-gray-600 border-b border-gray-200/50">B2C MRR</th>
-                        <th className="text-right p-2 font-semibold text-gray-600 border-b border-gray-200/50">Total MRR</th>
+                        <th className="text-left p-2 font-semibold text-gray-600 border-b border-gray-200/50">{t('Month', 'Mois')}</th>
+                        <th className="text-right p-2 font-semibold text-gray-600 border-b border-gray-200/50">{t('Practitioners', 'Praticiens')}</th>
+                        <th className="text-right p-2 font-semibold text-gray-600 border-b border-gray-200/50">{t('B2B MRR', 'MRR B2B')}</th>
+                        <th className="text-right p-2 font-semibold text-gray-600 border-b border-gray-200/50">{t('B2C MRR', 'MRR B2C')}</th>
+                        <th className="text-right p-2 font-semibold text-gray-600 border-b border-gray-200/50">{t('Total MRR', 'MRR total')}</th>
                         <th className="text-right p-2 font-semibold text-gray-600 border-b border-gray-200/50">ARR</th>
                       </tr>
                     </thead>
@@ -1155,12 +1214,18 @@ export default function PricingAnalysisPage() {
           </div>
 
           <div className="mt-4 p-4 bg-gray-100 border border-gray-200 rounded-xl">
-            <h4 className="text-xs font-bold text-gray-700 mb-2">Scenario Comparison — Key Takeaway</h4>
+            <h4 className="text-xs font-bold text-gray-700 mb-2">{t('Scenario Comparison — Key Takeaway', 'Comparaison des scenarios — Point cle')}</h4>
             <p className="text-xs text-gray-600 leading-relaxed">
-              At M18 (seed window), the base case at €29/mo ARPU generates <strong>€126K ARR</strong> — 3x the conservative scenario (€42K)
-              and strong enough for Series A conversations. The €10/mo price difference between conservative (€19) and base (€29) ARPU results in
-              a <strong>3x revenue difference</strong> over 18 months. This is why the Pro tier at €29 matters — it&apos;s not just €10 more, it&apos;s the difference
-              between a fundable and unfundable trajectory.
+              {t(
+                'At M18 (seed window), the base case at €29/mo ARPU generates',
+                'A M18 (fenetre de seed), le scenario de base a €29/mois d\'ARPU genere'
+              )} <strong>€126K ARR</strong> — {t(
+                '3x the conservative scenario (€42K) and strong enough for Series A conversations. The €10/mo price difference between conservative (€19) and base (€29) ARPU results in a',
+                '3x le scenario conservateur (€42K) et suffisant pour engager des discussions Serie A. La difference de €10/mois entre l\'ARPU conservateur (€19) et de base (€29) entraine une'
+              )} <strong>{t('3x revenue difference', 'difference de revenu de 3x')}</strong> {t(
+                'over 18 months. This is why the Pro tier at €29 matters — it',
+                'sur 18 mois. C\'est pourquoi le niveau Pro a €29 est crucial — ce n\'est pas seulement €10 de plus, c\'est la difference entre une trajectoire financable et non financable.'
+              )}{lang === 'en' && <>&apos;s not just €10 more, it&apos;s the difference between a fundable and unfundable trajectory.</>}
             </p>
           </div>
         </motion.section>
@@ -1169,8 +1234,8 @@ export default function PricingAnalysisPage() {
         {/* 9. MONETIZATION OPPORTUNITIES                         */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.5)}>
-          <SectionTitle subtitle="Upsells, cross-sells, and new revenue streams beyond core subscriptions">
-            9. Monetization Opportunities
+          <SectionTitle subtitle={t('Upsells, cross-sells, and new revenue streams beyond core subscriptions', 'Ventes additionnelles, ventes croisees et nouvelles sources de revenus au-dela des abonnements de base')}>
+            {t('9. Monetization Opportunities', '9. Opportunites de monetisation')}
           </SectionTitle>
 
           <div className="space-y-3">
@@ -1193,11 +1258,11 @@ export default function PricingAnalysisPage() {
                 <p className="text-xs text-gray-500 mb-2">{m.model}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-2 bg-emerald-50 rounded-lg">
-                    <p className="text-[10px] text-emerald-400 mb-0.5">Revenue Estimate</p>
+                    <p className="text-[10px] text-emerald-400 mb-0.5">{t('Revenue Estimate', 'Estimation du revenu')}</p>
                     <p className="text-xs font-semibold text-emerald-600">{m.revenueEstimate}</p>
                   </div>
                   <div className="p-2 bg-amber-50 rounded-lg">
-                    <p className="text-[10px] text-amber-400 mb-0.5">Risk Level</p>
+                    <p className="text-[10px] text-amber-400 mb-0.5">{t('Risk Level', 'Niveau de risque')}</p>
                     <p className="text-xs font-semibold text-amber-600">{m.risk}</p>
                   </div>
                 </div>
@@ -1213,18 +1278,34 @@ export default function PricingAnalysisPage() {
           <div className="bg-gray-900 rounded-2xl p-6 sm:p-8 text-white">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-emerald-400" />
-              The Pricing Verdict
+              {t('The Pricing Verdict', 'Le verdict tarifaire')}
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <h4 className="text-sm font-semibold text-emerald-400 mb-3">What should change from current model</h4>
+                <h4 className="text-sm font-semibold text-emerald-400 mb-3">{t('What should change from current model', 'Ce qui doit changer par rapport au modele actuel')}</h4>
                 <div className="space-y-2">
                   {[
-                    { from: '€25/mo flat price', to: '3-tier structure: €19 / €29 / €49+€19', why: 'Flat pricing leaves money on the table and offers no upgrade path. The decoy effect alone lifts conversion 25-30%.' },
-                    { from: 'No entry tier below €25', to: '€19 Essentiel with 10-client cap', why: 'Eliminates the #1 objection ("too expensive to try"). 10-client cap creates natural upgrade pressure.' },
-                    { from: '€25/mo for unlimited', to: '€29/mo Pro (unlimited)', why: '€4/mo increase with charm pricing. "Under €30" is psychologically cheaper than "€25" sounds. Revenue +16% at minimal demand loss.' },
-                    { from: 'No group pricing', to: '€49 base + €19/practitioner', why: 'Thomas persona (group director) needs volume pricing. 5-head group = €144/mo (~€29/head). Higher ACV, longer retention.' },
+                    {
+                      from: t('€25/mo flat price', 'Prix fixe €25/mois'),
+                      to: t('3-tier structure: €19 / €29 / €49+€19', 'Structure 3 niveaux : €19 / €29 / €49+€19'),
+                      why: t('Flat pricing leaves money on the table and offers no upgrade path. The decoy effect alone lifts conversion 25-30%.', 'Un prix unique laisse de l\'argent sur la table et n\'offre aucun chemin de mise a niveau. L\'effet leurre seul augmente la conversion de 25-30 %.')
+                    },
+                    {
+                      from: t('No entry tier below €25', 'Pas de niveau d\'entree sous €25'),
+                      to: t('€19 Essentiel with 10-client cap', '€19 Essentiel avec plafond de 10 clients'),
+                      why: t('Eliminates the #1 objection ("too expensive to try"). 10-client cap creates natural upgrade pressure.', 'Elimine l\'objection n°1 ("trop cher pour essayer"). Le plafond de 10 clients cree une pression naturelle de mise a niveau.')
+                    },
+                    {
+                      from: t('€25/mo for unlimited', '€25/mois pour illimite'),
+                      to: t('€29/mo Pro (unlimited)', '€29/mois Pro (illimite)'),
+                      why: t('€4/mo increase with charm pricing. "Under €30" is psychologically cheaper than "€25" sounds. Revenue +16% at minimal demand loss.', 'Augmentation de €4/mois avec prix psychologique. "Moins de €30" est percu comme moins cher que "€25". Revenus +16 % avec perte de demande minimale.')
+                    },
+                    {
+                      from: t('No group pricing', 'Pas de tarification groupe'),
+                      to: t('€49 base + €19/practitioner', '€49 base + €19/praticien'),
+                      why: t('Thomas persona (group director) needs volume pricing. 5-head group = €144/mo (~€29/head). Higher ACV, longer retention.', 'Le persona Thomas (directeur de cabinet) a besoin d\'une tarification volume. Groupe de 5 = €144/mois (~€29/praticien). ACV plus eleve, retention plus longue.')
+                    },
                   ].map((c, i) => (
                     <div key={i} className="p-3 bg-white/5 rounded-lg border border-white/10">
                       <div className="flex items-center gap-2 mb-1">
@@ -1239,17 +1320,17 @@ export default function PricingAnalysisPage() {
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-blue-400 mb-3">Unit economics at recommended pricing</h4>
+                <h4 className="text-sm font-semibold text-blue-400 mb-3">{t('Unit economics at recommended pricing', 'Economie unitaire au tarif recommande')}</h4>
                 <div className="space-y-2">
                   {[
-                    { metric: 'Blended ARPU', value: '€29/mo', note: '70% of users on Pro' },
-                    { metric: 'Variable cost/practitioner', value: '€4.25/mo', note: 'AI + infra + support' },
-                    { metric: 'Gross margin', value: '85%', note: 'SaaS best-in-class' },
-                    { metric: 'CAC', value: '€50', note: 'Organic/content-driven' },
-                    { metric: 'LTV (25-mo lifetime)', value: '€3,625', note: 'At 4% monthly churn' },
-                    { metric: 'LTV/CAC', value: '72.5x', note: 'Exceptional (benchmark: >3x)' },
-                    { metric: 'Payback period', value: '1.7 months', note: 'Break-even in under 2 months' },
-                    { metric: 'B2C upside/practitioner', value: '€1.80/mo', note: '12 members × 5% × €3/mo' },
+                    { metric: t('Blended ARPU', 'ARPU mixte'), value: t('€29/mo', '€29/mois'), note: t('70% of users on Pro', '70 % des utilisateurs sur Pro') },
+                    { metric: t('Variable cost/practitioner', 'Cout variable/praticien'), value: t('€4.25/mo', '€4,25/mois'), note: t('AI + infra + support', 'IA + infra + support') },
+                    { metric: t('Gross margin', 'Marge brute'), value: '85%', note: t('SaaS best-in-class', 'Reference SaaS') },
+                    { metric: 'CAC', value: '€50', note: t('Organic/content-driven', 'Organique / contenu') },
+                    { metric: t('LTV (25-mo lifetime)', 'LTV (duree de vie 25 mois)'), value: '€3,625', note: t('At 4% monthly churn', 'A 4 % de churn mensuel') },
+                    { metric: 'LTV/CAC', value: '72.5x', note: t('Exceptional (benchmark: >3x)', 'Exceptionnel (reference : >3x)') },
+                    { metric: t('Payback period', 'Delai de rentabilisation'), value: t('1.7 months', '1,7 mois'), note: t('Break-even in under 2 months', 'Rentabilite en moins de 2 mois') },
+                    { metric: t('B2C upside/practitioner', 'Potentiel B2C/praticien'), value: t('€1.80/mo', '€1,80/mois'), note: t('12 members x 5% x €3/mo', '12 membres x 5 % x €3/mois') },
                   ].map((m, i) => (
                     <div key={i} className="flex items-center justify-between py-1.5 border-b border-white/5">
                       <span className="text-xs text-gray-400">{m.metric}</span>
@@ -1264,14 +1345,20 @@ export default function PricingAnalysisPage() {
             </div>
 
             <div className="border-t border-white/10 pt-4">
-              <h4 className="text-sm font-semibold text-amber-400 mb-2">The bottom line</h4>
+              <h4 className="text-sm font-semibold text-amber-400 mb-2">{t('The bottom line', 'En resume')}</h4>
               <p className="text-xs text-gray-300 leading-relaxed">
-                Move from €25/mo flat to a <strong className="text-white">€19 / €29 / €49 tiered structure</strong>.
-                The current €25 flat price is neither cheap enough to be impulsive nor premium enough to signal quality.
-                €29 Pro with charm pricing captures the same market at +16% revenue per user with negligible demand loss.
-                The €19 Essentiel tier eliminates price objections, and the €49 Cabinet tier anchors the Pro price as a deal while
-                capturing higher ACV from group practices. At 850 practitioners (base M36), this pricing architecture generates
-                <strong className="text-emerald-400"> €314K ARR</strong> — a 4.3x improvement over the conservative single-price model.
+                {t(
+                  'Move from €25/mo flat to a',
+                  'Passer de €25/mois fixe a une'
+                )} <strong className="text-white">{t('€19 / €29 / €49 tiered structure', 'structure a paliers €19 / €29 / €49')}</strong>.
+                {t(
+                  ' The current €25 flat price is neither cheap enough to be impulsive nor premium enough to signal quality. €29 Pro with charm pricing captures the same market at +16% revenue per user with negligible demand loss. The €19 Essentiel tier eliminates price objections, and the €49 Cabinet tier anchors the Pro price as a deal while capturing higher ACV from group practices. At 850 practitioners (base M36), this pricing architecture generates',
+                  ' Le prix fixe actuel de €25 n\'est ni assez bas pour etre impulsif ni assez premium pour signaler la qualite. Le Pro a €29 avec prix psychologique capture le meme marche a +16 % de revenu par utilisateur avec une perte de demande negligeable. Le niveau Essentiel a €19 elimine les objections de prix, et le niveau Cabinet a €49 ancre le prix Pro comme une bonne affaire tout en capturant un ACV plus eleve des cabinets de groupe. A 850 praticiens (base M36), cette architecture tarifaire genere'
+                )}
+                <strong className="text-emerald-400"> €314K ARR</strong> — {t(
+                  'a 4.3x improvement over the conservative single-price model.',
+                  'une amelioration de 4,3x par rapport au modele conservateur a prix unique.'
+                )}
               </p>
             </div>
           </div>
@@ -1283,9 +1370,9 @@ export default function PricingAnalysisPage() {
           className="flex items-center gap-2 text-[10px] text-gray-400"
         >
           <Clock className="w-3 h-3" />
-          <span>Pricing analysis as of Feb 2026</span>
+          <span>{t('Pricing analysis as of Feb 2026', 'Analyse tarifaire de fevrier 2026')}</span>
           <span className="text-gray-200">|</span>
-          <span>Bloomsline Care — Pricing Strategy</span>
+          <span>{t('Bloomsline Care — Pricing Strategy', 'Bloomsline Care — Strategie tarifaire')}</span>
         </motion.div>
       </main>
     </div>

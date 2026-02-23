@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   Shield,
@@ -359,18 +360,29 @@ const FORCES = [
 // ── Page ─────────────────────────────────────────────────────────────────
 
 export default function SwotAnalysisPage() {
+  const [lang, setLang] = useState<'en' | 'fr'>('en')
+  const t = (en: string, fr: string) => lang === 'fr' ? fr : en
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white border-b border-gray-200 px-8 py-4">
-        <div className="max-w-4xl mx-auto flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
-            <Shield className="w-4 h-4 text-white" />
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
+              <Shield className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h1 className="text-sm font-semibold text-gray-900">{t("SWOT & Porter's Five Forces", "SWOT & les cinq forces de Porter")}</h1>
+              <p className="text-[10px] text-gray-400">{t('Bloomsline Care — Strategic Analysis, Q1 2026', 'Bloomsline Care — Analyse stratégique, T1 2026')}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-sm font-semibold text-gray-900">SWOT & Porter&apos;s Five Forces</h1>
-            <p className="text-[10px] text-gray-400">Bloomsline Care — Strategic Analysis, Q1 2026</p>
-          </div>
+          <button
+            onClick={() => setLang(lang === 'en' ? 'fr' : 'en')}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+          >
+            {lang === 'en' ? '\u{1F1EB}\u{1F1F7} Fran\u00e7ais' : '\u{1F1EC}\u{1F1E7} English'}
+          </button>
         </div>
       </header>
 
@@ -378,16 +390,18 @@ export default function SwotAnalysisPage() {
 
         {/* ── Hero ──────────────────────────────────────────────── */}
         <motion.section {...fadeUp()}>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Strategic position: right product, right market, pre-traction.</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{t('Strategic position: right product, right market, pre-traction.', 'Position stratégique : bon produit, bon marché, pré-traction.')}</h2>
           <p className="text-sm text-gray-500 leading-relaxed max-w-2xl">
-            Bloomsline is a pre-revenue B2B2C platform entering a $33B market with no direct competitor in its category (between-session care + AI + EU). The strategic challenge is not
-            differentiation — it&apos;s execution speed. The window is 12-18 months before adjacent players converge.
+            {t(
+              "Bloomsline is a pre-revenue B2B2C platform entering a $33B market with no direct competitor in its category (between-session care + AI + EU). The strategic challenge is not differentiation — it's execution speed. The window is 12-18 months before adjacent players converge.",
+              "Bloomsline est une plateforme B2B2C pré-revenu qui entre sur un marché de 33 Md$ sans concurrent direct dans sa catégorie (suivi inter-séance + IA + UE). Le défi stratégique n'est pas la différenciation — c'est la vitesse d'exécution. La fenêtre est de 12 à 18 mois avant la convergence des acteurs adjacents."
+            )}
           </p>
           <div className="flex flex-wrap items-center gap-2 mt-4">
-            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">Low competitive rivalry (3/10)</span>
-            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full">Moderate buyer power (6/10)</span>
-            <span className="text-[10px] font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full">"Do nothing" is the real competitor</span>
-            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">EU regulation = structural moat</span>
+            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">{t('Low competitive rivalry (3/10)', 'Faible rivalité concurrentielle (3/10)')}</span>
+            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full">{t('Moderate buyer power (6/10)', 'Pouvoir des acheteurs modéré (6/10)')}</span>
+            <span className="text-[10px] font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full">{t('"Do nothing" is the real competitor', '"Ne rien faire" est le vrai concurrent')}</span>
+            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">{t('EU regulation = structural moat', 'Réglementation UE = avantage structurel')}</span>
           </div>
         </motion.section>
 
@@ -397,12 +411,12 @@ export default function SwotAnalysisPage() {
 
         {/* ── SWOT 2x2 Visual ──────────────────────────────────── */}
         <motion.section {...fadeUp(0.05)}>
-          <SectionTitle subtitle="Internal capabilities vs. external environment">SWOT Overview</SectionTitle>
+          <SectionTitle subtitle={t('Internal capabilities vs. external environment', 'Capacités internes vs. environnement externe')}>{t('SWOT Overview', 'Aperçu SWOT')}</SectionTitle>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <h3 className="text-xs font-bold text-emerald-700">Strengths</h3>
+                <h3 className="text-xs font-bold text-emerald-700">{t('Strengths', 'Forces')}</h3>
               </div>
               <ul className="space-y-1">
                 {STRENGTHS.map((s, i) => (
@@ -416,7 +430,7 @@ export default function SwotAnalysisPage() {
             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <XCircle className="w-4 h-4 text-red-500" />
-                <h3 className="text-xs font-bold text-red-600">Weaknesses</h3>
+                <h3 className="text-xs font-bold text-red-600">{t('Weaknesses', 'Faiblesses')}</h3>
               </div>
               <ul className="space-y-1">
                 {WEAKNESSES.map((w, i) => (
@@ -430,7 +444,7 @@ export default function SwotAnalysisPage() {
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp className="w-4 h-4 text-blue-600" />
-                <h3 className="text-xs font-bold text-blue-700">Opportunities</h3>
+                <h3 className="text-xs font-bold text-blue-700">{t('Opportunities', 'Opportunités')}</h3>
               </div>
               <ul className="space-y-1">
                 {OPPORTUNITIES.map((o, i) => (
@@ -444,13 +458,13 @@ export default function SwotAnalysisPage() {
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className="w-4 h-4 text-amber-500" />
-                <h3 className="text-xs font-bold text-amber-600">Threats</h3>
+                <h3 className="text-xs font-bold text-amber-600">{t('Threats', 'Menaces')}</h3>
               </div>
               <ul className="space-y-1">
-                {THREATS.map((t, i) => (
+                {THREATS.map((threat, i) => (
                   <li key={i} className="text-[10px] text-amber-600 flex items-start gap-1">
                     <span className="text-amber-400 shrink-0">!</span>
-                    <span className="line-clamp-1">{t.title}</span>
+                    <span className="line-clamp-1">{threat.title}</span>
                   </li>
                 ))}
               </ul>
@@ -460,7 +474,7 @@ export default function SwotAnalysisPage() {
 
         {/* ── Strengths Detail ─────────────────────────────────── */}
         <motion.section {...fadeUp(0.1)}>
-          <SectionTitle subtitle="7 internal advantages with evidence">Strengths</SectionTitle>
+          <SectionTitle subtitle={t('7 internal advantages with evidence', '7 avantages internes avec preuves')}>{t('Strengths', 'Forces')}</SectionTitle>
           <div className="space-y-3">
             {STRENGTHS.map((s, i) => (
               <motion.div
@@ -489,7 +503,7 @@ export default function SwotAnalysisPage() {
 
         {/* ── Weaknesses Detail ────────────────────────────────── */}
         <motion.section {...fadeUp(0.3)}>
-          <SectionTitle subtitle="7 internal limitations — honest assessment">Weaknesses</SectionTitle>
+          <SectionTitle subtitle={t('7 internal limitations — honest assessment', '7 limitations internes — évaluation honnête')}>{t('Weaknesses', 'Faiblesses')}</SectionTitle>
           <div className="space-y-3">
             {WEAKNESSES.map((w, i) => (
               <motion.div
@@ -518,7 +532,7 @@ export default function SwotAnalysisPage() {
 
         {/* ── Opportunities Detail ─────────────────────────────── */}
         <motion.section {...fadeUp(0.5)}>
-          <SectionTitle subtitle="7 external factors to exploit">Opportunities</SectionTitle>
+          <SectionTitle subtitle={t('7 external factors to exploit', '7 facteurs externes à exploiter')}>{t('Opportunities', 'Opportunités')}</SectionTitle>
           <div className="space-y-3">
             {OPPORTUNITIES.map((o, i) => (
               <motion.div
@@ -550,9 +564,9 @@ export default function SwotAnalysisPage() {
 
         {/* ── Threats Detail ───────────────────────────────────── */}
         <motion.section {...fadeUp(0.7)}>
-          <SectionTitle subtitle="7 external factors that could harm us">Threats</SectionTitle>
+          <SectionTitle subtitle={t('7 external factors that could harm us', '7 facteurs externes qui pourraient nous nuire')}>{t('Threats', 'Menaces')}</SectionTitle>
           <div className="space-y-3">
-            {THREATS.map((t, i) => (
+            {THREATS.map((threat, i) => (
               <motion.div
                 key={i}
                 className="bg-white border border-amber-200 rounded-xl p-4"
@@ -561,19 +575,19 @@ export default function SwotAnalysisPage() {
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <h4 className="text-xs font-bold text-gray-900">{t.title}</h4>
+                    <h4 className="text-xs font-bold text-gray-900">{threat.title}</h4>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full border ${
-                      t.severity === 'High' ? 'bg-red-50 text-red-700 border-red-200' :
+                      threat.severity === 'High' ? 'bg-red-50 text-red-700 border-red-200' :
                       'bg-amber-50 text-amber-700 border-amber-200'
                     }`}>
-                      {t.severity}
+                      {threat.severity}
                     </span>
-                    <span className="text-[9px] text-gray-400">P: {t.probability}</span>
+                    <span className="text-[9px] text-gray-400">{t('P:', 'P :')} {threat.probability}</span>
                   </div>
                 </div>
-                <p className="text-[10px] text-gray-500 leading-relaxed pl-5.5">{t.detail}</p>
+                <p className="text-[10px] text-gray-500 leading-relaxed pl-5.5">{threat.detail}</p>
               </motion.div>
             ))}
           </div>
@@ -581,10 +595,10 @@ export default function SwotAnalysisPage() {
 
         {/* ── Cross-Analysis ───────────────────────────────────── */}
         <motion.section {...fadeUp(0.85)}>
-          <SectionTitle subtitle="Match strengths to opportunities (SO) and identify threat-weakness risks (WT)">Cross-Analysis</SectionTitle>
+          <SectionTitle subtitle={t('Match strengths to opportunities (SO) and identify threat-weakness risks (WT)', 'Croiser les forces avec les opportunités (SO) et identifier les risques faiblesses-menaces (WT)')}>{t('Cross-Analysis', 'Analyse croisée')}</SectionTitle>
 
           <h3 className="text-xs font-semibold text-emerald-700 mb-3 flex items-center gap-2">
-            <Zap className="w-3.5 h-3.5" /> SO Strategies — Strengths x Opportunities
+            <Zap className="w-3.5 h-3.5" /> {t('SO Strategies — Strengths x Opportunities', 'Stratégies SO — Forces x Opportunités')}
           </h3>
           <div className="space-y-3 mb-8">
             {SO_STRATEGIES.map((s, i) => (
@@ -601,11 +615,11 @@ export default function SwotAnalysisPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <div className="bg-white/60 rounded-lg px-3 py-2">
-                    <p className="text-[9px] font-semibold text-emerald-600 mb-0.5">Strength</p>
+                    <p className="text-[9px] font-semibold text-emerald-600 mb-0.5">{t('Strength', 'Force')}</p>
                     <p className="text-[10px] text-gray-600">{s.strength}</p>
                   </div>
                   <div className="bg-white/60 rounded-lg px-3 py-2">
-                    <p className="text-[9px] font-semibold text-blue-600 mb-0.5">Opportunity</p>
+                    <p className="text-[9px] font-semibold text-blue-600 mb-0.5">{t('Opportunity', 'Opportunité')}</p>
                     <p className="text-[10px] text-gray-600">{s.opportunity}</p>
                   </div>
                 </div>
@@ -615,7 +629,7 @@ export default function SwotAnalysisPage() {
           </div>
 
           <h3 className="text-xs font-semibold text-red-600 mb-3 flex items-center gap-2">
-            <AlertTriangle className="w-3.5 h-3.5" /> WT Risks — Weaknesses x Threats
+            <AlertTriangle className="w-3.5 h-3.5" /> {t('WT Risks — Weaknesses x Threats', 'Risques WT — Faiblesses x Menaces')}
           </h3>
           <div className="space-y-3">
             {WT_RISKS.map((r, i) => (
@@ -632,17 +646,17 @@ export default function SwotAnalysisPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <div className="bg-white/60 rounded-lg px-3 py-2">
-                    <p className="text-[9px] font-semibold text-red-500 mb-0.5">Weakness</p>
+                    <p className="text-[9px] font-semibold text-red-500 mb-0.5">{t('Weakness', 'Faiblesse')}</p>
                     <p className="text-[10px] text-gray-600">{r.weakness}</p>
                   </div>
                   <div className="bg-white/60 rounded-lg px-3 py-2">
-                    <p className="text-[9px] font-semibold text-amber-600 mb-0.5">Threat</p>
+                    <p className="text-[9px] font-semibold text-amber-600 mb-0.5">{t('Threat', 'Menace')}</p>
                     <p className="text-[10px] text-gray-600">{r.threat}</p>
                   </div>
                 </div>
-                <p className="text-[10px] text-red-700 leading-relaxed mb-2"><span className="font-semibold">Risk:</span> {r.risk}</p>
+                <p className="text-[10px] text-red-700 leading-relaxed mb-2"><span className="font-semibold">{t('Risk:', 'Risque :')}</span> {r.risk}</p>
                 <div className="bg-white/60 rounded-lg px-3 py-2">
-                  <p className="text-[10px] text-emerald-700 leading-relaxed"><span className="font-semibold">Mitigation:</span> {r.mitigation}</p>
+                  <p className="text-[10px] text-emerald-700 leading-relaxed"><span className="font-semibold">{t('Mitigation:', 'Atténuation :')}</span> {r.mitigation}</p>
                 </div>
               </motion.div>
             ))}
@@ -655,7 +669,7 @@ export default function SwotAnalysisPage() {
 
         {/* ── Forces Overview ──────────────────────────────────── */}
         <motion.section {...fadeUp(1.15)}>
-          <SectionTitle subtitle="Industry structure analysis — how attractive is this market to operate in?">Porter&apos;s Five Forces</SectionTitle>
+          <SectionTitle subtitle={t('Industry structure analysis — how attractive is this market to operate in?', "Analyse de la structure industrielle — quelle est l'attractivité de ce marché ?")}>{t("Porter's Five Forces", 'Les cinq forces de Porter')}</SectionTitle>
 
           {/* Visual summary */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
@@ -686,18 +700,19 @@ export default function SwotAnalysisPage() {
             <div className="mt-5 pt-4 border-t border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold text-gray-900">Overall Industry Attractiveness</p>
-                  <p className="text-[10px] text-gray-400">Average force intensity: {(FORCES.reduce((a, f) => a + f.score, 0) / FORCES.length).toFixed(1)}/10</p>
+                  <p className="text-xs font-bold text-gray-900">{t('Overall Industry Attractiveness', "Attractivité globale de l'industrie")}</p>
+                  <p className="text-[10px] text-gray-400">{t('Average force intensity', 'Intensité moyenne des forces')} : {(FORCES.reduce((a, f) => a + f.score, 0) / FORCES.length).toFixed(1)}/10</p>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold text-emerald-600">7/10</p>
-                  <p className="text-[10px] text-emerald-500 font-medium">Attractive</p>
+                  <p className="text-[10px] text-emerald-500 font-medium">{t('Attractive', 'Attractif')}</p>
                 </div>
               </div>
               <p className="text-[10px] text-gray-500 leading-relaxed mt-2">
-                Low competitive rivalry and low supplier power create a favorable operating environment.
-                Moderate buyer power (practitioners can churn easily) and high substitution threat (&quot;do nothing&quot;) are the primary forces to manage.
-                The EU regulatory environment uniquely benefits European-native entrants.
+                {t(
+                  'Low competitive rivalry and low supplier power create a favorable operating environment. Moderate buyer power (practitioners can churn easily) and high substitution threat ("do nothing") are the primary forces to manage. The EU regulatory environment uniquely benefits European-native entrants.',
+                  "La faible rivalité concurrentielle et le faible pouvoir des fournisseurs créent un environnement opérationnel favorable. Le pouvoir modéré des acheteurs (les praticiens peuvent facilement résilier) et la forte menace de substitution (« ne rien faire ») sont les principales forces à gérer. L'environnement réglementaire de l'UE bénéficie particulièrement aux acteurs européens natifs."
+                )}
               </p>
             </div>
           </div>
@@ -753,7 +768,7 @@ export default function SwotAnalysisPage() {
 
                   <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
                     <p className="text-[10px] text-indigo-700 leading-relaxed">
-                      <span className="font-semibold">Bloomsline implication:</span> {force.bloomsline}
+                      <span className="font-semibold">{t('Bloomsline implication:', 'Implication pour Bloomsline :')}</span> {force.bloomsline}
                     </p>
                   </div>
                 </motion.div>
@@ -767,19 +782,19 @@ export default function SwotAnalysisPage() {
           <div className="bg-gray-900 text-white rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <Lightbulb className="w-4 h-4 text-amber-400" />
-              <h2 className="text-sm font-bold">Strategic Synthesis</h2>
+              <h2 className="text-sm font-bold">{t('Strategic Synthesis', 'Synthèse stratégique')}</h2>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
               <div>
-                <p className="text-[10px] font-semibold text-emerald-300 uppercase tracking-wider mb-2">Where you win</p>
+                <p className="text-[10px] font-semibold text-emerald-300 uppercase tracking-wider mb-2">{t('Where you win', 'Là où vous gagnez')}</p>
                 <div className="space-y-1.5">
                   {[
-                    'Only B2B2C platform connecting both sides of mental health care',
-                    'Zero direct competitors in EU between-session care',
-                    'Unit economics proven in model (25-50x LTV/CAC, 90% margin)',
-                    'EU regulatory moat deepens every year (AI Act, EHDS, DiGA)',
-                    'Woebot/BetterHelp failures validate your thesis',
+                    t('Only B2B2C platform connecting both sides of mental health care', 'Seule plateforme B2B2C reliant les deux côtés du soin en santé mentale'),
+                    t('Zero direct competitors in EU between-session care', 'Zéro concurrent direct dans le suivi inter-séance en UE'),
+                    t('Unit economics proven in model (25-50x LTV/CAC, 90% margin)', 'Économie unitaire prouvée en modèle (LTV/CAC 25-50x, marge 90 %)'),
+                    t('EU regulatory moat deepens every year (AI Act, EHDS, DiGA)', "L'avantage réglementaire UE se renforce chaque année (AI Act, EHDS, DiGA)"),
+                    t('Woebot/BetterHelp failures validate your thesis', 'Les échecs de Woebot/BetterHelp valident votre thèse'),
                   ].map((point, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
@@ -789,14 +804,14 @@ export default function SwotAnalysisPage() {
                 </div>
               </div>
               <div>
-                <p className="text-[10px] font-semibold text-red-300 uppercase tracking-wider mb-2">What keeps you up at night</p>
+                <p className="text-[10px] font-semibold text-red-300 uppercase tracking-wider mb-2">{t('What keeps you up at night', 'Ce qui vous empêche de dormir')}</p>
                 <div className="space-y-1.5">
                   {[
-                    'Zero paying customers — all advantages are theoretical until validated',
-                    '"Do nothing" inertia is stronger than any competitor',
-                    'SimplePractice/Vista ($4B) could close the gap in 18 months',
-                    'Two-person team vs. well-resourced adjacent players',
-                    'French HDS compliance could force expensive infrastructure migration',
+                    t('Zero paying customers — all advantages are theoretical until validated', 'Zéro client payant — tous les avantages sont théoriques tant qu\'ils ne sont pas validés'),
+                    t('"Do nothing" inertia is stronger than any competitor', "L'inertie du « ne rien faire » est plus forte que tout concurrent"),
+                    t('SimplePractice/Vista ($4B) could close the gap in 18 months', 'SimplePractice/Vista (4 Md$) pourrait combler l\'écart en 18 mois'),
+                    t('Two-person team vs. well-resourced adjacent players', 'Équipe de deux personnes face à des acteurs adjacents bien financés'),
+                    t('French HDS compliance could force expensive infrastructure migration', "La conformité HDS française pourrait imposer une migration d'infrastructure coûteuse"),
                   ].map((point, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <AlertTriangle className="w-3 h-3 text-red-400 shrink-0 mt-0.5" />
@@ -808,11 +823,12 @@ export default function SwotAnalysisPage() {
             </div>
 
             <div className="bg-white/10 rounded-lg p-4">
-              <p className="text-xs font-semibold text-white mb-2">The One Thing That Matters Right Now</p>
+              <p className="text-xs font-semibold text-white mb-2">{t('The One Thing That Matters Right Now', "La seule chose qui compte maintenant")}</p>
               <p className="text-[10px] text-gray-300 leading-relaxed">
-                Get 10 paying practitioners within 90 days of launch. Everything else — the AI, the Care Network Effect, the EU moat,
-                the 25-50x LTV/CAC — is a hypothesis until money changes hands. The SWOT is favorable. The Five Forces analysis shows
-                an attractive industry. But the only force that matters at pre-seed is <span className="text-white font-semibold">converting the first dollar of revenue.</span>
+                {t(
+                  'Get 10 paying practitioners within 90 days of launch. Everything else — the AI, the Care Network Effect, the EU moat, the 25-50x LTV/CAC — is a hypothesis until money changes hands. The SWOT is favorable. The Five Forces analysis shows an attractive industry. But the only force that matters at pre-seed is',
+                  "Obtenir 10 praticiens payants dans les 90 jours suivant le lancement. Tout le reste — l'IA, l'effet réseau de soins, l'avantage réglementaire UE, le LTV/CAC de 25-50x — n'est qu'une hypothèse tant que l'argent ne change pas de mains. Le SWOT est favorable. L'analyse des cinq forces montre une industrie attractive. Mais la seule force qui compte au stade pré-amorçage est"
+                )} <span className="text-white font-semibold">{t('converting the first dollar of revenue.', "convertir le premier euro de chiffre d'affaires.")}</span>
               </p>
             </div>
           </div>
@@ -821,7 +837,7 @@ export default function SwotAnalysisPage() {
         {/* ── Footer ──────────────────────────────────────────── */}
         <motion.div {...fadeUp(1.5)} className="text-center pt-4 pb-8">
           <p className="text-[10px] text-gray-400">
-            Analysis as of Feb 2026 — Bloomsline Care
+            {t('Analysis as of Feb 2026 — Bloomsline Care', 'Analyse en date de février 2026 — Bloomsline Care')}
           </p>
         </motion.div>
       </main>

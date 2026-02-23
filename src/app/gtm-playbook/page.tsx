@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   Rocket,
@@ -82,71 +83,71 @@ interface LaunchPhase {
   tasks: PhaseTask[]
 }
 
-const LAUNCH_PHASES: LaunchPhase[] = [
+const getLaunchPhases = (t: (en: string, fr: string) => string): LaunchPhase[] => [
   {
     id: 'pre-launch',
-    name: 'Pre-Launch',
-    timeline: '60 days before launch (D-60 → D-1)',
+    name: t('Pre-Launch', 'Pre-lancement'),
+    timeline: t('60 days before launch (D-60 → D-1)', '60 jours avant le lancement (J-60 → J-1)'),
     color: 'bg-gray-900',
     lightBg: 'bg-gray-50',
     borderColor: 'border-gray-300',
     textColor: 'text-gray-900',
-    goal: 'Build the pipeline, validate messaging, create launch assets',
-    kpiTarget: '200 prospect list, 30 demo calls booked, 5 beta testimonials',
+    goal: t('Build the pipeline, validate messaging, create launch assets', 'Construire le pipeline, valider le message, creer les supports de lancement'),
+    kpiTarget: t('200 prospect list, 30 demo calls booked, 5 beta testimonials', '200 prospects, 30 demos reservees, 5 temoignages beta'),
     tasks: [
-      { task: 'Build prospect list of 200 independent practitioners (Paris → Lyon → Bordeaux)', owner: 'Founder 1', deliverable: 'LinkedIn Sales Nav + Doctolib scrape → CRM', priority: 'P0' },
-      { task: 'Run 50+ personalized LinkedIn outreach messages/week', owner: 'Founder 1 + 2', deliverable: '25/founder/week, 3-touch sequence', priority: 'P0' },
-      { task: 'Convert 3-5 beta testers to paying at €29/mo', owner: 'Founder 1', deliverable: 'First revenue + testimonials', priority: 'P0' },
-      { task: 'Produce 3 case study videos (90-second practitioner stories)', owner: 'Founder 2', deliverable: 'LinkedIn + website assets', priority: 'P1' },
-      { task: 'Write 8 French blog posts targeting SEO keywords', owner: 'Founder 2', deliverable: '"gestion cabinet", "suivi patient", "RGPD psychologue"', priority: 'P1' },
-      { task: 'Set up referral program infrastructure', owner: 'Engineering', deliverable: '"Invite a colleague" → 1 free month per referral', priority: 'P1' },
-      { task: 'Create onboarding flow (15-min white-glove setup)', owner: 'Founder 1', deliverable: 'Script + Loom video + checklist', priority: 'P1' },
-      { task: 'Design pricing page with 3-tier layout', owner: 'Founder 2', deliverable: 'Essentiel €19 / Pro €29 / Cabinet €49+', priority: 'P2' },
-      { task: 'Apply to AFTCC conference (speaking/booth slot)', owner: 'Founder 1', deliverable: 'Conference submission + follow-up', priority: 'P2' },
-      { task: 'Pitch 3 French psych podcasts for guest spots', owner: 'Founder 2', deliverable: 'Deux Psys, Catherine la Psy, Le Comptoir', priority: 'P2' },
+      { task: t('Build prospect list of 200 independent practitioners (Paris → Lyon → Bordeaux)', 'Construire une liste de 200 praticiens independants (Paris → Lyon → Bordeaux)'), owner: t('Founder 1', 'Fondateur 1'), deliverable: 'LinkedIn Sales Nav + Doctolib scrape → CRM', priority: 'P0' },
+      { task: t('Run 50+ personalized LinkedIn outreach messages/week', 'Envoyer 50+ messages LinkedIn personnalises/semaine'), owner: t('Founder 1 + 2', 'Fondateur 1 + 2'), deliverable: t('25/founder/week, 3-touch sequence', '25/fondateur/semaine, sequence en 3 points de contact'), priority: 'P0' },
+      { task: t('Convert 3-5 beta testers to paying at €29/mo', 'Convertir 3-5 beta testeurs en payants a 29 €/mois'), owner: t('Founder 1', 'Fondateur 1'), deliverable: t('First revenue + testimonials', 'Premiers revenus + temoignages'), priority: 'P0' },
+      { task: t('Produce 3 case study videos (90-second practitioner stories)', 'Produire 3 videos d\'etudes de cas (temoignages praticiens de 90 secondes)'), owner: t('Founder 2', 'Fondateur 2'), deliverable: t('LinkedIn + website assets', 'Contenus LinkedIn + site web'), priority: 'P1' },
+      { task: t('Write 8 French blog posts targeting SEO keywords', 'Rediger 8 articles de blog en francais ciblant les mots-cles SEO'), owner: t('Founder 2', 'Fondateur 2'), deliverable: '"gestion cabinet", "suivi patient", "RGPD psychologue"', priority: 'P1' },
+      { task: t('Set up referral program infrastructure', 'Mettre en place l\'infrastructure du programme de parrainage'), owner: t('Engineering', 'Ingenierie'), deliverable: t('"Invite a colleague" → 1 free month per referral', '"Invitez un collegue" → 1 mois gratuit par parrainage'), priority: 'P1' },
+      { task: t('Create onboarding flow (15-min white-glove setup)', 'Creer le parcours d\'onboarding (configuration assistee de 15 min)'), owner: t('Founder 1', 'Fondateur 1'), deliverable: t('Script + Loom video + checklist', 'Script + video Loom + checklist'), priority: 'P1' },
+      { task: t('Design pricing page with 3-tier layout', 'Concevoir la page tarifaire avec 3 niveaux'), owner: t('Founder 2', 'Fondateur 2'), deliverable: 'Essentiel 19 € / Pro 29 € / Cabinet 49 €+', priority: 'P2' },
+      { task: t('Apply to AFTCC conference (speaking/booth slot)', 'Postuler a la conference AFTCC (intervention/stand)'), owner: t('Founder 1', 'Fondateur 1'), deliverable: t('Conference submission + follow-up', 'Candidature conference + suivi'), priority: 'P2' },
+      { task: t('Pitch 3 French psych podcasts for guest spots', 'Proposer 3 podcasts psy francais pour des interventions'), owner: t('Founder 2', 'Fondateur 2'), deliverable: 'Deux Psys, Catherine la Psy, Le Comptoir', priority: 'P2' },
     ],
   },
   {
     id: 'launch-week',
-    name: 'Launch Week',
-    timeline: 'Day 1 → Day 7',
+    name: t('Launch Week', 'Semaine de lancement'),
+    timeline: t('Day 1 → Day 7', 'Jour 1 → Jour 7'),
     color: 'bg-indigo-600',
     lightBg: 'bg-indigo-50',
     borderColor: 'border-indigo-200',
     textColor: 'text-indigo-700',
-    goal: 'Activate first 10 paying practitioners, generate social proof',
-    kpiTarget: '10 paying users, 100+ members onboarded, 3 LinkedIn posts > 5K views',
+    goal: t('Activate first 10 paying practitioners, generate social proof', 'Activer les 10 premiers praticiens payants, generer de la preuve sociale'),
+    kpiTarget: t('10 paying users, 100+ members onboarded, 3 LinkedIn posts > 5K views', '10 utilisateurs payants, 100+ membres integres, 3 posts LinkedIn > 5K vues'),
     tasks: [
-      { task: 'Personal outreach to all 30 warm leads — "We\'re live"', owner: 'Founder 1 + 2', deliverable: '15 calls/founder in 3 days', priority: 'P0' },
-      { task: 'Publish LinkedIn launch post with practitioner story', owner: 'Founder 1', deliverable: 'Narrative post (not product features)', priority: 'P0' },
-      { task: 'Email beta testers asking for public testimonials', owner: 'Founder 2', deliverable: '3-5 LinkedIn recommendations', priority: 'P0' },
-      { task: 'Offer 60-day extended trial to first 20 signups', owner: 'Founder 1', deliverable: 'Urgency + exclusivity signal', priority: 'P1' },
-      { task: 'White-glove onboard every new practitioner (15-min call)', owner: 'Founder 1', deliverable: 'Account setup + first member invite', priority: 'P0' },
-      { task: 'Post day-by-day "building in public" updates on LinkedIn', owner: 'Founder 2', deliverable: '5 posts in 7 days, each with 1 real metric', priority: 'P1' },
-      { task: 'Send thank-you messages to everyone who shared the launch', owner: 'Founder 1 + 2', deliverable: 'Relationship maintenance', priority: 'P2' },
+      { task: t('Personal outreach to all 30 warm leads — "We\'re live"', 'Contact personnel des 30 leads chauds — "On est en ligne"'), owner: t('Founder 1 + 2', 'Fondateur 1 + 2'), deliverable: t('15 calls/founder in 3 days', '15 appels/fondateur en 3 jours'), priority: 'P0' },
+      { task: t('Publish LinkedIn launch post with practitioner story', 'Publier un post LinkedIn de lancement avec un temoignage praticien'), owner: t('Founder 1', 'Fondateur 1'), deliverable: t('Narrative post (not product features)', 'Post narratif (pas de fonctionnalites produit)'), priority: 'P0' },
+      { task: t('Email beta testers asking for public testimonials', 'Envoyer un email aux beta testeurs pour des temoignages publics'), owner: t('Founder 2', 'Fondateur 2'), deliverable: t('3-5 LinkedIn recommendations', '3-5 recommandations LinkedIn'), priority: 'P0' },
+      { task: t('Offer 60-day extended trial to first 20 signups', 'Offrir un essai prolonge de 60 jours aux 20 premiers inscrits'), owner: t('Founder 1', 'Fondateur 1'), deliverable: t('Urgency + exclusivity signal', 'Signal d\'urgence + exclusivite'), priority: 'P1' },
+      { task: t('White-glove onboard every new practitioner (15-min call)', 'Onboarding personnalise pour chaque nouveau praticien (appel de 15 min)'), owner: t('Founder 1', 'Fondateur 1'), deliverable: t('Account setup + first member invite', 'Configuration du compte + premiere invitation membre'), priority: 'P0' },
+      { task: t('Post day-by-day "building in public" updates on LinkedIn', 'Publier des mises a jour quotidiennes "construire en public" sur LinkedIn'), owner: t('Founder 2', 'Fondateur 2'), deliverable: t('5 posts in 7 days, each with 1 real metric', '5 posts en 7 jours, chacun avec 1 metrique reelle'), priority: 'P1' },
+      { task: t('Send thank-you messages to everyone who shared the launch', 'Envoyer des messages de remerciement a tous ceux qui ont partage le lancement'), owner: t('Founder 1 + 2', 'Fondateur 1 + 2'), deliverable: t('Relationship maintenance', 'Entretien des relations'), priority: 'P2' },
     ],
   },
   {
     id: 'post-launch',
-    name: 'Post-Launch',
-    timeline: 'Day 8 → Day 90',
+    name: t('Post-Launch', 'Post-lancement'),
+    timeline: t('Day 8 → Day 90', 'Jour 8 → Jour 90'),
     color: 'bg-emerald-600',
     lightBg: 'bg-emerald-50',
     borderColor: 'border-emerald-200',
     textColor: 'text-emerald-700',
-    goal: 'Reach 30 practitioners, prove PMF (churn < 5%), activate referral loop',
-    kpiTarget: '30 practitioners, 360+ members, <5% churn, first organic signup',
+    goal: t('Reach 30 practitioners, prove PMF (churn < 5%), activate referral loop', 'Atteindre 30 praticiens, prouver le PMF (churn < 5 %), activer la boucle de parrainage'),
+    kpiTarget: t('30 practitioners, 360+ members, <5% churn, first organic signup', '30 praticiens, 360+ membres, <5 % churn, premiere inscription organique'),
     tasks: [
-      { task: 'Week 2-4: Scale LinkedIn outreach to 100 messages/week', owner: 'Founder 1 + 2', deliverable: 'Multi-channel (LinkedIn + email + follow-up)', priority: 'P0' },
-      { task: 'Week 2: Activate referral program for all paying users', owner: 'Engineering', deliverable: 'Dashboard prompt: "Invite a colleague"', priority: 'P0' },
-      { task: 'Week 3: Publish 2 case studies with real engagement data', owner: 'Founder 2', deliverable: 'Blog + LinkedIn + email to prospects', priority: 'P1' },
-      { task: 'Week 4: Analyze first-month churn — fix if > 5%', owner: 'Founder 1', deliverable: 'Churn analysis → product fixes or onboarding tweaks', priority: 'P0' },
-      { task: 'Month 2: Begin SEO content cadence (1 post/week in French)', owner: 'Founder 2', deliverable: 'Target: 500 organic visits/month by M3', priority: 'P1' },
-      { task: 'Month 2: Attend first professional event/conference', owner: 'Founder 1', deliverable: 'AFTCC workshop or regional FFPP chapter', priority: 'P1' },
-      { task: 'Month 2: Contact IFFORTHECC about student partnership', owner: 'Founder 1', deliverable: 'Free year for newly certified → pipeline', priority: 'P2' },
-      { task: 'Month 3: Review NPS — target > 40', owner: 'Founder 2', deliverable: 'In-app survey at day 30', priority: 'P1' },
-      { task: 'Month 3: Evaluate first organic/referral signup signal', owner: 'Founder 1', deliverable: 'If 0 organic signups by M3, reassess messaging', priority: 'P0' },
-      { task: 'Month 3: Begin group practice outreach (Cabinet tier)', owner: 'Founder 1', deliverable: '10 group practice targets identified', priority: 'P2' },
+      { task: t('Week 2-4: Scale LinkedIn outreach to 100 messages/week', 'Sem. 2-4 : Passer la prospection LinkedIn a 100 messages/semaine'), owner: t('Founder 1 + 2', 'Fondateur 1 + 2'), deliverable: t('Multi-channel (LinkedIn + email + follow-up)', 'Multi-canal (LinkedIn + email + relance)'), priority: 'P0' },
+      { task: t('Week 2: Activate referral program for all paying users', 'Sem. 2 : Activer le programme de parrainage pour tous les utilisateurs payants'), owner: t('Engineering', 'Ingenierie'), deliverable: t('Dashboard prompt: "Invite a colleague"', 'Invite tableau de bord : "Invitez un collegue"'), priority: 'P0' },
+      { task: t('Week 3: Publish 2 case studies with real engagement data', 'Sem. 3 : Publier 2 etudes de cas avec des donnees d\'engagement reelles'), owner: t('Founder 2', 'Fondateur 2'), deliverable: t('Blog + LinkedIn + email to prospects', 'Blog + LinkedIn + email aux prospects'), priority: 'P1' },
+      { task: t('Week 4: Analyze first-month churn — fix if > 5%', 'Sem. 4 : Analyser le churn du premier mois — corriger si > 5 %'), owner: t('Founder 1', 'Fondateur 1'), deliverable: t('Churn analysis → product fixes or onboarding tweaks', 'Analyse du churn → corrections produit ou ajustements onboarding'), priority: 'P0' },
+      { task: t('Month 2: Begin SEO content cadence (1 post/week in French)', 'Mois 2 : Demarrer le rythme de contenu SEO (1 article/semaine en francais)'), owner: t('Founder 2', 'Fondateur 2'), deliverable: t('Target: 500 organic visits/month by M3', 'Objectif : 500 visites organiques/mois a M3'), priority: 'P1' },
+      { task: t('Month 2: Attend first professional event/conference', 'Mois 2 : Participer au premier evenement/conference professionnel'), owner: t('Founder 1', 'Fondateur 1'), deliverable: t('AFTCC workshop or regional FFPP chapter', 'Atelier AFTCC ou chapitre regional FFPP'), priority: 'P1' },
+      { task: t('Month 2: Contact IFFORTHECC about student partnership', 'Mois 2 : Contacter IFFORTHECC pour un partenariat etudiant'), owner: t('Founder 1', 'Fondateur 1'), deliverable: t('Free year for newly certified → pipeline', 'Annee gratuite pour les nouveaux certifies → pipeline'), priority: 'P2' },
+      { task: t('Month 3: Review NPS — target > 40', 'Mois 3 : Evaluer le NPS — objectif > 40'), owner: t('Founder 2', 'Fondateur 2'), deliverable: t('In-app survey at day 30', 'Sondage in-app au jour 30'), priority: 'P1' },
+      { task: t('Month 3: Evaluate first organic/referral signup signal', 'Mois 3 : Evaluer le premier signal d\'inscription organique/parrainage'), owner: t('Founder 1', 'Fondateur 1'), deliverable: t('If 0 organic signups by M3, reassess messaging', 'Si 0 inscription organique a M3, revoir le message'), priority: 'P0' },
+      { task: t('Month 3: Begin group practice outreach (Cabinet tier)', 'Mois 3 : Demarrer la prospection cabinets de groupe (offre Cabinet)'), owner: t('Founder 1', 'Fondateur 1'), deliverable: t('10 group practice targets identified', '10 cabinets de groupe cibles identifies'), priority: 'P2' },
     ],
   },
 ]
@@ -169,138 +170,138 @@ interface Channel {
   playbook: string[]
 }
 
-const CHANNELS: Channel[] = [
+const getChannels = (t: (en: string, fr: string) => string): Channel[] => [
   {
     rank: 1,
-    name: 'Founder-Led LinkedIn Outreach',
+    name: t('Founder-Led LinkedIn Outreach', 'Prospection LinkedIn par les fondateurs'),
     icon: MessageSquare,
     roiScore: 9,
-    costPerLead: '€2-5 (time only)',
-    timeToImpact: 'Week 1',
-    scalability: 'Low (founder time)',
-    when: 'Pre-launch → M6',
-    budget: '€0 cash, 20 hrs/week founder time',
-    why: 'Highest ROI channel at pre-seed. Multi-channel outreach gets 287% higher reply rate. Independent practitioners are reachable on LinkedIn. Zero cost, instant feedback loop.',
+    costPerLead: t('€2-5 (time only)', '2-5 € (temps uniquement)'),
+    timeToImpact: t('Week 1', 'Semaine 1'),
+    scalability: t('Low (founder time)', 'Faible (temps fondateurs)'),
+    when: t('Pre-launch → M6', 'Pre-lancement → M6'),
+    budget: t('€0 cash, 20 hrs/week founder time', '0 € en tresorerie, 20 h/sem. temps fondateurs'),
+    why: t('Highest ROI channel at pre-seed. Multi-channel outreach gets 287% higher reply rate. Independent practitioners are reachable on LinkedIn. Zero cost, instant feedback loop.', 'Canal au meilleur ROI en pre-seed. La prospection multi-canal obtient 287 % de taux de reponse en plus. Les praticiens independants sont joignables sur LinkedIn. Zero cout, boucle de retour instantanee.'),
     playbook: [
-      'Build list: LinkedIn Sales Nav + Doctolib profiles → 200 targets',
-      'Sequence: Connection request → value post → DM with case study → demo offer',
-      '50+ conversations/week (25 per founder)',
-      'Follow up 3x minimum — 80% of sales happen after 5th touchpoint',
-      'Track: reply rate > 15%, demo rate > 5%, close rate > 20%',
+      t('Build list: LinkedIn Sales Nav + Doctolib profiles → 200 targets', 'Construire la liste : LinkedIn Sales Nav + profils Doctolib → 200 cibles'),
+      t('Sequence: Connection request → value post → DM with case study → demo offer', 'Sequence : demande de connexion → post de valeur → DM avec etude de cas → offre de demo'),
+      t('50+ conversations/week (25 per founder)', '50+ conversations/semaine (25 par fondateur)'),
+      t('Follow up 3x minimum — 80% of sales happen after 5th touchpoint', 'Relancer au moins 3 fois — 80 % des ventes se font apres le 5e point de contact'),
+      t('Track: reply rate > 15%, demo rate > 5%, close rate > 20%', 'Suivi : taux de reponse > 15 %, taux de demo > 5 %, taux de conversion > 20 %'),
     ],
   },
   {
     rank: 2,
-    name: 'Referral Program',
+    name: t('Referral Program', 'Programme de parrainage'),
     icon: UserPlus,
     roiScore: 9,
-    costPerLead: '€29 (1 month free)',
+    costPerLead: t('€29 (1 month free)', '29 € (1 mois gratuit)'),
     timeToImpact: 'M2-M3',
-    scalability: 'High (viral loop)',
-    when: 'Activate at 10 users → ongoing',
-    budget: '€0 cash (deferred revenue)',
-    why: '86% of B2B buyers say word-of-mouth is most influential. Referred customers have 16-25% higher LTV and lower churn. Practitioners talk in supervision groups and conferences.',
+    scalability: t('High (viral loop)', 'Eleve (boucle virale)'),
+    when: t('Activate at 10 users → ongoing', 'Activer a 10 utilisateurs → continu'),
+    budget: t('€0 cash (deferred revenue)', '0 € en tresorerie (revenu differe)'),
+    why: t('86% of B2B buyers say word-of-mouth is most influential. Referred customers have 16-25% higher LTV and lower churn. Practitioners talk in supervision groups and conferences.', '86 % des acheteurs B2B disent que le bouche-a-oreille est le plus influent. Les clients recommandes ont un LTV 16-25 % superieur et un churn plus faible. Les praticiens echangent dans les groupes de supervision et les conferences.'),
     playbook: [
-      '1 free month per successful referral (both sides)',
-      'Ask every user for 2 introductions at day 14 (happiness peak)',
-      'Dashboard "Invite a colleague" button — always visible',
-      'Cap at 3 free months/year per referrer',
-      'Target: referrals = 20-30% of signups by M12',
+      t('1 free month per successful referral (both sides)', '1 mois gratuit par parrainage reussi (les deux cotes)'),
+      t('Ask every user for 2 introductions at day 14 (happiness peak)', 'Demander a chaque utilisateur 2 mises en relation au jour 14 (pic de satisfaction)'),
+      t('Dashboard "Invite a colleague" button — always visible', 'Bouton "Invitez un collegue" dans le tableau de bord — toujours visible'),
+      t('Cap at 3 free months/year per referrer', 'Plafond a 3 mois gratuits/an par parrain'),
+      t('Target: referrals = 20-30% of signups by M12', 'Objectif : parrainages = 20-30 % des inscriptions a M12'),
     ],
   },
   {
     rank: 3,
-    name: 'French Blog + SEO',
+    name: t('French Blog + SEO', 'Blog francais + SEO'),
     icon: PenTool,
     roiScore: 8,
-    costPerLead: '€5-15 (content creation time)',
-    timeToImpact: 'M3-M6 (compounds)',
-    scalability: 'Very high (evergreen)',
-    when: 'Start M1 → ongoing',
-    budget: '€200/mo (design + tooling)',
-    why: 'French practitioners search "gestion cabinet psychologue", "suivi patient", "RGPD psychologue" — low competition. SEO compounds over time. By M6, should drive 30% of pipeline.',
+    costPerLead: t('€5-15 (content creation time)', '5-15 € (temps de creation de contenu)'),
+    timeToImpact: t('M3-M6 (compounds)', 'M3-M6 (se compose)'),
+    scalability: t('Very high (evergreen)', 'Tres eleve (contenu perenne)'),
+    when: t('Start M1 → ongoing', 'Debut M1 → continu'),
+    budget: t('€200/mo (design + tooling)', '200 €/mois (design + outils)'),
+    why: t('French practitioners search "gestion cabinet psychologue", "suivi patient", "RGPD psychologue" — low competition. SEO compounds over time. By M6, should drive 30% of pipeline.', 'Les praticiens francais recherchent "gestion cabinet psychologue", "suivi patient", "RGPD psychologue" — faible concurrence. Le SEO se compose au fil du temps. A M6, devrait generer 30 % du pipeline.'),
     playbook: [
-      '1 post/week in French targeting practitioner pain points',
-      'Keywords: "gestion cabinet", "suivi patient entre séances", "RGPD psychologue"',
-      'Each post has clear CTA: free trial or demo booking',
-      'Repurpose blog → LinkedIn carousel → email newsletter',
-      'Target: 1,000 organic visits/month by M6, 5,000 by M12',
+      t('1 post/week in French targeting practitioner pain points', '1 article/semaine en francais ciblant les problematiques des praticiens'),
+      t('Keywords: "gestion cabinet", "suivi patient entre seances", "RGPD psychologue"', 'Mots-cles : "gestion cabinet", "suivi patient entre seances", "RGPD psychologue"'),
+      t('Each post has clear CTA: free trial or demo booking', 'Chaque article a un CTA clair : essai gratuit ou reservation de demo'),
+      t('Repurpose blog → LinkedIn carousel → email newsletter', 'Reutiliser le blog → carrousel LinkedIn → newsletter email'),
+      t('Target: 1,000 organic visits/month by M6, 5,000 by M12', 'Objectif : 1 000 visites organiques/mois a M6, 5 000 a M12'),
     ],
   },
   {
     rank: 4,
-    name: 'Events & Conferences',
+    name: t('Events & Conferences', 'Evenements et conferences'),
     icon: Calendar,
     roiScore: 7,
-    costPerLead: '€30-80 (travel + fees)',
+    costPerLead: t('€30-80 (travel + fees)', '30-80 € (deplacements + frais)'),
     timeToImpact: 'M3-M6',
-    scalability: 'Medium (seasonal)',
+    scalability: t('Medium (seasonal)', 'Moyen (saisonnier)'),
     when: 'M3 → M18',
-    budget: '€300-500/event',
-    why: 'SimplePractice got their first 50 customers at local chapter meetings. AFTCC has 2,500 members. Congrès Français de Psychiatrie is the annual gathering. Face-to-face builds trust.',
+    budget: t('€300-500/event', '300-500 €/evenement'),
+    why: t('SimplePractice got their first 50 customers at local chapter meetings. AFTCC has 2,500 members. Congres Francais de Psychiatrie is the annual gathering. Face-to-face builds trust.', 'SimplePractice a obtenu ses 50 premiers clients lors de reunions de chapitres locaux. L\'AFTCC compte 2 500 membres. Le Congres Francais de Psychiatrie est le rassemblement annuel. Le face-a-face cree la confiance.'),
     playbook: [
-      'AFTCC workshops: present on "digital between-session care"',
-      'FFPP/SNP chapter meetings: demo at regional events',
-      'Congrès Français de Psychiatrie: booth or speaking slot',
-      'Every event: collect 20+ contacts, follow up within 48 hours',
-      'Bring 1 testimonial practitioner as co-presenter',
+      t('AFTCC workshops: present on "digital between-session care"', 'Ateliers AFTCC : presenter le "suivi numerique entre les seances"'),
+      t('FFPP/SNP chapter meetings: demo at regional events', 'Reunions de chapitres FFPP/SNP : demo lors d\'evenements regionaux'),
+      t('Congres Francais de Psychiatrie: booth or speaking slot', 'Congres Francais de Psychiatrie : stand ou intervention'),
+      t('Every event: collect 20+ contacts, follow up within 48 hours', 'Chaque evenement : collecter 20+ contacts, relancer sous 48 heures'),
+      t('Bring 1 testimonial practitioner as co-presenter', 'Amener 1 praticien temoin comme co-presentateur'),
     ],
   },
   {
     rank: 5,
-    name: 'Training Institute Partnerships',
+    name: t('Training Institute Partnerships', 'Partenariats avec les instituts de formation'),
     icon: GraduationCap,
     roiScore: 7,
-    costPerLead: '€0 (partnership)',
+    costPerLead: t('€0 (partnership)', '0 € (partenariat)'),
     timeToImpact: 'M6-M12',
-    scalability: 'High (pipeline)',
+    scalability: t('High (pipeline)', 'Eleve (pipeline)'),
     when: 'M6 → M18',
-    budget: '€0 cash (free accounts)',
-    why: '21% growth in psychologist numbers = thousands setting up practice annually. Newly certified practitioners are easiest early adopters — no existing tool habits.',
+    budget: t('€0 cash (free accounts)', '0 € en tresorerie (comptes gratuits)'),
+    why: t('21% growth in psychologist numbers = thousands setting up practice annually. Newly certified practitioners are easiest early adopters — no existing tool habits.', '21 % de croissance du nombre de psychologues = des milliers s\'installent chaque annee. Les praticiens nouvellement certifies sont les adopteurs precoces les plus faciles — aucune habitude d\'outil existante.'),
     playbook: [
-      'Partners: AFTCC, IFFORTHECC, IRCCADE, Asadis',
-      'Offer: free year for newly certified practitioners',
-      'Position as "recommended practice tool" in curriculum',
-      'Co-branded onboarding materials for each institute',
-      'Target: 3 institute partnerships signed by M12',
+      t('Partners: AFTCC, IFFORTHECC, IRCCADE, Asadis', 'Partenaires : AFTCC, IFFORTHECC, IRCCADE, Asadis'),
+      t('Offer: free year for newly certified practitioners', 'Offre : annee gratuite pour les praticiens nouvellement certifies'),
+      t('Position as "recommended practice tool" in curriculum', 'Positionner comme "outil de pratique recommande" dans le cursus'),
+      t('Co-branded onboarding materials for each institute', 'Supports d\'onboarding co-marques pour chaque institut'),
+      t('Target: 3 institute partnerships signed by M12', 'Objectif : 3 partenariats d\'instituts signes a M12'),
     ],
   },
   {
     rank: 6,
-    name: 'Podcast Guest Appearances',
+    name: t('Podcast Guest Appearances', 'Interventions en podcast'),
     icon: Mic,
     roiScore: 6,
-    costPerLead: '€0',
+    costPerLead: '0 €',
     timeToImpact: 'M6-M12',
-    scalability: 'Low (limited shows)',
+    scalability: t('Low (limited shows)', 'Faible (emissions limitees)'),
     when: 'M6 → M18',
-    budget: '€0',
-    why: 'French practitioners listen to Deux Psys, Catherine la Psy, Le Comptoir de la Psychologie. Builds authority and trust. Zero cost. 1 podcast appearance = awareness among 5K-20K listeners.',
+    budget: '0 €',
+    why: t('French practitioners listen to Deux Psys, Catherine la Psy, Le Comptoir de la Psychologie. Builds authority and trust. Zero cost. 1 podcast appearance = awareness among 5K-20K listeners.', 'Les praticiens francais ecoutent Deux Psys, Catherine la Psy, Le Comptoir de la Psychologie. Construit autorite et confiance. Zero cout. 1 apparition podcast = notoriete aupres de 5K-20K auditeurs.'),
     playbook: [
-      'Pitch 5 French psych podcasts with practitioner-centric angle',
-      'Topic: "What happens between sessions — and why it matters"',
-      'Share real practitioner stories, not product features',
-      'Include unique offer code for listeners',
-      'Target: 3 appearances in first 12 months',
+      t('Pitch 5 French psych podcasts with practitioner-centric angle', 'Proposer 5 podcasts psy francais avec un angle centre sur le praticien'),
+      t('Topic: "What happens between sessions — and why it matters"', 'Sujet : "Ce qui se passe entre les seances — et pourquoi c\'est important"'),
+      t('Share real practitioner stories, not product features', 'Partager de vrais temoignages de praticiens, pas des fonctionnalites produit'),
+      t('Include unique offer code for listeners', 'Inclure un code promo unique pour les auditeurs'),
+      t('Target: 3 appearances in first 12 months', 'Objectif : 3 apparitions dans les 12 premiers mois'),
     ],
   },
   {
     rank: 7,
-    name: 'Email Newsletter (Practitioner Insights)',
+    name: t('Email Newsletter (Practitioner Insights)', 'Newsletter email (conseils praticiens)'),
     icon: Mail,
     roiScore: 6,
-    costPerLead: '€1-3',
+    costPerLead: '1-3 €',
     timeToImpact: 'M3-M6',
-    scalability: 'High (list grows)',
-    when: 'M3 → ongoing',
-    budget: '€50/mo (email tool)',
-    why: 'Nurtures warm leads who aren\'t ready to buy. Positions Bloomsline as thought leader. Bi-weekly cadence keeps brand top-of-mind. Low cost, compounds over time.',
+    scalability: t('High (list grows)', 'Eleve (la liste grandit)'),
+    when: t('M3 → ongoing', 'M3 → continu'),
+    budget: t('€50/mo (email tool)', '50 €/mois (outil email)'),
+    why: t('Nurtures warm leads who aren\'t ready to buy. Positions Bloomsline as thought leader. Bi-weekly cadence keeps brand top-of-mind. Low cost, compounds over time.', 'Nourrit les leads chauds qui ne sont pas prets a acheter. Positionne Bloomsline comme leader d\'opinion. Un rythme bimensuel garde la marque en tete. Faible cout, se compose avec le temps.'),
     playbook: [
-      'Bi-weekly email: 1 practitioner insight + 1 product tip + 1 CTA',
-      'Build list from blog subscribers, event contacts, LinkedIn connections',
-      'Subject line A/B test every send',
-      'Target: 500 subscribers by M6, 2,000 by M12',
-      'Open rate target: > 35%, CTR: > 5%',
+      t('Bi-weekly email: 1 practitioner insight + 1 product tip + 1 CTA', 'Email bimensuel : 1 conseil praticien + 1 astuce produit + 1 CTA'),
+      t('Build list from blog subscribers, event contacts, LinkedIn connections', 'Construire la liste a partir des abonnes blog, contacts evenements, connexions LinkedIn'),
+      t('Subject line A/B test every send', 'Test A/B de l\'objet a chaque envoi'),
+      t('Target: 500 subscribers by M6, 2,000 by M12', 'Objectif : 500 abonnes a M6, 2 000 a M12'),
+      t('Open rate target: > 35%, CTR: > 5%', 'Objectif taux d\'ouverture : > 35 %, CTR : > 5 %'),
     ],
   },
 ]
@@ -309,50 +310,50 @@ const CHANNELS: Channel[] = [
 // 3. MESSAGING FRAMEWORK
 // ══════════════════════════════════════════════════════════════════════════
 
-const MESSAGING = {
-  coreValueProp: 'Bloomsline fills the 167 hours between sessions — so practitioners see their clients\' week, and members feel supported every day.',
-  positioning: 'The only platform that connects practitioners and members through gentle, AI-powered between-session care.',
+const getMessaging = (t: (en: string, fr: string) => string) => ({
+  coreValueProp: t('Bloomsline fills the 167 hours between sessions — so practitioners see their clients\' week, and members feel supported every day.', 'Bloomsline comble les 167 heures entre les seances — pour que les praticiens voient la semaine de leurs clients, et que les membres se sentent soutenus chaque jour.'),
+  positioning: t('The only platform that connects practitioners and members through gentle, AI-powered between-session care.', 'La seule plateforme qui connecte praticiens et membres grace a un accompagnement bienveillant entre les seances, assiste par l\'IA.'),
   taglines: [
-    'Therapy is 1 hour a week. Life is the other 167.',
-    'See their week. Support their journey.',
-    'Between-session care that practitioners trust and members love.',
+    t('Therapy is 1 hour a week. Life is the other 167.', 'La therapie, c\'est 1 heure par semaine. La vie, ce sont les 167 autres.'),
+    t('See their week. Support their journey.', 'Voyez leur semaine. Accompagnez leur parcours.'),
+    t('Between-session care that practitioners trust and members love.', 'Un suivi entre les seances auquel les praticiens font confiance et que les membres adorent.'),
   ],
   supportingMessages: [
     {
-      message: 'Start every session already informed',
-      audience: 'Practitioners',
+      message: t('Start every session already informed', 'Commencez chaque seance deja informe'),
+      audience: t('Practitioners', 'Praticiens'),
       proofPoints: [
-        '50% of session time currently spent catching up (APA Practice)',
-        'Practitioners see real-time client engagement dashboard',
-        'AI-generated session briefs from between-session activity',
+        t('50% of session time currently spent catching up (APA Practice)', '50 % du temps de seance est actuellement consacre a la mise a jour (APA Practice)'),
+        t('Practitioners see real-time client engagement dashboard', 'Les praticiens voient un tableau de bord d\'engagement client en temps reel'),
+        t('AI-generated session briefs from between-session activity', 'Briefings de seance generes par l\'IA a partir de l\'activite entre les seances'),
       ],
     },
     {
-      message: 'Your growth continues between appointments',
-      audience: 'Members',
+      message: t('Your growth continues between appointments', 'Votre progression continue entre les rendez-vous'),
+      audience: t('Members', 'Membres'),
       proofPoints: [
-        'Bloom AI companion available 24/7 for gentle support',
-        'Capture moments in 10 seconds — photo, voice, text',
-        'AI discovers patterns in mood and behavior over time',
+        t('Bloom AI companion available 24/7 for gentle support', 'Compagnon IA Bloom disponible 24h/24 pour un soutien bienveillant'),
+        t('Capture moments in 10 seconds — photo, voice, text', 'Capturez des moments en 10 secondes — photo, voix, texte'),
+        t('AI discovers patterns in mood and behavior over time', 'L\'IA decouvre des tendances dans l\'humeur et le comportement au fil du temps'),
       ],
     },
     {
-      message: 'One sale. 15 users. Zero incremental CAC.',
-      audience: 'Investors',
+      message: t('One sale. 15 users. Zero incremental CAC.', 'Une vente. 15 utilisateurs. Zero CAC supplementaire.'),
+      audience: t('Investors', 'Investisseurs'),
       proofPoints: [
-        '1 practitioner → 12-15 members at no additional cost',
-        'LTV/CAC of 72x (benchmark: 3x)',
-        '90% gross margin, €50 CAC, 1.7-month payback',
+        t('1 practitioner → 12-15 members at no additional cost', '1 praticien → 12-15 membres sans cout supplementaire'),
+        t('LTV/CAC of 72x (benchmark: 3x)', 'LTV/CAC de 72x (reference : 3x)'),
+        t('90% gross margin, €50 CAC, 1.7-month payback', '90 % de marge brute, 50 € de CAC, retour sur investissement en 1,7 mois'),
       ],
     },
   ],
   objectionCounters: [
-    { objection: '"I don\'t have time for a new tool"', counter: 'White-glove setup in 15 minutes. No data migration needed. We set it up for you.' },
-    { objection: '"I already use Doctolib"', counter: 'Bloomsline doesn\'t replace Doctolib. We\'re the engagement layer between sessions — they handle booking, we handle care.' },
-    { objection: '"€29/mo is too much"', counter: '€29/mo is less than one cancelled session (€60-80). Doctolib charges €139/mo with no AI. SimplePractice is $49-99.' },
-    { objection: '"I worry about data privacy"', counter: 'EU-hosted, GDPR-native from line 1. AES-256 encryption. Row Level Security on every table. We\'re not American SaaS.' },
+    { objection: t('"I don\'t have time for a new tool"', '"Je n\'ai pas le temps pour un nouvel outil"'), counter: t('White-glove setup in 15 minutes. No data migration needed. We set it up for you.', 'Configuration assistee en 15 minutes. Aucune migration de donnees necessaire. Nous le configurons pour vous.') },
+    { objection: t('"I already use Doctolib"', '"J\'utilise deja Doctolib"'), counter: t('Bloomsline doesn\'t replace Doctolib. We\'re the engagement layer between sessions — they handle booking, we handle care.', 'Bloomsline ne remplace pas Doctolib. Nous sommes la couche d\'engagement entre les seances — ils gerent la prise de rendez-vous, nous gerons le suivi.') },
+    { objection: t('"€29/mo is too much"', '"29 €/mois c\'est trop cher"'), counter: t('€29/mo is less than one cancelled session (€60-80). Doctolib charges €139/mo with no AI. SimplePractice is $49-99.', '29 €/mois c\'est moins qu\'une seance annulee (60-80 €). Doctolib facture 139 €/mois sans IA. SimplePractice coute 49-99 $.') },
+    { objection: t('"I worry about data privacy"', '"Je m\'inquiete de la confidentialite des donnees"'), counter: t('EU-hosted, GDPR-native from line 1. AES-256 encryption. Row Level Security on every table. We\'re not American SaaS.', 'Heberge en UE, conforme au RGPD des la premiere ligne. Chiffrement AES-256. Securite au niveau des lignes sur chaque table. Nous ne sommes pas un SaaS americain.') },
   ],
-}
+})
 
 // ══════════════════════════════════════════════════════════════════════════
 // 4. CONTENT STRATEGY
@@ -650,37 +651,53 @@ const QUICK_WINS: QuickWin[] = [
 // ══════════════════════════════════════════════════════════════════════════
 
 export default function GTMPlaybookPage() {
+  const [lang, setLang] = useState<'en' | 'fr'>('en')
+  const t = (en: string, fr: string) => lang === 'fr' ? fr : en
+
+  const LAUNCH_PHASES = getLaunchPhases(t)
+  const CHANNELS = getChannels(t)
+  const MESSAGING = getMessaging(t)
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ── Header ─────────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-white border-b border-gray-200 px-6 sm:px-8 py-4">
-        <div className="max-w-5xl mx-auto flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
-            <Rocket className="w-4 h-4 text-white" />
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
+              <Rocket className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h1 className="text-sm font-semibold text-gray-900">{t('GTM Playbook', 'Strategie GTM')}</h1>
+              <p className="text-[10px] text-gray-400">{t('Bloomsline Care — Go-to-Market Execution Plan', 'Bloomsline Care — Plan de mise en marche')}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-sm font-semibold text-gray-900">GTM Playbook</h1>
-            <p className="text-[10px] text-gray-400">Bloomsline Care — Go-to-Market Execution Plan</p>
-          </div>
+          <button
+            onClick={() => setLang(lang === 'en' ? 'fr' : 'en')}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+          >
+            {lang === 'en' ? '\u{1F1EB}\u{1F1F7} Fran\u00e7ais' : '\u{1F1EC}\u{1F1E7} English'}
+          </button>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-6 sm:px-8 py-10 space-y-14">
         {/* ── Hero ────────────────────────────────────── */}
         <motion.div {...fadeUp(0)}>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Go-to-Market Playbook</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{t('Go-to-Market Playbook', 'Plan de mise en marche')}</h2>
           <p className="text-sm text-gray-500 leading-relaxed max-w-3xl">
-            A complete, actionable GTM execution plan for Bloomsline Care. Budget: ~€10K/year cash + founder sweat equity.
-            Timeline: pre-launch (60 days) → launch (week 1) → post-launch (90 days) → scale (M4-M18).
-            Built for a 2-founder pre-seed team targeting French independent mental health practitioners.
+            {t(
+              'A complete, actionable GTM execution plan for Bloomsline Care. Budget: ~€10K/year cash + founder sweat equity. Timeline: pre-launch (60 days) → launch (week 1) → post-launch (90 days) → scale (M4-M18). Built for a 2-founder pre-seed team targeting French independent mental health practitioners.',
+              'Un plan GTM complet et actionnable pour Bloomsline Care. Budget : ~10 K€/an en tresorerie + travail des fondateurs. Calendrier : pre-lancement (60 jours) → lancement (semaine 1) → post-lancement (90 jours) → croissance (M4-M18). Concu pour une equipe de 2 fondateurs en pre-seed ciblant les praticiens independants en sante mentale en France.'
+            )}
           </p>
           <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-3">
             {[
-              { label: 'Budget', value: '~€10K/yr', sub: '+ founder time' },
-              { label: 'Team', value: '2 founders', sub: '+ part-time eng' },
-              { label: 'Market', value: '30K', sub: 'FR independent practitioners' },
-              { label: 'Price', value: '€19-49/mo', sub: '3-tier model' },
-              { label: 'Target M18', value: '340 users', sub: '€118K ARR' },
+              { label: t('Budget', 'Budget'), value: '~€10K/' + t('yr', 'an'), sub: t('+ founder time', '+ temps fondateurs') },
+              { label: t('Team', 'Equipe'), value: t('2 founders', '2 fondateurs'), sub: t('+ part-time eng', '+ dev temps partiel') },
+              { label: t('Market', 'Marche'), value: '30K', sub: t('FR independent practitioners', 'praticiens independants FR') },
+              { label: t('Price', 'Prix'), value: '€19-49/' + t('mo', 'mois'), sub: t('3-tier model', 'modele 3 niveaux') },
+              { label: t('Target M18', 'Objectif M18'), value: t('340 users', '340 utilisateurs'), sub: '€118K ARR' },
             ].map((s) => (
               <div key={s.label} className="bg-white border border-gray-200 rounded-xl p-3 text-center">
                 <p className="text-[10px] text-gray-400">{s.label}</p>
@@ -695,8 +712,8 @@ export default function GTMPlaybookPage() {
         {/* 9. QUICK WINS (FIRST 14 DAYS) — up front     */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.05)}>
-          <SectionTitle subtitle="3 high-impact tactics that generate traction before everything else compounds">
-            Quick Wins — First 14 Days
+          <SectionTitle subtitle={t('3 high-impact tactics that generate traction before everything else compounds', '3 tactiques a fort impact qui generent de la traction avant que tout le reste ne se compose')}>
+            {t('Quick Wins — First 14 Days', 'Gains rapides — 14 premiers jours')}
           </SectionTitle>
 
           <div className="space-y-4">
@@ -736,8 +753,8 @@ export default function GTMPlaybookPage() {
         {/* 1. LAUNCH PHASING                               */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.1)}>
-          <SectionTitle subtitle="Pre-launch (60 days) → Launch (week 1) → Post-launch (90 days)">
-            1. Launch Phasing
+          <SectionTitle subtitle={t('Pre-launch (60 days) → Launch (week 1) → Post-launch (90 days)', 'Pre-lancement (60 jours) → Lancement (semaine 1) → Post-lancement (90 jours)')}>
+            {t('1. Launch Phasing', '1. Phases de lancement')}
           </SectionTitle>
 
           <div className="space-y-6">
@@ -756,7 +773,7 @@ export default function GTMPlaybookPage() {
                 </div>
 
                 <p className="text-xs text-gray-500 mb-3">
-                  <strong className="text-gray-700">Goal:</strong> {phase.goal}
+                  <strong className="text-gray-700">{t('Goal:', 'Objectif :')}</strong> {phase.goal}
                 </p>
 
                 <div className="space-y-2">
@@ -770,8 +787,8 @@ export default function GTMPlaybookPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-800">{task.task}</p>
                         <div className="flex items-center gap-3 mt-1">
-                          <span className="text-[10px] text-gray-400"><strong>Owner:</strong> {task.owner}</span>
-                          <span className="text-[10px] text-gray-400"><strong>Output:</strong> {task.deliverable}</span>
+                          <span className="text-[10px] text-gray-400"><strong>{t('Owner:', 'Responsable :')}</strong> {task.owner}</span>
+                          <span className="text-[10px] text-gray-400"><strong>{t('Output:', 'Livrable :')}</strong> {task.deliverable}</span>
                         </div>
                       </div>
                     </div>
@@ -786,8 +803,8 @@ export default function GTMPlaybookPage() {
         {/* 2. CHANNEL STRATEGY                              */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.15)}>
-          <SectionTitle subtitle="Top 7 acquisition channels ranked by expected ROI at pre-seed stage">
-            2. Channel Strategy — Ranked by ROI
+          <SectionTitle subtitle={t('Top 7 acquisition channels ranked by expected ROI at pre-seed stage', 'Les 7 meilleurs canaux d\'acquisition classes par ROI attendu au stade pre-seed')}>
+            {t('2. Channel Strategy — Ranked by ROI', '2. Strategie canaux — Classement par ROI')}
           </SectionTitle>
 
           <div className="space-y-4">
@@ -810,19 +827,19 @@ export default function GTMPlaybookPage() {
 
                       <div className="grid grid-cols-4 gap-2 mb-3">
                         <div className="text-center p-1.5 bg-gray-50 rounded-lg">
-                          <p className="text-[9px] text-gray-400">ROI Score</p>
+                          <p className="text-[9px] text-gray-400">{t('ROI Score', 'Score ROI')}</p>
                           <p className="text-xs font-bold text-indigo-600">{ch.roiScore}/10</p>
                         </div>
                         <div className="text-center p-1.5 bg-gray-50 rounded-lg">
-                          <p className="text-[9px] text-gray-400">Cost/Lead</p>
+                          <p className="text-[9px] text-gray-400">{t('Cost/Lead', 'Cout/Lead')}</p>
                           <p className="text-xs font-bold text-gray-700">{ch.costPerLead}</p>
                         </div>
                         <div className="text-center p-1.5 bg-gray-50 rounded-lg">
-                          <p className="text-[9px] text-gray-400">Time to Impact</p>
+                          <p className="text-[9px] text-gray-400">{t('Time to Impact', 'Delai d\'impact')}</p>
                           <p className="text-xs font-bold text-gray-700">{ch.timeToImpact}</p>
                         </div>
                         <div className="text-center p-1.5 bg-gray-50 rounded-lg">
-                          <p className="text-[9px] text-gray-400">Budget</p>
+                          <p className="text-[9px] text-gray-400">{t('Budget', 'Budget')}</p>
                           <p className="text-xs font-bold text-gray-700">{ch.budget}</p>
                         </div>
                       </div>
@@ -830,7 +847,7 @@ export default function GTMPlaybookPage() {
                       <p className="text-xs text-gray-500 mb-2">{ch.why}</p>
 
                       <div className="bg-indigo-50 rounded-lg p-3">
-                        <p className="text-[10px] font-semibold text-indigo-600 mb-1.5">Playbook</p>
+                        <p className="text-[10px] font-semibold text-indigo-600 mb-1.5">{t('Playbook', 'Plan d\'action')}</p>
                         <div className="space-y-1">
                           {ch.playbook.map((step, i) => (
                             <div key={i} className="flex items-start gap-2">
@@ -852,19 +869,19 @@ export default function GTMPlaybookPage() {
         {/* 3. MESSAGING FRAMEWORK                           */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.2)}>
-          <SectionTitle subtitle="Core value proposition, supporting messages, and proof points">
-            3. Messaging Framework
+          <SectionTitle subtitle={t('Core value proposition, supporting messages, and proof points', 'Proposition de valeur principale, messages de soutien et preuves')}>
+            {t('3. Messaging Framework', '3. Cadre de communication')}
           </SectionTitle>
 
           {/* Core value prop */}
           <div className="bg-gray-900 text-white rounded-2xl p-6 mb-4">
-            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-2">Core Value Proposition</p>
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-2">{t('Core Value Proposition', 'Proposition de valeur principale')}</p>
             <p className="text-lg font-bold leading-relaxed">{MESSAGING.coreValueProp}</p>
             <p className="text-xs text-gray-400 mt-3">{MESSAGING.positioning}</p>
             <div className="flex flex-wrap gap-2 mt-4">
-              {MESSAGING.taglines.map((t, i) => (
+              {MESSAGING.taglines.map((tag, i) => (
                 <span key={i} className="text-[10px] bg-white/10 text-gray-300 px-2.5 py-1 rounded-full border border-white/10">
-                  &quot;{t}&quot;
+                  &quot;{tag}&quot;
                 </span>
               ))}
             </div>
@@ -895,7 +912,7 @@ export default function GTMPlaybookPage() {
           {/* Objection counters */}
           <div className="bg-red-50 border border-red-100 rounded-xl p-4">
             <h4 className="text-xs font-bold text-red-700 mb-3 flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5" /> Top Objections & Counters
+              <Shield className="w-3.5 h-3.5" /> {t('Top Objections & Counters', 'Objections principales et reponses')}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {MESSAGING.objectionCounters.map((o, i) => (
@@ -912,8 +929,8 @@ export default function GTMPlaybookPage() {
         {/* 4. CONTENT STRATEGY                              */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.25)}>
-          <SectionTitle subtitle="Content mapped to every stage of the practitioner buying journey">
-            4. Content Strategy — Full Funnel
+          <SectionTitle subtitle={t('Content mapped to every stage of the practitioner buying journey', 'Contenu associe a chaque etape du parcours d\'achat du praticien')}>
+            {t('4. Content Strategy — Full Funnel', '4. Strategie de contenu — Entonnoir complet')}
           </SectionTitle>
 
           <div className="space-y-4">
@@ -932,7 +949,7 @@ export default function GTMPlaybookPage() {
                         <span className="text-[9px] text-gray-400">{c.frequency}</span>
                       </div>
                       <p className="text-[10px] text-gray-500 mb-1">{c.format}</p>
-                      <p className="text-[10px] text-gray-400"><strong>Channel:</strong> {c.channel} | <strong>Why:</strong> {c.purpose}</p>
+                      <p className="text-[10px] text-gray-400"><strong>{t('Channel:', 'Canal :')}</strong> {c.channel} | <strong>{t('Why:', 'Pourquoi :')}</strong> {c.purpose}</p>
                     </div>
                   ))}
                 </div>
@@ -945,8 +962,8 @@ export default function GTMPlaybookPage() {
         {/* 5. PARTNERSHIPS                                  */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.3)}>
-          <SectionTitle subtitle="5 strategic partnerships ranked by timeline and expected impact">
-            5. Strategic Partnerships
+          <SectionTitle subtitle={t('5 strategic partnerships ranked by timeline and expected impact', '5 partenariats strategiques classes par calendrier et impact attendu')}>
+            {t('5. Strategic Partnerships', '5. Partenariats strategiques')}
           </SectionTitle>
 
           <div className="space-y-3">
@@ -966,15 +983,15 @@ export default function GTMPlaybookPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[10px]">
                   <div>
-                    <p className="text-gray-400 mb-0.5 font-medium">Type & Reach</p>
+                    <p className="text-gray-400 mb-0.5 font-medium">{t('Type & Reach', 'Type et portee')}</p>
                     <p className="text-gray-600">{p.type} — {p.reach}</p>
                   </div>
                   <div>
-                    <p className="text-gray-400 mb-0.5 font-medium">Deal Structure</p>
+                    <p className="text-gray-400 mb-0.5 font-medium">{t('Deal Structure', 'Structure du partenariat')}</p>
                     <p className="text-gray-600">{p.dealStructure}</p>
                   </div>
                   <div>
-                    <p className="text-gray-400 mb-0.5 font-medium">Expected Impact</p>
+                    <p className="text-gray-400 mb-0.5 font-medium">{t('Expected Impact', 'Impact attendu')}</p>
                     <p className="text-emerald-600 font-semibold">{p.expectedImpact}</p>
                   </div>
                 </div>
@@ -987,19 +1004,19 @@ export default function GTMPlaybookPage() {
         {/* 6. BUDGET ALLOCATION                              */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.35)}>
-          <SectionTitle subtitle={`Total GTM cash budget: ${TOTAL_GTM_CASH} (${TOTAL_GTM_MONTHLY}) — plus founder sweat equity`}>
-            6. Budget Allocation
+          <SectionTitle subtitle={t(`Total GTM cash budget: ${TOTAL_GTM_CASH} (${TOTAL_GTM_MONTHLY}) — plus founder sweat equity`, `Budget GTM total en tresorerie : ${TOTAL_GTM_CASH} (${TOTAL_GTM_MONTHLY}) — plus travail des fondateurs`)}>
+            {t('6. Budget Allocation', '6. Repartition du budget')}
           </SectionTitle>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Channel</th>
-                  <th className="text-right p-3 font-semibold text-gray-700 border-b border-gray-200">Monthly</th>
-                  <th className="text-right p-3 font-semibold text-gray-700 border-b border-gray-200">Annual</th>
-                  <th className="text-right p-3 font-semibold text-gray-700 border-b border-gray-200">% of GTM</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Rationale</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Channel', 'Canal')}</th>
+                  <th className="text-right p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Monthly', 'Mensuel')}</th>
+                  <th className="text-right p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Annual', 'Annuel')}</th>
+                  <th className="text-right p-3 font-semibold text-gray-700 border-b border-gray-200">{t('% of GTM', '% du GTM')}</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Rationale', 'Justification')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1017,13 +1034,12 @@ export default function GTMPlaybookPage() {
           </div>
 
           <div className="mt-4 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
-            <h4 className="text-xs font-bold text-indigo-800 mb-2">Budget Philosophy</h4>
+            <h4 className="text-xs font-bold text-indigo-800 mb-2">{t('Budget Philosophy', 'Philosophie budgetaire')}</h4>
             <p className="text-xs text-indigo-700 leading-relaxed">
-              At pre-seed, <strong>your time is your budget</strong>. The ~€10K annual cash spend is almost rounding error —
-              it&apos;s the 80+ hours/week of founder outreach, content creation, and relationship-building that drives growth.
-              No paid ads. No growth hacking shortcuts. Just consistent, founder-led, trust-based acquisition in a
-              niche professional community where reputation compounds. When you hit 100+ practitioners and €3K MRR,
-              then evaluate whether to add a €500-1,000/mo paid channel.
+              {t(
+                'At pre-seed, your time is your budget. The ~€10K annual cash spend is almost rounding error — it\'s the 80+ hours/week of founder outreach, content creation, and relationship-building that drives growth. No paid ads. No growth hacking shortcuts. Just consistent, founder-led, trust-based acquisition in a niche professional community where reputation compounds. When you hit 100+ practitioners and €3K MRR, then evaluate whether to add a €500-1,000/mo paid channel.',
+                'Au stade pre-seed, votre temps est votre budget. Les ~10 K\u20AC de depenses annuelles en tresorerie sont presque negligeables \u2014 ce sont les 80+ heures/semaine de prospection, creation de contenu et developpement de relations par les fondateurs qui generent la croissance. Pas de publicite payante. Pas de raccourcis growth hacking. Juste une acquisition constante, menee par les fondateurs, basee sur la confiance dans une communaute professionnelle de niche ou la reputation se compose. Quand vous atteindrez 100+ praticiens et 3 K\u20AC de MRR, alors evaluez l\'ajout d\'un canal payant a 500-1 000 \u20AC/mois.'
+              )}
             </p>
           </div>
         </motion.section>
@@ -1032,21 +1048,21 @@ export default function GTMPlaybookPage() {
         {/* 7. KPI FRAMEWORK                                  */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.4)}>
-          <SectionTitle subtitle="10 metrics to track with quarterly benchmarks — know what good looks like">
-            7. KPI Framework
+          <SectionTitle subtitle={t('10 metrics to track with quarterly benchmarks — know what good looks like', '10 indicateurs a suivre avec des objectifs trimestriels — savoir a quoi ressemble le succes')}>
+            {t('7. KPI Framework', '7. Cadre KPI')}
           </SectionTitle>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Metric</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Category</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Metric', 'Indicateur')}</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Category', 'Categorie')}</th>
                   <th className="text-center p-3 font-semibold text-gray-700 border-b border-gray-200">M3</th>
                   <th className="text-center p-3 font-semibold text-gray-700 border-b border-gray-200">M6</th>
                   <th className="text-center p-3 font-semibold text-gray-700 border-b border-gray-200">M12</th>
                   <th className="text-center p-3 font-semibold text-gray-700 border-b border-gray-200">M18</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Why This Matters</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Why This Matters', 'Pourquoi c\'est important')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1079,19 +1095,19 @@ export default function GTMPlaybookPage() {
 
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-center">
-              <p className="text-[10px] text-red-400 mb-1">Red Flag — Pause & Fix</p>
-              <p className="text-xs font-bold text-red-600">Churn &gt; 10% at M3</p>
-              <p className="text-[10px] text-red-400 mt-0.5">Stop selling. Fix the product.</p>
+              <p className="text-[10px] text-red-400 mb-1">{t('Red Flag — Pause & Fix', 'Alerte rouge — Pause et correction')}</p>
+              <p className="text-xs font-bold text-red-600">{t('Churn > 10% at M3', 'Churn > 10 % a M3')}</p>
+              <p className="text-[10px] text-red-400 mt-0.5">{t('Stop selling. Fix the product.', 'Arretez de vendre. Corrigez le produit.')}</p>
             </div>
             <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
-              <p className="text-[10px] text-amber-400 mb-1">Yellow Flag — Investigate</p>
-              <p className="text-xs font-bold text-amber-600">0 organic signups by M3</p>
-              <p className="text-[10px] text-amber-400 mt-0.5">Messaging isn&apos;t resonating. Revisit positioning.</p>
+              <p className="text-[10px] text-amber-400 mb-1">{t('Yellow Flag — Investigate', 'Alerte jaune — Enqueter')}</p>
+              <p className="text-xs font-bold text-amber-600">{t('0 organic signups by M3', '0 inscription organique a M3')}</p>
+              <p className="text-[10px] text-amber-400 mt-0.5">{t('Messaging isn\'t resonating. Revisit positioning.', 'Le message ne resonne pas. Revoir le positionnement.')}</p>
             </div>
             <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
-              <p className="text-[10px] text-emerald-400 mb-1">Green Light — Accelerate</p>
-              <p className="text-xs font-bold text-emerald-600">Referrals &gt; 20% by M6</p>
-              <p className="text-[10px] text-emerald-400 mt-0.5">Flywheel spinning. Consider first hire.</p>
+              <p className="text-[10px] text-emerald-400 mb-1">{t('Green Light — Accelerate', 'Feu vert — Accelerer')}</p>
+              <p className="text-xs font-bold text-emerald-600">{t('Referrals > 20% by M6', 'Parrainages > 20 % a M6')}</p>
+              <p className="text-[10px] text-emerald-400 mt-0.5">{t('Flywheel spinning. Consider first hire.', 'La boucle de croissance tourne. Envisagez la premiere embauche.')}</p>
             </div>
           </div>
         </motion.section>
@@ -1100,8 +1116,8 @@ export default function GTMPlaybookPage() {
         {/* 8. RISK MITIGATION                                 */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.45)}>
-          <SectionTitle subtitle="Top 5 launch risks with early warning signals and contingency plans">
-            8. Risk Mitigation
+          <SectionTitle subtitle={t('Top 5 launch risks with early warning signals and contingency plans', 'Les 5 principaux risques de lancement avec signaux d\'alerte et plans de contingence')}>
+            {t('8. Risk Mitigation', '8. Attenuation des risques')}
           </SectionTitle>
 
           <div className="space-y-3">
@@ -1126,21 +1142,21 @@ export default function GTMPlaybookPage() {
                       r.impact === 'Fatal' ? 'bg-red-200 text-red-700' :
                       r.impact === 'Critical' ? 'bg-red-100 text-red-600' :
                       'bg-amber-100 text-amber-600'
-                    }`}>Impact: {r.impact}</span>
+                    }`}>{t('Impact:', 'Impact :')} {r.impact}</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[10px]">
                   <div className="p-2 bg-amber-50 rounded-lg">
-                    <p className="text-amber-500 font-medium mb-0.5">Early Warning</p>
+                    <p className="text-amber-500 font-medium mb-0.5">{t('Early Warning', 'Signal d\'alerte')}</p>
                     <p className="text-amber-700">{r.earlyWarning}</p>
                   </div>
                   <div className="p-2 bg-emerald-50 rounded-lg md:col-span-2">
-                    <p className="text-emerald-500 font-medium mb-0.5">Contingency Plan</p>
+                    <p className="text-emerald-500 font-medium mb-0.5">{t('Contingency Plan', 'Plan de contingence')}</p>
                     <p className="text-emerald-700">{r.contingency}</p>
                   </div>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-2"><strong>Owner:</strong> {r.owner}</p>
+                <p className="text-[10px] text-gray-400 mt-2"><strong>{t('Owner:', 'Responsable :')}</strong> {r.owner}</p>
               </div>
             ))}
           </div>
@@ -1153,18 +1169,18 @@ export default function GTMPlaybookPage() {
           <div className="bg-gray-900 rounded-2xl p-6 sm:p-8 text-white">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <Rocket className="w-5 h-5 text-indigo-400" />
-              The GTM Operating System
+              {t('The GTM Operating System', 'Le systeme operationnel GTM')}
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <h4 className="text-sm font-semibold text-emerald-400 mb-3">What makes this work</h4>
+                <h4 className="text-sm font-semibold text-emerald-400 mb-3">{t('What makes this work', 'Ce qui fait que ca fonctionne')}</h4>
                 <div className="space-y-2">
                   {[
-                    { principle: 'Founder-led distribution', detail: 'No marketing team needed. Two founders doing 50+ outreach conversations/week is more effective than any paid channel at this stage.' },
-                    { principle: 'Built-in viral loop', detail: '1 practitioner → 12-15 members. Members can\'t buy Bloomsline themselves — the practitioner IS the distribution. Every sale seeds 15 potential advocates.' },
-                    { principle: 'Trust-based selling', detail: 'Mental health professionals buy from peers and authority figures, not ads. Content + conferences + word-of-mouth is the only credible channel mix.' },
-                    { principle: 'CAC efficiency', detail: 'At €50 CAC with 72x LTV/CAC, even 10% of your budget wasted is irrelevant. You\'re not optimizing spend — you\'re optimizing for speed to 100 users.' },
+                    { principle: t('Founder-led distribution', 'Distribution menee par les fondateurs'), detail: t('No marketing team needed. Two founders doing 50+ outreach conversations/week is more effective than any paid channel at this stage.', 'Pas besoin d\'equipe marketing. Deux fondateurs menant 50+ conversations de prospection/semaine est plus efficace que tout canal payant a ce stade.') },
+                    { principle: t('Built-in viral loop', 'Boucle virale integree'), detail: t('1 practitioner → 12-15 members. Members can\'t buy Bloomsline themselves — the practitioner IS the distribution. Every sale seeds 15 potential advocates.', '1 praticien → 12-15 membres. Les membres ne peuvent pas acheter Bloomsline eux-memes — le praticien EST la distribution. Chaque vente seme 15 ambassadeurs potentiels.') },
+                    { principle: t('Trust-based selling', 'Vente basee sur la confiance'), detail: t('Mental health professionals buy from peers and authority figures, not ads. Content + conferences + word-of-mouth is the only credible channel mix.', 'Les professionnels de sante mentale achetent aupres de pairs et de figures d\'autorite, pas via la publicite. Contenu + conferences + bouche-a-oreille est le seul mix de canaux credible.') },
+                    { principle: t('CAC efficiency', 'Efficacite du CAC'), detail: t('At €50 CAC with 72x LTV/CAC, even 10% of your budget wasted is irrelevant. You\'re not optimizing spend — you\'re optimizing for speed to 100 users.', 'Avec un CAC de 50 \u20AC et un LTV/CAC de 72x, meme 10 % de budget gaspille est negligeable. Vous n\'optimisez pas les depenses — vous optimisez la vitesse pour atteindre 100 utilisateurs.') },
                   ].map((p, i) => (
                     <div key={i} className="p-3 bg-white/5 rounded-lg border border-white/10">
                       <p className="text-xs font-semibold text-white">{p.principle}</p>
@@ -1175,20 +1191,20 @@ export default function GTMPlaybookPage() {
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-amber-400 mb-3">The 90-day truth test</h4>
+                <h4 className="text-sm font-semibold text-amber-400 mb-3">{t('The 90-day truth test', 'Le test de verite a 90 jours')}</h4>
                 <div className="space-y-3">
                   {[
-                    { day: 'Day 14', test: 'Have you talked to 50+ practitioners?', answer: 'If no, you\'re not moving fast enough. Outreach volume trumps perfection.' },
-                    { day: 'Day 30', test: 'Do you have 5+ paying users?', answer: 'If no, the pricing or value prop is wrong — not the product. Fix the pitch first.' },
-                    { day: 'Day 60', test: 'Have members logged 100+ moments?', answer: 'If no, onboarding is broken. Practitioners signed up but members aren\'t activated.' },
-                    { day: 'Day 90', test: 'Has anyone signed up without your direct involvement?', answer: 'If yes, you have a business. If no, you have a consulting project. Act accordingly.' },
-                  ].map((t, i) => (
+                    { day: t('Day 14', 'Jour 14'), test: t('Have you talked to 50+ practitioners?', 'Avez-vous parle a plus de 50 praticiens ?'), answer: t('If no, you\'re not moving fast enough. Outreach volume trumps perfection.', 'Si non, vous n\'avancez pas assez vite. Le volume de prospection prime sur la perfection.') },
+                    { day: t('Day 30', 'Jour 30'), test: t('Do you have 5+ paying users?', 'Avez-vous 5+ utilisateurs payants ?'), answer: t('If no, the pricing or value prop is wrong — not the product. Fix the pitch first.', 'Si non, le prix ou la proposition de valeur est mauvais — pas le produit. Corrigez le pitch d\'abord.') },
+                    { day: t('Day 60', 'Jour 60'), test: t('Have members logged 100+ moments?', 'Les membres ont-ils enregistre 100+ moments ?'), answer: t('If no, onboarding is broken. Practitioners signed up but members aren\'t activated.', 'Si non, l\'onboarding est casse. Les praticiens se sont inscrits mais les membres ne sont pas actives.') },
+                    { day: t('Day 90', 'Jour 90'), test: t('Has anyone signed up without your direct involvement?', 'Quelqu\'un s\'est-il inscrit sans votre implication directe ?'), answer: t('If yes, you have a business. If no, you have a consulting project. Act accordingly.', 'Si oui, vous avez un business. Si non, vous avez un projet de conseil. Agissez en consequence.') },
+                  ].map((item, i) => (
                     <div key={i} className="p-3 bg-white/5 rounded-lg border border-white/10">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">{t.day}</span>
-                        <p className="text-xs font-semibold text-white">{t.test}</p>
+                        <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">{item.day}</span>
+                        <p className="text-xs font-semibold text-white">{item.test}</p>
                       </div>
-                      <p className="text-[10px] text-gray-400">{t.answer}</p>
+                      <p className="text-[10px] text-gray-400">{item.answer}</p>
                     </div>
                   ))}
                 </div>
@@ -1197,12 +1213,11 @@ export default function GTMPlaybookPage() {
 
             <div className="border-t border-white/10 pt-4">
               <p className="text-xs text-gray-300 leading-relaxed">
-                <strong className="text-white">Bottom line:</strong> This is a founder-led GTM.
-                Your budget is your calendar. Your channel is your network. Your content is your conviction.
-                The first 30 practitioners will come from sweat, not spend.
-                After that, the care network effect does the rest — each practitioner bringing 12-15 members,
-                each member interaction proving the product, each proved practitioner telling their peers.
-                <strong className="text-emerald-400"> Get 10 paying practitioners in 30 days. Everything else follows.</strong>
+                <strong className="text-white">{t('Bottom line:', 'L\'essentiel :')}</strong> {t(
+                  'This is a founder-led GTM. Your budget is your calendar. Your channel is your network. Your content is your conviction. The first 30 practitioners will come from sweat, not spend. After that, the care network effect does the rest — each practitioner bringing 12-15 members, each member interaction proving the product, each proved practitioner telling their peers.',
+                  'C\'est un GTM mene par les fondateurs. Votre budget, c\'est votre agenda. Votre canal, c\'est votre reseau. Votre contenu, c\'est votre conviction. Les 30 premiers praticiens viendront de l\'effort, pas des depenses. Ensuite, l\'effet reseau de soin fait le reste — chaque praticien amenant 12-15 membres, chaque interaction membre prouvant le produit, chaque praticien convaincu parlant a ses pairs.'
+                )}
+                <strong className="text-emerald-400"> {t('Get 10 paying practitioners in 30 days. Everything else follows.', 'Obtenez 10 praticiens payants en 30 jours. Tout le reste suivra.')}</strong>
               </p>
             </div>
           </div>
@@ -1214,9 +1229,9 @@ export default function GTMPlaybookPage() {
           className="flex items-center gap-2 text-[10px] text-gray-400"
         >
           <Clock className="w-3 h-3" />
-          <span>GTM playbook as of Feb 2026</span>
+          <span>{t('GTM playbook as of Feb 2026', 'Strategie GTM en date de fevrier 2026')}</span>
           <span className="text-gray-200">|</span>
-          <span>Bloomsline Care — Go-to-Market Execution Plan</span>
+          <span>{t('Bloomsline Care — Go-to-Market Execution Plan', 'Bloomsline Care — Plan de mise en marche')}</span>
         </motion.div>
       </main>
     </div>

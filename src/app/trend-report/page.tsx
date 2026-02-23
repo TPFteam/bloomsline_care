@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   TrendingUp,
@@ -87,7 +88,7 @@ function ImpactBar({ score }: { score: number }) {
   )
 }
 
-function TimelineBadge({ timeline }: { timeline: 'short' | 'mid' | 'long' | 'structural' }) {
+function TimelineBadge({ timeline, lang = 'en' }: { timeline: 'short' | 'mid' | 'long' | 'structural'; lang?: 'en' | 'fr' }) {
   const styles = {
     short: 'bg-red-50 text-red-600 border-red-200',
     mid: 'bg-amber-50 text-amber-600 border-amber-200',
@@ -95,10 +96,10 @@ function TimelineBadge({ timeline }: { timeline: 'short' | 'mid' | 'long' | 'str
     structural: 'bg-gray-900 text-white border-gray-900',
   }
   const labels = {
-    short: '0-1yr',
-    mid: '1-3yr',
-    long: '3-5yr',
-    structural: 'Structural',
+    short: lang === 'fr' ? '0-1 an' : '0-1yr',
+    mid: lang === 'fr' ? '1-3 ans' : '1-3yr',
+    long: lang === 'fr' ? '3-5 ans' : '3-5yr',
+    structural: lang === 'fr' ? 'Structurel' : 'Structural',
   }
   return (
     <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full border ${styles[timeline]}`}>
@@ -107,12 +108,12 @@ function TimelineBadge({ timeline }: { timeline: 'short' | 'mid' | 'long' | 'str
   )
 }
 
-function FlowBadge({ direction }: { direction: 'inflow' | 'outflow' | 'consolidation' | 'emerging' }) {
+function FlowBadge({ direction, lang = 'en' }: { direction: 'inflow' | 'outflow' | 'consolidation' | 'emerging'; lang?: 'en' | 'fr' }) {
   const config = {
-    inflow: { icon: ArrowUp, color: 'text-emerald-600 bg-emerald-50 border-emerald-200', label: 'Inflow' },
-    outflow: { icon: ArrowDown, color: 'text-red-600 bg-red-50 border-red-200', label: 'Outflow' },
+    inflow: { icon: ArrowUp, color: 'text-emerald-600 bg-emerald-50 border-emerald-200', label: lang === 'fr' ? 'Afflux' : 'Inflow' },
+    outflow: { icon: ArrowDown, color: 'text-red-600 bg-red-50 border-red-200', label: lang === 'fr' ? 'Reflux' : 'Outflow' },
     consolidation: { icon: Minus, color: 'text-amber-600 bg-amber-50 border-amber-200', label: 'Consolidation' },
-    emerging: { icon: Zap, color: 'text-violet-600 bg-violet-50 border-violet-200', label: 'Emerging' },
+    emerging: { icon: Zap, color: 'text-violet-600 bg-violet-50 border-violet-200', label: lang === 'fr' ? 'Émergent' : 'Emerging' },
   }
   const { icon: Icon, color, label } = config[direction]
   return (
@@ -603,18 +604,29 @@ const CONSUMER_SHIFTS = [
 // ── Page ─────────────────────────────────────────────────────────────────
 
 export default function TrendReportPage() {
+  const [lang, setLang] = useState<'en' | 'fr'>('en')
+  const t = (en: string, fr: string) => lang === 'fr' ? fr : en
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white border-b border-gray-200 px-8 py-4">
-        <div className="max-w-4xl mx-auto flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
-            <TrendingUp className="w-4 h-4 text-white" />
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h1 className="text-sm font-semibold text-gray-900">{t('Trend Intelligence Brief', 'Veille stratégique')}</h1>
+              <p className="text-[10px] text-gray-400">{t('Bloomsline Care — Digital Mental Health Sector Analysis, Q1 2026', 'Bloomsline Care — Analyse du secteur de la santé mentale numérique, T1 2026')}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-sm font-semibold text-gray-900">Trend Intelligence Brief</h1>
-            <p className="text-[10px] text-gray-400">Bloomsline Care — Digital Mental Health Sector Analysis, Q1 2026</p>
-          </div>
+          <button
+            onClick={() => setLang(lang === 'en' ? 'fr' : 'en')}
+            className="text-xs font-medium px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors"
+          >
+            {lang === 'en' ? '🇫🇷 Français' : '🇬🇧 English'}
+          </button>
         </div>
       </header>
 
@@ -622,23 +634,29 @@ export default function TrendReportPage() {
 
         {/* ── 1. Executive Summary ──────────────────────────────── */}
         <motion.section {...fadeUp()}>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">$33B market undergoing a structural reset.</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{t('$33B market undergoing a structural reset.', 'Un marché de 33 Md$ en pleine restructuration.')}</h2>
           <p className="text-sm text-gray-500 leading-relaxed max-w-2xl">
-            The B2C therapy marketplace model is collapsing (BetterHelp -11% YoY). The B2B enterprise model is consolidating
-            (Lyra $5.58B, Spring Health $3.3B). A new category — <span className="font-semibold text-gray-700">AI-augmented practitioner SaaS with between-session care</span> — remains
-            entirely unoccupied. For Bloomsline, this creates a rare window: structural demand is accelerating while the competitive field is fragmenting.
+            {t(
+              'The B2C therapy marketplace model is collapsing (BetterHelp -11% YoY). The B2B enterprise model is consolidating (Lyra $5.58B, Spring Health $3.3B). A new category — ',
+              'Le modèle B2C de marketplace thérapeutique s\'effondre (BetterHelp -11 % sur un an). Le modèle B2B entreprise se consolide (Lyra 5,58 Md$, Spring Health 3,3 Md$). Une nouvelle catégorie — '
+            )}
+            <span className="font-semibold text-gray-700">{t('AI-augmented practitioner SaaS with between-session care', 'SaaS praticien augmenté par l\'IA avec suivi entre les séances')}</span>
+            {t(
+              ' — remains entirely unoccupied. For Bloomsline, this creates a rare window: structural demand is accelerating while the competitive field is fragmenting.',
+              ' — reste entièrement inoccupée. Pour Bloomsline, cela crée une fenêtre rare : la demande structurelle s\'accélère tandis que le paysage concurrentiel se fragmente.'
+            )}
           </p>
           <div className="flex flex-wrap items-center gap-2 mt-4">
-            <span className="text-[10px] font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded-full">$33B → $88B by 2030</span>
-            <span className="text-[10px] font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full">BetterHelp -11% Q1</span>
-            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">Talkspace +42% payor revenue</span>
-            <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-3 py-1 rounded-full">0 EU competitors</span>
+            <span className="text-[10px] font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded-full">{t('$33B → $88B by 2030', '33 Md$ → 88 Md$ d\'ici 2030')}</span>
+            <span className="text-[10px] font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full">BetterHelp -11% T1</span>
+            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">{t('Talkspace +42% payor revenue', 'Talkspace +42 % revenus payeurs')}</span>
+            <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-3 py-1 rounded-full">{t('0 EU competitors', '0 concurrent européen')}</span>
           </div>
         </motion.section>
 
         {/* ── 2. Macro Trends ──────────────────────────────────── */}
         <motion.section {...fadeUp(0.05)}>
-          <SectionTitle subtitle="5 global forces shaping the digital mental health industry">Macro Trends</SectionTitle>
+          <SectionTitle subtitle={t('5 global forces shaping the digital mental health industry', '5 forces mondiales qui façonnent le secteur de la santé mentale numérique')}>{t('Macro Trends', 'Tendances macro')}</SectionTitle>
           <div className="space-y-4">
             {MACRO_TRENDS.map((trend, i) => {
               const Icon = trend.icon
@@ -659,7 +677,7 @@ export default function TrendReportPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <TimelineBadge timeline={trend.timeline} />
+                      <TimelineBadge timeline={trend.timeline} lang={lang} />
                       <ImpactBar score={trend.impact} />
                     </div>
                   </div>
@@ -675,7 +693,7 @@ export default function TrendReportPage() {
                   <p className="text-xs text-gray-500 leading-relaxed mb-3">{trend.description}</p>
 
                   <div className="bg-gray-900 rounded-lg p-3 mb-3">
-                    <p className="text-[10px] font-semibold text-gray-300 mb-0.5">So what for Bloomsline:</p>
+                    <p className="text-[10px] font-semibold text-gray-300 mb-0.5">{t('So what for Bloomsline:', 'Impact pour Bloomsline :')}</p>
                     <p className="text-[10px] text-gray-400 leading-relaxed">{trend.soWhat}</p>
                   </div>
 
@@ -692,7 +710,7 @@ export default function TrendReportPage() {
 
         {/* ── 3. Micro Trends ──────────────────────────────────── */}
         <motion.section {...fadeUp(0.35)}>
-          <SectionTitle subtitle="7 emerging patterns from the last 12 months">Micro Trends</SectionTitle>
+          <SectionTitle subtitle={t('7 emerging patterns from the last 12 months', '7 tendances émergentes des 12 derniers mois')}>{t('Micro Trends', 'Micro-tendances')}</SectionTitle>
 
           {/* Summary table */}
           <div className="bg-white border border-gray-200 rounded-xl p-5 overflow-x-auto mb-4">
@@ -700,20 +718,20 @@ export default function TrendReportPage() {
               <thead>
                 <tr className="border-b border-gray-100">
                   <th className="text-left py-2 pr-3 text-gray-500 font-medium">#</th>
-                  <th className="text-left py-2 px-2 text-gray-500 font-medium">Trend</th>
-                  <th className="text-center py-2 px-2 text-gray-500 font-medium">Impact</th>
-                  <th className="text-center py-2 px-2 text-gray-500 font-medium">Timeline</th>
-                  <th className="text-left py-2 pl-2 text-gray-500 font-medium">Signal</th>
+                  <th className="text-left py-2 px-2 text-gray-500 font-medium">{t('Trend', 'Tendance')}</th>
+                  <th className="text-center py-2 px-2 text-gray-500 font-medium">{t('Impact', 'Impact')}</th>
+                  <th className="text-center py-2 px-2 text-gray-500 font-medium">{t('Timeline', 'Horizon')}</th>
+                  <th className="text-left py-2 pl-2 text-gray-500 font-medium">{t('Signal', 'Signal')}</th>
                 </tr>
               </thead>
               <tbody>
-                {MICRO_TRENDS.map((t) => (
-                  <tr key={t.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                    <td className="py-2 pr-3 font-bold text-gray-400">{t.id}</td>
-                    <td className="py-2 px-2 font-medium text-gray-800 max-w-[200px]">{t.title}</td>
-                    <td className="py-2 px-2 text-center"><ImpactBar score={t.impact} /></td>
-                    <td className="py-2 px-2 text-center"><TimelineBadge timeline={t.timeline} /></td>
-                    <td className="py-2 pl-2 text-[10px] text-gray-500 max-w-[250px]">{t.signal}</td>
+                {MICRO_TRENDS.map((mt) => (
+                  <tr key={mt.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                    <td className="py-2 pr-3 font-bold text-gray-400">{mt.id}</td>
+                    <td className="py-2 px-2 font-medium text-gray-800 max-w-[200px]">{mt.title}</td>
+                    <td className="py-2 px-2 text-center"><ImpactBar score={mt.impact} /></td>
+                    <td className="py-2 px-2 text-center"><TimelineBadge timeline={mt.timeline} lang={lang} /></td>
+                    <td className="py-2 pl-2 text-[10px] text-gray-500 max-w-[250px]">{mt.signal}</td>
                   </tr>
                 ))}
               </tbody>
@@ -734,12 +752,12 @@ export default function TrendReportPage() {
                     <h4 className="text-xs font-bold text-gray-900">{trend.title}</h4>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <TimelineBadge timeline={trend.timeline} />
+                    <TimelineBadge timeline={trend.timeline} lang={lang} />
                   </div>
                 </div>
                 <p className="text-[10px] text-gray-500 leading-relaxed mb-2">{trend.detail}</p>
                 <div className="bg-indigo-50 rounded-lg px-3 py-2 mb-2">
-                  <p className="text-[10px] text-indigo-700 leading-relaxed"><span className="font-semibold">So what:</span> {trend.soWhat}</p>
+                  <p className="text-[10px] text-indigo-700 leading-relaxed"><span className="font-semibold">{t('So what:', 'Impact :')}</span> {trend.soWhat}</p>
                 </div>
                 <div className="flex flex-wrap gap-x-3 gap-y-1">
                   {trend.sources.map((src, j) => (
@@ -753,7 +771,7 @@ export default function TrendReportPage() {
 
         {/* ── 4. Technology Disruptions ─────────────────────────── */}
         <motion.section {...fadeUp(0.55)}>
-          <SectionTitle subtitle="What new tech is changing the game — and when it hits mainstream">Technology Disruptions</SectionTitle>
+          <SectionTitle subtitle={t('What new tech is changing the game — and when it hits mainstream', 'Les technologies qui changent la donne — et quand elles se généralisent')}>{t('Technology Disruptions', 'Ruptures technologiques')}</SectionTitle>
 
           <div className="space-y-3">
             {TECH_DISRUPTIONS.map((tech, i) => {
@@ -775,15 +793,15 @@ export default function TrendReportPage() {
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-[9px] text-gray-400">{tech.maturity}</span>
                             <span className="text-[9px] text-gray-300">|</span>
-                            <span className="text-[9px] font-medium text-violet-500">Mainstream: {tech.mainstream}</span>
+                            <span className="text-[9px] font-medium text-violet-500">{t('Mainstream:', 'Grand public :')} {tech.mainstream}</span>
                           </div>
                         </div>
                         <ImpactBar score={tech.impact} />
                       </div>
                       <p className="text-[10px] text-gray-500 leading-relaxed mb-1.5">{tech.description}</p>
-                      <p className="text-[10px] text-gray-400 mb-2"><span className="font-medium text-gray-500">Key players:</span> {tech.keyPlayers}</p>
+                      <p className="text-[10px] text-gray-400 mb-2"><span className="font-medium text-gray-500">{t('Key players:', 'Acteurs clés :')}</span> {tech.keyPlayers}</p>
                       <div className="bg-gray-900 rounded-lg px-3 py-2 mb-2">
-                        <p className="text-[10px] text-gray-400 leading-relaxed"><span className="font-semibold text-gray-300">So what:</span> {tech.soWhat}</p>
+                        <p className="text-[10px] text-gray-400 leading-relaxed"><span className="font-semibold text-gray-300">{t('So what:', 'Impact :')}</span> {tech.soWhat}</p>
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1">
                         {tech.sources.map((src, j) => (
@@ -800,15 +818,15 @@ export default function TrendReportPage() {
 
         {/* ── 5. Regulatory Shifts ─────────────────────────────── */}
         <motion.section {...fadeUp(0.7)}>
-          <SectionTitle subtitle="Upcoming legislation and policy changes to watch">Regulatory Shifts</SectionTitle>
+          <SectionTitle subtitle={t('Upcoming legislation and policy changes to watch', 'Législation et changements réglementaires à surveiller')}>{t('Regulatory Shifts', 'Évolutions réglementaires')}</SectionTitle>
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="grid grid-cols-12 text-[9px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 px-4 py-2.5 border-b border-gray-100">
-              <span className="col-span-3">Regulation</span>
-              <span className="col-span-1 text-center">Scope</span>
-              <span className="col-span-2">Status</span>
-              <span className="col-span-1 text-center">Deadline</span>
-              <span className="col-span-4">Impact on Bloomsline</span>
-              <span className="col-span-1 text-center">When</span>
+              <span className="col-span-3">{t('Regulation', 'Réglementation')}</span>
+              <span className="col-span-1 text-center">{t('Scope', 'Portée')}</span>
+              <span className="col-span-2">{t('Status', 'Statut')}</span>
+              <span className="col-span-1 text-center">{t('Deadline', 'Échéance')}</span>
+              <span className="col-span-4">{t('Impact on Bloomsline', 'Impact sur Bloomsline')}</span>
+              <span className="col-span-1 text-center">{t('When', 'Quand')}</span>
             </div>
             {REGULATORY_SHIFTS.map((reg, i) => (
               <div key={reg.regulation} className={`grid grid-cols-12 px-4 py-3 text-[10px] ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} border-b border-gray-50 last:border-0`}>
@@ -816,7 +834,7 @@ export default function TrendReportPage() {
                   {reg.regulation}
                   <div className="flex flex-wrap gap-1 mt-1">
                     {reg.sources.map((src, j) => (
-                      <SourceLink key={j} href={src.url}>Source</SourceLink>
+                      <SourceLink key={j} href={src.url}>{t('Source', 'Source')}</SourceLink>
                     ))}
                   </div>
                 </div>
@@ -824,7 +842,7 @@ export default function TrendReportPage() {
                 <div className="col-span-2 text-gray-500 pr-2">{reg.status}</div>
                 <div className="col-span-1 text-center font-medium text-gray-700 self-start">{reg.deadline}</div>
                 <div className="col-span-4 text-gray-600 pr-2">{reg.impact}</div>
-                <div className="col-span-1 text-center self-start"><TimelineBadge timeline={reg.timeline} /></div>
+                <div className="col-span-1 text-center self-start"><TimelineBadge timeline={reg.timeline} lang={lang} /></div>
               </div>
             ))}
           </div>
@@ -832,7 +850,7 @@ export default function TrendReportPage() {
 
         {/* ── 6. Consumer Behavior Changes ──────────────────────── */}
         <motion.section {...fadeUp(0.75)}>
-          <SectionTitle subtitle="How buyer preferences are evolving">Consumer Behavior Shifts</SectionTitle>
+          <SectionTitle subtitle={t('How buyer preferences are evolving', 'Comment les préférences des acheteurs évoluent')}>{t('Consumer Behavior Shifts', 'Évolutions du comportement des consommateurs')}</SectionTitle>
           <div className="space-y-3">
             {CONSUMER_SHIFTS.map((shift, i) => (
               <motion.div
@@ -852,14 +870,14 @@ export default function TrendReportPage() {
           </div>
           <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mt-4">
             <p className="text-xs text-indigo-700 leading-relaxed">
-              <span className="font-bold">Critical insight:</span> Consumers don&apos;t want <em>another app</em>. They want their therapist to recommend a tool connected to their actual care. The practitioner is the distribution channel and the trust signal. This is why B2B2C wins and B2C dies.
+              <span className="font-bold">{t('Critical insight:', 'Enseignement clé :')}</span> {t('Consumers don\'t want ', 'Les consommateurs ne veulent pas ')}<em>{t('another app', 'une autre appli')}</em>{t('. They want their therapist to recommend a tool connected to their actual care. The practitioner is the distribution channel and the trust signal. This is why B2B2C wins and B2C dies.', '. Ils veulent que leur thérapeute leur recommande un outil lié à leur suivi réel. Le praticien est le canal de distribution et le signal de confiance. C\'est pourquoi le B2B2C gagne et le B2C meurt.')}
             </p>
           </div>
         </motion.section>
 
         {/* ── 7. Investment Signals ─────────────────────────────── */}
         <motion.section {...fadeUp(0.85)}>
-          <SectionTitle subtitle="Where smart money is flowing — VC deals, M&A, and market signals">Investment Signals</SectionTitle>
+          <SectionTitle subtitle={t('Where smart money is flowing — VC deals, M&A, and market signals', 'Où va l\'argent — opérations VC, fusions-acquisitions et signaux de marché')}>{t('Investment Signals', 'Signaux d\'investissement')}</SectionTitle>
 
           {/* Capital flow */}
           <div className="space-y-2 mb-6">
@@ -871,7 +889,7 @@ export default function TrendReportPage() {
               >
                 <div className="flex items-start justify-between gap-3 mb-1.5">
                   <div className="flex items-center gap-2">
-                    <FlowBadge direction={signal.direction} />
+                    <FlowBadge direction={signal.direction} lang={lang} />
                     <h4 className="text-xs font-bold text-gray-900">{signal.category}</h4>
                   </div>
                 </div>
@@ -887,16 +905,16 @@ export default function TrendReportPage() {
           </div>
 
           {/* Valuation benchmarks */}
-          <h3 className="text-xs font-semibold text-gray-700 mb-3">Valuation Benchmarks</h3>
+          <h3 className="text-xs font-semibold text-gray-700 mb-3">{t('Valuation Benchmarks', 'Comparatifs de valorisation')}</h3>
           <div className="bg-white border border-gray-200 rounded-xl p-5 overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-left py-2 pr-3 text-gray-500 font-medium">Company</th>
-                  <th className="text-left py-2 px-2 text-gray-500 font-medium">Category</th>
-                  <th className="text-center py-2 px-2 text-gray-500 font-medium">Valuation</th>
-                  <th className="text-center py-2 px-2 text-gray-500 font-medium">Multiple</th>
-                  <th className="text-left py-2 pl-2 text-gray-500 font-medium">Relevance</th>
+                  <th className="text-left py-2 pr-3 text-gray-500 font-medium">{t('Company', 'Société')}</th>
+                  <th className="text-left py-2 px-2 text-gray-500 font-medium">{t('Category', 'Catégorie')}</th>
+                  <th className="text-center py-2 px-2 text-gray-500 font-medium">{t('Valuation', 'Valorisation')}</th>
+                  <th className="text-center py-2 px-2 text-gray-500 font-medium">{t('Multiple', 'Multiple')}</th>
+                  <th className="text-left py-2 pl-2 text-gray-500 font-medium">{t('Relevance', 'Pertinence')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -916,50 +934,50 @@ export default function TrendReportPage() {
 
         {/* ── 8. Timeline Map ──────────────────────────────────── */}
         <motion.section {...fadeUp(0.95)}>
-          <SectionTitle subtitle="When each trend hits — and when to act">Timeline Map</SectionTitle>
+          <SectionTitle subtitle={t('When each trend hits — and when to act', 'Quand chaque tendance se concrétise — et quand agir')}>{t('Timeline Map', 'Carte chronologique')}</SectionTitle>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {([
               {
-                label: 'Short-term (0-1yr)',
+                label: t('Short-term (0-1yr)', 'Court terme (0-1 an)'),
                 color: 'border-red-200',
                 headerBg: 'bg-red-50',
                 headerText: 'text-red-700',
                 items: [
-                  'B2C marketplace collapse',
-                  'AI ambient scribes go mainstream',
-                  'Woebot aftermath — market seeks care-anchored AI',
-                  'Therapist burnout crisis',
-                  'VC consolidation into fewer/bigger rounds',
-                  'France MonParcoursPsy expands TAM',
+                  t('B2C marketplace collapse', 'Effondrement des marketplaces B2C'),
+                  t('AI ambient scribes go mainstream', 'Les scribes IA ambiants se généralisent'),
+                  t('Woebot aftermath — market seeks care-anchored AI', 'Après Woebot — le marché cherche une IA ancrée dans le soin'),
+                  t('Therapist burnout crisis', 'Crise d\'épuisement des thérapeutes'),
+                  t('VC consolidation into fewer/bigger rounds', 'Consolidation VC : moins de levées, mais plus importantes'),
+                  t('France MonParcoursPsy expands TAM', 'MonParcoursPsy élargit le marché adressable en France'),
                 ],
               },
               {
-                label: 'Mid-term (1-3yr)',
+                label: t('Mid-term (1-3yr)', 'Moyen terme (1-3 ans)'),
                 color: 'border-amber-200',
                 headerBg: 'bg-amber-50',
                 headerText: 'text-amber-700',
                 items: [
-                  'EU AI Act high-risk deadline (Aug 2026)',
-                  'EHDS full implementation begins',
-                  'DiGA model spreads across EU',
-                  'SimplePractice platform play accelerates',
-                  'Employer EAP → platform shift',
-                  'MBC adoption reaches 40%+',
-                  'Gen Z enters peak therapy spending years',
+                  t('EU AI Act high-risk deadline (Aug 2026)', 'Échéance IA Act UE haut risque (août 2026)'),
+                  t('EHDS full implementation begins', 'Début du déploiement complet de l\'EHDS'),
+                  t('DiGA model spreads across EU', 'Le modèle DiGA s\'étend à toute l\'UE'),
+                  t('SimplePractice platform play accelerates', 'L\'offensive plateforme de SimplePractice s\'accélère'),
+                  t('Employer EAP → platform shift', 'Transition employeurs : PAE → plateformes'),
+                  t('MBC adoption reaches 40%+', 'Adoption du MBC atteint 40 %+'),
+                  t('Gen Z enters peak therapy spending years', 'La Gen Z entre dans ses années de pic de dépenses thérapeutiques'),
                 ],
               },
               {
-                label: 'Long-term (3-5yr)',
+                label: t('Long-term (3-5yr)', 'Long terme (3-5 ans)'),
                 color: 'border-blue-200',
                 headerBg: 'bg-blue-50',
                 headerText: 'text-blue-700',
                 items: [
-                  'Voice biomarkers mainstream',
-                  'Value-based MH reimbursement standard',
-                  'Practice management fully AI-augmented',
-                  'EU becomes largest digital MH market',
-                  'Wearable integration ubiquitous',
-                  'Digital phenotyping matures',
+                  t('Voice biomarkers mainstream', 'Biomarqueurs vocaux généralisés'),
+                  t('Value-based MH reimbursement standard', 'Remboursement santé mentale basé sur les résultats'),
+                  t('Practice management fully AI-augmented', 'Gestion de cabinet entièrement augmentée par l\'IA'),
+                  t('EU becomes largest digital MH market', 'L\'UE devient le plus grand marché de santé mentale numérique'),
+                  t('Wearable integration ubiquitous', 'Intégration des objets connectés omniprésente'),
+                  t('Digital phenotyping matures', 'Le phénotypage numérique arrive à maturité'),
                 ],
               },
             ]).map((col) => (
@@ -985,18 +1003,18 @@ export default function TrendReportPage() {
           <div className="bg-gray-900 text-white rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <Lightbulb className="w-4 h-4 text-amber-400" />
-              <h2 className="text-sm font-bold">Synthesis — What This Means for Bloomsline</h2>
+              <h2 className="text-sm font-bold">{t('Synthesis — What This Means for Bloomsline', 'Synthèse — Ce que cela signifie pour Bloomsline')}</h2>
             </div>
 
             <div className="mb-5">
-              <p className="text-xs font-semibold text-indigo-300 mb-1.5">The Window (12-18 months)</p>
+              <p className="text-xs font-semibold text-indigo-300 mb-1.5">{t('The Window (12-18 months)', 'La fenêtre d\'opportunité (12-18 mois)')}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {[
-                  'B2C model is proven dead (BetterHelp, Woebot) but care-anchored B2B2C hasn\'t been built',
-                  'EU regulatory infrastructure favors European-native builders',
-                  'Therapist burnout is at crisis levels — urgent demand for admin-reducing tools',
-                  'AI note generation is the wedge that opens the door to full practice adoption',
-                  'VC is looking for the next model — not another marketplace, not another chatbot',
+                  t('B2C model is proven dead (BetterHelp, Woebot) but care-anchored B2B2C hasn\'t been built', 'Le modèle B2C est mort (BetterHelp, Woebot) mais le B2B2C ancré dans le soin n\'a pas encore été construit'),
+                  t('EU regulatory infrastructure favors European-native builders', 'L\'infrastructure réglementaire européenne favorise les acteurs natifs de l\'UE'),
+                  t('Therapist burnout is at crisis levels — urgent demand for admin-reducing tools', 'L\'épuisement des thérapeutes atteint un niveau critique — demande urgente d\'outils réduisant l\'administratif'),
+                  t('AI note generation is the wedge that opens the door to full practice adoption', 'La génération de notes par IA est le levier qui ouvre la porte à l\'adoption complète'),
+                  t('VC is looking for the next model — not another marketplace, not another chatbot', 'Les VC cherchent le prochain modèle — pas une marketplace de plus, pas un chatbot de plus'),
                 ].map((point, i) => (
                   <div key={i} className="flex items-start gap-2">
                     <Zap className="w-3 h-3 text-amber-400 shrink-0 mt-0.5" />
@@ -1007,23 +1025,25 @@ export default function TrendReportPage() {
             </div>
 
             <div className="mb-5">
-              <p className="text-xs font-semibold text-red-300 mb-1.5">The Risk</p>
+              <p className="text-xs font-semibold text-red-300 mb-1.5">{t('The Risk', 'Le risque')}</p>
               <p className="text-[10px] text-gray-400 leading-relaxed">
-                SimplePractice (Vista, $4B, 237K practitioners) is building in your direction — adding AI, building payer partnerships.
-                They have distribution, capital, and 237K practitioners. They do NOT have: a member app, between-session care, EU presence,
-                or B2B2C architecture. <span className="text-white font-medium">Your advantage is architectural, not resource-based. Build the thing they can&apos;t easily bolt on.</span>
+                {t(
+                  'SimplePractice (Vista, $4B, 237K practitioners) is building in your direction — adding AI, building payer partnerships. They have distribution, capital, and 237K practitioners. They do NOT have: a member app, between-session care, EU presence, or B2B2C architecture. ',
+                  'SimplePractice (Vista, 4 Md$, 237 000 praticiens) avance dans votre direction — ajout de l\'IA, partenariats payeurs. Ils ont la distribution, le capital et 237 000 praticiens. Ils n\'ont PAS : d\'application patient, de suivi entre les séances, de présence en UE, ni d\'architecture B2B2C. '
+                )}
+                <span className="text-white font-medium">{t('Your advantage is architectural, not resource-based. Build the thing they can\'t easily bolt on.', 'Votre avantage est architectural, pas fondé sur les ressources. Construisez ce qu\'ils ne peuvent pas facilement ajouter.')}</span>
               </p>
             </div>
 
             <div className="bg-white/10 rounded-lg p-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {[
-                  { metric: 'Market size', signal: '$33B → $88B (2030)', position: 'Inside fastest-growing segment' },
-                  { metric: 'Growth rate', signal: '18.6% CAGR', position: 'Targeting 22.7% SOM CAGR' },
-                  { metric: 'B2C viability', signal: 'Collapsing', position: 'B2C is free, B2B pays' },
-                  { metric: 'AI positioning', signal: '"Augment, don\'t replace" winning', position: 'Care-anchored by design' },
-                  { metric: 'EU competition', signal: 'Near zero', position: 'First mover in white space' },
-                  { metric: 'Regulatory readiness', signal: 'EU AI Act Aug 2026', position: 'GDPR-native from day one' },
+                  { metric: t('Market size', 'Taille du marché'), signal: t('$33B → $88B (2030)', '33 Md$ → 88 Md$ (2030)'), position: t('Inside fastest-growing segment', 'Dans le segment à la plus forte croissance') },
+                  { metric: t('Growth rate', 'Taux de croissance'), signal: t('18.6% CAGR', '18,6 % TCAM'), position: t('Targeting 22.7% SOM CAGR', 'Objectif 22,7 % TCAM sur le marché servi') },
+                  { metric: t('B2C viability', 'Viabilité B2C'), signal: t('Collapsing', 'En effondrement'), position: t('B2C is free, B2B pays', 'Le B2C est gratuit, le B2B paie') },
+                  { metric: t('AI positioning', 'Positionnement IA'), signal: t('"Augment, don\'t replace" winning', '« Augmenter, pas remplacer » gagne'), position: t('Care-anchored by design', 'Ancré dans le soin par conception') },
+                  { metric: t('EU competition', 'Concurrence UE'), signal: t('Near zero', 'Quasi nulle'), position: t('First mover in white space', 'Premier entrant sur un marché vierge') },
+                  { metric: t('Regulatory readiness', 'Conformité réglementaire'), signal: t('EU AI Act Aug 2026', 'IA Act UE août 2026'), position: t('GDPR-native from day one', 'Natif RGPD dès le premier jour') },
                 ].map((row) => (
                   <div key={row.metric}>
                     <p className="text-[9px] text-gray-500 uppercase tracking-wider">{row.metric}</p>
@@ -1036,7 +1056,10 @@ export default function TrendReportPage() {
 
             <div className="mt-5 pt-4 border-t border-white/10">
               <p className="text-xs text-gray-300 leading-relaxed italic">
-                &quot;The market is moving from &apos;apps for patients&apos; to &apos;platforms for practitioners&apos; — and nobody has built the European version yet.&quot;
+                {t(
+                  '"The market is moving from \'apps for patients\' to \'platforms for practitioners\' — and nobody has built the European version yet."',
+                  '« Le marché passe des "applis pour patients" aux "plateformes pour praticiens" — et personne n\'a encore construit la version européenne. »'
+                )}
               </p>
             </div>
           </div>
@@ -1045,10 +1068,13 @@ export default function TrendReportPage() {
         {/* ── 10. Footer ──────────────────────────────────────── */}
         <motion.div {...fadeUp(1.05)} className="text-center pt-4 pb-8">
           <p className="text-[10px] text-gray-400">
-            Research as of Feb 2026 — Bloomsline Care
+            {t('Research as of Feb 2026 — Bloomsline Care', 'Recherche en date de février 2026 — Bloomsline Care')}
           </p>
           <p className="text-[9px] text-gray-300 mt-1">
-            Sources: Towards Healthcare, Grand View Research, Behavioral Health Business, STAT News, HRSA, WHO, European Commission, Fierce Healthcare, PitchBook, and public company filings.
+            {t(
+              'Sources: Towards Healthcare, Grand View Research, Behavioral Health Business, STAT News, HRSA, WHO, European Commission, Fierce Healthcare, PitchBook, and public company filings.',
+              'Sources : Towards Healthcare, Grand View Research, Behavioral Health Business, STAT News, HRSA, OMS, Commission européenne, Fierce Healthcare, PitchBook et documents publics d\'entreprises.'
+            )}
           </p>
         </motion.div>
       </main>

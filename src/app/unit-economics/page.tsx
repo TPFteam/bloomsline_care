@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   Calculator,
@@ -22,6 +23,8 @@ import {
 } from 'lucide-react'
 
 // ── Helpers ──────────────────────────────────────────────────────────────
+
+type TFunc = (en: string, fr: string) => string
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 16 },
@@ -61,68 +64,70 @@ interface ChannelCAC {
   ltvCacRatio: string
 }
 
-const CHANNEL_CAC: ChannelCAC[] = [
-  {
-    channel: 'Founder LinkedIn outreach',
-    cac: '€35-50',
-    cacNum: 42,
-    volume: '50+ conversations/week',
-    timeline: 'Pre-launch → M6',
-    quality: 'High (personal relationship, high intent)',
-    ltv: '€3,625',
-    ltvCacRatio: '86x',
-  },
-  {
-    channel: 'Referral program',
-    cac: '€29 (1 month free)',
-    cacNum: 29,
-    volume: '5-15 referrals/month at scale',
-    timeline: 'M3 → ongoing',
-    quality: 'Highest (16-25% higher LTV, lower churn)',
-    ltv: '€4,350 (est. +20%)',
-    ltvCacRatio: '150x',
-  },
-  {
-    channel: 'French SEO / content',
-    cac: '€15-25',
-    cacNum: 20,
-    volume: 'Scales with content volume',
-    timeline: 'M3-M6 (compounds)',
-    quality: 'High (self-selected, problem-aware)',
-    ltv: '€3,625',
-    ltvCacRatio: '181x',
-  },
-  {
-    channel: 'Events & conferences',
-    cac: '€60-100',
-    cacNum: 80,
-    volume: '10-20 leads/event',
-    timeline: 'M3 → M18',
-    quality: 'Very high (face-to-face, trust-based)',
-    ltv: '€3,625',
-    ltvCacRatio: '45x',
-  },
-  {
-    channel: 'Training institute partnerships',
-    cac: '€0 (free accounts)',
-    cacNum: 0,
-    volume: '50-100 graduates/year',
-    timeline: 'M6 → M18',
-    quality: 'Medium (newly certified, habit formation)',
-    ltv: '€2,900 (est. 80% of avg)',
-    ltvCacRatio: '∞ (no CAC)',
-  },
-  {
-    channel: 'Podcast guest appearances',
-    cac: '€0',
-    cacNum: 0,
-    volume: '2-5 signups per episode',
-    timeline: 'M6 → ongoing',
-    quality: 'High (authority-driven)',
-    ltv: '€3,625',
-    ltvCacRatio: '∞ (no CAC)',
-  },
-]
+function getChannelCAC(t: TFunc): ChannelCAC[] {
+  return [
+    {
+      channel: t('Founder LinkedIn outreach', 'Prospection LinkedIn du fondateur'),
+      cac: '€35-50',
+      cacNum: 42,
+      volume: t('50+ conversations/week', '50+ conversations/semaine'),
+      timeline: t('Pre-launch → M6', 'Pré-lancement → M6'),
+      quality: t('High (personal relationship, high intent)', 'Élevée (relation personnelle, forte intention)'),
+      ltv: '€3,625',
+      ltvCacRatio: '86x',
+    },
+    {
+      channel: t('Referral program', 'Programme de parrainage'),
+      cac: t('€29 (1 month free)', '€29 (1 mois offert)'),
+      cacNum: 29,
+      volume: t('5-15 referrals/month at scale', '5-15 parrainages/mois à grande échelle'),
+      timeline: t('M3 → ongoing', 'M3 → continu'),
+      quality: t('Highest (16-25% higher LTV, lower churn)', 'Maximale (LTV 16-25% supérieure, attrition plus faible)'),
+      ltv: t('€4,350 (est. +20%)', '€4 350 (est. +20%)'),
+      ltvCacRatio: '150x',
+    },
+    {
+      channel: t('French SEO / content', 'SEO / contenu francophone'),
+      cac: '€15-25',
+      cacNum: 20,
+      volume: t('Scales with content volume', 'Évolue avec le volume de contenu'),
+      timeline: t('M3-M6 (compounds)', 'M3-M6 (effet cumulé)'),
+      quality: t('High (self-selected, problem-aware)', 'Élevée (auto-sélection, connaissance du besoin)'),
+      ltv: '€3,625',
+      ltvCacRatio: '181x',
+    },
+    {
+      channel: t('Events & conferences', 'Événements et conférences'),
+      cac: '€60-100',
+      cacNum: 80,
+      volume: t('10-20 leads/event', '10-20 prospects/événement'),
+      timeline: 'M3 → M18',
+      quality: t('Very high (face-to-face, trust-based)', 'Très élevée (en présentiel, basée sur la confiance)'),
+      ltv: '€3,625',
+      ltvCacRatio: '45x',
+    },
+    {
+      channel: t('Training institute partnerships', 'Partenariats avec les instituts de formation'),
+      cac: t('€0 (free accounts)', '€0 (comptes gratuits)'),
+      cacNum: 0,
+      volume: t('50-100 graduates/year', '50-100 diplômés/an'),
+      timeline: 'M6 → M18',
+      quality: t('Medium (newly certified, habit formation)', 'Moyenne (nouvellement certifiés, création d\'habitudes)'),
+      ltv: t('€2,900 (est. 80% of avg)', '€2 900 (est. 80% de la moy.)'),
+      ltvCacRatio: t('∞ (no CAC)', '∞ (pas de CAC)'),
+    },
+    {
+      channel: t('Podcast guest appearances', 'Passages en podcast'),
+      cac: '€0',
+      cacNum: 0,
+      volume: t('2-5 signups per episode', '2-5 inscriptions par épisode'),
+      timeline: t('M6 → ongoing', 'M6 → continu'),
+      quality: t('High (authority-driven)', 'Élevée (basée sur l\'autorité)'),
+      ltv: '€3,625',
+      ltvCacRatio: t('∞ (no CAC)', '∞ (pas de CAC)'),
+    },
+  ]
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // 2. LTV CALCULATION
@@ -135,14 +140,16 @@ interface LTVComponent {
   assumption: string
 }
 
-const LTV_CALC: LTVComponent[] = [
-  { label: 'ARPU (monthly)', formula: 'Blended average of tier mix', value: '€29/mo', assumption: '20% Essentiel (€19) + 70% Pro (€29) + 10% Cabinet (~€29/head)' },
-  { label: 'Gross margin', formula: '(Revenue - Variable Cost) / Revenue', value: '85.3%', assumption: 'Variable cost €4.25/practitioner/mo (AI €1.80 + infra €0.80 + support €1.50 + misc €0.15)' },
-  { label: 'Monthly churn rate', formula: 'Churned customers / Start-of-month customers', value: '4%', assumption: 'SaaS benchmark 2-10%. Mental health SaaS sticky (care relationship lock-in).' },
-  { label: 'Average lifetime', formula: '1 / Monthly churn rate', value: '25 months', assumption: 'At 4% churn. Conservative: 20 months (5% churn). Aggressive: 33 months (3% churn).' },
-  { label: 'Lifetime Value (LTV)', formula: 'ARPU × Lifetime × Gross margin', value: '€3,625', assumption: '€29 × 25 × 0.853 = €618/yr × 2.08 years' },
-  { label: 'B2C upside per practitioner', formula: 'Members × conversion % × premium price × lifetime', value: '+€540', assumption: '12 members × 5% × €3/mo × 25 months. Not included in core LTV.' },
-]
+function getLTVCalc(t: TFunc): LTVComponent[] {
+  return [
+    { label: t('ARPU (monthly)', 'ARPU (mensuel)'), formula: t('Blended average of tier mix', 'Moyenne pondérée des offres'), value: '€29/mo', assumption: t('20% Essentiel (€19) + 70% Pro (€29) + 10% Cabinet (~€29/head)', '20% Essentiel (19€) + 70% Pro (29€) + 10% Cabinet (~29€/tête)') },
+    { label: t('Gross margin', 'Marge brute'), formula: t('(Revenue - Variable Cost) / Revenue', '(Revenu - Coût variable) / Revenu'), value: '85.3%', assumption: t('Variable cost €4.25/practitioner/mo (AI €1.80 + infra €0.80 + support €1.50 + misc €0.15)', 'Coût variable 4,25€/praticien/mois (IA 1,80€ + infra 0,80€ + support 1,50€ + divers 0,15€)') },
+    { label: t('Monthly churn rate', 'Taux d\'attrition mensuel'), formula: t('Churned customers / Start-of-month customers', 'Clients perdus / Clients en début de mois'), value: '4%', assumption: t('SaaS benchmark 2-10%. Mental health SaaS sticky (care relationship lock-in).', 'Référence SaaS 2-10%. Le SaaS en santé mentale est fidélisant (relation de soin).') },
+    { label: t('Average lifetime', 'Durée de vie moyenne'), formula: t('1 / Monthly churn rate', '1 / Taux d\'attrition mensuel'), value: t('25 months', '25 mois'), assumption: t('At 4% churn. Conservative: 20 months (5% churn). Aggressive: 33 months (3% churn).', 'À 4% d\'attrition. Conservateur : 20 mois (5%). Agressif : 33 mois (3%).') },
+    { label: t('Lifetime Value (LTV)', 'Valeur vie client (LTV)'), formula: t('ARPU × Lifetime × Gross margin', 'ARPU × Durée de vie × Marge brute'), value: '€3,625', assumption: t('€29 × 25 × 0.853 = €618/yr × 2.08 years', '29€ × 25 × 0,853 = 618€/an × 2,08 ans') },
+    { label: t('B2C upside per practitioner', 'Potentiel B2C par praticien'), formula: t('Members × conversion % × premium price × lifetime', 'Membres × taux de conversion × prix premium × durée de vie'), value: '+€540', assumption: t('12 members × 5% × €3/mo × 25 months. Not included in core LTV.', '12 membres × 5% × 3€/mois × 25 mois. Non inclus dans la LTV de base.') },
+  ]
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // 3. GROSS MARGIN & CONTRIBUTION MARGIN
@@ -157,18 +164,20 @@ interface MarginLine {
   isHeader?: boolean
 }
 
-const MARGIN_WATERFALL: MarginLine[] = [
-  { item: 'Revenue', perPractitioner: '€29.00', percent: '100%', note: 'Pro tier (70% of customers)', isHeader: true },
-  { item: 'Claude Haiku API', perPractitioner: '-€1.80', percent: '6.2%', note: '$1/MTok in, $5/MTok out. ~3K tokens/interaction, ~20 interactions/practitioner/mo.' },
-  { item: 'Supabase (DB + auth)', perPractitioner: '-€0.50', percent: '1.7%', note: 'Pro plan €25/mo shared. Scales sub-linearly with users.' },
-  { item: 'Hosting (Vercel EU)', perPractitioner: '-€0.30', percent: '1.0%', note: 'Next.js on Vercel. EU region for GDPR. Generous free tier initially.' },
-  { item: 'PostHog analytics', perPractitioner: '-€0.10', percent: '0.3%', note: 'EU-hosted. Free tier covers first 1M events/month.' },
-  { item: 'Email / notifications', perPractitioner: '-€0.05', percent: '0.2%', note: 'Transactional emails, push notifications.' },
-  { item: 'Support & onboarding', perPractitioner: '-€1.50', percent: '5.2%', note: 'White-glove onboarding amortized. Drops to €0.50 at scale.' },
-  { item: 'Gross Profit', perPractitioner: '€24.75', percent: '85.3%', note: 'Variable cost: €4.25/practitioner/mo', isTotal: true },
-  { item: 'CAC amortized (over 25-mo lifetime)', perPractitioner: '-€2.00', percent: '6.9%', note: '€50 CAC / 25 months = €2.00/mo fully-loaded' },
-  { item: 'Contribution Margin', perPractitioner: '€22.75', percent: '78.4%', note: 'After both COGS and amortized acquisition', isTotal: true },
-]
+function getMarginWaterfall(t: TFunc): MarginLine[] {
+  return [
+    { item: t('Revenue', 'Revenu'), perPractitioner: '€29.00', percent: '100%', note: t('Pro tier (70% of customers)', 'Offre Pro (70% des clients)'), isHeader: true },
+    { item: 'Claude Haiku API', perPractitioner: '-€1.80', percent: '6.2%', note: t('$1/MTok in, $5/MTok out. ~3K tokens/interaction, ~20 interactions/practitioner/mo.', '1$/MTok entrée, 5$/MTok sortie. ~3K tokens/interaction, ~20 interactions/praticien/mois.') },
+    { item: 'Supabase (DB + auth)', perPractitioner: '-€0.50', percent: '1.7%', note: t('Pro plan €25/mo shared. Scales sub-linearly with users.', 'Plan Pro 25€/mois partagé. Croissance sous-linéaire avec les utilisateurs.') },
+    { item: 'Hosting (Vercel EU)', perPractitioner: '-€0.30', percent: '1.0%', note: t('Next.js on Vercel. EU region for GDPR. Generous free tier initially.', 'Next.js sur Vercel. Région UE pour le RGPD. Offre gratuite généreuse au départ.') },
+    { item: 'PostHog analytics', perPractitioner: '-€0.10', percent: '0.3%', note: t('EU-hosted. Free tier covers first 1M events/month.', 'Hébergé en UE. L\'offre gratuite couvre 1M d\'événements/mois.') },
+    { item: t('Email / notifications', 'E-mail / notifications'), perPractitioner: '-€0.05', percent: '0.2%', note: t('Transactional emails, push notifications.', 'E-mails transactionnels, notifications push.') },
+    { item: t('Support & onboarding', 'Support et onboarding'), perPractitioner: '-€1.50', percent: '5.2%', note: t('White-glove onboarding amortized. Drops to €0.50 at scale.', 'Onboarding personnalisé amorti. Tombe à 0,50€ à grande échelle.') },
+    { item: t('Gross Profit', 'Marge brute'), perPractitioner: '€24.75', percent: '85.3%', note: t('Variable cost: €4.25/practitioner/mo', 'Coût variable : 4,25€/praticien/mois'), isTotal: true },
+    { item: t('CAC amortized (over 25-mo lifetime)', 'CAC amorti (sur 25 mois de durée de vie)'), perPractitioner: '-€2.00', percent: '6.9%', note: t('€50 CAC / 25 months = €2.00/mo fully-loaded', '50€ de CAC / 25 mois = 2,00€/mois en charge complète') },
+    { item: t('Contribution Margin', 'Marge de contribution'), perPractitioner: '€22.75', percent: '78.4%', note: t('After both COGS and amortized acquisition', 'Après coût des ventes et acquisition amortie'), isTotal: true },
+  ]
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // 4. 3-YEAR FINANCIAL PROJECTION
@@ -233,17 +242,19 @@ interface CostCategory {
   scalesWith: string
 }
 
-const COST_STRUCTURE: CostCategory[] = [
-  { category: 'Team (founders + contractors)', type: 'Fixed', m1: '€6,500', m12: '€6,500', m36: '€12,000', scalesWith: 'Stepped: +hire at 100 users, +hire at 300 users' },
-  { category: 'Claude Haiku API', type: 'Variable', m1: '€18', m12: '€211', m36: '€1,530', scalesWith: 'Linear with practitioners (€1.80/practitioner/mo)' },
-  { category: 'Supabase', type: 'Semi-variable', m1: '€25', m12: '€50', m36: '€200', scalesWith: 'Sub-linear. Pro plan covers 0-500, then scales.' },
-  { category: 'Hosting (Vercel)', type: 'Semi-variable', m1: '€0', m12: '€30', m36: '€200', scalesWith: 'Free tier → Pro at ~50 users → Enterprise at 500+' },
-  { category: 'PostHog analytics', type: 'Semi-variable', m1: '€0', m12: '€0', m36: '€100', scalesWith: 'Free tier (1M events/mo). Paid only at high volume.' },
-  { category: 'Marketing spend', type: 'Fixed', m1: '€1,000', m12: '€1,000', m36: '€2,000', scalesWith: 'Content + events. No paid ads until PMF.' },
-  { category: 'Other (legal, accounting)', type: 'Fixed', m1: '€400', m12: '€400', m36: '€800', scalesWith: 'Stepped: +legal at HDS certification' },
-  { category: 'Customer acquisition (CAC)', type: 'Variable', m1: '€150', m12: '€1,755', m36: '€4,500', scalesWith: 'Linear with new practitioners acquired × €50/each' },
-  { category: 'Support labor', type: 'Variable', m1: '€15', m12: '€176', m36: '€425', scalesWith: '€1.50/practitioner/mo initially, €0.50 at scale (self-serve)' },
-]
+function getCostStructure(t: TFunc): CostCategory[] {
+  return [
+    { category: t('Team (founders + contractors)', 'Équipe (fondateurs + prestataires)'), type: 'Fixed', m1: '€6,500', m12: '€6,500', m36: '€12,000', scalesWith: t('Stepped: +hire at 100 users, +hire at 300 users', 'Par paliers : +recrutement à 100 utilisateurs, +recrutement à 300 utilisateurs') },
+    { category: 'Claude Haiku API', type: 'Variable', m1: '€18', m12: '€211', m36: '€1,530', scalesWith: t('Linear with practitioners (€1.80/practitioner/mo)', 'Linéaire avec les praticiens (1,80€/praticien/mois)') },
+    { category: 'Supabase', type: 'Semi-variable', m1: '€25', m12: '€50', m36: '€200', scalesWith: t('Sub-linear. Pro plan covers 0-500, then scales.', 'Sous-linéaire. Le plan Pro couvre 0-500, puis évolue.') },
+    { category: 'Hosting (Vercel)', type: 'Semi-variable', m1: '€0', m12: '€30', m36: '€200', scalesWith: t('Free tier → Pro at ~50 users → Enterprise at 500+', 'Offre gratuite → Pro à ~50 utilisateurs → Enterprise à 500+') },
+    { category: 'PostHog analytics', type: 'Semi-variable', m1: '€0', m12: '€0', m36: '€100', scalesWith: t('Free tier (1M events/mo). Paid only at high volume.', 'Offre gratuite (1M événements/mois). Payant uniquement à fort volume.') },
+    { category: t('Marketing spend', 'Dépenses marketing'), type: 'Fixed', m1: '€1,000', m12: '€1,000', m36: '€2,000', scalesWith: t('Content + events. No paid ads until PMF.', 'Contenu + événements. Pas de publicité payante avant le PMF.') },
+    { category: t('Other (legal, accounting)', 'Autres (juridique, comptabilité)'), type: 'Fixed', m1: '€400', m12: '€400', m36: '€800', scalesWith: t('Stepped: +legal at HDS certification', 'Par paliers : +juridique à la certification HDS') },
+    { category: t('Customer acquisition (CAC)', 'Acquisition client (CAC)'), type: 'Variable', m1: '€150', m12: '€1,755', m36: '€4,500', scalesWith: t('Linear with new practitioners acquired × €50/each', 'Linéaire avec les nouveaux praticiens acquis × 50€/chacun') },
+    { category: t('Support labor', 'Main-d\'œuvre support'), type: 'Variable', m1: '€15', m12: '€176', m36: '€425', scalesWith: t('€1.50/practitioner/mo initially, €0.50 at scale (self-serve)', '1,50€/praticien/mois au départ, 0,50€ à grande échelle (libre-service)') },
+  ]
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // 6. BREAK-EVEN ANALYSIS
@@ -259,35 +270,37 @@ interface BreakEvenScenario {
   color: string
 }
 
-const BREAK_EVEN: BreakEvenScenario[] = [
-  {
-    scenario: 'Conservative (€19 ARPU, 5% churn)',
-    fixedCosts: '€6,700/mo',
-    contributionMargin: '€14.75/user/mo',
-    breakEvenUsers: '454 practitioners',
-    breakEvenMRR: '€8,626',
-    expectedMonth: 'M28-M32',
-    color: 'bg-amber-50 border-amber-200 text-amber-700',
-  },
-  {
-    scenario: 'Base case (€29 ARPU, 4% churn)',
-    fixedCosts: '€8,600/mo',
-    contributionMargin: '€24.75/user/mo',
-    breakEvenUsers: '347 practitioners',
-    breakEvenMRR: '€10,063',
-    expectedMonth: 'M22-M26',
-    color: 'bg-emerald-50 border-emerald-200 text-emerald-700',
-  },
-  {
-    scenario: 'Aggressive (€35 ARPU, 3% churn)',
-    fixedCosts: '€11,000/mo',
-    contributionMargin: '€30.75/user/mo',
-    breakEvenUsers: '358 practitioners',
-    breakEvenMRR: '€12,530',
-    expectedMonth: 'M16-M20',
-    color: 'bg-blue-50 border-blue-200 text-blue-700',
-  },
-]
+function getBreakEven(t: TFunc): BreakEvenScenario[] {
+  return [
+    {
+      scenario: t('Conservative (€19 ARPU, 5% churn)', 'Conservateur (ARPU 19€, 5% d\'attrition)'),
+      fixedCosts: '€6,700/mo',
+      contributionMargin: t('€14.75/user/mo', '14,75€/utilisateur/mois'),
+      breakEvenUsers: t('454 practitioners', '454 praticiens'),
+      breakEvenMRR: '€8,626',
+      expectedMonth: 'M28-M32',
+      color: 'bg-amber-50 border-amber-200 text-amber-700',
+    },
+    {
+      scenario: t('Base case (€29 ARPU, 4% churn)', 'Cas de base (ARPU 29€, 4% d\'attrition)'),
+      fixedCosts: '€8,600/mo',
+      contributionMargin: t('€24.75/user/mo', '24,75€/utilisateur/mois'),
+      breakEvenUsers: t('347 practitioners', '347 praticiens'),
+      breakEvenMRR: '€10,063',
+      expectedMonth: 'M22-M26',
+      color: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+    },
+    {
+      scenario: t('Aggressive (€35 ARPU, 3% churn)', 'Agressif (ARPU 35€, 3% d\'attrition)'),
+      fixedCosts: '€11,000/mo',
+      contributionMargin: t('€30.75/user/mo', '30,75€/utilisateur/mois'),
+      breakEvenUsers: t('358 practitioners', '358 praticiens'),
+      breakEvenMRR: '€12,530',
+      expectedMonth: 'M16-M20',
+      color: 'bg-blue-50 border-blue-200 text-blue-700',
+    },
+  ]
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // 7. SENSITIVITY ANALYSIS
@@ -302,15 +315,17 @@ interface SensitivityVar {
   impactOnRunway: string
 }
 
-const SENSITIVITY: SensitivityVar[] = [
-  { variable: 'Monthly churn', worst: '7%', base: '4%', best: '2.5%', impactOnLTV: '€1,779 / €3,625 / €5,800', impactOnRunway: 'High — 1% churn change = €1,800 LTV swing' },
-  { variable: 'ARPU', worst: '€19', base: '€29', best: '€39', impactOnLTV: '€2,375 / €3,625 / €4,875', impactOnRunway: 'High — €10 ARPU = 3x revenue difference at M18' },
-  { variable: 'CAC', worst: '€100', base: '€50', best: '€25', impactOnLTV: 'LTV/CAC: 36x / 72x / 145x', impactOnRunway: 'Medium — CAC doubling still yields healthy 36x LTV/CAC' },
-  { variable: 'Initial growth rate', worst: '15%', base: '30%', best: '40%', impactOnLTV: 'Same LTV, different time to scale', impactOnRunway: 'Critical — determines when you hit break-even' },
-  { variable: 'Members/practitioner', worst: '8', base: '12', best: '20', impactOnLTV: 'B2C upside: €288 / €540 / €900 per practitioner', impactOnRunway: 'Low-Med — member revenue is upside, not core' },
-  { variable: 'AI cost per practitioner', worst: '€3.50', base: '€1.80', best: '€1.00', impactOnLTV: 'Gross margin: 77% / 85% / 89%', impactOnRunway: 'Low — even worst case maintains healthy margins' },
-  { variable: 'Fixed costs (team)', worst: '€12,000/mo', base: '€8,600/mo', best: '€6,500/mo', impactOnLTV: 'N/A (affects break-even, not LTV)', impactOnRunway: 'High — €3.4K/mo difference = 10+ months of runway' },
-]
+function getSensitivity(t: TFunc): SensitivityVar[] {
+  return [
+    { variable: t('Monthly churn', 'Attrition mensuelle'), worst: '7%', base: '4%', best: '2.5%', impactOnLTV: '€1,779 / €3,625 / €5,800', impactOnRunway: t('High — 1% churn change = €1,800 LTV swing', 'Élevé — 1% de variation d\'attrition = 1 800€ d\'écart de LTV') },
+    { variable: 'ARPU', worst: '€19', base: '€29', best: '€39', impactOnLTV: '€2,375 / €3,625 / €4,875', impactOnRunway: t('High — €10 ARPU = 3x revenue difference at M18', 'Élevé — 10€ d\'ARPU = 3x de différence de revenu à M18') },
+    { variable: 'CAC', worst: '€100', base: '€50', best: '€25', impactOnLTV: t('LTV/CAC: 36x / 72x / 145x', 'LTV/CAC : 36x / 72x / 145x'), impactOnRunway: t('Medium — CAC doubling still yields healthy 36x LTV/CAC', 'Moyen — un CAC doublé donne encore un LTV/CAC sain de 36x') },
+    { variable: t('Initial growth rate', 'Taux de croissance initial'), worst: '15%', base: '30%', best: '40%', impactOnLTV: t('Same LTV, different time to scale', 'Même LTV, délai de mise à l\'échelle différent'), impactOnRunway: t('Critical — determines when you hit break-even', 'Critique — détermine le moment du seuil de rentabilité') },
+    { variable: t('Members/practitioner', 'Membres/praticien'), worst: '8', base: '12', best: '20', impactOnLTV: t('B2C upside: €288 / €540 / €900 per practitioner', 'Potentiel B2C : 288€ / 540€ / 900€ par praticien'), impactOnRunway: t('Low-Med — member revenue is upside, not core', 'Faible-Moyen — le revenu des membres est un bonus, pas le cœur') },
+    { variable: t('AI cost per practitioner', 'Coût IA par praticien'), worst: '€3.50', base: '€1.80', best: '€1.00', impactOnLTV: t('Gross margin: 77% / 85% / 89%', 'Marge brute : 77% / 85% / 89%'), impactOnRunway: t('Low — even worst case maintains healthy margins', 'Faible — même le pire scénario maintient des marges saines') },
+    { variable: t('Fixed costs (team)', 'Coûts fixes (équipe)'), worst: '€12,000/mo', base: '€8,600/mo', best: '€6,500/mo', impactOnLTV: t('N/A (affects break-even, not LTV)', 'N/A (affecte le seuil de rentabilité, pas la LTV)'), impactOnRunway: t('High — €3.4K/mo difference = 10+ months of runway', 'Élevé — 3,4K€/mois de différence = 10+ mois de trésorerie') },
+  ]
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // 8. KEY ASSUMPTIONS TABLE
@@ -323,18 +338,20 @@ interface Assumption {
   risk: string
 }
 
-const ASSUMPTIONS: Assumption[] = [
-  { assumption: 'Starting practitioners at raise close', value: '10', justification: '3-5 beta testers today → 10 paying by close (3-6 months of outreach). Signals validated WTP.', risk: 'Medium — depends on fundraise timeline' },
-  { assumption: 'Monthly price (blended ARPU)', value: '€29', justification: '70% Pro tier at €29/mo. Charm price below €30. Less than 1 cancelled session (€60-80).', risk: 'Low — validated against competitor benchmarks' },
-  { assumption: 'Monthly churn rate', value: '4%', justification: 'SaaS benchmark 2-10%. Care relationship creates lock-in. Practitioner switching cost high.', risk: 'Medium — unproven at scale' },
-  { assumption: 'CAC', value: '€50', justification: 'Organic/content-driven. No paid ads. LinkedIn outreach + referrals. Below SaaS benchmark (€200-500).', risk: 'Low — founder-led keeps CAC low initially' },
-  { assumption: 'Gross margin', value: '85%', justification: 'Variable cost €4.25/mo. AI on Claude Haiku ($1/$5 per MTok). SaaS best-in-class is 70-90%.', risk: 'Low — Haiku pricing is stable and declining' },
-  { assumption: 'Members per practitioner', value: '12', justification: 'Average caseload 15-25 clients. 75% adoption rate when recommended by therapist.', risk: 'Medium — adoption rate is estimated' },
-  { assumption: 'Growth rate (initial → mature)', value: '30% → 7%', justification: 'Linear decay over 36 months. Top SaaS grow 20-50% MoM at pre-seed. 7% mature = stabilized.', risk: 'Medium — depends on market response' },
-  { assumption: 'Starting cash', value: '€300,000', justification: 'Mid-point of €250K-€400K raise target. Pre-seed standard for EU.', risk: 'Low — aligned with raise expectations' },
-  { assumption: 'Team cost', value: '€8,600/mo', justification: '2 founders (€3K combined) + dev (€2.5K) + expert (€1K) + marketing (€1K) + other (€1.1K)', risk: 'Low — conservative. Founders below market rate.' },
-  { assumption: 'No paid acquisition', value: '€0 ads', justification: 'Mental health professionals buy through trust. Ads are low-trust. Content + referrals are high-trust.', risk: 'Low-Med — may need ads if organic stalls at 100 users' },
-]
+function getAssumptions(t: TFunc): Assumption[] {
+  return [
+    { assumption: t('Starting practitioners at raise close', 'Praticiens au bouclage de la levée'), value: '10', justification: t('3-5 beta testers today → 10 paying by close (3-6 months of outreach). Signals validated WTP.', '3-5 bêta-testeurs aujourd\'hui → 10 payants au bouclage (3-6 mois de prospection). Signal de volonté de payer validé.'), risk: t('Medium — depends on fundraise timeline', 'Moyen — dépend du calendrier de levée') },
+    { assumption: t('Monthly price (blended ARPU)', 'Prix mensuel (ARPU pondéré)'), value: '€29', justification: t('70% Pro tier at €29/mo. Charm price below €30. Less than 1 cancelled session (€60-80).', '70% offre Pro à 29€/mois. Prix d\'appel sous 30€. Moins d\'une séance annulée (60-80€).'), risk: t('Low — validated against competitor benchmarks', 'Faible — validé par rapport aux références concurrentes') },
+    { assumption: t('Monthly churn rate', 'Taux d\'attrition mensuel'), value: '4%', justification: t('SaaS benchmark 2-10%. Care relationship creates lock-in. Practitioner switching cost high.', 'Référence SaaS 2-10%. La relation de soin crée de la fidélité. Le coût de changement pour le praticien est élevé.'), risk: t('Medium — unproven at scale', 'Moyen — non prouvé à grande échelle') },
+    { assumption: 'CAC', value: '€50', justification: t('Organic/content-driven. No paid ads. LinkedIn outreach + referrals. Below SaaS benchmark (€200-500).', 'Organique/contenu. Pas de publicité payante. Prospection LinkedIn + parrainages. Sous la référence SaaS (200-500€).'), risk: t('Low — founder-led keeps CAC low initially', 'Faible — la gestion par les fondateurs maintient le CAC bas au départ') },
+    { assumption: t('Gross margin', 'Marge brute'), value: '85%', justification: t('Variable cost €4.25/mo. AI on Claude Haiku ($1/$5 per MTok). SaaS best-in-class is 70-90%.', 'Coût variable 4,25€/mois. IA sur Claude Haiku (1$/5$ par MTok). Les meilleurs SaaS : 70-90%.'), risk: t('Low — Haiku pricing is stable and declining', 'Faible — les tarifs Haiku sont stables et en baisse') },
+    { assumption: t('Members per practitioner', 'Membres par praticien'), value: '12', justification: t('Average caseload 15-25 clients. 75% adoption rate when recommended by therapist.', 'Charge de travail moyenne 15-25 clients. Taux d\'adoption de 75% quand recommandé par le thérapeute.'), risk: t('Medium — adoption rate is estimated', 'Moyen — le taux d\'adoption est estimé') },
+    { assumption: t('Growth rate (initial → mature)', 'Taux de croissance (initial → mature)'), value: '30% → 7%', justification: t('Linear decay over 36 months. Top SaaS grow 20-50% MoM at pre-seed. 7% mature = stabilized.', 'Décroissance linéaire sur 36 mois. Les meilleurs SaaS croissent de 20-50% MoM en pré-seed. 7% mature = stabilisé.'), risk: t('Medium — depends on market response', 'Moyen — dépend de la réponse du marché') },
+    { assumption: t('Starting cash', 'Trésorerie de départ'), value: '€300,000', justification: t('Mid-point of €250K-€400K raise target. Pre-seed standard for EU.', 'Point médian de l\'objectif de levée 250K€-400K€. Standard pré-seed en Europe.'), risk: t('Low — aligned with raise expectations', 'Faible — aligné avec les attentes de levée') },
+    { assumption: t('Team cost', 'Coût de l\'équipe'), value: '€8,600/mo', justification: t('2 founders (€3K combined) + dev (€2.5K) + expert (€1K) + marketing (€1K) + other (€1.1K)', '2 fondateurs (3K€ combinés) + dev (2,5K€) + expert (1K€) + marketing (1K€) + autres (1,1K€)'), risk: t('Low — conservative. Founders below market rate.', 'Faible — conservateur. Fondateurs sous le prix du marché.') },
+    { assumption: t('No paid acquisition', 'Pas d\'acquisition payante'), value: t('€0 ads', '0€ publicité'), justification: t('Mental health professionals buy through trust. Ads are low-trust. Content + referrals are high-trust.', 'Les professionnels de santé mentale achètent par la confiance. La publicité inspire peu confiance. Le contenu + parrainages inspirent confiance.'), risk: t('Low-Med — may need ads if organic stalls at 100 users', 'Faible-Moyen — la publicité peut être nécessaire si l\'organique stagne à 100 utilisateurs') },
+  ]
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // 9. BENCHMARKS
@@ -348,16 +365,18 @@ interface Benchmark {
   verdict: string
 }
 
-const BENCHMARKS: Benchmark[] = [
-  { metric: 'Gross margin', bloomsline: '85%', saasMedian: '70-75%', topDecile: '85-90%', verdict: 'Top decile. AI costs are well-optimized on Haiku.' },
-  { metric: 'LTV/CAC ratio', bloomsline: '72.5x', saasMedian: '3-5x', topDecile: '10-15x', verdict: 'Off the chart. B2B2C multiplier is unique. Investors will question this — prepare to defend.' },
-  { metric: 'CAC payback', bloomsline: '1.7 months', saasMedian: '12-18 months', topDecile: '5-6 months', verdict: 'Exceptional. Organic channels + low price + high margin.' },
-  { metric: 'Monthly churn', bloomsline: '4%', saasMedian: '5-7%', topDecile: '2-3%', verdict: 'Good. Must prove this with real data — care lock-in is hypothesis.' },
-  { metric: 'Net revenue retention', bloomsline: '~100% (est.)', saasMedian: '90-100%', topDecile: '120-140%', verdict: 'Needs upsell motion (Essentiel → Pro, Pro → Cabinet) to reach 110%+.' },
-  { metric: 'CAC', bloomsline: '€50', saasMedian: '€200-500', topDecile: '€50-100', verdict: 'Top decile. Organic-only. Will rise if paid channels needed.' },
-  { metric: 'ARPU', bloomsline: '€29/mo', saasMedian: '€50-100/mo', topDecile: 'Varies', verdict: 'Below median. Compensated by low CAC and high margin. Room to grow.' },
-  { metric: 'Rule of 40', bloomsline: '-30 (pre-rev)', saasMedian: '40+', topDecile: '60+', verdict: 'N/A at pre-revenue. Target: 40+ by M18 with growth + margin.' },
-]
+function getBenchmarks(t: TFunc): Benchmark[] {
+  return [
+    { metric: t('Gross margin', 'Marge brute'), bloomsline: '85%', saasMedian: '70-75%', topDecile: '85-90%', verdict: t('Top decile. AI costs are well-optimized on Haiku.', 'Décile supérieur. Les coûts IA sont bien optimisés sur Haiku.') },
+    { metric: 'LTV/CAC', bloomsline: '72.5x', saasMedian: '3-5x', topDecile: '10-15x', verdict: t('Off the chart. B2B2C multiplier is unique. Investors will question this — prepare to defend.', 'Hors norme. Le multiplicateur B2B2C est unique. Les investisseurs questionneront — préparez votre défense.') },
+    { metric: t('CAC payback', 'Retour sur CAC'), bloomsline: t('1.7 months', '1,7 mois'), saasMedian: t('12-18 months', '12-18 mois'), topDecile: t('5-6 months', '5-6 mois'), verdict: t('Exceptional. Organic channels + low price + high margin.', 'Exceptionnel. Canaux organiques + prix bas + marge élevée.') },
+    { metric: t('Monthly churn', 'Attrition mensuelle'), bloomsline: '4%', saasMedian: '5-7%', topDecile: '2-3%', verdict: t('Good. Must prove this with real data — care lock-in is hypothesis.', 'Bon. À prouver avec des données réelles — la fidélisation par le soin est une hypothèse.') },
+    { metric: t('Net revenue retention', 'Rétention nette du revenu'), bloomsline: t('~100% (est.)', '~100% (est.)'), saasMedian: '90-100%', topDecile: '120-140%', verdict: t('Needs upsell motion (Essentiel → Pro, Pro → Cabinet) to reach 110%+.', 'Nécessite un mécanisme d\'upsell (Essentiel → Pro, Pro → Cabinet) pour atteindre 110%+.') },
+    { metric: 'CAC', bloomsline: '€50', saasMedian: '€200-500', topDecile: '€50-100', verdict: t('Top decile. Organic-only. Will rise if paid channels needed.', 'Décile supérieur. Organique uniquement. Augmentera si des canaux payants sont nécessaires.') },
+    { metric: 'ARPU', bloomsline: '€29/mo', saasMedian: '€50-100/mo', topDecile: t('Varies', 'Variable'), verdict: t('Below median. Compensated by low CAC and high margin. Room to grow.', 'Sous la médiane. Compensé par un CAC faible et une marge élevée. Marge de progression.') },
+    { metric: t('Rule of 40', 'Règle des 40'), bloomsline: t('-30 (pre-rev)', '-30 (pré-revenu)'), saasMedian: '40+', topDecile: '60+', verdict: t('N/A at pre-revenue. Target: 40+ by M18 with growth + margin.', 'N/A en pré-revenu. Objectif : 40+ à M18 avec croissance + marge.') },
+  ]
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // 10. RED FLAGS
@@ -371,43 +390,68 @@ interface RedFlag {
   checkAt: string
 }
 
-const RED_FLAGS: RedFlag[] = [
-  { flag: 'Churn exceeds 8%', threshold: '>8% monthly', whyDangerous: 'At 8% churn, average lifetime drops to 12.5 months. LTV crashes to €2,175. You\'re losing customers faster than you can acquire them.', action: 'STOP selling. Interview every churned user. Fix top 3 churn reasons before resuming growth.', checkAt: 'Monthly from M2' },
-  { flag: 'Zero organic signups by M3', threshold: '0 inbound by day 90', whyDangerous: 'If no one finds you without your direct involvement, word-of-mouth isn\'t working. The product isn\'t remarkable enough to talk about.', action: 'Reassess messaging. Run 10 user interviews. Consider pricing/positioning pivot.', checkAt: 'M3 check-in' },
-  { flag: 'Member activation below 50%', threshold: '<50% invited members log first moment', whyDangerous: 'The practitioner signed up, but their clients aren\'t using it. The practitioner sees no value. They\'ll churn within 60 days.', action: 'Redesign first-use experience. Make first moment <10 seconds. Add practitioner-triggered nudges.', checkAt: 'Monthly from M1' },
-  { flag: 'CAC rises above €150', threshold: '>€150/practitioner', whyDangerous: 'LTV/CAC drops to 24x — still healthy, but signals organic channels are saturating. Paid acquisition is expensive in healthcare.', action: 'Double down on referral program. Invest more in content/SEO. Don\'t chase paid ads.', checkAt: 'Quarterly' },
-  { flag: 'Burn exceeds €12K/month', threshold: '>€12K/mo net burn', whyDangerous: 'At €300K starting cash, €12K/mo burn = 25 months runway. But if revenue isn\'t growing, you\'re bleeding out.', action: 'Audit every expense. Defer hiring. Cut conference spend. Founder salaries to €0 if needed.', checkAt: 'Monthly' },
-  { flag: 'Demo-to-paid conversion below 15%', threshold: '<15% of demos convert', whyDangerous: 'Either the demo is bad, the price is wrong, or you\'re targeting the wrong practitioners. At 50 demos/month, you need >7 conversions.', action: 'Record and review 10 demos. A/B test pitch. Test €19 entry offer for hesitant prospects.', checkAt: 'Monthly from M2' },
-  { flag: 'Cash below €100K with <50 practitioners', threshold: '<€100K remaining, <50 users', whyDangerous: 'Less than 12 months runway with insufficient traction. Not Series A-ready. Not break-even trajectory.', action: 'Emergency mode: cut to bare essentials, explore bridge round, or find revenue partnership.', checkAt: 'Monthly cash review' },
-]
+function getRedFlags(t: TFunc): RedFlag[] {
+  return [
+    { flag: t('Churn exceeds 8%', 'Attrition supérieure à 8%'), threshold: t('>8% monthly', '>8% mensuel'), whyDangerous: t('At 8% churn, average lifetime drops to 12.5 months. LTV crashes to €2,175. You\'re losing customers faster than you can acquire them.', 'À 8% d\'attrition, la durée de vie moyenne tombe à 12,5 mois. La LTV chute à 2 175€. Vous perdez des clients plus vite que vous n\'en acquérez.'), action: t('STOP selling. Interview every churned user. Fix top 3 churn reasons before resuming growth.', 'ARRÊTEZ de vendre. Interrogez chaque client perdu. Corrigez les 3 premières causes d\'attrition avant de reprendre la croissance.'), checkAt: t('Monthly from M2', 'Mensuel à partir de M2') },
+    { flag: t('Zero organic signups by M3', 'Zéro inscription organique à M3'), threshold: t('0 inbound by day 90', '0 entrant au jour 90'), whyDangerous: t('If no one finds you without your direct involvement, word-of-mouth isn\'t working. The product isn\'t remarkable enough to talk about.', 'Si personne ne vous trouve sans votre implication directe, le bouche-à-oreille ne fonctionne pas. Le produit n\'est pas assez remarquable.'), action: t('Reassess messaging. Run 10 user interviews. Consider pricing/positioning pivot.', 'Réévaluez le message. Réalisez 10 entretiens utilisateurs. Envisagez un pivot prix/positionnement.'), checkAt: t('M3 check-in', 'Bilan M3') },
+    { flag: t('Member activation below 50%', 'Activation des membres sous 50%'), threshold: t('<50% invited members log first moment', '<50% des membres invités enregistrent un premier moment'), whyDangerous: t('The practitioner signed up, but their clients aren\'t using it. The practitioner sees no value. They\'ll churn within 60 days.', 'Le praticien s\'est inscrit, mais ses clients ne l\'utilisent pas. Le praticien n\'y voit pas de valeur. Il partira dans les 60 jours.'), action: t('Redesign first-use experience. Make first moment <10 seconds. Add practitioner-triggered nudges.', 'Repensez l\'expérience de première utilisation. Premier moment en <10 secondes. Ajoutez des rappels déclenchés par le praticien.'), checkAt: t('Monthly from M1', 'Mensuel à partir de M1') },
+    { flag: t('CAC rises above €150', 'CAC supérieur à 150€'), threshold: t('>€150/practitioner', '>150€/praticien'), whyDangerous: t('LTV/CAC drops to 24x — still healthy, but signals organic channels are saturating. Paid acquisition is expensive in healthcare.', 'Le LTV/CAC tombe à 24x — encore sain, mais signe que les canaux organiques saturent. L\'acquisition payante est coûteuse en santé.'), action: t('Double down on referral program. Invest more in content/SEO. Don\'t chase paid ads.', 'Doublez les efforts sur le programme de parrainage. Investissez davantage dans le contenu/SEO. Ne poursuivez pas la publicité payante.'), checkAt: t('Quarterly', 'Trimestriel') },
+    { flag: t('Burn exceeds €12K/month', 'Burn supérieur à 12K€/mois'), threshold: t('>€12K/mo net burn', '>12K€/mois de burn net'), whyDangerous: t('At €300K starting cash, €12K/mo burn = 25 months runway. But if revenue isn\'t growing, you\'re bleeding out.', 'Avec 300K€ de trésorerie de départ, un burn de 12K€/mois = 25 mois de runway. Mais si le revenu ne croît pas, vous vous épuisez.'), action: t('Audit every expense. Defer hiring. Cut conference spend. Founder salaries to €0 if needed.', 'Auditez chaque dépense. Reportez les recrutements. Réduisez les conférences. Salaires des fondateurs à 0€ si nécessaire.'), checkAt: t('Monthly', 'Mensuel') },
+    { flag: t('Demo-to-paid conversion below 15%', 'Conversion démo-payant sous 15%'), threshold: t('<15% of demos convert', '<15% des démos convertissent'), whyDangerous: t('Either the demo is bad, the price is wrong, or you\'re targeting the wrong practitioners. At 50 demos/month, you need >7 conversions.', 'Soit la démo est mauvaise, soit le prix est incorrect, soit vous ciblez les mauvais praticiens. À 50 démos/mois, il faut >7 conversions.'), action: t('Record and review 10 demos. A/B test pitch. Test €19 entry offer for hesitant prospects.', 'Enregistrez et analysez 10 démos. Testez A/B le pitch. Testez une offre d\'entrée à 19€ pour les prospects hésitants.'), checkAt: t('Monthly from M2', 'Mensuel à partir de M2') },
+    { flag: t('Cash below €100K with <50 practitioners', 'Trésorerie sous 100K€ avec <50 praticiens'), threshold: t('<€100K remaining, <50 users', '<100K€ restants, <50 utilisateurs'), whyDangerous: t('Less than 12 months runway with insufficient traction. Not Series A-ready. Not break-even trajectory.', 'Moins de 12 mois de runway avec une traction insuffisante. Pas prêt pour une Série A. Pas sur la trajectoire de rentabilité.'), action: t('Emergency mode: cut to bare essentials, explore bridge round, or find revenue partnership.', 'Mode urgence : réduire au strict minimum, explorer un tour de pont, ou trouver un partenariat de revenu.'), checkAt: t('Monthly cash review', 'Revue mensuelle de trésorerie') },
+  ]
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // PAGE COMPONENT
 // ══════════════════════════════════════════════════════════════════════════
 
 export default function UnitEconomicsPage() {
+  const [lang, setLang] = useState<'en' | 'fr'>('en')
+  const t = (en: string, fr: string) => lang === 'fr' ? fr : en
+
+  const channelCAC = getChannelCAC(t)
+  const ltvCalc = getLTVCalc(t)
+  const marginWaterfall = getMarginWaterfall(t)
+  const costStructure = getCostStructure(t)
+  const breakEven = getBreakEven(t)
+  const sensitivity = getSensitivity(t)
+  const assumptions = getAssumptions(t)
+  const benchmarks = getBenchmarks(t)
+  const redFlags = getRedFlags(t)
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ── Header ────────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-white border-b border-gray-200 px-6 sm:px-8 py-4">
-        <div className="max-w-5xl mx-auto flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
-            <Calculator className="w-4 h-4 text-white" />
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
+              <Calculator className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h1 className="text-sm font-semibold text-gray-900">{t('Unit Economics & Financial Model', 'Économie unitaire et modèle financier')}</h1>
+              <p className="text-[10px] text-gray-400">{t('Bloomsline Care — 36-Month Financial Projection', 'Bloomsline Care — Projection financière sur 36 mois')}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-sm font-semibold text-gray-900">Unit Economics & Financial Model</h1>
-            <p className="text-[10px] text-gray-400">Bloomsline Care — 36-Month Financial Projection</p>
-          </div>
+          <button
+            onClick={() => setLang(lang === 'en' ? 'fr' : 'en')}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
+          >
+            {lang === 'en' ? '\u{1F1EB}\u{1F1F7} Fran\u00e7ais' : '\u{1F1EC}\u{1F1E7} English'}
+          </button>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-6 sm:px-8 py-10 space-y-14">
         {/* ── Hero ────────────────────────────────────── */}
         <motion.div {...fadeUp(0)}>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Unit Economics & 3-Year Financial Model</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{t('Unit Economics & 3-Year Financial Model', 'Économie unitaire et modèle financier sur 3 ans')}</h2>
           <p className="text-sm text-gray-500 leading-relaxed max-w-3xl">
-            Complete financial model grounded in Bloomsline&apos;s actual cost structure, pricing architecture,
-            and growth assumptions. All formulas shown. All assumptions justified. Built for investor scrutiny.
+            {t(
+              'Complete financial model grounded in Bloomsline\u2019s actual cost structure, pricing architecture, and growth assumptions. All formulas shown. All assumptions justified. Built for investor scrutiny.',
+              'Modèle financier complet fondé sur la structure de coûts réelle de Bloomsline, son architecture tarifaire et ses hypothèses de croissance. Toutes les formules sont exposées. Toutes les hypothèses sont justifiées. Conçu pour résister au regard des investisseurs.'
+            )}
           </p>
 
           {/* Summary cards */}
@@ -416,9 +460,9 @@ export default function UnitEconomicsPage() {
               { label: 'LTV', value: '€3,625', color: 'text-emerald-600' },
               { label: 'CAC', value: '€50', color: 'text-blue-600' },
               { label: 'LTV/CAC', value: '72.5x', color: 'text-indigo-600' },
-              { label: 'Payback', value: '1.7 mo', color: 'text-violet-600' },
-              { label: 'Gross Margin', value: '85.3%', color: 'text-emerald-600' },
-              { label: 'Break-even', value: '~M24', color: 'text-amber-600' },
+              { label: t('Payback', 'Retour'), value: t('1.7 mo', '1,7 mois'), color: 'text-violet-600' },
+              { label: t('Gross Margin', 'Marge brute'), value: '85.3%', color: 'text-emerald-600' },
+              { label: t('Break-even', 'Seuil de rentabilité'), value: '~M24', color: 'text-amber-600' },
             ].map((m) => (
               <div key={m.label} className="bg-white border border-gray-200 rounded-xl p-3 text-center">
                 <p className="text-[10px] text-gray-400">{m.label}</p>
@@ -432,12 +476,12 @@ export default function UnitEconomicsPage() {
         {/* 1. CAC BY CHANNEL                               */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.05)}>
-          <SectionTitle subtitle="Customer acquisition cost broken down by acquisition channel">
-            1. CAC by Channel
+          <SectionTitle subtitle={t('Customer acquisition cost broken down by acquisition channel', 'Coût d\'acquisition client ventilé par canal d\'acquisition')}>
+            {t('1. CAC by Channel', '1. CAC par canal')}
           </SectionTitle>
 
           <div className="space-y-3">
-            {CHANNEL_CAC.map((ch, i) => (
+            {channelCAC.map((ch, i) => (
               <div key={i} className="bg-white border border-gray-200 rounded-xl p-4">
                 <div className="flex items-start justify-between mb-2">
                   <h4 className="text-sm font-semibold text-gray-900">{ch.channel}</h4>
@@ -451,10 +495,10 @@ export default function UnitEconomicsPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-4 gap-3 text-[10px]">
-                  <div><span className="text-gray-400">Volume:</span> <span className="text-gray-600">{ch.volume}</span></div>
-                  <div><span className="text-gray-400">Timeline:</span> <span className="text-gray-600">{ch.timeline}</span></div>
-                  <div><span className="text-gray-400">Lead quality:</span> <span className="text-gray-600">{ch.quality}</span></div>
-                  <div><span className="text-gray-400">Channel LTV:</span> <span className="text-gray-600">{ch.ltv}</span></div>
+                  <div><span className="text-gray-400">{t('Volume:', 'Volume :')}</span> <span className="text-gray-600">{ch.volume}</span></div>
+                  <div><span className="text-gray-400">{t('Timeline:', 'Calendrier :')}</span> <span className="text-gray-600">{ch.timeline}</span></div>
+                  <div><span className="text-gray-400">{t('Lead quality:', 'Qualité du prospect :')}</span> <span className="text-gray-600">{ch.quality}</span></div>
+                  <div><span className="text-gray-400">{t('Channel LTV:', 'LTV du canal :')}</span> <span className="text-gray-600">{ch.ltv}</span></div>
                 </div>
               </div>
             ))}
@@ -462,9 +506,19 @@ export default function UnitEconomicsPage() {
 
           <div className="mt-4 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
             <p className="text-xs text-indigo-700">
-              <strong>Blended CAC: €50.</strong> Weighted average across all channels. No paid acquisition.
-              Referral and organic channels have €0 cash CAC — only founder time. Blended CAC will rise to €60-80
-              as events and partnerships require spend, but LTV/CAC remains well above 40x.
+              {lang === 'fr' ? (
+                <>
+                  <strong>CAC pondéré : 50€.</strong> Moyenne pondérée sur tous les canaux. Pas d&apos;acquisition payante.
+                  Les canaux de parrainage et organiques ont un CAC de 0€ — uniquement le temps des fondateurs. Le CAC pondéré montera à 60-80€
+                  à mesure que les événements et partenariats nécessitent des dépenses, mais le LTV/CAC reste bien au-dessus de 40x.
+                </>
+              ) : (
+                <>
+                  <strong>Blended CAC: €50.</strong> Weighted average across all channels. No paid acquisition.
+                  Referral and organic channels have €0 cash CAC — only founder time. Blended CAC will rise to €60-80
+                  as events and partnerships require spend, but LTV/CAC remains well above 40x.
+                </>
+              )}
             </p>
           </div>
         </motion.section>
@@ -473,19 +527,19 @@ export default function UnitEconomicsPage() {
         {/* 2. LTV CALCULATION                               */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.1)}>
-          <SectionTitle subtitle="Lifetime value calculation with transparent assumptions">
-            2. LTV Calculation
+          <SectionTitle subtitle={t('Lifetime value calculation with transparent assumptions', 'Calcul de la valeur vie client avec des hypothèses transparentes')}>
+            {t('2. LTV Calculation', '2. Calcul de la LTV')}
           </SectionTitle>
 
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            {LTV_CALC.map((row, i) => (
-              <div key={i} className={`px-4 py-3 flex items-start gap-4 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${i === LTV_CALC.length - 1 ? 'bg-emerald-50' : ''} border-b border-gray-100`}>
+            {ltvCalc.map((row, i) => (
+              <div key={i} className={`px-4 py-3 flex items-start gap-4 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${i === ltvCalc.length - 1 ? 'bg-emerald-50' : ''} border-b border-gray-100`}>
                 <div className="w-48 shrink-0">
-                  <p className={`text-xs font-semibold ${i === LTV_CALC.length - 1 ? 'text-emerald-800' : 'text-gray-900'}`}>{row.label}</p>
+                  <p className={`text-xs font-semibold ${i === ltvCalc.length - 1 ? 'text-emerald-800' : 'text-gray-900'}`}>{row.label}</p>
                   <p className="text-[10px] text-gray-400 font-mono mt-0.5">{row.formula}</p>
                 </div>
                 <div className="w-24 shrink-0">
-                  <p className={`text-sm font-bold ${i === LTV_CALC.length - 1 ? 'text-emerald-700' : 'text-gray-900'}`}>{row.value}</p>
+                  <p className={`text-sm font-bold ${i === ltvCalc.length - 1 ? 'text-emerald-700' : 'text-gray-900'}`}>{row.value}</p>
                 </div>
                 <p className="text-[10px] text-gray-500 flex-1">{row.assumption}</p>
               </div>
@@ -494,15 +548,15 @@ export default function UnitEconomicsPage() {
 
           <div className="mt-3 grid grid-cols-3 gap-3">
             <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-center">
-              <p className="text-[10px] text-red-400">Worst case (7% churn, €19 ARPU)</p>
+              <p className="text-[10px] text-red-400">{t('Worst case (7% churn, €19 ARPU)', 'Pire scénario (7% d\'attrition, ARPU 19€)')}</p>
               <p className="text-lg font-bold text-red-600">€1,779</p>
             </div>
             <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
-              <p className="text-[10px] text-emerald-400">Base case (4% churn, €29 ARPU)</p>
+              <p className="text-[10px] text-emerald-400">{t('Base case (4% churn, €29 ARPU)', 'Cas de base (4% d\'attrition, ARPU 29€)')}</p>
               <p className="text-lg font-bold text-emerald-600">€3,625</p>
             </div>
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-center">
-              <p className="text-[10px] text-blue-400">Best case (2.5% churn, €39 ARPU)</p>
+              <p className="text-[10px] text-blue-400">{t('Best case (2.5% churn, €39 ARPU)', 'Meilleur scénario (2,5% d\'attrition, ARPU 39€)')}</p>
               <p className="text-lg font-bold text-blue-600">€5,800</p>
             </div>
           </div>
@@ -512,22 +566,22 @@ export default function UnitEconomicsPage() {
         {/* 3. GROSS & CONTRIBUTION MARGIN                    */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.15)}>
-          <SectionTitle subtitle="Revenue waterfall from top-line to contribution margin">
-            3. Margin Waterfall — Per Practitioner / Month
+          <SectionTitle subtitle={t('Revenue waterfall from top-line to contribution margin', 'Cascade de revenu du chiffre d\'affaires à la marge de contribution')}>
+            {t('3. Margin Waterfall — Per Practitioner / Month', '3. Cascade des marges — Par praticien / Mois')}
           </SectionTitle>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Line Item</th>
-                  <th className="text-right p-3 font-semibold text-gray-700 border-b border-gray-200">Per Practitioner/mo</th>
-                  <th className="text-right p-3 font-semibold text-gray-700 border-b border-gray-200">% of Revenue</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">Note</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Line Item', 'Poste')}</th>
+                  <th className="text-right p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Per Practitioner/mo', 'Par praticien/mois')}</th>
+                  <th className="text-right p-3 font-semibold text-gray-700 border-b border-gray-200">{t('% of Revenue', '% du revenu')}</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b border-gray-200">{t('Note', 'Note')}</th>
                 </tr>
               </thead>
               <tbody>
-                {MARGIN_WATERFALL.map((row, i) => (
+                {marginWaterfall.map((row, i) => (
                   <tr key={i} className={`${
                     row.isTotal ? 'bg-gray-900 text-white' :
                     row.isHeader ? 'bg-indigo-50' :
@@ -556,29 +610,29 @@ export default function UnitEconomicsPage() {
         {/* 4. 3-YEAR PROJECTION                              */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.2)}>
-          <SectionTitle subtitle="Base case: €29 ARPU, 30% initial growth, 4% churn, €300K starting cash">
-            4. Three-Year Financial Projection
+          <SectionTitle subtitle={t('Base case: €29 ARPU, 30% initial growth, 4% churn, €300K starting cash', 'Cas de base : ARPU 29€, croissance initiale 30%, 4% d\'attrition, 300K€ de trésorerie de départ')}>
+            {t('4. Three-Year Financial Projection', '4. Projection financière sur trois ans')}
           </SectionTitle>
 
           {/* Year 1 — Monthly */}
           <div className="mb-6">
             <h4 className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-2">
-              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px]">Year 1</span>
-              Monthly Detail
+              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px]">{t('Year 1', 'Année 1')}</span>
+              {t('Monthly Detail', 'Détail mensuel')}
             </h4>
             <div className="overflow-x-auto">
               <table className="w-full text-[10px] border-collapse">
                 <thead>
                   <tr className="bg-gray-50">
-                    <th className="p-2 text-left font-semibold text-gray-600 border-b">Period</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Practitioners</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Members</th>
+                    <th className="p-2 text-left font-semibold text-gray-600 border-b">{t('Period', 'Période')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Practitioners', 'Praticiens')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Members', 'Membres')}</th>
                     <th className="p-2 text-right font-semibold text-gray-600 border-b">MRR</th>
                     <th className="p-2 text-right font-semibold text-gray-600 border-b">ARR</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Gross Profit</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Fixed Costs</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Net Burn</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Cash</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Gross Profit', 'Marge brute')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Fixed Costs', 'Coûts fixes')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Net Burn', 'Burn net')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Cash', 'Trésorerie')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -603,20 +657,20 @@ export default function UnitEconomicsPage() {
           {/* Year 2 — Quarterly */}
           <div className="mb-6">
             <h4 className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-2">
-              <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px]">Year 2</span>
-              Quarterly
+              <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px]">{t('Year 2', 'Année 2')}</span>
+              {t('Quarterly', 'Trimestriel')}
             </h4>
             <div className="overflow-x-auto">
               <table className="w-full text-[10px] border-collapse">
                 <thead>
                   <tr className="bg-gray-50">
-                    <th className="p-2 text-left font-semibold text-gray-600 border-b">Period</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Practitioners</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Revenue (qtr)</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Gross Profit</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Fixed Costs</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Net Burn (qtr)</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Cash</th>
+                    <th className="p-2 text-left font-semibold text-gray-600 border-b">{t('Period', 'Période')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Practitioners', 'Praticiens')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Revenue (qtr)', 'Revenu (trim.)')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Gross Profit', 'Marge brute')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Fixed Costs', 'Coûts fixes')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Net Burn (qtr)', 'Burn net (trim.)')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Cash', 'Trésorerie')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -639,20 +693,20 @@ export default function UnitEconomicsPage() {
           {/* Year 3 — Quarterly */}
           <div className="mb-4">
             <h4 className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-2">
-              <span className="bg-violet-100 text-violet-700 px-2 py-0.5 rounded text-[10px]">Year 3</span>
-              Quarterly — Path to Profitability
+              <span className="bg-violet-100 text-violet-700 px-2 py-0.5 rounded text-[10px]">{t('Year 3', 'Année 3')}</span>
+              {t('Quarterly — Path to Profitability', 'Trimestriel — Chemin vers la rentabilité')}
             </h4>
             <div className="overflow-x-auto">
               <table className="w-full text-[10px] border-collapse">
                 <thead>
                   <tr className="bg-gray-50">
-                    <th className="p-2 text-left font-semibold text-gray-600 border-b">Period</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Practitioners</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Revenue (qtr)</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Gross Profit</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Fixed Costs</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Net Profit (qtr)</th>
-                    <th className="p-2 text-right font-semibold text-gray-600 border-b">Cash</th>
+                    <th className="p-2 text-left font-semibold text-gray-600 border-b">{t('Period', 'Période')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Practitioners', 'Praticiens')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Revenue (qtr)', 'Revenu (trim.)')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Gross Profit', 'Marge brute')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Fixed Costs', 'Coûts fixes')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Net Profit (qtr)', 'Bénéfice net (trim.)')}</th>
+                    <th className="p-2 text-right font-semibold text-gray-600 border-b">{t('Cash', 'Trésorerie')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -675,11 +729,13 @@ export default function UnitEconomicsPage() {
           </div>
 
           <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
-            <h4 className="text-xs font-bold text-emerald-800 mb-1">Cash flow inflection: Q10 (~M29)</h4>
+            <h4 className="text-xs font-bold text-emerald-800 mb-1">{t('Cash flow inflection: Q10 (~M29)', 'Point d\'inflexion de trésorerie : Q10 (~M29)')}</h4>
             <p className="text-xs text-emerald-700">
-              The business turns cash-flow positive in Q10 with ~600 practitioners and €17.4K MRR (€209K ARR).
-              At M36, the company holds €165K in cash — having never required a second raise. Total cash burned from the €300K raise: ~€134K.
-              <strong> The model is capital-efficient by design.</strong>
+              {t(
+                'The business turns cash-flow positive in Q10 with ~600 practitioners and €17.4K MRR (€209K ARR). At M36, the company holds €165K in cash — having never required a second raise. Total cash burned from the €300K raise: ~€134K.',
+                'L\'entreprise devient positive en trésorerie au Q10 avec ~600 praticiens et 17,4K€ de MRR (209K€ d\'ARR). À M36, l\'entreprise détient 165K€ en trésorerie — sans avoir eu besoin d\'une seconde levée. Trésorerie totale consommée sur les 300K€ levés : ~134K€.'
+              )}
+              <strong>{t(' The model is capital-efficient by design.', ' Le modèle est conçu pour être efficient en capital.')}</strong>
             </p>
           </div>
         </motion.section>
@@ -688,24 +744,24 @@ export default function UnitEconomicsPage() {
         {/* 5. COST STRUCTURE                                 */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.25)}>
-          <SectionTitle subtitle="Fixed vs variable costs — how the cost structure scales with growth">
-            5. Cost Structure Breakdown
+          <SectionTitle subtitle={t('Fixed vs variable costs — how the cost structure scales with growth', 'Coûts fixes vs variables — comment la structure de coûts évolue avec la croissance')}>
+            {t('5. Cost Structure Breakdown', '5. Détail de la structure de coûts')}
           </SectionTitle>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b">Category</th>
-                  <th className="text-center p-3 font-semibold text-gray-700 border-b">Type</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b">{t('Category', 'Catégorie')}</th>
+                  <th className="text-center p-3 font-semibold text-gray-700 border-b">{t('Type', 'Type')}</th>
                   <th className="text-right p-3 font-semibold text-gray-700 border-b">M1</th>
                   <th className="text-right p-3 font-semibold text-gray-700 border-b">M12</th>
                   <th className="text-right p-3 font-semibold text-gray-700 border-b">M36</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b">Scales With</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b">{t('Scales With', 'Évolue avec')}</th>
                 </tr>
               </thead>
               <tbody>
-                {COST_STRUCTURE.map((c, i) => (
+                {costStructure.map((c, i) => (
                   <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
                     <td className="p-3 font-medium text-gray-900 border-b border-gray-100">{c.category}</td>
                     <td className="p-3 text-center border-b border-gray-100">
@@ -713,7 +769,7 @@ export default function UnitEconomicsPage() {
                         c.type === 'Fixed' ? 'bg-blue-100 text-blue-600' :
                         c.type === 'Variable' ? 'bg-amber-100 text-amber-600' :
                         'bg-violet-100 text-violet-600'
-                      }`}>{c.type}</span>
+                      }`}>{c.type === 'Fixed' ? t('Fixed', 'Fixe') : c.type === 'Variable' ? t('Variable', 'Variable') : t('Semi-variable', 'Semi-variable')}</span>
                     </td>
                     <td className="p-3 text-right font-mono text-gray-700 border-b border-gray-100">{c.m1}</td>
                     <td className="p-3 text-right font-mono text-gray-700 border-b border-gray-100">{c.m12}</td>
@@ -730,21 +786,21 @@ export default function UnitEconomicsPage() {
         {/* 6. BREAK-EVEN ANALYSIS                            */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.3)}>
-          <SectionTitle subtitle="When does revenue cover all costs? Formula: Break-even = Fixed costs / Contribution margin per user">
-            6. Break-Even Analysis
+          <SectionTitle subtitle={t('When does revenue cover all costs? Formula: Break-even = Fixed costs / Contribution margin per user', 'Quand le revenu couvre-t-il tous les coûts ? Formule : Seuil de rentabilité = Coûts fixes / Marge de contribution par utilisateur')}>
+            {t('6. Break-Even Analysis', '6. Analyse du seuil de rentabilité')}
           </SectionTitle>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {BREAK_EVEN.map((b, i) => (
+            {breakEven.map((b, i) => (
               <div key={i} className={`${b.color} border rounded-xl p-4`}>
                 <h4 className="text-sm font-bold mb-3">{b.scenario}</h4>
                 <div className="space-y-2 text-[10px]">
-                  <div className="flex justify-between"><span className="opacity-70">Fixed costs:</span> <span className="font-mono font-bold">{b.fixedCosts}</span></div>
-                  <div className="flex justify-between"><span className="opacity-70">Contribution/user:</span> <span className="font-mono font-bold">{b.contributionMargin}</span></div>
-                  <div className="flex justify-between"><span className="opacity-70">Break-even users:</span> <span className="font-mono font-bold">{b.breakEvenUsers}</span></div>
-                  <div className="flex justify-between"><span className="opacity-70">Break-even MRR:</span> <span className="font-mono font-bold">{b.breakEvenMRR}</span></div>
+                  <div className="flex justify-between"><span className="opacity-70">{t('Fixed costs:', 'Coûts fixes :')}</span> <span className="font-mono font-bold">{b.fixedCosts}</span></div>
+                  <div className="flex justify-between"><span className="opacity-70">{t('Contribution/user:', 'Contribution/utilisateur :')}</span> <span className="font-mono font-bold">{b.contributionMargin}</span></div>
+                  <div className="flex justify-between"><span className="opacity-70">{t('Break-even users:', 'Utilisateurs au seuil :')}</span> <span className="font-mono font-bold">{b.breakEvenUsers}</span></div>
+                  <div className="flex justify-between"><span className="opacity-70">{t('Break-even MRR:', 'MRR au seuil :')}</span> <span className="font-mono font-bold">{b.breakEvenMRR}</span></div>
                   <div className="border-t pt-2 mt-2 flex justify-between">
-                    <span className="font-semibold">Expected month:</span>
+                    <span className="font-semibold">{t('Expected month:', 'Mois prévu :')}</span>
                     <span className="font-bold">{b.expectedMonth}</span>
                   </div>
                 </div>
@@ -757,24 +813,24 @@ export default function UnitEconomicsPage() {
         {/* 7. SENSITIVITY ANALYSIS                           */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.35)}>
-          <SectionTitle subtitle="How do key variables affect LTV, margins, and runway?">
-            7. Sensitivity Analysis
+          <SectionTitle subtitle={t('How do key variables affect LTV, margins, and runway?', 'Comment les variables clés affectent-elles la LTV, les marges et la trésorerie ?')}>
+            {t('7. Sensitivity Analysis', '7. Analyse de sensibilité')}
           </SectionTitle>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b">Variable</th>
-                  <th className="text-center p-3 font-semibold text-red-500 border-b">Worst</th>
-                  <th className="text-center p-3 font-semibold text-gray-700 border-b">Base</th>
-                  <th className="text-center p-3 font-semibold text-emerald-600 border-b">Best</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b">Impact on LTV</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b">Impact on Runway</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b">{t('Variable', 'Variable')}</th>
+                  <th className="text-center p-3 font-semibold text-red-500 border-b">{t('Worst', 'Pire')}</th>
+                  <th className="text-center p-3 font-semibold text-gray-700 border-b">{t('Base', 'Base')}</th>
+                  <th className="text-center p-3 font-semibold text-emerald-600 border-b">{t('Best', 'Meilleur')}</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b">{t('Impact on LTV', 'Impact sur la LTV')}</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b">{t('Impact on Runway', 'Impact sur la trésorerie')}</th>
                 </tr>
               </thead>
               <tbody>
-                {SENSITIVITY.map((s, i) => (
+                {sensitivity.map((s, i) => (
                   <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
                     <td className="p-3 font-semibold text-gray-900 border-b border-gray-100">{s.variable}</td>
                     <td className="p-3 text-center font-mono text-red-500 border-b border-gray-100">{s.worst}</td>
@@ -789,11 +845,21 @@ export default function UnitEconomicsPage() {
           </div>
 
           <div className="mt-4 p-4 bg-amber-50 border border-amber-100 rounded-xl">
-            <h4 className="text-xs font-bold text-amber-800 mb-1">Sensitivity ranking — what matters most:</h4>
+            <h4 className="text-xs font-bold text-amber-800 mb-1">{t('Sensitivity ranking — what matters most:', 'Classement de sensibilité — ce qui compte le plus :')}</h4>
             <p className="text-xs text-amber-700">
-              <strong>1. Churn</strong> (1% change = €1,800 LTV swing) &gt; <strong>2. ARPU</strong> (€10 change = 3x revenue) &gt;
-              <strong> 3. Growth rate</strong> (determines break-even timing) &gt; <strong>4. Fixed costs</strong> (team size) &gt;
-              <strong> 5. CAC</strong> (still healthy even at 2x). AI cost is the least sensitive variable — even at €3.50/mo, margins are 77%.
+              {lang === 'fr' ? (
+                <>
+                  <strong>1. Attrition</strong> (1% de variation = 1 800€ d&apos;écart de LTV) &gt; <strong>2. ARPU</strong> (10€ de variation = 3x le revenu) &gt;
+                  <strong> 3. Taux de croissance</strong> (détermine le moment du seuil de rentabilité) &gt; <strong>4. Coûts fixes</strong> (taille de l&apos;équipe) &gt;
+                  <strong> 5. CAC</strong> (encore sain même à 2x). Le coût IA est la variable la moins sensible — même à 3,50€/mois, les marges sont de 77%.
+                </>
+              ) : (
+                <>
+                  <strong>1. Churn</strong> (1% change = €1,800 LTV swing) &gt; <strong>2. ARPU</strong> (€10 change = 3x revenue) &gt;
+                  <strong> 3. Growth rate</strong> (determines break-even timing) &gt; <strong>4. Fixed costs</strong> (team size) &gt;
+                  <strong> 5. CAC</strong> (still healthy even at 2x). AI cost is the least sensitive variable — even at €3.50/mo, margins are 77%.
+                </>
+              )}
             </p>
           </div>
         </motion.section>
@@ -802,12 +868,12 @@ export default function UnitEconomicsPage() {
         {/* 8. KEY ASSUMPTIONS                                */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.4)}>
-          <SectionTitle subtitle="Every assumption justified — nothing hand-waved">
-            8. Key Assumptions
+          <SectionTitle subtitle={t('Every assumption justified — nothing hand-waved', 'Chaque hypothèse justifiée — rien de flou')}>
+            {t('8. Key Assumptions', '8. Hypothèses clés')}
           </SectionTitle>
 
           <div className="space-y-2">
-            {ASSUMPTIONS.map((a, i) => (
+            {assumptions.map((a, i) => (
               <div key={i} className="bg-white border border-gray-200 rounded-xl px-4 py-3">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
@@ -815,10 +881,10 @@ export default function UnitEconomicsPage() {
                     <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{a.value}</span>
                   </div>
                   <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                    a.risk.includes('Low') ? 'bg-emerald-100 text-emerald-600' :
-                    a.risk.includes('Medium') ? 'bg-amber-100 text-amber-600' :
+                    a.risk.includes('Low') || a.risk.includes('Faible') ? 'bg-emerald-100 text-emerald-600' :
+                    a.risk.includes('Medium') || a.risk.includes('Moyen') ? 'bg-amber-100 text-amber-600' :
                     'bg-red-100 text-red-600'
-                  }`}>{a.risk} risk</span>
+                  }`}>{a.risk} {t('risk', 'risque')}</span>
                 </div>
                 <p className="text-[10px] text-gray-500">{a.justification}</p>
               </div>
@@ -830,23 +896,23 @@ export default function UnitEconomicsPage() {
         {/* 9. BENCHMARKS                                     */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.45)}>
-          <SectionTitle subtitle="How Bloomsline metrics compare to SaaS industry standards">
-            9. Industry Benchmarks
+          <SectionTitle subtitle={t('How Bloomsline metrics compare to SaaS industry standards', 'Comment les indicateurs de Bloomsline se comparent aux standards de l\'industrie SaaS')}>
+            {t('9. Industry Benchmarks', '9. Références sectorielles')}
           </SectionTitle>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b">Metric</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b">{t('Metric', 'Indicateur')}</th>
                   <th className="text-center p-3 font-semibold text-indigo-600 border-b">Bloomsline</th>
-                  <th className="text-center p-3 font-semibold text-gray-600 border-b">SaaS Median</th>
-                  <th className="text-center p-3 font-semibold text-emerald-600 border-b">Top Decile</th>
-                  <th className="text-left p-3 font-semibold text-gray-700 border-b">Verdict</th>
+                  <th className="text-center p-3 font-semibold text-gray-600 border-b">{t('SaaS Median', 'Médiane SaaS')}</th>
+                  <th className="text-center p-3 font-semibold text-emerald-600 border-b">{t('Top Decile', 'Décile supérieur')}</th>
+                  <th className="text-left p-3 font-semibold text-gray-700 border-b">{t('Verdict', 'Verdict')}</th>
                 </tr>
               </thead>
               <tbody>
-                {BENCHMARKS.map((b, i) => (
+                {benchmarks.map((b, i) => (
                   <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
                     <td className="p-3 font-semibold text-gray-900 border-b border-gray-100">{b.metric}</td>
                     <td className="p-3 text-center font-mono font-bold text-indigo-600 border-b border-gray-100">{b.bloomsline}</td>
@@ -864,12 +930,12 @@ export default function UnitEconomicsPage() {
         {/* 10. RED FLAGS                                     */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <motion.section {...fadeUp(0.5)}>
-          <SectionTitle subtitle="Numbers that should trigger immediate action — don't ignore these">
-            10. Red Flags — What Should Worry You
+          <SectionTitle subtitle={t('Numbers that should trigger immediate action — don\'t ignore these', 'Des chiffres qui doivent déclencher une action immédiate — ne les ignorez pas')}>
+            {t('10. Red Flags — What Should Worry You', '10. Signaux d\'alerte — Ce qui doit vous inquiéter')}
           </SectionTitle>
 
           <div className="space-y-3">
-            {RED_FLAGS.map((f, i) => (
+            {redFlags.map((f, i) => (
               <div key={i} className="bg-white border-2 border-red-100 rounded-xl p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -886,7 +952,7 @@ export default function UnitEconomicsPage() {
                 <p className="text-xs text-gray-500 mb-2">{f.whyDangerous}</p>
                 <div className="p-2.5 bg-emerald-50 rounded-lg">
                   <p className="text-[10px] text-emerald-700">
-                    <strong className="text-emerald-600">Action:</strong> {f.action}
+                    <strong className="text-emerald-600">{t('Action:', 'Action :')}</strong> {f.action}
                   </p>
                 </div>
               </div>
@@ -901,18 +967,18 @@ export default function UnitEconomicsPage() {
           <div className="bg-gray-900 rounded-2xl p-6 sm:p-8 text-white">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <Calculator className="w-5 h-5 text-emerald-400" />
-              The Financial Verdict
+              {t('The Financial Verdict', 'Le verdict financier')}
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <h4 className="text-sm font-semibold text-emerald-400 mb-3">Why the numbers work</h4>
+                <h4 className="text-sm font-semibold text-emerald-400 mb-3">{t('Why the numbers work', 'Pourquoi les chiffres fonctionnent')}</h4>
                 <div className="space-y-2">
                   {[
-                    { point: 'B2B2C multiplier is the moat', detail: '€50 to acquire 1 practitioner who brings 12 members = €4.17 effective member CAC. B2C apps pay €30-50 per user. This is 7-12x more efficient.' },
-                    { point: 'Gross margin leaves room for everything', detail: '85% gross margin means €24.75 of every €29 is available for growth, team, and product. At 1,000 users, that\'s €24,750/mo to reinvest.' },
-                    { point: 'Capital efficiency is exceptional', detail: '€300K gets you to 850 practitioners and €296K ARR in 36 months. €134K total cash burned. Most SaaS startups burn 3-5x their raise.' },
-                    { point: 'Path to profitability without Series A', detail: 'Cash-flow positive at ~M29 with ~600 practitioners. No second raise required. Series A becomes optional — a growth accelerant, not survival.' },
+                    { point: t('B2B2C multiplier is the moat', 'Le multiplicateur B2B2C est le fossé concurrentiel'), detail: t('€50 to acquire 1 practitioner who brings 12 members = €4.17 effective member CAC. B2C apps pay €30-50 per user. This is 7-12x more efficient.', '50€ pour acquérir 1 praticien qui amène 12 membres = 4,17€ de CAC effectif par membre. Les apps B2C paient 30-50€ par utilisateur. C\'est 7-12x plus efficace.') },
+                    { point: t('Gross margin leaves room for everything', 'La marge brute laisse de la place pour tout'), detail: t('85% gross margin means €24.75 of every €29 is available for growth, team, and product. At 1,000 users, that\'s €24,750/mo to reinvest.', 'Une marge brute de 85% signifie que 24,75€ sur chaque 29€ sont disponibles pour la croissance, l\'équipe et le produit. À 1 000 utilisateurs, cela représente 24 750€/mois à réinvestir.') },
+                    { point: t('Capital efficiency is exceptional', 'L\'efficacité du capital est exceptionnelle'), detail: t('€300K gets you to 850 practitioners and €296K ARR in 36 months. €134K total cash burned. Most SaaS startups burn 3-5x their raise.', '300K€ vous amènent à 850 praticiens et 296K€ d\'ARR en 36 mois. 134K€ de trésorerie totale consommée. La plupart des startups SaaS brûlent 3-5x leur levée.') },
+                    { point: t('Path to profitability without Series A', 'Chemin vers la rentabilité sans Série A'), detail: t('Cash-flow positive at ~M29 with ~600 practitioners. No second raise required. Series A becomes optional — a growth accelerant, not survival.', 'Trésorerie positive à ~M29 avec ~600 praticiens. Pas de seconde levée nécessaire. La Série A devient optionnelle — un accélérateur de croissance, pas une question de survie.') },
                   ].map((p, i) => (
                     <div key={i} className="p-3 bg-white/5 rounded-lg border border-white/10">
                       <p className="text-xs font-semibold text-white">{p.point}</p>
@@ -923,13 +989,13 @@ export default function UnitEconomicsPage() {
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-red-400 mb-3">What to watch</h4>
+                <h4 className="text-sm font-semibold text-red-400 mb-3">{t('What to watch', 'Points de vigilance')}</h4>
                 <div className="space-y-2">
                   {[
-                    { concern: 'These are modeled numbers, not observed', detail: 'Zero paying customers today. LTV, churn, and CAC are projections. The model is only as good as its assumptions. Validate every number within the first 90 days.' },
-                    { concern: 'Churn is the biggest unknown', detail: '1% churn difference = €1,800 LTV swing = 50% revenue difference at M36. If churn is 7% instead of 4%, break-even moves from M24 to M32.' },
-                    { concern: 'LTV/CAC looks too good', detail: '72.5x will make investors suspicious. Prepare to explain why: (1) organic CAC, (2) care relationship lock-in, (3) B2B2C multiplier. Expect CAC to rise to €80-100 at scale.' },
-                    { concern: 'Fixed costs will step up', detail: 'Team costs assumed flat at €8.6K/mo. First hire (€3K/mo) at 100 users. Second hire (€3.5K/mo) at 300 users. Budget accordingly.' },
+                    { concern: t('These are modeled numbers, not observed', 'Ce sont des chiffres modélisés, pas observés'), detail: t('Zero paying customers today. LTV, churn, and CAC are projections. The model is only as good as its assumptions. Validate every number within the first 90 days.', 'Zéro client payant aujourd\'hui. La LTV, l\'attrition et le CAC sont des projections. Le modèle ne vaut que par ses hypothèses. Validez chaque chiffre dans les 90 premiers jours.') },
+                    { concern: t('Churn is the biggest unknown', 'L\'attrition est la plus grande inconnue'), detail: t('1% churn difference = €1,800 LTV swing = 50% revenue difference at M36. If churn is 7% instead of 4%, break-even moves from M24 to M32.', '1% de différence d\'attrition = 1 800€ d\'écart de LTV = 50% de différence de revenu à M36. Si l\'attrition est de 7% au lieu de 4%, le seuil de rentabilité passe de M24 à M32.') },
+                    { concern: t('LTV/CAC looks too good', 'Le LTV/CAC semble trop bon'), detail: t('72.5x will make investors suspicious. Prepare to explain why: (1) organic CAC, (2) care relationship lock-in, (3) B2B2C multiplier. Expect CAC to rise to €80-100 at scale.', '72,5x rendra les investisseurs suspicieux. Préparez-vous à expliquer pourquoi : (1) CAC organique, (2) fidélisation par la relation de soin, (3) multiplicateur B2B2C. Attendez-vous à un CAC de 80-100€ à grande échelle.') },
+                    { concern: t('Fixed costs will step up', 'Les coûts fixes vont augmenter par paliers'), detail: t('Team costs assumed flat at €8.6K/mo. First hire (€3K/mo) at 100 users. Second hire (€3.5K/mo) at 300 users. Budget accordingly.', 'Coûts d\'équipe supposés constants à 8,6K€/mois. Premier recrutement (3K€/mois) à 100 utilisateurs. Second recrutement (3,5K€/mois) à 300 utilisateurs. Budgétisez en conséquence.') },
                   ].map((c, i) => (
                     <div key={i} className="p-3 bg-white/5 rounded-lg border border-white/10">
                       <p className="text-xs font-semibold text-red-300">{c.concern}</p>
@@ -942,11 +1008,23 @@ export default function UnitEconomicsPage() {
 
             <div className="border-t border-white/10 pt-4">
               <p className="text-xs text-gray-300 leading-relaxed">
-                <strong className="text-white">Bottom line:</strong> The unit economics are structurally sound. 85% gross margin,
-                72x LTV/CAC, 1.7-month payback, and a path to profitability within 36 months on €300K. The model breaks
-                even at ~347 practitioners (~M24) and generates €20K+/quarter profit by M36.
-                The biggest risk isn&apos;t the model — it&apos;s whether the first 30 practitioners validate the assumptions.
-                <strong className="text-emerald-400"> If churn stays below 5% and you hit 30 practitioners by M3, this model is real.</strong>
+                {lang === 'fr' ? (
+                  <>
+                    <strong className="text-white">En résumé :</strong> L&apos;économie unitaire est structurellement saine. 85% de marge brute,
+                    72x de LTV/CAC, 1,7 mois de retour sur investissement, et un chemin vers la rentabilité en 36 mois avec 300K€. Le modèle atteint
+                    le seuil de rentabilité à ~347 praticiens (~M24) et génère 20K€+/trimestre de bénéfice à M36.
+                    Le plus grand risque n&apos;est pas le modèle — c&apos;est de savoir si les 30 premiers praticiens valideront les hypothèses.
+                    <strong className="text-emerald-400"> Si l&apos;attrition reste sous 5% et que vous atteignez 30 praticiens à M3, ce modèle est réel.</strong>
+                  </>
+                ) : (
+                  <>
+                    <strong className="text-white">Bottom line:</strong> The unit economics are structurally sound. 85% gross margin,
+                    72x LTV/CAC, 1.7-month payback, and a path to profitability within 36 months on €300K. The model breaks
+                    even at ~347 practitioners (~M24) and generates €20K+/quarter profit by M36.
+                    The biggest risk isn&apos;t the model — it&apos;s whether the first 30 practitioners validate the assumptions.
+                    <strong className="text-emerald-400"> If churn stays below 5% and you hit 30 practitioners by M3, this model is real.</strong>
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -958,9 +1036,9 @@ export default function UnitEconomicsPage() {
           className="flex items-center gap-2 text-[10px] text-gray-400"
         >
           <Clock className="w-3 h-3" />
-          <span>Financial model as of Feb 2026</span>
+          <span>{t('Financial model as of Feb 2026', 'Modèle financier en date de février 2026')}</span>
           <span className="text-gray-200">|</span>
-          <span>Bloomsline Care — Unit Economics & 3-Year Projection</span>
+          <span>{t('Bloomsline Care — Unit Economics & 3-Year Projection', 'Bloomsline Care — Économie unitaire et projection sur 3 ans')}</span>
         </motion.div>
       </main>
     </div>

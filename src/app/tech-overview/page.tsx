@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   Cpu,
@@ -27,147 +28,162 @@ import {
   Activity,
 } from 'lucide-react'
 
-// ── Data ─────────────────────────────────────────────────────────────────
+// ── Translation helper type ──────────────────────────────────────────────
+type T = (en: string, fr: string) => string
 
-const STACK_LAYERS = [
-  {
-    title: 'Frontend',
-    icon: MonitorSmartphone,
-    color: 'bg-blue-500',
-    lightColor: 'bg-blue-50 text-blue-600',
-    items: [
-      { name: 'Next.js 16', detail: 'App Router, SSR, API routes' },
-      { name: 'React 19', detail: 'Latest with Server Components' },
-      { name: 'TypeScript', detail: 'End-to-end type safety' },
-      { name: 'Tailwind CSS 4', detail: 'Utility-first styling' },
-      { name: 'Framer Motion', detail: 'Smooth animations & transitions' },
-      { name: 'Recharts 3.6', detail: 'Interactive data visualizations' },
-      { name: 'Radix UI', detail: 'Accessible headless components' },
-      { name: 'React Hook Form + Zod', detail: 'Form handling & validation' },
-    ],
-  },
-  {
-    title: 'Backend & Database',
-    icon: Database,
-    color: 'bg-emerald-500',
-    lightColor: 'bg-emerald-50 text-emerald-600',
-    items: [
-      { name: 'Supabase PostgreSQL', detail: 'Primary database with real-time subscriptions' },
-      { name: 'Supabase Auth', detail: 'Google OAuth + magic links + session management' },
-      { name: 'Row Level Security', detail: 'Database-level access control per user' },
-      { name: 'Next.js API Routes', detail: '24+ REST endpoints with middleware' },
-      { name: 'Zustand + TanStack Query', detail: 'Client state & server cache management' },
-      { name: 'Rate Limiting', detail: 'Custom per-route throttling (public, auth, AI)' },
-    ],
-  },
-  {
-    title: 'AI Engine',
-    icon: Brain,
-    color: 'bg-violet-500',
-    lightColor: 'bg-violet-50 text-violet-600',
-    items: [
-      { name: 'Anthropic Claude API', detail: 'Primary LLM for all AI features' },
-      { name: 'Claude Haiku', detail: 'Cost-optimized conversations (~€1.80/user/mo)' },
-      { name: 'Claude Sonnet', detail: 'Complex tasks — summaries, pattern analysis' },
-      { name: 'Bloom Chat', detail: 'AI companion for member self-reflection' },
-      { name: 'Bloom Assist', detail: 'Practitioner copilot for clinical notes' },
-    ],
-  },
-  {
-    title: 'External Services',
-    icon: Layers,
-    color: 'bg-amber-500',
-    lightColor: 'bg-amber-50 text-amber-600',
-    items: [
-      { name: 'Google Calendar API', detail: 'OAuth 2.0 — session booking & sync' },
-      { name: 'Postmark', detail: 'Transactional emails (hi@bloomsline.com)' },
-      { name: 'PostHog', detail: 'Product analytics & session recording (EU-hosted)' },
-      { name: 'HubSpot', detail: 'CRM, feedback tickets & file uploads' },
-      { name: 'Google OAuth', detail: 'Social login for practitioners' },
-      { name: 'Expo (React Native)', detail: 'Cross-platform member mobile app' },
-    ],
-  },
-]
+// ── Data (functions accepting t) ─────────────────────────────────────────
 
-const SECURITY_FEATURES = [
-  { icon: Lock, label: 'AES-256-GCM encryption', detail: 'OAuth tokens & sensitive data encrypted at rest' },
-  { icon: Shield, label: 'Row Level Security', detail: 'Postgres RLS on every table — data isolation per user' },
-  { icon: Zap, label: 'Rate limiting', detail: 'Per-route throttling — public, auth, AI, summary tiers' },
-  { icon: Globe, label: 'GDPR-ready', detail: 'EU-hosted analytics (PostHog EU), cookie consent, data control' },
-]
+function getStackLayers(t: T) {
+  return [
+    {
+      title: t('Frontend', 'Interface'),
+      icon: MonitorSmartphone,
+      color: 'bg-blue-500',
+      lightColor: 'bg-blue-50 text-blue-600',
+      items: [
+        { name: 'Next.js 16', detail: t('App Router, SSR, API routes', 'App Router, SSR, routes API') },
+        { name: 'React 19', detail: t('Latest with Server Components', 'Version la plus recente avec Server Components') },
+        { name: 'TypeScript', detail: t('End-to-end type safety', 'Typage de bout en bout') },
+        { name: 'Tailwind CSS 4', detail: t('Utility-first styling', 'Stylisation utilitaire') },
+        { name: 'Framer Motion', detail: t('Smooth animations & transitions', 'Animations et transitions fluides') },
+        { name: 'Recharts 3.6', detail: t('Interactive data visualizations', 'Visualisations de donnees interactives') },
+        { name: 'Radix UI', detail: t('Accessible headless components', 'Composants accessibles sans interface') },
+        { name: 'React Hook Form + Zod', detail: t('Form handling & validation', 'Gestion et validation de formulaires') },
+      ],
+    },
+    {
+      title: t('Backend & Database', 'Backend et base de donnees'),
+      icon: Database,
+      color: 'bg-emerald-500',
+      lightColor: 'bg-emerald-50 text-emerald-600',
+      items: [
+        { name: 'Supabase PostgreSQL', detail: t('Primary database with real-time subscriptions', 'Base de donnees principale avec abonnements en temps reel') },
+        { name: 'Supabase Auth', detail: t('Google OAuth + magic links + session management', 'Google OAuth + liens magiques + gestion de sessions') },
+        { name: 'Row Level Security', detail: t('Database-level access control per user', 'Controle d\'acces au niveau de la base par utilisateur') },
+        { name: t('Next.js API Routes', 'Routes API Next.js'), detail: t('24+ REST endpoints with middleware', '24+ points d\'acces REST avec middleware') },
+        { name: 'Zustand + TanStack Query', detail: t('Client state & server cache management', 'Gestion de l\'etat client et du cache serveur') },
+        { name: t('Rate Limiting', 'Limitation de debit'), detail: t('Custom per-route throttling (public, auth, AI)', 'Limitation personnalisee par route (public, auth, IA)') },
+      ],
+    },
+    {
+      title: t('AI Engine', 'Moteur IA'),
+      icon: Brain,
+      color: 'bg-violet-500',
+      lightColor: 'bg-violet-50 text-violet-600',
+      items: [
+        { name: 'Anthropic Claude API', detail: t('Primary LLM for all AI features', 'LLM principal pour toutes les fonctionnalites IA') },
+        { name: 'Claude Haiku', detail: t('Cost-optimized conversations (~\u20AC1.80/user/mo)', 'Conversations optimisees en cout (~1,80\u20AC/utilisateur/mois)') },
+        { name: 'Claude Sonnet', detail: t('Complex tasks \u2014 summaries, pattern analysis', 'Taches complexes \u2014 resumes, analyse de tendances') },
+        { name: 'Bloom Chat', detail: t('AI companion for member self-reflection', 'Compagnon IA pour l\'auto-reflexion des membres') },
+        { name: 'Bloom Assist', detail: t('Practitioner copilot for clinical notes', 'Copilote praticien pour les notes cliniques') },
+      ],
+    },
+    {
+      title: t('External Services', 'Services externes'),
+      icon: Layers,
+      color: 'bg-amber-500',
+      lightColor: 'bg-amber-50 text-amber-600',
+      items: [
+        { name: 'Google Calendar API', detail: t('OAuth 2.0 \u2014 session booking & sync', 'OAuth 2.0 \u2014 reservation de sessions et synchronisation') },
+        { name: 'Postmark', detail: t('Transactional emails (hi@bloomsline.com)', 'Emails transactionnels (hi@bloomsline.com)') },
+        { name: 'PostHog', detail: t('Product analytics & session recording (EU-hosted)', 'Analytique produit et enregistrement de sessions (heberge en UE)') },
+        { name: 'HubSpot', detail: t('CRM, feedback tickets & file uploads', 'CRM, tickets de retour et telechargement de fichiers') },
+        { name: 'Google OAuth', detail: t('Social login for practitioners', 'Connexion sociale pour les praticiens') },
+        { name: 'Expo (React Native)', detail: t('Cross-platform member mobile app', 'Application mobile multiplateforme pour les membres') },
+      ],
+    },
+  ]
+}
 
-const KEY_NUMBERS = [
-  { value: '24+', label: 'API endpoints', icon: Server },
-  { value: '3', label: 'Languages (EN/FR/ES)', icon: Languages },
-  { value: '6', label: 'External services integrated', icon: Layers },
-  { value: '2', label: 'Platforms (Web + Mobile)', icon: Smartphone },
-]
+function getSecurityFeatures(t: T) {
+  return [
+    { icon: Lock, label: t('AES-256-GCM encryption', 'Chiffrement AES-256-GCM'), detail: t('OAuth tokens & sensitive data encrypted at rest', 'Tokens OAuth et donnees sensibles chiffrees au repos') },
+    { icon: Shield, label: 'Row Level Security', detail: t('Postgres RLS on every table \u2014 data isolation per user', 'RLS Postgres sur chaque table \u2014 isolation des donnees par utilisateur') },
+    { icon: Zap, label: t('Rate limiting', 'Limitation de debit'), detail: t('Per-route throttling \u2014 public, auth, AI, summary tiers', 'Limitation par route \u2014 niveaux public, auth, IA, resume') },
+    { icon: Globe, label: t('GDPR-ready', 'Conforme au RGPD'), detail: t('EU-hosted analytics (PostHog EU), cookie consent, data control', 'Analytique hebergee en UE (PostHog EU), consentement cookies, controle des donnees') },
+  ]
+}
 
-const AI_FEATURES = [
-  { name: 'Bloom Chat', description: 'Conversational AI companion for member self-reflection and wellbeing tracking' },
-  { name: 'Bloom Assist', description: 'Quick-action AI for practitioners — summarize sessions, extract themes, suggest focus areas' },
-  { name: 'Pattern Detection', description: 'Automatically identifies wellbeing trends across mood, sleep, and activity data' },
-  { name: 'Smart Notifications', description: 'AI-informed alerts when member engagement drops or milestones are reached' },
-]
+function getKeyNumbers(t: T) {
+  return [
+    { value: '24+', label: t('API endpoints', 'Points d\'acces API'), icon: Server },
+    { value: '3', label: t('Languages (EN/FR/ES)', 'Langues (EN/FR/ES)'), icon: Languages },
+    { value: '6', label: t('External services integrated', 'Services externes integres'), icon: Layers },
+    { value: '2', label: t('Platforms (Web + Mobile)', 'Plateformes (Web + Mobile)'), icon: Smartphone },
+  ]
+}
 
-const API_DOMAINS = [
-  { domain: 'Auth & Users', endpoints: 'Setup member, create profile, update language, Google OAuth', count: 4 },
-  { domain: 'Bloom AI', endpoints: 'Chat, greeting, patterns, assist, extract, summarize, practitioner chat', count: 7 },
-  { domain: 'Calendar & Booking', endpoints: 'Google OAuth flow, calendar events, create/update bookings, sync', count: 6 },
-  { domain: 'Notifications', endpoints: 'Fetch, send, mark read, mark all read, preferences', count: 5 },
-  { domain: 'Resources & Content', endpoints: 'Create resource, check access, early access, feedback → HubSpot', count: 4 },
-]
+function getAiFeatures(t: T) {
+  return [
+    { name: 'Bloom Chat', description: t('Conversational AI companion for member self-reflection and wellbeing tracking', 'Compagnon IA conversationnel pour l\'auto-reflexion et le suivi du bien-etre des membres') },
+    { name: 'Bloom Assist', description: t('Quick-action AI for practitioners \u2014 summarize sessions, extract themes, suggest focus areas', 'IA d\'action rapide pour les praticiens \u2014 resumer les sessions, extraire les themes, suggerer des axes de travail') },
+    { name: t('Pattern Detection', 'Detection de tendances'), description: t('Automatically identifies wellbeing trends across mood, sleep, and activity data', 'Identifie automatiquement les tendances de bien-etre a travers les donnees d\'humeur, de sommeil et d\'activite') },
+    { name: t('Smart Notifications', 'Notifications intelligentes'), description: t('AI-informed alerts when member engagement drops or milestones are reached', 'Alertes basees sur l\'IA lorsque l\'engagement d\'un membre diminue ou qu\'un jalon est atteint') },
+  ]
+}
 
-const EXTERNAL_SERVICES = [
-  {
-    name: 'Supabase',
-    purpose: 'Database, Auth & Real-time',
-    detail: 'PostgreSQL with Row Level Security, Google OAuth, magic links, real-time subscriptions',
-    color: 'bg-emerald-500',
-    lightBg: 'bg-emerald-50',
-    textColor: 'text-emerald-700',
-  },
-  {
-    name: 'Anthropic Claude',
-    purpose: 'AI / LLM Engine',
-    detail: 'Haiku for cost-efficient chat, Sonnet for complex analysis. Powers Bloom companion + practitioner assist',
-    color: 'bg-violet-500',
-    lightBg: 'bg-violet-50',
-    textColor: 'text-violet-700',
-  },
-  {
-    name: 'Google Calendar',
-    purpose: 'Session Scheduling',
-    detail: 'OAuth 2.0 with offline refresh tokens, calendar sync, availability management, booking creation',
-    color: 'bg-blue-500',
-    lightBg: 'bg-blue-50',
-    textColor: 'text-blue-700',
-  },
-  {
-    name: 'Postmark',
-    purpose: 'Email Delivery',
-    detail: 'Transactional emails from hi@bloomsline.com — notifications, invitations, session reminders',
-    color: 'bg-amber-500',
-    lightBg: 'bg-amber-50',
-    textColor: 'text-amber-700',
-  },
-  {
-    name: 'PostHog',
-    purpose: 'Product Analytics',
-    detail: 'EU-hosted (GDPR compliant), autocapture events, session recordings, user identification, cookie consent',
-    color: 'bg-blue-600',
-    lightBg: 'bg-blue-50',
-    textColor: 'text-blue-700',
-  },
-  {
-    name: 'HubSpot',
-    purpose: 'CRM & Feedback',
-    detail: 'API v3 — ticket creation from user feedback, file uploads for attachments, bug/feature/question categories',
-    color: 'bg-orange-500',
-    lightBg: 'bg-orange-50',
-    textColor: 'text-orange-700',
-  },
-]
+function getApiDomains(t: T) {
+  return [
+    { domain: t('Auth & Users', 'Auth et utilisateurs'), endpoints: t('Setup member, create profile, update language, Google OAuth', 'Configurer un membre, creer un profil, mettre a jour la langue, Google OAuth'), count: 4 },
+    { domain: 'Bloom AI', endpoints: t('Chat, greeting, patterns, assist, extract, summarize, practitioner chat', 'Chat, accueil, tendances, assistance, extraction, resume, chat praticien'), count: 7 },
+    { domain: t('Calendar & Booking', 'Calendrier et reservations'), endpoints: t('Google OAuth flow, calendar events, create/update bookings, sync', 'Flux Google OAuth, evenements de calendrier, creation/mise a jour de reservations, synchronisation'), count: 6 },
+    { domain: 'Notifications', endpoints: t('Fetch, send, mark read, mark all read, preferences', 'Recuperer, envoyer, marquer comme lu, tout marquer comme lu, preferences'), count: 5 },
+    { domain: t('Resources & Content', 'Ressources et contenu'), endpoints: t('Create resource, check access, early access, feedback \u2192 HubSpot', 'Creer une ressource, verifier l\'acces, acces anticipe, retours \u2192 HubSpot'), count: 4 },
+  ]
+}
+
+function getExternalServices(t: T) {
+  return [
+    {
+      name: 'Supabase',
+      purpose: t('Database, Auth & Real-time', 'Base de donnees, auth et temps reel'),
+      detail: t('PostgreSQL with Row Level Security, Google OAuth, magic links, real-time subscriptions', 'PostgreSQL avec Row Level Security, Google OAuth, liens magiques, abonnements en temps reel'),
+      color: 'bg-emerald-500',
+      lightBg: 'bg-emerald-50',
+      textColor: 'text-emerald-700',
+    },
+    {
+      name: 'Anthropic Claude',
+      purpose: t('AI / LLM Engine', 'Moteur IA / LLM'),
+      detail: t('Haiku for cost-efficient chat, Sonnet for complex analysis. Powers Bloom companion + practitioner assist', 'Haiku pour un chat economique, Sonnet pour les analyses complexes. Alimente le compagnon Bloom et l\'assistance praticien'),
+      color: 'bg-violet-500',
+      lightBg: 'bg-violet-50',
+      textColor: 'text-violet-700',
+    },
+    {
+      name: 'Google Calendar',
+      purpose: t('Session Scheduling', 'Planification de sessions'),
+      detail: t('OAuth 2.0 with offline refresh tokens, calendar sync, availability management, booking creation', 'OAuth 2.0 avec tokens de rafraichissement hors ligne, synchronisation de calendrier, gestion des disponibilites, creation de reservations'),
+      color: 'bg-blue-500',
+      lightBg: 'bg-blue-50',
+      textColor: 'text-blue-700',
+    },
+    {
+      name: 'Postmark',
+      purpose: t('Email Delivery', 'Envoi d\'emails'),
+      detail: t('Transactional emails from hi@bloomsline.com \u2014 notifications, invitations, session reminders', 'Emails transactionnels depuis hi@bloomsline.com \u2014 notifications, invitations, rappels de sessions'),
+      color: 'bg-amber-500',
+      lightBg: 'bg-amber-50',
+      textColor: 'text-amber-700',
+    },
+    {
+      name: 'PostHog',
+      purpose: t('Product Analytics', 'Analytique produit'),
+      detail: t('EU-hosted (GDPR compliant), autocapture events, session recordings, user identification, cookie consent', 'Heberge en UE (conforme au RGPD), capture automatique d\'evenements, enregistrements de sessions, identification des utilisateurs, consentement cookies'),
+      color: 'bg-blue-600',
+      lightBg: 'bg-blue-50',
+      textColor: 'text-blue-700',
+    },
+    {
+      name: 'HubSpot',
+      purpose: t('CRM & Feedback', 'CRM et retours'),
+      detail: t('API v3 \u2014 ticket creation from user feedback, file uploads for attachments, bug/feature/question categories', 'API v3 \u2014 creation de tickets a partir des retours utilisateurs, telechargement de fichiers joints, categories bug/fonctionnalite/question'),
+      color: 'bg-orange-500',
+      lightBg: 'bg-orange-50',
+      textColor: 'text-orange-700',
+    },
+  ]
+}
 
 // ── Animation helpers ────────────────────────────────────────────────────
 
@@ -178,19 +194,19 @@ const fadeUp = {
 
 // ── Visual Architecture Diagram ──────────────────────────────────────────
 
-function ArchitectureDiagram() {
+function ArchitectureDiagram({ t }: { t: T }) {
   return (
     <div className="relative py-4">
       {/* Row 1: Clients */}
       <div className="flex justify-center gap-6 mb-3">
         <div className="bg-blue-50 border-2 border-blue-200 rounded-xl px-5 py-3 text-center w-48">
           <Monitor className="w-5 h-5 text-blue-600 mx-auto mb-1.5" />
-          <p className="text-xs font-bold text-blue-700">Practitioner Web</p>
+          <p className="text-xs font-bold text-blue-700">{t('Practitioner Web', 'Web praticien')}</p>
           <p className="text-[10px] text-blue-500">Next.js 16 + React 19</p>
         </div>
         <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl px-5 py-3 text-center w-48">
           <Smartphone className="w-5 h-5 text-emerald-600 mx-auto mb-1.5" />
-          <p className="text-xs font-bold text-emerald-700">Member Mobile</p>
+          <p className="text-xs font-bold text-emerald-700">{t('Member Mobile', 'Mobile membre')}</p>
           <p className="text-[10px] text-emerald-500">Expo (React Native)</p>
         </div>
       </div>
@@ -209,10 +225,10 @@ function ArchitectureDiagram() {
       <div className="flex justify-center mb-3">
         <div className="bg-gray-100 border-2 border-gray-300 rounded-xl px-8 py-3 text-center w-[420px]">
           <Server className="w-5 h-5 text-gray-600 mx-auto mb-1.5" />
-          <p className="text-xs font-bold text-gray-700">API Layer</p>
-          <p className="text-[10px] text-gray-500">Next.js Routes + Middleware + Rate Limiting + Auth</p>
+          <p className="text-xs font-bold text-gray-700">{t('API Layer', 'Couche API')}</p>
+          <p className="text-[10px] text-gray-500">{t('Next.js Routes + Middleware + Rate Limiting + Auth', 'Routes Next.js + Middleware + Limitation de debit + Auth')}</p>
           <div className="flex justify-center gap-1.5 mt-2">
-            {['Auth', 'Bloom AI', 'Calendar', 'Notify', 'Resources'].map((d) => (
+            {['Auth', 'Bloom AI', t('Calendar', 'Calendrier'), t('Notify', 'Notif.'), t('Resources', 'Ressources')].map((d) => (
               <span key={d} className="text-[9px] bg-white text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">{d}</span>
             ))}
           </div>
@@ -230,13 +246,13 @@ function ArchitectureDiagram() {
           <Database className="w-5 h-5 text-emerald-600 mx-auto mb-1.5" />
           <p className="text-xs font-bold text-emerald-700">Supabase</p>
           <p className="text-[10px] text-emerald-500">PostgreSQL + Auth + RLS</p>
-          <p className="text-[10px] text-emerald-400">Real-time subscriptions</p>
+          <p className="text-[10px] text-emerald-400">{t('Real-time subscriptions', 'Abonnements en temps reel')}</p>
         </div>
         <div className="bg-violet-50 border-2 border-violet-200 rounded-xl px-4 py-3 text-center w-52">
           <Brain className="w-5 h-5 text-violet-600 mx-auto mb-1.5" />
           <p className="text-xs font-bold text-violet-700">Claude AI</p>
-          <p className="text-[10px] text-violet-500">Haiku (chat) + Sonnet (analysis)</p>
-          <p className="text-[10px] text-violet-400">Bloom companion & assist</p>
+          <p className="text-[10px] text-violet-500">{t('Haiku (chat) + Sonnet (analysis)', 'Haiku (chat) + Sonnet (analyse)')}</p>
+          <p className="text-[10px] text-violet-400">{t('Bloom companion & assist', 'Compagnon Bloom et assistance')}</p>
         </div>
       </div>
 
@@ -248,35 +264,35 @@ function ArchitectureDiagram() {
       {/* Row 4: External Services */}
       <div className="flex justify-center">
         <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl px-6 py-4 w-full max-w-xl">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider text-center mb-3">External Services</p>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider text-center mb-3">{t('External Services', 'Services externes')}</p>
           <div className="grid grid-cols-4 gap-3">
             <div className="text-center">
               <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mx-auto mb-1">
                 <Calendar className="w-4 h-4 text-blue-600" />
               </div>
               <p className="text-[10px] font-semibold text-gray-700">Google</p>
-              <p className="text-[9px] text-gray-400">Calendar + OAuth</p>
+              <p className="text-[9px] text-gray-400">{t('Calendar + OAuth', 'Calendrier + OAuth')}</p>
             </div>
             <div className="text-center">
               <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center mx-auto mb-1">
                 <Mail className="w-4 h-4 text-amber-600" />
               </div>
               <p className="text-[10px] font-semibold text-gray-700">Postmark</p>
-              <p className="text-[9px] text-gray-400">Email delivery</p>
+              <p className="text-[9px] text-gray-400">{t('Email delivery', 'Envoi d\'emails')}</p>
             </div>
             <div className="text-center">
               <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mx-auto mb-1">
                 <Activity className="w-4 h-4 text-blue-600" />
               </div>
               <p className="text-[10px] font-semibold text-gray-700">PostHog</p>
-              <p className="text-[9px] text-gray-400">Analytics (EU)</p>
+              <p className="text-[9px] text-gray-400">{t('Analytics (EU)', 'Analytique (UE)')}</p>
             </div>
             <div className="text-center">
               <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center mx-auto mb-1">
                 <Users className="w-4 h-4 text-orange-600" />
               </div>
               <p className="text-[10px] font-semibold text-gray-700">HubSpot</p>
-              <p className="text-[9px] text-gray-400">CRM & tickets</p>
+              <p className="text-[9px] text-gray-400">{t('CRM & tickets', 'CRM et tickets')}</p>
             </div>
           </div>
         </div>
@@ -287,21 +303,21 @@ function ArchitectureDiagram() {
 
 // ── Data Flow Diagram ────────────────────────────────────────────────────
 
-function DataFlowDiagram() {
+function DataFlowDiagram({ t }: { t: T }) {
   const flows = [
     {
-      label: 'Member opens app',
-      steps: ['Expo App', 'API /bloom/chat', 'Claude Haiku', 'Response streamed back'],
+      label: t('Member opens app', 'Le membre ouvre l\'application'),
+      steps: ['Expo App', 'API /bloom/chat', 'Claude Haiku', t('Response streamed back', 'Reponse envoyee en continu')],
       color: 'emerald',
     },
     {
-      label: 'Practitioner books session',
-      steps: ['Web App', 'API /bookings', 'Supabase', 'Google Calendar sync', 'Postmark email to member'],
+      label: t('Practitioner books session', 'Le praticien reserve une session'),
+      steps: ['Web App', 'API /bookings', 'Supabase', t('Google Calendar sync', 'Sync Google Calendar'), t('Postmark email to member', 'Email Postmark au membre')],
       color: 'blue',
     },
     {
-      label: 'User submits feedback',
-      steps: ['Web App', 'API /feedback', 'HubSpot ticket created', 'File attachments uploaded'],
+      label: t('User submits feedback', 'L\'utilisateur envoie un retour'),
+      steps: ['Web App', 'API /feedback', t('HubSpot ticket created', 'Ticket HubSpot cree'), t('File attachments uploaded', 'Fichiers joints telecharges')],
       color: 'amber',
     },
   ]
@@ -337,6 +353,16 @@ function DataFlowDiagram() {
 // ── Page ─────────────────────────────────────────────────────────────────
 
 export default function TechOverviewPage() {
+  const [lang, setLang] = useState<'en' | 'fr'>('en')
+  const t = (en: string, fr: string) => lang === 'fr' ? fr : en
+
+  const STACK_LAYERS = getStackLayers(t)
+  const SECURITY_FEATURES = getSecurityFeatures(t)
+  const KEY_NUMBERS = getKeyNumbers(t)
+  const AI_FEATURES = getAiFeatures(t)
+  const API_DOMAINS = getApiDomains(t)
+  const EXTERNAL_SERVICES = getExternalServices(t)
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -346,9 +372,15 @@ export default function TechOverviewPage() {
             <Cpu className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h1 className="text-sm font-semibold text-gray-900">Technical Overview</h1>
-            <p className="text-[10px] text-gray-400">Bloomsline Care — Architecture & Stack</p>
+            <h1 className="text-sm font-semibold text-gray-900">{t('Technical Overview', 'Apercu technique')}</h1>
+            <p className="text-[10px] text-gray-400">{t('Bloomsline Care \u2014 Architecture & Stack', 'Bloomsline Care \u2014 Architecture et stack technique')}</p>
           </div>
+          <button
+            onClick={() => setLang(lang === 'en' ? 'fr' : 'en')}
+            className="ml-auto text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
+          >
+            {lang === 'en' ? '\uD83C\uDDEB\uD83C\uDDF7 Fran\u00E7ais' : '\uD83C\uDDEC\uD83C\uDDE7 English'}
+          </button>
         </div>
       </header>
 
@@ -356,25 +388,27 @@ export default function TechOverviewPage() {
 
         {/* ── Intro ───────────────────────────────────────────────── */}
         <motion.div {...fadeUp} className="max-w-2xl">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">How Bloomsline Care is Built</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{t('How Bloomsline Care is Built', 'Comment Bloomsline Care est construit')}</h2>
           <p className="text-sm text-gray-500 leading-relaxed">
-            A modern, AI-native healthcare platform with two interfaces — a web app for practitioners and a mobile app for members.
-            Built on production-grade infrastructure with security, i18n, and scalability from day one.
+            {t(
+              'A modern, AI-native healthcare platform with two interfaces \u2014 a web app for practitioners and a mobile app for members. Built on production-grade infrastructure with security, i18n, and scalability from day one.',
+              'Une plateforme de sante moderne et nativement IA avec deux interfaces \u2014 une application web pour les praticiens et une application mobile pour les membres. Construite sur une infrastructure de qualite production avec securite, internationalisation et scalabilite des le premier jour.'
+            )}
           </p>
         </motion.div>
 
         {/* ── Visual Architecture Diagram ──────────────────────────── */}
         <motion.div {...fadeUp} transition={{ delay: 0.05 }} className="bg-white border border-gray-200 rounded-xl p-6">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">System Architecture</h3>
-          <p className="text-[10px] text-gray-400 mb-4">How everything connects — from clients to external services</p>
-          <ArchitectureDiagram />
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">{t('System Architecture', 'Architecture du systeme')}</h3>
+          <p className="text-[10px] text-gray-400 mb-4">{t('How everything connects \u2014 from clients to external services', 'Comment tout s\'interconnecte \u2014 des clients aux services externes')}</p>
+          <ArchitectureDiagram t={t} />
         </motion.div>
 
         {/* ── Data Flow Examples ───────────────────────────────────── */}
         <motion.div {...fadeUp} transition={{ delay: 0.08 }}>
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">How Data Flows</h3>
-          <p className="text-[10px] text-gray-400 mb-3">Real request paths through the system</p>
-          <DataFlowDiagram />
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">{t('How Data Flows', 'Flux de donnees')}</h3>
+          <p className="text-[10px] text-gray-400 mb-3">{t('Real request paths through the system', 'Parcours reels des requetes a travers le systeme')}</p>
+          <DataFlowDiagram t={t} />
         </motion.div>
 
         {/* ── Key Numbers ─────────────────────────────────────────── */}
@@ -394,7 +428,7 @@ export default function TechOverviewPage() {
         {/* ── Stack Layers ────────────────────────────────────────── */}
         <div>
           <motion.h3 {...fadeUp} transition={{ delay: 0.15 }} className="text-sm font-semibold text-gray-900 mb-4">
-            Technology Stack
+            {t('Technology Stack', 'Stack technique')}
           </motion.h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {STACK_LAYERS.map((layer, i) => {
@@ -418,7 +452,7 @@ export default function TechOverviewPage() {
                         <div className={`w-1.5 h-1.5 rounded-full ${layer.color} mt-1.5 shrink-0`} />
                         <div>
                           <span className="text-xs font-medium text-gray-800">{item.name}</span>
-                          <span className="text-xs text-gray-400 ml-1.5">— {item.detail}</span>
+                          <span className="text-xs text-gray-400 ml-1.5">&mdash; {item.detail}</span>
                         </div>
                       </div>
                     ))}
@@ -433,8 +467,8 @@ export default function TechOverviewPage() {
         <motion.div {...fadeUp} transition={{ delay: 0.35 }}>
           <div className="flex items-center gap-2 mb-4">
             <Globe className="w-4 h-4 text-gray-500" />
-            <h3 className="text-sm font-semibold text-gray-900">External Services</h3>
-            <span className="text-[10px] text-gray-400 ml-1">6 integrations powering the platform</span>
+            <h3 className="text-sm font-semibold text-gray-900">{t('External Services', 'Services externes')}</h3>
+            <span className="text-[10px] text-gray-400 ml-1">{t('6 integrations powering the platform', '6 integrations alimentant la plateforme')}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {EXTERNAL_SERVICES.map((svc) => (
@@ -454,8 +488,8 @@ export default function TechOverviewPage() {
         <motion.div {...fadeUp} transition={{ delay: 0.4 }}>
           <div className="flex items-center gap-2 mb-4">
             <Brain className="w-4 h-4 text-violet-500" />
-            <h3 className="text-sm font-semibold text-gray-900">AI-Native Features</h3>
-            <span className="text-[10px] text-gray-400 ml-1">Powered by Anthropic Claude</span>
+            <h3 className="text-sm font-semibold text-gray-900">{t('AI-Native Features', 'Fonctionnalites nativement IA')}</h3>
+            <span className="text-[10px] text-gray-400 ml-1">{t('Powered by Anthropic Claude', 'Propulse par Anthropic Claude')}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {AI_FEATURES.map((feature) => (
@@ -468,7 +502,10 @@ export default function TechOverviewPage() {
           <div className="mt-3 bg-violet-50 border border-violet-100 rounded-lg px-4 py-2.5 flex items-start gap-2">
             <Zap className="w-3.5 h-3.5 text-violet-500 mt-0.5 shrink-0" />
             <p className="text-xs text-violet-700">
-              <span className="font-medium">Cost optimization:</span> Bloom uses Claude Haiku for conversations (~€1.80/practitioner/mo), keeping AI costs under 10% of revenue at €25/mo pricing. Sonnet reserved for complex analysis (summaries, pattern detection).
+              <span className="font-medium">{t('Cost optimization:', 'Optimisation des couts :')}</span> {t(
+                'Bloom uses Claude Haiku for conversations (~\u20AC1.80/practitioner/mo), keeping AI costs under 10% of revenue at \u20AC25/mo pricing. Sonnet reserved for complex analysis (summaries, pattern detection).',
+                'Bloom utilise Claude Haiku pour les conversations (~1,80\u20AC/praticien/mois), maintenant les couts IA en dessous de 10 % du chiffre d\'affaires a 25\u20AC/mois. Sonnet reserve pour les analyses complexes (resumes, detection de tendances).'
+              )}
             </p>
           </div>
         </motion.div>
@@ -477,8 +514,8 @@ export default function TechOverviewPage() {
         <motion.div {...fadeUp} transition={{ delay: 0.45 }} className="bg-white border border-gray-200 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <Server className="w-4 h-4 text-gray-500" />
-            <h3 className="text-sm font-semibold text-gray-900">API Surface</h3>
-            <span className="text-[10px] text-gray-400 ml-1">24+ endpoints across 5 domains</span>
+            <h3 className="text-sm font-semibold text-gray-900">{t('API Surface', 'Surface API')}</h3>
+            <span className="text-[10px] text-gray-400 ml-1">{t('24+ endpoints across 5 domains', '24+ points d\'acces repartis sur 5 domaines')}</span>
           </div>
           <div className="space-y-2">
             {API_DOMAINS.map((d) => (
@@ -495,7 +532,7 @@ export default function TechOverviewPage() {
         <motion.div {...fadeUp} transition={{ delay: 0.5 }}>
           <div className="flex items-center gap-2 mb-4">
             <Shield className="w-4 h-4 text-emerald-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Security & Compliance</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{t('Security & Compliance', 'Securite et conformite')}</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {SECURITY_FEATURES.map((feature) => {
@@ -519,13 +556,20 @@ export default function TechOverviewPage() {
         <motion.div {...fadeUp} transition={{ delay: 0.55 }} className="bg-white border border-gray-200 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <Smartphone className="w-4 h-4 text-blue-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Multi-Platform Architecture</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{t('Multi-Platform Architecture', 'Architecture multiplateforme')}</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="border border-blue-100 rounded-xl p-4 bg-blue-50/30">
-              <p className="text-xs font-semibold text-blue-700 mb-2">Practitioner — Web App</p>
+              <p className="text-xs font-semibold text-blue-700 mb-2">{t('Practitioner \u2014 Web App', 'Praticien \u2014 Application web')}</p>
               <div className="space-y-1.5">
-                {['Dashboard & member management', 'Session scheduling via Google Calendar', 'AI-assisted clinical notes (Bloom Assist)', 'Resource library & sharing', 'Analytics & progress tracking', 'Feedback system → HubSpot'].map((item) => (
+                {[
+                  t('Dashboard & member management', 'Tableau de bord et gestion des membres'),
+                  t('Session scheduling via Google Calendar', 'Planification de sessions via Google Calendar'),
+                  t('AI-assisted clinical notes (Bloom Assist)', 'Notes cliniques assistees par IA (Bloom Assist)'),
+                  t('Resource library & sharing', 'Bibliotheque de ressources et partage'),
+                  t('Analytics & progress tracking', 'Analytique et suivi de la progression'),
+                  t('Feedback system \u2192 HubSpot', 'Systeme de retours \u2192 HubSpot'),
+                ].map((item) => (
                   <div key={item} className="flex items-center gap-2">
                     <CheckCircle2 className="w-3 h-3 text-blue-400 shrink-0" />
                     <span className="text-[11px] text-gray-600">{item}</span>
@@ -534,9 +578,16 @@ export default function TechOverviewPage() {
               </div>
             </div>
             <div className="border border-emerald-100 rounded-xl p-4 bg-emerald-50/30">
-              <p className="text-xs font-semibold text-emerald-700 mb-2">Member — Mobile App (Expo)</p>
+              <p className="text-xs font-semibold text-emerald-700 mb-2">{t('Member \u2014 Mobile App (Expo)', 'Membre \u2014 Application mobile (Expo)')}</p>
               <div className="space-y-1.5">
-                {['Bloom AI companion for self-reflection', 'Mood tracking & daily rituals', 'Moment capture (photo, voice, text)', 'Session booking & email reminders (Postmark)', 'Milestone progress & celebrations', 'Push notifications'].map((item) => (
+                {[
+                  t('Bloom AI companion for self-reflection', 'Compagnon IA Bloom pour l\'auto-reflexion'),
+                  t('Mood tracking & daily rituals', 'Suivi de l\'humeur et rituels quotidiens'),
+                  t('Moment capture (photo, voice, text)', 'Capture de moments (photo, voix, texte)'),
+                  t('Session booking & email reminders (Postmark)', 'Reservation de sessions et rappels par email (Postmark)'),
+                  t('Milestone progress & celebrations', 'Progression des jalons et celebrations'),
+                  t('Push notifications', 'Notifications push'),
+                ].map((item) => (
                   <div key={item} className="flex items-center gap-2">
                     <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
                     <span className="text-[11px] text-gray-600">{item}</span>
@@ -551,28 +602,28 @@ export default function TechOverviewPage() {
         <motion.div {...fadeUp} transition={{ delay: 0.6 }} className="bg-white border border-gray-200 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-3">
             <Languages className="w-4 h-4 text-amber-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Internationalization</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{t('Internationalization', 'Internationalisation')}</h3>
           </div>
           <div className="flex items-center gap-3">
             {[
-              { flag: '🇬🇧', lang: 'English', code: 'en' },
-              { flag: '🇫🇷', lang: 'French', code: 'fr' },
-              { flag: '🇪🇸', lang: 'Spanish', code: 'es' },
+              { flag: '\uD83C\uDDEC\uD83C\uDDE7', langName: t('English', 'Anglais'), code: 'en' },
+              { flag: '\uD83C\uDDEB\uD83C\uDDF7', langName: t('French', 'Francais'), code: 'fr' },
+              { flag: '\uD83C\uDDEA\uD83C\uDDF8', langName: t('Spanish', 'Espagnol'), code: 'es' },
             ].map((l) => (
               <div key={l.code} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
                 <span className="text-sm">{l.flag}</span>
-                <span className="text-xs font-medium text-gray-700">{l.lang}</span>
+                <span className="text-xs font-medium text-gray-700">{l.langName}</span>
                 <span className="text-[10px] text-gray-400">{l.code}</span>
               </div>
             ))}
           </div>
-          <p className="text-xs text-gray-400 mt-2">Full UI + AI prompts + system messages translated across all supported languages.</p>
+          <p className="text-xs text-gray-400 mt-2">{t('Full UI + AI prompts + system messages translated across all supported languages.', 'Interface complete + invites IA + messages systeme traduits dans toutes les langues prises en charge.')}</p>
         </motion.div>
 
         {/* ── Footer ──────────────────────────────────────────────── */}
         <motion.div {...fadeUp} transition={{ delay: 0.65 }} className="text-center pt-4 pb-8">
           <p className="text-[10px] text-gray-400">
-            Built by the Bloomsline team — shipping fast, scaling smart.
+            {t('Built by the Bloomsline team \u2014 shipping fast, scaling smart.', 'Construit par l\'\u00E9quipe Bloomsline \u2014 livraison rapide, croissance intelligente.')}
           </p>
         </motion.div>
       </main>
