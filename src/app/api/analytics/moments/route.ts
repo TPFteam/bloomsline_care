@@ -150,6 +150,109 @@ export async function GET() {
       return { userId: u.userId, maxStreak, totalDays: days.length }
     })
 
+    // ── Retention curve (% users active on day N after first moment) ──
+    const retentionDays = [1, 2, 3, 5, 7, 14, 21, 30]
+    const retention = retentionDays.map(dayN => {
+      let retained = 0
+      for (const uid of uniqueUsers) {
+        const userMoments = userMap[uid]
+        const firstDate = new Date(userMoments[0].created_at)
+        const targetDate = new Date(firstDate)
+        targetDate.setDate(targetDate.getDate() + dayN)
+        const targetDay = targetDate.toISOString().split('T')[0]
+        const activeDays = new Set(userMoments.map(m => new Date(m.created_at).toISOString().split('T')[0]))
+        if (activeDays.has(targetDay)) retained++
+      }
+      return { day: dayN, retained, total: totalUsers, pct: Math.round((retained / totalUsers) * 100) }
+    })
+
+    // ── Activation funnel (% users who reached N moments) ───────────
+    const activationThresholds = [1, 2, 3, 5, 10, 20, 50]
+    const activation = activationThresholds.map(n => {
+      const count = perUser.filter(u => u.total >= n).length
+      return { threshold: n, count, pct: Math.round((count / totalUsers) * 100) }
+    })
+
+    // ── Engagement depth over time (weekly averages) ────────────────
+    const weeklyEngagement: { week: string; avgMoments: number; activeUsers: number }[] = []
+    const firstEver = new Date(moments[0].created_at)
+    const lastEver = new Date(moments[moments.length - 1].created_at)
+    const weekStart = new Date(firstEver)
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay()) // start of week
+    while (weekStart <= lastEver) {
+      const weekEnd = new Date(weekStart)
+      weekEnd.setDate(weekEnd.getDate() + 7)
+      const weekLabel = `${weekStart.toISOString().split('T')[0]}`
+      const weekMoments = moments.filter(m => {
+        const d = new Date(m.created_at)
+        return d >= weekStart && d < weekEnd
+      })
+      const weekUsers = new Set(weekMoments.map(m => m.user_id))
+      weeklyEngagement.push({
+        week: weekLabel,
+        avgMoments: weekUsers.size > 0 ? Math.round((weekMoments.length / weekUsers.size) * 10) / 10 : 0,
+        activeUsers: weekUsers.size,
+      })
+      weekStart.setDate(weekStart.getDate() + 7)
+    }
+
+    // ── Power user analysis ────────────────────────────────────────
+    const powerUsers = perUser.filter(u => u.total >= 10).length
+    const casualUsers = perUser.filter(u => u.total >= 3 && u.total < 10).length
+    const trialUsers = perUser.filter(u => u.total < 3).length
+
+    // ── Predictive signals: what early behavior predicts retention ──
+    const usersWithDay1Multi = perUser.filter(u => {
+      const uid = uniqueUsers.find(id => id.slice(0, 8) === u.userId)!
+      const userMoments = userMap[uid]
+      const firstDay = new Date(userMoments[0].created_at).toISOString().split('T')[0]
+      const day1Count = userMoments.filter(m => new Date(m.created_at).toISOString().split('T')[0] === firstDay).length
+      return day1Count >= 2
+    })
+    const day1MultiRetained = usersWithDay1Multi.filter(u => u.activeDays >= 3).length
+    const day1SingleUsers = perUser.filter(u => !usersWithDay1Multi.includes(u))
+    const day1SingleRetained = day1SingleUsers.filter(u => u.activeDays >= 3).length
+
+    const usersWithMoodTag = perUser.filter(u => u.topMood !== null)
+    const moodTagRetained = usersWithMoodTag.filter(u => u.activeDays >= 3).length
+    const noMoodUsers = perUser.filter(u => u.topMood === null)
+    const noMoodRetained = noMoodUsers.filter(u => u.activeDays >= 3).length
+
+    const usersWithCaption = perUser.filter(u => u.captionRate > 0)
+    const captionRetained = usersWithCaption.filter(u => u.activeDays >= 3).length
+    const noCaptionUsers = perUser.filter(u => u.captionRate === 0)
+    const noCaptionRetained = noCaptionUsers.filter(u => u.activeDays >= 3).length
+
+    const signals = [
+      {
+        signal: '2+ moments on day 1',
+        withSignal: usersWithDay1Multi.length,
+        withSignalRetained: day1MultiRetained,
+        withSignalPct: usersWithDay1Multi.length > 0 ? Math.round((day1MultiRetained / usersWithDay1Multi.length) * 100) : 0,
+        withoutSignal: day1SingleUsers.length,
+        withoutSignalRetained: day1SingleRetained,
+        withoutSignalPct: day1SingleUsers.length > 0 ? Math.round((day1SingleRetained / day1SingleUsers.length) * 100) : 0,
+      },
+      {
+        signal: 'Tagged a mood',
+        withSignal: usersWithMoodTag.length,
+        withSignalRetained: moodTagRetained,
+        withSignalPct: usersWithMoodTag.length > 0 ? Math.round((moodTagRetained / usersWithMoodTag.length) * 100) : 0,
+        withoutSignal: noMoodUsers.length,
+        withoutSignalRetained: noMoodRetained,
+        withoutSignalPct: noMoodUsers.length > 0 ? Math.round((noMoodRetained / noMoodUsers.length) * 100) : 0,
+      },
+      {
+        signal: 'Wrote a caption/note',
+        withSignal: usersWithCaption.length,
+        withSignalRetained: captionRetained,
+        withSignalPct: usersWithCaption.length > 0 ? Math.round((captionRetained / usersWithCaption.length) * 100) : 0,
+        withoutSignal: noCaptionUsers.length,
+        withoutSignalRetained: noCaptionRetained,
+        withoutSignalPct: noCaptionUsers.length > 0 ? Math.round((noCaptionRetained / noCaptionUsers.length) * 100) : 0,
+      },
+    ]
+
     return NextResponse.json({
       empty: false,
       totalMoments,
@@ -172,6 +275,11 @@ export async function GET() {
         first: moments[0].created_at,
         last: moments[moments.length - 1].created_at,
       },
+      retention,
+      activation,
+      weeklyEngagement,
+      userSegments: { powerUsers, casualUsers, trialUsers },
+      signals,
     })
   } catch (err) {
     console.error('Analytics error:', err)

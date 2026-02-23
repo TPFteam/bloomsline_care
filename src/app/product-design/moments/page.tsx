@@ -344,6 +344,14 @@ interface AnalyticsData {
   dailyTimeline: { date: string; count: number }[]
   totalActiveDays: number
   dateRange: { first: string; last: string }
+  retention: { day: number; retained: number; total: number; pct: number }[]
+  activation: { threshold: number; count: number; pct: number }[]
+  weeklyEngagement: { week: string; avgMoments: number; activeUsers: number }[]
+  userSegments: { powerUsers: number; casualUsers: number; trialUsers: number }
+  signals: {
+    signal: string; withSignal: number; withSignalRetained: number; withSignalPct: number
+    withoutSignal: number; withoutSignalRetained: number; withoutSignalPct: number
+  }[]
 }
 
 const MOOD_EMOJI: Record<string, string> = {
@@ -421,6 +429,11 @@ export default function MomentsProductDesignPage() {
               { id: 'user-feedback', label: 'What Users Told Us' },
               { id: 'touchpoints', label: 'Touchpoint Sequence' },
               { id: 'analytics', label: 'Live Analytics' },
+              { id: 'user-segments', label: 'User Segments' },
+              { id: 'retention', label: 'Retention Curve' },
+              { id: 'activation', label: 'Activation Funnel' },
+              { id: 'signals', label: 'Predictive Signals' },
+              { id: 'pilot-summary', label: 'Pilot Summary' },
               { id: 'built-vs-next', label: 'Built vs. Next' },
             ].map((item) => (
               <a
@@ -1074,6 +1087,323 @@ export default function MomentsProductDesignPage() {
               </div>
             </div>
           )}
+        </motion.section>
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* ── USER SEGMENTS ────────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════ */}
+        <motion.section id="user-segments" className="scroll-mt-16" {...fadeUp(0.38)}>
+          <SectionTitle subtitle="Test users categorized by background — how prior experience shaped behavior">User Segments</SectionTitle>
+
+          <div className="space-y-4">
+            {/* Segment framework */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                {
+                  label: 'Prior Wellbeing App Users',
+                  color: 'bg-blue-50 border-blue-200',
+                  headerColor: 'bg-blue-100 text-blue-800',
+                  icon: '📱',
+                  description: 'Used apps like Calm, Headspace, Daylio, or therapy platforms before.',
+                  traits: ['Already understand mood tracking', 'Compare Bloomsline to what they know', 'Higher initial engagement', 'More critical of UX gaps'],
+                  hypothesis: 'Faster activation but higher churn if features don\'t match expectations.',
+                },
+                {
+                  label: 'No Prior Wellbeing App',
+                  color: 'bg-emerald-50 border-emerald-200',
+                  headerColor: 'bg-emerald-100 text-emerald-800',
+                  icon: '🌱',
+                  description: 'First time using any digital wellbeing tool. Often referred by practitioner.',
+                  traits: ['Need more onboarding guidance', 'No benchmark to compare against', 'May find concept novel or confusing', 'Practitioner recommendation is key trigger'],
+                  hypothesis: 'Slower activation but potentially stickier if they form a new habit.',
+                },
+                {
+                  label: 'Emotionally Self-Aware',
+                  color: 'bg-violet-50 border-violet-200',
+                  headerColor: 'bg-violet-100 text-violet-800',
+                  icon: '🧭',
+                  description: 'Clear about their emotions, organized, can name what they feel. vs. those who struggle to identify emotions.',
+                  traits: ['Quick mood tagging (know their feelings)', 'Richer captions and notes', 'Use negative moods without hesitation', 'vs. Uncertain/skip mood step'],
+                  hypothesis: 'Self-aware users tag moods faster and write more notes. Less-aware users need the mood vocabulary as a learning tool.',
+                },
+              ].map((seg, i) => (
+                <div key={i} className={`border rounded-2xl overflow-hidden ${seg.color}`}>
+                  <div className={`px-4 py-2.5 ${seg.headerColor} flex items-center gap-2`}>
+                    <span className="text-base">{seg.icon}</span>
+                    <span className="text-xs font-bold">{seg.label}</span>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <p className="text-[10px] text-gray-600 leading-relaxed">{seg.description}</p>
+                    <div>
+                      <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Behavioral Traits</p>
+                      <div className="space-y-1">
+                        {seg.traits.map((t, j) => (
+                          <p key={j} className="text-[10px] text-gray-600">• {t}</p>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="bg-white/60 rounded-lg p-2.5">
+                      <p className="text-[9px] font-semibold text-gray-500 mb-0.5">Hypothesis</p>
+                      <p className="text-[10px] text-gray-700 leading-relaxed">{seg.hypothesis}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Behavioral segments from data */}
+            {analytics && !analytics.empty && (
+              <div className="bg-white border border-gray-200 rounded-2xl p-5">
+                <h3 className="text-xs font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Users className="w-3.5 h-3.5 text-gray-400" />
+                  Engagement Tiers (from data)
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                    <p className="text-2xl font-bold text-emerald-600">{analytics.userSegments.powerUsers}</p>
+                    <p className="text-xs font-semibold text-emerald-700 mt-1">Power Users</p>
+                    <p className="text-[9px] text-emerald-600">10+ moments</p>
+                    <p className="text-[9px] text-gray-500 mt-1">{analytics.totalUsers > 0 ? Math.round((analytics.userSegments.powerUsers / analytics.totalUsers) * 100) : 0}% of users</p>
+                  </div>
+                  <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-200">
+                    <p className="text-2xl font-bold text-blue-600">{analytics.userSegments.casualUsers}</p>
+                    <p className="text-xs font-semibold text-blue-700 mt-1">Casual Users</p>
+                    <p className="text-[9px] text-blue-600">3-9 moments</p>
+                    <p className="text-[9px] text-gray-500 mt-1">{analytics.totalUsers > 0 ? Math.round((analytics.userSegments.casualUsers / analytics.totalUsers) * 100) : 0}% of users</p>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded-xl border border-gray-200">
+                    <p className="text-2xl font-bold text-gray-500">{analytics.userSegments.trialUsers}</p>
+                    <p className="text-xs font-semibold text-gray-700 mt-1">Trial Only</p>
+                    <p className="text-[9px] text-gray-500">1-2 moments</p>
+                    <p className="text-[9px] text-gray-400 mt-1">{analytics.totalUsers > 0 ? Math.round((analytics.userSegments.trialUsers / analytics.totalUsers) * 100) : 0}% of users</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.section>
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* ── RETENTION CURVE ──────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════ */}
+        {analytics && !analytics.empty && (
+          <motion.section id="retention" className="scroll-mt-16" {...fadeUp(0.4)}>
+            <SectionTitle subtitle="What % of users captured a moment on day N after their first moment">Retention Curve</SectionTitle>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+              <div className="flex gap-0.5 h-40 items-end">
+                {analytics.retention.map((r) => (
+                  <div key={r.day} className="flex-1 flex flex-col items-center justify-end group relative">
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 text-white text-[8px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
+                      Day {r.day}: {r.retained}/{r.total} users ({r.pct}%)
+                    </div>
+                    <p className="text-[9px] font-bold text-gray-700 mb-1">{r.pct}%</p>
+                    <div className={`w-full rounded-t-md ${r.pct >= 30 ? 'bg-emerald-400' : r.pct >= 15 ? 'bg-amber-400' : 'bg-red-400'}`} style={{ height: `${Math.max(r.pct * 1.4, r.pct > 0 ? 6 : 0)}px` }} />
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-0.5 mt-2">
+                {analytics.retention.map((r) => (
+                  <div key={r.day} className="flex-1 text-center">
+                    <p className="text-[9px] text-gray-500">D{r.day}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-5 bg-gray-50 border border-gray-100 rounded-lg p-3">
+                <p className="text-[9px] font-semibold text-gray-500 mb-1">What This Tells Investors</p>
+                <p className="text-[10px] text-gray-600 leading-relaxed">
+                  {(() => {
+                    const d7 = analytics.retention.find(r => r.day === 7)
+                    const d30 = analytics.retention.find(r => r.day === 30)
+                    if (!d7 || !d30) return 'Insufficient data for retention analysis.'
+                    return `Day 7 retention: ${d7.pct}% (${d7.retained}/${d7.total} users). Day 30 retention: ${d30.pct}% (${d30.retained}/${d30.total} users). ${d7.pct >= 20 ? 'Early signal of product-market fit — users are voluntarily returning.' : 'Retention needs work — confirms the missing trigger/reward problem identified in user feedback.'} For context: consumer health apps typically see 10-15% D30 retention.`
+                  })()}
+                </p>
+              </div>
+            </div>
+          </motion.section>
+        )}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* ── ACTIVATION FUNNEL ────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════ */}
+        {analytics && !analytics.empty && (
+          <motion.section id="activation" className="scroll-mt-16" {...fadeUp(0.42)}>
+            <SectionTitle subtitle="How deep do users go — what % reach each milestone">Activation Funnel</SectionTitle>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+              <div className="space-y-3">
+                {analytics.activation.map((a, i) => (
+                  <div key={a.threshold}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-gray-700 font-semibold">{a.threshold === 1 ? 'Captured 1st moment' : a.threshold === 2 ? 'Came back for 2nd' : a.threshold === 3 ? 'Reached 3 moments' : a.threshold === 5 ? 'Committed (5+)' : a.threshold === 10 ? 'Power user (10+)' : a.threshold === 20 ? 'Super user (20+)' : `${a.threshold}+ moments`}</span>
+                      <span className="text-[10px] text-gray-500">{a.count}/{analytics.totalUsers} ({a.pct}%)</span>
+                    </div>
+                    <div className="h-6 bg-gray-100 rounded-lg overflow-hidden relative">
+                      <div
+                        className={`h-full rounded-lg transition-all ${i === 0 ? 'bg-emerald-400' : i <= 2 ? 'bg-blue-400' : i <= 4 ? 'bg-violet-400' : 'bg-pink-400'}`}
+                        style={{ width: `${a.pct}%` }}
+                      />
+                      <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-gray-700">{a.pct}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-5 bg-blue-50 border border-blue-100 rounded-lg p-3">
+                <p className="text-[9px] font-semibold text-blue-700 mb-1">Funnel Analysis</p>
+                <p className="text-[10px] text-blue-600 leading-relaxed">
+                  {(() => {
+                    const a1 = analytics.activation.find(a => a.threshold === 1)
+                    const a2 = analytics.activation.find(a => a.threshold === 2)
+                    const a5 = analytics.activation.find(a => a.threshold === 5)
+                    if (!a1 || !a2 || !a5) return ''
+                    const dropoff = a1.pct - a2.pct
+                    return `${a1.pct}% captured at least 1 moment (activation). ${a2.pct}% came back for a 2nd (${dropoff}pp drop-off — the "aha moment" gap). ${a5.pct}% reached 5+ (committed users). The biggest drop is from ${a1.count > a2.count ? '1st to 2nd moment — the return trigger is the critical fix.' : 'later in the funnel — users try it but don\'t deepen.'}`
+                  })()}
+                </p>
+              </div>
+            </div>
+          </motion.section>
+        )}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* ── PREDICTIVE SIGNALS ───────────────────────────── */}
+        {/* ══════════════════════════════════════════════════ */}
+        {analytics && !analytics.empty && (
+          <motion.section id="signals" className="scroll-mt-16" {...fadeUp(0.44)}>
+            <SectionTitle subtitle="Which early behaviors predict whether a user sticks around (3+ active days)">What Predicts Retention</SectionTitle>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+              <div className="space-y-4">
+                {analytics.signals.map((s) => {
+                  const lift = s.withSignalPct - s.withoutSignalPct
+                  return (
+                    <div key={s.signal} className="border border-gray-100 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-xs font-bold text-gray-900">{s.signal}</h4>
+                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${lift > 15 ? 'bg-emerald-100 text-emerald-700' : lift > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                          {lift > 0 ? '+' : ''}{lift}pp lift
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-[9px] font-semibold text-emerald-600 uppercase tracking-wider mb-1.5">With signal</p>
+                          <div className="flex items-end gap-2">
+                            <span className="text-xl font-bold text-emerald-600">{s.withSignalPct}%</span>
+                            <span className="text-[10px] text-gray-400 mb-0.5">retained ({s.withSignalRetained}/{s.withSignal})</span>
+                          </div>
+                          <div className="h-2 bg-gray-100 rounded-full mt-1.5 overflow-hidden">
+                            <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${s.withSignalPct}%` }} />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Without signal</p>
+                          <div className="flex items-end gap-2">
+                            <span className="text-xl font-bold text-gray-400">{s.withoutSignalPct}%</span>
+                            <span className="text-[10px] text-gray-400 mb-0.5">retained ({s.withoutSignalRetained}/{s.withoutSignal})</span>
+                          </div>
+                          <div className="h-2 bg-gray-100 rounded-full mt-1.5 overflow-hidden">
+                            <div className="h-full bg-gray-300 rounded-full" style={{ width: `${s.withoutSignalPct}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="mt-5 bg-violet-50 border border-violet-100 rounded-lg p-3">
+                <p className="text-[9px] font-semibold text-violet-700 mb-1">Why This Matters to Investors</p>
+                <p className="text-[10px] text-violet-600 leading-relaxed">
+                  Predictive signals tell you <span className="font-semibold">what to optimize for</span>. If &quot;2+ moments on day 1&quot; strongly predicts retention,
+                  the product fix is clear: get users to capture a second moment during onboarding. These signals shape the roadmap from guesswork into data-driven decisions.
+                </p>
+              </div>
+            </div>
+          </motion.section>
+        )}
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* ── PILOT SUMMARY (THE INVESTOR SLIDE) ──────────── */}
+        {/* ══════════════════════════════════════════════════ */}
+        <motion.section id="pilot-summary" className="scroll-mt-16" {...fadeUp(0.46)}>
+          <SectionTitle subtitle="The one-slide summary an investor skims first">1-Month Pilot Summary</SectionTitle>
+          <div className="bg-gray-900 text-white rounded-2xl p-6">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-white">{analytics?.totalUsers || '—'}</p>
+                <p className="text-[10px] text-gray-400">Test Users</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-emerald-400">{analytics?.totalMoments || '—'}</p>
+                <p className="text-[10px] text-gray-400">Moments Captured</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-400">{analytics?.totalActiveDays || '—'}</p>
+                <p className="text-[10px] text-gray-400">Active Days</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-amber-400">{analytics ? `${analytics.avgMomentsPerUser}` : '—'}</p>
+                <p className="text-[10px] text-gray-400">Avg Moments/User</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div className="bg-white/10 rounded-xl p-4">
+                <p className="text-[10px] font-semibold text-emerald-300 uppercase tracking-wider mb-2">What Worked</p>
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-gray-300">• Capture flow: users who started it, completed it</p>
+                  <p className="text-[10px] text-gray-300">• Mood tagging: {analytics?.moodTagRate || '—'}% tagged at least one mood</p>
+                  <p className="text-[10px] text-gray-300">• Emotional vocabulary: all 14 moods used including negative</p>
+                  <p className="text-[10px] text-gray-300">• Power users emerged organically ({analytics?.userSegments.powerUsers || '—'} users, 10+ moments)</p>
+                </div>
+              </div>
+              <div className="bg-white/10 rounded-xl p-4">
+                <p className="text-[10px] font-semibold text-red-300 uppercase tracking-wider mb-2">What Broke</p>
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-gray-300">• No daily trigger — web-only, zero push notifications</p>
+                  <p className="text-[10px] text-gray-300">• No structured onboarding — verbal explanation only</p>
+                  <p className="text-[10px] text-gray-300">• Reward loop too passive — curve is beautiful but not enough</p>
+                  <p className="text-[10px] text-gray-300">• {analytics?.userSegments.trialUsers || '—'} users tried once and left</p>
+                </div>
+              </div>
+              <div className="bg-white/10 rounded-xl p-4">
+                <p className="text-[10px] font-semibold text-blue-300 uppercase tracking-wider mb-2">What We Learned</p>
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-gray-300">• The product works — the infrastructure around it doesn&apos;t</p>
+                  <p className="text-[10px] text-gray-300">• Users need triggers (notifications) not features</p>
+                  <p className="text-[10px] text-gray-300">• Early multi-capture predicts retention</p>
+                  <p className="text-[10px] text-gray-300">• Emotional self-awareness varies — mood step is also educational</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+              <p className="text-xs font-semibold text-white mb-2">Next 90 Days: 3 Fixes That Change Everything</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex items-start gap-2">
+                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0">1</span>
+                  <div>
+                    <p className="text-[10px] font-semibold text-white">Native app + push notifications</p>
+                    <p className="text-[9px] text-gray-400">Daily trigger at 9am, evening recap at 8pm</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[10px] font-bold text-blue-400 bg-blue-400/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0">2</span>
+                  <div>
+                    <p className="text-[10px] font-semibold text-white">Guided onboarding</p>
+                    <p className="text-[9px] text-gray-400">First moment in onboarding, show the curve preview</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[10px] font-bold text-amber-400 bg-amber-400/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0">3</span>
+                  <div>
+                    <p className="text-[10px] font-semibold text-white">Active reward system</p>
+                    <p className="text-[9px] text-gray-400">Streaks, seeds progression, weekly insight reports</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </motion.section>
 
         {/* ── Key Stats ──────────────────────────────────── */}
