@@ -427,6 +427,7 @@ export default function MomentsProductDesignPage() {
               { id: 'flow-4', label: 'Flow 4: Full Day' },
               { id: 'flow-5', label: 'Flow 5: Loop' },
               { id: 'user-feedback', label: 'What Users Told Us' },
+              { id: 'test-conditions', label: 'Test Conditions' },
               { id: 'touchpoints', label: 'Touchpoint Sequence' },
               { id: 'analytics', label: 'Live Analytics' },
               { id: 'user-segments', label: 'User Segments' },
@@ -809,6 +810,89 @@ export default function MomentsProductDesignPage() {
                   The fix isn&apos;t in the capture flow — it&apos;s in the infrastructure around it: native app with push notifications, structured onboarding,
                   and a reward system that creates forward momentum (streaks, seeds, practitioner connection, weekly insights).
                 </p>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* ══════════════════════════════════════════════════ */}
+        {/* ── TEST CONDITIONS ──────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════ */}
+        <motion.section id="test-conditions" className="scroll-mt-16" {...fadeUp(0.29)}>
+          <SectionTitle subtitle="How the pilot was run — deliberately minimal to test the product on its own">Test Conditions</SectionTitle>
+
+          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+            {/* Header */}
+            <div className="bg-gray-50 border-b border-gray-200 px-5 py-3">
+              <p className="text-xs font-bold text-gray-900">Zero-Support Pilot — Jan 20 to Feb 23, 2026</p>
+              <p className="text-[10px] text-gray-500 mt-0.5">We intentionally gave users the minimum to see what the product does on its own, without any hand-holding.</p>
+            </div>
+
+            <div className="p-5 space-y-5">
+              {/* What we did */}
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">What We Did</p>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  {[
+                    { step: '1', label: 'Gave access', detail: 'Shared the web app URL with 11 users', icon: '🔗' },
+                    { step: '2', label: '15-min explanation', detail: 'High-level walkthrough of what Moments is and how to capture', icon: '💬' },
+                    { step: '3', label: 'Stepped back', detail: 'Zero follow-up for 1 month — no messages, no check-ins, no prompts', icon: '🤫' },
+                    { step: '4', label: 'Observed', detail: 'Let the data speak — who came back, who didn\'t, and why', icon: '📊' },
+                  ].map((s) => (
+                    <div key={s.step} className="flex items-start gap-2.5">
+                      <span className="text-base mt-0.5">{s.icon}</span>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-900">{s.label}</p>
+                        <p className="text-[9px] text-gray-500 leading-relaxed">{s.detail}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* What we deliberately did NOT do */}
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">What We Deliberately Did Not Do</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    'No push notifications',
+                    'No in-app onboarding flow',
+                    'No daily reminders or nudges',
+                    'No check-in messages',
+                    'No incentives or rewards',
+                    'No native app (web URL only)',
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-red-50 rounded-lg px-3 py-2">
+                      <XCircle className="w-3 h-3 text-red-400 shrink-0" />
+                      <span className="text-[10px] text-red-700">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Why this matters */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p className="text-[10px] font-semibold text-blue-700 mb-2">Why This Matters for Investors</p>
+                <div className="space-y-2">
+                  <p className="text-[10px] text-blue-600 leading-relaxed">
+                    <span className="font-semibold">This was a stress test, not a launch.</span> We wanted to answer one question:
+                    &quot;Does the core capture + emotional timeline experience have enough pull to bring users back on its own?&quot;
+                  </p>
+                  <p className="text-[10px] text-blue-600 leading-relaxed">
+                    The conditions were deliberately harsh — no triggers, no onboarding, no follow-up. A web URL in a browser.
+                    In any standard pilot you&apos;d have push notifications, an onboarding flow, and weekly touchpoints.
+                    We had none of that.
+                  </p>
+                  <p className="text-[10px] text-blue-700 leading-relaxed font-semibold">
+                    And yet: {analytics?.userSegments.powerUsers || '—'} users captured 10+ moments organically. {analytics?.totalMoments || '—'} total moments across {analytics?.totalActiveDays || '—'} active days.
+                    The top user captured {analytics?.perUser[0]?.total || '—'} moments over {analytics?.perUser[0]?.activeDays || '—'} days — with zero prompting.
+                  </p>
+                  <p className="text-[10px] text-blue-600 leading-relaxed">
+                    That&apos;s not a retention problem — it&apos;s a distribution problem. The product has pull.
+                    Now add a native app with push notifications, a real onboarding, and a reward system,
+                    and these numbers change fundamentally.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
