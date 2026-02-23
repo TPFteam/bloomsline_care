@@ -836,16 +836,16 @@ export default function MomentsProductDesignPage() {
                   <BarChart3 className="w-3.5 h-3.5 text-gray-400" />
                   Hourly Distribution (24h)
                 </h3>
-                <div className="flex items-end gap-0.5 h-24">
+                <div className="flex gap-0.5 h-24">
                   {analytics.hourly.map((count, hour) => {
                     const maxHour = Math.max(...analytics.hourly)
-                    const heightPct = maxHour > 0 ? (count / maxHour) * 100 : 0
+                    const h = maxHour > 0 ? Math.round((count / maxHour) * 88) : 0
                     return (
-                      <div key={hour} className="flex-1 flex flex-col items-center justify-end group relative">
-                        <div className="absolute -top-5 hidden group-hover:block bg-gray-900 text-white text-[8px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
+                      <div key={hour} className="flex-1 flex flex-col justify-end group relative">
+                        <div className="absolute -top-5 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 text-white text-[8px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
                           {hour}:00 — {count} moments
                         </div>
-                        <div className="w-full bg-violet-400 rounded-t-sm transition-all" style={{ height: `${Math.max(heightPct, count > 0 ? 4 : 0)}%` }} />
+                        <div className="w-full bg-violet-400 rounded-t-sm" style={{ height: count > 0 ? `${Math.max(h, 3)}px` : '0px' }} />
                       </div>
                     )
                   })}
@@ -865,16 +865,16 @@ export default function MomentsProductDesignPage() {
                   <TrendingUp className="w-3.5 h-3.5 text-gray-400" />
                   Daily Activity Timeline
                 </h3>
-                <div className="flex items-end gap-0.5 h-24">
+                <div className="flex gap-0.5 h-24">
                   {analytics.dailyTimeline.map(({ date, count }) => {
                     const maxDay = Math.max(...analytics.dailyTimeline.map(d => d.count))
-                    const heightPct = maxDay > 0 ? (count / maxDay) * 100 : 0
+                    const h = maxDay > 0 ? Math.round((count / maxDay) * 88) : 0
                     return (
-                      <div key={date} className="flex-1 flex flex-col items-center justify-end group relative" style={{ minWidth: analytics.dailyTimeline.length > 60 ? '2px' : '6px' }}>
-                        <div className="absolute -top-5 hidden group-hover:block bg-gray-900 text-white text-[8px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
+                      <div key={date} className="flex-1 flex flex-col justify-end group relative" style={{ minWidth: analytics.dailyTimeline.length > 60 ? '2px' : '6px' }}>
+                        <div className="absolute -top-5 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 text-white text-[8px] px-1.5 py-0.5 rounded whitespace-nowrap z-10">
                           {new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} — {count}
                         </div>
-                        <div className="w-full bg-emerald-400 rounded-t-sm transition-all" style={{ height: `${Math.max(heightPct, count > 0 ? 4 : 0)}%` }} />
+                        <div className="w-full bg-emerald-400 rounded-t-sm" style={{ height: count > 0 ? `${Math.max(h, 3)}px` : '0px' }} />
                       </div>
                     )
                   })}
