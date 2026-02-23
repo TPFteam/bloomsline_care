@@ -379,12 +379,12 @@ function PractitionerContent() {
       headline: { en: 'Built for', fr: 'Conçu pour' },
       subtitle: { en: 'Less admin, more time with the people you care about.', fr: 'Moins d\'administratif, plus de temps avec ceux qui comptent.' },
       types: [
-        { en: 'Psychotherapists', fr: 'Psychothérapeutes' },
-        { en: 'Psychologists', fr: 'Psychologues' },
-        { en: 'Counselors', fr: 'Conseillers' },
-        { en: 'Coaches', fr: 'Coachs' },
-        { en: 'Social Workers', fr: 'Travailleurs sociaux' },
-        { en: 'Art Therapists', fr: 'Art-thérapeutes' },
+        { en: 'Psychologists', fr: 'Psychologues', hint: { en: 'Track client progress between sessions with AI-powered insights', fr: 'Suivez les progrès de vos clients entre les séances grâce à l\'IA' } },
+        { en: 'Psychotherapists', fr: 'Psychothérapeutes', hint: { en: 'Reduce session notes from 30 min to 5 min with smart templates', fr: 'Réduisez vos notes de séance de 30 min à 5 min avec des modèles intelligents' } },
+        { en: 'Professional Coaches', fr: 'Coachs professionnels', hint: { en: 'Share exercises and track goals with your coachees in one place', fr: 'Partagez des exercices et suivez les objectifs de vos coachés en un seul endroit' } },
+        { en: 'Institutional Psychologists', fr: 'Psychologues institutionnels', hint: { en: 'Manage caseloads across teams with unified dashboards', fr: 'Gérez vos dossiers en équipe avec des tableaux de bord unifiés' } },
+        { en: 'Cabinets', fr: 'Cabinets', hint: { en: 'One platform for your whole team — shared notes, referrals, and outcomes', fr: 'Une plateforme pour toute votre équipe — notes partagées, orientations et résultats' } },
+        { en: 'Brief Therapy Practitioners', fr: 'Praticiens en thérapies brèves', hint: { en: 'Structured homework and between-session tools your clients actually use', fr: 'Des exercices structurés et des outils inter-séances que vos clients utilisent vraiment' } },
       ],
     },
     security: {
@@ -495,7 +495,15 @@ function PractitionerContent() {
               <p className="text-lg text-neutral-600 mb-10 max-w-2xl mx-auto">{l(content.audience.subtitle)}</p>
               <div className="flex flex-wrap justify-center gap-3">
                 {content.audience.types.map((type, i) => (
-                  <span key={i} className="px-5 py-3 bg-neutral-100 rounded-full text-neutral-700 font-medium hover:bg-neutral-200 transition-colors">{l(type)}</span>
+                  <div key={i} className="relative group">
+                    <span className="px-5 py-3 bg-neutral-100 rounded-full text-neutral-700 font-medium hover:bg-neutral-200 transition-colors cursor-default inline-block">{l(type)}</span>
+                    {type.hint && (
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-4 py-2.5 bg-neutral-800 text-white text-xs leading-relaxed rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none w-56 text-center z-10">
+                        {l(type.hint)}
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-neutral-800" />
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </motion.div>
