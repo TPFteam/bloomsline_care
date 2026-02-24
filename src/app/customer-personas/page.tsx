@@ -228,7 +228,7 @@ function getPersonas(t: TranslateFn): Persona[] {
         },
       ],
       willingness: {
-        range: '€25-50/' + t('mo', 'mois'),
+        range: '€19-49/' + t('mo', 'mois'),
         comparisons: [
           t('1 cancelled session = €60-80 lost', '1 séance annulée = 60-80 € perdus'),
           t('Current US tools cost €50-139/mo', 'Les outils américains actuels coûtent 50-139 €/mois'),
@@ -457,7 +457,7 @@ function getPersonas(t: TranslateFn): Persona[] {
         ],
         purchase: [
           t('Free via practitioner initially', 'Gratuit via le praticien au départ'),
-          t('5-8% convert to ~€3/mo premium after 2-3 months', '5-8 % convertissent vers ~3 €/mois premium après 2-3 mois'),
+          t('Projected: 5-8% convert to ~€3/mo premium after 2-3 months (hypothesis, not measured)', 'Projeté : 5-8 % convertissent vers ~3 €/mois premium après 2-3 mois (hypothèse, non mesuré)'),
           t('In-app upgrade — no sales contact needed', 'Upgrade in-app — aucun contact commercial nécessaire'),
         ],
       },
@@ -673,8 +673,8 @@ function getSegments(t: TranslateFn) {
   return [
     { segment: t('Solo practitioners', 'Praticiens indépendants'), persona: 'Marie', pctMarket: '65%', tam: t('~19.5K (France)', '~19,5K (France)'), priority: 'P0', priorityColor: 'bg-red-50 text-red-700 border-red-200', rationale: t('Core ICP, shortest sales cycle, highest volume', 'ICP principal, cycle de vente le plus court, volume le plus élevé') },
     { segment: t('Group practices', 'Cabinets de groupe'), persona: 'Thomas', pctMarket: '20%', tam: t('~3-5K practices', '~3-5K cabinets'), priority: 'P1', priorityColor: 'bg-amber-50 text-amber-700 border-amber-200', rationale: t('Higher ACV, longer cycle, expansion revenue', 'VMA plus élevée, cycle plus long, revenus d\'expansion') },
-    { segment: t('Engaged members', 'Membres engagés'), persona: 'Lea', pctMarket: t('45% of members', '45 % des membres'), tam: '~195K', priority: 'P1', priorityColor: 'bg-amber-50 text-amber-700 border-amber-200', rationale: t('Self-activating, freemium conversion upside', 'Auto-activation, potentiel de conversion freemium') },
-    { segment: t('High-risk members', 'Membres à haut risque'), persona: 'Sophie', pctMarket: t('35% of members', '35 % des membres'), tam: '~130K', priority: 'P2', priorityColor: 'bg-gray-50 text-gray-500 border-gray-200', rationale: t('Retention proof, drives B2B outcomes data', 'Preuve de rétention, génère des données de résultats B2B') },
+    { segment: t('Engaged members (projected)', 'Membres engagés (projeté)'), persona: 'Lea', pctMarket: t('45% of members (est.)', '45 % des membres (est.)'), tam: '~195K', priority: 'P1', priorityColor: 'bg-amber-50 text-amber-700 border-amber-200', rationale: t('Self-activating, freemium conversion upside (hypothesis)', 'Auto-activation, potentiel de conversion freemium (hypothèse)') },
+    { segment: t('High-risk members (projected)', 'Membres à haut risque (projeté)'), persona: 'Sophie', pctMarket: t('35% of members (est.)', '35 % des membres (est.)'), tam: '~130K', priority: 'P2', priorityColor: 'bg-gray-50 text-gray-500 border-gray-200', rationale: t('Retention proof, drives B2B outcomes data', 'Preuve de rétention, génère des données de résultats B2B') },
   ]
 }
 
@@ -1091,8 +1091,8 @@ export default function CustomerPersonasPage() {
           <h2 className="text-xl font-bold text-gray-900 mb-2">{t('Who we\u2019re building for', 'Pour qui nous construisons')}</h2>
           <p className="text-sm text-gray-500 leading-relaxed max-w-2xl">
             {t(
-              'Bloomsline is a dual-sided platform. Practitioners pay (B2B) and their clients use (B2C). Each side has distinct needs, buying behaviors, and success criteria. These four personas define our product decisions, pricing architecture, and go-to-market priorities.',
-              'Bloomsline est une plateforme biface. Les praticiens paient (B2B) et leurs clients utilisent (B2C). Chaque côté a des besoins distincts, des comportements d\'achat et des critères de succès différents. Ces quatre personas définissent nos décisions produit, notre architecture de prix et nos priorités de mise en marché.'
+              'Bloomsline is a dual-sided platform. Practitioners pay (B2B, €19/29/49 per month) and their clients use for free (B2C). Each side has distinct needs, buying behaviors, and success criteria. These four personas are constructed from 119 discovery interviews with practitioners across France, Belgium, and Switzerland. Buying behaviors and conversion estimates are hypotheses to be validated \u2014 we have 15 beta testers and 0 paying customers.',
+              'Bloomsline est une plateforme biface. Les praticiens paient (B2B, 19/29/49 \u20ac par mois) et leurs clients utilisent gratuitement (B2C). Chaque c\u00f4t\u00e9 a des besoins distincts, des comportements d\u2019achat et des crit\u00e8res de succ\u00e8s diff\u00e9rents. Ces quatre personas sont construits \u00e0 partir de 119 entretiens de d\u00e9couverte avec des praticiens en France, Belgique et Suisse. Les comportements d\u2019achat et les estimations de conversion sont des hypoth\u00e8ses \u00e0 valider \u2014 nous avons 15 b\u00eata-testeurs et 0 client payant.'
             )}
           </p>
           <div className="flex flex-wrap items-center gap-2 mt-4">
@@ -1260,7 +1260,7 @@ export default function CustomerPersonasPage() {
                 <span className="text-lg">👩‍💻</span>
                 <div>
                   <p className="text-xs font-semibold text-emerald-300">{t('Lea is the retention engine.', 'Lea est le moteur de rétention.')}</p>
-                  <p className="text-[10px] text-gray-400 leading-relaxed">{t('Engaged members generate data that proves practitioner ROI — and 5-8% convert to paid.', 'Les membres engagés génèrent des données qui prouvent le ROI des praticiens — et 5-8 % convertissent en payant.')}</p>
+                  <p className="text-[10px] text-gray-400 leading-relaxed">{t('Engaged members generate data that proves practitioner ROI — projected 5-8% premium conversion (unvalidated).', 'Les membres engagés génèrent des données qui prouvent le ROI des praticiens — conversion premium projetée à 5-8 % (non validée).')}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">

@@ -160,35 +160,35 @@ const VALUE_DRIVERS: ValueDriver[] = [
     dimension: 'Admin time saved',
     practitionerValue: '5-8 hrs/week × €40/hr = €10,400-€16,640/yr',
     annualSavings: '€10,400+',
-    bloomslinePrice: '€300/yr (Starter)',
+    bloomslinePrice: '€348/yr (Pro)',
     valueMultiple: '35x',
   },
   {
     dimension: 'Client retention improvement',
     practitionerValue: '2-3 fewer dropoffs/yr × €80/session × 10 sessions = €1,600-€2,400',
     annualSavings: '€1,600+',
-    bloomslinePrice: '€300/yr',
+    bloomslinePrice: '€348/yr',
     valueMultiple: '5x',
   },
   {
     dimension: 'Between-session visibility',
     practitionerValue: 'Catch crises early, reduce no-shows, improve outcomes — priceless for reputation',
     annualSavings: '€2,000+ (est.)',
-    bloomslinePrice: '€300/yr',
+    bloomslinePrice: '€348/yr',
     valueMultiple: '7x',
   },
   {
     dimension: 'Outcome documentation',
     practitionerValue: 'Referral partners want data. Group practices need ROI proof. Insurance trend.',
     annualSavings: '€1,500+ (new revenue)',
-    bloomslinePrice: '€300/yr',
+    bloomslinePrice: '€348/yr',
     valueMultiple: '5x',
   },
   {
     dimension: 'AI-assisted notes & patterns',
     practitionerValue: 'Reduces note-taking from 20min → 5min per session. 15 sessions/week = 3.75 hrs saved.',
     annualSavings: '€7,800+ (time value)',
-    bloomslinePrice: '€300/yr',
+    bloomslinePrice: '€348/yr',
     valueMultiple: '26x',
   },
 ]
@@ -213,7 +213,7 @@ const COST_STRUCTURE: CostComponent[] = [
     item: 'Supabase (database + auth)',
     costPerPractitioner: '€0.50/mo',
     monthly: '€0.50',
-    note: 'Pro plan at €25/mo shared across 50+ practitioners. Scales sub-linearly.',
+    note: 'Supabase Pro plan shared across practitioners. Scales sub-linearly.',
   },
   {
     item: 'Hosting (Vercel/EU)',
@@ -254,11 +254,11 @@ interface ElasticityPoint {
 const ELASTICITY_CURVE: ElasticityPoint[] = [
   { price: 15, demandIndex: 100, revenueIndex: 60, segment: 'Maximum adoption', note: 'Below cost floor. Unsustainable.' },
   { price: 19, demandIndex: 95, revenueIndex: 72, segment: 'High adoption', note: 'Charm price. Impulse zone. €0.63/day.' },
-  { price: 25, demandIndex: 85, revenueIndex: 85, segment: 'Sweet spot', note: 'Current base model. Less than 1 cancelled session.' },
+  { price: 25, demandIndex: 85, revenueIndex: 85, segment: 'Sweet spot', note: 'Near blended ARPU target (~€25.50). Less than 1 cancelled session.' },
   { price: 29, demandIndex: 78, revenueIndex: 91, segment: 'Near-optimal', note: 'Charm price. "Under €30" psychological barrier.' },
   { price: 39, demandIndex: 65, revenueIndex: 101, segment: 'Revenue max', note: 'Revenue-maximizing point. Filters tire-kickers.' },
   { price: 49, demandIndex: 50, revenueIndex: 98, segment: 'Premium', note: 'Matches SimplePractice Starter. Credibility signal.' },
-  { price: 79, demandIndex: 30, revenueIndex: 95, segment: 'High anchor', note: 'Pro tier territory. Only with proven outcomes.' },
+  { price: 79, demandIndex: 30, revenueIndex: 95, segment: 'High anchor', note: 'Pro tier territory. Only viable with proven outcomes (not yet validated).' },
   { price: 99, demandIndex: 18, revenueIndex: 71, segment: 'Exclusion', note: 'Too expensive for solo French practitioners.' },
 ]
 
@@ -862,7 +862,7 @@ export default function PricingAnalysisPage() {
               <p className="text-[10px] text-amber-400 mt-1">{t('~67% gross margin', '~67 % de marge brute')}</p>
             </div>
             <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
-              <p className="text-[10px] text-emerald-400 mb-1">{t('Target Margin (90%)', 'Marge cible (90 %)')}</p>
+              <p className="text-[10px] text-emerald-400 mb-1">{t('Target Margin (~83%)', 'Marge cible (~83 %)')}</p>
               <p className="text-lg font-bold text-emerald-600">€{(totalCostPerPractitioner / 0.1).toFixed(0)}/{t('mo', 'mois')}</p>
               <p className="text-[10px] text-emerald-400 mt-1">{t('SaaS-grade unit economics', 'Economie unitaire niveau SaaS')}</p>
             </div>
@@ -871,11 +871,11 @@ export default function PricingAnalysisPage() {
           <div className="mt-4 p-4 bg-gray-100 border border-gray-200 rounded-xl">
             <p className="text-xs text-gray-600 leading-relaxed">
               <strong>{t('Verdict:', 'Verdict :')}</strong> {t(
-                'At €29/mo with a €4.25 variable cost, Bloomsline achieves',
-                'A €29/mois avec un cout variable de €4,25, Bloomsline atteint'
-              )} <strong>{t('85% gross margin', '85 % de marge brute')}</strong> {t(
-                'per practitioner — well within SaaS best-in-class (70-90%). The AI cost (€1.80/mo) is the largest variable component but is optimized on Claude Haiku. Even at €19/mo (Essentiel), gross margin is 78%.',
-                'par praticien — bien dans les standards SaaS de reference (70-90 %). Le cout IA (€1,80/mois) est le principal poste variable, mais il est optimise sur Claude Haiku. Meme a €19/mois (Essentiel), la marge brute est de 78 %.'
+                'At a blended ARPU of ~€25.50 with a €4.25 variable cost, Bloomsline models',
+                'Avec un ARPU pondéré de ~€25,50 et un coût variable de €4,25, Bloomsline modélise'
+              )} <strong>{t('~83% gross margin (projected)', '~83 % de marge brute (projetée)')}</strong> {t(
+                'per practitioner — well within SaaS best-in-class (70-90%). The AI cost (€1.80/mo) is the largest variable component but is optimized on Claude Haiku. Even at €19/mo (Essentiel), gross margin is ~78%. All margins are modeled, not observed.',
+                'par praticien — bien dans les standards SaaS de référence (70-90 %). Le coût IA (€1,80/mois) est le principal poste variable, mais il est optimisé sur Claude Haiku. Même a €19/mois (Essentiel), la marge brute est de ~78 %. Toutes les marges sont modélisées, non observées.'
               )} <strong>{t('There is no cost-floor problem.', 'Il n\'y a pas de probleme de prix plancher.')}</strong>
             </p>
           </div>
@@ -1287,19 +1287,19 @@ export default function PricingAnalysisPage() {
                 <div className="space-y-2">
                   {[
                     {
-                      from: t('€25/mo flat price', 'Prix fixe €25/mois'),
-                      to: t('3-tier structure: €19 / €29 / €49+€19', 'Structure 3 niveaux : €19 / €29 / €49+€19'),
-                      why: t('Flat pricing leaves money on the table and offers no upgrade path. The decoy effect alone lifts conversion 25-30%.', 'Un prix unique laisse de l\'argent sur la table et n\'offre aucun chemin de mise a niveau. L\'effet leurre seul augmente la conversion de 25-30 %.')
+                      from: t('Single flat price', 'Prix unique fixe'),
+                      to: t('3-tier structure: €19 / €29 / €49+€19 (Essentiel/Pro/Cabinet)', 'Structure 3 niveaux : €19 / €29 / €49+€19 (Essentiel/Pro/Cabinet)'),
+                      why: t('Flat pricing leaves money on the table and offers no upgrade path. The decoy effect alone lifts conversion 25-30% (projected).', 'Un prix unique laisse de l\'argent sur la table et n\'offre aucun chemin de mise a niveau. L\'effet leurre seul augmente la conversion de 25-30 % (projeté).')
                     },
                     {
-                      from: t('No entry tier below €25', 'Pas de niveau d\'entree sous €25'),
+                      from: t('No entry tier below €29', 'Pas de niveau d\'entree sous €29'),
                       to: t('€19 Essentiel with 10-client cap', '€19 Essentiel avec plafond de 10 clients'),
                       why: t('Eliminates the #1 objection ("too expensive to try"). 10-client cap creates natural upgrade pressure.', 'Elimine l\'objection n°1 ("trop cher pour essayer"). Le plafond de 10 clients cree une pression naturelle de mise a niveau.')
                     },
                     {
-                      from: t('€25/mo for unlimited', '€25/mois pour illimite'),
-                      to: t('€29/mo Pro (unlimited)', '€29/mois Pro (illimite)'),
-                      why: t('€4/mo increase with charm pricing. "Under €30" is psychologically cheaper than "€25" sounds. Revenue +16% at minimal demand loss.', 'Augmentation de €4/mois avec prix psychologique. "Moins de €30" est percu comme moins cher que "€25". Revenus +16 % avec perte de demande minimale.')
+                      from: t('No unlimited tier defined', 'Pas de niveau illimite defini'),
+                      to: t('€29/mo Pro (unlimited clients)', '€29/mois Pro (clients illimites)'),
+                      why: t('"Under €30" is psychologically appealing — a charm price. Revenue projection assumes 70% of practitioners land on Pro tier.', '"Moins de €30" est psychologiquement attractif — un prix d\'appel. La projection de revenus suppose 70 % des praticiens sur le niveau Pro.')
                     },
                     {
                       from: t('No group pricing', 'Pas de tarification groupe'),
@@ -1325,11 +1325,11 @@ export default function PricingAnalysisPage() {
                   {[
                     { metric: t('Blended ARPU', 'ARPU mixte'), value: t('€29/mo', '€29/mois'), note: t('70% of users on Pro', '70 % des utilisateurs sur Pro') },
                     { metric: t('Variable cost/practitioner', 'Cout variable/praticien'), value: t('€4.25/mo', '€4,25/mois'), note: t('AI + infra + support', 'IA + infra + support') },
-                    { metric: t('Gross margin', 'Marge brute'), value: '85%', note: t('SaaS best-in-class', 'Reference SaaS') },
+                    { metric: t('Gross margin (modeled)', 'Marge brute (modélisée)'), value: '~83%', note: t('SaaS top quartile (projected)', 'Quartile supérieur SaaS (projeté)') },
                     { metric: 'CAC', value: '€50', note: t('Organic/content-driven', 'Organique / contenu') },
                     { metric: t('LTV (25-mo lifetime)', 'LTV (duree de vie 25 mois)'), value: '€3,625', note: t('At 4% monthly churn', 'A 4 % de churn mensuel') },
-                    { metric: 'LTV/CAC', value: '72.5x', note: t('Exceptional (benchmark: >3x)', 'Exceptionnel (reference : >3x)') },
-                    { metric: t('Payback period', 'Delai de rentabilisation'), value: t('1.7 months', '1,7 mois'), note: t('Break-even in under 2 months', 'Rentabilite en moins de 2 mois') },
+                    { metric: t('LTV/CAC (modeled)', 'LTV/CAC (modélisé)'), value: '~5x', note: t('Healthy if validated (benchmark: >3x)', 'Sain si validé (référence : >3x)') },
+                    { metric: t('Payback period (modeled)', 'Delai de rentabilisation (modélisé)'), value: t('~2 months', '~2 mois'), note: t('Projected, not proven', 'Projeté, non prouvé') },
                     { metric: t('B2C upside/practitioner', 'Potentiel B2C/praticien'), value: t('€1.80/mo', '€1,80/mois'), note: t('12 members x 5% x €3/mo', '12 membres x 5 % x €3/mois') },
                   ].map((m, i) => (
                     <div key={i} className="flex items-center justify-between py-1.5 border-b border-white/5">
@@ -1348,12 +1348,12 @@ export default function PricingAnalysisPage() {
               <h4 className="text-sm font-semibold text-amber-400 mb-2">{t('The bottom line', 'En resume')}</h4>
               <p className="text-xs text-gray-300 leading-relaxed">
                 {t(
-                  'Move from €25/mo flat to a',
-                  'Passer de €25/mois fixe a une'
+                  'Launch with a',
+                  'Lancer avec une'
                 )} <strong className="text-white">{t('€19 / €29 / €49 tiered structure', 'structure a paliers €19 / €29 / €49')}</strong>.
                 {t(
-                  ' The current €25 flat price is neither cheap enough to be impulsive nor premium enough to signal quality. €29 Pro with charm pricing captures the same market at +16% revenue per user with negligible demand loss. The €19 Essentiel tier eliminates price objections, and the €49 Cabinet tier anchors the Pro price as a deal while capturing higher ACV from group practices. At 850 practitioners (base M36), this pricing architecture generates',
-                  ' Le prix fixe actuel de €25 n\'est ni assez bas pour etre impulsif ni assez premium pour signaler la qualite. Le Pro a €29 avec prix psychologique capture le meme marche a +16 % de revenu par utilisateur avec une perte de demande negligeable. Le niveau Essentiel a €19 elimine les objections de prix, et le niveau Cabinet a €49 ancre le prix Pro comme une bonne affaire tout en capturant un ACV plus eleve des cabinets de groupe. A 850 praticiens (base M36), cette architecture tarifaire genere'
+                  ' €29 Pro with charm pricing is the core tier (projected 70% of subscribers). The €19 Essentiel tier eliminates price objections, and the €49 Cabinet tier anchors the Pro price as a deal while capturing higher ACV from group practices. None of these tiers have been validated with paying customers. At 850 practitioners (projected base case M36), this pricing architecture would generate',
+                  ' Le Pro a €29 avec prix psychologique est le niveau principal (70 % des abonnes projetes). Le niveau Essentiel a €19 elimine les objections de prix, et le niveau Cabinet a €49 ancre le prix Pro comme une bonne affaire tout en capturant un ACV plus eleve des cabinets de groupe. Aucun de ces niveaux n\'a ete valide avec des clients payants. A 850 praticiens (scenario de base projete M36), cette architecture tarifaire genererait'
                 )}
                 <strong className="text-emerald-400"> €314K ARR</strong> — {t(
                   'a 4.3x improvement over the conservative single-price model.',

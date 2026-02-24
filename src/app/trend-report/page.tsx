@@ -198,12 +198,12 @@ const MACRO_TRENDS: MacroTrend[] = [
     borderColor: 'border-red-200',
     keyStats: [
       '1B people globally live with a mental health condition (WHO)',
-      '91% with depression can\'t access care',
-      '122M+ Americans in Mental Health Shortage Areas (HRSA)',
-      'US short ~31,000 practitioners by 2025 (SAMHSA)',
+      'EU: 84M adults affected by mental health conditions (Eurostat)',
+      'France: 13M adults report anxiety or depression symptoms (DREES 2024)',
+      'EU short 600K+ mental health professionals (WHO Europe)',
     ],
-    description: 'The surge isn\'t receding — it\'s hardening into baseline. This isn\'t cyclical demand; it\'s a permanent supply-demand gap that only technology can close.',
-    soWhat: 'Every practitioner you serve multiplies their capacity by extending care into the 167 hours between sessions. You\'re not competing for demand — you\'re the only solution that addresses the supply constraint.',
+    description: 'The surge is not receding \u2014 it is hardening into baseline across both the US and EU. In France, the government declared mental health a "Grande Cause Nationale" for 2025. This is not cyclical demand; it is a permanent supply-demand gap that technology can help address.',
+    soWhat: 'Tools that help practitioners extend care into the 167 hours between sessions address the supply constraint. This is the opportunity Bloomsline is pursuing \u2014 but we have not yet proven practitioners will pay for it.',
     sources: [
       { label: 'WHO Mental Health Atlas', url: 'https://www.who.int/news/item/02-09-2025-who-releases-new-reports-and-estimates-highlighting-urgent-gaps-in-mental-health' },
       { label: 'HRSA Behavioral Health Workforce 2025', url: 'https://bhw.hrsa.gov/sites/default/files/bureau-health-workforce/data-research/Behavioral-Health-Workforce-Brief-2025.pdf' },
@@ -226,7 +226,7 @@ const MACRO_TRENDS: MacroTrend[] = [
       'Germany DiGA: ~60 digital health apps prescribable with insurance',
     ],
     description: 'Three regulatory forces converging simultaneously: EU AI Act (compliance advantage for EU-native builders), EHDS (standardized data), and national programs (France MonParcoursPsy, Germany DiGA) creating reimbursement pathways.',
-    soWhat: 'GDPR-native, French-first, EU AI Act-ready from day one. US competitors (SimplePractice, Spring Health, BetterHelp) would need years to achieve regulatory parity. Your compliance posture is a moat, not a cost.',
+    soWhat: 'GDPR-native and French-first from day one. US competitors (SimplePractice, Spring Health, BetterHelp) would need significant effort to achieve regulatory parity. Compliance is a potential advantage for EU-native builders, though this alone does not guarantee commercial success.',
     sources: [
       { label: 'EU AI Act Timeline — Trilateral Research', url: 'https://trilateralresearch.com/responsible-ai/eu-ai-act-implementation-timeline-mapping-your-models-to-the-new-risk-tiers' },
       { label: 'npj Digital Medicine — EU AI Act Healthcare', url: 'https://www.nature.com/articles/s41746-024-01213-6' },
@@ -250,7 +250,7 @@ const MACRO_TRENDS: MacroTrend[] = [
       'Woebot shutdown (June 2025, $123M raised): standalone AI therapy fails',
     ],
     description: 'The AI narrative has shifted from "replace therapists" (Woebot, failed) to "augment therapists" (ambient scribes, succeeding). Therapists save 12-15 hours/month through AI-powered note-taking. The market validated that AI embedded in care relationships — not replacing them — is the winning model.',
-    soWhat: 'Bloom AI as a practitioner tool (not a therapist replacement) is exactly where the evidence points. Position aggressively around "AI that knows your therapist, your milestones, and your journey."',
+    soWhat: 'The evidence supports AI as a practitioner tool, not a therapist replacement. Bloomsline is positioning Bloom AI in this direction, though we need to validate with paying customers that this resonates.',
     sources: [
       { label: 'UW Health — Ambient AI Study', url: 'https://www.med.wisc.edu/news/ambient-ai-improves-practitioner-well-being/' },
       { label: 'STAT News — Woebot Shutdown', url: 'https://www.statnews.com/2025/07/02/woebot-therapy-chatbot-shuts-down-founder-says-ai-moving-faster-than-regulators/' },
@@ -274,7 +274,7 @@ const MACRO_TRENDS: MacroTrend[] = [
       'Modern EAPs shifting to outcome-based, digitally-delivered solutions',
     ],
     description: 'Traditional EAPs are being replaced by outcome-based, digitally-delivered, high-acuity solutions. Spring Health ($3.3B) and Lyra Health ($5.58B) are building the replacement layer.',
-    soWhat: 'Not your primary market today, but Thomas (Group Practice Director) is the bridge. Group practices that adopt Bloomsline generate the outcomes data that employers and insurers need. This is your expansion path.',
+    soWhat: 'Not our primary market today. Group practices (Thomas persona) could be the bridge in the future. For now, we focus on solo practitioners in France.',
     sources: [
       { label: 'Spring Health — Beyond EAPs', url: 'https://www.springhealth.com/blog/beyond-eaps-your-guide-to-a-new-mental-health-approach-in-2026' },
       { label: 'Workplace Wellness Trends 2026', url: 'https://www.myshortlister.com/insights/workplace-wellness-trends-report-2026' },
@@ -296,8 +296,8 @@ const MACRO_TRENDS: MacroTrend[] = [
       'Fewer than 20% of clinicians implement measurement-based care',
       'Insurance payers demanding measurable outcomes, not just session counts',
     ],
-    description: 'The gap between what payers demand (measurable outcomes) and what practitioners can deliver (no tracking tools) is the opportunity. MBC adoption is below 20% due to lack of EHR integration and time burden.',
-    soWhat: 'Your platform generates outcomes data by design — member engagement, milestone progression, session-to-session improvement. Practitioners using Bloomsline can prove what works. This becomes their competitive advantage.',
+    description: 'The gap between what payers demand (measurable outcomes) and what practitioners can deliver (no tracking tools) is the opportunity. Measurement-based care adoption is below 20% due to lack of EHR integration and time burden.',
+    soWhat: 'The platform is designed to generate outcomes data \u2014 member engagement, milestone progression, session-to-session improvement. If practitioners adopt it, they could prove what works. This is a hypothesis we need to validate with real usage data.',
     sources: [
       { label: 'APA — Measurement-Based Care', url: 'https://www.apa.org/monitor/2025/01/measurement-based-care-transforms-treatment' },
       { label: 'European Parliament — Mental Health Costs', url: 'https://www.europarl.europa.eu/RegData/etudes/BRIE/2023/751416/EPRS_BRI(2023)751416_EN.pdf' },
@@ -313,7 +313,7 @@ const MICRO_TRENDS: MicroTrend[] = [
     timeline: 'short',
     signal: 'BetterHelp -11% revenue Q1 2025, -9% Q2; paying users -4% YoY',
     detail: 'BetterHelp is losing subscribers quarter over quarter. Teladoc is desperately retrofitting insurance coverage — acquiring UpLift (April 2025) to access 100M insured lives. The D2C therapy model is structurally broken: consumers won\'t pay $280-400/mo indefinitely.',
-    soWhat: 'Validates Bloomsline\'s B2B-first model. You don\'t depend on consumer willingness to pay for therapy access — practitioners pay, members get free value.',
+    soWhat: 'Supports Bloomsline\'s B2B-first hypothesis. Our model does not depend on consumer willingness to pay for therapy access \u2014 practitioners pay, members use for free. This model still needs validation with paying customers.',
     sources: [
       { label: 'BetterHelp Revenue Decline — BHB', url: 'https://bhbusiness.com/2025/02/27/betterhelp-wilts-while-other-teladoc-mental-health-services-bloom/' },
       { label: 'BetterHelp Insurance Pivot — BHB', url: 'https://bhbusiness.com/2025/10/30/teladoc-sees-in-network-coverage-as-lifeline-for-ongoing-betterhelp-weakness/' },
@@ -326,7 +326,7 @@ const MICRO_TRENDS: MicroTrend[] = [
     timeline: 'short',
     signal: 'Talkspace payor revenue +42% YoY; 5 consecutive profitable quarters',
     detail: 'Talkspace grew payor revenue 42% year-over-year by focusing exclusively on insurance-covered mental health. Q1 2025: revenue +15% to $52.2M, fifth profitable quarter in a row. The market is rewarding practitioner-first and payor-first models.',
-    soWhat: 'The B2B mental health model works. Your B2B2C architecture (practitioner pays, members use free) is aligned with the winning business model.',
+    soWhat: 'The B2B mental health model is gaining traction at scale. Bloomsline\'s B2B2C architecture (practitioner pays, members use free) is aligned with this direction, though at a very different stage.',
     sources: [
       { label: 'Talkspace Profitability — BHB', url: 'https://bhbusiness.com/2025/05/06/talkspace-extends-profitability-run-as-payer-strategy-fuels-growth/' },
       { label: 'Talkspace Q1 2025 — AInvest', url: 'https://www.ainvest.com/news/talkspace-strategic-shift-payer-centric-growth-sustainable-path-booming-mental-health-tech-market-2508/' },
@@ -339,7 +339,7 @@ const MICRO_TRENDS: MicroTrend[] = [
     timeline: 'short',
     signal: 'Vista/SimplePractice ($4B) acquiring Luminello; building payer partnerships; 237K+ practitioners',
     detail: 'Vista Equity Partners is building a vertically integrated mental health platform. SimplePractice acquired Luminello (psychiatric EHR) for e-prescribe, is hiring Head of Payer & Employer Partnerships, and building AI-enabled multi-sided solutions.',
-    soWhat: 'SimplePractice is the gorilla evolving in your direction. They have distribution but NOT: a member app, between-session care, EU presence, or B2B2C architecture. Build the thing they can\'t easily bolt on.',
+    soWhat: 'SimplePractice is a major player evolving toward this space. They have distribution (237K practitioners) but lack: a member app, between-session care, EU presence, or B2B2C architecture. Whether this gap persists is an open question.',
     sources: [
       { label: 'SimplePractice Profile — PitchBook', url: 'https://pitchbook.com/profiles/company/234770-95' },
       { label: 'Luminello Acquisition — Yung Sidekick', url: 'https://yung-sidekick.com/blog/what-you-need-to-know-about-luminello-s-acquisition' },
@@ -352,7 +352,7 @@ const MICRO_TRENDS: MicroTrend[] = [
     timeline: 'short',
     signal: '800+ physicians at UW Health; therapists saving 12-15 hrs/month',
     detail: 'After a successful trial (Aug 2024 — Mar 2025), UW Health rolled out ambient AI across all clinics. Burnout dropped from 51.9% to 38.8% in 30 days. Multiple startups (Eleos Health $40M+, AutoNotes, Mentalyc, Upheal) building therapy-specific AI notes.',
-    soWhat: 'AI notes should be your wedge feature. Once Marie generates notes with AI, expanding to between-session care is a natural upsell, not a product pivot.',
+    soWhat: 'AI notes are intended as our wedge feature. If practitioners adopt AI notes, expanding to between-session care could be a natural upsell \u2014 but this path is a hypothesis, not yet validated.',
     sources: [
       { label: 'Ambient AI Improves Wellbeing — UW Health', url: 'https://www.med.wisc.edu/news/ambient-ai-improves-practitioner-well-being/' },
       { label: 'AI Notes for Therapists 2026 — TwoFold', url: 'https://www.trytwofold.com/blog/ai-notes-for-therapists' },
@@ -365,7 +365,7 @@ const MICRO_TRENDS: MicroTrend[] = [
     timeline: 'short',
     signal: '$123M raised, 1.5M users — standalone AI therapy model proven unviable',
     detail: 'Woebot shut down June 30, 2025. CEO cited regulatory limbo (no FDA pathway for LLM-based therapy). The shutdown wasn\'t clinical failure — it was business model failure. Generic GenAI chatbots are booming without clinical rigor; hybrid models (AI + human oversight) are the sustainable path.',
-    soWhat: 'Your thesis is validated: AI embedded in care relationships, not replacing them. Position Bloom as "what Woebot should have been — AI anchored in real therapeutic relationships."',
+    soWhat: 'This supports our thesis: AI embedded in care relationships, not replacing them. The opportunity is real, but Woebot had $123M in funding and still failed \u2014 execution risk is significant regardless of thesis quality.',
     sources: [
       { label: 'STAT News — Why Woebot Shut Down', url: 'https://www.statnews.com/2025/07/02/woebot-therapy-chatbot-shuts-down-founder-says-ai-moving-faster-than-regulators/' },
       { label: 'MobiHealthNews — Woebot Shutdown', url: 'https://www.mobihealthnews.com/news/woebot-health-shutting-down-its-app' },
@@ -378,7 +378,7 @@ const MICRO_TRENDS: MicroTrend[] = [
     timeline: 'short',
     signal: 'Mental health funding up 150% to $352M, but rounds dropped from 20 → 13',
     detail: 'Capital is concentrating into later-stage winners. Lyra Health: $235M Series G → $5.58B. Spring Health: $100M Series E → $3.3B. Seed is harder but conviction is stronger — investors want B2B or B2B2C models, not another chatbot.',
-    soWhat: 'Pre-seed fundraising is selective but the thesis investors want to fund (B2B2C, EU, practitioner-first) is exactly what you\'re building. Lead with "we\'re building the European SimplePractice with AI and a member app."',
+    soWhat: 'Pre-seed fundraising is selective. The thesis investors are backing (B2B2C, practitioner-first) aligns with what we are building. We are raising \u20ac400K-500K pre-seed for 18 months of runway.',
     sources: [
       { label: 'Mental Health Investment Soars 150% — Calcalist', url: 'https://www.calcalistech.com/ctechnews/article/skhzjq8i11g' },
       { label: 'Lyra Health $5.58B — Fierce Healthcare', url: 'https://www.fiercehealthcare.com/digital-health/lyra-health-gets-235m-soars-to-5-85b-valuation-new-acquisition-for-global-expansion' },
@@ -391,7 +391,7 @@ const MICRO_TRENDS: MicroTrend[] = [
     timeline: 'structural',
     signal: '93% report burnout; 29% considering leaving; 1/3 spend majority of time on admin',
     detail: '93% of behavioral health workers report burnout, 62% at severe levels (8-10/10). A third spend most of their time on admin. 29% of burned-out therapists consider leaving the field. Therapists spend 10-15 min per session note; 25 clients/week = 4+ hours of documentation alone.',
-    soWhat: 'Burnout is the emotional trigger that converts Marie. "I became a therapist to help people, not do paperwork" is the message that resonates — and AI notes + streamlined workflows is the solution.',
+    soWhat: 'Burnout is a strong emotional driver we hear repeatedly in interviews. "I became a therapist to help people, not do paperwork" is the message that resonates in our 119 discovery conversations.',
     sources: [
       { label: 'Admin Friction & Burnout — PimsyEHR', url: 'https://pimsyehr.com/administrative-friction-and-clinician-burnout/' },
       { label: 'SimplePractice — Therapist Burnout Report', url: 'https://www.simplepractice.com/blog/therapist-burnout-report/' },
@@ -409,7 +409,7 @@ const TECH_DISRUPTIONS: TechDisruption[] = [
     icon: Mic,
     description: 'AI listens to therapy sessions, generates structured clinical notes. Saves 15-30 min per session. Burnout reduction proven in randomized trials.',
     keyPlayers: 'Eleos Health ($40M+), AutoNotes, Mentalyc, Upheal, Freed AI, iCANotes',
-    soWhat: 'Trojan horse technology. Once a practitioner adopts AI for notes, they\'re primed for AI in other workflows. This is your wedge feature.',
+    soWhat: 'AI notes are our planned wedge feature. Once a practitioner adopts AI for notes, they may be open to AI in other workflows \u2014 this is the land-and-expand hypothesis we are testing.',
     sources: [
       { label: 'Ambient AI Scribe RCT — PMC', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC12768499/' },
       { label: 'AI Scribes Reduce Burnout — PMC', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC12492056/' },
@@ -423,7 +423,7 @@ const TECH_DISRUPTIONS: TechDisruption[] = [
     icon: Brain,
     description: 'AI companions that know the member\'s care plan, milestones, and practitioner context. Woebot\'s shutdown cleared the field for care-anchored AI models.',
     keyPlayers: 'Bloomsline (Bloom AI), Wysa (hybrid), emerging startups',
-    soWhat: 'This is your core product differentiator. No competitor has an AI companion anchored to a real therapeutic relationship. First-mover advantage is real.',
+    soWhat: 'This is our intended product differentiator. No competitor currently has an AI companion anchored to a real therapeutic relationship. Whether first-mover advantage holds depends on execution speed.',
     sources: [
       { label: 'AI Chatbots for Mental Health — Healthcare-in-Europe', url: 'https://healthcare-in-europe.com/en/news/ai-chatbot-mental-health-regulation.html' },
     ],
@@ -436,7 +436,7 @@ const TECH_DISRUPTIONS: TechDisruption[] = [
     icon: AlertTriangle,
     description: 'ML models predict therapy dropout with 70-80% accuracy using early session data. Key predictors: missed appointments, declining homework completion, reduced between-session engagement.',
     keyPlayers: 'Spring Health (Precision MH), Crisis Text Line, Quartet Health',
-    soWhat: 'Between-session engagement data is the key input. Your platform captures ritual completion, mood tracking, and AI companion interactions — the exact signals these models need.',
+    soWhat: 'Between-session engagement data is the key input for these models. Our platform is designed to capture mood tracking and AI companion interactions \u2014 the signals these models need. This remains theoretical until we have real usage data.',
     sources: [
       { label: 'Spring Health $3.3B — BHB', url: 'https://bhbusiness.com/2024/07/31/mental-health-startup-spring-health-secures-100m-series-e-valuation-soars-to-3-3b/' },
     ],
@@ -962,7 +962,7 @@ export default function TrendReportPage() {
                   t('DiGA model spreads across EU', 'Le modèle DiGA s\'étend à toute l\'UE'),
                   t('SimplePractice platform play accelerates', 'L\'offensive plateforme de SimplePractice s\'accélère'),
                   t('Employer EAP → platform shift', 'Transition employeurs : PAE → plateformes'),
-                  t('MBC adoption reaches 40%+', 'Adoption du MBC atteint 40 %+'),
+                  t('Measurement-based care adoption reaches 40%+', 'Adoption du MBC atteint 40 %+'),
                   t('Gen Z enters peak therapy spending years', 'La Gen Z entre dans ses années de pic de dépenses thérapeutiques'),
                 ],
               },
@@ -1010,7 +1010,7 @@ export default function TrendReportPage() {
               <p className="text-xs font-semibold text-indigo-300 mb-1.5">{t('The Window (12-18 months)', 'La fenêtre d\'opportunité (12-18 mois)')}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {[
-                  t('B2C model is proven dead (BetterHelp, Woebot) but care-anchored B2B2C hasn\'t been built', 'Le modèle B2C est mort (BetterHelp, Woebot) mais le B2B2C ancré dans le soin n\'a pas encore été construit'),
+                  t('B2C model is struggling (BetterHelp -11%, Woebot shutdown) but care-anchored B2B2C has not yet been proven either', 'Le modèle B2C est en difficulté (BetterHelp -11 %, fermeture Woebot) mais le B2B2C ancré dans le soin n\'a pas encore été prouvé non plus'),
                   t('EU regulatory infrastructure favors European-native builders', 'L\'infrastructure réglementaire européenne favorise les acteurs natifs de l\'UE'),
                   t('Therapist burnout is at crisis levels — urgent demand for admin-reducing tools', 'L\'épuisement des thérapeutes atteint un niveau critique — demande urgente d\'outils réduisant l\'administratif'),
                   t('AI note generation is the wedge that opens the door to full practice adoption', 'La génération de notes par IA est le levier qui ouvre la porte à l\'adoption complète'),
@@ -1031,7 +1031,7 @@ export default function TrendReportPage() {
                   'SimplePractice (Vista, $4B, 237K practitioners) is building in your direction — adding AI, building payer partnerships. They have distribution, capital, and 237K practitioners. They do NOT have: a member app, between-session care, EU presence, or B2B2C architecture. ',
                   'SimplePractice (Vista, 4 Md$, 237 000 praticiens) avance dans votre direction — ajout de l\'IA, partenariats payeurs. Ils ont la distribution, le capital et 237 000 praticiens. Ils n\'ont PAS : d\'application patient, de suivi entre les séances, de présence en UE, ni d\'architecture B2B2C. '
                 )}
-                <span className="text-white font-medium">{t('Your advantage is architectural, not resource-based. Build the thing they can\'t easily bolt on.', 'Votre avantage est architectural, pas fondé sur les ressources. Construisez ce qu\'ils ne peuvent pas facilement ajouter.')}</span>
+                <span className="text-white font-medium">{t('Our potential advantage is architectural (B2B2C with member app), not resource-based. The question is whether we can build defensibility before better-funded players enter.', 'Notre avantage potentiel est architectural (B2B2C avec application membre), pas fondé sur les ressources. La question est de savoir si nous pouvons construire une défensibilité avant l\'entrée d\'acteurs mieux financés.')}</span>
               </p>
             </div>
 
@@ -1039,7 +1039,7 @@ export default function TrendReportPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {[
                   { metric: t('Market size', 'Taille du marché'), signal: t('$33B → $88B (2030)', '33 Md$ → 88 Md$ (2030)'), position: t('Inside fastest-growing segment', 'Dans le segment à la plus forte croissance') },
-                  { metric: t('Growth rate', 'Taux de croissance'), signal: t('18.6% CAGR', '18,6 % TCAM'), position: t('Targeting 22.7% SOM CAGR', 'Objectif 22,7 % TCAM sur le marché servi') },
+                  { metric: t('Growth rate', 'Taux de croissance'), signal: t('18.6% CAGR', '18,6 % TCAM'), position: t('Targeting 22.7% serviceable market growth', 'Objectif 22,7 % TCAM sur le marché servi') },
                   { metric: t('B2C viability', 'Viabilité B2C'), signal: t('Collapsing', 'En effondrement'), position: t('B2C is free, B2B pays', 'Le B2C est gratuit, le B2B paie') },
                   { metric: t('AI positioning', 'Positionnement IA'), signal: t('"Augment, don\'t replace" winning', '« Augmenter, pas remplacer » gagne'), position: t('Care-anchored by design', 'Ancré dans le soin par conception') },
                   { metric: t('EU competition', 'Concurrence UE'), signal: t('Near zero', 'Quasi nulle'), position: t('First mover in white space', 'Premier entrant sur un marché vierge') },

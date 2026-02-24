@@ -106,8 +106,8 @@ function getPhases(t: (en: string, fr: string) => string): Phase[] {
         ],
         business: [
           { label: t('SAS incorporated in France', 'SAS immatriculée en France'), done: true },
-          { label: t('187 discovery interviews (68 practitioners, 119 users)', '187 entretiens découverte (68 praticiens, 119 utilisateurs)'), done: true },
-          { label: t('3-5 beta testers onboarded', '3-5 testeurs bêta intégrés'), done: true },
+          { label: t('119 discovery interviews completed', '119 entretiens découverte réalisés'), done: true },
+          { label: t('15 beta testers onboarded', '15 testeurs bêta intégrés'), done: true },
           { label: t('Investor data room built', 'Data room investisseur construite'), done: true },
           { label: t('Pitch deck & financial model ready', 'Pitch deck et modèle financier prêts'), done: true },
         ],
@@ -116,8 +116,8 @@ function getPhases(t: (en: string, fr: string) => string): Phase[] {
     {
       id: 'q2-2026',
       period: 'T2 2026 (Avr – Juin)',
-      title: t('Launch & Validate', 'Lancement & Validation'),
-      subtitle: t('10 → 30 paying practitioners, prove willingness to pay', '10 → 30 praticiens payants, prouver la disposition à payer'),
+      title: t('Launch & First Revenue', 'Lancement & Premiers revenus'),
+      subtitle: t('0 → 10 paying practitioners, prove willingness to pay', '0 → 10 praticiens payants, prouver la disposition à payer'),
       status: 'current',
       items: {
         product: [
@@ -127,7 +127,7 @@ function getPhases(t: (en: string, fr: string) => string): Phase[] {
           { label: t('Practitioner onboarding flow optimization', 'Optimisation du parcours d\'intégration praticien') },
         ],
         b2b: [
-          { label: t('Payment integration — Stripe billing (€25/mo)', 'Intégration de paiement — facturation Stripe (25 €/mois)') },
+          { label: t('Payment integration — Stripe billing (€19/29/49 tiers)', 'Intégration de paiement — facturation Stripe (paliers 19/29/49 €)') },
           { label: t('Practitioner settings & profile customization', 'Paramètres praticien et personnalisation du profil') },
           { label: t('Session recap — AI-generated pre-session brief', 'Résumé de séance — brief pré-séance généré par IA') },
           { label: t('Member invite flow (email + link)', 'Parcours d\'invitation membre (e-mail + lien)') },
@@ -139,14 +139,14 @@ function getPhases(t: (en: string, fr: string) => string): Phase[] {
           { label: t('Session booking from mobile app', 'Réservation de séance depuis l\'application mobile') },
         ],
         digital: [
-          { label: t('French blog launch — weekly SEO content', 'Lancement du blog français — contenu SEO hebdomadaire') },
-          { label: t('LinkedIn presence — founder-led thought leadership', 'Présence LinkedIn — leadership d\'opinion par le fondateur') },
+          { label: t('French blog launch — bi-weekly SEO articles', 'Lancement du blog français — articles SEO bimensuels') },
+          { label: t('LinkedIn presence — founder-led content on practitioner pain points', 'Présence LinkedIn — contenu fondateur sur les difficultés des praticiens') },
           { label: t('Practitioner testimonial videos (2-3 beta users)', 'Vidéos témoignages praticiens (2-3 utilisateurs bêta)') },
           { label: t('HubSpot CRM pipeline for practitioner leads', 'Pipeline CRM HubSpot pour leads praticiens') },
         ],
         business: [
-          { label: t('Close pre-seed round (€250-400K)', 'Clôturer le tour pré-seed (250-400 K€)') },
-          { label: t('First 10 paying practitioners', '10 premiers praticiens payants') },
+          { label: t('Close pre-seed round (€400K-500K for 18 months runway)', 'Clôturer le tour pré-seed (400-500 K€ pour 18 mois de trésorerie)') },
+          { label: t('First 10 paying practitioners (from beta converts + outbound)', '10 premiers praticiens payants (conversions bêta + prospection)') },
           { label: t('Attend first conference (AFTCC or similar)', 'Participer à la première conférence (AFTCC ou similaire)') },
           { label: t('Launch referral program (1 free month per referral)', 'Lancer le programme de parrainage (1 mois offert par parrainage)') },
         ],
@@ -156,37 +156,37 @@ function getPhases(t: (en: string, fr: string) => string): Phase[] {
       id: 'q3-2026',
       period: 'T3 2026 (Juil – Sep)',
       title: t('Grow & Iterate', 'Croître & Itérer'),
-      subtitle: t('30 → 100 practitioners, organic inbound begins', '30 → 100 praticiens, début de l\'acquisition organique'),
+      subtitle: t('10 → 30 practitioners, first organic signups', '10 → 30 praticiens, premières inscriptions organiques'),
       status: 'upcoming',
       items: {
         product: [
-          { label: t('Advanced Bloom — emotional pattern summaries', 'Bloom avancé — résumés de schémas émotionnels') },
-          { label: t('Practitioner copilot v2 — smarter session prep', 'Copilote praticien v2 — préparation de séance plus intelligente') },
+          { label: t('Bloom AI improvements based on user feedback', 'Améliorations Bloom IA basées sur les retours utilisateurs') },
+          { label: t('Session prep summaries — pull recent member data for practitioners', 'Résumés de préparation de séance — données récentes du membre pour le praticien') },
           { label: t('Member progress reports (shareable with practitioner)', 'Rapports de progression membre (partageables avec le praticien)') },
-          { label: t('API performance optimization for scale', 'Optimisation des performances API pour le passage à l\'échelle') },
+          { label: t('Performance and reliability fixes as usage grows', 'Corrections de performance et fiabilité à mesure que l\'usage augmente') },
         ],
         b2b: [
-          { label: t('Group practice support (multi-practitioner accounts)', 'Support cabinet de groupe (comptes multi-praticiens)') },
           { label: t('Exportable clinical reports (PDF)', 'Rapports cliniques exportables (PDF)') },
-          { label: t('Practitioner-to-practitioner referral system', 'Système d\'orientation entre praticiens') },
           { label: t('Custom resource templates', 'Modèles de ressources personnalisés') },
+          { label: t('Practitioner referral program (invite a colleague)', 'Programme de parrainage praticien (inviter un collègue)') },
+          { label: t('Group practice support — if demand warrants it', 'Support cabinet de groupe — si la demande le justifie') },
         ],
         b2c: [
           { label: t('Guided journaling prompts (AI-personalized)', 'Invitations de journal guidé (personnalisé par IA)') },
-          { label: t('Sleep tracking integration', 'Intégration du suivi du sommeil') },
-          { label: t('Community features — anonymous peer support', 'Fonctionnalités communautaires — soutien anonyme entre pairs') },
           { label: t('Widget for quick mood check-in (iOS/Android)', 'Widget de vérification rapide de l\'humeur (iOS/Android)') },
+          { label: t('Offline mode improvements', 'Améliorations du mode hors ligne') },
+          { label: t('Member engagement improvements based on usage data', 'Améliorations de l\'engagement membre basées sur les données d\'usage') },
         ],
         digital: [
-          { label: t('SEO compounding — target 500+ organic monthly visits', 'Effet cumulatif SEO — objectif 500+ visites organiques mensuelles') },
-          { label: t('Guest on 2-3 French psych podcasts', 'Invité sur 2-3 podcasts français de psychologie') },
-          { label: t('Case studies published from early adopters', 'Études de cas publiées d\'adopteurs précoces') },
-          { label: t('Conference presence — demo booth at major event', 'Présence en conférence — stand de démo à un événement majeur') },
+          { label: t('SEO target: 200+ organic monthly visits', 'Objectif SEO : 200+ visites organiques mensuelles') },
+          { label: t('Guest on 1-2 French psych podcasts', 'Invité sur 1-2 podcasts français de psychologie') },
+          { label: t('First case study published from an early adopter', 'Première étude de cas publiée d\'un adopteur précoce') },
+          { label: t('Conference attendance — networking, not booths yet', 'Participation à une conférence — networking, pas encore de stand') },
         ],
         business: [
-          { label: t('First hire — customer success / support', 'Première embauche — succès client / support') },
-          { label: t('Training institute partnerships (AFTCC, IFFORTHECC)', 'Partenariats avec des instituts de formation (AFTCC, IFFORTHECC)') },
-          { label: t('First organic/referral signups (inflection point)', 'Premières inscriptions organiques/parrainage (point d\'inflexion)') },
+          { label: t('Evaluate first hire — customer success or support', 'Évaluer la première embauche — succès client ou support') },
+          { label: t('Begin conversations with training institutes (AFTCC, IFFORTHECC)', 'Engager les conversations avec les instituts de formation (AFTCC, IFFORTHECC)') },
+          { label: t('First organic or referral signups', 'Premières inscriptions organiques ou par parrainage') },
           { label: t('Monthly burn stable at <€10K/mo', 'Dépenses mensuelles stables à < 10 K€/mois') },
         ],
       },
@@ -194,73 +194,73 @@ function getPhases(t: (en: string, fr: string) => string): Phase[] {
     {
       id: 'q4-2026',
       period: 'T4 2026 (Oct – Déc)',
-      title: t('Scale & Expand', 'Croissance & Expansion'),
-      subtitle: t('100 → 200+ practitioners, Series A prep', '100 → 200+ praticiens, préparation Série A'),
+      title: t('Consolidate & Expand', 'Consolider & Développer'),
+      subtitle: t('30 → 50+ practitioners, refine unit economics', '30 → 50+ praticiens, affiner les métriques unitaires'),
       status: 'upcoming',
       items: {
         product: [
-          { label: t('Bloom AI v3 — multi-modal (voice notes analysis)', 'Bloom IA v3 — multimodal (analyse de notes vocales)') },
-          { label: t('Outcomes measurement framework', 'Cadre de mesure des résultats') },
-          { label: t('HDS-certified hosting evaluation (for enterprise)', 'Évaluation d\'hébergement certifié HDS (pour entreprise)') },
-          { label: t('API for third-party EHR integrations', 'API pour intégrations de DSE tiers') },
+          { label: t('Bloom AI improvements — voice note analysis if validated', 'Améliorations Bloom IA — analyse de notes vocales si validée') },
+          { label: t('Outcomes measurement — track what works for practitioners', 'Mesure des résultats — suivre ce qui fonctionne pour les praticiens') },
+          { label: t('Begin HDS-certified hosting evaluation (required for enterprise in France)', 'Commencer l\'évaluation d\'hébergement certifié HDS (requis pour l\'entreprise en France)') },
+          { label: t('Evaluate EHR integration needs based on practitioner requests', 'Évaluer les besoins d\'intégration DSE selon les demandes des praticiens') },
         ],
         b2b: [
-          { label: t('Enterprise plan — clinic / group practice pricing', 'Offre entreprise — tarification cabinet / groupe') },
-          { label: t('Admin dashboard for practice managers', 'Tableau de bord administrateur pour responsables de cabinet') },
+          { label: t('Group practice pricing — if enough demand from Q3', 'Tarification cabinet de groupe — si assez de demande du T3') },
+          { label: t('Admin dashboard for multi-practitioner accounts', 'Tableau de bord admin pour comptes multi-praticiens') },
           { label: t('Insurance/reimbursement pathway exploration', 'Exploration du parcours assurance/remboursement') },
-          { label: t('White-label option for large practices', 'Option marque blanche pour grands cabinets') },
+          { label: t('Explore expansion to French-speaking markets (Belgium, Switzerland)', 'Explorer l\'expansion sur les marchés francophones (Belgique, Suisse)') },
         ],
         b2c: [
-          { label: t('Personalized wellbeing programs (AI-generated)', 'Programmes de bien-être personnalisés (générés par IA)') },
-          { label: t('Family/couple mode (shared care journeys)', 'Mode famille/couple (parcours de soin partagés)') },
-          { label: t('Wearable integrations (Apple Health, Fitbit)', 'Intégrations objets connectés (Apple Health, Fitbit)') },
-          { label: t('Celebrate milestones — shareable achievement cards', 'Célébrer les étapes — cartes de réussite partageables') },
+          { label: t('Personalized wellbeing suggestions based on usage patterns', 'Suggestions de bien-être personnalisées basées sur les habitudes d\'usage') },
+          { label: t('Celebrate milestones — shareable progress cards', 'Célébrer les étapes — cartes de progression partageables') },
+          { label: t('Apple Health integration (if validated by member feedback)', 'Intégration Apple Health (si validée par les retours membres)') },
+          { label: t('Continued mobile app polish based on real usage', 'Amélioration continue de l\'app mobile basée sur l\'usage réel') },
         ],
         digital: [
-          { label: t('Expand to French-speaking markets (Belgium, Switzerland)', 'Expansion sur les marchés francophones (Belgique, Suisse)') },
-          { label: t('SEO target: 2,000+ organic monthly visits', 'Objectif SEO : 2 000+ visites organiques mensuelles') },
-          { label: t('YouTube channel — practitioner education content', 'Chaîne YouTube — contenu éducatif pour praticiens') },
-          { label: t('Partnership co-marketing with training institutes', 'Co-marketing en partenariat avec les instituts de formation') },
+          { label: t('SEO target: 500+ organic monthly visits', 'Objectif SEO : 500+ visites organiques mensuelles') },
+          { label: t('2-3 published case studies with real practitioner data', '2-3 études de cas publiées avec des données praticien réelles') },
+          { label: t('Co-marketing with one training institute if partnership closes', 'Co-marketing avec un institut de formation si le partenariat aboutit') },
+          { label: t('Double down on whatever channel is working', 'Doubler les efforts sur le canal qui fonctionne') },
         ],
         business: [
-          { label: t('Second hire — full-stack developer', 'Deuxième embauche — développeur full-stack') },
-          { label: t('Series A data package (retention, NPS, unit economics)', 'Dossier de données Série A (rétention, NPS, unit economics)') },
-          { label: t('Referrals = 20-30% of new signups', 'Parrainages = 20-30 % des nouvelles inscriptions') },
-          { label: t('Start Series A conversations', 'Débuter les discussions Série A') },
+          { label: t('First or second hire depending on traction', 'Première ou deuxième embauche selon la traction') },
+          { label: t('Build data package: retention, NPS, unit economics', 'Construire le dossier de données : rétention, NPS, métriques unitaires') },
+          { label: t('Referrals growing as % of new signups', 'Parrainages en croissance en % des nouvelles inscriptions') },
+          { label: t('Evaluate if ready for seed round conversations', 'Évaluer si prêt pour les discussions de tour d\'amorçage') },
         ],
       },
     },
     {
       id: '2027',
       period: '2027',
-      title: t('Series A & Beyond', 'Série A & Au-delà'),
-      subtitle: t('European expansion, enterprise, advanced AI', 'Expansion européenne, entreprise, IA avancée'),
+      title: t('Seed Round & Growth', 'Tour d\'amorçage & Croissance'),
+      subtitle: t('If traction supports it: raise seed, expand team, enter new markets', 'Si la traction le justifie : lever un tour d\'amorçage, agrandir l\'équipe, entrer sur de nouveaux marchés'),
       status: 'upcoming',
       items: {
         product: [
-          { label: t('Bloom AI v4 — predictive wellbeing alerts', 'Bloom IA v4 — alertes prédictives de bien-être') },
-          { label: t('Clinical evidence package (outcome data)', 'Dossier de preuves cliniques (données de résultats)') },
-          { label: t('Open API for partner integrations', 'API ouverte pour intégrations partenaires') },
+          { label: t('Bloom AI — deeper personalization based on 12+ months of data', 'Bloom IA — personnalisation plus poussée basée sur 12+ mois de données') },
+          { label: t('Clinical evidence package from real usage outcomes', 'Dossier de preuves cliniques à partir des résultats d\'usage réels') },
+          { label: t('Open API for partner integrations if enterprise demand exists', 'API ouverte pour intégrations partenaires si la demande entreprise existe') },
         ],
         b2b: [
-          { label: t('UK & Germany market entry', 'Entrée sur les marchés UK et Allemagne') },
-          { label: t('EAP (Employee Assistance Program) channel', 'Canal PAE (Programme d\'Aide aux Employés)') },
-          { label: t('Multi-language practitioner support (DE, IT, PT)', 'Support praticien multilingue (DE, IT, PT)') },
+          { label: t('UK or Germany market entry — one new market at a time', 'Entrée sur le marché UK ou Allemagne — un nouveau marché à la fois') },
+          { label: t('Explore employee assistance program channel', 'Explorer le canal programmes d\'aide aux employés') },
+          { label: t('Add German or English practitioner support based on expansion market', 'Ajouter le support praticien allemand ou anglais selon le marché d\'expansion') },
         ],
         b2c: [
-          { label: t('Bloom voice companion (real-time audio)', 'Compagnon vocal Bloom (audio en temps réel)') },
-          { label: t('AR/VR mindfulness experiences', 'Expériences de pleine conscience AR/VR') },
-          { label: t('Self-guided therapeutic programs', 'Programmes thérapeutiques en autonomie') },
+          { label: t('Bloom voice companion — explore real-time audio if tech matures', 'Compagnon vocal Bloom — explorer l\'audio en temps réel si la technologie mûrit') },
+          { label: t('Self-guided programs based on practitioner input', 'Programmes en autonomie basés sur les retours des praticiens') },
+          { label: t('Mobile app features driven by actual member usage data', 'Fonctionnalités mobile guidées par les données d\'usage réel des membres') },
         ],
         digital: [
-          { label: t('Multi-market SEO (UK, DE, Benelux)', 'SEO multi-marchés (UK, DE, Benelux)') },
-          { label: t('Thought leadership — conference speaking circuit', 'Leadership d\'opinion — circuit de conférences') },
-          { label: t('Strategic media partnerships', 'Partenariats médias stratégiques') },
+          { label: t('SEO in expansion market (UK or DE)', 'SEO sur le marché d\'expansion (UK ou DE)') },
+          { label: t('Conference speaking if brand awareness warrants it', 'Conférences si la notoriété de la marque le justifie') },
+          { label: t('Content partnerships with practitioner training organizations', 'Partenariats de contenu avec les organisations de formation de praticiens') },
         ],
         business: [
-          { label: t('Raise Series A', 'Lever la Série A') },
-          { label: t('Team to 8-12 people', 'Équipe de 8-12 personnes') },
-          { label: t('North America exploration', 'Exploration de l\'Amérique du Nord') },
+          { label: t('Raise seed round if pre-seed metrics support it', 'Lever un tour d\'amorçage si les métriques pré-seed le justifient') },
+          { label: t('Team to 4-6 people', 'Équipe de 4-6 personnes') },
+          { label: t('Focus remains Europe — North America is years away', 'Le focus reste l\'Europe — l\'Amérique du Nord est à des années') },
         ],
       },
     },
@@ -318,8 +318,8 @@ export default function RoadmapPage() {
           <h2 className="text-xl font-bold text-gray-900 mb-2">{t('Building the Care Platform', 'Construire la plateforme de soin')}</h2>
           <p className="text-sm text-gray-500 leading-relaxed">
             {t(
-              'From MVP to market leader — our roadmap across product, B2B practitioner tools, B2C member experience, digital presence, and business growth. Built iteratively based on real practitioner feedback.',
-              'Du MVP au leader du marché — notre feuille de route couvrant le produit, les outils B2B pour praticiens, l\'expérience B2C pour les membres, la présence numérique et la croissance de l\'entreprise. Construit de manière itérative à partir de retours réels de praticiens.'
+              'Our roadmap across product, practitioner tools, member experience, digital presence, and business growth. We are a 2-person team (product/tech + sales/ops), pre-revenue, with 15 beta testers and 119 discovery interviews completed. Priorities shift based on what practitioners actually need.',
+              'Notre feuille de route couvrant le produit, les outils praticiens, l\'expérience membre, la présence numérique et la croissance. Nous sommes une équipe de 2 personnes (produit/tech + ventes/ops), pré-revenu, avec 15 testeurs bêta et 119 entretiens découverte réalisés. Les priorités évoluent selon les besoins réels des praticiens.'
             )}
           </p>
         </motion.div>
@@ -411,27 +411,27 @@ export default function RoadmapPage() {
 
         {/* ── Vision Summary ──────────────────────────────────────── */}
         <motion.div {...fadeUp} transition={{ delay: 0.5 }} className="bg-gray-900 rounded-xl p-6 text-white">
-          <h3 className="text-sm font-semibold mb-3">{t('The Vision', 'La Vision')}</h3>
+          <h3 className="text-sm font-semibold mb-3">{t('Where We Want to Be', 'Où nous voulons aller')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">{t('End of 2026', 'Fin 2026')}</p>
               <p className="text-xs text-gray-300">{t(
-                '200+ practitioners across France. Proven B2B2C flywheel. Series A ready with real traction data.',
-                '200+ praticiens en France. Boucle B2B2C prouvée. Prêt pour la Série A avec des données de traction réelles.'
+                '50+ paying practitioners in France. Clear retention and unit economics. Practitioners actively referring colleagues. Ready to evaluate seed round.',
+                '50+ praticiens payants en France. Rétention et métriques unitaires claires. Les praticiens recommandent activement leurs collègues. Prêt à évaluer un tour d\'amorçage.'
               )}</p>
             </div>
             <div>
               <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">2027</p>
               <p className="text-xs text-gray-300">{t(
-                'European expansion (UK, Germany, Benelux). Enterprise channel. Team of 8-12. Advanced AI companion.',
-                'Expansion européenne (UK, Allemagne, Benelux). Canal entreprise. Équipe de 8-12. Compagnon IA avancé.'
+                'Enter one new European market (UK or Germany). Team of 4-6. Deeper AI features based on real usage data. Enterprise exploration.',
+                'Entrer sur un nouveau marché européen (UK ou Allemagne). Équipe de 4-6. Fonctionnalités IA plus poussées basées sur les données d\'usage réel. Exploration entreprise.'
               )}</p>
             </div>
             <div>
               <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">{t('Long Term', 'Long terme')}</p>
               <p className="text-xs text-gray-300">{t(
-                'The default platform for therapeutic care between sessions. Every practitioner, every member, connected through AI.',
-                'La plateforme de référence pour le soin thérapeutique entre les séances. Chaque praticien, chaque membre, connectés grâce à l\'IA.'
+                'The go-to platform for practitioners who want to stay connected with their clients between sessions. Built on real clinical needs, not hype.',
+                'La plateforme de référence pour les praticiens qui veulent rester connectés avec leurs clients entre les séances. Construite sur des besoins cliniques réels, pas sur des effets de mode.'
               )}</p>
             </div>
           </div>

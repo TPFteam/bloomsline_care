@@ -408,8 +408,8 @@ function buildDifferentiators(t: TFn) {
       title: t('B2B2C Model', 'Modele B2B2C'),
       subtitle: t('Practitioner as distribution', 'Le praticien comme canal de distribution'),
       detail: t(
-        '\u20AC50 to acquire 1 practitioner \u2192 12 members for free. Effective member CAC: ~\u20AC4 vs \u20AC30-50 for B2C apps.',
-        '50 \u20AC pour acquerir 1 praticien \u2192 12 membres gratuitement. CAC effectif par membre : ~4 \u20AC contre 30-50 \u20AC pour les apps B2C.'
+        'Target: \u20AC50 to acquire 1 practitioner \u2192 ~12 members invited for free. Hypothetical member CAC: ~\u20AC4 vs \u20AC30-50 for B2C apps. This is our thesis based on 119 discovery interviews — not yet validated with paying customers.',
+        'Objectif : 50 \u20AC pour acquerir 1 praticien \u2192 environ 12 membres invites gratuitement. CAC theorique par membre : ~4 \u20AC contre 30-50 \u20AC pour les apps B2C. C\'est notre these basee sur 119 entretiens de decouverte — pas encore validee avec des clients payants.'
       ),
     },
     {
@@ -426,8 +426,8 @@ function buildDifferentiators(t: TFn) {
       title: t('Both Sides Connected', 'Les deux cotes connectes'),
       subtitle: t('Practitioner + member in one ecosystem', 'Praticien + membre dans un seul ecosysteme'),
       detail: t(
-        'No competitor connects both sides. SimplePractice has no member app. BetterHelp has no practitioner tools. We do both.',
-        'Aucun concurrent ne connecte les deux cotes. SimplePractice n\u2019a pas d\u2019application membre. BetterHelp n\u2019a pas d\u2019outils praticiens. Nous faisons les deux.'
+        'No major competitor connects both sides today. SimplePractice has no member app. BetterHelp has no practitioner tools. We are building both, though we are early-stage and need to prove this model works.',
+        'Aucun concurrent majeur ne connecte les deux cotes aujourd\u2019hui. SimplePractice n\u2019a pas d\u2019application membre. BetterHelp n\u2019a pas d\u2019outils praticiens. Nous construisons les deux, bien que nous soyons en phase initiale et devions prouver que ce modele fonctionne.'
       ),
     },
     {
@@ -435,17 +435,17 @@ function buildDifferentiators(t: TFn) {
       title: t('European White Space', 'Espace vierge europeen'),
       subtitle: t('No AI-native competitor in EU', 'Aucun concurrent natif IA en UE'),
       detail: t(
-        'SimplePractice, BetterHelp, Spring Health \u2014 all US-only. Doctolib is booking, not care. We\'re GDPR-native with FR/EN/ES from day one.',
-        'SimplePractice, BetterHelp, Spring Health \u2014 tous exclusivement americains. Doctolib fait de la reservation, pas du soin. Nous sommes natifs RGPD avec FR/EN/ES des le premier jour.'
+        'SimplePractice, BetterHelp, Spring Health \u2014 all US-only. Doctolib dominates booking (80M patients, \u20AC6.4B valuation) but is not a care platform. The gap exists, but Doctolib could move into this space. We\'re GDPR-native with FR/EN/ES from day one.',
+        'SimplePractice, BetterHelp, Spring Health \u2014 tous exclusivement americains. Doctolib domine la reservation (80M de patients, 6,4 Mds \u20AC de valorisation) mais n\u2019est pas une plateforme de soins. Le vide existe, mais Doctolib pourrait investir cet espace. Nous sommes natifs RGPD avec FR/EN/ES des le premier jour.'
       ),
     },
     {
       icon: DollarSign,
       title: t('Price as a Weapon', 'Le prix comme arme'),
-      subtitle: t('\u20AC25/mo vs \u20AC50-139/mo competitors', '25 \u20AC/mois contre 50-139 \u20AC/mois chez les concurrents'),
+      subtitle: t('\u20AC19-49/mo vs \u20AC50-139/mo competitors', '19-49 \u20AC/mois contre 50-139 \u20AC/mois chez les concurrents'),
       detail: t(
-        '2-5x cheaper than every practice management tool. 90%+ gross margin with AI cost-optimized on Claude Haiku.',
-        '2 a 5 fois moins cher que chaque outil de gestion de cabinet. Marge brute de 90%+ avec un cout IA optimise sur Claude Haiku.'
+        '2-3x cheaper than most practice management tools at our mid-tier (€29/mo). 85%+ target gross margin with AI cost-optimized on Claude Haiku. We are pre-revenue — pricing validated through 119 discovery interviews, not paying customers yet.',
+        '2 a 3 fois moins cher que la plupart des outils de gestion de cabinet a notre palier intermediaire (29 \u20AC/mois). Marge brute cible de 85%+ avec un cout IA optimise sur Claude Haiku. Nous sommes pre-revenu — tarification validee par 119 entretiens de decouverte, pas encore de clients payants.'
       ),
     },
   ]
@@ -518,12 +518,12 @@ function buildUncontestedSpaces(t: TFn) {
       icon: DollarSign,
       title: t('Affordable AI-Native Practice Tool', 'Outil de cabinet natif IA et abordable'),
       description: t(
-        'Practice management tools cost \u20AC50-139/mo. We deliver more (AI + member app) for \u20AC25/mo \u2014 2-5x cheaper.',
-        'Les outils de gestion de cabinet coutent 50-139 \u20AC/mois. Nous offrons plus (IA + application membre) pour 25 \u20AC/mois \u2014 2 a 5 fois moins cher.'
+        'Practice management tools cost \u20AC50-139/mo. We aim to deliver more (AI + member app) starting at \u20AC19/mo \u2014 significantly cheaper. This pricing is validated by discovery interviews, not paying customers yet.',
+        'Les outils de gestion de cabinet coutent 50-139 \u20AC/mois. Nous visons a offrir plus (IA + application membre) a partir de 19 \u20AC/mois \u2014 nettement moins cher. Cette tarification est validee par des entretiens de decouverte, pas encore de clients payants.'
       ),
       signal: t(
-        '90%+ gross margin with AI optimized on Claude Haiku',
-        'Marge brute de 90%+ avec une IA optimisee sur Claude Haiku'
+        '85%+ target gross margin with AI optimized on Claude Haiku',
+        'Marge brute cible de 85%+ avec une IA optimisee sur Claude Haiku'
       ),
     },
   ]
@@ -544,8 +544,8 @@ function buildStrategicRecs(t: TFn) {
       priority: 'critical' as const,
       title: t('Win France before expanding', 'Gagner la France avant de s\u2019etendre'),
       description: t(
-        'Doctolib proved France is the EU beachhead. Win 1,000 French practitioners first, then expand to DE/ES/UK with a proven playbook.',
-        'Doctolib a prouve que la France est la tete de pont europeenne. Gagner 1 000 praticiens francais d\u2019abord, puis s\u2019etendre en DE/ES/UK avec un playbook eprouve.'
+        'Doctolib proved France is the EU beachhead. Win the first 100-200 French practitioners and prove unit economics, then expand to DE/ES/UK with a proven playbook. We currently have 0 paying customers and 15 beta testers.',
+        'Doctolib a prouve que la France est la tete de pont europeenne. Gagner les 100-200 premiers praticiens francais et prouver l\u2019economie unitaire, puis s\u2019etendre en DE/ES/UK avec un playbook eprouve. Nous avons actuellement 0 client payant et 15 beta testeurs.'
       ),
       icon: Flag,
     },
@@ -553,8 +553,8 @@ function buildStrategicRecs(t: TFn) {
       priority: 'important' as const,
       title: t('Use B2B2C as the moat', 'Utiliser le B2B2C comme avantage defensif'),
       description: t(
-        '1 practitioner sale \u2192 ~30 members over time. This creates organic distribution that B2C and B2B competitors can\'t replicate.',
-        '1 vente praticien \u2192 ~30 membres a terme. Cela cree une distribution organique que les concurrents B2C et B2B ne peuvent pas repliquer.'
+        '1 practitioner sale \u2192 ~12 members invited for free. If this model works, it creates organic distribution that B2C and B2B competitors can\'t easily replicate. We need to validate this thesis.',
+        '1 vente praticien \u2192 environ 12 membres invites gratuitement. Si ce modele fonctionne, il cree une distribution organique que les concurrents B2C et B2B ne peuvent pas facilement repliquer. Nous devons valider cette these.'
       ),
       icon: Shield,
     },
@@ -573,7 +573,7 @@ function buildStrategicRecs(t: TFn) {
 // All sources referenced on this page (source labels are kept as-is since they reference external publications)
 const ALL_SOURCES: CompetitorSource[] = [
   // Market sizing
-  { label: 'Digital Mental Health Market \u2014 $33B (2025), Towards Healthcare', url: 'https://www.towardshealthcare.com/insights/digital-mental-health-market-sizing' },
+  { label: 'Digital Mental Health Market \u2014 \u20AC12B EU TAM (2025), Towards Healthcare', url: 'https://www.towardshealthcare.com/insights/digital-mental-health-market-sizing' },
   { label: 'EU Mental Health Apps Market \u2014 $2.2B (2025), Grand View Research', url: 'https://www.grandviewresearch.com/horizon/outlook/mental-health-apps-market/europe' },
   // Between-session gap
   { label: 'Between-session homework non-adherence 20-50%, JMIR Mental Health (2017)', url: 'https://mental.jmir.org/2017/2/e20/' },
@@ -787,18 +787,18 @@ export default function CompetitiveLandscapePage() {
           </h2>
           <p className="text-sm text-gray-500 leading-relaxed max-w-2xl">
             {t(
-              'Mental health tech is fragmented into silos \u2014 practice tools for clinicians, wellness apps for consumers, enterprise platforms for HR. Nobody connects both sides with AI. Bloomsline sits in the gap that everyone else ignores: the 167 hours between weekly sessions where care should still be happening.',
-              'La tech en sante mentale est fragmentee en silos \u2014 outils de cabinet pour les cliniciens, applications bien-etre pour les consommateurs, plateformes entreprise pour les RH. Personne ne connecte les deux cotes avec l\u2019IA. Bloomsline se positionne dans le vide que tout le monde ignore : les 167 heures entre les seances hebdomadaires ou les soins devraient continuer.'
+              'Mental health tech is fragmented into silos \u2014 practice tools for clinicians, wellness apps for consumers, enterprise platforms for HR. Nobody connects both sides with AI in Europe. Bloomsline is building for the gap that everyone else ignores: the 167 hours between weekly sessions where care should still be happening. We are pre-revenue with 15 beta testers and 119 discovery interviews.',
+              'La tech en sante mentale est fragmentee en silos \u2014 outils de cabinet pour les cliniciens, applications bien-etre pour les consommateurs, plateformes entreprise pour les RH. Personne ne connecte les deux cotes avec l\u2019IA en Europe. Bloomsline construit pour le vide que tout le monde ignore : les 167 heures entre les seances hebdomadaires ou les soins devraient continuer. Nous sommes pre-revenu avec 15 beta testeurs et 119 entretiens de decouverte.'
             )}
           </p>
           <div className="flex flex-wrap items-center gap-2 mt-4">
-            <span className="text-[10px] font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded-full">{t('$33B market', 'Marche de 33 Mds $')}</span>
+            <span className="text-[10px] font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded-full">{t('€12B EU market', 'Marche UE de 12 Mds €')}</span>
             <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">{t('0 dual-sided platforms', '0 plateforme bilaterale')}</span>
             <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-3 py-1 rounded-full">{t('No AI-native competitor in EU', 'Aucun concurrent natif IA en UE')}</span>
           </div>
           <div className="mt-2">
             <SourceLink href="https://www.towardshealthcare.com/insights/digital-mental-health-market-sizing">
-              $33B: Towards Healthcare, Digital Mental Health Market (2025)
+              €12B EU TAM: Towards Healthcare, Digital Mental Health Market (2025)
             </SourceLink>
           </div>
         </motion.section>
@@ -959,7 +959,7 @@ export default function CompetitiveLandscapePage() {
               <tbody>
                 <tr className="bg-gray-900 text-white rounded-lg">
                   <td className="py-2.5 pr-4 font-bold rounded-l-lg pl-3">Bloomsline Care</td>
-                  <td className="py-2.5 px-2 font-semibold">\u20AC25/{t('mo', 'mois')}</td>
+                  <td className="py-2.5 px-2 font-semibold">\u20AC19-49/{t('mo', 'mois')}</td>
                   {FEATURE_COLUMNS.map((col) => (
                     <td key={col.key} className="text-center py-2.5 px-2">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 mx-auto" />

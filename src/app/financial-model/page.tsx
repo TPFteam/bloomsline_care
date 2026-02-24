@@ -16,6 +16,8 @@ import {
   BarChart3,
   TrendingUp,
   Info,
+  Calendar,
+  AlertTriangle,
 } from 'lucide-react'
 import {
   AreaChart,
@@ -58,6 +60,9 @@ interface Assumptions {
   infraCost: number
   marketingCost: number
   otherCost: number
+  teamCostStepUp: number      // €/mo added per step-up
+  teamStepUpInterval: number  // months between step-ups
+  cacGrowthPctPerQuarter: number // CAC grows this % each quarter
   startingCash: number
   dilutionPct: number
   useOfFunds: { product: number; gtm: number; team: number; ops: number }
@@ -82,6 +87,7 @@ interface MonthProjection {
   marketingExp: number
   otherExp: number
   acquisitionExp: number
+  currentCAC: number
   netBurn: number
   cumulativeCash: number
 }
@@ -98,6 +104,8 @@ interface UnitEconomics {
   ltvCacRatio: number
   paybackMonths: number
   effectiveMemberCAC: number
+  cacM18: number
+  cacM36: number
 }
 
 interface RunwayInfo {
@@ -131,6 +139,9 @@ const SCENARIOS: Record<string, Assumptions> = {
     variableCostPerPract: 4.25,
     cac: 60,
     teamCost: 8000,    // 2 founders (€4K) + dev part-time (€2K) + sales (€1.5K) + expert (€500)
+    teamCostStepUp: 2000,
+    teamStepUpInterval: 6,
+    cacGrowthPctPerQuarter: 10,
     infraCost: 100,
     marketingCost: 800,
     otherCost: 500,
@@ -150,6 +161,9 @@ const SCENARIOS: Record<string, Assumptions> = {
     variableCostPerPract: 4.25,
     cac: 50,
     teamCost: 10500,   // 2 founders (€5K) + dev (€2.5K) + sales (€2K) + expert (€1K)
+    teamCostStepUp: 2500,
+    teamStepUpInterval: 6,
+    cacGrowthPctPerQuarter: 7,
     infraCost: 200,
     marketingCost: 1200,
     otherCost: 700,
@@ -169,12 +183,37 @@ const SCENARIOS: Record<string, Assumptions> = {
     variableCostPerPract: 4.25,
     cac: 50,
     teamCost: 14500,   // 2 founders (€6K) + dev full-time (€3.5K) + sales (€2.5K) + expert (€1K) + marketer (€1.5K)
+    teamCostStepUp: 3000,
+    teamStepUpInterval: 6,
+    cacGrowthPctPerQuarter: 5,
     infraCost: 300,
     marketingCost: 2000,
     otherCost: 1000,
     startingCash: 500000,
     dilutionPct: 13,
     useOfFunds: { product: 35, gtm: 30, team: 25, ops: 10 },
+  },
+  stress: {
+    startingPractitioners: 10,
+    initialGrowthPct: 15,
+    endGrowthPct: 3,
+    churnPct: 7,
+    essentielPct: 55,
+    proPct: 35,
+    membersPerPractitioner: 8,
+    memberPremiumPct: 2,
+    variableCostPerPract: 4.25,
+    cac: 70,
+    teamCost: 8000,
+    teamCostStepUp: 2000,
+    teamStepUpInterval: 6,
+    cacGrowthPctPerQuarter: 12,
+    infraCost: 100,
+    marketingCost: 800,
+    otherCost: 500,
+    startingCash: 350000,
+    dilutionPct: 17,
+    useOfFunds: { product: 40, gtm: 25, team: 25, ops: 10 },
   },
 }
 
@@ -227,8 +266,16 @@ function computeProjections(a: Assumptions): MonthProjection[] {
     const grossProfit = b2bMrr * gm + b2cMrr * 0.95 // B2C near-zero variable cost
     const gpPct = mrr > 0 ? (grossProfit / mrr) * 100 : 0
 
-    const acquisitionExp = newPract * a.cac
-    const fixedCosts = a.teamCost + a.infraCost + a.marketingCost + a.otherCost
+    // Dynamic team cost: step up every N months
+    const stepUps = a.teamStepUpInterval > 0 ? Math.floor((m - 1) / a.teamStepUpInterval) : 0
+    const dynamicTeamCost = a.teamCost + stepUps * a.teamCostStepUp
+
+    // Evolving CAC: grows each quarter
+    const quarterIndex = Math.floor((m - 1) / 3)
+    const currentCAC = a.cac * Math.pow(1 + a.cacGrowthPctPerQuarter / 100, quarterIndex)
+
+    const acquisitionExp = newPract * currentCAC
+    const fixedCosts = dynamicTeamCost + a.infraCost + a.marketingCost + a.otherCost
     const totalExpenses = fixedCosts + acquisitionExp
     const netBurn = grossProfit - totalExpenses
     cash += netBurn
@@ -247,11 +294,12 @@ function computeProjections(a: Assumptions): MonthProjection[] {
       grossProfit: Math.round(grossProfit),
       grossMarginPct: Math.round(gpPct * 10) / 10,
       expenses: Math.round(totalExpenses + variableCosts),
-      teamExp: a.teamCost,
+      teamExp: dynamicTeamCost,
       infraExp: a.infraCost,
       marketingExp: a.marketingCost,
       otherExp: a.otherCost,
       acquisitionExp: Math.round(acquisitionExp),
+      currentCAC: Math.round(currentCAC),
       netBurn: Math.round(netBurn),
       cumulativeCash: Math.round(cash),
     })
@@ -273,6 +321,10 @@ function computeUnitEconomics(a: Assumptions): UnitEconomics {
   const effectiveMemberCAC = a.membersPerPractitioner > 0 ? a.cac / a.membersPerPractitioner : a.cac
   const contributionMargin = grossProfit - (a.cac / avgLifetime)
 
+  // CAC at M18 (quarter 5) and M36 (quarter 11)
+  const cacM18 = a.cac * Math.pow(1 + a.cacGrowthPctPerQuarter / 100, 5)
+  const cacM36 = a.cac * Math.pow(1 + a.cacGrowthPctPerQuarter / 100, 11)
+
   return {
     blendedArpu: Math.round(arpu * 100) / 100,
     b2cRevenuePerPract: Math.round(b2cRev * 100) / 100,
@@ -285,6 +337,8 @@ function computeUnitEconomics(a: Assumptions): UnitEconomics {
     ltvCacRatio: Math.round(ltvCacRatio * 10) / 10,
     paybackMonths: Math.round(payback * 10) / 10,
     effectiveMemberCAC: Math.round(effectiveMemberCAC),
+    cacM18: Math.round(cacM18),
+    cacM36: Math.round(cacM36),
   }
 }
 
@@ -319,6 +373,50 @@ function computeRunway(projections: MonthProjection[]): RunwayInfo {
     m18Arr: m18.arr,
     monthlyBurn,
   }
+}
+
+// ── Quarterly P&L ────────────────────────────────────────────────────────
+
+interface QuarterlyPnL {
+  label: string
+  revenue: number
+  cogs: number
+  grossProfit: number
+  team: number
+  marketing: number
+  infra: number
+  other: number
+  cac: number
+  ebitda: number
+  cumulativeCash: number
+  practitioners: number
+  arr: number
+}
+
+function computeQuarterlyPnL(projections: MonthProjection[]): QuarterlyPnL[] {
+  const quarters: QuarterlyPnL[] = []
+  for (let q = 0; q < 12; q++) {
+    const start = q * 3
+    const slice = projections.slice(start, start + 3)
+    if (slice.length === 0) break
+    const last = slice[slice.length - 1]
+    quarters.push({
+      label: `Q${q + 1}`,
+      revenue: slice.reduce((s, p) => s + p.mrr, 0),
+      cogs: slice.reduce((s, p) => s + p.variableCosts, 0),
+      grossProfit: slice.reduce((s, p) => s + p.grossProfit, 0),
+      team: slice.reduce((s, p) => s + p.teamExp, 0),
+      marketing: slice.reduce((s, p) => s + p.marketingExp, 0),
+      infra: slice.reduce((s, p) => s + p.infraExp, 0),
+      other: slice.reduce((s, p) => s + p.otherExp, 0),
+      cac: slice.reduce((s, p) => s + p.acquisitionExp, 0),
+      ebitda: slice.reduce((s, p) => s + p.netBurn, 0),
+      cumulativeCash: last.cumulativeCash,
+      practitioners: last.practitioners,
+      arr: last.arr,
+    })
+  }
+  return quarters
 }
 
 // ── Formatters ───────────────────────────────────────────────────────────
@@ -497,10 +595,10 @@ function InfoLine({ label, value, valueClass, info }: { label: string; value: st
 
 export default function FinancialModelPage() {
   const { locale, setLocale } = useLanguage()
-  const [scenario, setScenario] = useState<'conservative' | 'base' | 'aggressive'>('base')
+  const [scenario, setScenario] = useState<'conservative' | 'base' | 'aggressive' | 'stress'>('base')
   const [assumptions, setAssumptions] = useState<Assumptions>(SCENARIOS.base)
 
-  const setScenarioPreset = useCallback((s: 'conservative' | 'base' | 'aggressive') => {
+  const setScenarioPreset = useCallback((s: 'conservative' | 'base' | 'aggressive' | 'stress') => {
     setScenario(s)
     setAssumptions(SCENARIOS[s])
   }, [])
@@ -533,6 +631,12 @@ export default function FinancialModelPage() {
     () => projections.filter((_, i) => i % 3 === 2),
     [projections],
   )
+
+  const quarterlyPnL = useMemo(() => computeQuarterlyPnL(projections), [projections])
+
+  // Stress test: always compute stress projections for comparison
+  const stressProjections = useMemo(() => computeProjections(SCENARIOS.stress), [])
+  const stressRunway = useMemo(() => computeRunway(stressProjections), [stressProjections])
 
   const fr = locale === 'fr'
 
@@ -678,8 +782,8 @@ export default function FinancialModelPage() {
     postMoney: fr ? 'Post-money' : 'Post-money',
     whyThisValuation: fr ? 'Pourquoi cette valorisation ?' : 'Why this valuation?',
     valuationJustification: fr
-      ? "Nous sommes pré-revenu, ce qui signifie normalement une valorisation plus basse. Mais nos unit economics sont déjà prouvés sur le papier : 85% de marge brute (top décile SaaS), {ltvCac}x LTV/CAC (la cible sectorielle est 3x), et {payback} mois de retour sur CAC. Le marché SaaS santé mentale croît de 25%+ par an en Europe, et aucun concurrent basé en UE n'a un modèle B2B2C centré praticien avec IA intégrée. La pré-money de {preMoney} est en ligne avec les standards pré-seed UE (1,5M-3M €) et reflète à la fois le stade précoce et les fondamentaux solides."
-      : "We're pre-revenue, which normally means a lower valuation. But our unit economics are already proven on paper: 85% gross margin (top-decile SaaS), {ltvCac}x LTV/CAC (industry target is 3x), and {payback}-month CAC payback. The mental health SaaS market is growing 25%+ per year in Europe, and no EU-based competitor has a practitioner-first B2B2C model with built-in AI. Pre-money of {preMoney} is in line with EU pre-seed standards (€1.5M-€3M) and reflects both the early stage and the strong fundamentals.",
+      ? "Soyons directs : nous sommes pré-revenu, donc cette valorisation repose sur le potentiel, pas sur la preuve. Ce qui la justifie : (1) Les unit economics modélisés sont dans le top décile SaaS — {ltvCac}x LTV/CAC et {payback} mois de retour sur CAC — même s'ils restent à prouver avec de vrais clients. (2) Le marché SaaS santé mentale en UE croît de 25%+/an sans plateforme dominante. (3) Notre architecture B2B2C crée un avantage d'acquisition structurel que les concurrents pure-play B2C n'ont pas. La pré-money de {preMoney} est dans la fourchette standard pré-seed UE (1,5M-3M €). Si cela vous semble trop élevé pour du pré-revenu, nous sommes ouverts à une décote avec des milestones de performance."
+      : "Let's be direct: we're pre-revenue, so this valuation is based on potential, not proof. What justifies it: (1) Modeled unit economics are top-decile SaaS — {ltvCac}x LTV/CAC and {payback}-month payback — though they remain unproven with real customers. (2) The EU mental health SaaS market is growing 25%+/year with no dominant platform. (3) Our B2B2C architecture creates a structural acquisition advantage that pure-play B2C competitors don't have. Pre-money of {preMoney} is within standard EU pre-seed range (€1.5M-€3M). If that feels high for pre-revenue, we're open to a milestone-based discount.",
     ownershipAfterRound: fr ? 'Répartition du capital après le tour' : 'Ownership after round',
     founders: fr ? 'Fondateurs' : 'Founders',
     investors: fr ? 'Investisseurs' : 'Investors',
@@ -725,24 +829,79 @@ export default function FinancialModelPage() {
     m12m18Desc: (pract: string, arr: string) => fr
       ? `Atteindre ${pract} praticiens, ${arr} ARR, et des métriques de rétention solides. À ce stade, nous avons les données pour lever une Série A de 1,5-3M € avec un step-up de 3-5x par rapport à la valorisation actuelle.`
       : `Reach ${pract} practitioners, ${arr} ARR, and strong retention metrics. At this point we have the data to raise a €1.5-3M Series A at a 3-5x step-up from today's valuation.`,
+    pathConclusionTitle: fr ? 'Ce que cela signifie pour vous :' : 'What this means for you:',
+    pathConclusion: (runwayMonths: number, beMonth: number | null, arr100k: number | null, m18Arr: string, raise: string) => {
+      const hitsBreakEven = beMonth !== null && beMonth <= 36
+      const hits100k = arr100k !== null && arr100k <= 36
+      if (fr) {
+        return `Votre ${raise} finance ${runwayMonths} mois d'exploitation.${hitsBreakEven ? ` Nous atteignons la rentabilité vers M${beMonth}, donc l'entreprise s'autofinance avant que l'argent ne s'épuise.` : ` Nous n'atteignons pas encore la rentabilité sur cette fenêtre — l'objectif est d'atteindre suffisamment de traction pour lever un tour suivant avant.`}${hits100k ? ` Nous franchissons les 100K € d'ARR vers M${arr100k}.` : ''} À M18, nous visons ${m18Arr} d'ARR — si nous y arrivons, c'est la preuve pour lever une Série A. Si la croissance est plus lente, nous avons assez de trésorerie pour ajuster le plan sans panique.`
+      }
+      return `Your ${raise} funds ${runwayMonths} months of operations.${hitsBreakEven ? ` We hit break-even around M${beMonth}, so the business sustains itself before the money runs out.` : ` We don't reach break-even within this window — the goal is to build enough traction to raise a follow-on round before then.`}${hits100k ? ` We cross €100K ARR around M${arr100k}.` : ''} By M18 we target ${m18Arr} ARR — if we get there, that's the proof point to raise a Series A. If growth is slower, we have enough runway to adjust the plan without panic.`
+    },
     // Key metrics cards
     mrrAtM18: fr ? 'MRR @ M18' : 'MRR @ M18',
     practAtM18: fr ? 'Praticiens @ M18' : 'Practitioners @ M18',
     atPractitioners: (n: number) => fr ? `À environ ${n} praticiens` : `At ~${n} practitioners`,
     monthsRunway: (n: number) => fr ? `${n} mois de trésorerie` : `${n} months runway`,
+    // Key metric takeaways
+    takeawayMrr: (m18Arr: string, m36Arr: string) => fr
+      ? `À M18 c'est notre preuve pour lever une Série A. À M36 (${m36Arr} ARR), c'est un vrai business SaaS.`
+      : `At M18 this is our proof point to raise a Series A. By M36 (${m36Arr} ARR), this is a real SaaS business.`,
+    takeawayPract: (membersPerPract: number) => fr
+      ? `Chaque praticien amène ~${membersPerPract} patients gratuitement. C'est la distribution, pas juste du revenu.`
+      : `Each practitioner brings ~${membersPerPract} clients for free. This is distribution, not just revenue.`,
+    takeawayLtvCac: (ratio: number) => {
+      if (ratio >= 10) return fr
+        ? `La cible sectorielle est 3x. ${ratio}x signifie que chaque euro de marketing en rapporte ${ratio}. L'économie fonctionne.`
+        : `Industry target is 3x. ${ratio}x means every €1 of marketing returns €${ratio}. The economics work.`
+      if (ratio >= 3) return fr
+        ? `Au-dessus de la cible de 3x — chaque euro d'acquisition génère un retour sain.`
+        : `Above the 3x target — every acquisition euro generates a healthy return.`
+      return fr
+        ? `En dessous de la cible de 3x — l'acquisition coûte trop cher par rapport à la valeur client.`
+        : `Below the 3x target — acquisition costs too much relative to customer value.`
+    },
+    takeawayBreakEven: (beMonth: number | null, runwayMonths: number) => {
+      if (beMonth && beMonth <= 18) return fr
+        ? `Rentable avant la fenêtre Série A. Pas de pression pour lever — on lève par choix, pas par nécessité.`
+        : `Profitable before the Series A window. No pressure to raise — we raise by choice, not necessity.`
+      if (beMonth && beMonth <= runwayMonths) return fr
+        ? `Rentable avant que l'argent ne s'épuise. Pas besoin de tour de secours.`
+        : `Profitable before the money runs out. No emergency round needed.`
+      return fr
+        ? `Pas encore rentable sur cette fenêtre — l'objectif est d'avoir assez de traction pour lever un tour suivant.`
+        : `Not yet profitable in this window — the goal is enough traction to raise a follow-on round.`
+    },
     // Waterfall section
     marginWaterfall: fr ? 'Cascade de marge' : 'Margin Waterfall',
     waterfallSubtitle: fr ? 'Par praticien par mois — du revenu à la marge de contribution' : 'Per practitioner per month — from revenue to contribution margin',
     revenueArpu: fr ? 'Revenu (ARPU)' : 'Revenue (ARPU)',
+    revenueArpuCtx: fr
+      ? `Ce que chaque praticien nous paie par mois — moyenne pondérée : ${assumptions.essentielPct}% × €${TIER_PRICES.essentiel} + ${assumptions.proPct}% × €${TIER_PRICES.pro} + ${cabinetPct}% × €${TIER_PRICES.cabinet}`
+      : `What each practitioner pays us per month — weighted average: ${assumptions.essentielPct}% × €${TIER_PRICES.essentiel} + ${assumptions.proPct}% × €${TIER_PRICES.pro} + ${cabinetPct}% × €${TIER_PRICES.cabinet}`,
     aiClaude: fr ? 'IA (Claude Haiku)' : 'AI (Claude Haiku)',
+    aiClaudeCtx: fr ? "Coût de l'IA par praticien — alimente Bloom, notre assistant IA. Baisse chaque année" : 'AI cost per practitioner — powers Bloom, our AI assistant. Gets cheaper every year',
     infrastructure: fr ? 'Infrastructure' : 'Infrastructure',
+    infrastructureCtx: fr ? 'Hébergement, base de données, analytics, email — indépendant du nombre d\'utilisateurs' : 'Hosting, database, analytics, email — does not scale with users',
     support: 'Support',
+    supportCtx: fr ? "Aide à l'onboarding des praticiens — diminue avec le self-service" : 'Helping practitioners get started — shrinks as we build self-serve',
     grossProfit: fr ? 'Marge brute' : 'Gross Profit',
+    grossProfitCtx: fr ? 'Ce qui reste après avoir payé la livraison du service — notre vraie marge' : "What's left after paying to deliver the service — our true margin",
     cacAmortized: fr ? 'CAC amorti' : 'CAC amortized',
+    cacAmortizedCtx: (cac: number, lifetime: string) => fr
+      ? `Coût d'acquisition (€${cac}) étalé sur la durée de vie du client (${lifetime} mois) — le coût mensuel réel d'avoir acquis ce praticien`
+      : `Acquisition cost (€${cac}) spread over customer lifetime (${lifetime} months) — the real monthly cost of having acquired this practitioner`,
     contributionMargin: fr ? 'Marge de contribution' : 'Contribution Margin',
+    contributionMarginCtx: fr ? 'Le profit réel par praticien après tout — service + acquisition. Si ce chiffre est positif, chaque nouveau client rend le business plus rentable' : 'Real profit per practitioner after everything — serving + acquisition. If this number is positive, every new customer makes the business more profitable',
+    waterfallHowToRead: fr
+      ? "Comment lire : on commence par ce qu'un praticien nous rapporte (ARPU), on soustrait ce que ça coûte de le servir (IA, infra, support), ce qui donne la marge brute. Ensuite on soustrait le coût d'acquisition amorti sur sa durée de vie — ce qui reste est ce qu'on gagne réellement par praticien."
+      : "How to read this: start with what one practitioner pays us (ARPU), subtract what it costs to serve them (AI, infra, support) to get gross profit. Then subtract the acquisition cost spread over their lifetime — what's left is what we actually earn per practitioner.",
+    waterfallTakeaway: (cm: string, cmPct: string, gmPct: string) => fr
+      ? `Conclusion : sur chaque €1 de revenu, nous gardons ${gmPct}% après les coûts de service et ${cmPct}% après acquisition. Ça signifie que chaque nouveau praticien génère ${cm}/mois de profit réel — le modèle se paie de lui-même.`
+      : `Bottom line: of every €1 in revenue, we keep ${gmPct}% after serving costs and ${cmPct}% after acquisition. That means every new practitioner generates ${cm}/mo in real profit — the model pays for itself.`,
     b2cPremiumUpside: fr
-      ? `+ Potentiel premium B2C : €{amount}/praticien/mois ({members} membres × {pct}% × €{price}/mois) — non inclus dans la marge ci-dessus.`
-      : `+ B2C premium upside: €{amount}/practitioner/mo ({members} members × {pct}% × €{price}/mo) — not included in margin above.`,
+      ? `Bonus non compté ci-dessus : chaque praticien amène ~{members} patients sur l'app. Si {pct}% d'entre eux passent à la version premium (€{price}/mois), ça ajoute €{amount}/praticien/mois de revenu supplémentaire — sans aucun coût d'acquisition. On ne compte pas dessus dans le modèle, mais c'est du pur potentiel de hausse.`
+      : `Bonus not counted above: each practitioner brings ~{members} clients onto the app. If {pct}% of them upgrade to premium (€{price}/mo), that adds €{amount}/practitioner/mo in extra revenue — at zero acquisition cost. We don't bank on this in the model, but it's pure upside.`,
     // B2B2C Advantage
     b2b2cTitle: fr ? 'Avantage B2B2C — Pourquoi notre CAC est différent' : 'B2B2C Advantage — Why Our CAC is Different',
     b2b2cSubtitle: fr ? "Notre arme secrète : les praticiens font l'acquisition d'utilisateurs pour nous" : 'Our secret weapon: practitioners do the user acquisition for us',
@@ -764,11 +923,17 @@ export default function FinancialModelPage() {
     revenueProjectionDesc: (arpu: string, initialGrowth: number, endGrowth: number) => fr
       ? `MRR sur 36 mois — ${arpu} € ARPU pondéré, croissance ${initialGrowth}% → ${endGrowth}%/mois`
       : `MRR over 36 months — €${arpu} blended ARPU, growth ${initialGrowth}% → ${endGrowth}%/mo`,
+    revenueProjectionCtx: (m18Mrr: string, m36Mrr: string) => fr
+      ? `Ce graphique montre notre revenu mensuel récurrent (MRR) — ce que les praticiens nous paient chaque mois. La courbe accélère car chaque nouveau praticien ajoute du revenu récurrent. La ligne pointillée marque le mois 18 — notre fenêtre cible pour lever une Série A. À gauche de la ligne : ce qu'on construit avec la levée seed. À droite : comment le business continue de croître après. M18 : ${m18Mrr}/mois. M36 : ${m36Mrr}/mois.`
+      : `This chart shows our monthly recurring revenue (MRR) — what practitioners pay us each month. The curve accelerates because every new practitioner adds recurring revenue on top. The dashed line marks month 18 — our target window to raise a Series A. Left of the line: what we build with seed money. Right of the line: how the business keeps growing after. M18: ${m18Mrr}/mo. M36: ${m36Mrr}/mo.`,
     // Customer growth
     customerGrowth: fr ? 'Croissance clients' : 'Customer Growth',
     customerGrowthDesc: (membersPerPract: number) => fr
       ? `Praticiens et membres (multiplicateur B2B2C : 1 prat. = ${membersPerPract} membres)`
       : `Practitioners and members (B2B2C multiplier: 1 pract. = ${membersPerPract} members)`,
+    customerGrowthCtx: (m18Pract: string, m18Members: string, membersPerPract: number) => fr
+      ? `Deux courbes, un seul coût d'acquisition. La ligne bleue (praticiens) représente nos clients payants — c'est eux qu'on acquiert. La ligne verte (membres) représente leurs patients qui utilisent l'app gratuitement — chaque praticien en amène ~${membersPerPract}. La ligne pointillée marque le mois 18 (fenêtre Série A). L'écart entre les deux courbes est notre avantage B2B2C : une base d'utilisateurs massive sans payer pour les acquérir. M18 : ${m18Pract} praticiens → ${m18Members} membres.`
+      : `Two curves, one acquisition cost. The blue line (practitioners) is our paying customers — these are who we acquire. The green line (members) is their clients using the app for free — each practitioner brings ~${membersPerPract}. The dashed line marks month 18 (Series A window). The gap between the two curves is our B2B2C advantage: a massive user base without paying to acquire them. M18: ${m18Pract} practitioners → ${m18Members} members.`,
     m18SeedWindow: fr ? 'Fenêtre seed M18' : 'M18 seed window',
     // Unit economics
     unitEconomics: fr ? 'Unit economics' : 'Unit Economics',
@@ -783,15 +948,27 @@ export default function FinancialModelPage() {
     payback: fr ? 'Retour sur CAC' : 'Payback',
     targetLt12mo: fr ? 'cible : <12 mois' : 'target: <12mo',
     variableCost: fr ? 'coût variable' : 'variable cost',
+    unitEconomicsCtx: fr
+      ? "Les unit economics répondent à une question simple : est-ce que chaque client nous rapporte plus qu'il ne nous coûte ? Si oui, le business devient plus rentable à chaque nouveau client. Ces 6 métriques sont ce que les investisseurs SaaS regardent en premier — elles montrent si le moteur fonctionne avant même de regarder la croissance."
+      : "Unit economics answer one simple question: does each customer bring in more than they cost? If yes, the business gets more profitable with every new customer. These 6 metrics are what SaaS investors look at first — they show whether the engine works before even looking at growth.",
     // Expense breakdown
     expenseBreakdown: fr ? 'Répartition des dépenses' : 'Expense Breakdown',
     expenseBreakdownDesc: fr ? 'Dépenses trimestrielles par catégorie (inclut le COGS)' : 'Quarterly expenses by category (includes COGS)',
+    expenseBreakdownCtx: fr
+      ? "Ce graphique montre où va chaque euro, trimestre par trimestre. Le bleu (équipe) est le plus gros poste — c'est normal en SaaS, les gens sont le principal investissement. Le rose (COGS) grandit avec le nombre d'utilisateurs — c'est le coût IA et serveurs. L'orange (CAC) augmente quand on acquiert plus vite. Si le bleu domine et le reste reste petit, la structure de coûts est saine."
+      : "This chart shows where every euro goes, quarter by quarter. Blue (team) is the biggest block — that's normal in SaaS, people are the main investment. Pink (COGS) grows with users — that's AI and server costs. Orange (CAC) increases as we acquire faster. If blue dominates and everything else stays small, the cost structure is healthy.",
     // Runway & Cash
     runwayCash: fr ? 'Trésorerie & Position de caisse' : 'Runway & Cash Position',
     runwayCashDesc: fr ? 'Trésorerie cumulée avec jalons' : 'Cumulative cash with milestones',
+    runwayCashCtx: (raise: string, runwayMonths: number, beMonth: number | null) => fr
+      ? `Ce graphique montre combien d'argent il reste en banque mois après mois. On commence avec ${raise} (la levée seed) et on dépense chaque mois pour l'équipe, le marketing et l'infrastructure. La ligne verte descend tant qu'on dépense plus qu'on ne gagne. La ligne rouge pointillée à €0 est le seuil critique — si la courbe la croise, on est à court de cash. La ligne pointillée verticale « M18 » marque la fenêtre Série A.${beMonth ? ` La ligne verte « Rentabilité » à M${beMonth} montre quand les revenus couvrent enfin les dépenses — après ce point, la courbe remonte.` : ' Dans ce scénario, on n\'atteint pas la rentabilité sur 36 mois — l\'objectif est de lever un tour suivant avant que le cash ne s\'épuise.'} Trésorerie actuelle : ${runwayMonths} mois avant d'atteindre zéro.`
+      : `This chart shows how much money is left in the bank month by month. We start with ${raise} (the seed raise) and spend each month on team, marketing, and infrastructure. The green line slopes down as long as we spend more than we earn. The red dashed line at €0 is the danger zone — if the curve crosses it, we're out of cash. The vertical dashed "M18" line marks the Series A window.${beMonth ? ` The green "Break-even" line at M${beMonth} shows when revenue finally covers expenses — after that point, the curve bends back up.` : " In this scenario, we don't reach break-even within 36 months — the goal is to raise a follow-on round before cash runs out."} Current runway: ${runwayMonths} months before hitting zero.`,
     seedWindow: fr ? 'Fenêtre seed' : 'Seed window',
     // Industry benchmarks
     industryBenchmarks: fr ? 'Benchmarks sectoriels' : 'Industry Benchmarks',
+    industryBenchmarksCtx: fr
+      ? "Ce tableau compare nos métriques aux standards du secteur SaaS. La colonne « Médiane SaaS » montre où se situe une entreprise SaaS typique. « Top décile » montre les 10% les meilleurs. Notre colonne (Bloomsline) se met à jour en temps réel quand vous ajustez les hypothèses. L'objectif : être au-dessus de la médiane sur chaque ligne, idéalement proche du top décile. Ça prouve aux investisseurs que notre modèle économique n'est pas juste « correct » — il est dans les meilleurs de sa catégorie."
+      : "This table compares our metrics against SaaS industry standards. The \"SaaS Median\" column shows where a typical SaaS company lands. \"Top Decile\" shows the top 10%. Our column (Bloomsline) updates in real-time as you adjust assumptions. The goal: be above the median on every row, ideally near the top decile. This proves to investors that our business model isn't just \"okay\" — it's best-in-class.",
     vsSaasStandards: fr ? 'vs. standards SaaS' : 'vs. SaaS standards',
     metric: fr ? 'Métrique' : 'Metric',
     saasMedian: fr ? 'Médiane SaaS' : 'SaaS Median',
@@ -822,6 +999,9 @@ export default function FinancialModelPage() {
     narrativePayback: fr ? 'de retour sur CAC' : 'payback',
     narrativeIn18Months: fr ? 'En 18 mois nous visons' : 'In 18 months we target',
     narrativeAnd: fr ? 'et' : 'and',
+    narrativeHonestNote: fr
+      ? "Ces unit economics sont calculés, pas prouvés. Nous n'avons pas encore de clients payants. Le modèle ci-dessous teste si les fondamentaux tiennent sous différentes hypothèses — ajustez les curseurs pour casser le modèle et voir où il résiste."
+      : "These unit economics are modeled, not proven. We have no paying customers yet. The model below stress-tests whether the fundamentals hold under different assumptions — move the sliders to break it and see where it holds.",
     // Chart tooltips
     tooltipGrowth: fr ? 'Croissance' : 'Growth',
     tooltipPractitioners: fr ? 'Praticiens' : 'Practitioners',
@@ -832,6 +1012,62 @@ export default function FinancialModelPage() {
     tooltipCOGS: 'COGS',
     tooltipAcquisition: fr ? 'Acquisition' : 'Acquisition',
     tooltipTotal: fr ? 'Total' : 'Total',
+    // Today anchor banner
+    todayTitle: fr ? "Aujourd'hui — Février 2026" : 'Today — February 2026',
+    todayPreRevenue: fr ? 'Pré-revenu' : 'Pre-revenue',
+    todayPaying: fr ? '0 praticien payant' : '0 paying practitioners',
+    todayBeta: fr ? '15 testeurs bêta' : '15 beta testers',
+    todayLive: fr ? 'Produit en ligne' : 'Product live',
+    todayGrounding: fr
+      ? "Soyons honnêtes sur le point de départ. Nous sommes pré-revenu avec un produit live et des testeurs bêta, pas des clients payants. L'objectif avant la clôture du tour : convertir 5-10 praticiens en clients payants pour prouver que quelqu'un sortira sa carte bancaire. Toutes les projections ci-dessous partent de 10 praticiens payants — un objectif réaliste mais non garanti."
+      : "Let's be honest about the starting point. We're pre-revenue with a live product and beta testers, not paying customers. The goal before close: convert 5-10 practitioners into paying customers to prove someone will swipe their card. All projections below start from 10 paying practitioners — a realistic but not guaranteed assumption.",
+    // Scaling team costs
+    teamStepUp: fr ? 'Augmentation par palier' : 'Step-up per hire',
+    teamStepInterval: fr ? 'Intervalle palier' : 'Step interval',
+    infoTeamStepUp: fr
+      ? "Combien le coût d'équipe mensuel augmente à chaque palier. Représente les embauches progressives — dev, marketing, support — à mesure que nous grandissons."
+      : 'How much the monthly team cost increases at each step-up. Represents gradual hires — dev, marketing, support — as we scale.',
+    infoTeamStepInterval: fr
+      ? "Tous les combien de mois nous ajoutons un nouveau palier de coût d'équipe. 6 mois est typique pour une startup en phase de démarrage."
+      : 'How many months between each team cost step-up. 6 months is typical for an early-stage startup.',
+    // CAC evolution
+    cacGrowthLabel: fr ? 'Croissance CAC / trimestre' : 'CAC growth / quarter',
+    infoCacGrowth: fr
+      ? "Le CAC augmente naturellement en grandissant — les premiers clients sont les plus faciles. 7% par trimestre signifie que le CAC double environ en 3 ans. C'est réaliste pour l'acquisition organique."
+      : 'CAC naturally rises as you scale — the first customers are the easiest. 7% per quarter means CAC roughly doubles over 3 years. This is realistic for organic acquisition.',
+    cacEvolution: fr ? 'Évolution CAC' : 'CAC evolution',
+    // Stress test
+    stressTest: fr ? 'Stress test' : 'Stress Test',
+    downsideTitle: fr ? 'Analyse scénario pessimiste' : 'Downside Scenario Analysis',
+    downsideSubtitle: fr
+      ? 'Que se passe-t-il si les choses ne se passent pas comme prévu — et notre plan de réaction'
+      : "What happens if things don't go as planned — and our response plan",
+    currentScenario: fr ? 'Scénario actuel' : 'Current scenario',
+    stressScenario: fr ? 'Scénario stress' : 'Stress scenario',
+    stressRunway: fr ? 'Trésorerie' : 'Runway',
+    stressBreakEven: fr ? 'Rentabilité' : 'Break-even',
+    stressM18Pract: fr ? 'Praticiens M18' : 'M18 practitioners',
+    stressM18Arr: fr ? 'ARR M18' : 'M18 ARR',
+    stressCashM18: fr ? 'Cash M18' : 'Cash at M18',
+    pivotPlanTitle: fr ? 'Plan de pivot' : 'Pivot plan',
+    pivotPlanDesc: fr
+      ? "On ne prétend pas que tout ira bien. Voici nos déclencheurs concrets : (1) M3 — si <5 praticiens payants, on arrête le développement produit et on passe 100% en vente directe. (2) M6 — si burn > prévisions de 20%, on coupe les coûts d'équipe de 30% immédiatement. (3) M9 — si la rétention est <80% à 3 mois, on pivote le produit avant de dépenser plus en acquisition. (4) M12 — si <€2K MRR, on lève un bridge de 100-150K € ou on prépare un shutdown propre avec 3 mois de cash restant. Pas de déni — des seuils clairs et des actions définies."
+      : "We're not pretending everything will work. Here are our concrete triggers: (1) M3 — if <5 paying practitioners, we stop product development and go 100% direct sales. (2) M6 — if burn exceeds forecast by 20%, we cut team costs 30% immediately. (3) M9 — if retention is <80% at 3 months, we pivot the product before spending more on acquisition. (4) M12 — if <€2K MRR, we raise a €100-150K bridge or prepare a clean shutdown with 3 months cash remaining. No denial — clear thresholds, defined actions.",
+    // Stress mode banner
+    stressBannerTitle: fr ? 'Mode stress test actif' : 'Stress test mode active',
+    stressBannerDesc: fr
+      ? "Vous regardez le scénario pessimiste : croissance divisée par deux (15%), attrition plus élevée (7%), CAC plus cher (70 €), levée réduite (350K €). Ce scénario teste ce qui se passe quand tout est plus dur que prévu. Comparez avec les scénarios Base ou Prudent pour voir l'écart."
+      : "You're viewing the downside scenario: half the growth (15%), higher churn (7%), more expensive CAC (€70), smaller raise (€350K). This scenario tests what happens when everything is harder than planned. Switch to Base or Conservative to see the gap.",
+    // Quarterly P&L
+    quarterlyPnL: fr ? 'Compte de résultat trimestriel' : 'Quarterly P&L',
+    quarterlyPnLSubtitle: fr ? 'Agrégé par trimestre sur 3 ans' : 'Aggregated by quarter over 3 years',
+    pnlRevenue: fr ? 'Revenu' : 'Revenue',
+    pnlCOGS: 'COGS',
+    pnlGrossProfit: fr ? 'Marge brute' : 'Gross Profit',
+    pnlEBITDA: 'EBITDA',
+    pnlCumulativeCash: fr ? 'Trésorerie cumulée' : 'Cumulative Cash',
+    pnlPractitioners: fr ? 'Praticiens' : 'Practitioners',
+    pnlARR: 'ARR',
   }
 
   // Waterfall data (per practitioner, per month)
@@ -843,14 +1079,15 @@ export default function FinancialModelPage() {
     const avgLife = churnRate > 0 ? 1 / churnRate : 100
     const cacAmort = assumptions.cac / avgLife
     const cm = gp - cacAmort
+    const lifetimeStr = avgLife.toFixed(0)
     return [
-      { label: t.revenueArpu, value: arpu, widthPct: 100, color: 'bg-indigo-500', textColor: 'text-indigo-600' },
-      { label: t.aiClaude, value: -(vc * VC_AI_SHARE), widthPct: (vc * VC_AI_SHARE / arpu) * 100, color: 'bg-rose-400', textColor: 'text-rose-500' },
-      { label: t.infrastructure, value: -(vc * VC_INFRA_SHARE), widthPct: (vc * VC_INFRA_SHARE / arpu) * 100, color: 'bg-rose-300', textColor: 'text-rose-400' },
-      { label: t.support, value: -(vc * VC_SUPPORT_SHARE), widthPct: (vc * VC_SUPPORT_SHARE / arpu) * 100, color: 'bg-rose-200', textColor: 'text-rose-300' },
-      { label: t.grossProfit, value: gp, widthPct: (gp / arpu) * 100, color: 'bg-emerald-500', textColor: 'text-emerald-600', isBold: true },
-      { label: t.cacAmortized, value: -cacAmort, widthPct: (cacAmort / arpu) * 100, color: 'bg-amber-400', textColor: 'text-amber-500' },
-      { label: t.contributionMargin, value: cm, widthPct: Math.max(0, (cm / arpu) * 100), color: 'bg-emerald-600', textColor: 'text-emerald-700', isBold: true },
+      { label: t.revenueArpu, value: arpu, widthPct: 100, color: 'bg-indigo-500', textColor: 'text-indigo-600', ctx: t.revenueArpuCtx },
+      { label: t.aiClaude, value: -(vc * VC_AI_SHARE), widthPct: (vc * VC_AI_SHARE / arpu) * 100, color: 'bg-rose-400', textColor: 'text-rose-500', ctx: t.aiClaudeCtx },
+      { label: t.infrastructure, value: -(vc * VC_INFRA_SHARE), widthPct: (vc * VC_INFRA_SHARE / arpu) * 100, color: 'bg-rose-300', textColor: 'text-rose-400', ctx: t.infrastructureCtx },
+      { label: t.support, value: -(vc * VC_SUPPORT_SHARE), widthPct: (vc * VC_SUPPORT_SHARE / arpu) * 100, color: 'bg-rose-200', textColor: 'text-rose-300', ctx: t.supportCtx },
+      { label: t.grossProfit, value: gp, widthPct: (gp / arpu) * 100, color: 'bg-emerald-500', textColor: 'text-emerald-600', isBold: true, ctx: t.grossProfitCtx },
+      { label: t.cacAmortized, value: -cacAmort, widthPct: (cacAmort / arpu) * 100, color: 'bg-amber-400', textColor: 'text-amber-500', ctx: t.cacAmortizedCtx(assumptions.cac, lifetimeStr) },
+      { label: t.contributionMargin, value: cm, widthPct: Math.max(0, (cm / arpu) * 100), color: 'bg-emerald-600', textColor: 'text-emerald-700', isBold: true, ctx: t.contributionMarginCtx },
     ]
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ue.blendedArpu, assumptions.variableCostPerPract, assumptions.churnPct, assumptions.cac, locale])
@@ -865,10 +1102,11 @@ export default function FinancialModelPage() {
     `€${ue.blendedArpu}`,
   ], [ue, assumptions.churnPct, fr])
 
-  const scenarioButtons: Array<{ key: 'conservative' | 'base' | 'aggressive'; label: string }> = [
+  const scenarioButtons: Array<{ key: 'conservative' | 'base' | 'aggressive' | 'stress'; label: string; isStress?: boolean }> = [
     { key: 'conservative', label: t.conservative },
     { key: 'base', label: t.base },
     { key: 'aggressive', label: t.aggressive },
+    { key: 'stress', label: t.stressTest, isStress: true },
   ]
 
   const uof = assumptions.useOfFunds
@@ -903,12 +1141,13 @@ export default function FinancialModelPage() {
             <button
               key={s.key}
               onClick={() => setScenarioPreset(s.key)}
-              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all ${
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1 ${
                 scenario === s.key
-                  ? 'bg-gray-900 text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  ? s.isStress ? 'bg-red-600 text-white shadow-sm' : 'bg-gray-900 text-white shadow-sm'
+                  : s.isStress ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
               }`}
             >
+              {s.isStress && <AlertTriangle className="w-3 h-3" />}
               {s.label}
             </button>
           ))}
@@ -941,6 +1180,32 @@ export default function FinancialModelPage() {
               {' '}{t.narrativeIn18Months} <span className="font-semibold text-gray-900">{fmtNumber(m18.practitioners)} {t.practitionersLabel.toLowerCase()}</span> {t.narrativeAnd}
               {' '}<span className="font-semibold text-gray-900">{fmtEuro(m18.arr)} ARR</span>.
             </p>
+            <p className="text-xs text-amber-600 mt-3 pt-3 border-t border-gray-100 leading-relaxed">
+              {t.narrativeHonestNote}
+            </p>
+          </motion.div>
+
+          {/* ─── Today Anchor Banner ──────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.02 }}
+            className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3"
+          >
+            <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+              <Calendar className="w-4 h-4 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-amber-900">{t.todayTitle}</p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {[t.todayPreRevenue, t.todayPaying, t.todayBeta, t.todayLive].map((pill) => (
+                  <span key={pill} className="px-2.5 py-1 text-[11px] font-medium bg-amber-100 text-amber-800 rounded-full">
+                    {pill}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-amber-700 mt-2 leading-relaxed">{t.todayGrounding}</p>
+            </div>
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -1067,11 +1332,29 @@ export default function FinancialModelPage() {
                       prefix="€"
                       info={t.infoCAC}
                     />
+                    <SliderInput
+                      label={t.cacGrowthLabel} value={assumptions.cacGrowthPctPerQuarter}
+                      onChange={(v) => updateAssumption('cacGrowthPctPerQuarter', v)}
+                      min={0} max={20} suffix="%"
+                      info={t.infoCacGrowth}
+                    />
                     <NumberInput
                       label={`${t.team} (/${fr ? 'mois' : 'mo'})`} value={assumptions.teamCost}
                       onChange={(v) => updateAssumption('teamCost', Math.max(0, v))}
                       prefix="€"
                       info={t.infoTeam}
+                    />
+                    <SliderInput
+                      label={t.teamStepUp} value={assumptions.teamCostStepUp}
+                      onChange={(v) => updateAssumption('teamCostStepUp', v)}
+                      min={0} max={5000} step={500} prefix="€"
+                      info={t.infoTeamStepUp}
+                    />
+                    <SliderInput
+                      label={t.teamStepInterval} value={assumptions.teamStepUpInterval}
+                      onChange={(v) => updateAssumption('teamStepUpInterval', v)}
+                      min={3} max={12} suffix={` ${fr ? 'mois' : 'mo'}`}
+                      info={t.infoTeamStepInterval}
                     />
                     <NumberInput
                       label={`${t.infra} (/${fr ? 'mois' : 'mo'})`} value={assumptions.infraCost}
@@ -1123,6 +1406,21 @@ export default function FinancialModelPage() {
 
             {/* ─── Output Panel ────────────────────────────── */}
             <div className="lg:col-span-8 xl:col-span-9 space-y-6">
+
+              {/* Stress Test Banner */}
+              {scenario === 'stress' && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-red-600 rounded-xl p-4 flex items-start gap-3"
+                >
+                  <AlertTriangle className="w-5 h-5 text-white shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-white">{t.stressBannerTitle}</p>
+                    <p className="text-xs text-red-100 mt-1 leading-relaxed">{t.stressBannerDesc}</p>
+                  </div>
+                </motion.div>
+              )}
 
               {/* Burn + Use of Funds */}
               <motion.div
@@ -1423,6 +1721,14 @@ export default function FinancialModelPage() {
                     {t.m12m18Desc(fmtNumber(m18.practitioners), fmtEuro(m18.arr))}
                   </p>
                 </div>
+                <div className={`rounded-lg p-3 mt-2 ${runway.breakEvenMonth && runway.breakEvenMonth <= 36 ? 'bg-emerald-50 border border-emerald-100' : 'bg-amber-50 border border-amber-100'}`}>
+                  <p className="text-[10px] leading-relaxed">
+                    <span className={`font-semibold ${runway.breakEvenMonth && runway.breakEvenMonth <= 36 ? 'text-emerald-700' : 'text-amber-700'}`}>{t.pathConclusionTitle}</span>{' '}
+                    <span className={runway.breakEvenMonth && runway.breakEvenMonth <= 36 ? 'text-emerald-600' : 'text-amber-600'}>
+                      {t.pathConclusion(runway.runwayMonths, runway.breakEvenMonth, runway.arr100kMonth, fmtEuro(m18.arr), fmtEuro(assumptions.startingCash))}
+                    </span>
+                  </p>
+                </div>
               </motion.div>
 
               {/* Key Metrics — 4 cards */}
@@ -1441,6 +1747,7 @@ export default function FinancialModelPage() {
                   </div>
                   <p className="text-xl font-bold text-gray-900">{fmtEuro(m18.mrr)}</p>
                   <p className="text-[10px] text-gray-400 mt-1">M36: {fmtEuro(lastMonth.mrr)} ({fmtEuro(lastMonth.arr)} ARR)</p>
+                  <p className="text-[9px] text-indigo-500 mt-2 pt-2 border-t border-gray-100 leading-relaxed">{t.takeawayMrr(fmtEuro(m18.arr), fmtEuro(lastMonth.arr))}</p>
                 </div>
 
                 <div className="bg-white border border-gray-200 rounded-xl p-4">
@@ -1452,6 +1759,7 @@ export default function FinancialModelPage() {
                   </div>
                   <p className="text-xl font-bold text-gray-900">{fmtNumber(m18.practitioners)}</p>
                   <p className="text-[10px] text-gray-400 mt-1">M36: {fmtNumber(lastMonth.practitioners)} ({fmtNumber(lastMonth.members)} {t.members.toLowerCase()})</p>
+                  <p className="text-[9px] text-blue-500 mt-2 pt-2 border-t border-gray-100 leading-relaxed">{t.takeawayPract(assumptions.membersPerPractitioner)}</p>
                 </div>
 
                 <div className="bg-white border border-gray-200 rounded-xl p-4">
@@ -1465,6 +1773,7 @@ export default function FinancialModelPage() {
                     {ue.ltvCacRatio}x
                   </p>
                   <p className="text-[10px] text-gray-400 mt-1">LTV: {fmtEuro(ue.ltv)} | CAC: €{ue.cac}</p>
+                  <p className={`text-[9px] mt-2 pt-2 border-t border-gray-100 leading-relaxed ${ue.ltvCacRatio >= 3 ? 'text-emerald-500' : ue.ltvCacRatio >= 1 ? 'text-amber-500' : 'text-red-500'}`}>{t.takeawayLtvCac(ue.ltvCacRatio)}</p>
                 </div>
 
                 <div className="bg-white border border-gray-200 rounded-xl p-4">
@@ -1480,6 +1789,7 @@ export default function FinancialModelPage() {
                   <p className="text-[10px] text-gray-400 mt-1">
                     {runway.breakEvenPractitioners ? t.atPractitioners(runway.breakEvenPractitioners) : t.monthsRunway(runway.runwayMonths)}
                   </p>
+                  <p className={`text-[9px] mt-2 pt-2 border-t border-gray-100 leading-relaxed ${runway.breakEvenMonth && runway.breakEvenMonth <= runway.runwayMonths ? 'text-emerald-500' : 'text-amber-500'}`}>{t.takeawayBreakEven(runway.breakEvenMonth, runway.runwayMonths)}</p>
                 </div>
               </motion.div>
 
@@ -1494,7 +1804,8 @@ export default function FinancialModelPage() {
                   <ArrowDown className="w-4 h-4 text-emerald-500" />
                   <h3 className="text-sm font-medium text-gray-900">{t.marginWaterfall}</h3>
                 </div>
-                <p className="text-xs text-gray-400 mb-4">{t.waterfallSubtitle}</p>
+                <p className="text-xs text-gray-400 mb-2">{t.waterfallSubtitle}</p>
+                <p className="text-[10px] text-gray-500 leading-relaxed bg-gray-50 rounded-lg p-2.5 mb-4">{t.waterfallHowToRead}</p>
                 <div className="space-y-2">
                   {waterfall.map((row, i) => (
                     <div key={i}>
@@ -1518,6 +1829,9 @@ export default function FinancialModelPage() {
                           {row.value >= 0 ? '' : '-'}{Math.abs(row.widthPct).toFixed(1)}%
                         </span>
                       </div>
+                      {row.ctx && (
+                        <p className="text-[9px] text-gray-400 ml-[156px] mt-0.5 leading-snug">{row.ctx}</p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1530,6 +1844,15 @@ export default function FinancialModelPage() {
                       .replace('{price}', String(MEMBER_PREMIUM))}
                   </p>
                 )}
+                <div className={`rounded-lg p-3 mt-3 ${ue.contributionMargin > 0 ? 'bg-emerald-50 border border-emerald-100' : 'bg-amber-50 border border-amber-100'}`}>
+                  <p className={`text-[10px] leading-relaxed ${ue.contributionMargin > 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    {t.waterfallTakeaway(
+                      `€${Math.abs(ue.contributionMargin).toFixed(2)}`,
+                      ((ue.contributionMargin / ue.blendedArpu) * 100).toFixed(0),
+                      String(ue.grossMarginPct),
+                    )}
+                  </p>
+                </div>
               </motion.div>
 
               {/* B2B2C Advantage */}
@@ -1582,8 +1905,11 @@ export default function FinancialModelPage() {
                 className="bg-white border border-gray-200 rounded-xl p-5"
               >
                 <h3 className="text-sm font-medium text-gray-900">{t.revenueProjection}</h3>
-                <p className="text-xs text-gray-400 mb-4">
+                <p className="text-xs text-gray-400 mb-2">
                   {t.revenueProjectionDesc(ue.blendedArpu.toFixed(0), assumptions.initialGrowthPct, assumptions.endGrowthPct)}
+                </p>
+                <p className="text-[10px] text-gray-500 leading-relaxed bg-gray-50 rounded-lg p-2.5 mb-4">
+                  {t.revenueProjectionCtx(fmtEuro(m18.mrr), fmtEuro(lastMonth.mrr))}
                 </p>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1615,7 +1941,10 @@ export default function FinancialModelPage() {
                 className="bg-white border border-gray-200 rounded-xl p-5"
               >
                 <h3 className="text-sm font-medium text-gray-900">{t.customerGrowth}</h3>
-                <p className="text-xs text-gray-400 mb-4">{t.customerGrowthDesc(assumptions.membersPerPractitioner)}</p>
+                <p className="text-xs text-gray-400 mb-2">{t.customerGrowthDesc(assumptions.membersPerPractitioner)}</p>
+                <p className="text-[10px] text-gray-500 leading-relaxed bg-gray-50 rounded-lg p-2.5 mb-4">
+                  {t.customerGrowthCtx(fmtNumber(m18.practitioners), fmtNumber(m18.members), assumptions.membersPerPractitioner)}
+                </p>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={projections} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
@@ -1657,12 +1986,16 @@ export default function FinancialModelPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
               >
-                <h3 className="text-sm font-medium text-gray-900 mb-3">{t.unitEconomics}</h3>
+                <h3 className="text-sm font-medium text-gray-900 mb-2">{t.unitEconomics}</h3>
+                <p className="text-[10px] text-gray-500 leading-relaxed bg-gray-50 rounded-lg p-2.5 mb-3">{t.unitEconomicsCtx}</p>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                   <div className="bg-white border border-gray-200 rounded-xl p-4">
                     <span className="text-xs text-gray-500">{t.blendedArpu}</span>
                     <p className="text-lg font-bold text-gray-900 mt-1">€{ue.blendedArpu.toFixed(2)}</p>
                     <p className="text-[10px] text-gray-400">{t.perPractMoB2B}</p>
+                    <p className="text-[9px] text-gray-400 mt-2 pt-2 border-t border-gray-100 leading-relaxed">
+                      {fr ? "Le prix moyen qu'on touche par praticien — pondéré entre les 3 plans. C'est notre revenu de base par client." : "The average price we collect per practitioner — weighted across all 3 plans. This is our baseline revenue per customer."}
+                    </p>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-4">
                     <span className="text-xs text-gray-500">{t.ltv}</span>
@@ -1670,11 +2003,27 @@ export default function FinancialModelPage() {
                     <p className="text-[10px] text-gray-400">
                       {(1 / (assumptions.churnPct / 100)).toFixed(0)} {t.moLifetime} × €{ue.totalArpu.toFixed(0)} × {ue.grossMarginPct}%
                     </p>
+                    <p className="text-[9px] text-gray-400 mt-2 pt-2 border-t border-gray-100 leading-relaxed">
+                      {fr ? "Le revenu total qu'un praticien génère sur toute sa durée de vie, après coûts de service. Plus il reste longtemps et plus la marge est haute, plus ce chiffre monte." : "Total revenue one practitioner generates over their entire lifetime, after serving costs. The longer they stay and the higher our margin, the bigger this number."}
+                    </p>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-4">
                     <span className="text-xs text-gray-500">{t.cac}</span>
                     <p className="text-lg font-bold text-gray-900 mt-1">€{ue.cac}</p>
                     <p className="text-[10px] text-gray-400">{t.organicAcquisition}</p>
+                    <p className="text-[9px] text-gray-400 mt-2 pt-2 border-t border-gray-100 leading-relaxed">
+                      {fr ? "Ce qu'on dépense pour acquérir un praticien payant — LinkedIn, parrainages, conférences. Pas de pub payante. Ce coût augmente en grandissant (voir évolution ci-dessous)." : "What we spend to acquire one paying practitioner — LinkedIn, referrals, conferences. No paid ads. This cost rises as we scale (see evolution below)."}
+                    </p>
+                    <div className="mt-2 pt-2 border-t border-gray-100">
+                      <p className="text-[9px] text-gray-400 mb-1">{t.cacEvolution}</p>
+                      <div className="flex items-center gap-1.5 text-[10px]">
+                        <span className="text-gray-500">M1: <span className="font-semibold text-gray-700">€{ue.cac}</span></span>
+                        <ArrowRight className="w-2.5 h-2.5 text-gray-300" />
+                        <span className="text-gray-500">M18: <span className="font-semibold text-amber-600">€{ue.cacM18}</span></span>
+                        <ArrowRight className="w-2.5 h-2.5 text-gray-300" />
+                        <span className="text-gray-500">M36: <span className="font-semibold text-red-500">€{ue.cacM36}</span></span>
+                      </div>
+                    </div>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-4">
                     <span className="text-xs text-gray-500">{t.ltvCac}</span>
@@ -1682,6 +2031,9 @@ export default function FinancialModelPage() {
                       {ue.ltvCacRatio}x
                     </p>
                     <p className="text-[10px] text-gray-400">{t.target3x}</p>
+                    <p className="text-[9px] text-gray-400 mt-2 pt-2 border-t border-gray-100 leading-relaxed">
+                      {fr ? `Chaque €1 dépensé en acquisition génère €${ue.ltvCacRatio} de revenu sur la vie du client. Les investisseurs veulent voir >3x — en dessous, l'acquisition coûte trop cher.` : `Every €1 spent on acquisition generates €${ue.ltvCacRatio} in revenue over the customer's life. Investors want to see >3x — below that, acquisition costs too much.`}
+                    </p>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-4">
                     <span className="text-xs text-gray-500">{t.payback}</span>
@@ -1689,6 +2041,9 @@ export default function FinancialModelPage() {
                       {ue.paybackMonths} {t.monthLabel}
                     </p>
                     <p className="text-[10px] text-gray-400">{t.targetLt12mo}</p>
+                    <p className="text-[9px] text-gray-400 mt-2 pt-2 border-t border-gray-100 leading-relaxed">
+                      {fr ? `En ${ue.paybackMonths} mois, le revenu du praticien a remboursé son coût d'acquisition. Après ça, tout est du profit. La cible est <12 mois — plus c'est rapide, moins on a besoin de cash pour croître.` : `In ${ue.paybackMonths} months, the practitioner's revenue has paid back their acquisition cost. After that, it's all profit. Target is <12 months — the faster, the less cash we need to grow.`}
+                    </p>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-4">
                     <span className="text-xs text-gray-500">{t.grossMarginLabel}</span>
@@ -1696,6 +2051,9 @@ export default function FinancialModelPage() {
                       {ue.grossMarginPct}%
                     </p>
                     <p className="text-[10px] text-gray-400">€{ue.variableCost.toFixed(2)} {t.variableCost}</p>
+                    <p className="text-[9px] text-gray-400 mt-2 pt-2 border-t border-gray-100 leading-relaxed">
+                      {fr ? `Sur chaque €1 de revenu, on garde ${ue.grossMarginPct} centimes après les coûts de service (IA, infra, support). La médiane SaaS est 70-75% — on est dans le top décile à ${ue.grossMarginPct}%.` : `Of every €1 in revenue, we keep ${ue.grossMarginPct} cents after serving costs (AI, infra, support). SaaS median is 70-75% — we're in the top decile at ${ue.grossMarginPct}%.`}
+                    </p>
                   </div>
                 </div>
               </motion.div>
@@ -1708,7 +2066,8 @@ export default function FinancialModelPage() {
                 className="bg-white border border-gray-200 rounded-xl p-5"
               >
                 <h3 className="text-sm font-medium text-gray-900">{t.expenseBreakdown}</h3>
-                <p className="text-xs text-gray-400 mb-4">{t.expenseBreakdownDesc}</p>
+                <p className="text-xs text-gray-400 mb-2">{t.expenseBreakdownDesc}</p>
+                <p className="text-[10px] text-gray-500 leading-relaxed bg-gray-50 rounded-lg p-2.5 mb-4">{t.expenseBreakdownCtx}</p>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={barChartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
@@ -1734,6 +2093,119 @@ export default function FinancialModelPage() {
                 </div>
               </motion.div>
 
+              {/* Quarterly P&L */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.47 }}
+                className="bg-white border border-gray-200 rounded-xl p-5"
+              >
+                <h3 className="text-sm font-medium text-gray-900">{t.quarterlyPnL}</h3>
+                <p className="text-xs text-gray-400 mb-4">{t.quarterlyPnLSubtitle}</p>
+                <div className="overflow-x-auto -mx-2">
+                  <table className="w-full text-xs min-w-[800px]">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="text-left p-2 font-semibold text-gray-600 sticky left-0 bg-gray-50 z-10 min-w-[120px]">&nbsp;</th>
+                        {quarterlyPnL.map((q) => (
+                          <th key={q.label} className="text-right p-2 font-semibold text-gray-500 min-w-[72px]">{q.label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Revenue */}
+                      <tr>
+                        <td className="p-2 text-gray-600 sticky left-0 bg-white z-10">{t.pnlRevenue}</td>
+                        {quarterlyPnL.map((q) => (
+                          <td key={q.label} className="p-2 text-right font-mono text-gray-700 tabular-nums">{fmtEuro(q.revenue)}</td>
+                        ))}
+                      </tr>
+                      {/* COGS */}
+                      <tr className="bg-gray-50/50">
+                        <td className="p-2 text-gray-600 sticky left-0 bg-gray-50/50 z-10">{t.pnlCOGS}</td>
+                        {quarterlyPnL.map((q) => (
+                          <td key={q.label} className="p-2 text-right font-mono text-rose-500 tabular-nums">-{fmtEuro(q.cogs)}</td>
+                        ))}
+                      </tr>
+                      {/* Gross Profit */}
+                      <tr className="border-t border-gray-200">
+                        <td className="p-2 font-bold text-gray-900 sticky left-0 bg-white z-10">{t.pnlGrossProfit}</td>
+                        {quarterlyPnL.map((q) => (
+                          <td key={q.label} className="p-2 text-right font-mono font-bold text-gray-900 tabular-nums">{fmtEuro(q.grossProfit)}</td>
+                        ))}
+                      </tr>
+                      {/* Team */}
+                      <tr>
+                        <td className="p-2 text-gray-600 sticky left-0 bg-white z-10">{t.team}</td>
+                        {quarterlyPnL.map((q) => (
+                          <td key={q.label} className="p-2 text-right font-mono text-gray-500 tabular-nums">-{fmtEuro(q.team)}</td>
+                        ))}
+                      </tr>
+                      {/* Marketing */}
+                      <tr className="bg-gray-50/50">
+                        <td className="p-2 text-gray-600 sticky left-0 bg-gray-50/50 z-10">{t.marketing}</td>
+                        {quarterlyPnL.map((q) => (
+                          <td key={q.label} className="p-2 text-right font-mono text-gray-500 tabular-nums">-{fmtEuro(q.marketing)}</td>
+                        ))}
+                      </tr>
+                      {/* Infra */}
+                      <tr>
+                        <td className="p-2 text-gray-600 sticky left-0 bg-white z-10">{t.infra}</td>
+                        {quarterlyPnL.map((q) => (
+                          <td key={q.label} className="p-2 text-right font-mono text-gray-500 tabular-nums">-{fmtEuro(q.infra)}</td>
+                        ))}
+                      </tr>
+                      {/* Other */}
+                      <tr className="bg-gray-50/50">
+                        <td className="p-2 text-gray-600 sticky left-0 bg-gray-50/50 z-10">{t.other}</td>
+                        {quarterlyPnL.map((q) => (
+                          <td key={q.label} className="p-2 text-right font-mono text-gray-500 tabular-nums">-{fmtEuro(q.other)}</td>
+                        ))}
+                      </tr>
+                      {/* CAC */}
+                      <tr>
+                        <td className="p-2 text-gray-600 sticky left-0 bg-white z-10">CAC</td>
+                        {quarterlyPnL.map((q) => (
+                          <td key={q.label} className="p-2 text-right font-mono text-orange-500 tabular-nums">-{fmtEuro(q.cac)}</td>
+                        ))}
+                      </tr>
+                      {/* EBITDA */}
+                      <tr className="border-t border-gray-200">
+                        <td className="p-2 font-bold text-gray-900 sticky left-0 bg-white z-10">{t.pnlEBITDA}</td>
+                        {quarterlyPnL.map((q) => (
+                          <td key={q.label} className={`p-2 text-right font-mono font-bold tabular-nums ${q.ebitda >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                            {q.ebitda >= 0 ? '' : '-'}{fmtEuro(Math.abs(q.ebitda))}
+                          </td>
+                        ))}
+                      </tr>
+                      {/* Cumulative Cash */}
+                      <tr className="border-t border-gray-200 bg-gray-50/50">
+                        <td className="p-2 font-bold text-gray-900 sticky left-0 bg-gray-50/50 z-10">{t.pnlCumulativeCash}</td>
+                        {quarterlyPnL.map((q) => (
+                          <td key={q.label} className={`p-2 text-right font-mono font-bold tabular-nums ${q.cumulativeCash >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                            {fmtEuro(q.cumulativeCash)}
+                          </td>
+                        ))}
+                      </tr>
+                      {/* Practitioners */}
+                      <tr className="border-t border-dashed border-gray-200">
+                        <td className="p-2 text-gray-500 sticky left-0 bg-white z-10">{t.pnlPractitioners}</td>
+                        {quarterlyPnL.map((q) => (
+                          <td key={q.label} className="p-2 text-right font-mono text-gray-500 tabular-nums">{fmtNumber(q.practitioners)}</td>
+                        ))}
+                      </tr>
+                      {/* ARR */}
+                      <tr className="bg-gray-50/50">
+                        <td className="p-2 text-gray-500 sticky left-0 bg-gray-50/50 z-10">{t.pnlARR}</td>
+                        {quarterlyPnL.map((q) => (
+                          <td key={q.label} className="p-2 text-right font-mono text-gray-500 tabular-nums">{fmtEuro(q.arr)}</td>
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+
               {/* Runway & Cash */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
@@ -1742,7 +2214,10 @@ export default function FinancialModelPage() {
                 className="bg-white border border-gray-200 rounded-xl p-5"
               >
                 <h3 className="text-sm font-medium text-gray-900">{t.runwayCash}</h3>
-                <p className="text-xs text-gray-400 mb-4">{t.runwayCashDesc}</p>
+                <p className="text-xs text-gray-400 mb-2">{t.runwayCashDesc}</p>
+                <p className="text-[10px] text-gray-500 leading-relaxed bg-gray-50 rounded-lg p-2.5 mb-4">
+                  {t.runwayCashCtx(fmtEuro(assumptions.startingCash), runway.runwayMonths, runway.breakEvenMonth)}
+                </p>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={projections} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
@@ -1769,6 +2244,72 @@ export default function FinancialModelPage() {
                 </div>
               </motion.div>
 
+              {/* Downside Scenario Analysis — always visible */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.52 }}
+                className="bg-white border border-red-200 rounded-xl p-5"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900">{t.downsideTitle}</h3>
+                    <p className="text-[10px] text-gray-400">{t.downsideSubtitle}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  {/* Current scenario column */}
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.currentScenario}</p>
+                    <div className="space-y-2">
+                      {[
+                        { label: t.stressRunway, value: `${runway.runwayMonths} ${t.months}`, color: 'text-gray-900' },
+                        { label: t.stressBreakEven, value: runway.breakEvenMonth ? `M${runway.breakEvenMonth}` : t.never, color: 'text-gray-900' },
+                        { label: t.stressM18Pract, value: fmtNumber(runway.m18Practitioners), color: 'text-gray-900' },
+                        { label: t.stressM18Arr, value: fmtEuro(runway.m18Arr), color: 'text-gray-900' },
+                        { label: t.stressCashM18, value: fmtEuro(projections[17]?.cumulativeCash ?? 0), color: projections[17]?.cumulativeCash >= 0 ? 'text-emerald-600' : 'text-red-500' },
+                      ].map((item) => (
+                        <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-gray-50">
+                          <span className="text-[10px] text-gray-500">{item.label}</span>
+                          <span className={`text-xs font-bold tabular-nums ${item.color}`}>{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Stress scenario column */}
+                  <div className="bg-red-50/50 rounded-lg p-3">
+                    <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wider mb-2">{t.stressScenario}</p>
+                    <div className="space-y-2">
+                      {[
+                        { label: t.stressRunway, value: `${stressRunway.runwayMonths} ${t.months}`, color: 'text-red-700' },
+                        { label: t.stressBreakEven, value: stressRunway.breakEvenMonth ? `M${stressRunway.breakEvenMonth}` : t.never, color: 'text-red-700' },
+                        { label: t.stressM18Pract, value: fmtNumber(stressRunway.m18Practitioners), color: 'text-red-700' },
+                        { label: t.stressM18Arr, value: fmtEuro(stressRunway.m18Arr), color: 'text-red-700' },
+                        { label: t.stressCashM18, value: fmtEuro(stressProjections[17]?.cumulativeCash ?? 0), color: stressProjections[17]?.cumulativeCash >= 0 ? 'text-amber-600' : 'text-red-600' },
+                      ].map((item) => (
+                        <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-red-100/50">
+                          <span className="text-[10px] text-red-400">{item.label}</span>
+                          <span className={`text-xs font-bold tabular-nums ${item.color}`}>{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pivot plan */}
+                <div className="bg-gray-50 rounded-lg p-3 mt-4">
+                  <p className="text-[10px] text-gray-500 leading-relaxed">
+                    <span className="font-semibold text-gray-700">{t.pivotPlanTitle}:</span>{' '}
+                    {t.pivotPlanDesc}
+                  </p>
+                </div>
+              </motion.div>
+
               {/* Industry Benchmarks */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
@@ -1776,11 +2317,12 @@ export default function FinancialModelPage() {
                 transition={{ delay: 0.55 }}
                 className="bg-white border border-gray-200 rounded-xl p-5"
               >
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-2">
                   <BarChart3 className="w-4 h-4 text-gray-500" />
                   <h3 className="text-sm font-medium text-gray-900">{t.industryBenchmarks}</h3>
                   <span className="text-[10px] text-gray-400">{t.vsSaasStandards}</span>
                 </div>
+                <p className="text-[10px] text-gray-500 leading-relaxed bg-gray-50 rounded-lg p-2.5 mb-4">{t.industryBenchmarksCtx}</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>

@@ -117,8 +117,8 @@ function getAiFeatures(t: T) {
   return [
     { name: 'Bloom Chat', description: t('Conversational AI companion for member self-reflection and wellbeing tracking', 'Compagnon IA conversationnel pour l\'auto-reflexion et le suivi du bien-etre des membres') },
     { name: 'Bloom Assist', description: t('Quick-action AI for practitioners \u2014 summarize sessions, extract themes, suggest focus areas', 'IA d\'action rapide pour les praticiens \u2014 resumer les sessions, extraire les themes, suggerer des axes de travail') },
-    { name: t('Pattern Detection', 'Detection de tendances'), description: t('Automatically identifies wellbeing trends across mood, sleep, and activity data', 'Identifie automatiquement les tendances de bien-etre a travers les donnees d\'humeur, de sommeil et d\'activite') },
-    { name: t('Smart Notifications', 'Notifications intelligentes'), description: t('AI-informed alerts when member engagement drops or milestones are reached', 'Alertes basees sur l\'IA lorsque l\'engagement d\'un membre diminue ou qu\'un jalon est atteint') },
+    { name: t('Pattern Detection', 'Detection de tendances'), description: t('Identifies wellbeing trends across mood and activity data logged by members', 'Identifie les tendances de bien-etre a travers les donnees d\'humeur et d\'activite enregistrees par les membres') },
+    { name: t('Notifications', 'Notifications'), description: t('Email and in-app notifications for session reminders, member invitations, and milestone updates. Delivered via Postmark.', 'Notifications par email et dans l\'app pour les rappels de seance, invitations membre, et mises a jour de jalons. Envoyees via Postmark.') },
   ]
 }
 
@@ -391,8 +391,8 @@ export default function TechOverviewPage() {
           <h2 className="text-xl font-bold text-gray-900 mb-2">{t('How Bloomsline Care is Built', 'Comment Bloomsline Care est construit')}</h2>
           <p className="text-sm text-gray-500 leading-relaxed">
             {t(
-              'A modern, AI-native healthcare platform with two interfaces \u2014 a web app for practitioners and a mobile app for members. Built on production-grade infrastructure with security, i18n, and scalability from day one.',
-              'Une plateforme de sante moderne et nativement IA avec deux interfaces \u2014 une application web pour les praticiens et une application mobile pour les membres. Construite sur une infrastructure de qualite production avec securite, internationalisation et scalabilite des le premier jour.'
+              'Two interfaces \u2014 a web app for practitioners and a mobile app for their clients (members). Built solo by the technical co-founder using modern tools. Everything described here is live and working, not a prototype.',
+              'Deux interfaces \u2014 une application web pour les praticiens et une application mobile pour leurs clients (membres). Construit seul par le co-fondateur technique avec des outils modernes. Tout ce qui est decrit ici est en production, pas un prototype.'
             )}
           </p>
         </motion.div>
@@ -468,7 +468,7 @@ export default function TechOverviewPage() {
           <div className="flex items-center gap-2 mb-4">
             <Globe className="w-4 h-4 text-gray-500" />
             <h3 className="text-sm font-semibold text-gray-900">{t('External Services', 'Services externes')}</h3>
-            <span className="text-[10px] text-gray-400 ml-1">{t('6 integrations powering the platform', '6 integrations alimentant la plateforme')}</span>
+            <span className="text-[10px] text-gray-400 ml-1">{t('6 integrations used in production', '6 integrations utilisees en production')}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {EXTERNAL_SERVICES.map((svc) => (
@@ -488,8 +488,8 @@ export default function TechOverviewPage() {
         <motion.div {...fadeUp} transition={{ delay: 0.4 }}>
           <div className="flex items-center gap-2 mb-4">
             <Brain className="w-4 h-4 text-violet-500" />
-            <h3 className="text-sm font-semibold text-gray-900">{t('AI-Native Features', 'Fonctionnalites nativement IA')}</h3>
-            <span className="text-[10px] text-gray-400 ml-1">{t('Powered by Anthropic Claude', 'Propulse par Anthropic Claude')}</span>
+            <h3 className="text-sm font-semibold text-gray-900">{t('AI Features', 'Fonctionnalites IA')}</h3>
+            <span className="text-[10px] text-gray-400 ml-1">{t('Built on Anthropic Claude', 'Construit sur Anthropic Claude')}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {AI_FEATURES.map((feature) => (
@@ -503,8 +503,8 @@ export default function TechOverviewPage() {
             <Zap className="w-3.5 h-3.5 text-violet-500 mt-0.5 shrink-0" />
             <p className="text-xs text-violet-700">
               <span className="font-medium">{t('Cost optimization:', 'Optimisation des couts :')}</span> {t(
-                'Bloom uses Claude Haiku for conversations (~\u20AC1.80/practitioner/mo), keeping AI costs under 10% of revenue at \u20AC25/mo pricing. Sonnet reserved for complex analysis (summaries, pattern detection).',
-                'Bloom utilise Claude Haiku pour les conversations (~1,80\u20AC/praticien/mois), maintenant les couts IA en dessous de 10 % du chiffre d\'affaires a 25\u20AC/mois. Sonnet reserve pour les analyses complexes (resumes, detection de tendances).'
+                'Bloom uses Claude Haiku for conversations (~\u20AC1.80/practitioner/mo), keeping AI costs manageable relative to \u20AC19-49/mo subscription tiers. Sonnet is reserved for heavier tasks like summaries and pattern detection.',
+                'Bloom utilise Claude Haiku pour les conversations (~1,80\u20AC/praticien/mois), maintenant les couts IA maitrisables par rapport aux abonnements de 19-49\u20AC/mois. Sonnet est reserve pour les taches plus lourdes comme les resumes et la detection de tendances.'
               )}
             </p>
           </div>
@@ -623,7 +623,7 @@ export default function TechOverviewPage() {
         {/* ── Footer ──────────────────────────────────────────────── */}
         <motion.div {...fadeUp} transition={{ delay: 0.65 }} className="text-center pt-4 pb-8">
           <p className="text-[10px] text-gray-400">
-            {t('Built by the Bloomsline team \u2014 shipping fast, scaling smart.', 'Construit par l\'\u00E9quipe Bloomsline \u2014 livraison rapide, croissance intelligente.')}
+            {t('Built by a 2-person team. Architecture choices prioritize speed of iteration and low operational cost.', 'Construit par une equipe de 2 personnes. Les choix d\'architecture privilegient la rapidite d\'iteration et les faibles couts operationnels.')}
           </p>
         </motion.div>
       </main>

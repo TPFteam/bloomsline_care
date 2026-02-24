@@ -103,8 +103,8 @@ function getRisks(t: TFn): Risk[] {
       score: 16,
       severity: t('Critical', 'Critique'),
       description: t(
-        'Financial model assumes 20-30% MoM practitioner growth from 10 initial users. If growth is 10-15% MoM due to therapist technology inertia (only 5% of therapists currently use AI in practice), runway math shifts dramatically. At €8.7K/month burn with €300K cash, 34 months of runway means nothing without revenue traction — Series A becomes unreachable.',
-        'Le modèle financier prévoit une croissance de 20-30 % MoM des praticiens à partir de 10 utilisateurs initiaux. Si la croissance est de 10-15 % MoM en raison de l\'inertie technologique des thérapeutes (seulement 5 % des thérapeutes utilisent actuellement l\'IA en pratique), les projections financières changent radicalement. Avec un burn de 8,7 K€/mois et 300 K€ de trésorerie, 34 mois de runway ne servent à rien sans traction commerciale — la Série A devient inaccessible.'
+        'Financial model assumes 20-30% MoM practitioner growth from 10 initial users. If growth is 10-15% MoM due to therapist technology inertia (only 5% of therapists currently use AI in practice), runway math shifts dramatically. At €8.7K/month burn with €400-500K cash, ~46-57 months of runway means nothing without revenue traction — Series A becomes unreachable. The biggest risk: practitioners simply won\'t pay, and the practitioner-driven network effect doesn\'t materialize.',
+        'Le modèle financier prévoit une croissance de 20-30 % MoM des praticiens à partir de 10 utilisateurs initiaux. Si la croissance est de 10-15 % MoM en raison de l\'inertie technologique des thérapeutes (seulement 5 % des thérapeutes utilisent actuellement l\'IA en pratique), les projections financières changent radicalement. Avec un burn de 8,7 K€/mois et 400-500 K€ de trésorerie, ~46-57 mois de runway ne servent à rien sans traction commerciale — la Série A devient inaccessible. Le plus grand risque : les praticiens ne paieront tout simplement pas, et l\'effet réseau praticien ne se matérialisera pas.'
       ),
       earlyWarnings: [
         t('Fewer than 10 paying practitioners after 90 days of launch', 'Moins de 10 praticiens payants après 90 jours de lancement'),
@@ -183,8 +183,8 @@ function getRisks(t: TFn): Risk[] {
       score: 16,
       severity: t('Critical', 'Critique'),
       description: t(
-        'Two founders covering product, engineering, sales, marketing, design, support, and fundraising. No clinical advisor on the team. If one founder is unavailable (illness, burnout, personal emergency), the entire operation stalls. Hiring plan deferred to post-seed. Cannot match feature velocity of well-funded competitors.',
-        'Deux fondateurs couvrant produit, ingénierie, ventes, marketing, design, support et levée de fonds. Aucun conseiller clinique dans l\'équipe. Si un fondateur est indisponible (maladie, épuisement, urgence personnelle), toute l\'opération s\'arrête. Le plan de recrutement est reporté à l\'après-seed. Impossible d\'égaler la vélocité produit des concurrents bien financés.'
+        'Two founders (Aditya: product/tech, Sarah: sales/ops) covering product, engineering, sales, marketing, design, support, and fundraising. No clinical advisor on the team. If one founder is unavailable (illness, burnout, personal emergency), the entire operation stalls. Hiring plan deferred to post-pre-seed. Cannot match feature velocity of well-funded competitors.',
+        'Deux fondateurs (Aditya : produit/tech, Sarah : ventes/ops) couvrant produit, ingénierie, ventes, marketing, design, support et levée de fonds. Aucun conseiller clinique dans l\'équipe. Si un fondateur est indisponible (maladie, épuisement, urgence personnelle), toute l\'opération s\'arrête. Le plan de recrutement est reporté à l\'après-pré-seed. Impossible d\'égaler la vélocité produit des concurrents bien financés.'
       ),
       earlyWarnings: [
         t('Feature backlog growing faster than delivery capacity', 'Le backlog de fonctionnalités croît plus vite que la capacité de livraison'),
@@ -193,12 +193,12 @@ function getRisks(t: TFn): Risk[] {
         t('Sales conversations stalling because of product gaps', 'Les conversations commerciales stagnent à cause des lacunes produit'),
       ],
       mitigation: t(
-        'Hire first engineer immediately after seed close (Month 1-2). Prioritize ruthlessly: only build features that directly drive practitioner acquisition or retention. Use AI-assisted development to multiply output. Establish advisory board with 2-3 clinical advisors (compensated with equity). Document all critical systems so either founder can operate alone temporarily.',
-        'Recruter le premier ingénieur immédiatement après la clôture du seed (Mois 1-2). Prioriser impitoyablement : ne construire que les fonctionnalités qui contribuent directement à l\'acquisition ou la rétention des praticiens. Utiliser le développement assisté par IA pour multiplier la production. Constituer un comité consultatif avec 2-3 conseillers cliniques (rémunérés en equity). Documenter tous les systèmes critiques pour qu\'un fondateur puisse opérer seul temporairement.'
+        'Hire first engineer immediately after pre-seed close (Month 1-2). Prioritize ruthlessly: only build features that directly drive practitioner acquisition or retention. Use AI-assisted development to multiply output. Establish advisory board with 2-3 clinical advisors (compensated with equity). Document all critical systems so either founder can operate alone temporarily.',
+        'Recruter le premier ingénieur immédiatement après la clôture du pré-seed (Mois 1-2). Prioriser impitoyablement : ne construire que les fonctionnalités qui contribuent directement à l\'acquisition ou la rétention des praticiens. Utiliser le développement assisté par IA pour multiplier la production. Constituer un comité consultatif avec 2-3 conseillers cliniques (rémunérés en equity). Documenter tous les systèmes critiques pour qu\'un fondateur puisse opérer seul temporairement.'
       ),
       contingency: t(
-        'If founder becomes unavailable: activate advisor network for interim coverage. Pre-negotiate contract with senior freelance developer for emergency support (€400-600/day). If scaling requires faster hiring: convert €15-20K of seed funding to recruitment budget. Consider technical co-founder from Bpifrance\'s La French Tech network.',
-        'Si un fondateur devient indisponible : activer le réseau de conseillers pour une couverture intérimaire. Pré-négocier un contrat avec un développeur freelance senior pour le support d\'urgence (400-600 €/jour). Si la montée en charge nécessite un recrutement plus rapide : convertir 15-20 K€ du seed en budget de recrutement. Envisager un CTO technique issu du réseau La French Tech de Bpifrance.'
+        'If founder becomes unavailable: activate advisor network for interim coverage. Pre-negotiate contract with senior freelance developer for emergency support (€400-600/day). If scaling requires faster hiring: convert €15-20K of pre-seed funding to recruitment budget. Consider technical co-founder from Bpifrance\'s La French Tech network.',
+        'Si un fondateur devient indisponible : activer le réseau de conseillers pour une couverture intérimaire. Pré-négocier un contrat avec un développeur freelance senior pour le support d\'urgence (400-600 €/jour). Si la montée en charge nécessite un recrutement plus rapide : convertir 15-20 K€ du pré-seed en budget de recrutement. Envisager un CTO technique issu du réseau La French Tech de Bpifrance.'
       ),
     },
     {
@@ -237,8 +237,8 @@ function getRisks(t: TFn): Risk[] {
       score: 15,
       severity: t('Critical', 'Critique'),
       description: t(
-        'The core hypothesis — that practitioners will pay €25/month for a between-session care platform — is unvalidated with revenue. Interview validation (187 conversations) shows interest, but stated preference ≠ purchasing behavior. Woebot had 5+ RCTs and still failed commercially. The gap between "this is interesting" and "I will pay monthly" remains uncrossed.',
-        'L\'hypothèse centrale — que les praticiens paieront 25 €/mois pour une plateforme de suivi inter-séances — n\'est pas validée par des revenus. La validation par entretiens (187 conversations) montre de l\'intérêt, mais préférence déclarée ≠ comportement d\'achat. Woebot avait 5+ essais cliniques randomisés et a échoué commercialement. L\'écart entre « c\'est intéressant » et « je paierai mensuellement » reste à franchir.'
+        'The core hypothesis — that practitioners will pay €19-49/month for a between-session care platform — is unvalidated with revenue. Interview validation (119 discovery interviews, 15 beta testers) shows interest, but stated preference ≠ purchasing behavior. Woebot had 5+ RCTs and still failed commercially. The gap between "this is interesting" and "I will pay monthly" remains uncrossed.',
+        'L\'hypothèse centrale — que les praticiens paieront 19-49 €/mois pour une plateforme de suivi inter-séances — n\'est pas validée par des revenus. La validation par entretiens (119 entretiens de découverte, 15 bêta-testeurs) montre de l\'intérêt, mais préférence déclarée ≠ comportement d\'achat. Woebot avait 5+ essais cliniques randomisés et a échoué commercialement. L\'écart entre « c\'est intéressant » et « je paierai mensuellement » reste à franchir.'
       ),
       earlyWarnings: [
         t('Monthly churn exceeding 8% after first 3 months', 'Taux d\'attrition mensuel supérieur à 8 % après les 3 premiers mois'),
@@ -258,14 +258,14 @@ function getRisks(t: TFn): Risk[] {
     {
       id: 'R7',
       category: t('Financial', 'Financier'),
-      name: t('Seed raise falls short', 'Levée de seed insuffisante'),
+      name: t('Pre-seed raise falls short', 'Levée de pré-seed insuffisante'),
       probability: 3,
       impact: 4,
       score: 12,
       severity: t('High', 'Élevé'),
       description: t(
-        'Target: €250K-€400K pre-seed. EU health-tech seed funding declined 15% in 2024. If only €200K-€250K raised, runway shortens to 23-29 months and key hires (engineer, clinical advisor) may be delayed. Pre-revenue companies face heightened investor skepticism. French startup funding concentrated in Paris networks.',
-        'Objectif : 250 K€-400 K€ en pré-seed. Le financement seed en health-tech UE a diminué de 15 % en 2024. Si seulement 200 K€-250 K€ sont levés, le runway se réduit à 23-29 mois et les recrutements clés (ingénieur, conseiller clinique) pourraient être retardés. Les entreprises pré-revenu font face à un scepticisme accru des investisseurs. Le financement des startups françaises est concentré dans les réseaux parisiens.'
+        'Target: €400K-€500K pre-seed for 18 months runway. EU health-tech seed funding declined 15% in 2024. If only €300K-€350K raised, runway shortens and key hires (engineer, clinical advisor) may be delayed. Pre-revenue companies with 0 paying customers face heightened investor skepticism. French startup funding concentrated in Paris networks.',
+        'Objectif : 400 K€-500 K€ en pré-seed pour 18 mois de runway. Le financement seed en health-tech UE a diminué de 15 % en 2024. Si seulement 300 K€-350 K€ sont levés, le runway se réduit et les recrutements clés (ingénieur, conseiller clinique) pourraient être retardés. Les entreprises pré-revenu avec 0 client payant font face à un scepticisme accru des investisseurs. Le financement des startups françaises est concentré dans les réseaux parisiens.'
       ),
       earlyWarnings: [
         t('Investor meetings converting below 20% to follow-up', 'Taux de conversion des réunions investisseurs en suivi inférieur à 20 %'),
@@ -274,8 +274,8 @@ function getRisks(t: TFn): Risk[] {
         t('Key target investors passing due to pre-revenue risk', 'Investisseurs cibles clés refusant en raison du risque pré-revenu'),
       ],
       mitigation: t(
-        'Build fundraise pipeline of 40+ investors (mix of French angels, EU health-tech VCs, Bpifrance). Lead with unit economics story: €50 CAC, 25-50x LTV/CAC, 90% gross margin. Target French public grants (Bpifrance Bourse French Tech: €30K non-dilutive, La French Tech Tremplin). Set minimum viable raise at €250K with clear milestone plan. Close seed within 3 months to minimize distraction.',
-        'Constituer un pipeline de 40+ investisseurs (mix d\'angels français, VCs health-tech UE, Bpifrance). Mener avec l\'histoire de l\'unit economics : 50 € de CAC, LTV/CAC de 25-50x, marge brute de 90 %. Cibler les subventions publiques françaises (Bpifrance Bourse French Tech : 30 K€ non dilutif, La French Tech Tremplin). Fixer la levée minimum viable à 250 K€ avec un plan de jalons clair. Clôturer le seed en 3 mois pour minimiser les distractions.'
+        'Build fundraise pipeline of 40+ investors (mix of French angels, EU health-tech VCs, Bpifrance). Lead with unit economics story: modeled €50 CAC, ~5x LTV/CAC, ~83% gross margin (all projected). Target French public grants (Bpifrance Bourse French Tech: €30K non-dilutive, La French Tech Tremplin). Set minimum viable raise at €400K with clear milestone plan. Close pre-seed within 3 months to minimize distraction.',
+        'Constituer un pipeline de 40+ investisseurs (mix d\'angels français, VCs health-tech UE, Bpifrance). Mener avec l\'histoire de l\'unit economics : 50 € de CAC modélisé, LTV/CAC de ~5x, marge brute de ~83 % (tout est projeté). Cibler les subventions publiques françaises (Bpifrance Bourse French Tech : 30 K€ non dilutif, La French Tech Tremplin). Fixer la levée minimum viable à 400 K€ avec un plan de jalons clair. Clôturer le pré-seed en 3 mois pour minimiser les distractions.'
       ),
       contingency: t(
         'If raise falls short: accept lower amount and adjust milestones accordingly. Reduce burn to €6K/month (no engineering hire, founder-only for 6 months longer). Pursue Bpifrance grants aggressively (€30-50K non-dilutive). Consider revenue-based financing if initial traction exists. Bridge with convertible notes from angel investors while building traction for larger seed.',
@@ -291,8 +291,8 @@ function getRisks(t: TFn): Risk[] {
       score: 12,
       severity: t('High', 'Élevé'),
       description: t(
-        'Model assumes 5% monthly churn. At €25/month with monthly billing, switching cost is near zero. If churn reaches 8-12%, LTV drops from €500 to €208-€312, LTV/CAC ratio drops below 10x, and growth becomes a treadmill — every new practitioner just replaces a churned one. SaaS median churn for SMB is 3-7% monthly.',
-        'Le modèle suppose une attrition mensuelle de 5 %. À 25 €/mois en facturation mensuelle, le coût de changement est quasi nul. Si l\'attrition atteint 8-12 %, la LTV chute de 500 € à 208-312 €, le ratio LTV/CAC passe sous 10x, et la croissance devient un tapis roulant — chaque nouveau praticien remplace simplement un praticien perdu. La médiane SaaS pour les PME est de 3-7 % mensuel.'
+        'Model assumes 4% monthly churn. At €19-29/month with monthly billing, switching cost is near zero. If churn reaches 8-12%, LTV drops dramatically, LTV/CAC ratio drops below 3x, and growth becomes a treadmill — every new practitioner just replaces a churned one. Churn rate is entirely modeled — zero real data. SaaS median churn for SMB is 3-7% monthly.',
+        'Le modèle suppose une attrition mensuelle de 4 %. À 19-29 €/mois en facturation mensuelle, le coût de changement est quasi nul. Si l\'attrition atteint 8-12 %, la LTV chute fortement, le ratio LTV/CAC passe sous 3x, et la croissance devient un tapis roulant — chaque nouveau praticien remplace simplement un praticien perdu. Le taux d\'attrition est entièrement modélisé — aucune donnée réelle. La médiane SaaS pour les PME est de 3-7 % mensuel.'
       ),
       earlyWarnings: [
         t('Monthly churn trending above 6% for 2 consecutive months', 'Attrition mensuelle tendant au-dessus de 6 % pendant 2 mois consécutifs'),
@@ -312,14 +312,14 @@ function getRisks(t: TFn): Risk[] {
     {
       id: 'R9',
       category: t('Financial', 'Financier'),
-      name: t('Series A gap', 'Fossé vers la Série A'),
+      name: t('Series A gap (from pre-seed)', 'Fossé vers la Série A (depuis le pré-seed)'),
       probability: 3,
       impact: 5,
       score: 15,
       severity: t('Critical', 'Critique'),
       description: t(
-        'Series A requires €80-100K MRR, 200+ practitioners, <5% churn, and a clear path to €1M ARR. Median time from seed to Series A in EU health-tech is 18-24 months. If seed-stage milestones aren\'t hit (50 practitioners by Month 6, 120 by Month 12), Series A timeline extends or becomes impossible. Funding winter could coincide with fundraise window.',
-        'La Série A nécessite 80-100 K€ de MRR, 200+ praticiens, <5 % d\'attrition et un chemin clair vers 1 M€ d\'ARR. Le délai médian du seed à la Série A en health-tech UE est de 18-24 mois. Si les jalons du seed ne sont pas atteints (50 praticiens au Mois 6, 120 au Mois 12), le calendrier de Série A s\'allonge ou devient impossible. L\'hiver du financement pourrait coïncider avec la fenêtre de levée.'
+        'Series A requires €80-100K MRR, 200+ practitioners, <5% churn, and a clear path to €1M ARR. Median time from pre-seed to Series A in EU health-tech is 18-24 months. If pre-seed-stage milestones aren\'t hit (50 practitioners by Month 6, 120 by Month 12), Series A timeline extends or becomes impossible. Funding winter could coincide with fundraise window.',
+        'La Série A nécessite 80-100 K€ de MRR, 200+ praticiens, <5 % d\'attrition et un chemin clair vers 1 M€ d\'ARR. Le délai médian du pré-seed à la Série A en health-tech UE est de 18-24 mois. Si les jalons du pré-seed ne sont pas atteints (50 praticiens au Mois 6, 120 au Mois 12), le calendrier de Série A s\'allonge ou devient impossible. L\'hiver du financement pourrait coïncider avec la fenêtre de levée.'
       ),
       earlyWarnings: [
         t('Practitioner count below 30 at Month 6', 'Nombre de praticiens inférieur à 30 au Mois 6'),
@@ -328,8 +328,8 @@ function getRisks(t: TFn): Risk[] {
         t('Key metrics (churn, NPS, engagement) not at benchmark levels', 'Métriques clés (attrition, NPS, engagement) en dessous des niveaux de référence'),
       ],
       mitigation: t(
-        'Begin Series A networking at Month 9 — don\'t wait until Month 15+. Target EU-focused health-tech funds: Heal Capital, Partech Health, Digital Health Ventures, Elaia. Build investor update cadence from Day 1 (monthly updates to seed investors + prospective Series A leads). Set internal milestone: if <50 practitioners at Month 9, evaluate bridge round or strategic alternatives.',
-        'Commencer le réseautage Série A au Mois 9 — ne pas attendre le Mois 15+. Cibler les fonds health-tech européens : Heal Capital, Partech Health, Digital Health Ventures, Elaia. Établir un rythme de mises à jour investisseurs dès le Jour 1 (mises à jour mensuelles aux investisseurs seed + prospects Série A). Fixer un jalon interne : si <50 praticiens au Mois 9, évaluer un bridge round ou des alternatives stratégiques.'
+        'Begin Series A networking at Month 9 — don\'t wait until Month 15+. Target EU-focused health-tech funds: Heal Capital, Partech Health, Digital Health Ventures, Elaia. Build investor update cadence from Day 1 (monthly updates to pre-seed investors + prospective Series A leads). Set internal milestone: if <50 practitioners at Month 9, evaluate bridge round or strategic alternatives.',
+        'Commencer le réseautage Série A au Mois 9 — ne pas attendre le Mois 15+. Cibler les fonds health-tech européens : Heal Capital, Partech Health, Digital Health Ventures, Elaia. Établir un rythme de mises à jour investisseurs dès le Jour 1 (mises à jour mensuelles aux investisseurs pré-seed + prospects Série A). Fixer un jalon interne : si <50 praticiens au Mois 9, évaluer un bridge round ou des alternatives stratégiques.'
       ),
       contingency: t(
         'If Series A not achievable by Month 18: pursue bridge round (€150-200K from existing investors) to extend runway 6-9 months. Apply for Bpifrance innovation grants (€50-100K). Explore strategic investment from complementary health-tech company. If all funding options exhausted: evaluate acqui-hire offers from larger platforms (SimplePractice, Doctolib) that value the team and technology.',
@@ -526,8 +526,8 @@ function getScenarios(t: TFn): Scenario[] {
       bgColor: 'bg-emerald-50',
       textColor: 'text-emerald-700',
       narrative: t(
-        'Strong product-market fit validated within 60 days. 30%+ MoM practitioner growth driven by word-of-mouth through supervision groups and conferences. €500K raised at favorable terms. 200 practitioners by Month 12. Series A at Month 15 at 3-4x step-up. Bloom AI becomes the default between-session tool in French therapy training programs.',
-        'Fort product-market fit validé en 60 jours. Croissance 30 %+ MoM des praticiens portée par le bouche-à-oreille via les groupes de supervision et les conférences. 500 K€ levés à des conditions favorables. 200 praticiens au Mois 12. Série A au Mois 15 avec un step-up de 3-4x. Bloom AI devient l\'outil inter-séances par défaut dans les programmes de formation en thérapie français.'
+        'Strong product-market fit validated within 60 days. 30%+ MoM practitioner growth driven by word-of-mouth through supervision groups and conferences. €400-500K pre-seed raised at favorable terms. 200 practitioners by Month 12. Series A at Month 15 at 3-4x step-up. Bloom AI becomes the default between-session tool in French therapy training programs.',
+        'Fort product-market fit validé en 60 jours. Croissance 30 %+ MoM des praticiens portée par le bouche-à-oreille via les groupes de supervision et les conférences. 400-500 K€ de pré-seed levés à des conditions favorables. 200 praticiens au Mois 12. Série A au Mois 15 avec un step-up de 3-4x. Bloom AI devient l\'outil inter-séances par défaut dans les programmes de formation en thérapie français.'
       ),
       revenueImpact: t(
         '€8K MRR by Month 12 — 200 practitioners × €40 blended ARPU',
@@ -554,8 +554,8 @@ function getScenarios(t: TFn): Scenario[] {
       bgColor: 'bg-blue-50',
       textColor: 'text-blue-700',
       narrative: t(
-        'Moderate PMF — practitioners value AI notes but between-session engagement adoption is slower. 20-25% MoM growth with steady effort. €400K raised after 2-month fundraise. 120 practitioners by Month 12. Series A at Month 18-20 requiring bridge round. Core market is solo French practitioners; group practices take longer to convert.',
-        'PMF modéré — les praticiens apprécient les notes IA mais l\'adoption de l\'engagement inter-séances est plus lente. Croissance de 20-25 % MoM avec un effort soutenu. 400 K€ levés après 2 mois de levée. 120 praticiens au Mois 12. Série A au Mois 18-20 nécessitant un bridge round. Le marché principal est celui des praticiens français indépendants ; les cabinets de groupe prennent plus de temps à convertir.'
+        'Moderate PMF — practitioners value AI notes but between-session engagement adoption is slower. 20-25% MoM growth with steady effort. €400-500K pre-seed raised after 2-month fundraise. 120 practitioners by Month 12. Series A at Month 18-20 requiring bridge round. Core market is solo French practitioners; group practices take longer to convert.',
+        'PMF modéré — les praticiens apprécient les notes IA mais l\'adoption de l\'engagement inter-séances est plus lente. Croissance de 20-25 % MoM avec un effort soutenu. 400-500 K€ de pré-seed levés après 2 mois de levée. 120 praticiens au Mois 12. Série A au Mois 18-20 nécessitant un bridge round. Le marché principal est celui des praticiens français indépendants ; les cabinets de groupe prennent plus de temps à convertir.'
       ),
       revenueImpact: t(
         '€5K MRR by Month 12 — 120 practitioners × €42 blended ARPU (some annual)',
@@ -582,8 +582,8 @@ function getScenarios(t: TFn): Scenario[] {
       bgColor: 'bg-amber-50',
       textColor: 'text-amber-700',
       narrative: t(
-        'Weak PMF — practitioners sign up for AI notes but churn after 2-3 months. Between-session features underused. 10% MoM growth. €300K raised at less favorable terms. 50 practitioners by Month 12 with 8%+ monthly churn. Product needs significant iteration. Pivot evaluation at Month 9.',
-        'PMF faible — les praticiens s\'inscrivent pour les notes IA mais partent après 2-3 mois. Fonctionnalités inter-séances sous-utilisées. Croissance de 10 % MoM. 300 K€ levés à des conditions moins favorables. 50 praticiens au Mois 12 avec une attrition mensuelle de 8 %+. Le produit nécessite une itération significative. Évaluation de pivot au Mois 9.'
+        'Weak PMF — practitioners sign up for AI notes but churn after 2-3 months. Between-session features underused. 10% MoM growth. Only €300-350K raised at less favorable terms. 50 practitioners by Month 12 with 8%+ monthly churn. Product needs significant iteration. Pivot evaluation at Month 9.',
+        'PMF faible — les praticiens s\'inscrivent pour les notes IA mais partent après 2-3 mois. Fonctionnalités inter-séances sous-utilisées. Croissance de 10 % MoM. Seulement 300-350 K€ levés à des conditions moins favorables. 50 praticiens au Mois 12 avec une attrition mensuelle de 8 %+. Le produit nécessite une itération significative. Évaluation de pivot au Mois 9.'
       ),
       revenueImpact: t(
         '€2K MRR by Month 12 — 50 practitioners × €40 blended ARPU (high churn offsets growth)',

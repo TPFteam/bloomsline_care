@@ -119,8 +119,8 @@ const MARKETS_RAW: Omit<MarketScore, 'weightedTotal'>[] = [
     infraReady: 9,
     practitioners: '89,800 psychologists (30K independent)',
     practitionersFr: '89 800 psychologues (30 K indépendants)',
-    marketValue: '€166M SOM (2025)',
-    marketValueFr: '166 M€ SOM (2025)',
+    marketValue: '€50M SOM (2025)',
+    marketValueFr: '50 M€ SOM (2025)',
     keyInsight: 'Home market. MonParcoursPsy reimbursement, AFTCC partnerships, zero AI-native competitors. 21% YoY practitioner growth.',
     keyInsightFr: 'Marché domestique. Remboursement MonParcoursPsy, partenariats AFTCC, zéro concurrent natif IA. Croissance de 21 % par an des praticiens.',
   },
@@ -452,8 +452,8 @@ const ENTRY_MODES: EntryMode[] = [
     bestFor: 'Germany (DiGA pathway requires local entity) or US entry',
     bestForFr: 'Allemagne (le parcours DiGA exige une entité locale) ou entrée aux États-Unis',
     recommended: false,
-    recommendedFor: 'Only for markets with proven demand and Series A funding',
-    recommendedForFr: 'Uniquement pour les marchés avec demande prouvée et financement Series A',
+    recommendedFor: 'Only for markets with proven demand and seed round funding',
+    recommendedForFr: 'Uniquement pour les marchés avec demande prouvée et financement seed round',
   },
   {
     name: 'Partnership / Joint Venture',
@@ -1036,13 +1036,13 @@ const ROADMAP: RoadmapMonth[] = [
       'Onboard first 5 Swiss practitioners (Romandie)',
       'Premium pricing validated (CHF 29-39)',
       'Milestone: 60+ practitioners, €2K+ MRR across 3 markets',
-      'Document multi-market learnings for Series A investor narrative',
+      'Document multi-market learnings for seed round investor narrative',
     ],
     milestonesFr: [
       'Intégrer les 5 premiers praticiens suisses (Romandie)',
       'Tarification premium validée (CHF 29-39)',
       'Jalon : 60+ praticiens, 2 K€+ MRR sur 3 marchés',
-      'Documenter les enseignements multi-marchés pour le récit investisseur Series A',
+      'Documenter les enseignements multi-marchés pour le récit investisseur seed',
     ],
   },
   {
@@ -1069,20 +1069,20 @@ const ROADMAP: RoadmapMonth[] = [
   },
   {
     month: 'M9',
-    phase: 'Series A + Spain Prep',
-    phaseFr: 'Series A + Préparation Espagne',
+    phase: 'Seed Round + Spain Prep',
+    phaseFr: 'Seed Round + Préparation Espagne',
     phaseColor: 'text-violet-700 bg-violet-50 border-violet-200',
     markets: 'FR + BE + CH + DE (prep) + ES (prep)',
     marketsFr: 'FR + BE + CH + DE (préparation) + ES (préparation)',
     milestones: [
-      'Series A conversations active — present multi-market traction',
+      'Seed round conversations active — present multi-market traction',
       'Verify Spanish (es) clinical terminology accuracy',
       'Contact Colegio Oficial de Psicólogos (Spain)',
       'Adjust Spanish pricing tier (€15-22/mo)',
       'Target: 100+ practitioners across French-speaking markets',
     ],
     milestonesFr: [
-      'Discussions Series A actives — présenter la traction multi-marchés',
+      'Discussions seed round actives — présenter la traction multi-marchés',
       'Vérifier la précision de la terminologie clinique espagnole (es)',
       'Contacter le Colegio Oficial de Psicólogos (Espagne)',
       'Ajuster le palier tarifaire espagnol (15-22 €/mois)',
@@ -1141,14 +1141,14 @@ const ROADMAP: RoadmapMonth[] = [
       'Decision gate: which markets scale, which pause, which exit',
       'UK and Netherlands entry assessment based on Year 1 learnings',
       'DiGA application status review (Germany)',
-      'Target: 200+ practitioners, €7K+ MRR, clear Series A narrative',
+      'Target: 200+ practitioners, €7K+ MRR, clear seed round narrative',
     ],
     milestonesFr: [
       'Revue complète des performances par marché : CAC, LTV, churn, NPS par marché',
       'Porte de décision : quels marchés accélérer, lesquels suspendre, lesquels quitter',
       'Évaluation de l\'entrée au Royaume-Uni et aux Pays-Bas basée sur les enseignements de l\'Année 1',
       'Revue du statut de la candidature DiGA (Allemagne)',
-      'Objectif : 200+ praticiens, 7 K€+ MRR, récit Series A clair',
+      'Objectif : 200+ praticiens, 7 K€+ MRR, récit seed round clair',
     ],
   },
 ]
@@ -1337,8 +1337,8 @@ export default function MarketEntryPage() {
           {/* Business context summary */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
             {[
-              { label: t('Global TAM', 'TAM mondial'), value: t('$33B', '33 Md$'), sub: t('18.6% CAGR → $88B by 2030', '18,6 % TCAC → 88 Md$ d\'ici 2030') },
-              { label: t('EU SOM', 'SOM UE'), value: t('€166M', '166 M€'), sub: t('22.7% CAGR → $500M by 2030', '22,7 % TCAC → 500 M$ d\'ici 2030') },
+              { label: t('EU TAM', 'TAM UE'), value: t('€12B', '12 Md€'), sub: t('25% CAGR → €30B by 2030', '25 % TCAC → 30 Md€ d\'ici 2030') },
+              { label: t('EU SOM', 'SOM UE'), value: t('€50M', '50 M€'), sub: t('25% CAGR → €150M by 2030', '25 % TCAC → 150 M€ d\'ici 2030') },
               { label: t('EU Practitioners', 'Praticiens UE'), value: '400 K+', sub: t('Psychologists + counselors', 'Psychologues + conseillers') },
               { label: t('Current Pricing', 'Tarification actuelle'), value: t('€19-49/mo', '19-49 €/mois'), sub: t('85% gross margin, €50 CAC', '85 % de marge brute, 50 € CAC') },
             ].map((stat, i) => (
@@ -1678,7 +1678,7 @@ export default function MarketEntryPage() {
               </div>
               <div className="text-right">
                 <p className="text-xl font-bold text-gray-900">{t(TOTAL_BUDGET, '135-200 K€')}</p>
-                <p className="text-[9px] text-gray-400">{t('from seed raise (€300-500K)', 'sur la levée d\'amorçage (300-500 K€)')}</p>
+                <p className="text-[9px] text-gray-400">{t('from pre-seed raise (€400-500K)', 'sur la levée de pré-amorçage (400-500 K€)')}</p>
               </div>
             </div>
 
@@ -1718,8 +1718,8 @@ export default function MarketEntryPage() {
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <p className="text-[10px] text-blue-700 leading-relaxed">
               <span className="font-semibold">{t('Funding allocation:', 'Allocation du financement :')}</span> {t(
-                'Expansion budget represents 35-50% of seed raise (€300-500K). Remaining funds cover core product development (40%), France GTM (25%), team salaries (20%), and operations (10%). Non-dilutive funding sources can reduce pressure: Bpifrance Bourse French Tech (€30K), EU EIC Accelerator (up to €2.5M), Horizon Europe mental health grants. Total expansion cost per market averages €27-40K — among the lowest in health-tech due to the digital-first entry model and existing multi-language infrastructure.',
-                'Le budget d\'expansion représente 35-50 % de la levée d\'amorçage (300-500 K€). Les fonds restants couvrent le développement produit (40 %), le GTM France (25 %), les salaires (20 %) et les opérations (10 %). Les financements non dilutifs peuvent réduire la pression : Bpifrance Bourse French Tech (30 K€), EU EIC Accelerator (jusqu\'à 2,5 M€), subventions Horizon Europe pour la santé mentale. Le coût moyen d\'expansion par marché est de 27-40 K€ — parmi les plus bas en santé numérique grâce au modèle d\'entrée numérique et à l\'infrastructure multilingue existante.'
+                'Expansion budget represents 35-50% of pre-seed raise (€400-500K). Remaining funds cover core product development (40%), France GTM (25%), team salaries (20%), and operations (10%). Non-dilutive funding sources can reduce pressure: Bpifrance Bourse French Tech (€30K), EU EIC Accelerator (up to €2.5M), Horizon Europe mental health grants. Total expansion cost per market averages €27-40K — among the lowest in health-tech due to the digital-first entry model and existing multi-language infrastructure.',
+                'Le budget d\'expansion représente 35-50 % de la levée de pré-amorçage (400-500 K€). Les fonds restants couvrent le développement produit (40 %), le GTM France (25 %), les salaires (20 %) et les opérations (10 %). Les financements non dilutifs peuvent réduire la pression : Bpifrance Bourse French Tech (30 K€), EU EIC Accelerator (jusqu\'à 2,5 M€), subventions Horizon Europe pour la santé mentale. Le coût moyen d\'expansion par marché est de 27-40 K€ — parmi les plus bas en santé numérique grâce au modèle d\'entrée numérique et à l\'infrastructure multilingue existante.'
               )}
             </p>
           </div>
@@ -1841,16 +1841,16 @@ export default function MarketEntryPage() {
               <p className="text-[10px] text-gray-300 leading-relaxed">
                 {lang === 'fr' ? (
                   <>
-                    L&apos;avantage d&apos;expansion de Bloomsline est structurel, pas tactique. Le modèle B2B2C signifie que chaque entrée sur un nouveau marché est efficiente en capital (5-15 K€ pour tester, 27-40 K€ pour croître). Le fossé réglementaire se renforce à chaque marché de l&apos;UE conquis. Le playbook est simple : <span className="text-white font-semibold">gagner la France d&apos;abord, s&apos;étendre aux marchés francophones à coût quasi nul, puis utiliser des indicateurs unitaires prouvés pour justifier un financement Series A pour l&apos;Allemagne, l&apos;Espagne et le Royaume-Uni.</span> Les États-Unis sont une ambition Phase 4 — pas une distraction. Le chemin vers 200+ praticiens sur 5 marchés européens en 12 mois est réalisable avec le seul financement d&apos;amorçage.
+                    L&apos;avantage d&apos;expansion de Bloomsline est structurel, pas tactique. Le modèle B2B2C signifie que chaque entrée sur un nouveau marché est efficiente en capital (5-15 K€ pour tester, 27-40 K€ pour croître). Le fossé réglementaire se renforce à chaque marché de l&apos;UE conquis. Le playbook est simple : <span className="text-white font-semibold">gagner la France d&apos;abord, s&apos;étendre aux marchés francophones à coût quasi nul, puis utiliser des indicateurs unitaires prouvés pour justifier un seed round pour l&apos;Allemagne, l&apos;Espagne et le Royaume-Uni.</span> Les États-Unis sont une ambition Phase 4 — pas une distraction. Le chemin vers 200+ praticiens sur 5 marchés européens en 12 mois est réalisable avec le seul financement de pré-amorçage.
                   </>
                 ) : (
                   <>
                     Bloomsline&apos;s expansion advantage is structural, not tactical. The B2B2C model means every new market entry is
                     capital-efficient (€5-15K to test, €27-40K to scale). The regulatory moat deepens with each EU market entered.
                     The playbook is simple: <span className="text-white font-semibold">win France first, expand to French-speaking markets at near-zero cost,
-                    then use proven unit economics to justify Series A funding for Germany, Spain, and the UK.</span> The US
+                    then use proven unit economics to justify seed round funding for Germany, Spain, and the UK.</span> The US
                     is a Phase 4 ambition — not a distraction. The path to 200+ practitioners across 5 European markets in 12 months
-                    is achievable with seed funding alone.
+                    is achievable with pre-seed funding alone.
                   </>
                 )}
               </p>

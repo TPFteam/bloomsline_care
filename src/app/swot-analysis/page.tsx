@@ -55,7 +55,7 @@ function ForceBar({ score, color }: { score: number; color: string }) {
 const STRENGTHS = [
   {
     title: 'Exceptional unit economics at pre-revenue stage',
-    evidence: 'LTV/CAC of 25-50x (target >3x). €50 CAC per practitioner, each bringing 12-15 members at zero incremental cost. Effective member CAC: €3.33 vs €30-50 for B2C apps. Payback period: 2.4 months. 90% gross margin.',
+    evidence: 'Modeled LTV/CAC of ~5x (target >3x). Modeled €50 CAC per practitioner, each bringing 20-50 members at zero incremental cost (unproven). Effective member CAC: €3.33 vs €30-50 for B2C apps (projected). Payback period: ~2 months (modeled). ~83% gross margin (modeled).',
     rating: 'Critical',
   },
   {
@@ -64,8 +64,8 @@ const STRENGTHS = [
     rating: 'Critical',
   },
   {
-    title: 'Care Network Effect creates organic distribution',
-    evidence: '1 practitioner sale → 12-15 members for free (base case). Over time, each practitioner brings 20-50 members as their caseload rotates. Members can\'t churn the practitioner out — they\'re locked into the care relationship. Word-of-mouth flows through supervision groups and conferences.',
+    title: 'Practitioner-driven network effect creates organic distribution (unproven)',
+    evidence: '1 practitioner sale → 20-50 members for free (projected, not yet observed). Members can\'t churn the practitioner out — they\'re locked into the care relationship. Word-of-mouth flows through supervision groups and conferences. This network effect is the core hypothesis but has not been validated with real users.',
     rating: 'Critical',
   },
   {
@@ -79,8 +79,8 @@ const STRENGTHS = [
     rating: 'High',
   },
   {
-    title: 'Deep domain validation: 187 interviews across 7 countries',
-    evidence: '68 practitioners and 119+ users interviewed. Previous product (Doctalink) taught the team what practitioners don\'t want (another profile directory). The pivot to between-session care was informed by practitioner pain, not founder assumption.',
+    title: 'Domain validation: 119 discovery interviews, 15 beta testers',
+    evidence: '119 discovery interviews conducted and 15 beta testers onboarded. Zero paying customers. Previous product (Doctalink) taught the team what practitioners don\'t want (another profile directory). The pivot to between-session care was informed by practitioner pain, not founder assumption.',
     rating: 'High',
   },
   {
@@ -98,7 +98,7 @@ const WEAKNESSES = [
   },
   {
     title: 'Two-person team limits execution bandwidth',
-    assessment: 'Two founders covering product, engineering, sales, marketing, design, support, and fundraising. No clinical advisor on the team. Hiring plan deferred to post-seed. If one founder is unavailable, the entire operation stalls.',
+    assessment: 'Two founders (Aditya: product/tech, Sarah: sales/ops) covering product, engineering, sales, marketing, design, support, and fundraising. No clinical advisor on the team. Hiring plan deferred to post-pre-seed. If one founder is unavailable, the entire operation stalls.',
     severity: 'High',
   },
   {
@@ -117,8 +117,8 @@ const WEAKNESSES = [
     severity: 'Medium',
   },
   {
-    title: 'Revenue model dependent on a single low price point',
-    assessment: '€25/mo single-tier pricing. No enterprise pricing validated. No upsell path beyond the base subscription. B2C premium (€3/mo, 5-8% conversion) is a rounding error, not a revenue engine. If €25/mo proves too low for unit economics at scale, raising prices post-acquisition is painful.',
+    title: 'Unproven pricing — no paying customer has validated any tier',
+    assessment: '€19/29/49 three-tier pricing (Essentiel/Pro/Cabinet) is modeled, not validated. No paying customers have confirmed willingness-to-pay at any tier. B2C premium (€3/mo, 5-8% conversion) is a rounding error, not a revenue engine. If pricing proves wrong, adjusting post-launch risks early adopter churn.',
     severity: 'Medium',
   },
   {
@@ -200,7 +200,7 @@ const THREATS = [
   },
   {
     title: 'Practitioner adoption slower than modeled — runway exhaustion',
-    detail: 'Financial model assumes 20-30% MoM growth from 10 practitioners. If growth is 10-15% MoM, the runway math changes dramatically. At €8.7K/month burn, €300K cash = 34 months — but without revenue traction, Series A becomes impossible.',
+    detail: 'Financial model assumes 20-30% MoM growth from 10 practitioners. If growth is 10-15% MoM, the runway math changes dramatically. At €8.7K/month burn, €400-500K cash = ~46-57 months — but without revenue traction, Series A becomes impossible.',
     severity: 'High',
     probability: 'Medium',
   },
@@ -222,9 +222,9 @@ const THREATS = [
 
 const SO_STRATEGIES = [
   {
-    strength: 'B2B2C architecture + Care Network Effect',
+    strength: 'B2B2C architecture + practitioner-driven network effect',
     opportunity: 'EU white space + B2C collapse',
-    strategy: 'Land Marie (solo practitioner) in France, let the Care Network Effect do the expansion. Each practitioner brings 12-15 members; each member who recommends therapy to a friend creates a new potential practitioner lead. Own the French market before anyone else enters.',
+    strategy: 'Land Marie (solo practitioner) in France, let the practitioner-driven network effect do the expansion. Each practitioner brings 20-50 members (projected); each member who recommends therapy to a friend creates a new potential practitioner lead. Own the French market before anyone else enters.',
     priority: 'P0',
   },
   {
@@ -240,7 +240,7 @@ const SO_STRATEGIES = [
     priority: 'P1',
   },
   {
-    strength: '187 interviews + domain expertise',
+    strength: '119 discovery interviews + 15 beta testers + domain expertise',
     opportunity: 'Training institute partnerships',
     strategy: 'Use interview-backed insights to create clinical education content (e.g., "Between-Session Engagement: What the Research Shows"). Partner with AFTCC, IFFORTHECC to offer Bloomsline as the recommended tool for newly certified practitioners. Capture them before habits form.',
     priority: 'P1',
@@ -270,10 +270,10 @@ const WT_RISKS = [
     severity: 'High',
   },
   {
-    weakness: 'Single revenue price point (€25/mo)',
+    weakness: 'Unproven pricing (€19/29/49 tiers)',
     threat: 'Anthropic pricing increase + open-source commoditization',
-    risk: 'If AI costs rise 3x (€5.40/user/mo) while open-source alternatives commoditize the AI advantage, the €25/mo price point leaves only €10-12/mo for everything else. Margin compression makes the business unsustainable at current pricing.',
-    mitigation: 'Build pricing headroom now: test €35-45/mo tiers with expanded features. Implement Claude fallback on Mistral/Llama for non-critical AI tasks. Keep the AI cost structure flexible with model routing.',
+    risk: 'If AI costs rise 3x (€5.40/user/mo) while open-source alternatives commoditize the AI advantage, the €19-49/mo price range may leave insufficient margin. Pricing has not been validated with paying customers.',
+    mitigation: 'Build pricing headroom: test willingness-to-pay at each tier with early adopters. Implement Claude fallback on Mistral/Llama for non-critical AI tasks. Keep the AI cost structure flexible with model routing.',
     severity: 'Medium',
   },
 ]
@@ -308,7 +308,7 @@ const FORCES = [
       { name: 'Group practice directors (Thomas — P1)', power: 'Medium', detail: 'Larger spend (€20-25/practitioner/mo × 3-8 seats). Longer decision cycle but higher lock-in once adopted. Needs ROI justification. More likely to negotiate volume discounts. Switching costs higher (data migration, team retraining).' },
       { name: 'Members (Lea, Sophie — B2C)', power: 'Low', detail: 'Members pay nothing (free via practitioner). They have zero buyer power because they\'re not buyers. Their engagement determines practitioner retention — so they have indirect power over churn but no pricing leverage.' },
     ],
-    bloomsline: 'Buyer power is the primary force to manage. At €25/mo with monthly billing, the switching cost is near zero. Defense: make the data generated on the platform (session notes, client engagement history, outcome trends) the irreplaceable asset. The more data accumulated, the higher the switching cost.',
+    bloomsline: 'Buyer power is the primary force to manage. At €19-29/mo with monthly billing, the switching cost is near zero. Defense: make the data generated on the platform (session notes, client engagement history, outcome trends) the irreplaceable asset. The more data accumulated, the higher the switching cost.',
   },
   {
     name: 'Competitive Rivalry',
@@ -353,7 +353,7 @@ const FORCES = [
       { name: 'Distribution barriers', power: 'Medium', detail: 'Solo practitioners discover tools through peer networks, conferences, and supervision groups — not app stores. Building trust with AFTCC, local supervision groups, and training institutes takes 12-24 months. Network effects compound once 50+ practitioners in a region.' },
       { name: 'Capital barriers', power: 'Low', detail: 'A well-funded startup could enter with €1-2M. VC interest in mental health is high. The barrier is not capital but product-market insight and local distribution.' },
     ],
-    bloomsline: 'New entry is a medium threat. Any well-funded team could build the technology in 6 months. The defense is: (1) regulatory head start (GDPR-native, EU AI Act ready), (2) distribution network in French practitioner communities, and (3) Care Network Effect — once 100+ practitioners are on the platform with 1,200+ members, the data moat and referral loop become very hard to replicate.',
+    bloomsline: 'New entry is a medium threat. Any well-funded team could build the technology in 6 months. The defense is: (1) regulatory head start (GDPR-native, EU AI Act ready), (2) distribution network in French practitioner communities, and (3) practitioner-driven network effect — once 100+ practitioners are on the platform with 1,200+ members, the data moat and referral loop become very hard to replicate (unproven hypothesis).',
   },
 ]
 
@@ -393,8 +393,8 @@ export default function SwotAnalysisPage() {
           <h2 className="text-xl font-bold text-gray-900 mb-2">{t('Strategic position: right product, right market, pre-traction.', 'Position stratégique : bon produit, bon marché, pré-traction.')}</h2>
           <p className="text-sm text-gray-500 leading-relaxed max-w-2xl">
             {t(
-              "Bloomsline is a pre-revenue B2B2C platform entering a $33B market with no direct competitor in its category (between-session care + AI + EU). The strategic challenge is not differentiation — it's execution speed. The window is 12-18 months before adjacent players converge.",
-              "Bloomsline est une plateforme B2B2C pré-revenu qui entre sur un marché de 33 Md$ sans concurrent direct dans sa catégorie (suivi inter-séance + IA + UE). Le défi stratégique n'est pas la différenciation — c'est la vitesse d'exécution. La fenêtre est de 12 à 18 mois avant la convergence des acteurs adjacents."
+              "Bloomsline is a pre-revenue B2B2C platform entering a TAM of ~€12B (SAM ~€2B, SOM ~€50M) with no direct competitor in its category (between-session care + AI + EU). The strategic challenge is not differentiation — it's execution speed. The window is 12-18 months before adjacent players converge.",
+              "Bloomsline est une plateforme B2B2C pré-revenu qui entre sur un TAM de ~12 Md€ (SAM ~2 Md€, SOM ~50 M€) sans concurrent direct dans sa catégorie (suivi inter-séance + IA + UE). Le défi stratégique n'est pas la différenciation — c'est la vitesse d'exécution. La fenêtre est de 12 à 18 mois avant la convergence des acteurs adjacents."
             )}
           </p>
           <div className="flex flex-wrap items-center gap-2 mt-4">
@@ -792,7 +792,7 @@ export default function SwotAnalysisPage() {
                   {[
                     t('Only B2B2C platform connecting both sides of mental health care', 'Seule plateforme B2B2C reliant les deux côtés du soin en santé mentale'),
                     t('Zero direct competitors in EU between-session care', 'Zéro concurrent direct dans le suivi inter-séance en UE'),
-                    t('Unit economics proven in model (25-50x LTV/CAC, 90% margin)', 'Économie unitaire prouvée en modèle (LTV/CAC 25-50x, marge 90 %)'),
+                    t('Unit economics modeled, not proven (~5x LTV/CAC, ~83% margin — all projected)', 'Économie unitaire modélisée, non prouvée (~5x LTV/CAC, ~83% marge — tout est projeté)'),
                     t('EU regulatory moat deepens every year (AI Act, EHDS, DiGA)', "L'avantage réglementaire UE se renforce chaque année (AI Act, EHDS, DiGA)"),
                     t('Woebot/BetterHelp failures validate your thesis', 'Les échecs de Woebot/BetterHelp valident votre thèse'),
                   ].map((point, i) => (
@@ -826,8 +826,8 @@ export default function SwotAnalysisPage() {
               <p className="text-xs font-semibold text-white mb-2">{t('The One Thing That Matters Right Now', "La seule chose qui compte maintenant")}</p>
               <p className="text-[10px] text-gray-300 leading-relaxed">
                 {t(
-                  'Get 10 paying practitioners within 90 days of launch. Everything else — the AI, the Care Network Effect, the EU moat, the 25-50x LTV/CAC — is a hypothesis until money changes hands. The SWOT is favorable. The Five Forces analysis shows an attractive industry. But the only force that matters at pre-seed is',
-                  "Obtenir 10 praticiens payants dans les 90 jours suivant le lancement. Tout le reste — l'IA, l'effet réseau de soins, l'avantage réglementaire UE, le LTV/CAC de 25-50x — n'est qu'une hypothèse tant que l'argent ne change pas de mains. Le SWOT est favorable. L'analyse des cinq forces montre une industrie attractive. Mais la seule force qui compte au stade pré-amorçage est"
+                  'Get 10 paying practitioners within 90 days of launch. Everything else — the AI, the practitioner-driven network effect, the EU moat, the modeled ~5x LTV/CAC — is a hypothesis until money changes hands. The SWOT is favorable. The Five Forces analysis shows an attractive industry. But the only force that matters at pre-seed is',
+                  "Obtenir 10 praticiens payants dans les 90 jours suivant le lancement. Tout le reste — l'IA, l'effet réseau praticien, l'avantage réglementaire UE, le LTV/CAC modélisé de ~5x — n'est qu'une hypothèse tant que l'argent ne change pas de mains. Le SWOT est favorable. L'analyse des cinq forces montre une industrie attractive. Mais la seule force qui compte au stade pré-amorçage est"
                 )} <span className="text-white font-semibold">{t('converting the first dollar of revenue.', "convertir le premier euro de chiffre d'affaires.")}</span>
               </p>
             </div>

@@ -56,13 +56,13 @@ function getPHASES(t: T) {
       lightBg: 'bg-gray-50',
       borderColor: 'border-gray-300',
       textColor: 'text-gray-900',
-      target: t('3 → 10 practitioners', '3 → 10 praticiens'),
-      mrr: '€250',
+      target: t('0 → 10 practitioners (from 15 beta testers)', '0 → 10 praticiens (à partir de 15 bêta-testeurs)'),
+      mrr: t('€0 → €250 (target)', '0 € → 250 € (objectif)'),
       strategy: t('Founder-led direct outreach', 'Prospection directe par les fondateurs'),
       activities: [
         t('LinkedIn outreach: 10 personalized messages/day per founder', 'Prospection LinkedIn : 10 messages personnalisés/jour par fondateur'),
-        t('Validate willingness to pay — convert beta testers to €25/mo', 'Valider la volonté de payer — convertir les bêta-testeurs à 25 €/mois'),
-        t('Collect 3-5 testimonials and usage data', 'Recueillir 3 à 5 témoignages et données d\'utilisation'),
+        t('Validate willingness to pay — convert beta testers to €19-29/mo', 'Valider la volonté de payer — convertir les bêta-testeurs à 19-29 €/mois'),
+        t('Collect 3-5 testimonials and usage data from beta testers', 'Recueillir 3 à 5 témoignages et données d\'utilisation des bêta-testeurs'),
         t('Refine pitch: "what happens between sessions" positioning', 'Affiner le pitch : positionnement « ce qui se passe entre les séances »'),
         t('Build prospect list: 200 practitioners (Paris, LinkedIn + Doctolib)', 'Constituer une liste de 200 praticiens (Paris, LinkedIn + Doctolib)'),
       ],
@@ -114,8 +114,8 @@ function getPHASES(t: T) {
         t('Training institute partnerships (IFFORTHECC, IRCCADE, Asadis)', 'Partenariats avec des instituts de formation (IFFORTHECC, IRCCADE, Asadis)'),
         t('Offer free year for newly certified practitioners', 'Offrir une année gratuite aux praticiens nouvellement certifiés'),
         t('Guest on French psych podcasts (Deux Psys, Catherine la Psy)', 'Invité sur des podcasts psy français (Deux Psys, Catherine la Psy)'),
-        t('First organic/referral signups should appear (inflection signal)', 'Les premières inscriptions organiques / par parrainage devraient apparaître (signal d\'inflexion)'),
-        t('Consider first hire: customer success / support', 'Envisager une première embauche : succès client / support'),
+        t('First organic/referral signups should appear (planned — key validation signal)', 'Les premières inscriptions organiques / par parrainage devraient apparaître (planifié — signal de validation clé)'),
+        t('Make first hire with raise funds: customer success / support (2 hires planned total)', 'Effectuer la première embauche avec les fonds levés : succès client / support (2 embauches prévues au total)'),
       ],
       channels: [
         t('Content (SEO)', 'Contenu (SEO)'),
@@ -135,12 +135,12 @@ function getPHASES(t: T) {
       textColor: 'text-violet-700',
       target: t('150 → 280+ practitioners', '150 → 280+ praticiens'),
       mrr: '€7,000+',
-      strategy: t('Flywheel spinning + Series A prep', 'Volant d\'inertie en marche + préparation Série A'),
+      strategy: t('Organic growth scaling + Seed round prep', 'Croissance organique + préparation tour Seed'),
       activities: [
-        t('Referrals should be 20-30% of new signups', 'Les parrainages devraient représenter 20 à 30 % des nouvelles inscriptions'),
+        t('Referrals should be 20-30% of new signups (planned — depends on Phase 2 results)', 'Les parrainages devraient représenter 20 à 30 % des nouvelles inscriptions (planifié — dépend des résultats Phase 2)'),
         t('Expand to French-speaking markets (Belgium, Switzerland)', 'Expansion vers les marchés francophones (Belgique, Suisse)'),
-        t('Explore group practice / multi-practitioner plans', 'Explorer les offres cabinet de groupe / multi-praticiens'),
-        t('Build Series A data package: retention, NPS, unit economics', 'Préparer le dossier Série A : rétention, NPS, unit economics'),
+        t('Explore group practice / multi-practitioner plans (€49/mo Cabinet tier)', 'Explorer les offres cabinet de groupe / multi-praticiens (offre Cabinet à 49 €/mois)'),
+        t('Build Seed round data package: retention, NPS, unit economics', 'Préparer le dossier tour Seed : rétention, NPS, unit economics'),
         t('Start conversations with enterprise / EAP partners', 'Entamer des discussions avec des partenaires entreprises / PAE'),
         t('Evaluate HDS certification for larger clients', 'Évaluer la certification HDS pour les grands comptes'),
       ],
@@ -163,8 +163,8 @@ function getCHANNELS(t: T) {
       color: 'bg-blue-50 text-blue-600',
       when: t('Pre-raise → M6', 'Pré-levée → M6'),
       why: t(
-        'Highest leverage at early stage. Multi-channel gets 287% higher reply rate vs single channel. At €25/mo, you need volume: 50+ conversations/week.',
-        'Levier le plus puissant en phase initiale. Le multicanal obtient un taux de réponse 287 % supérieur au monocanal. À 25 €/mois, il faut du volume : 50+ conversations/semaine.'
+        'Highest leverage at early stage. Multi-channel gets 287% higher reply rate vs single channel. At €19-29/mo, you need volume: 50+ conversations/week.',
+        'Levier le plus puissant en phase initiale. Le multicanal obtient un taux de réponse 287 % supérieur au monocanal. À 19-29 €/mois, il faut du volume : 50+ conversations/semaine.'
       ),
       how: t(
         'Build list from LinkedIn Sales Navigator + Doctolib. Personalize every message. Offer 15-min demo, not a sales pitch. Follow up 3x.',
@@ -265,9 +265,9 @@ function getMILESTONES(t: T) {
     { users: 10, label: t('Payment validated', 'Paiement validé'), signal: t('Willingness to pay proven', 'Volonté de payer prouvée'), trigger: t('Close pre-seed', 'Clôturer le pré-seed') },
     { users: 30, label: t('PMF signal', 'Signal PMF'), signal: t('<5% monthly churn', '<5 % de churn mensuel'), trigger: t('Stop selling, fix product if churn >10%', 'Arrêter de vendre, corriger le produit si churn >10 %') },
     { users: 50, label: t('First organic signup', 'Première inscription organique'), signal: t('Someone signed up without founder contact', 'Quelqu\'un s\'est inscrit sans contact fondateur'), trigger: t('Word-of-mouth beginning', 'Début du bouche-à-oreille') },
-    { users: 100, label: t('Model proven', 'Modèle prouvé'), signal: t('15-20% MoM growth, stable churn', '15-20 % de croissance MoM, churn stable'), trigger: t('Consider first hire', 'Envisager une première embauche') },
-    { users: 200, label: t('Flywheel spinning', 'Volant d\'inertie en marche'), signal: t('Referrals = 20-30% of signups', 'Parrainages = 20-30 % des inscriptions'), trigger: t('Series A conversations', 'Discussions Série A') },
-    { users: 280, label: t('Seed target hit', 'Objectif seed atteint'), signal: t('€7K+ MRR, proven unit economics', '7 K€+ MRR, unit economics prouvés'), trigger: t('Raise Series A', 'Lever la Série A') },
+    { users: 100, label: t('Model validation', 'Validation du modèle'), signal: t('15-20% MoM growth, stable churn', '15-20 % de croissance MoM, churn stable'), trigger: t('Make first hire (planned: 2 hires with raise)', 'Première embauche (prévu : 2 embauches avec la levée)') },
+    { users: 200, label: t('Referral loop working (planned)', 'Boucle de parrainage active (planifié)'), signal: t('Referrals = 20-30% of signups', 'Parrainages = 20-30 % des inscriptions'), trigger: t('Seed round conversations', 'Discussions pour un tour Seed') },
+    { users: 280, label: t('Pre-seed target hit', 'Objectif pré-seed atteint'), signal: t('€7K+ MRR, proven unit economics', '7 K€+ MRR, unit economics prouvés'), trigger: t('Raise Seed round', 'Lever un tour Seed') },
   ]
 }
 
@@ -277,8 +277,8 @@ function getRISKS(t: T) {
       risk: t('Slow adoption / long sales cycles', 'Adoption lente / cycles de vente longs'),
       likelihood: t('High', 'Élevé'),
       mitigation: t(
-        'Multi-channel outreach, free trial, white-glove onboarding, ultra-low €25/mo friction',
-        'Prospection multicanal, essai gratuit, onboarding personnalisé, friction ultra-faible à 25 €/mois'
+        'Multi-channel outreach, free trial, white-glove onboarding, low entry at €19/mo Essentiel tier',
+        'Prospection multicanal, essai gratuit, onboarding personnalisé, entrée à faible friction à 19 €/mois (offre Essentiel)'
       ),
     },
     {
@@ -293,8 +293,8 @@ function getRISKS(t: T) {
       risk: t('Doctolib adds engagement features', 'Doctolib ajoute des fonctionnalités d\'engagement'),
       likelihood: t('Low-Med', 'Faible-Moyen'),
       mitigation: t(
-        'Move fast. Our B2C member layer + AI companion is hard to bolt on as an afterthought',
-        'Aller vite. Notre couche B2C membre + compagnon IA est difficile à ajouter après coup'
+        'Move fast. Our member-facing app + AI between-session support is structurally hard to bolt on as an afterthought',
+        'Aller vite. Notre application membre + accompagnement IA entre les séances est structurellement difficile à ajouter après coup'
       ),
     },
     {
@@ -322,8 +322,8 @@ function FlywheelDiagram({ lang }: { lang: Lang }) {
   const t: T = (en, fr) => lang === 'fr' ? fr : en
 
   const steps = [
-    { icon: UserPlus, label: t('Practitioner signs up', 'Un praticien s\'inscrit'), sub: t('€25/mo', '25 €/mois'), color: 'bg-blue-100 text-blue-700' },
-    { icon: Users, label: t('Onboards 10-15 members', 'Intègre 10-15 membres'), sub: t('Free for members', 'Gratuit pour les membres'), color: 'bg-emerald-100 text-emerald-700' },
+    { icon: UserPlus, label: t('Practitioner signs up', 'Un praticien s\'inscrit'), sub: t('€19/29/49 per month', '19/29/49 € par mois'), color: 'bg-blue-100 text-blue-700' },
+    { icon: Users, label: t('Invites 20-50 members (hypothesis)', 'Invite 20-50 membres (hypothèse)'), sub: t('Free for members', 'Gratuit pour les membres'), color: 'bg-emerald-100 text-emerald-700' },
     { icon: Star, label: t('Members engage with Bloom AI', 'Les membres interagissent avec Bloom AI'), sub: t('Better outcomes', 'De meilleurs résultats'), color: 'bg-violet-100 text-violet-700' },
     { icon: TrendingUp, label: t('Practitioner sees results', 'Le praticien voit les résultats'), sub: t('Engagement data + retention', 'Données d\'engagement + rétention'), color: 'bg-amber-100 text-amber-700' },
     { icon: Megaphone, label: t('Tells peers about it', 'En parle à ses pairs'), sub: t('Word-of-mouth', 'Bouche-à-oreille'), color: 'bg-rose-100 text-rose-700' },
@@ -381,7 +381,7 @@ export default function GoToMarketPage() {
             </div>
             <div>
               <h1 className="text-sm font-semibold text-gray-900">{t('Go-to-Market Strategy', 'Stratégie de mise en marché')}</h1>
-              <p className="text-[10px] text-gray-400">{t('Bloomsline Care — From 10 to 280 Practitioners', 'Bloomsline Care — De 10 à 280 praticiens')}</p>
+              <p className="text-[10px] text-gray-400">{t('Bloomsline Care — Pre-Seed, From 0 to 280 Practitioners', 'Bloomsline Care — Pré-seed, De 0 à 280 praticiens')}</p>
             </div>
           </div>
           <button
@@ -400,8 +400,8 @@ export default function GoToMarketPage() {
           <h2 className="text-xl font-bold text-gray-900 mb-2">{t('Practitioner-Led Growth', 'Croissance portée par les praticiens')}</h2>
           <p className="text-sm text-gray-500 leading-relaxed">
             {t(
-              "We don\u2019t sell to consumers. We sell to practitioners \u2014 they bring their entire caseload. One \u20ac25/mo sale = 10-15 member accounts for free. That\u2019s not marketing \u2014 that\u2019s how care works. Every practitioner who joins seeds the next wave through peer word-of-mouth.",
-              "Nous ne vendons pas aux consommateurs. Nous vendons aux praticiens \u2014 ils am\u00e8nent toute leur client\u00e8le. Une vente \u00e0 25\u00a0\u20ac/mois = 10 \u00e0 15 comptes membres gratuits. Ce n\u2019est pas du marketing \u2014 c\u2019est ainsi que fonctionne le soin. Chaque praticien qui s\u2019inscrit g\u00e9n\u00e8re la vague suivante par le bouche-\u00e0-oreille entre pairs."
+              "We don\u2019t sell to consumers. We sell to practitioners (\u20ac19/29/49 per month) \u2014 they invite their clients. Our hypothesis (unproven): one practitioner sale = 20-50 member accounts at no extra cost. If this holds, each practitioner who joins could seed the next wave through peer word-of-mouth. We have 15 beta testers and 119 discovery interviews \u2014 no paying customers yet.",
+              "Nous ne vendons pas aux consommateurs. Nous vendons aux praticiens (19/29/49\u00a0\u20ac par mois) \u2014 ils invitent leurs clients. Notre hypoth\u00e8se (non prouv\u00e9e) : une vente praticien = 20 \u00e0 50 comptes membres sans co\u00fbt suppl\u00e9mentaire. Si cela se v\u00e9rifie, chaque praticien qui s\u2019inscrit pourrait g\u00e9n\u00e9rer la vague suivante par le bouche-\u00e0-oreille entre pairs. Nous avons 15 b\u00eata-testeurs et 119 entretiens de d\u00e9couverte \u2014 aucun client payant pour l\u2019instant."
             )}
           </p>
         </motion.div>
@@ -434,8 +434,8 @@ export default function GoToMarketPage() {
           <div className="bg-indigo-50 rounded-lg px-4 py-2.5">
             <p className="text-xs text-indigo-700">
               {t(
-                'Our addressable market: ~30,000 independent practitioners. At 1% penetration (300 users) = €90K ARR. At 5% (1,500) = €450K ARR. This is psychologists only — add psychiatrists, psychotherapists, coaches and the TAM grows significantly.',
-                'Notre marché adressable : ~30 000 praticiens indépendants. À 1 % de pénétration (300 utilisateurs) = 90 K€ ARR. À 5 % (1 500) = 450 K€ ARR. Cela concerne uniquement les psychologues — en ajoutant psychiatres, psychothérapeutes et coachs, le TAM augmente considérablement.'
+                'TAM: €12B (EU digital mental health). SAM: €2B (practitioner tools, EU). SOM: €50M (France independent practitioners). Starting here: ~30,000 independent practitioners. At 1% penetration (300 users at €29 avg) = ~€104K ARR. At 5% (1,500) = ~€522K ARR. This is psychologists only — psychiatrists, psychotherapists, and coaches expand the opportunity.',
+                'TAM : 12 Md€ (santé mentale numérique, UE). SAM : 2 Md€ (outils praticiens, UE). SOM : 50 M€ (praticiens indépendants, France). Point de départ : ~30 000 praticiens indépendants. À 1 % de pénétration (300 utilisateurs à 29 € en moyenne) = ~104 K€ ARR. À 5 % (1 500) = ~522 K€ ARR. Cela concerne uniquement les psychologues — psychiatres, psychothérapeutes et coachs élargissent l\'opportunité.'
               )}
             </p>
           </div>
@@ -444,7 +444,7 @@ export default function GoToMarketPage() {
         {/* ── The Flywheel ────────────────────────────────────────── */}
         <motion.div {...fadeUp} transition={{ delay: 0.1 }} className="bg-white border border-gray-200 rounded-xl p-6">
           <h3 className="text-sm font-semibold text-gray-900 mb-1">{t('The Growth Flywheel', 'Le volant d\'inertie de croissance')}</h3>
-          <p className="text-[10px] text-gray-400 mb-5">{t('Each practitioner seeds the next wave through the care network effect', 'Chaque praticien génère la vague suivante grâce à l\'effet réseau de soin')}</p>
+          <p className="text-[10px] text-gray-400 mb-5">{t('Hypothesis: each practitioner invites their caseload, creating organic word-of-mouth (unproven)', 'Hypothèse : chaque praticien invite sa clientèle, créant du bouche-à-oreille organique (non prouvé)')}</p>
           <FlywheelDiagram lang={lang} />
         </motion.div>
 
@@ -608,7 +608,7 @@ export default function GoToMarketPage() {
               },
               {
                 objection: t('"It costs too much"', '« C\'est trop cher »'),
-                counter: t('€25/mo = less than one cancelled session. Compare to Doctolib at €129/mo.', '25 €/mois = moins qu\'une séance annulée. Comparez à Doctolib à 129 €/mois.'),
+                counter: t('€19/mo (Essentiel) = less than one cancelled session. Compare to Doctolib at €129/mo.', '19 €/mois (Essentiel) = moins qu\'une séance annulée. Comparez à Doctolib à 129 €/mois.'),
               },
               {
                 objection: t('"I\'m worried about data security"', '« Je m\'inquiète pour la sécurité des données »'),
@@ -653,8 +653,8 @@ export default function GoToMarketPage() {
           <h3 className="text-sm font-semibold mb-2">{t('The Bottom Line', 'L\'essentiel')}</h3>
           <p className="text-xs text-gray-300 leading-relaxed">
             {t(
-              "We\u2019re not building a marketing machine \u2014 we\u2019re building a care network. Every practitioner who joins brings 10-15 members. Those members see other practitioners. Those practitioners hear about us. The flywheel is the product itself. With \u20ac250-400K, 2 founders, and 18 months of runway, we target 280 practitioners and \u20ac84K ARR \u2014 enough for a credible Series A conversation.",
-              "Nous ne construisons pas une machine marketing \u2014 nous construisons un r\u00e9seau de soin. Chaque praticien qui s\u2019inscrit am\u00e8ne 10 \u00e0 15 membres. Ces membres consultent d\u2019autres praticiens. Ces praticiens entendent parler de nous. Le volant d\u2019inertie, c\u2019est le produit lui-m\u00eame. Avec 250 \u00e0 400\u00a0K\u20ac, 2 fondateurs et 18 mois de runway, nous visons 280 praticiens et 84\u00a0K\u20ac d\u2019ARR \u2014 suffisant pour une discussion cr\u00e9dible de S\u00e9rie A."
+              "We\u2019re not building a marketing machine \u2014 we\u2019re building practitioner-led distribution. Our hypothesis: each practitioner who joins invites 20-50 members. Those members see other practitioners. Those practitioners hear about us. This is unproven but directionally supported by 119 discovery interviews. With \u20ac400K-500K, 2 founders (+ 2 planned hires), and 18 months of runway, we target 280 practitioners and \u20ac84K ARR \u2014 enough for a credible Seed round conversation.",
+              "Nous ne construisons pas une machine marketing \u2014 nous construisons une distribution port\u00e9e par les praticiens. Notre hypoth\u00e8se : chaque praticien qui s\u2019inscrit invite 20 \u00e0 50 membres. Ces membres consultent d\u2019autres praticiens. Ces praticiens entendent parler de nous. C\u2019est non prouv\u00e9 mais directionnellement soutenu par 119 entretiens de d\u00e9couverte. Avec 400 \u00e0 500\u00a0K\u20ac, 2 fondateurs (+ 2 embauches pr\u00e9vues) et 18 mois de runway, nous visons 280 praticiens et 84\u00a0K\u20ac d\u2019ARR \u2014 suffisant pour une discussion cr\u00e9dible de tour Seed."
             )}
           </p>
         </motion.div>

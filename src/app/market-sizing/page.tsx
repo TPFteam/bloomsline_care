@@ -83,16 +83,16 @@ function getMarketLayers(t: T): MarketLayer[] {
     {
       label: 'TAM',
       sublabel: t('Total Addressable Market', 'Marche total adressable'),
-      size2025: '$33B',
-      size2030: '$88B',
-      cagr: '18.6%',
+      size2025: '€12B',
+      size2030: '€30B',
+      cagr: '25%',
       color: 'text-indigo-600',
       bgColor: 'bg-indigo-50',
       borderColor: 'border-indigo-200',
       icon: Globe,
       description: t(
-        'Global digital mental health market — teletherapy, digital therapeutics, practice software, and wellness apps.',
-        'Marche mondial de la sante mentale numerique — teletherapie, therapeutiques numeriques, logiciels de cabinet et applications de bien-etre.'
+        'EU digital mental health market — teletherapy, digital therapeutics, practice software, and wellness apps. Global market is ~$33B for context.',
+        'Marche europeen de la sante mentale numerique — teletherapie, therapeutiques numeriques, logiciels de cabinet et applications de bien-etre. Le marche mondial est d\'environ 33 Mds $ pour reference.'
       ),
       sources: [
         { label: 'Towards Healthcare', url: 'https://www.towardshealthcare.com/insights/digital-mental-health-market-sizing' },
@@ -102,16 +102,16 @@ function getMarketLayers(t: T): MarketLayer[] {
     {
       label: 'SAM',
       sublabel: t('Serviceable Available Market', 'Marche disponible adressable'),
-      size2025: '$5.5B',
-      size2030: '$12B',
-      cagr: '14.1%',
+      size2025: '€2B',
+      size2030: '€5B',
+      cagr: '25%',
       color: 'text-violet-600',
       bgColor: 'bg-violet-50',
       borderColor: 'border-violet-200',
       icon: Target,
       description: t(
-        'Practice management software + mental health apps in our launch markets (Europe, North America). The tools practitioners and members actually buy today.',
-        'Logiciels de gestion de cabinet + applications de sante mentale dans nos marches de lancement (Europe, Amerique du Nord). Les outils que les praticiens et les membres achetent aujourd\'hui.'
+        'Practice management software + mental health apps in our launch markets (EU — France first, then UK/Germany). The tools practitioners and members actually buy today.',
+        'Logiciels de gestion de cabinet + applications de sante mentale dans nos marches de lancement (UE — France d\'abord, puis UK/Allemagne). Les outils que les praticiens et les membres achetent aujourd\'hui.'
       ),
       sources: [
         { label: 'Verified Market Reports', url: 'https://www.verifiedmarketreports.com/product/mental-health-practice-management-software-market/' },
@@ -121,16 +121,16 @@ function getMarketLayers(t: T): MarketLayer[] {
     {
       label: 'SOM',
       sublabel: t('Serviceable Obtainable Market', 'Marche reellement accessible'),
-      size2025: '$180M',
-      size2030: '$500M',
-      cagr: '22.7%',
+      size2025: '€50M',
+      size2030: '€150M',
+      cagr: '25%',
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50',
       borderColor: 'border-emerald-200',
       icon: Crosshair,
       description: t(
-        'Practitioners actively seeking between-session engagement tools in Europe + early North America. Our realistic capture within 5 years.',
-        'Praticiens recherchant activement des outils d\'engagement entre les seances en Europe + debut en Amerique du Nord. Notre capture realiste sur 5 ans.'
+        'Practitioners actively seeking between-session engagement tools in Europe (France first, then UK/Germany). Our realistic capture target within 5 years.',
+        'Praticiens recherchant activement des outils d\'engagement entre les seances en Europe (France d\'abord, puis UK/Allemagne). Notre objectif de capture realiste sur 5 ans.'
       ),
       sources: [
         { label: 'Grand View Research — Behavioral Health Software', url: 'https://www.grandviewresearch.com/industry-analysis/behavioral-mental-health-care-software-market' },
@@ -141,38 +141,38 @@ function getMarketLayers(t: T): MarketLayer[] {
 }
 
 const GROWTH_DATA: GrowthYear[] = [
-  { year: '2025', tam: 33, sam: 5.5, som: 0.18 },
-  { year: '2026', tam: 39, sam: 6.3, som: 0.25 },
-  { year: '2027', tam: 46, sam: 7.2, som: 0.32 },
-  { year: '2028', tam: 55, sam: 8.2, som: 0.40 },
-  { year: '2029', tam: 65, sam: 9.4, som: 0.45 },
-  { year: '2030', tam: 88, sam: 12.0, som: 0.50 },
+  { year: '2025', tam: 12, sam: 2.0, som: 0.05 },
+  { year: '2026', tam: 15, sam: 2.5, som: 0.063 },
+  { year: '2027', tam: 18.75, sam: 3.1, som: 0.078 },
+  { year: '2028', tam: 23.4, sam: 3.9, som: 0.098 },
+  { year: '2029', tam: 29.3, sam: 4.9, som: 0.12 },
+  { year: '2030', tam: 30, sam: 5.0, som: 0.15 },
 ]
 
 function getTopDownAssumptions(t: T): Assumption[] {
   return [
-    { label: t('Total market today', 'Marche total aujourd\'hui'), value: '$33B', source: 'Towards Healthcare', url: 'https://www.towardshealthcare.com/insights/digital-mental-health-market-sizing', why: t('How much the world spends on digital mental health right now. This is the biggest circle — our starting point.', 'Combien le monde depense en sante mentale numerique actuellement. C\'est le plus grand cercle — notre point de depart.') },
-    { label: t('How fast it\'s growing', 'Vitesse de croissance'), value: '18.6%/yr', source: 'Towards Healthcare', url: 'https://www.towardshealthcare.com/insights/digital-mental-health-market-sizing', why: t('The market nearly triples in a decade. Demand is going up, not slowing down.', 'Le marche triple presque en une decennie. La demande augmente, elle ne ralentit pas.') },
-    { label: t('What practitioners spend on tools', 'Ce que les praticiens depensent en outils'), value: '$2.1B', source: 'Verified Market Reports', url: 'https://www.verifiedmarketreports.com/product/mental-health-practice-management-software-market/', why: t('Money already being spent on tools like SimplePractice and TherapyNotes. Bloomsline competes for this budget.', 'Argent deja depense pour des outils comme SimplePractice et TherapyNotes. Bloomsline est en concurrence pour ce budget.') },
-    { label: t('What members spend on wellness apps', 'Ce que les membres depensent en applications de bien-etre'), value: '$7.5B', source: 'Grand View Research', url: 'https://www.grandviewresearch.com/industry-analysis/mental-health-apps-market-report', why: t('What people pay for apps like Headspace and Calm. Bloomsline\'s member premium plan taps into this.', 'Ce que les gens paient pour des applications comme Headspace et Calm. Le plan premium membre de Bloomsline exploite ce segment.') },
-    { label: t('We sell to both sides', 'Nous vendons aux deux cotes'), value: 'B2B + B2C', source: 'Internal', url: '/competitive-landscape', why: t('Most competitors pick one side. Bloomsline sells to practitioners and gives their clients a free app — one sale reaches ~30 people.', 'La plupart des concurrents choisissent un cote. Bloomsline vend aux praticiens et offre a leurs clients une application gratuite — une vente atteint environ 30 personnes.') },
-    { label: t('We start in Europe + North America', 'Nous commencons en Europe + Amerique du Nord'), value: t('~65% of spend', '~65% des depenses'), source: 'Grand View Research', url: 'https://www.grandviewresearch.com/industry-analysis/mental-health-apps-market-report', why: t('These two regions make up most of the global spending. Europe first (founder network), then North America.', 'Ces deux regions representent la majorite des depenses mondiales. L\'Europe d\'abord (reseau du fondateur), puis l\'Amerique du Nord.') },
+    { label: t('EU market today', 'Marche UE aujourd\'hui'), value: '€12B', source: 'Towards Healthcare', url: 'https://www.towardshealthcare.com/insights/digital-mental-health-market-sizing', why: t('How much Europe spends on digital mental health right now. The global market is ~$33B — we focus on the EU portion as our primary market.', 'Combien l\'Europe depense en sante mentale numerique actuellement. Le marche mondial est d\'environ 33 Mds $ — nous nous concentrons sur la part europeenne comme marche principal.') },
+    { label: t('How fast it\'s growing', 'Vitesse de croissance'), value: '25%/yr', source: 'Towards Healthcare', url: 'https://www.towardshealthcare.com/insights/digital-mental-health-market-sizing', why: t('EU digital mental health is growing at ~25% CAGR, driven by policy shifts and workforce shortages. Demand is accelerating, not slowing down.', 'La sante mentale numerique en UE croit a environ 25% de TCAC, stimulee par les changements de politique et les penuries de main-d\'oeuvre. La demande s\'accelere, elle ne ralentit pas.') },
+    { label: t('What EU practitioners spend on tools', 'Ce que les praticiens UE depensent en outils'), value: '€800M', source: 'Verified Market Reports', url: 'https://www.verifiedmarketreports.com/product/mental-health-practice-management-software-market/', why: t('Estimated EU share of the $2.1B global practice management software market. Bloomsline competes for this budget. Most EU practitioners currently use generic tools or nothing.', 'Part estimee de l\'UE dans le marche mondial de 2,1 Mds $ de logiciels de gestion de cabinet. Bloomsline est en concurrence pour ce budget. La plupart des praticiens UE utilisent actuellement des outils generiques ou rien.') },
+    { label: t('What members spend on wellness apps', 'Ce que les membres depensent en applications de bien-etre'), value: '$7.5B', source: 'Grand View Research', url: 'https://www.grandviewresearch.com/industry-analysis/mental-health-apps-market-report', why: t('Global spend on apps like Headspace and Calm. Bloomsline\'s free member tier is part of the practitioner value proposition — B2C premium is future upside, not part of our pre-seed model.', 'Depenses mondiales pour les applications comme Headspace et Calm. Le niveau membre gratuit de Bloomsline fait partie de la proposition de valeur pour les praticiens — le premium B2C est un potentiel futur, pas une partie de notre modele pre-amorcage.') },
+    { label: t('We sell to practitioners', 'Nous vendons aux praticiens'), value: 'B2B SaaS', source: 'Internal', url: '/competitive-landscape', why: t('Bloomsline sells to practitioners at €19/29/49 per month. Members (their clients) use it for free — one sale reaches ~12 people. We are pre-revenue with 15 beta testers and 119 discovery interviews.', 'Bloomsline vend aux praticiens a 19/29/49€ par mois. Les membres (leurs clients) l\'utilisent gratuitement — une vente atteint environ 12 personnes. Nous sommes pre-revenu avec 15 beta testeurs et 119 entretiens de decouverte.') },
+    { label: t('We start in EU — France first', 'Nous commencons en UE — France d\'abord'), value: t('EU focus', 'Focus UE'), source: 'Grand View Research', url: 'https://www.grandviewresearch.com/industry-analysis/mental-health-apps-market-report', why: t('France first (founder network, MonParcoursPsy tailwind), then UK and Germany. EU regulatory compliance (GDPR, AI Act) transfers across member states.', 'France d\'abord (reseau du fondateur, vent porteur MonParcoursPsy), puis UK et Allemagne. La conformite reglementaire UE (RGPD, AI Act) se transfere entre les Etats membres.') },
   ]
 }
 
 function getBottomUp(t: T): BottomUpRow[] {
   return [
-    { label: t('Addressable practitioners', 'Praticiens adressables'), description: t('Total therapists, psychologists, and counselors in our launch markets', 'Total des therapeutes, psychologues et conseillers dans nos marches de lancement'), b2b: '530K (US) + 400K (EU)', b2c: '—', calc: t('US: ~530K licensed mental health professionals (APA, HRSA). EU: ~400K psychologists + counselors (WHO, Eurostat). Only counting licensed practitioners in our Phase 1–2 markets.', 'US : ~530K professionnels de sante mentale agrees (APA, HRSA). UE : ~400K psychologues + conseillers (OMS, Eurostat). Seuls les praticiens agrees dans nos marches Phase 1-2.'), sources: [{ label: 'APA — Therapist Count', url: 'https://www.autonotes.ai/blog/how-many-therapists-are-in-the-us/' }, { label: 'HRSA — Behavioral Health Workforce 2025', url: 'https://bhw.hrsa.gov/sites/default/files/bureau-health-workforce/data-research/Behavioral-Health-Workforce-Brief-2025.pdf' }, { label: 'WHO — Mental Health Workers', url: 'https://www.who.int/data/gho/data/themes/topics/indicator-groups/indicator-group-details/GHO/mental-health-workers' }, { label: 'Eurostat — Psychiatrists in Europe', url: 'https://ec.europa.eu/eurostat/web/products-eurostat-news/-/ddn-20200506-1' }] },
-    { label: t('Target penetration (5yr)', 'Penetration cible (5 ans)'), description: t('Realistic share of practitioners we can convert within 5 years', 'Part realiste des praticiens que nous pouvons convertir en 5 ans'), b2b: '1–2%', b2c: '—', calc: t('Seed-stage SaaS benchmarks: 0.5–2% penetration in Year 5 is standard. We use 1–2% given PLG distribution (one sale → 30 members) and Care Network Effect.', 'Benchmarks SaaS en phase d\'amorcage : 0,5-2% de penetration en annee 5 est standard. Nous utilisons 1-2% compte tenu de la distribution PLG (une vente → 30 membres) et de l\'effet reseau de soins.') },
-    { label: t('Paying practitioners', 'Praticiens payants'), description: t('Number of practitioners on a paid subscription by Year 5', 'Nombre de praticiens sur un abonnement payant en annee 5'), b2b: '~7,500', b2c: '—', calc: t('930K addressable × 0.8% midpoint penetration ≈ 7,500 paying practitioners. SimplePractice reached 200K+ in ~10 years for reference.', '930K adressables × 0,8% de penetration au point median ≈ 7 500 praticiens payants. SimplePractice a atteint 200K+ en environ 10 ans pour reference.'), sources: [{ label: 'SimplePractice — EngageSmart Acquisition', url: 'https://www.summitpartners.com/news/vista-equity-partners-completes-acquisition-of-engagesmart' }] },
-    { label: t('Avg. revenue / practitioner / yr', 'Revenu moy. / praticien / an'), description: t('Blended annual subscription revenue per practitioner', 'Revenu d\'abonnement annuel mixte par praticien'), b2b: '€470 (~$510)', b2c: '—', calc: t('Starter: €22/mo, Professional: €79/mo. Assuming 70% Starter + 30% Professional: (0.7 × 22) + (0.3 × 79) = €39/mo → €468/yr ≈ €470. Conservative — excludes tax and annual plan discounts.', 'Starter : 22€/mois, Professional : 79€/mois. En supposant 70% Starter + 30% Professional : (0,7 × 22) + (0,3 × 79) = 39€/mois → 468€/an ≈ 470€. Conservateur — hors taxes et remises sur abonnement annuel.'), sources: [{ label: 'Bloomsline Pricing', url: '/pitch-new' }] },
-    { label: t('Members per practitioner', 'Membres par praticien'), description: t('Average clients each practitioner invites to the platform', 'Nombre moyen de clients que chaque praticien invite sur la plateforme'), b2b: '—', b2c: t('30 avg', '30 en moy.'), calc: t('APA data shows average active caseload for a therapist is 20–40 clients. Not all will accept the invite — assuming ~75% adoption (it\'s free and recommended by their therapist): 40 × 0.75 = 30. Practitioners already get full value without members (notes, sessions, CRM, booking). Member invites are optional and additive — unlocking between-session visibility and shared resources.', 'Les donnees de l\'APA montrent que la charge active moyenne d\'un therapeute est de 20-40 clients. Tous n\'accepteront pas l\'invitation — en supposant environ 75% d\'adoption (c\'est gratuit et recommande par leur therapeute) : 40 × 0,75 = 30. Les praticiens tirent deja pleinement profit sans les membres (notes, seances, CRM, reservations). Les invitations de membres sont optionnelles et additives — offrant une visibilite entre les seances et des ressources partagees.'), sources: [{ label: 'APA — Mental Health Care Access', url: 'https://www.apa.org/monitor/2024/01/trends-pathways-access-mental-health-care' }] },
-    { label: t('Active members (Year 5)', 'Membres actifs (annee 5)'), description: t('Total members using the platform through their practitioners', 'Total des membres utilisant la plateforme via leurs praticiens'), b2b: '—', b2c: '~225,000', calc: t('7,500 practitioners × 30 members each = 225,000 active members on the platform. Zero acquisition cost — distributed through practitioners.', '7 500 praticiens × 30 membres chacun = 225 000 membres actifs sur la plateforme. Cout d\'acquisition nul — distribue via les praticiens.') },
-    { label: t('B2C freemium conversion', 'Conversion freemium B2C'), description: t('Share of free members who upgrade to a paid personal plan', 'Part des membres gratuits qui passent a un plan personnel payant'), b2b: '—', b2c: '5–8%', calc: t('Industry benchmark: freemium-to-paid conversion in health apps is 2–10% (Headspace ~6%, Calm ~4%). We use 5–8% given the practitioner trust channel driving adoption.', 'Benchmark sectoriel : la conversion freemium-payant dans les applications de sante est de 2-10% (Headspace ~6%, Calm ~4%). Nous utilisons 5-8% compte tenu du canal de confiance du praticien stimulant l\'adoption.'), sources: [{ label: 'Business of Apps — Headspace Stats', url: 'https://www.businessofapps.com/data/headspace-statistics/' }] },
-    { label: t('B2C ARPU / yr', 'ARPU B2C / an'), description: t('Average revenue per paying member per year', 'Revenu moyen par membre payant par an'), b2b: '—', b2c: '€36 (~$40)', calc: t('Priced at €3/mo for premium member features (AI companion, advanced insights, extra rituals). €3 × 12 = €36/yr. Well below Headspace ($70/yr) — accessible by design.', 'Au prix de 3€/mois pour les fonctionnalites premium membre (compagnon IA, analyses avancees, rituels supplementaires). 3€ × 12 = 36€/an. Bien en dessous de Headspace (70$/an) — accessible par conception.') },
-    { label: t('Annual B2B revenue', 'Revenu annuel B2B'), description: t('Practitioner subscription revenue at Year 5', 'Revenu d\'abonnement des praticiens en annee 5'), b2b: '$3.8M', b2c: '—', calc: t('7,500 practitioners × €470/yr = €3.5M ≈ $3.8M USD. This is the primary revenue engine.', '7 500 praticiens × 470€/an = 3,5M€ ≈ 3,8M$ USD. C\'est le moteur de revenu principal.') },
-    { label: t('Annual B2C revenue', 'Revenu annuel B2C'), description: t('Member premium plan revenue at Year 5', 'Revenu du plan premium membre en annee 5'), b2b: '—', b2c: '$0.6M', calc: t('225,000 members × 6.5% conversion × €36/yr = €527K ≈ $0.6M USD. Upside channel — not required for unit economics to work.', '225 000 membres × 6,5% de conversion × 36€/an = 527K€ ≈ 0,6M$ USD. Canal supplementaire — non necessaire pour que l\'economie unitaire fonctionne.') },
-    { label: t('Total bottom-up ARR (Year 5)', 'ARR ascendant total (annee 5)'), description: t('Combined annual recurring revenue from both sides', 'Revenu recurrent annuel combine des deux cotes'), b2b: t('$4.4M combined', '$4.4M combines'), b2c: '', calc: t('$3.8M (B2B) + $0.6M (B2C) = $4.4M ARR. Represents 0.04% of SAM — conservative and realistic for seed-stage.', '3,8M$ (B2B) + 0,6M$ (B2C) = 4,4M$ ARR. Represente 0,04% du SAM — conservateur et realiste pour une phase d\'amorcage.') },
+    { label: t('Addressable practitioners', 'Praticiens adressables'), description: t('Total therapists, psychologists, and counselors in our EU launch markets', 'Total des therapeutes, psychologues et conseillers dans nos marches de lancement en UE'), b2b: '~400K (EU)', b2c: '—', calc: t('EU: ~400K psychologists + counselors (WHO, Eurostat). Only counting licensed practitioners in our Phase 1–3 markets (France, Belgium, Switzerland, Germany, UK). US (~530K) is a Phase 4 ambition, not part of current planning.', 'UE : ~400K psychologues + conseillers (OMS, Eurostat). Seuls les praticiens agrees dans nos marches Phase 1-3 (France, Belgique, Suisse, Allemagne, UK). Les US (~530K) sont une ambition Phase 4, pas dans la planification actuelle.'), sources: [{ label: 'WHO — Mental Health Workers', url: 'https://www.who.int/data/gho/data/themes/topics/indicator-groups/indicator-group-details/GHO/mental-health-workers' }, { label: 'Eurostat — Psychiatrists in Europe', url: 'https://ec.europa.eu/eurostat/web/products-eurostat-news/-/ddn-20200506-1' }] },
+    { label: t('Target penetration (5yr)', 'Penetration cible (5 ans)'), description: t('Realistic share of practitioners we can convert within 5 years', 'Part realiste des praticiens que nous pouvons convertir en 5 ans'), b2b: '1–2%', b2c: '—', calc: t('Pre-seed SaaS benchmarks: 0.5–2% penetration in Year 5 is standard. We use 1–2% given practitioner-led distribution (one sale → ~12 members invited for free) and word-of-mouth referral within practitioner networks.', 'Benchmarks SaaS en pre-amorcage : 0,5-2% de penetration en annee 5 est standard. Nous utilisons 1-2% compte tenu de la distribution via les praticiens (une vente → environ 12 membres invites gratuitement) et du bouche-a-oreille dans les reseaux de praticiens.') },
+    { label: t('Paying practitioners', 'Praticiens payants'), description: t('Number of practitioners on a paid subscription by Year 5', 'Nombre de praticiens sur un abonnement payant en annee 5'), b2b: '~3,200', b2c: '—', calc: t('400K EU addressable × 0.8% midpoint penetration ≈ 3,200 paying practitioners. SimplePractice reached 200K+ in ~10 years in the US for reference. We are currently pre-revenue with 15 beta testers.', '400K adressables en UE × 0,8% de penetration au point median ≈ 3 200 praticiens payants. SimplePractice a atteint 200K+ en environ 10 ans aux US pour reference. Nous sommes actuellement pre-revenu avec 15 beta testeurs.'), sources: [{ label: 'SimplePractice — EngageSmart Acquisition', url: 'https://www.summitpartners.com/news/vista-equity-partners-completes-acquisition-of-engagesmart' }] },
+    { label: t('Avg. revenue / practitioner / yr', 'Revenu moy. / praticien / an'), description: t('Blended annual subscription revenue per practitioner', 'Revenu d\'abonnement annuel mixte par praticien'), b2b: '€348 (~$380)', b2c: '—', calc: t('Starter: €19/mo, Professional: €29/mo, Team: €49/mo. Assuming 50% Starter + 35% Professional + 15% Team: (0.5 × 19) + (0.35 × 29) + (0.15 × 49) = €27/mo → €324/yr. With upsell and annual plan mix, blended estimate: €29/mo → €348/yr. Conservative — excludes tax and annual plan discounts.', 'Starter : 19€/mois, Professional : 29€/mois, Team : 49€/mois. En supposant 50% Starter + 35% Professional + 15% Team : (0,5 × 19) + (0,35 × 29) + (0,15 × 49) = 27€/mois → 324€/an. Avec upsell et mix abonnement annuel, estimation mixte : 29€/mois → 348€/an. Conservateur — hors taxes et remises sur abonnement annuel.'), sources: [{ label: 'Bloomsline Pricing', url: '/pitch-new' }] },
+    { label: t('Members per practitioner', 'Membres par praticien'), description: t('Average clients each practitioner invites to the platform', 'Nombre moyen de clients que chaque praticien invite sur la plateforme'), b2b: '—', b2c: t('12 avg', '12 en moy.'), calc: t('European practitioners typically have an active caseload of 15–25 clients. Not all will accept the invite — assuming ~50% adoption (it\'s free and recommended by their practitioner): 24 × 0.5 = 12. This is a conservative estimate that we need to validate. Practitioners already get full value without members (notes, sessions, CRM). Member invites are optional and additive.', 'Les praticiens europeens ont generalement une charge active de 15-25 clients. Tous n\'accepteront pas l\'invitation — en supposant environ 50% d\'adoption (c\'est gratuit et recommande par leur praticien) : 24 × 0,5 = 12. C\'est une estimation conservatrice que nous devons valider. Les praticiens tirent deja pleinement profit sans les membres (notes, seances, CRM). Les invitations de membres sont optionnelles et additives.'), sources: [{ label: 'APA — Mental Health Care Access', url: 'https://www.apa.org/monitor/2024/01/trends-pathways-access-mental-health-care' }] },
+    { label: t('Active members (Year 5)', 'Membres actifs (annee 5)'), description: t('Total members using the platform through their practitioners', 'Total des membres utilisant la plateforme via leurs praticiens'), b2b: '—', b2c: '~38,400', calc: t('3,200 practitioners × 12 members each = 38,400 active members on the platform. Zero acquisition cost — distributed through practitioners. This assumes member invites are working, which we still need to validate.', '3 200 praticiens × 12 membres chacun = 38 400 membres actifs sur la plateforme. Cout d\'acquisition nul — distribue via les praticiens. Cela suppose que les invitations de membres fonctionnent, ce que nous devons encore valider.') },
+    { label: t('B2C freemium conversion', 'Conversion freemium B2C'), description: t('Share of free members who upgrade to a paid personal plan', 'Part des membres gratuits qui passent a un plan personnel payant'), b2b: '—', b2c: '3–5%', calc: t('Industry benchmark: freemium-to-paid conversion in health apps is 2–10% (Headspace ~6%, Calm ~4%). We use a conservative 3–5% since we have no data yet on member conversion. This is an assumption to validate.', 'Benchmark sectoriel : la conversion freemium-payant dans les applications de sante est de 2-10% (Headspace ~6%, Calm ~4%). Nous utilisons un conservateur 3-5% car nous n\'avons pas encore de donnees sur la conversion des membres. C\'est une hypothese a valider.'), sources: [{ label: 'Business of Apps — Headspace Stats', url: 'https://www.businessofapps.com/data/headspace-statistics/' }] },
+    { label: t('B2C ARPU / yr', 'ARPU B2C / an'), description: t('Average revenue per paying member per year', 'Revenu moyen par membre payant par an'), b2b: '—', b2c: '€36 (~$40)', calc: t('Priced at €3/mo for premium member features (AI companion, advanced insights, extra rituals). €3 × 12 = €36/yr. Well below Headspace ($70/yr) — accessible by design. B2C revenue is a future upside, not part of our core model today.', 'Au prix de 3€/mois pour les fonctionnalites premium membre (compagnon IA, analyses avancees, rituels supplementaires). 3€ × 12 = 36€/an. Bien en dessous de Headspace (70$/an) — accessible par conception. Le revenu B2C est un potentiel futur, pas une partie de notre modele principal aujourd\'hui.') },
+    { label: t('Annual B2B revenue', 'Revenu annuel B2B'), description: t('Practitioner subscription revenue at Year 5', 'Revenu d\'abonnement des praticiens en annee 5'), b2b: '€1.1M', b2c: '—', calc: t('3,200 practitioners × €348/yr = €1.1M. This is the primary revenue engine. We are currently pre-revenue with 0 paying customers.', '3 200 praticiens × 348€/an = 1,1M€. C\'est le moteur de revenu principal. Nous sommes actuellement pre-revenu avec 0 client payant.') },
+    { label: t('Annual B2C revenue', 'Revenu annuel B2C'), description: t('Member premium plan revenue at Year 5', 'Revenu du plan premium membre en annee 5'), b2b: '—', b2c: '€55K', calc: t('38,400 members × 4% conversion × €36/yr = €55K. Upside channel — not required for unit economics to work. Not part of our pre-seed financial model.', '38 400 membres × 4% de conversion × 36€/an = 55K€. Canal supplementaire — non necessaire pour que l\'economie unitaire fonctionne. Ne fait pas partie de notre modele financier pre-amorcage.') },
+    { label: t('Total bottom-up ARR (Year 5)', 'ARR ascendant total (annee 5)'), description: t('Combined annual recurring revenue from both sides', 'Revenu recurrent annuel combine des deux cotes'), b2b: t('€1.2M combined', '1,2M€ combines'), b2c: '', calc: t('€1.1M (B2B) + €55K (B2C) = ~€1.2M ARR. Represents 0.06% of SAM — conservative and realistic for a pre-seed company. We have 0 paying customers today.', '1,1M€ (B2B) + 55K€ (B2C) = ~1,2M€ ARR. Represente 0,06% du SAM — conservateur et realiste pour une entreprise en pre-amorcage. Nous avons 0 client payant aujourd\'hui.') },
   ]
 }
 
@@ -243,7 +243,7 @@ function ConcentricCircles() {
       >
         <span className="absolute top-4 left-1/2 -translate-x-1/2 text-center">
           <p className="text-[10px] font-bold text-indigo-500">TAM</p>
-          <p className="text-sm font-bold text-indigo-600">$33B</p>
+          <p className="text-sm font-bold text-indigo-600">€12B</p>
         </span>
         <motion.div
           className="w-48 h-48 sm:w-52 sm:h-52 rounded-full border-2 bg-violet-50 border-violet-200 flex items-center justify-center relative"
@@ -253,7 +253,7 @@ function ConcentricCircles() {
         >
           <span className="absolute top-3 left-1/2 -translate-x-1/2 text-center">
             <p className="text-[10px] font-bold text-violet-500">SAM</p>
-            <p className="text-sm font-bold text-violet-600">$5.5B</p>
+            <p className="text-sm font-bold text-violet-600">€2B</p>
           </span>
           <motion.div
             className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 bg-emerald-50 border-emerald-200 flex items-center justify-center"
@@ -263,7 +263,7 @@ function ConcentricCircles() {
           >
             <div className="text-center">
               <p className="text-[10px] font-bold text-emerald-500">SOM</p>
-              <p className="text-sm font-bold text-emerald-600">$180M</p>
+              <p className="text-sm font-bold text-emerald-600">€50M</p>
             </div>
           </motion.div>
         </motion.div>
@@ -342,8 +342,8 @@ function BottomUpSection({ t }: { t: T }) {
       </div>
       <p className="text-[10px] text-gray-400 mt-3 leading-relaxed">
         {t(
-          'Click any row to see how the number was calculated. Bottom-up Year 5 ARR of ~$4.4M represents a 0.04% capture of SAM — conservative and realistic for a seed-stage company.',
-          'Cliquez sur n\'importe quelle ligne pour voir comment le chiffre a ete calcule. L\'ARR ascendant en annee 5 de ~4,4M$ represente une capture de 0,04% du SAM — conservateur et realiste pour une entreprise en phase d\'amorcage.'
+          'Click any row to see how the number was calculated. Bottom-up Year 5 ARR of ~€1.2M represents a 0.06% capture of SAM — conservative and realistic for a pre-seed company with 0 paying customers today.',
+          'Cliquez sur n\'importe quelle ligne pour voir comment le chiffre a ete calcule. L\'ARR ascendant en annee 5 de ~1,2M€ represente une capture de 0,06% du SAM — conservateur et realiste pour une entreprise en pre-amorcage avec 0 client payant aujourd\'hui.'
         )}
       </p>
     </motion.section>
@@ -384,11 +384,11 @@ export default function MarketSizingPage() {
       <main className="max-w-4xl mx-auto px-6 sm:px-8 py-10 space-y-14">
         {/* ── Hero ───────────────────────────────────────────── */}
         <motion.div {...fadeUp(0)}>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('$33B market. Growing 18% a year.', 'Un marche de 33 Md$. En croissance de 18% par an.')}</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('€12B EU market. Growing 25% a year.', 'Un marche UE de 12 Md€. En croissance de 25% par an.')}</h2>
           <p className="text-sm text-gray-500 leading-relaxed max-w-2xl">
             {t(
-              'Digital mental health is one of the fastest-growing healthcare verticals. Bloomsline sits at the intersection of two underserved segments — practitioner tools (B2B) and between-session member support (B2C) — in a market where neither side is well-connected today.',
-              'La sante mentale numerique est l\'un des segments de sante les plus dynamiques. Bloomsline se situe a l\'intersection de deux segments sous-desservis — les outils pour praticiens (B2B) et le soutien des membres entre les seances (B2C) — dans un marche ou aucun des deux cotes n\'est bien connecte aujourd\'hui.'
+              'EU digital mental health is one of the fastest-growing healthcare verticals at 25% CAGR. Bloomsline is a B2B SaaS for mental health practitioners (€19/29/49 per month) — members use free, invited by their practitioner. We are pre-revenue with 15 beta testers and 119 discovery interviews, raising €400K-500K pre-seed for 18 months runway.',
+              'La sante mentale numerique en UE est l\'un des segments de sante les plus dynamiques avec un TCAC de 25%. Bloomsline est un SaaS B2B pour les praticiens en sante mentale (19/29/49€ par mois) — les membres utilisent gratuitement, invites par leur praticien. Nous sommes pre-revenu avec 15 beta testeurs et 119 entretiens de decouverte, levant 400K-500K€ en pre-amorcage pour 18 mois de tresorerie.'
             )}
           </p>
         </motion.div>
@@ -453,9 +453,9 @@ export default function MarketSizingPage() {
 
           <div className="grid grid-cols-3 gap-4">
             {[
-              { key: 'tam', label: 'TAM', sublabel: t('Global Digital Mental Health', 'Sante mentale numerique mondiale'), insight: t('The rising tide — growing demand for digital mental health tools worldwide.', 'La maree montante — demande croissante d\'outils numeriques de sante mentale dans le monde.'), cagr: '18.6%', stroke: '#818cf8', gradId: 'tamGrad', stopColor: '#818cf8', color: 'text-indigo-600', bg: 'border-indigo-200', formatter: (v: number) => `$${v}B`, sources: [{ label: 'Towards Healthcare', url: 'https://www.towardshealthcare.com/insights/digital-mental-health-market-sizing' }] },
-              { key: 'sam', label: 'SAM', sublabel: t('Practice Software + Apps', 'Logiciels de cabinet + applications'), insight: t('Where we compete — the tools practitioners and members actually pay for today.', 'La ou nous sommes en concurrence — les outils que les praticiens et les membres paient aujourd\'hui.'), cagr: '14.1%', stroke: '#8b5cf6', gradId: 'samGrad', stopColor: '#8b5cf6', color: 'text-violet-600', bg: 'border-violet-200', formatter: (v: number) => `$${v}B`, sources: [{ label: 'Verified Market Reports', url: 'https://www.verifiedmarketreports.com/product/mental-health-practice-management-software-market/' }] },
-              { key: 'som', label: 'SOM', sublabel: t('Between-Session Tools', 'Outils entre les seances'), insight: t('What we can realistically capture — our fastest-growing segment.', 'Ce que nous pouvons capturer de maniere realiste — notre segment a la croissance la plus rapide.'), cagr: '22.7%', stroke: '#10b981', gradId: 'somGrad', stopColor: '#10b981', color: 'text-emerald-600', bg: 'border-emerald-200', formatter: (v: number) => v >= 1 ? `$${v}B` : `$${(v * 1000).toFixed(0)}M`, sources: [{ label: 'Grand View Research', url: 'https://www.grandviewresearch.com/industry-analysis/behavioral-mental-health-care-software-market' }] },
+              { key: 'tam', label: 'TAM', sublabel: t('EU Digital Mental Health', 'Sante mentale numerique UE'), insight: t('The rising tide — growing demand for digital mental health tools across Europe.', 'La maree montante — demande croissante d\'outils numeriques de sante mentale en Europe.'), cagr: '25%', stroke: '#818cf8', gradId: 'tamGrad', stopColor: '#818cf8', color: 'text-indigo-600', bg: 'border-indigo-200', formatter: (v: number) => `€${v}B`, sources: [{ label: 'Towards Healthcare', url: 'https://www.towardshealthcare.com/insights/digital-mental-health-market-sizing' }] },
+              { key: 'sam', label: 'SAM', sublabel: t('EU Practice Software + Apps', 'Logiciels de cabinet + applications UE'), insight: t('Where we compete — the tools EU practitioners and members actually pay for today.', 'La ou nous sommes en concurrence — les outils que les praticiens et les membres en UE paient aujourd\'hui.'), cagr: '25%', stroke: '#8b5cf6', gradId: 'samGrad', stopColor: '#8b5cf6', color: 'text-violet-600', bg: 'border-violet-200', formatter: (v: number) => `€${v}B`, sources: [{ label: 'Verified Market Reports', url: 'https://www.verifiedmarketreports.com/product/mental-health-practice-management-software-market/' }] },
+              { key: 'som', label: 'SOM', sublabel: t('Between-Session Tools (EU)', 'Outils entre les seances (UE)'), insight: t('What we can realistically capture — our target within 5 years in the EU market.', 'Ce que nous pouvons capturer de maniere realiste — notre objectif sur 5 ans en UE.'), cagr: '25%', stroke: '#10b981', gradId: 'somGrad', stopColor: '#10b981', color: 'text-emerald-600', bg: 'border-emerald-200', formatter: (v: number) => v >= 1 ? `€${v}B` : `€${(v * 1000).toFixed(0)}M`, sources: [{ label: 'Grand View Research', url: 'https://www.grandviewresearch.com/industry-analysis/behavioral-mental-health-care-software-market' }] },
             ].map((chart, ci) => {
               const data = GROWTH_DATA.map((d) => ({ year: d.year, value: d[chart.key as keyof GrowthYear] as number }))
               const first = data[0].value
@@ -711,27 +711,27 @@ export default function MarketSizingPage() {
           </div>
           <p className="text-[10px] text-gray-400 mt-3 leading-relaxed">
             {t(
-              'Bloomsline combines elements of both models — B2B practice tools (like SimplePractice) and B2C member engagement (like Headspace) — connected into one platform. No one in the market does both today.',
-              'Bloomsline combine des elements des deux modeles — outils de cabinet B2B (comme SimplePractice) et engagement B2C des membres (comme Headspace) — connectes en une seule plateforme. Personne sur le marche ne fait les deux aujourd\'hui.'
+              'Bloomsline aims to combine elements of both models — B2B practice tools (like SimplePractice) and B2C member engagement (like Headspace) — connected into one platform. This is our thesis, not yet validated at scale. We are pre-revenue with 15 beta testers.',
+              'Bloomsline vise a combiner des elements des deux modeles — outils de cabinet B2B (comme SimplePractice) et engagement B2C des membres (comme Headspace) — connectes en une seule plateforme. C\'est notre these, pas encore validee a grande echelle. Nous sommes pre-revenu avec 15 beta testeurs.'
             )}
           </p>
         </motion.section>
 
         {/* ── EUR conversion note ─────────────────────────────── */}
         <motion.div {...fadeUp(0.55)} className="bg-gray-100 rounded-xl p-5 text-xs text-gray-500 leading-relaxed">
-          <p className="font-semibold text-gray-700 mb-1">{t('Currency reference (1 USD ≈ €0.92)', 'Reference de change (1 USD ≈ 0,92€)')}</p>
+          <p className="font-semibold text-gray-700 mb-1">{t('All figures in EUR — EU-focused market sizing', 'Tous les chiffres en EUR — dimensionnement du marche centre sur l\'UE')}</p>
           <div className="grid grid-cols-3 gap-3 mt-2">
             <div>
               <p className="text-gray-400">TAM (2025)</p>
-              <p className="text-sm font-bold text-gray-800">€30.4B</p>
+              <p className="text-sm font-bold text-gray-800">€12B</p>
             </div>
             <div>
               <p className="text-gray-400">SAM (2025)</p>
-              <p className="text-sm font-bold text-gray-800">€5.1B</p>
+              <p className="text-sm font-bold text-gray-800">€2B</p>
             </div>
             <div>
               <p className="text-gray-400">SOM (2025)</p>
-              <p className="text-sm font-bold text-gray-800">€166M</p>
+              <p className="text-sm font-bold text-gray-800">€50M</p>
             </div>
           </div>
         </motion.div>

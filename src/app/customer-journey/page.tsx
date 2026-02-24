@@ -148,7 +148,7 @@ const getB2BStages = (t: (en: string, fr: string) => string): JourneyStage[] => 
     ],
     thoughts: [
       t('"The AI notes look impressive but can I trust it with clinical data?"', '« Les notes IA sont impressionnantes mais puis-je leur confier des données cliniques ? »'),
-      t('"€25/month — that is less than one cancelled session costs me"', '« 25 €/mois — c\'est moins que le coût d\'une séance annulée »'),
+      t('"€19-49/month — that is less than one cancelled session costs me"', '« 19-49 €/mois — c\'est moins que le coût d\'une séance annulée »'),
       t('"Will my clients actually use a between-session app?"', '« Mes patients utiliseront-ils vraiment une application inter-séances ? »'),
       t('"I need something that works with my existing workflow, not replaces it"', '« J\'ai besoin d\'un outil qui s\'intègre à mon flux de travail, pas qui le remplace »'),
     ],
@@ -167,7 +167,7 @@ const getB2BStages = (t: (en: string, fr: string) => string): JourneyStage[] => 
     opportunities: [
       t('Offer live 1:1 demo with a clinical specialist, not a sales rep', 'Proposer une démo individuelle avec un spécialiste clinique, pas un commercial'),
       t('Create comparison landing pages vs. SimplePractice, Quenza, Doctolib', 'Créer des pages comparatives vs. SimplePractice, Quenza, Doctolib'),
-      t('Publish practitioner testimonials with specific outcomes ("saves me 6 hrs/week")', 'Publier des témoignages de praticiens avec des résultats concrets (« me fait gagner 6 h/semaine »)'),
+      t('Publish early beta tester feedback with specific outcomes (target: "saves me X hrs/week")', 'Publier les retours des premiers bêta-testeurs avec des résultats concrets (cible : « me fait gagner X h/semaine »)'),
       t('Provide 14-day free trial with full features, no credit card required', 'Proposer un essai gratuit de 14 jours avec toutes les fonctionnalités, sans carte bancaire'),
     ],
     metrics: [
@@ -200,7 +200,7 @@ const getB2BStages = (t: (en: string, fr: string) => string): JourneyStage[] => 
     thoughts: [
       t('"The AI note was actually good — better than what I write at 9 PM"', '« La note IA était vraiment bien — meilleure que ce que j\'écris à 21 h »'),
       t('"My client responded to the between-session check-in, that is new"', '« Mon patient a répondu au suivi inter-séances, c\'est nouveau »'),
-      t('"€25/month = 1 hour of my time. If it saves 4+ hours, it is worth it"', '« 25 €/mois = 1 h de mon temps. Si ça m\'en fait gagner 4+, c\'est rentable »'),
+      t('"€19-49/month = less than 1 hour of my time. If it saves 4+ hours, it is worth it"', '« 19-49 €/mois = moins d\'une heure de mon temps. Si ça m\'en fait gagner 4+, c\'est rentable »'),
       t('"What happens to data if I stop paying? Can I export everything?"', '« Qu\'advient-il de mes données si j\'arrête de payer ? Puis-je tout exporter ? »'),
     ],
     touchpoints: [
@@ -218,13 +218,13 @@ const getB2BStages = (t: (en: string, fr: string) => string): JourneyStage[] => 
     opportunities: [
       t('Offer "first month 50% off" or extended 30-day trial for conference leads', 'Proposer « premier mois à -50 % » ou un essai prolongé de 30 jours pour les contacts conférence'),
       t('Show clear data export and account deletion options during trial', 'Afficher clairement les options d\'export et de suppression de compte pendant l\'essai'),
-      t('Send personalized email: "Your first AI note saved 18 minutes"', 'Envoyer un e-mail personnalisé : « Votre première note IA a fait gagner 18 minutes »'),
+      t('Send personalized email: "Your first AI note took X minutes instead of Y" (measure in beta)', 'Envoyer un e-mail personnalisé : « Votre première note IA a pris X minutes au lieu de Y » (mesurer en bêta)'),
       t('Provide ROI calculator: hours saved × hourly rate vs. subscription cost', 'Fournir un calculateur de ROI : heures gagnées × tarif horaire vs. coût d\'abonnement'),
     ],
     metrics: [
-      { label: t('Trial → paid conversion', 'Conversion essai → payant'), target: '>40 %' },
-      { label: t('Days to conversion (trial)', 'Jours avant conversion (essai)'), target: t('<10 days', '<10 jours') },
-      { label: t('Average revenue per signup', 'Revenu moyen par inscription'), target: '25-40 €' },
+      { label: t('Trial → paid conversion (target)', 'Conversion essai → payant (cible)'), target: '>40 %' },
+      { label: t('Days to conversion (target)', 'Jours avant conversion (cible)'), target: t('<10 days', '<10 jours') },
+      { label: t('Average revenue per signup (projected)', 'Revenu moyen par inscription (projeté)'), target: '19-49 €' },
     ],
     tools: ['Stripe (payments)', 'Customer.io (email automation)', 'In-app analytics', t('ROI calculator widget', 'Widget calculateur de ROI')],
   },
@@ -269,7 +269,7 @@ const getB2BStages = (t: (en: string, fr: string) => string): JourneyStage[] => 
     opportunities: [
       t('Guided "first session" wizard: upload or dictate → AI note in 90 seconds', 'Assistant « première séance » guidé : téléverser ou dicter → note IA en 90 secondes'),
       t('Pre-written member invitation templates (email, SMS, in-session script)', 'Modèles d\'invitation prêts à l\'emploi (e-mail, SMS, script en séance)'),
-      t('Day 3 check-in email: "Your first note saved 18 min — here is what to try next"', 'E-mail de suivi au jour 3 : « Votre première note a fait gagner 18 min — voici la suite »'),
+      t('Day 3 check-in email: "Here is what your first note looked like — try this next"', 'E-mail de suivi au jour 3 : « Voici à quoi ressemblait votre première note — essayez ceci ensuite »'),
       t('White-glove onboarding for first 100 practitioners (builds loyalty + feedback)', 'Intégration personnalisée pour les 100 premiers praticiens (fidélisation + retours)'),
     ],
     metrics: [
@@ -300,7 +300,7 @@ const getB2BStages = (t: (en: string, fr: string) => string): JourneyStage[] => 
       t('Shares feedback and feature requests with the team', 'Partage ses retours et demandes de fonctionnalités avec l\'équipe'),
     ],
     thoughts: [
-      t('"I am saving 6+ hours per week on documentation"', '« Je gagne plus de 6 heures par semaine sur la documentation »'),
+      t('"I am saving significant time on documentation" (projected: 4-6 hrs/week based on AI scribe benchmarks)', '« Je gagne un temps considérable sur la documentation » (projeté : 4-6 h/semaine selon les benchmarks des scribes IA)'),
       t('"My clients are more engaged between sessions — I can see the data"', '« Mes patients sont plus engagés entre les séances — je peux le voir dans les données »'),
       t('"The AI catches patterns I might miss across my caseload"', '« L\'IA repère des schémas que je pourrais manquer dans ma patientèle »'),
       t('"This is becoming essential to how I practice"', '« C\'est en train de devenir essentiel dans ma pratique »'),
@@ -324,9 +324,9 @@ const getB2BStages = (t: (en: string, fr: string) => string): JourneyStage[] => 
       t('Introduce outcome measurement tools that practitioners can share with referrers', 'Introduire des outils de mesure des résultats partageables avec les prescripteurs'),
     ],
     metrics: [
-      { label: t('Daily active practitioners', 'Praticiens actifs quotidiens'), target: t('>60% of base', '>60 % de la base') },
-      { label: t('AI notes per practitioner/week', 'Notes IA par praticien/semaine'), target: '8-15' },
-      { label: t('NPS score', 'Score NPS'), target: '>50' },
+      { label: t('Daily active practitioners (target)', 'Praticiens actifs quotidiens (cible)'), target: t('>60% of base', '>60 % de la base') },
+      { label: t('AI notes per practitioner/week (target)', 'Notes IA par praticien/semaine (cible)'), target: '8-15' },
+      { label: t('NPS score (target)', 'Score NPS (cible)'), target: '>50' },
     ],
     tools: ['PostHog (product analytics)', 'Customer.io (lifecycle emails)', 'Canny (feature requests)', 'Discord (community)'],
   },
@@ -597,8 +597,8 @@ const getB2CStages = (t: (en: string, fr: string) => string): JourneyStage[] => 
     borderColor: 'border-amber-200',
     icon: Zap,
     description: t(
-      'Member builds a habit over the first 2-4 weeks. The critical activation milestones: 3 mood check-ins in Week 1, 1 journal entry in Week 2, and engagement with at least 1 practitioner-assigned activity. Members who hit these milestones retain 3x better.',
-      'Le membre construit une habitude sur les 2 à 4 premières semaines. Les jalons d\'activation critiques : 3 suivis d\'humeur en semaine 1, 1 entrée de journal en semaine 2, et engagement avec au moins 1 activité assignée par le praticien. Les membres atteignant ces jalons sont retenus 3 fois mieux.'
+      'Member builds a habit over the first 2-4 weeks. The critical activation milestones: 3 mood check-ins in Week 1, 1 journal entry in Week 2, and engagement with at least 1 practitioner-assigned activity. Based on health app benchmarks, members who hit these milestones are expected to retain significantly better.',
+      'Le membre construit une habitude sur les 2 à 4 premières semaines. Les jalons d\'activation critiques : 3 suivis d\'humeur en semaine 1, 1 entrée de journal en semaine 2, et engagement avec au moins 1 activité assignée par le praticien. Selon les benchmarks d\'applications de santé, les membres atteignant ces jalons devraient se retenir nettement mieux.'
     ),
     actions: [
       t('Completes 3+ mood check-ins in first week', 'Complète 3+ suivis d\'humeur la première semaine'),
@@ -1054,8 +1054,8 @@ export default function CustomerJourneyPage() {
           <h2 className="text-xl font-bold text-gray-900 mb-2">{t('Two journeys. One connected experience.', 'Deux parcours. Une exp\u00e9rience connect\u00e9e.')}</h2>
           <p className="text-sm text-gray-500 leading-relaxed max-w-2xl">
             {t(
-              'Bloomsline operates a B2B2C model: practitioners (B2B) adopt the platform and invite their members (B2C). Each journey has 7 lifecycle stages \u2014 from awareness to churn risk \u2014 with distinct emotional arcs, touchpoints, and intervention points. Understanding both journeys is critical because practitioner retention depends on member engagement, and member engagement depends on practitioner activation.',
-              'Bloomsline fonctionne sur un mod\u00e8le B2B2C : les praticiens (B2B) adoptent la plateforme et invitent leurs membres (B2C). Chaque parcours comporte 7 \u00e9tapes du cycle de vie \u2014 de la sensibilisation au risque de d\u00e9sabonnement \u2014 avec des arcs \u00e9motionnels, des points de contact et des points d\u2019intervention distincts. Comprendre les deux parcours est essentiel car la r\u00e9tention des praticiens d\u00e9pend de l\u2019engagement des membres, et l\u2019engagement des membres d\u00e9pend de l\u2019activation des praticiens.'
+              'Bloomsline operates a B2B2C model: practitioners (B2B) adopt the platform and invite their members (B2C). Each journey has 7 lifecycle stages \u2014 from awareness to churn risk \u2014 with distinct emotional arcs, touchpoints, and intervention points. Understanding both journeys is critical because practitioner retention depends on member engagement, and member engagement depends on practitioner activation. Note: These journeys are constructed from 119 discovery interviews with practitioners and industry benchmarks. All metrics are targets or projections \u2014 not measured data. We have 15 beta testers and 0 paying customers.',
+              'Bloomsline fonctionne sur un mod\u00e8le B2B2C : les praticiens (B2B) adoptent la plateforme et invitent leurs membres (B2C). Chaque parcours comporte 7 \u00e9tapes du cycle de vie \u2014 de la sensibilisation au risque de d\u00e9sabonnement \u2014 avec des arcs \u00e9motionnels, des points de contact et des points d\u2019intervention distincts. Comprendre les deux parcours est essentiel car la r\u00e9tention des praticiens d\u00e9pend de l\u2019engagement des membres, et l\u2019engagement des membres d\u00e9pend de l\u2019activation des praticiens. Note : Ces parcours sont construits \u00e0 partir de 119 entretiens de d\u00e9couverte avec des praticiens et de benchmarks sectoriels. Toutes les m\u00e9triques sont des cibles ou des projections \u2014 pas des donn\u00e9es mesur\u00e9es. Nous avons 15 b\u00eata-testeurs et 0 client payant.'
             )}
           </p>
           <div className="flex flex-wrap items-center gap-2 mt-4">
@@ -1149,7 +1149,7 @@ export default function CustomerJourneyPage() {
               </div>
               <div className="bg-white/10 rounded-lg p-3 text-center">
                 <p className="text-lg font-bold text-white">3x</p>
-                <p className="text-[9px] text-blue-300">{t('Retention lift (activated)', 'Gain de r\u00e9tention (activ\u00e9)')}</p>
+                <p className="text-[9px] text-blue-300">{t('Retention lift (projected, SaaS benchmark)', 'Gain de r\u00e9tention (projet\u00e9, benchmark SaaS)')}</p>
               </div>
             </div>
           </div>
@@ -1234,7 +1234,7 @@ export default function CustomerJourneyPage() {
                     t('Member engagement data reinforces practitioner value perception', 'Les donn\u00e9es d\u2019engagement des membres renforcent la perception de valeur du praticien'),
                     t('Practitioner referrals create new B2B acquisition at near-zero CAC', 'Les recommandations des praticiens cr\u00e9ent de nouvelles acquisitions B2B \u00e0 un CAC quasi nul'),
                     t('Member "refer your therapist" closes the B2C \u2192 B2B loop', 'Le \u00ab recommandez votre th\u00e9rapeute \u00bb des membres boucle la boucle B2C \u2192 B2B'),
-                    t('Network effects: each practitioner brings 5-15 members to the platform', 'Effets de r\u00e9seau : chaque praticien am\u00e8ne 5 \u00e0 15 membres sur la plateforme'),
+                    t('Network effects (hypothesis): each practitioner brings 5-15 members to the platform', 'Effets de r\u00e9seau (hypoth\u00e8se) : chaque praticien am\u00e8ne 5 \u00e0 15 membres sur la plateforme'),
                   ].map((point, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <ArrowRight className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
