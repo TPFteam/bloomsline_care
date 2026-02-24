@@ -53,8 +53,8 @@ const translations = {
     hero: {
       title1: 'The between-session',
       title2: 'care platform',
-      subtitle: 'Practitioners pay. Members use it free. Every practitioner brings 20-50 members.',
-      subtitle2: 'B2B SaaS for mental health — filling the 167 hours between therapy sessions.',
+      subtitle: 'Less admin, more presence.',
+      subtitle2: '',
       cta: 'View Pitch',
       seed: 'Pre-Seed · Pre-Revenue · 2026',
     },
@@ -300,8 +300,8 @@ const translations = {
     hero: {
       title1: 'La plateforme de soin',
       title2: 'entre les séances',
-      subtitle: 'Les praticiens paient. Les membres utilisent gratuitement. Chaque praticien amène 20-50 membres.',
-      subtitle2: 'B2B SaaS santé mentale — combler les 167 heures entre les séances de thérapie.',
+      subtitle: 'Moins d\'admin, plus de présence.',
+      subtitle2: '',
       cta: 'Voir le Pitch',
       seed: 'Pré-Seed · Pré-Revenu · 2026',
     },
