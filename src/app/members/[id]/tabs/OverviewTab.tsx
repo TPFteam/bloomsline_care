@@ -530,13 +530,15 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
     localizedTherapeuticContext ||
     localizedCurrentTreatment
 
-  const noteTypeColors: Record<NoteType, { bg: string; text: string }> = {
+  const noteTypeColors: Record<string, { bg: string; text: string }> = {
     general: { bg: 'bg-gray-100', text: 'text-gray-700' },
-    assessment: { bg: 'bg-blue-50', text: 'text-blue-700' },
-    treatment_plan: { bg: 'bg-purple-50', text: 'text-purple-700' },
-    milestone: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
-    concern: { bg: 'bg-red-50', text: 'text-red-700' },
-    observation: { bg: 'bg-amber-50', text: 'text-amber-700' },
+    symptome: { bg: 'bg-rose-50', text: 'text-rose-700' },
+    recurrence: { bg: 'bg-purple-50', text: 'text-purple-700' },
+    hypothese: { bg: 'bg-teal-50', text: 'text-teal-700' },
+    transfert: { bg: 'bg-indigo-50', text: 'text-indigo-700' },
+    contre_transfert: { bg: 'bg-pink-50', text: 'text-pink-700' },
+    ajustement_envisage: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
+    milestone: { bg: 'bg-green-50', text: 'text-green-700' },
   }
 
   const categoryColors: Record<MilestoneCategory, { bg: string; text: string }> = {

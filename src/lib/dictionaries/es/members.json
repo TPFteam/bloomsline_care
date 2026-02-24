@@ -266,11 +266,13 @@
 
   "noteTypes": {
     "general": "General",
-    "assessment": "Evaluación",
-    "treatment_plan": "Plan de tratamiento",
-    "milestone": "Hito",
-    "concern": "Preocupación",
-    "observation": "Observación"
+    "symptome": "Síntoma",
+    "recurrence": "Recurrencia",
+    "hypothese": "Hipótesis",
+    "transfert": "Transferencia",
+    "contre_transfert": "Contratransferencia",
+    "ajustement_envisage": "Ajuste previsto",
+    "milestone": "Hito"
   },
 
   "errors": {

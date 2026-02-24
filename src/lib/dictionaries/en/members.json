@@ -266,11 +266,13 @@
 
   "noteTypes": {
     "general": "General",
-    "assessment": "Assessment",
-    "treatment_plan": "Treatment Plan",
-    "milestone": "Milestone",
-    "concern": "Concern",
-    "observation": "Observation"
+    "symptome": "Symptom",
+    "recurrence": "Recurrence",
+    "hypothese": "Hypothesis",
+    "transfert": "Transference",
+    "contre_transfert": "Countertransference",
+    "ajustement_envisage": "Planned Adjustment",
+    "milestone": "Milestone"
   },
 
   "errors": {

@@ -14,7 +14,7 @@ export type SessionFormat = 'in_person' | 'virtual' | 'phone'
 
 export type SessionStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show'
 
-export type NoteType = 'general' | 'assessment' | 'treatment_plan' | 'milestone' | 'concern' | 'observation'
+export type NoteType = 'general' | 'symptome' | 'recurrence' | 'hypothese' | 'transfert' | 'contre_transfert' | 'ajustement_envisage' | 'milestone'
 
 export type FileCategory = 'general' | 'intake' | 'assessment' | 'consent' | 'insurance' | 'correspondence' | 'other'
 

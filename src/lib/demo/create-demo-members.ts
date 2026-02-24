@@ -205,7 +205,7 @@ export async function createDemoMembers(serviceClient: SupabaseClient, practitio
         practitioner_id: practitionerId,
         title: 'Clinical Observation / Observation clinique',
         content: 'EN: Good mentalization capacity when the setting feels safe. Tendency to freeze or over-adapt when perceiving expectations. Work on subjective recognition is progressing.\n\nFR: Bonne capacité de mentalisation quand le cadre est sécurisant. Tendance au gel ou à la suradaptation quand elle perçoit une attente. Le travail sur la reconnaissance subjective progresse.',
-        note_type: 'observation',
+        note_type: 'hypothese',
         is_private: true,
       },
       {
@@ -213,7 +213,7 @@ export async function createDemoMembers(serviceClient: SupabaseClient, practitio
         practitioner_id: practitionerId,
         title: 'Treatment Plan / Plan de traitement',
         content: 'EN: Focus areas:\n1. Internal safety and emotional regulation\n2. Relationships without control or performance\n3. Subjective recognition and experience validation\n4. Gradual trauma work when window of tolerance allows\n\nFR: Axes de travail:\n1. Sécurité interne et régulation émotionnelle\n2. Rapport au lien sans contrôle ni performance\n3. Reconnaissance subjective et validation de l\'expérience\n4. Travail progressif sur le trauma corporel quand la fenêtre de tolérance le permet',
-        note_type: 'treatment_plan',
+        note_type: 'ajustement_envisage',
         is_private: true,
       },
     ])

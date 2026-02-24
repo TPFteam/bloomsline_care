@@ -59,16 +59,20 @@ const ASSIST_PROMPT_KEYS: PromptKey[] = [
   'note_suggestions',
 ]
 
-const noteTypeColors: Record<NoteType, { bg: string; text: string }> = {
+const noteTypeColors: Record<string, { bg: string; text: string }> = {
   general: { bg: 'bg-gray-100', text: 'text-gray-700' },
-  assessment: { bg: 'bg-blue-50', text: 'text-blue-700' },
-  treatment_plan: { bg: 'bg-purple-50', text: 'text-purple-700' },
-  milestone: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
-  concern: { bg: 'bg-red-50', text: 'text-red-700' },
-  observation: { bg: 'bg-amber-50', text: 'text-amber-700' },
+  symptome: { bg: 'bg-rose-50', text: 'text-rose-700' },
+  recurrence: { bg: 'bg-purple-50', text: 'text-purple-700' },
+  hypothese: { bg: 'bg-teal-50', text: 'text-teal-700' },
+  transfert: { bg: 'bg-indigo-50', text: 'text-indigo-700' },
+  contre_transfert: { bg: 'bg-pink-50', text: 'text-pink-700' },
+  ajustement_envisage: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
+  milestone: { bg: 'bg-green-50', text: 'text-green-700' },
 }
+const defaultNoteColor = { bg: 'bg-gray-100', text: 'text-gray-700' }
+const getNoteColor = (type: string) => noteTypeColors[type] || defaultNoteColor
 
-const noteTypes: NoteType[] = ['general', 'observation', 'assessment', 'treatment_plan', 'concern']
+const noteTypes: NoteType[] = ['general', 'symptome', 'recurrence', 'hypothese', 'transfert', 'contre_transfert', 'ajustement_envisage']
 
 export default function NotesTab({ memberId, sessions, notes: initialNotes, onNotesUpdate }: NotesTabProps) {
   const { t, locale } = useLanguage()
@@ -554,7 +558,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
           milestone_id: padMilestoneId || null,
           title: `Bloom Assist: ${promptLabel}`,
           content: msg.response,
-          note_type: 'observation',
+          note_type: 'general',
           is_private: true,
         })
 
@@ -892,7 +896,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                               <div className="flex-1 min-w-0">
                                 {/* Badges — compact */}
                                 <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
-                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${noteTypeColors[note.note_type].bg} ${noteTypeColors[note.note_type].text}`}>
+                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getNoteColor(note.note_type).bg} ${getNoteColor(note.note_type).text}`}>
                                     {t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes]}
                                   </span>
                                   {note.session_id && (
@@ -1132,7 +1136,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     onClick={() => setPadNoteType(type)}
                     className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
                       padNoteType === type
-                        ? `${noteTypeColors[type].bg} ${noteTypeColors[type].text} ring-1 ring-current ring-opacity-30`
+                        ? `${getNoteColor(type).bg} ${getNoteColor(type).text} ring-1 ring-current ring-opacity-30`
                         : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                     }`}
                   >
@@ -1751,7 +1755,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                         <div className="flex-1 min-w-0">
                           {/* Badges row */}
                           <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${noteTypeColors[note.note_type].bg} ${noteTypeColors[note.note_type].text}`}>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getNoteColor(note.note_type).bg} ${getNoteColor(note.note_type).text}`}>
                               {t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes]}
                             </span>
                             {note.session_id && (

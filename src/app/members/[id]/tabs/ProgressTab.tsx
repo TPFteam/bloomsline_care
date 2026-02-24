@@ -497,14 +497,17 @@ const MilestoneCard = memo(function MilestoneCard({
 })
 
 // Note type colors
-const noteTypeColors: Record<NoteType, { bg: string; text: string }> = {
+const noteTypeColors: Record<string, { bg: string; text: string }> = {
   general: { bg: 'bg-gray-100', text: 'text-gray-700' },
-  assessment: { bg: 'bg-blue-50', text: 'text-blue-700' },
-  treatment_plan: { bg: 'bg-purple-50', text: 'text-purple-700' },
-  milestone: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
-  concern: { bg: 'bg-red-50', text: 'text-red-700' },
-  observation: { bg: 'bg-amber-50', text: 'text-amber-700' },
+  symptome: { bg: 'bg-rose-50', text: 'text-rose-700' },
+  recurrence: { bg: 'bg-purple-50', text: 'text-purple-700' },
+  hypothese: { bg: 'bg-teal-50', text: 'text-teal-700' },
+  transfert: { bg: 'bg-indigo-50', text: 'text-indigo-700' },
+  contre_transfert: { bg: 'bg-pink-50', text: 'text-pink-700' },
+  ajustement_envisage: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
+  milestone: { bg: 'bg-green-50', text: 'text-green-700' },
 }
+const defaultNoteColor = { bg: 'bg-gray-100', text: 'text-gray-700' }
 
 export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightMilestoneId }: ProgressTabProps) {
   const { t, locale } = useLanguage()
@@ -1619,11 +1622,13 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
                     className="flex-1 px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none text-sm bg-white"
                   >
                     <option value="general">{t.members.noteTypes.general}</option>
-                    <option value="assessment">{t.members.noteTypes.assessment}</option>
-                    <option value="treatment_plan">{t.members.noteTypes.treatment_plan}</option>
+                    <option value="symptome">{t.members.noteTypes.symptome}</option>
+                    <option value="recurrence">{t.members.noteTypes.recurrence}</option>
+                    <option value="hypothese">{t.members.noteTypes.hypothese}</option>
+                    <option value="transfert">{t.members.noteTypes.transfert}</option>
+                    <option value="contre_transfert">{t.members.noteTypes.contre_transfert}</option>
+                    <option value="ajustement_envisage">{t.members.noteTypes.ajustement_envisage}</option>
                     <option value="milestone">{t.members.noteTypes.milestone}</option>
-                    <option value="concern">{t.members.noteTypes.concern}</option>
-                    <option value="observation">{t.members.noteTypes.observation}</option>
                   </select>
                 </div>
                 <div className="flex items-center justify-end">
@@ -1665,7 +1670,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
         ) : (
           <div className="space-y-3">
             {notes.map((note, index) => {
-              const typeStyle = noteTypeColors[note.note_type]
+              const typeStyle = noteTypeColors[note.note_type] || defaultNoteColor
               return (
                 <motion.div
                   key={note.id}
