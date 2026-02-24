@@ -114,6 +114,8 @@ const MilestoneCard = memo(function MilestoneCard({
   const [savingComment, setSavingComment] = useState(false)
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
   const [editCommentContent, setEditCommentContent] = useState('')
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
+  const [confirmDeleteMilestone, setConfirmDeleteMilestone] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [history, setHistory] = useState<MilestoneStatusHistory[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
@@ -225,12 +227,29 @@ const MilestoneCard = memo(function MilestoneCard({
                 <span className="text-[10px] font-medium">{comments.length}</span>
               )}
             </button>
-            <button
-              onClick={() => onDelete(milestone.id)}
-              className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
+            {confirmDeleteMilestone ? (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => { onDelete(milestone.id); setConfirmDeleteMilestone(false) }}
+                  className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                >
+                  {locale === 'fr' ? 'Confirmer' : locale === 'es' ? 'Confirmar' : 'Confirm'}
+                </button>
+                <button
+                  onClick={() => setConfirmDeleteMilestone(false)}
+                  className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDeleteMilestone(true)}
+                className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -390,13 +409,22 @@ const MilestoneCard = memo(function MilestoneCard({
                             >
                               <Pencil className="w-3 h-3" />
                             </button>
-                            <button
-                              onClick={() => onDeleteComment(comment.id)}
-                              className="p-1 text-gray-400 hover:text-red-500 rounded"
-                              title={locale === 'fr' ? 'Supprimer' : 'Delete'}
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
+                            {deletingCommentId === comment.id ? (
+                              <button
+                                onClick={() => { onDeleteComment(comment.id); setDeletingCommentId(null) }}
+                                className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                              >
+                                {locale === 'fr' ? 'Confirmer' : locale === 'es' ? 'Confirmar' : 'Confirm'}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setDeletingCommentId(comment.id)}
+                                className="p-1 text-gray-400 hover:text-red-500 rounded"
+                                title={locale === 'fr' ? 'Supprimer' : 'Delete'}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
                           </div>
                         </div>
                         <p className="text-[10px] text-gray-400 mt-1">

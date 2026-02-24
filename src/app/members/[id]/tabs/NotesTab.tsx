@@ -948,12 +948,29 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                                 >
                                   <Pencil className="w-3 h-3" />
                                 </button>
-                                <button
-                                  onClick={() => handleDeleteNote(note.id)}
-                                  className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
+                                {deletingNoteId === note.id ? (
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => handleDeleteNote(note.id)}
+                                      className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                                    >
+                                      {locale === 'fr' ? 'Confirmer' : locale === 'es' ? 'Confirmar' : 'Confirm'}
+                                    </button>
+                                    <button
+                                      onClick={() => setDeletingNoteId(null)}
+                                      className="p-1 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setDeletingNoteId(note.id)}
+                                    className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>
