@@ -29,7 +29,7 @@ export function AppSidebar({ activeItem }: AppSidebarProps) {
   ]
 
   const managementItems = [
-    { id: 'analytics' as NavItem, href: '/analytics', icon: Activity, label: locale === 'fr' ? 'Rythme' : locale === 'es' ? 'Tu ritmo' : 'Your Flow' },
+    { id: 'analytics' as NavItem, href: '/analytics', icon: Activity, label: locale === 'fr' ? 'Signaux' : locale === 'es' ? 'Señales' : 'Signals' },
   ]
 
   const renderNavItem = (item: { id: NavItem; href: string; icon: typeof Home; label: string }) => {
