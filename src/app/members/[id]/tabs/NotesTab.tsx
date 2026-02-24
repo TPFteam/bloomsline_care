@@ -1116,7 +1116,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                         : 'border-gray-200 bg-white text-gray-700'
                   }`}
                 >
-                  <option value="">{locale === 'fr' ? '🎯 Aucun objectif' : locale === 'es' ? '🎯 Sin objetivo' : '🎯 No goal'}</option>
+                  <option value="">{locale === 'fr' ? '🎯 Aucun axe de travail' : locale === 'es' ? '🎯 Sin objetivo' : '🎯 No goal'}</option>
                   {milestones.map(m => (
                     <option key={m.id} value={m.id}>
                       🎯 {m.title}
@@ -1408,7 +1408,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                         onChange={(e) => setSelectedMilestoneId(e.target.value)}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
                       >
-                        <option value="">{locale === 'fr' ? 'Aucun objectif' : locale === 'es' ? 'Sin objetivo' : 'No goal'}</option>
+                        <option value="">{locale === 'fr' ? 'Aucun axe de travail' : locale === 'es' ? 'Sin objetivo' : 'No goal'}</option>
                         {milestones.map(m => (
                           <option key={m.id} value={m.id}>
                             {m.title}
@@ -1613,7 +1613,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                             onChange={(e) => setEditMilestoneId(e.target.value)}
                             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
                           >
-                            <option value="">{locale === 'fr' ? 'Aucun objectif' : locale === 'es' ? 'Sin objetivo' : 'No goal'}</option>
+                            <option value="">{locale === 'fr' ? 'Aucun axe de travail' : locale === 'es' ? 'Sin objetivo' : 'No goal'}</option>
                             {milestones.map(m => (
                               <option key={m.id} value={m.id}>
                                 {m.title}

@@ -263,6 +263,14 @@ export interface MilestoneComment {
   updated_at: string
 }
 
+export interface MilestoneStatusHistory {
+  id: string
+  milestone_id: string
+  old_status: MilestoneStatus | null
+  new_status: MilestoneStatus
+  changed_at: string
+}
+
 // ============================================
 // FORM TYPES
 // ============================================

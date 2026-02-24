@@ -18,12 +18,13 @@ import {
   Calendar,
   Pencil,
   Lightbulb,
+  History,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
-import type { Milestone, MilestoneCategory, MilestoneStatus, MilestoneComment, ProgressNote, NoteType, MemberSummary, SummaryContent } from '@/types/member'
+import type { Milestone, MilestoneCategory, MilestoneStatus, MilestoneComment, MilestoneStatusHistory, ProgressNote, NoteType, MemberSummary, SummaryContent } from '@/types/member'
 
 interface ProgressTabProps {
   memberId: string
@@ -52,6 +53,28 @@ interface SessionLinkedNote {
   session_type?: string
 }
 
+// Status label helpers for history timeline
+const statusLabels: Record<MilestoneStatus, { en: string; fr: string }> = {
+  discovery: { en: 'Discovery', fr: 'Compréhension' },
+  building: { en: 'Building', fr: 'Ancrage' },
+  thriving: { en: 'Thriving', fr: 'Évolution' },
+  independent: { en: 'Independent', fr: 'Autonomie' },
+}
+
+// Rank order matching the kanban columns left→right
+const statusRank: Record<MilestoneStatus, number> = {
+  discovery: 0,
+  thriving: 1,
+  building: 2,
+  independent: 3,
+}
+
+function getHistoryDotColor(oldStatus: MilestoneStatus | null, newStatus: MilestoneStatus): string {
+  if (!oldStatus) return 'bg-emerald-500' // creation = green
+  if (statusRank[newStatus] > statusRank[oldStatus]) return 'bg-emerald-500' // forward = green
+  return 'bg-orange-500' // backward = orange
+}
+
 // Memoized MilestoneCard component to prevent re-renders
 interface MilestoneCardProps {
   milestone: Milestone
@@ -64,6 +87,7 @@ interface MilestoneCardProps {
   onAddComment: (milestoneId: string, content: string) => Promise<void>
   onUpdateComment: (commentId: string, content: string) => Promise<void>
   onDeleteComment: (commentId: string) => Promise<void>
+  onFetchHistory: (milestoneId: string) => Promise<MilestoneStatusHistory[]>
   categoryLabel: string
   locale: string
   isHighlighted?: boolean
@@ -80,6 +104,7 @@ const MilestoneCard = memo(function MilestoneCard({
   onAddComment,
   onUpdateComment,
   onDeleteComment,
+  onFetchHistory,
   categoryLabel,
   locale,
   isHighlighted,
@@ -89,6 +114,24 @@ const MilestoneCard = memo(function MilestoneCard({
   const [savingComment, setSavingComment] = useState(false)
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
   const [editCommentContent, setEditCommentContent] = useState('')
+  const [showHistory, setShowHistory] = useState(false)
+  const [history, setHistory] = useState<MilestoneStatusHistory[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+
+  const handleToggleHistory = async () => {
+    if (showHistory) {
+      setShowHistory(false)
+      return
+    }
+    setShowHistory(true)
+    setLoadingHistory(true)
+    try {
+      const data = await onFetchHistory(milestone.id)
+      setHistory(data)
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.dataTransfer.setData('milestoneId', milestone.id)
@@ -158,6 +201,17 @@ const MilestoneCard = memo(function MilestoneCard({
           </div>
           <div className="flex items-center gap-1">
             <button
+              onClick={handleToggleHistory}
+              className={`p-1.5 rounded-lg transition-all ${
+                showHistory
+                  ? 'text-violet-500 bg-violet-50'
+                  : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-violet-500 hover:bg-violet-50'
+              }`}
+              title={locale === 'fr' ? 'Historique' : 'History'}
+            >
+              <History className="w-3.5 h-3.5" />
+            </button>
+            <button
               onClick={() => setShowComments(!showComments)}
               className={`p-1.5 rounded-lg transition-all flex items-center gap-1 ${
                 comments.length > 0
@@ -179,6 +233,77 @@ const MilestoneCard = memo(function MilestoneCard({
             </button>
           </div>
         </div>
+
+        {/* History Timeline Popover */}
+        {showHistory && (
+          <div className="mt-3 p-3 bg-violet-50 rounded-lg border border-violet-100">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-medium text-violet-600 uppercase tracking-wider flex items-center gap-1">
+                <History className="w-3 h-3" />
+                {locale === 'fr' ? 'Historique' : 'History'}
+              </p>
+              <button
+                onClick={() => setShowHistory(false)}
+                className="p-0.5 text-violet-400 hover:text-violet-600 rounded"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+            {loadingHistory ? (
+              <div className="flex items-center gap-2 py-2">
+                <div className="w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs text-violet-500">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</span>
+              </div>
+            ) : history.length === 0 ? (
+              <p className="text-xs text-violet-400 py-1">
+                {locale === 'fr' ? 'Aucun historique' : 'No history yet'}
+              </p>
+            ) : (
+              <div className="relative space-y-0">
+                {/* Vertical connecting line */}
+                {history.length > 1 && (
+                  <div className="absolute left-[5px] top-2 bottom-2 w-0.5 bg-violet-200" />
+                )}
+                {history.map((entry, idx) => {
+                  const isCreation = entry.old_status === null
+                  const dotColor = getHistoryDotColor(entry.old_status, entry.new_status)
+                  const date = new Date(entry.changed_at).toLocaleDateString(
+                    locale === 'fr' ? 'fr-FR' : 'en-US',
+                    { day: 'numeric', month: 'short', year: 'numeric' }
+                  )
+                  return (
+                    <div key={entry.id} className="flex items-start gap-2 py-1.5 relative">
+                      <div className={`w-[11px] h-[11px] rounded-full ${dotColor} border-2 border-white shrink-0 mt-0.5 z-10`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-700 leading-snug">
+                          {isCreation ? (
+                            <>
+                              {locale === 'fr' ? 'Créé dans ' : 'Created in '}
+                              <span className="font-medium">
+                                {locale === 'fr' ? statusLabels[entry.new_status].fr : statusLabels[entry.new_status].en}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="font-medium">
+                                {locale === 'fr' ? statusLabels[entry.old_status!].fr : statusLabels[entry.old_status!].en}
+                              </span>
+                              {' → '}
+                              <span className="font-medium">
+                                {locale === 'fr' ? statusLabels[entry.new_status].fr : statusLabels[entry.new_status].en}
+                              </span>
+                            </>
+                          )}
+                        </p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{date}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Comments Preview (show latest comment when collapsed) */}
         {comments.length > 0 && !showComments && (
@@ -607,6 +732,15 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
 
       if (error) throw error
 
+      // Log initial creation in history
+      if (data?.id) {
+        await supabase.from('milestone_status_history').insert({
+          milestone_id: data.id,
+          old_status: null,
+          new_status: 'discovery',
+        })
+      }
+
       toast.success(locale === 'fr' ? 'Axe de travail ajouté' : locale === 'es' ? 'Objetivo añadido' : 'Goal added')
 
       // Set the newly added goal ID for highlighting
@@ -644,7 +778,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { error } = await supabase
+      const { data: newMilestone, error } = await supabase
         .from('milestones')
         .insert({
           member_id: memberId,
@@ -658,8 +792,19 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
           achieved_at: initialStatus === 'independent' ? new Date().toISOString() : null,
           shared_with_member: false,
         })
+        .select('id')
+        .single()
 
       if (error) throw error
+
+      // Log initial creation in history
+      if (newMilestone) {
+        await supabase.from('milestone_status_history').insert({
+          milestone_id: newMilestone.id,
+          old_status: null,
+          new_status: initialStatus,
+        })
+      }
 
       toast.success('Journey added')
       setShowAddMilestone(false)
@@ -675,7 +820,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
     }
   }
 
-  const handleUpdateStatus = useCallback(async (milestoneId: string, newStatus: MilestoneStatus) => {
+  const handleUpdateStatus = useCallback(async (milestoneId: string, newStatus: MilestoneStatus, oldStatus?: MilestoneStatus) => {
     try {
       const updateData: Record<string, unknown> = {
         status: newStatus,
@@ -693,6 +838,15 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
         .eq('id', milestoneId)
 
       if (error) throw error
+
+      // Log status change in history
+      if (oldStatus) {
+        await supabase.from('milestone_status_history').insert({
+          milestone_id: milestoneId,
+          old_status: oldStatus,
+          new_status: newStatus,
+        })
+      }
 
       const statusMessages: Record<MilestoneStatus, string> = {
         discovery: 'Moved to Discovery',
@@ -804,6 +958,22 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
     }
   }, [supabase, locale])
 
+  const handleFetchHistory = useCallback(async (milestoneId: string): Promise<MilestoneStatusHistory[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('milestone_status_history')
+        .select('*')
+        .eq('milestone_id', milestoneId)
+        .order('changed_at', { ascending: true })
+
+      if (error) throw error
+      return (data || []) as MilestoneStatusHistory[]
+    } catch (error) {
+      console.error('Error fetching history:', error)
+      return []
+    }
+  }, [supabase])
+
   // Drag and drop handlers
   const handleDragOver = useCallback((e: React.DragEvent, columnId: MilestoneStatus) => {
     e.preventDefault()
@@ -820,10 +990,10 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
     setDragOverColumn(null)
 
     const milestoneId = e.dataTransfer.getData('milestoneId')
-    const sourceColumn = e.dataTransfer.getData('sourceColumn')
+    const sourceColumn = e.dataTransfer.getData('sourceColumn') as MilestoneStatus
 
     if (sourceColumn !== targetColumn && milestoneId) {
-      handleUpdateStatus(milestoneId, targetColumn)
+      handleUpdateStatus(milestoneId, targetColumn, sourceColumn)
     }
   }, [handleUpdateStatus])
 
@@ -1304,6 +1474,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
                         onAddComment={handleAddComment}
                         onUpdateComment={handleUpdateComment}
                         onDeleteComment={handleDeleteComment}
+                        onFetchHistory={handleFetchHistory}
                         categoryLabel={t.members.milestoneCategories[milestone.category]}
                         locale={locale}
                         isHighlighted={highlightMilestoneId === milestone.id || newlyAddedGoalId === milestone.id}
