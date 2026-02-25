@@ -48,6 +48,7 @@ const translations = {
       execution: 'Execution',
       business: 'Business',
       team: 'Team',
+      vision: 'Vision',
       ask: 'The Ask',
       contact: 'Contact',
     },
@@ -279,6 +280,18 @@ const translations = {
         'Risk: 2-person team. Plan: first 2 hires are engineer + sales (included in use of funds)',
       ],
     },
+    vision: {
+      label: 'THE LONG GAME',
+      title1: 'If this works, the data becomes',
+      title2: 'the real asset.',
+      description: "Every moment logged, every pattern observed, every therapeutic outcome tracked — with consent, this dataset becomes uniquely valuable for mental health research. But first we need to prove the platform works.",
+      phases: [
+        { title: 'Phase 1', desc: 'Between-session care platform. Prove product-market fit.' },
+        { title: 'Phase 2', desc: 'Behavioral pattern dataset. Valuable for research partnerships.' },
+        { title: 'Phase 3', desc: 'Mental health research infrastructure. Only if Phase 1-2 succeed.' },
+      ],
+      footer: "This vision is ambitious and far-off. Our focus is Phase 1: get 100+ practitioners paying, and prove the model works.",
+    },
     ask: {
       label: 'THE ASK',
       title: 'Raising €400K-€500K',
@@ -324,6 +337,7 @@ const translations = {
       execution: 'Exécution',
       business: 'Modèle',
       team: 'Équipe',
+      vision: 'Vision',
       ask: 'Demande',
       contact: 'Contact',
     },
@@ -555,6 +569,18 @@ const translations = {
         'Risque : équipe de 2. Plan : les 2 premiers recrutements sont ingénieur + commercial (inclus dans l\'utilisation des fonds)',
       ],
     },
+    vision: {
+      label: 'LE LONG TERME',
+      title1: 'Si ça marche, les données deviennent',
+      title2: 'le vrai actif.',
+      description: "Chaque moment capturé, chaque pattern observé, chaque résultat thérapeutique suivi — avec consentement, ce dataset devient uniquement précieux pour la recherche en santé mentale. Mais d'abord, nous devons prouver que la plateforme fonctionne.",
+      phases: [
+        { title: 'Phase 1', desc: 'Plateforme de soin entre-séances. Prouver le product-market fit.' },
+        { title: 'Phase 2', desc: 'Dataset de patterns comportementaux. Valeur pour les partenariats recherche.' },
+        { title: 'Phase 3', desc: 'Infrastructure de recherche en santé mentale. Uniquement si phases 1-2 réussissent.' },
+      ],
+      footer: "Cette vision est ambitieuse et lointaine. Notre focus est la Phase 1 : avoir 100+ praticiens payants, et prouver que le modèle fonctionne.",
+    },
     ask: {
       label: 'LA DEMANDE',
       title: 'Levée de 400K€-500K€',
@@ -609,6 +635,7 @@ export default function PitchNewPage() {
     { id: 'execution', title: t.slides.execution },
     { id: 'business', title: t.slides.business },
     { id: 'team', title: t.slides.team },
+    { id: 'vision', title: t.slides.vision },
     { id: 'ask', title: t.slides.ask },
     { id: 'contact', title: t.slides.contact },
   ]
@@ -732,8 +759,9 @@ export default function PitchNewPage() {
           {currentSlide === 7 && <ExecutionSlide t={t.execution} />}
           {currentSlide === 8 && <BusinessSlide t={t.business} />}
           {currentSlide === 9 && <TeamSlide t={t.team} />}
-          {currentSlide === 10 && <AskSlide t={t.ask} />}
-          {currentSlide === 11 && <ContactSlide t={t.contact} />}
+          {currentSlide === 10 && <VisionSlide t={t.vision} />}
+          {currentSlide === 11 && <AskSlide t={t.ask} />}
+          {currentSlide === 12 && <ContactSlide t={t.contact} />}
         </motion.div>
       </AnimatePresence>
 
@@ -1761,29 +1789,6 @@ function AskSlide({ t }: { t: typeof translations.en.ask }) {
           </motion.div>
         </div>
 
-        {/* Vision teaser */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="p-5 rounded-2xl bg-neutral-900 text-center"
-        >
-          <p className="text-white font-light text-lg">
-            {t.vision.title1} <span className="text-teal-400 font-medium">{t.vision.title2}</span>
-          </p>
-          <div className="flex justify-center gap-4 mt-3">
-            {t.vision.phases.map((phase, i) => {
-              const phaseIcons = [Zap, Brain, Building2]
-              const PhaseIcon = phaseIcons[i]
-              return (
-                <div key={i} className="flex items-center gap-1.5 text-xs text-neutral-400">
-                  <PhaseIcon className="w-3.5 h-3.5" />
-                  {phase}
-                </div>
-              )
-            })}
-          </div>
-        </motion.div>
       </div>
     </div>
   )
@@ -1791,7 +1796,83 @@ function AskSlide({ t }: { t: typeof translations.en.ask }) {
 
 
 // =============================================================================
-// SLIDE 10: CONTACT
+// SLIDE 11: VISION — The Long Game
+// =============================================================================
+
+function VisionSlide({ t }: { t: typeof translations.en.vision }) {
+  const phaseIcons = [Zap, Brain, Building2]
+  const phaseColors = ['bg-teal-500/20', 'bg-lavender-500/20', 'bg-[#D4856A]/20']
+  const phaseTextColors = ['text-teal-400', 'text-lavender-400', 'text-[#E8A87C]']
+
+  return (
+    <div className="h-full w-full flex items-center justify-center px-6 bg-neutral-900">
+      <div className="max-w-5xl mx-auto text-center">
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-teal-400 font-medium mb-4"
+        >
+          {t.label}
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-white mb-8 leading-[1.1]"
+        >
+          {t.title1}
+          <br />
+          <span className="text-teal-400">{t.title2}</span>
+        </motion.h2>
+
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="text-xl text-neutral-400 mb-12 max-w-3xl mx-auto"
+        >
+          {t.description}
+        </motion.p>
+
+        <div className="grid sm:grid-cols-3 gap-6">
+          {t.phases.map((phase, index) => {
+            const Icon = phaseIcons[index]
+            return (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
+                className="p-6 rounded-2xl bg-white/5 border border-white/10"
+              >
+                <div className={`w-12 h-12 rounded-xl ${phaseColors[index]} flex items-center justify-center mx-auto mb-4`}>
+                  <Icon className={`w-6 h-6 ${phaseTextColors[index]}`} />
+                </div>
+                <h3 className="font-semibold text-white mb-2">{phase.title}</h3>
+                <p className="text-sm text-neutral-400">{phase.desc}</p>
+              </motion.div>
+            )
+          })}
+        </div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
+          className="text-neutral-500 mt-10 text-sm"
+        >
+          {t.footer}
+        </motion.p>
+      </div>
+    </div>
+  )
+}
+
+
+// =============================================================================
+// SLIDE 12: CONTACT
 // =============================================================================
 
 function ContactSlide({ t }: { t: typeof translations.en.contact }) {
