@@ -338,17 +338,17 @@ const translations = {
       title: '2 founders, full-stack execution',
       members: [
         {
-          name: 'Aditya',
-          role: 'CEO — Product & Technology',
-          background: 'Solo-built the entire platform (web + mobile + AI)',
-          bio: 'Engineer who built Bloomsline end-to-end: Next.js dashboard, React Native mobile app, Supabase backend, Claude AI integration. Personal experience with therapy drove the product insight.',
+          name: 'Sarah',
+          role: 'Co-founder · Sales & Operations',
+          background: 'Building the GTM engine from scratch',
+          bio: 'Responsible for practitioner acquisition, partnerships, and operations. First sales conversations happening now — results pending.',
           linkedin: '#',
         },
         {
-          name: 'Sarah',
-          role: 'COO — Sales & Operations',
-          background: 'Building the GTM engine from scratch',
-          bio: 'Responsible for practitioner acquisition, partnerships, and operations. First sales conversations happening now — results pending.',
+          name: 'Aditya',
+          role: 'Co-founder · Product & Technology',
+          background: 'Solo-built the entire platform (web + mobile + AI)',
+          bio: 'Engineer who built Bloomsline end-to-end: Next.js dashboard, React Native mobile app, Supabase backend, Claude AI integration. Personal experience with therapy drove the product insight.',
           linkedin: '#',
         },
       ],
@@ -694,17 +694,17 @@ const translations = {
       title: '2 fondateurs, exécution full-stack',
       members: [
         {
-          name: 'Aditya',
-          role: 'CEO — Produit & Technologie',
-          background: 'A construit seul toute la plateforme (web + mobile + IA)',
-          bio: 'Ingénieur qui a construit Bloomsline de A à Z : dashboard Next.js, app mobile React Native, backend Supabase, intégration IA Claude. Expérience personnelle avec la thérapie a guidé l\'insight produit.',
+          name: 'Sarah',
+          role: 'Co-fondatrice · Ventes & Opérations',
+          background: 'Construit le moteur GTM de zéro',
+          bio: 'Responsable de l\'acquisition praticiens, partenariats et opérations. Premières conversations commerciales en cours — résultats en attente.',
           linkedin: '#',
         },
         {
-          name: 'Sarah',
-          role: 'COO — Ventes & Opérations',
-          background: 'Construit le moteur GTM de zéro',
-          bio: 'Responsable de l\'acquisition praticiens, partenariats et opérations. Premières conversations commerciales en cours — résultats en attente.',
+          name: 'Aditya',
+          role: 'Co-fondateur · Produit & Technologie',
+          background: 'A construit seul toute la plateforme (web + mobile + IA)',
+          bio: 'Ingénieur qui a construit Bloomsline de A à Z : dashboard Next.js, app mobile React Native, backend Supabase, intégration IA Claude. Expérience personnelle avec la thérapie a guidé l\'insight produit.',
           linkedin: '#',
         },
       ],
@@ -750,6 +750,7 @@ export default function PitchPage() {
   const t = (translations as Record<string, typeof translations.en>)[locale] || translations.en
 
   const slides = [
+    { id: 'vision', title: t.slides.vision },
     { id: 'hero', title: t.slides.hero },
     { id: 'problem', title: t.slides.problem },
     { id: 'solution', title: t.slides.solution },
@@ -763,7 +764,6 @@ export default function PitchPage() {
     { id: 'progress', title: t.slides.progress },
     { id: 'business', title: t.slides.business },
     { id: 'team', title: t.slides.team },
-    { id: 'vision', title: t.slides.vision },
     { id: 'ask', title: t.slides.ask },
     { id: 'contact', title: t.slides.contact },
   ]
@@ -886,20 +886,20 @@ export default function PitchPage() {
           transition={{ duration: 0.5, ease: 'easeInOut' }}
           className="h-full w-full"
         >
-          {currentSlide === 0 && <HeroSlide onNext={nextSlide} t={t.hero} />}
-          {currentSlide === 1 && <ProblemSlide t={t.problem} />}
-          {currentSlide === 2 && <SolutionSlide t={t.solution} />}
-          {currentSlide === 3 && <ProductSlide t={t.product} />}
-          {currentSlide === 4 && <FeaturesSlide t={t.features} />}
-          {currentSlide === 5 && <WhySlide t={t.why} />}
-          {currentSlide === 6 && <DifferentiationSlide t={t.differentiation} />}
-          {currentSlide === 7 && <MarketSlide t={t.market} />}
-          {currentSlide === 8 && <MarketSizeSlide t={t.marketSize} />}
-          {currentSlide === 9 && <TractionSlide t={t.traction} />}
-          {currentSlide === 10 && <ProgressSlide t={t.progress} />}
-          {currentSlide === 11 && <BusinessModelSlide t={t.business} />}
-          {currentSlide === 12 && <TeamSlide t={t.team} />}
-          {currentSlide === 13 && <VisionSlide t={t.vision} />}
+          {currentSlide === 0 && <VisionSlide t={t.vision} />}
+          {currentSlide === 1 && <HeroSlide onNext={nextSlide} t={t.hero} />}
+          {currentSlide === 2 && <ProblemSlide t={t.problem} />}
+          {currentSlide === 3 && <SolutionSlide t={t.solution} />}
+          {currentSlide === 4 && <ProductSlide t={t.product} />}
+          {currentSlide === 5 && <FeaturesSlide t={t.features} />}
+          {currentSlide === 6 && <WhySlide t={t.why} />}
+          {currentSlide === 7 && <DifferentiationSlide t={t.differentiation} />}
+          {currentSlide === 8 && <MarketSlide t={t.market} />}
+          {currentSlide === 9 && <MarketSizeSlide t={t.marketSize} />}
+          {currentSlide === 10 && <TractionSlide t={t.traction} />}
+          {currentSlide === 11 && <ProgressSlide t={t.progress} />}
+          {currentSlide === 12 && <BusinessModelSlide t={t.business} />}
+          {currentSlide === 13 && <TeamSlide t={t.team} />}
           {currentSlide === 14 && <AskSlide t={t.ask} />}
           {currentSlide === 15 && <ContactSlide t={t.contact} />}
         </motion.div>
@@ -2165,10 +2165,10 @@ interface TeamSlideProps {
 
 function TeamSlide({ t }: TeamSlideProps) {
   const colors = [
-    'bg-gradient-to-br from-teal-400 to-teal-600',
     'bg-gradient-to-br from-[#D4856A] to-[#E8A87C]',
+    'bg-gradient-to-br from-teal-400 to-teal-600',
   ]
-  const roleColors = ['text-teal-600', 'text-[#D4856A]']
+  const roleColors = ['text-[#D4856A]', 'text-teal-600']
 
   return (
     <div className="h-full w-full flex items-center justify-center px-6">
