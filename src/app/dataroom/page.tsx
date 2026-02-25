@@ -52,21 +52,11 @@ interface PageItem {
 function getPAGES(t: T): PageItem[] {
   return [
     {
-      id: 'pitch',
-      label: t('Pitch Deck', 'Pitch Deck'),
-      description: t('Full investor pitch presentation with all slides', 'Présentation complète du pitch investisseur avec toutes les diapositives'),
-      href: '/pitch',
-      icon: Presentation,
-      color: 'bg-indigo-50 text-indigo-600',
-      borderColor: 'border-indigo-200 hover:border-indigo-300',
-      tag: t('Original', 'Original'),
-    },
-    {
       id: 'pitch-new',
-      label: t('Pitch Deck v2', 'Pitch Deck v2'),
-      description: t('Redesigned pitch with updated narrative and visuals', 'Pitch repensé avec un récit et des visuels actualisés'),
+      label: t('Pitch Deck', 'Pitch Deck'),
+      description: t('Investor pitch — updated narrative, product, vision, and ask', 'Pitch investisseur — récit, produit, vision et demande actualisés'),
       href: '/pitch-new',
-      icon: Sparkles,
+      icon: Presentation,
       color: 'bg-violet-50 text-violet-600',
       borderColor: 'border-violet-200 hover:border-violet-300',
       tag: t('Latest', 'Récent'),
@@ -318,6 +308,17 @@ function getPAGES(t: T): PageItem[] {
       borderColor: 'border-gray-200',
       tag: t('Apr 2026', 'Avr 2026'),
       comingSoon: true,
+    },
+    // ── Reference Only ──────────────────────────
+    {
+      id: 'pitch-old',
+      label: t('Pitch Deck (Original)', 'Pitch Deck (Original)'),
+      description: t('Earlier version of the pitch — kept for reference only', 'Version antérieure du pitch — conservée pour référence uniquement'),
+      href: '/pitch',
+      icon: Presentation,
+      color: 'bg-gray-100 text-gray-400',
+      borderColor: 'border-gray-200',
+      tag: t('Reference', 'Référence'),
     },
   ]
 }
