@@ -16,12 +16,14 @@ import {
   Calendar,
   ArrowRight,
   Check,
-  Clock,
-  Lightbulb,
   Globe,
   Building2,
   Zap,
-  Stethoscope
+  Stethoscope,
+  Code,
+  Megaphone,
+  Handshake,
+  Palette,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { Button } from '@/components/ui/button'
@@ -29,48 +31,49 @@ import { useLanguage } from '@/lib/i18n/context'
 
 const DEMO_BOOKING_URL = 'https://calendar.app.google/DwruLrgYZ6TEegL58'
 
-// Translations
+// ─────────────────────────────────────────────────────
+// TRANSLATIONS (EN only for now — FR can be added later)
+// ─────────────────────────────────────────────────────
+
 const translations = {
   en: {
     slides: {
       hero: 'Hero',
       problem: 'Problem',
       solution: 'Solution',
-      why: 'Why Us',
-      product: 'Product',
-      features: 'Features',
-      traction: 'Traction',
-      progress: 'Progress',
-      market: 'Market',
-      marketSize: 'Market Size',
+      whyNow: 'Why Now',
       differentiation: 'Differentiation',
-      business: 'Business Model',
-      vision: 'Vision',
+      product: 'Product',
+      traction: 'Traction',
+      execution: 'Execution',
+      business: 'Business',
       team: 'Team',
+      vision: 'Vision',
       ask: 'The Ask',
       contact: 'Contact',
     },
     hero: {
       title1: 'The between-session',
       title2: 'care platform',
-      subtitle: 'Practitioners pay. Members use it free. Every practitioner brings 20-50 members.',
-      subtitle2: 'B2B SaaS for mental health — filling the 167 hours between therapy sessions.',
+      subtitle: 'Less admin, more presence.',
+      subtitle2: '',
       cta: 'View Pitch',
       seed: 'Pre-Seed · Pre-Revenue · 2026',
     },
     problem: {
       label: 'THE PROBLEM',
-      line1: 'There are 168 hours in a week.',
-      line2: 'Therapy is',
-      highlight1: '1.',
-      line3: 'What happens in the other',
-      highlight2: '167?',
-      closer: "That's where they need support — and where progress gets lost.",
+      headline: 'Therapy is 1 hour a week.',
+      subheadline: 'Life is the other 167.',
+      punchline: "That's where people need support — and where progress gets lost.",
+      consequences: [
+        { icon: 'clock', text: 'Half of every session is spent just catching up' },
+        { icon: 'blind', text: 'Practitioners can\'t see what happens between visits' },
+        { icon: 'alone', text: 'People feel alone between sessions — and disengage' },
+      ],
       stats: [
-        { value: '~50%', label: 'of session time spent "catching up"', source: 'APA Practice', url: 'https://www.apa.org/monitor/2024/01/trends-pathways-access-mental-health-care' },
-        { value: '86%', label: 'receive no treatment globally', source: 'WHO Sept 2025', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
-        { value: '58%', label: 'of providers: waitlist longer than ever', source: 'National Council 2024', url: 'https://www.thenationalcouncil.org/news/help-wanted/' },
-        { value: '49%', label: 'with mental health issues use AI', source: 'Sentio 2025', url: 'https://sentio.org/ai-research/ai-survey' },
+        { value: '~50%', label: 'of session time: catching up', source: 'APA Practice', url: 'https://www.apa.org/monitor/2024/01/trends-pathways-access-mental-health-care' },
+        { value: '86%', label: 'get no mental health treatment', source: 'WHO 2025', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
+        { value: '49%', label: 'with issues already use AI', source: 'Sentio 2025', url: 'https://sentio.org/ai-research/ai-survey' },
       ],
     },
     solution: {
@@ -82,9 +85,10 @@ const translations = {
           title: 'For Members',
           tagline: 'Companion App',
           features: [
-            'Log moments in 10 seconds (photo, voice, or text)',
-            'See AI-discovered patterns in mood and behavior',
-            'Chat with Bloom — an always-available AI companion',
+            'Capture moments in 10 seconds — photo, voice, or text',
+            'AI-discovered patterns in mood and behavior',
+            'Bloom — an always-available AI companion',
+            'Daily rituals that adapt to your energy',
           ],
           outcome: 'They stay engaged between sessions.'
         },
@@ -92,246 +96,166 @@ const translations = {
           title: 'For Practitioners',
           tagline: 'Visibility Dashboard',
           features: [
-            'Understand their week through what they share',
-            'Share worksheets and resources in one click',
+            'See their week through what they share',
+            'Create & share worksheets in one click',
             'Start sessions already informed',
+            'Track client engagement over time',
           ],
           outcome: 'Sessions go deeper, faster.'
         },
       ],
       bridge: 'One platform. Two sides of care. Connected.',
     },
-    why: {
-      label: 'WHY BLOOMSLINE',
-      title: 'What brings them here',
-      practitioner: {
-        title: 'Why Practitioners Choose Us',
-        motivation: 'They know healing doesn\'t happen in 50 minutes a week.',
-        painPoints: [
-          'Clients regress between sessions',
-          'No way to see the full picture',
-          'Limited tools beyond the couch',
-          'Burnout from emotional labor',
-        ],
-        outcome: 'Bloomsline extends their care — without extending their hours.',
-        value: 'Clients stay longer. Sessions go deeper.',
-      },
-      member: {
-        title: 'Why Members Stay',
-        motivation: 'They want to feel better — not track more.',
-        painPoints: [
-          'Apps feel like work',
-          'Tracking but not changing',
-          'Alone between sessions',
-          'Guilt when they slip',
-        ],
-        outcome: 'Bloomsline helps them grow — without making it feel like work.',
-        value: 'Real progress. Not just numbers.',
-      },
+    whyNow: {
+      label: 'WHY NOW',
+      title: 'Three tailwinds converging',
+      reasons: [
+        'Post-2020: mental health is destigmatized — demand up 40%',
+        'AI companions are socially accepted (49% of people with MH issues already use AI)',
+        'France launched Mon Soutien Psychologique (govt reimbursement) — practitioners need tools',
+        'No dominant between-session platform exists in EU — market is open',
+      ],
+      tam: { label: 'TAM', value: '€12B', desc: 'EU Digital Mental Health by 2030' },
+      sam: { label: 'SAM', value: '€2B', desc: 'Practice tools + between-session segment' },
+      som: { label: 'SOM', value: '€50M', desc: 'France + UK practitioners (Year 1-3 focus)' },
+      wedge: 'Each practitioner brings 20-50 members at zero acquisition cost. Built-in distribution that B2C competitors can\'t match.',
+      marketGrowth: '25% CAGR',
+    },
+    differentiation: {
+      label: 'WHERE WE FIT',
+      title: 'Nobody owns this space',
+      buckets: [
+        {
+          label: 'Practice tools',
+          examples: 'SimplePractice, Jane, TherapyNotes',
+          does: 'Run the business',
+          detail: 'Billing, scheduling, clinical notes',
+          emoji: '📋',
+        },
+        {
+          label: 'Wellness apps',
+          examples: 'Headspace, Calm, BetterHelp',
+          does: 'Help individuals cope',
+          detail: 'Meditations, self-help, generic content',
+          emoji: '🧘',
+        },
+      ],
+      gap: "Who connects the practitioner and the client between sessions?",
+      answer: 'Bloomsline.',
+      answerDetail: 'The between-session care platform — where both sides stay connected.',
     },
     product: {
       label: 'THE PRODUCT',
-      title: 'Built for both sides',
-      membersLabel: 'Members',
-      practitionersLabel: 'Practitioners',
-      memberFeatures: [
-        { name: 'Moments', desc: 'Capture memories with mood tracking' },
-        { name: 'Rituals', desc: 'Daily practices that adapt to your energy' },
-        { name: 'Progress', desc: 'Narrative growth, not scores' },
-        { name: 'Bloom AI', desc: 'Personalized guidance and check-ins' },
-      ],
-      practitionerFeatures: [
-        { name: 'Resources', desc: 'Create worksheets, exercises, psychoeducation' },
-        { name: 'Sessions', desc: 'Scheduling and session management' },
-        { name: 'Overview', desc: 'Client engagement and insights' },
-      ],
-      quote: '"See not just hard days, but the full picture — the effort, the small wins, the patterns over time."',
-    },
-    features: {
-      label: 'CORE FEATURES',
-      title: 'The two things that matter',
-      moments: {
-        title: 'Moments',
-        forWho: 'For Members',
-        problem: 'Life happens fast. We forget the small things that shape us.',
-        solution: 'Moments lets you capture everyday life — a walk, a meal, a feeling. It builds your journey over time.',
-        howItWorks: 'Snap a photo. Add how you felt. Done.',
-        whyItWorks: 'It\'s not about good or bad. It\'s about noticing. Every moment teaches something.',
-        noFriction: '10 seconds. No streaks. No guilt if you skip.',
-        whyTheyDoIt: 'Why they\'ll actually do it',
-        motivation: 'Scroll back and see how far you\'ve come.',
-        motivationDetail: 'Like looking at old photos — but for your growth. That\'s the reward.',
+      title: 'The missing layer between sessions',
+      practitioners: {
+        title: 'For Practitioners',
+        tagline: 'Walk into every session already informed',
+        features: [
+          { name: 'Pre-Session Brief', desc: 'AI reads what your client shared all week and gives you context before they sit down. No more "so how was your week?"' },
+          { name: 'Pattern Detection', desc: 'Spots recurring emotional themes across weeks that humans miss in 1-hour snapshots' },
+          { name: 'Contextual Notes', desc: 'After sessions, AI writes notes that understand your client\'s full arc — not a generic template' },
+        ],
       },
-      resources: {
-        title: 'Resources',
-        forWho: 'For Practitioners',
-        problem: 'You create great materials. But sharing them is a mess.',
-        solution: 'Resources lets you build a library — worksheets, exercises, guides — and share with one click.',
-        howItWorks: 'Create once. Assign to any client. Track who viewed it.',
-        whyItWorks: 'Your toolkit grows over time. Less repetition, more impact.',
-        noFriction: 'Not more admin. Just better delivery of what you already do.',
-        whyTheyDoIt: 'Why they\'ll actually do it',
-        motivation: 'Create once. Help hundreds.',
-        motivationDetail: 'Every resource you build compounds. Less repeating yourself, more connecting.',
+      members: {
+        title: 'For Members',
+        tagline: 'Stay connected to your care, not just an app',
+        features: [
+          { name: 'Moments', desc: 'Log what matters in 10 seconds. Your practitioner sees what you lived — not just what you remember to say.' },
+          { name: 'Bloom AI', desc: 'Not a replacement therapist. A companion that holds the thread between sessions — and knows your context.' },
+          { name: 'Rituals', desc: 'Practices shaped by what you need today. No streaks. No guilt. Just care that adapts.' },
+        ],
       },
+      loop: [
+        'Members share',
+        'AI connects the dots',
+        'Practitioners arrive informed',
+        'Every session starts deeper',
+      ],
     },
     traction: {
       label: 'WHERE WE ARE — HONESTLY',
       title: "Pre-revenue, post-learning",
       subtitle: "0 paying customers. A live product. And 18 months of research that shaped what we built.",
-      research: {
-        title: 'Discovery Research',
-        items: [
-          { value: '119', desc: 'Discovery interviews', detail: 'Across 7 countries — shaped every feature' },
-          { value: '15', desc: 'Beta testers', detail: 'Using the product, not paying yet' },
-        ],
-      },
-      pivot: {
-        title: 'What we learned',
-        before: 'We first tried building a platform for practitioner profiles (Doctalink). The market was crowded and we couldn\'t find a viable business model.',
-        learning: 'Through 119 interviews we discovered the real gap:',
-        insight: 'Practitioners have zero visibility into what happens between sessions. That insight became Bloomsline.',
-      },
-      now: {
-        title: 'Now',
-        items: [
-          { value: 'MVP', desc: 'Product live', detail: 'Web dashboard + mobile app built by founders' },
-          { value: '2', desc: 'Person team', detail: 'First 2 hires planned with raise (eng + sales)' },
-        ],
-      },
-      quote: '"Pre-revenue is a risk. But we\'ve de-risked the product through 119 interviews. The question is distribution, not product."',
-    },
-    progress: {
-      label: 'PROGRESS',
-      title: 'Our journey',
+      research: [
+        { value: '15', desc: 'Beta testers (not paying)' },
+        { value: '119', desc: 'Discovery interviews across 7 countries' },
+      ],
+      pivotInsight: 'We started with practitioner profiles (Doctalink). Market was crowded. But through 119 interviews we found the real gap: practitioners have zero visibility into what happens between sessions. That insight became Bloomsline.',
       timeline: [
-        {
-          date: 'Q1 2025',
-          title: 'Doctalink Pivot',
-          desc: 'First product wasn\'t viable. Crowded market, no clear business model.',
-          status: 'pivot',
-        },
-        {
-          date: 'Q3 2025',
-          title: 'Bloomsline Started',
-          desc: 'Applied learnings from 119 interviews. Built the between-session platform.',
-          status: 'done',
-        },
-        {
-          date: 'Dec 2025',
-          title: 'MVP Complete',
-          desc: 'Web dashboard + mobile app built. 15 beta testers onboarded.',
-          status: 'done',
-        },
-        {
-          date: 'Q1 2026',
-          title: 'Finding PMF',
-          desc: 'Converting beta testers to paying. Goal: 5-10 paying before round close.',
-          status: 'current',
-        },
-        {
-          date: 'Q2 2026',
-          title: 'First Paying Users',
-          desc: 'Target 30-50 paying practitioners via LinkedIn + referrals.',
-          status: 'upcoming',
-        },
-        {
-          date: 'Q3 2026',
-          title: 'Scale If PMF',
-          desc: 'EU expansion only if 3-month retention is >80%.',
-          status: 'upcoming',
-        },
+        { date: 'Q1 2025', title: 'Doctalink Pivot', status: 'pivot' },
+        { date: 'Q3 2025', title: 'Bloomsline Started', status: 'done' },
+        { date: 'Dec 2025', title: 'MVP Complete', status: 'done' },
+        { date: 'Q1 2026', title: 'Finding PMF', status: 'current' },
+        { date: 'Q2 2026', title: 'First Paying Users', status: 'upcoming' },
+        { date: 'Q3 2026', title: 'Scale If PMF', status: 'upcoming' },
       ],
-      currentFocus: 'Current Focus',
-      focusItems: [
-        'Converting beta testers to paying customers',
-        'Proving willingness to pay (€19-49/month)',
-        'Testing practitioner → member network effect',
-        'Measuring 30/60/90-day retention',
-      ],
+      quote: '"Pre-revenue is a risk. But we\'ve de-risked the product — 119 interviews shaped every feature. The question is distribution, not product."',
     },
-    market: {
-      label: 'MARKET OPPORTUNITY',
-      title: 'Three tailwinds converging',
-      stats: [
-        { value: '€12B', desc: 'EU Digital Mental Health by 2030' },
-        { value: '25%', desc: 'Annual market growth (CAGR)' },
-        { value: '0', desc: 'Dominant between-session platforms in EU' },
+    execution: {
+      label: 'HOW WE WIN',
+      title: 'Product. Distribution. Retention.',
+      subtitle: 'Three things that matter at our stage — and where we are on each.',
+      why: 'Build → Get found → Convert → Retain',
+      areas: [
+        {
+          title: 'Product',
+          items: [
+            'Full MVP live — web dashboard for practitioners + mobile app for members',
+            'AI context engine that learns from logged moments, spots emotional patterns, and gives practitioners a pre-session brief. Not a chatbot — a tool that makes sessions more productive.',
+          ],
+          status: 'MVP live',
+          why: 'What we sell',
+          highlight: '',
+        },
+        {
+          title: 'Distribution',
+          items: [
+            'Each practitioner publishes their profile on Bloomsline → SEO brings inbound practitioners organically, zero ad spend needed at this stage',
+            'LinkedIn outreach + peer referrals are our primary channels — low cost, high intent',
+          ],
+          status: 'Plan ready, not yet proven',
+          why: 'How we get practitioners',
+          highlight: '',
+        },
+        {
+          title: 'Network Effect',
+          items: [
+            'Every practitioner invites 20-50 members (their clients). Members see the product, tell other practitioners. One sale seeds the next. This is our CAC advantage — if it works.',
+            'Hypothesis: organic referrals compound. Risk: practitioners may not invite members actively.',
+          ],
+          status: 'Unproven — key assumption',
+          why: 'How we scale without $$',
+          highlight: '',
+        },
+        {
+          title: 'Retention',
+          items: [
+            'Mental health apps have ~90% drop-off in month 1. We designed around this: no streaks, no guilt, progress shown as story not score.',
+            'This is a bet on design philosophy. We believe it drives retention but have no data yet.',
+          ],
+          status: 'Designed, not measured',
+          why: 'Why they stay',
+          highlight: '',
+        },
       ],
-      whyNow: 'Why Now?',
-      reasons: [
-        'Post-2020: mental health destigmatized — demand up 40%',
-        'AI companions socially accepted (49% of MH patients already use AI)',
-        'France launched govt reimbursement (Mon Soutien Psychologique)',
-        'No dominant between-session platform exists in the EU market',
-      ],
-    },
-    marketSize: {
-      title: 'Market Size',
-      tam: {
-        label: 'TAM',
-        value: '€12B',
-        desc: 'EU Digital Mental Health Market by 2030',
-      },
-      sam: {
-        label: 'SAM',
-        value: '€2B',
-        desc: 'Practice Tools + Between-Session Segment',
-      },
-      som: {
-        label: 'SOM',
-        value: '€50M',
-        desc: 'France + UK practitioners (Year 1-3 focus)',
-      },
-      obtainable: 'Our wedge: Each practitioner brings 20-50 members at zero CAC. Built-in distribution that B2C apps can\'t match.',
-    },
-    differentiation: {
-      label: 'DIFFERENTIATION',
-      title: 'A new category',
-      headers: ['', 'SimplePractice', 'Headspace', 'Bloomsline'],
-      subheaders: ['', '& similar', 'Calm, etc.', ''],
-      rows: [
-        { label: 'What it does', values: ['Run a business', 'Feel-good content', 'Real progress'] },
-        { label: 'Between sessions', values: ['—', 'Same for everyone', '✓'] },
-        { label: 'What therapists see', values: ['Invoices only', '—', 'Client\'s full journey'] },
-        { label: 'AI companion', values: ['—', '—', '✓'] },
-        { label: 'Approach', values: ['Save time on admin', 'Streaks & badges', 'Fits into your day'] },
-      ],
-      summary: 'SimplePractice helps run a practice.',
-      summaryHighlight: 'Bloomsline helps deliver better care.',
     },
     business: {
       label: 'BUSINESS MODEL',
       title: 'B2B SaaS — practitioners pay, members free',
-      revenueTitle: 'Revenue Model',
       revenuePoints: [
         { title: '3 tiers: €19 / €29 / €49', desc: 'Essentiel → Pro → Cabinet, per practitioner/month' },
-        { title: 'Members use free', desc: 'Invited by their practitioner — zero acquisition cost' },
+        { title: 'Members use it free', desc: 'Invited by their practitioner — zero acquisition cost' },
         { title: 'B2C premium upside (future)', desc: '€3/mo member premium — not in current model' },
       ],
-      gtmTitle: 'Go-to-Market',
       gtmPoints: [
-        { title: 'Start: France', desc: 'Home market, where we have network' },
+        { title: 'Start: France', desc: 'Our home market, where we have network' },
         { title: 'Then: EU (UK, Germany)', desc: 'Same language support, similar regulations' },
         { title: 'Later: N. America', desc: 'Only after proving EU product-market fit' },
       ],
       metrics: [
         { value: '€19-49', desc: 'per practitioner/month' },
         { value: '~83%', desc: 'modeled gross margin (unproven)' },
-        { value: '<12mo', desc: 'modeled CAC payback' },
       ],
-    },
-    vision: {
-      label: 'THE LONG GAME',
-      title1: 'If this works, the data becomes',
-      title2: 'the real asset.',
-      description: "Every moment logged, every pattern observed, every therapeutic outcome tracked — with consent, this dataset becomes uniquely valuable for mental health research. But first we need to prove the platform works.",
-      phases: [
-        { title: 'Phase 1', desc: 'Between-session care platform. Prove product-market fit.' },
-        { title: 'Phase 2', desc: 'Behavioral pattern dataset. Valuable for research partnerships.' },
-        { title: 'Phase 3', desc: 'Mental health research infrastructure. Only if Phase 1-2 succeed.' },
-      ],
-      footer: "This vision is ambitious and far-off. Our focus is Phase 1: get 100+ practitioners paying, and prove the model works.",
     },
     team: {
       label: 'THE TEAM',
@@ -342,49 +266,63 @@ const translations = {
           role: 'Co-founder · Sales & Operations',
           background: 'Building the GTM engine from scratch',
           bio: 'Responsible for practitioner acquisition, partnerships, and operations. First sales conversations happening now — results pending.',
-          linkedin: '#',
         },
         {
           name: 'Aditya',
           role: 'Co-founder · Product & Technology',
           background: 'Solo-built the entire platform (web + mobile + AI)',
           bio: 'Engineer who built Bloomsline end-to-end: Next.js dashboard, React Native mobile app, Supabase backend, Claude AI integration. Personal experience with therapy drove the product insight.',
-          linkedin: '#',
         },
       ],
-      whyUs: 'Why us?',
       whyUsPoints: [
         'Entire product built by founders — no outsourcing, no burn before launch',
         '119 discovery interviews shaped every feature decision',
         'Risk: 2-person team. Plan: first 2 hires are engineer + sales (included in use of funds)',
       ],
-      quote: '"We built this because we needed it. Now we need to prove others will pay for it."',
+    },
+    vision: {
+      label: 'THE LONG GAME',
+      title1: 'When this works, the data becomes',
+      title2: 'the real asset.',
+      description: "Every moment logged, every pattern observed, every therapeutic outcome tracked — with consent, this dataset becomes uniquely valuable for mental health research. But first we need to prove the platform works.",
+      phases: [
+        { title: 'Phase 1', desc: 'Between-session care platform. Prove product-market fit.' },
+        { title: 'Phase 2', desc: 'Behavioral pattern dataset. Valuable for research partnerships.' },
+        { title: 'Phase 3', desc: 'Mental health research infrastructure. Only if Phase 1-2 succeed.' },
+      ],
+      footer: "This vision is ambitious and far-off. Our focus is Phase 1: get 100+ practitioners paying, and prove the model works.",
     },
     ask: {
       label: 'THE ASK',
-      title: 'Raising €400K - €500K',
-      subtitle: 'Pre-Seed · 18 months to prove product-market fit',
-      useOfFundsTitle: 'Use of Funds',
+      title: 'Raising €400K-€500K',
+      subtitle: 'Pre-seed · 18 months to prove product-market fit',
       useOfFunds: [
         { label: 'Product (AI + mobile)', percent: 40 },
         { label: 'Team (eng + sales)', percent: 25 },
         { label: 'Go-to-Market', percent: 25 },
         { label: 'Ops & Legal', percent: 10 },
       ],
-      milestonesTitle: 'Milestones',
       milestones: [
         { title: 'M6: First 30-50 paying practitioners', desc: 'Proof someone will swipe their card' },
         { title: 'M12: 100+ practitioners, 80%+ retention', desc: 'Product-market fit signal' },
         { title: 'M18: €100K+ ARR, Series A ready', desc: 'Data to raise next round at 3-5x' },
         { title: 'If we miss: concrete pivot triggers', desc: 'See financial model for M3/M6/M9/M12 thresholds' },
       ],
+      vision: {
+        title1: 'When this works, the data becomes',
+        title2: 'the real asset.',
+        phases: [
+          'Between-session care platform',
+          'Behavioral pattern dataset',
+          'Mental health research infrastructure',
+        ],
+      },
     },
     contact: {
       title: "Let's talk",
       subtitle: 'We\'re raising now. Happy to walk through the financial model live.',
       bookMeeting: 'Book a 20-min Call',
       emailUs: 'Email Us',
-      location: 'France · EU',
     },
   },
   fr: {
@@ -392,41 +330,39 @@ const translations = {
       hero: 'Accueil',
       problem: 'Problème',
       solution: 'Solution',
-      why: 'Pourquoi',
-      product: 'Produit',
-      features: 'Fonctions',
-      traction: 'Traction',
-      progress: 'Progrès',
-      market: 'Marché',
-      marketSize: 'Taille du Marché',
+      whyNow: 'Pourquoi',
       differentiation: 'Différenciation',
+      product: 'Produit',
+      traction: 'Traction',
+      execution: 'Exécution',
       business: 'Modèle',
-      vision: 'Vision',
       team: 'Équipe',
+      vision: 'Vision',
       ask: 'Demande',
       contact: 'Contact',
     },
     hero: {
       title1: 'La plateforme de soin',
       title2: 'entre les séances',
-      subtitle: 'Les praticiens paient. Les membres utilisent gratuitement. Chaque praticien amène 20-50 membres.',
-      subtitle2: 'B2B SaaS santé mentale — combler les 167 heures entre les séances de thérapie.',
+      subtitle: 'Moins d\'admin, plus de présence.',
+      subtitle2: '',
       cta: 'Voir le Pitch',
       seed: 'Pré-Seed · Pré-Revenu · 2026',
     },
     problem: {
       label: 'LE PROBLÈME',
-      line1: 'Il y a 168 heures dans une semaine.',
-      line2: 'La thérapie, c\'est',
-      highlight1: '1.',
-      line3: 'Que se passe-t-il dans les',
-      highlight2: '167 autres ?',
-      closer: "C'est là qu'ils ont besoin de soutien — et où le progrès se perd.",
+      headline: "La thérapie, c'est 1 heure par semaine.",
+      subheadline: 'La vie, ce sont les 167 autres.',
+      punchline: "C'est là que les gens ont besoin de soutien — et où le progrès se perd.",
+      consequences: [
+        { icon: 'clock', text: 'La moitié de chaque séance est passée à rattraper le retard' },
+        { icon: 'blind', text: 'Les praticiens ne voient pas ce qui se passe entre les visites' },
+        { icon: 'alone', text: 'Les gens se sentent seuls entre les séances — et décrochent' },
+      ],
       stats: [
-        { value: '~50%', label: 'du temps de séance à "rattraper"', source: 'APA Practice', url: 'https://www.apa.org/monitor/2024/01/trends-pathways-access-mental-health-care' },
-        { value: '86%', label: 'sans traitement mondial', source: 'OMS Sept 2025', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
-        { value: '58%', label: 'des psys: liste d\'attente record', source: 'National Council 2024', url: 'https://www.thenationalcouncil.org/news/help-wanted/' },
-        { value: '49%', label: 'avec problèmes psy utilisent l\'IA', source: 'Sentio 2025', url: 'https://sentio.org/ai-research/ai-survey' },
+        { value: '~50%', label: 'du temps de séance : rattrapage', source: 'APA Practice', url: 'https://www.apa.org/monitor/2024/01/trends-pathways-access-mental-health-care' },
+        { value: '86%', label: 'sans traitement en santé mentale', source: 'OMS 2025', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
+        { value: '49%', label: "avec des problèmes utilisent déjà l'IA", source: 'Sentio 2025', url: 'https://sentio.org/ai-research/ai-survey' },
       ],
     },
     solution: {
@@ -438,9 +374,10 @@ const translations = {
           title: 'Pour les Membres',
           tagline: 'App Compagnon',
           features: [
-            'Enregistrer des moments en 10 sec (photo, voix ou texte)',
-            'Voir les patterns découverts par l\'IA dans l\'humeur et le comportement',
-            'Discuter avec Bloom — un compagnon IA toujours disponible',
+            'Capturer des moments en 10 sec — photo, voix ou texte',
+            "Patterns découverts par l'IA dans l'humeur et le comportement",
+            'Bloom — un compagnon IA toujours disponible',
+            "Rituels quotidiens qui s'adaptent à votre énergie",
           ],
           outcome: 'Ils restent engagés entre les séances.'
         },
@@ -448,224 +385,157 @@ const translations = {
           title: 'Pour les Praticiens',
           tagline: 'Tableau de Bord Visibilité',
           features: [
-            'Comprendre leur semaine à travers ce qu\'ils partagent',
-            'Partager fiches et ressources en un clic',
+            "Comprendre leur semaine à travers ce qu'ils partagent",
+            'Créer et partager fiches et ressources en un clic',
             'Commencer les séances déjà informé',
+            "Suivre l'engagement client dans le temps",
           ],
           outcome: 'Les séances vont plus loin, plus vite.'
         },
       ],
       bridge: 'Une plateforme. Deux côtés du soin. Connectés.',
     },
-    why: {
-      label: 'POURQUOI BLOOMSLINE',
-      title: 'Ce qui les amène ici',
-      practitioner: {
-        title: 'Pourquoi les Praticiens nous choisissent',
-        motivation: 'Ils savent que la guérison ne se fait pas en 50 minutes par semaine.',
-        painPoints: [
-          'Les clients régressent entre les séances',
-          'Pas moyen de voir le tableau complet',
-          'Outils limités au-delà du cabinet',
-          'Épuisement dû à la charge émotionnelle',
-        ],
-        outcome: 'Bloomsline étend leur soin — sans étendre leurs heures.',
-        value: 'Les clients restent plus longtemps. Les séances vont plus loin.',
-      },
-      member: {
-        title: 'Pourquoi les Membres restent',
-        motivation: 'Ils veulent aller mieux — pas tracker plus.',
-        painPoints: [
-          'Les apps ressemblent à du travail',
-          'Tracker sans changer',
-          'Seuls entre les séances',
-          'Culpabilité quand ils craquent',
-        ],
-        outcome: 'Bloomsline les aide à grandir — sans que ça ressemble à du travail.',
-        value: 'Du vrai progrès. Pas juste des chiffres.',
-      },
+    whyNow: {
+      label: 'POURQUOI MAINTENANT',
+      title: 'Trois vents favorables convergent',
+      reasons: [
+        'Post-2020 : santé mentale déstigmatisée — demande en hausse de 40%',
+        'Les compagnons IA sont socialement acceptés (49% des personnes avec des troubles MH utilisent déjà l\'IA)',
+        'La France a lancé Mon Soutien Psychologique (remboursement) — les praticiens ont besoin d\'outils',
+        'Aucune plateforme entre-séances dominante en UE — le marché est ouvert',
+      ],
+      tam: { label: 'TAM', value: '12 Mrd€', desc: 'Santé mentale numérique UE d\'ici 2030' },
+      sam: { label: 'SAM', value: '2 Mrd€', desc: 'Outils de cabinet + segment entre-séances' },
+      som: { label: 'SOM', value: '50 M€', desc: 'Praticiens France + UK (focus années 1-3)' },
+      wedge: 'Chaque praticien amène 20-50 membres à coût d\'acquisition zéro. Distribution intégrée que les concurrents B2C ne peuvent pas égaler.',
+      marketGrowth: '25% TCAC',
+    },
+    differentiation: {
+      label: 'OÙ NOUS NOUS SITUONS',
+      title: 'Personne ne couvre cet espace',
+      buckets: [
+        {
+          label: 'Outils de cabinet',
+          examples: 'SimplePractice, Jane, TherapyNotes',
+          does: 'Gérer le business',
+          detail: 'Facturation, planning, notes cliniques',
+          emoji: '📋',
+        },
+        {
+          label: 'Apps bien-être',
+          examples: 'Headspace, Calm, BetterHelp',
+          does: 'Aider à se sentir mieux',
+          detail: 'Méditations, auto-aide, contenu générique',
+          emoji: '🧘',
+        },
+      ],
+      gap: 'Qui connecte le praticien et le client entre les séances ?',
+      answer: 'Bloomsline.',
+      answerDetail: 'La plateforme de soin entre les séances — où les deux côtés restent connectés.',
     },
     product: {
       label: 'LE PRODUIT',
-      title: 'Conçu pour les deux côtés',
-      membersLabel: 'Membres',
-      practitionersLabel: 'Praticiens',
-      memberFeatures: [
-        { name: 'Moments', desc: "Capturez des souvenirs avec suivi de l'humeur" },
-        { name: 'Rituels', desc: "Des pratiques quotidiennes qui s'adaptent à votre énergie" },
-        { name: 'Progrès', desc: 'Une croissance narrative, pas des scores' },
-        { name: 'Bloom IA', desc: 'Accompagnement personnalisé et suivis' },
-      ],
-      practitionerFeatures: [
-        { name: 'Ressources', desc: 'Créez des fiches, exercices, psychoéducation' },
-        { name: 'Séances', desc: 'Planification et gestion des séances' },
-        { name: 'Aperçu', desc: 'Engagement client et insights' },
-      ],
-      quote: '"Voir non seulement les jours difficiles, mais le tableau complet — l\'effort, les petites victoires, les patterns au fil du temps."',
-    },
-    features: {
-      label: 'FONCTIONS CLÉS',
-      title: 'Les deux choses qui comptent',
-      moments: {
-        title: 'Moments',
-        forWho: 'Pour les Membres',
-        problem: 'La vie va vite. On oublie les petites choses qui nous façonnent.',
-        solution: 'Moments permet de capturer le quotidien — une balade, un repas, une émotion. Ça construit votre parcours.',
-        howItWorks: 'Une photo. Une émotion. C\'est tout.',
-        whyItWorks: 'Ce n\'est pas une question de bon ou mauvais. C\'est remarquer. Chaque moment apprend quelque chose.',
-        noFriction: '10 secondes. Pas de séries. Pas de culpabilité si vous sautez.',
-        whyTheyDoIt: 'Pourquoi ils le feront',
-        motivation: 'Revenir en arrière et voir le chemin parcouru.',
-        motivationDetail: 'Comme regarder de vieilles photos — mais pour sa croissance. C\'est ça la récompense.',
+      title: 'La couche manquante entre les séances',
+      practitioners: {
+        title: 'Pour les Praticiens',
+        tagline: 'Arrivez à chaque séance déjà informé',
+        features: [
+          { name: 'Brief Pré-Séance', desc: 'L\'IA lit ce que votre client a partagé toute la semaine et vous donne le contexte avant qu\'il ne s\'assoie. Fini le "alors, comment s\'est passée votre semaine ?"' },
+          { name: 'Détection de Patterns', desc: 'Repère les thèmes émotionnels récurrents sur plusieurs semaines — ce que l\'humain rate en 1 heure' },
+          { name: 'Notes Contextuelles', desc: 'Après la séance, l\'IA rédige des notes qui comprennent l\'arc complet de votre client — pas un template générique' },
+        ],
       },
-      resources: {
-        title: 'Ressources',
-        forWho: 'Pour les Praticiens',
-        problem: 'Vous créez de super contenus. Mais les partager, c\'est le bazar.',
-        solution: 'Ressources vous permet de construire une bibliothèque — fiches, exercices, guides — et de partager en un clic.',
-        howItWorks: 'Créez une fois. Assignez à n\'importe quel client. Suivez qui a consulté.',
-        whyItWorks: 'Votre boîte à outils grandit avec le temps. Moins de répétition, plus d\'impact.',
-        noFriction: 'Pas plus d\'admin. Juste une meilleure façon de livrer ce que vous faites déjà.',
-        whyTheyDoIt: 'Pourquoi ils le feront',
-        motivation: 'Créer une fois. Aider des centaines.',
-        motivationDetail: 'Chaque ressource que vous créez se cumule. Moins vous répéter, plus connecter.',
+      members: {
+        title: 'Pour les Membres',
+        tagline: 'Restez connecté à votre soin, pas juste à une app',
+        features: [
+          { name: 'Moments', desc: 'Capturez ce qui compte en 10 secondes. Votre praticien voit ce que vous avez vécu — pas seulement ce dont vous vous souvenez.' },
+          { name: 'Bloom IA', desc: 'Pas un thérapeute de remplacement. Un compagnon qui tient le fil entre les séances — et connaît votre contexte.' },
+          { name: 'Rituels', desc: 'Des pratiques façonnées par ce dont vous avez besoin aujourd\'hui. Pas de séries. Pas de culpabilité. Juste du soin qui s\'adapte.' },
+        ],
       },
+      loop: [
+        'Les membres partagent',
+        'L\'IA connecte les points',
+        'Les praticiens arrivent informés',
+        'Chaque séance commence plus profond',
+      ],
     },
     traction: {
       label: 'OÙ NOUS EN SOMMES — HONNÊTEMENT',
       title: "Pré-revenu, post-apprentissage",
       subtitle: "0 client payant. Un produit live. Et 18 mois de recherche qui ont façonné ce que nous avons construit.",
-      research: {
-        title: 'Recherche Découverte',
-        items: [
-          { value: '119', desc: 'Entretiens découverte', detail: 'Dans 7 pays — ont façonné chaque fonctionnalité' },
-          { value: '15', desc: 'Testeurs bêta', detail: 'Utilisent le produit, ne paient pas encore' },
-        ],
-      },
-      pivot: {
-        title: 'Ce que nous avons appris',
-        before: 'Nous avons d\'abord construit une plateforme de profils praticiens (Doctalink). Le marché était saturé et nous n\'avons pas trouvé de modèle économique viable.',
-        learning: 'À travers 119 entretiens, nous avons découvert le vrai fossé :',
-        insight: 'Les praticiens n\'ont aucune visibilité sur ce qui se passe entre les séances. Cet insight est devenu Bloomsline.',
-      },
-      now: {
-        title: 'Maintenant',
-        items: [
-          { value: 'MVP', desc: 'Produit live', detail: 'Dashboard web + app mobile construits par les fondateurs' },
-          { value: '2', desc: 'Personnes dans l\'équipe', detail: '2 premiers recrutements prévus avec la levée (dev + commercial)' },
-        ],
-      },
-      quote: '"Pré-revenu est un risque. Mais nous avons dé-risqué le produit par 119 entretiens. La question est la distribution, pas le produit."',
-    },
-    progress: {
-      label: 'PROGRÈS',
-      title: 'Notre parcours',
+      research: [
+        { value: '15', desc: 'Testeurs bêta (non payants)' },
+        { value: '119', desc: 'Entretiens découverte dans 7 pays' },
+      ],
+      pivotInsight: "Nous avons commencé avec des profils praticiens (Doctalink). Marché saturé. Mais à travers 119 entretiens, nous avons trouvé le vrai fossé : les praticiens n'ont aucune visibilité sur ce qui se passe entre les séances. Cet insight est devenu Bloomsline.",
       timeline: [
-        {
-          date: 'T1 2025',
-          title: 'Pivot Doctalink',
-          desc: 'Premier produit non viable. Marché saturé, pas de modèle clair.',
-          status: 'pivot',
-        },
-        {
-          date: 'T3 2025',
-          title: 'Début Bloomsline',
-          desc: 'Appliqué les apprentissages de 119 entretiens. Construit la plateforme entre-séances.',
-          status: 'done',
-        },
-        {
-          date: 'Déc 2025',
-          title: 'MVP Terminé',
-          desc: 'Dashboard web + app mobile construits. 15 testeurs bêta.',
-          status: 'done',
-        },
-        {
-          date: 'T1 2026',
-          title: 'Recherche PMF',
-          desc: 'Conversion des testeurs bêta en clients payants. Objectif : 5-10 avant clôture du tour.',
-          status: 'current',
-        },
-        {
-          date: 'T2 2026',
-          title: 'Premiers clients payants',
-          desc: 'Objectif 30-50 praticiens payants via LinkedIn + parrainages.',
-          status: 'upcoming',
-        },
-        {
-          date: 'T3 2026',
-          title: 'Scale si PMF',
-          desc: 'Expansion EU uniquement si la rétention est >80% à 3 mois.',
-          status: 'upcoming',
-        },
+        { date: 'T1 2025', title: 'Pivot Doctalink', status: 'pivot' },
+        { date: 'T3 2025', title: 'Début Bloomsline', status: 'done' },
+        { date: 'Déc 2025', title: 'MVP Terminé', status: 'done' },
+        { date: 'T1 2026', title: 'Recherche PMF', status: 'current' },
+        { date: 'T2 2026', title: 'Premiers clients payants', status: 'upcoming' },
+        { date: "T3 2026", title: "Scale si PMF", status: 'upcoming' },
       ],
-      currentFocus: 'Focus Actuel',
-      focusItems: [
-        'Convertir les testeurs bêta en clients payants',
-        'Prouver la disposition à payer (€19-49/mois)',
-        'Tester le réseau praticien → membres',
-        'Mesurer la rétention à 30/60/90 jours',
-      ],
+      quote: '"Pré-revenu est un risque. Mais nous avons dé-risqué le produit — 119 entretiens ont façonné chaque fonctionnalité. La question est la distribution, pas le produit."',
     },
-    market: {
-      label: 'OPPORTUNITÉ DE MARCHÉ',
-      title: 'Trois vents favorables convergent',
-      stats: [
-        { value: '12 Mrd€', desc: 'Santé mentale numérique UE d\'ici 2030' },
-        { value: '25%', desc: 'Croissance annuelle du marché (TCAC)' },
-        { value: '0', desc: 'Plateforme entre-séances dominante en UE' },
+    execution: {
+      label: 'COMMENT ON GAGNE',
+      title: 'Produit. Distribution. Rétention.',
+      subtitle: 'Trois choses qui comptent à notre stade — et où nous en sommes sur chacune.',
+      why: 'Construire → Se faire trouver → Convertir → Retenir',
+      areas: [
+        {
+          title: 'Produit',
+          items: [
+            'MVP complet — dashboard web pour praticiens + app mobile pour membres',
+            'Moteur IA contextuel qui apprend des moments capturés, détecte les patterns émotionnels, et donne aux praticiens un brief pré-séance. Pas un chatbot — un outil qui rend les séances plus productives.',
+          ],
+          status: 'MVP prêt',
+          why: 'Ce qu\'on vend',
+          highlight: '',
+        },
+        {
+          title: 'Distribution',
+          items: [
+            'Chaque praticien publie son profil sur Bloomsline → le SEO amène des praticiens organiquement, zéro budget pub à ce stade',
+            'LinkedIn outreach + parrainages pairs sont nos canaux principaux — faible coût, haute intention',
+          ],
+          status: 'Plan prêt, pas encore prouvé',
+          why: 'Comment on trouve les praticiens',
+          highlight: '',
+        },
+        {
+          title: 'Effet réseau',
+          items: [
+            'Chaque praticien invite 20-50 membres (ses clients). Les membres voient le produit, en parlent à d\'autres praticiens. Une vente génère la suivante. C\'est notre avantage CAC — si ça marche.',
+            'Hypothèse : les parrainages organiques se composent. Risque : les praticiens n\'invitent peut-être pas activement leurs membres.',
+          ],
+          status: 'Non prouvé — hypothèse clé',
+          why: 'Comment on scale sans $$',
+          highlight: '',
+        },
+        {
+          title: 'Rétention',
+          items: [
+            'Les apps santé mentale ont ~90% d\'abandon au mois 1. Nous avons conçu autrement : pas de séries, pas de culpabilité, progrès en récit pas en score.',
+            'C\'est un pari sur la philosophie de design. On pense que ça drive la rétention mais on n\'a pas encore de données.',
+          ],
+          status: 'Conçu, pas mesuré',
+          why: 'Pourquoi ils restent',
+          highlight: '',
+        },
       ],
-      whyNow: 'Pourquoi maintenant ?',
-      reasons: [
-        'Post-2020 : santé mentale déstigmatisée — demande en hausse de 40%',
-        'Les compagnons IA sont socialement acceptés (49% des patients MH utilisent déjà l\'IA)',
-        'La France a lancé Mon Soutien Psychologique (remboursement)',
-        'Aucune plateforme entre-séances dominante n\'existe en UE',
-      ],
-    },
-    marketSize: {
-      title: 'Taille du Marché',
-      tam: {
-        label: 'TAM',
-        value: '12 Mrd€',
-        desc: 'Marché santé mentale numérique UE d\'ici 2030',
-      },
-      sam: {
-        label: 'SAM',
-        value: '2 Mrd€',
-        desc: 'Outils de cabinet + segment entre-séances',
-      },
-      som: {
-        label: 'SOM',
-        value: '50 M€',
-        desc: 'Praticiens France + UK (focus années 1-3)',
-      },
-      obtainable: 'Notre levier : Chaque praticien amène 20-50 membres à coût d\'acquisition zéro. Distribution intégrée que les apps B2C ne peuvent pas égaler.',
-    },
-    differentiation: {
-      label: 'DIFFÉRENCIATION',
-      title: 'Une nouvelle catégorie',
-      headers: ['', 'SimplePractice', 'Headspace', 'Bloomsline'],
-      subheaders: ['', '& similaires', 'Calm, etc.', ''],
-      rows: [
-        { label: 'Ce que ça fait', values: ['Gérer un business', 'Contenu feel-good', 'Vrai progrès'] },
-        { label: 'Entre les séances', values: ['—', 'Pareil pour tous', '✓'] },
-        { label: 'Ce que voit le psy', values: ['Factures seulement', '—', 'Parcours complet du client'] },
-        { label: 'Compagnon IA', values: ['—', '—', '✓'] },
-        { label: 'Approche', values: ['Gagner du temps admin', 'Séries & badges', 'S\'intègre à votre journée'] },
-      ],
-      summary: 'SimplePractice aide à gérer un cabinet.',
-      summaryHighlight: 'Bloomsline aide à délivrer de meilleurs soins.',
     },
     business: {
       label: 'MODÈLE ÉCONOMIQUE',
       title: 'B2B SaaS — les praticiens paient, les membres gratuit',
-      revenueTitle: 'Modèle de Revenus',
       revenuePoints: [
         { title: '3 paliers : 19€ / 29€ / 49€', desc: 'Essentiel → Pro → Cabinet, par praticien/mois' },
         { title: 'Les membres utilisent gratuitement', desc: 'Invités par leur praticien — coût d\'acquisition zéro' },
         { title: 'Premium B2C (futur)', desc: '3€/mois premium membre — pas dans le modèle actuel' },
       ],
-      gtmTitle: 'Stratégie de Marché',
       gtmPoints: [
         { title: 'Départ : France', desc: 'Notre marché domestique, où nous avons le réseau' },
         { title: 'Puis : UE (UK, Allemagne)', desc: 'Même support linguistique, réglementations similaires' },
@@ -674,20 +544,7 @@ const translations = {
       metrics: [
         { value: '19-49€', desc: 'par praticien/mois' },
         { value: '~83%', desc: 'marge brute modélisée (non prouvée)' },
-        { value: '<12 mois', desc: 'retour sur CAC modélisé' },
       ],
-    },
-    vision: {
-      label: 'LE LONG TERME',
-      title1: 'Si ça marche, les données deviennent',
-      title2: 'le vrai actif.',
-      description: "Chaque moment capturé, chaque pattern observé, chaque résultat thérapeutique suivi — avec consentement, ce dataset devient uniquement précieux pour la recherche en santé mentale. Mais d'abord, nous devons prouver que la plateforme fonctionne.",
-      phases: [
-        { title: 'Phase 1', desc: 'Plateforme de soin entre-séances. Prouver le product-market fit.' },
-        { title: 'Phase 2', desc: 'Dataset de patterns comportementaux. Valeur pour les partenariats recherche.' },
-        { title: 'Phase 3', desc: 'Infrastructure de recherche en santé mentale. Uniquement si phases 1-2 réussissent.' },
-      ],
-      footer: "Cette vision est ambitieuse et lointaine. Notre focus est la Phase 1 : avoir 100+ praticiens payants, et prouver que le modèle fonctionne.",
     },
     team: {
       label: "L'ÉQUIPE",
@@ -698,72 +555,87 @@ const translations = {
           role: 'Co-fondatrice · Ventes & Opérations',
           background: 'Construit le moteur GTM de zéro',
           bio: 'Responsable de l\'acquisition praticiens, partenariats et opérations. Premières conversations commerciales en cours — résultats en attente.',
-          linkedin: '#',
         },
         {
           name: 'Aditya',
           role: 'Co-fondateur · Produit & Technologie',
           background: 'A construit seul toute la plateforme (web + mobile + IA)',
           bio: 'Ingénieur qui a construit Bloomsline de A à Z : dashboard Next.js, app mobile React Native, backend Supabase, intégration IA Claude. Expérience personnelle avec la thérapie a guidé l\'insight produit.',
-          linkedin: '#',
         },
       ],
-      whyUs: 'Pourquoi nous ?',
       whyUsPoints: [
         'Produit entier construit par les fondateurs — pas d\'externalisation, pas de burn avant le lancement',
         '119 entretiens découverte ont façonné chaque décision produit',
         'Risque : équipe de 2. Plan : les 2 premiers recrutements sont ingénieur + commercial (inclus dans l\'utilisation des fonds)',
       ],
-      quote: '"Nous avons construit ce dont nous avions besoin. Maintenant nous devons prouver que d\'autres paieront pour."',
+    },
+    vision: {
+      label: 'LE LONG TERME',
+      title1: 'Quand ça marche, les données deviennent',
+      title2: 'le vrai actif.',
+      description: "Chaque moment capturé, chaque pattern observé, chaque résultat thérapeutique suivi — avec consentement, ce dataset devient uniquement précieux pour la recherche en santé mentale. Mais d'abord, nous devons prouver que la plateforme fonctionne.",
+      phases: [
+        { title: 'Phase 1', desc: 'Plateforme de soin entre-séances. Prouver le product-market fit.' },
+        { title: 'Phase 2', desc: 'Dataset de patterns comportementaux. Valeur pour les partenariats recherche.' },
+        { title: 'Phase 3', desc: 'Infrastructure de recherche en santé mentale. Uniquement si phases 1-2 réussissent.' },
+      ],
+      footer: "Cette vision est ambitieuse et lointaine. Notre focus est la Phase 1 : avoir 100+ praticiens payants, et prouver que le modèle fonctionne.",
     },
     ask: {
       label: 'LA DEMANDE',
-      title: 'Levée de 400K€ - 500K€',
-      subtitle: 'Pré-Seed · 18 mois pour prouver le product-market fit',
-      useOfFundsTitle: 'Utilisation des Fonds',
+      title: 'Levée de 400K€-500K€',
+      subtitle: 'Pré-seed · 18 mois pour prouver le product-market fit',
       useOfFunds: [
         { label: 'Produit (IA + mobile)', percent: 40 },
         { label: 'Équipe (dev + commercial)', percent: 25 },
         { label: 'Go-to-Market', percent: 25 },
         { label: 'Ops & Juridique', percent: 10 },
       ],
-      milestonesTitle: 'Jalons',
       milestones: [
         { title: 'M6 : 30-50 premiers praticiens payants', desc: 'Preuve que quelqu\'un sort sa carte' },
         { title: 'M12 : 100+ praticiens, 80%+ rétention', desc: 'Signal de product-market fit' },
         { title: 'M18 : 100K€+ ARR, prêt Série A', desc: 'Données pour lever le tour suivant à 3-5x' },
         { title: 'Si on rate : déclencheurs pivot concrets', desc: 'Voir le modèle financier pour les seuils M3/M6/M9/M12' },
       ],
+      vision: {
+        title1: 'Quand ça marche, les données deviennent',
+        title2: 'le vrai actif.',
+        phases: [
+          'Plateforme de soin entre-séances',
+          'Dataset de patterns comportementaux',
+          'Infrastructure de recherche en santé mentale',
+        ],
+      },
     },
     contact: {
-      title: 'Parlons-en',
+      title: "Parlons-en",
       subtitle: 'Nous levons maintenant. Nous pouvons présenter le modèle financier en direct.',
-      bookMeeting: 'Réserver 20 min',
+      bookMeeting: 'Réserver un appel de 20 min',
       emailUs: 'Nous Écrire',
-      location: 'France · UE',
     },
   },
 }
 
-export default function PitchPage() {
+// ─────────────────────────────────────────────────────
+// MAIN PAGE
+// ─────────────────────────────────────────────────────
+
+export default function PitchNewPage() {
   const { locale, setLocale } = useLanguage()
   const t = (translations as Record<string, typeof translations.en>)[locale] || translations.en
 
   const slides = [
-    { id: 'vision', title: t.slides.vision },
     { id: 'hero', title: t.slides.hero },
     { id: 'problem', title: t.slides.problem },
     { id: 'solution', title: t.slides.solution },
-    { id: 'product', title: t.slides.product },
-    { id: 'features', title: t.slides.features },
-    { id: 'why', title: t.slides.why },
+    { id: 'whyNow', title: t.slides.whyNow },
     { id: 'differentiation', title: t.slides.differentiation },
-    { id: 'market', title: t.slides.market },
-    { id: 'marketSize', title: t.slides.marketSize },
+    { id: 'product', title: t.slides.product },
     { id: 'traction', title: t.slides.traction },
-    { id: 'progress', title: t.slides.progress },
+    { id: 'execution', title: t.slides.execution },
     { id: 'business', title: t.slides.business },
     { id: 'team', title: t.slides.team },
+    { id: 'vision', title: t.slides.vision },
     { id: 'ask', title: t.slides.ask },
     { id: 'contact', title: t.slides.contact },
   ]
@@ -778,15 +650,9 @@ export default function PitchPage() {
     setTimeout(() => setIsAnimating(false), 600)
   }, [isAnimating, slides.length])
 
-  const nextSlide = useCallback(() => {
-    goToSlide(currentSlide + 1)
-  }, [currentSlide, goToSlide])
+  const nextSlide = useCallback(() => goToSlide(currentSlide + 1), [currentSlide, goToSlide])
+  const prevSlide = useCallback(() => goToSlide(currentSlide - 1), [currentSlide, goToSlide])
 
-  const prevSlide = useCallback(() => {
-    goToSlide(currentSlide - 1)
-  }, [currentSlide, goToSlide])
-
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
@@ -801,11 +667,10 @@ export default function PitchPage() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [nextSlide, prevSlide])
 
-
   const slideVariants = {
     enter: { opacity: 0, y: 50 },
     center: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -50 }
+    exit: { opacity: 0, y: -50 },
   }
 
   return (
@@ -827,7 +692,7 @@ export default function PitchPage() {
           <button
             key={slide.id}
             onClick={() => goToSlide(index)}
-            className={`group flex items-center gap-2 transition-all duration-300`}
+            className="group flex items-center gap-2 transition-all duration-300"
             aria-label={slide.title}
           >
             <span className={`text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
@@ -836,15 +701,13 @@ export default function PitchPage() {
               {slide.title}
             </span>
             <span className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              currentSlide === index
-                ? 'bg-teal-500 scale-125'
-                : 'bg-neutral-300 hover:bg-neutral-400'
+              currentSlide === index ? 'bg-teal-500 scale-125' : 'bg-neutral-300 hover:bg-neutral-400'
             }`} />
           </button>
         ))}
       </div>
 
-      {/* Navigation arrows - left side */}
+      {/* Navigation arrows */}
       <div className="fixed left-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-2">
         <button
           onClick={prevSlide}
@@ -886,22 +749,19 @@ export default function PitchPage() {
           transition={{ duration: 0.5, ease: 'easeInOut' }}
           className="h-full w-full"
         >
-          {currentSlide === 0 && <VisionSlide t={t.vision} />}
-          {currentSlide === 1 && <HeroSlide onNext={nextSlide} t={t.hero} />}
-          {currentSlide === 2 && <ProblemSlide t={t.problem} />}
-          {currentSlide === 3 && <SolutionSlide t={t.solution} />}
-          {currentSlide === 4 && <ProductSlide t={t.product} />}
-          {currentSlide === 5 && <FeaturesSlide t={t.features} />}
-          {currentSlide === 6 && <WhySlide t={t.why} />}
-          {currentSlide === 7 && <DifferentiationSlide t={t.differentiation} />}
-          {currentSlide === 8 && <MarketSlide t={t.market} />}
-          {currentSlide === 9 && <MarketSizeSlide t={t.marketSize} />}
-          {currentSlide === 10 && <TractionSlide t={t.traction} />}
-          {currentSlide === 11 && <ProgressSlide t={t.progress} />}
-          {currentSlide === 12 && <BusinessModelSlide t={t.business} />}
-          {currentSlide === 13 && <TeamSlide t={t.team} />}
-          {currentSlide === 14 && <AskSlide t={t.ask} />}
-          {currentSlide === 15 && <ContactSlide t={t.contact} />}
+          {currentSlide === 0 && <HeroSlide onNext={nextSlide} t={t.hero} />}
+          {currentSlide === 1 && <ProblemSlide t={t.problem} />}
+          {currentSlide === 2 && <SolutionSlide t={t.solution} />}
+          {currentSlide === 3 && <WhyNowSlide t={t.whyNow} />}
+          {currentSlide === 4 && <DifferentiationSlide t={t.differentiation} />}
+          {currentSlide === 5 && <ProductSlide t={t.product} />}
+          {currentSlide === 6 && <TractionSlide t={t.traction} />}
+          {currentSlide === 7 && <ExecutionSlide t={t.execution} />}
+          {currentSlide === 8 && <BusinessSlide t={t.business} />}
+          {currentSlide === 9 && <TeamSlide t={t.team} />}
+          {currentSlide === 10 && <VisionSlide t={t.vision} />}
+          {currentSlide === 11 && <AskSlide t={t.ask} />}
+          {currentSlide === 12 && <ContactSlide t={t.contact} />}
         </motion.div>
       </AnimatePresence>
 
@@ -913,22 +773,15 @@ export default function PitchPage() {
   )
 }
 
+
 // =============================================================================
-// SLIDE COMPONENTS
+// SLIDE 1: HERO
 // =============================================================================
 
-interface HeroSlideProps {
-  onNext: () => void
-  t: typeof translations.en.hero
-}
-
-function HeroSlide({ onNext, t }: HeroSlideProps) {
+function HeroSlide({ onNext, t }: { onNext: () => void; t: typeof translations.en.hero }) {
   return (
     <div className="h-full w-full flex items-center justify-center relative overflow-hidden">
-      {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-teal-50/50 via-white to-lavender-50/30" />
-
-      {/* Decorative blobs */}
       <div className="absolute top-20 right-20 w-96 h-96 bg-gradient-to-br from-teal-200/40 to-teal-300/40 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
       <div className="absolute bottom-20 left-20 w-96 h-96 bg-gradient-to-br from-lavender-200/40 to-lavender-300/40 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
 
@@ -948,8 +801,7 @@ function HeroSlide({ onNext, t }: HeroSlideProps) {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="text-5xl sm:text-6xl lg:text-7xl font-light text-neutral-900 mb-6 leading-[1.1]"
         >
-          {t.title1}
-          <br />
+          {t.title1}<br />
           <span className="bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent">
             {t.title2}
           </span>
@@ -961,16 +813,13 @@ function HeroSlide({ onNext, t }: HeroSlideProps) {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="text-xl text-neutral-600 mb-10 max-w-2xl mx-auto leading-relaxed"
         >
-          {t.subtitle}
-          <br />
-          {t.subtitle2}
+          {t.subtitle}<br />{t.subtitle2}
         </motion.p>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center"
         >
           <Button
             onClick={onNext}
@@ -994,93 +843,101 @@ function HeroSlide({ onNext, t }: HeroSlideProps) {
   )
 }
 
-interface ProblemSlideProps {
-  t: typeof translations.en.problem
-}
 
-function ProblemSlide({ t }: ProblemSlideProps) {
+// =============================================================================
+// SLIDE 2: PROBLEM — simple, visceral
+// =============================================================================
+
+function ProblemSlide({ t }: { t: typeof translations.en.problem }) {
   return (
     <div className="h-full w-full flex items-center justify-center px-8 lg:px-16">
-      <div className="w-full max-w-5xl mx-auto text-center">
-        {/* Label */}
+      <div className="w-full max-w-4xl mx-auto text-center">
         <motion.p
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-8"
+          className="text-teal-600 font-medium mb-10"
         >
           {t.label}
         </motion.p>
 
-        {/* Line 1: Context */}
-        <motion.p
+        {/* Big statement */}
+        <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-2xl sm:text-3xl text-neutral-400 mb-8"
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 mb-2 leading-[1.1]"
         >
-          {t.line1}
-        </motion.p>
+          {t.headline}
+        </motion.h2>
 
-        {/* 168 Dots Visual */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-          className="mb-8"
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.25 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-bold text-red-500 mb-8 leading-[1.1]"
         >
-          <div className="flex flex-wrap justify-center gap-1.5 max-w-3xl mx-auto mb-4">
-            {Array.from({ length: 168 }).map((_, i) => (
-              <motion.div
-                key={i}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.2, delay: 0.3 + i * 0.005 }}
-                className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${
-                  i === 0 ? 'bg-teal-500' : 'bg-neutral-200'
-                }`}
-              />
-            ))}
+          {t.subheadline}
+        </motion.h2>
+
+        {/* Visual ratio bar */}
+        <motion.div
+          initial={{ opacity: 0, scaleX: 0 }}
+          animate={{ opacity: 1, scaleX: 1 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          style={{ transformOrigin: 'left' }}
+          className="max-w-2xl mx-auto mb-4"
+        >
+          <div className="flex h-4 rounded-full overflow-hidden">
+            <div className="bg-teal-500 rounded-l-full" style={{ width: `${(1 / 168) * 100}%`, minWidth: '6px' }} />
+            <div className="bg-neutral-200 flex-1 rounded-r-full" />
           </div>
-          {/* Legend */}
-          <div className="flex justify-center gap-8 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-teal-500" />
-              <span className="text-neutral-600"><span className="font-bold">1</span> hour of therapy</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-neutral-200" />
-              <span className="text-neutral-400"><span className="font-bold">167</span> hours on your own</span>
-            </div>
+          <div className="flex justify-between text-xs text-neutral-400 mt-2 px-1">
+            <span className="text-teal-600 font-semibold">1h therapy</span>
+            <span>167h on their own</span>
           </div>
         </motion.div>
 
-        {/* Closing Statement */}
+        {/* Punchline */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="text-lg sm:text-xl text-neutral-500 max-w-2xl mx-auto mb-12"
+          transition={{ duration: 0.5, delay: 0.6 }}
+          className="text-lg text-neutral-500 max-w-xl mx-auto mb-12"
         >
-          {t.closer}
+          {t.punchline}
         </motion.p>
 
-        {/* Stats */}
+        {/* 3 consequences — what this means */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.7 }}
-          className="flex flex-col sm:flex-row justify-center gap-8 sm:gap-12"
+          className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto mb-10"
         >
-          {t.stats.map((stat: { value: string; label: string; source: string; url: string }, index: number) => (
+          {t.consequences.map((c, i) => (
+            <div key={i} className="p-4 rounded-2xl bg-red-50 border border-red-100">
+              <p className="text-sm text-neutral-700">{c.text}</p>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* Stats — proof */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.9 }}
+          className="flex justify-center gap-10"
+        >
+          {t.stats.map((stat, index) => (
             <div key={index} className="text-center">
-              <p className="text-3xl sm:text-4xl font-bold text-red-500 mb-1">{stat.value}</p>
-              <p className="text-sm text-neutral-600 mb-1">{stat.label}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-red-500 mb-1">{stat.value}</p>
+              <p className="text-xs text-neutral-600 mb-1">{stat.label}</p>
               <a
                 href={stat.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-neutral-400 hover:text-teal-600 underline underline-offset-2 transition-colors"
+                className="text-[10px] text-neutral-400 hover:text-teal-600 underline underline-offset-2 transition-colors"
               >
                 {stat.source} ↗
               </a>
@@ -1092,12 +949,17 @@ function ProblemSlide({ t }: ProblemSlideProps) {
   )
 }
 
-interface SolutionSlideProps {
-  t: typeof translations.en.solution
-}
 
-function SolutionSlide({ t }: SolutionSlideProps) {
-  const icons = [Sparkles, Stethoscope]  // Members = teal, Practitioners = peachy
+// =============================================================================
+// SLIDE 3: SOLUTION — merged Solution + Product features
+// =============================================================================
+
+function SolutionSlide({ t }: { t: typeof translations.en.solution }) {
+  const icons = [Sparkles, Stethoscope]
+  const bgColors = ['bg-teal-50', 'bg-[#D4856A]/10']
+  const borderColors = ['border-teal-200', 'border-[#D4856A]/30']
+  const textColors = ['text-teal-600', 'text-[#D4856A]']
+  const iconBgColors = ['bg-teal-100', 'bg-[#D4856A]/20']
 
   return (
     <div className="h-full w-full flex items-center justify-center px-6">
@@ -1135,13 +997,8 @@ function SolutionSlide({ t }: SolutionSlideProps) {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="grid sm:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8"
         >
-          {t.pillars.map((pillar: { title: string; tagline: string; features: string[]; outcome: string }, index: number) => {
+          {t.pillars.map((pillar, index) => {
             const Icon = icons[index]
-            // Members = teal, Practitioners = #D4856A (peachy)
-            const bgColors = ['bg-teal-50', 'bg-[#D4856A]/10']
-            const borderColors = ['border-teal-200', 'border-[#D4856A]/30']
-            const textColors = ['text-teal-600', 'text-[#D4856A]']
-            const iconBgColors = ['bg-teal-100', 'bg-[#D4856A]/20']
             return (
               <div key={index} className={`p-6 rounded-2xl ${bgColors[index]} border ${borderColors[index]} text-left`}>
                 <div className="flex items-center gap-3 mb-4">
@@ -1154,7 +1011,7 @@ function SolutionSlide({ t }: SolutionSlideProps) {
                   </div>
                 </div>
                 <ul className="space-y-2 mb-4">
-                  {pillar.features.map((feature: string, i: number) => (
+                  {pillar.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-neutral-700">
                       <Check className={`w-4 h-4 ${textColors[index]} mt-0.5 flex-shrink-0`} />
                       <span>{feature}</span>
@@ -1182,395 +1039,12 @@ function SolutionSlide({ t }: SolutionSlideProps) {
   )
 }
 
-interface WhySlideProps {
-  t: typeof translations.en.why
-}
 
-function WhySlide({ t }: WhySlideProps) {
-  return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-6xl mx-auto">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4 text-center"
-        >
-          {t.label}
-        </motion.p>
+// =============================================================================
+// SLIDE 4: WHY NOW — merged Market + Why Now + TAM/SAM/SOM
+// =============================================================================
 
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-12 text-center"
-        >
-          {t.title}
-        </motion.h2>
-
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Practitioners */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="p-8 rounded-3xl bg-gradient-to-br from-[#D4856A]/10 to-white border border-[#D4856A]/20"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-[#D4856A]/20 flex items-center justify-center">
-                <Users className="w-5 h-5 text-[#D4856A]" />
-              </div>
-              <h3 className="font-semibold text-neutral-900">{t.practitioner.title}</h3>
-            </div>
-
-            <p className="text-lg text-[#D4856A] font-medium mb-4 italic">
-              &ldquo;{t.practitioner.motivation}&rdquo;
-            </p>
-
-            <div className="space-y-2 mb-6">
-              {t.practitioner.painPoints.map((point, index) => (
-                <div key={index} className="flex items-center gap-2 text-neutral-600">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#D4856A]/50" />
-                  {point}
-                </div>
-              ))}
-            </div>
-
-            <div className="p-4 rounded-xl bg-[#D4856A]/10 border border-[#D4856A]/20">
-              <p className="text-[#D4856A] font-medium text-center">
-                {t.practitioner.outcome}
-              </p>
-              <p className="text-[#D4856A]/70 text-sm text-center mt-1">
-                {t.practitioner.value}
-              </p>
-            </div>
-          </motion.div>
-
-          {/* Members */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="p-8 rounded-3xl bg-gradient-to-br from-teal-50 to-white border border-teal-100"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
-                <Heart className="w-5 h-5 text-teal-600" />
-              </div>
-              <h3 className="font-semibold text-neutral-900">{t.member.title}</h3>
-            </div>
-
-            <p className="text-lg text-teal-600 font-medium mb-4 italic">
-              &ldquo;{t.member.motivation}&rdquo;
-            </p>
-
-            <div className="space-y-2 mb-6">
-              {t.member.painPoints.map((point, index) => (
-                <div key={index} className="flex items-center gap-2 text-neutral-600">
-                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500/50" />
-                  {point}
-                </div>
-              ))}
-            </div>
-
-            <div className="p-4 rounded-xl bg-teal-50 border border-teal-100">
-              <p className="text-teal-600 font-medium text-center">
-                {t.member.outcome}
-              </p>
-              <p className="text-teal-600/70 text-sm text-center mt-1">
-                {t.member.value}
-              </p>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-interface ProductSlideProps {
-  t: typeof translations.en.product
-}
-
-function ProductSlide({ t }: ProductSlideProps) {
-  const memberIcons = [Heart, Clock, TrendingUp, Brain]
-  const practitionerIcons = [Lightbulb, Calendar, Users]
-
-  return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-6xl mx-auto">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4 text-center"
-        >
-          {t.label}
-        </motion.p>
-
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-12 text-center"
-        >
-          {t.title}
-        </motion.h2>
-
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Members */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="p-8 rounded-3xl bg-gradient-to-br from-teal-50 to-white border border-teal-100"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="px-3 py-1 rounded-full bg-teal-100 text-teal-700 text-sm font-medium">
-                {t.membersLabel}
-              </div>
-            </div>
-            <div className="space-y-4">
-              {t.memberFeatures.map((feature, index) => {
-                const Icon = memberIcons[index]
-                const isHero = index === 0 // Moments is the hero feature
-                return (
-                  <motion.div
-                    key={feature.name}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.3 + index * 0.1 }}
-                    className={`flex items-center gap-4 p-3 rounded-xl transition-colors ${
-                      isHero
-                        ? 'bg-teal-100/50 border-2 border-teal-300 shadow-sm'
-                        : 'hover:bg-teal-50'
-                    }`}
-                  >
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      isHero ? 'bg-teal-500 text-white' : 'bg-teal-100'
-                    }`}>
-                      <Icon className={`w-5 h-5 ${isHero ? '' : 'text-teal-600'}`} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-neutral-900">{feature.name}</h4>
-                        {isHero && (
-                          <span className="px-2 py-0.5 text-xs font-medium bg-teal-500 text-white rounded-full">
-                            Core
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-neutral-500">{feature.desc}</p>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-          </motion.div>
-
-          {/* Practitioners */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="p-8 rounded-3xl bg-gradient-to-br from-[#D4856A]/10 to-white border border-[#D4856A]/20"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="px-3 py-1 rounded-full bg-[#D4856A]/20 text-[#D4856A] text-sm font-medium">
-                {t.practitionersLabel}
-              </div>
-            </div>
-            <div className="space-y-4">
-              {t.practitionerFeatures.map((feature, index) => {
-                const Icon = practitionerIcons[index]
-                const isHero = index === 0 // Resources is the hero feature
-                return (
-                  <motion.div
-                    key={feature.name}
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.4 + index * 0.1 }}
-                    className={`flex items-center gap-4 p-3 rounded-xl transition-colors ${
-                      isHero
-                        ? 'bg-[#D4856A]/20 border-2 border-[#D4856A]/40 shadow-sm'
-                        : 'hover:bg-[#D4856A]/10'
-                    }`}
-                  >
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      isHero ? 'bg-[#D4856A] text-white' : 'bg-[#D4856A]/20'
-                    }`}>
-                      <Icon className={`w-5 h-5 ${isHero ? '' : 'text-[#D4856A]'}`} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-neutral-900">{feature.name}</h4>
-                        {isHero && (
-                          <span className="px-2 py-0.5 text-xs font-medium bg-[#D4856A] text-white rounded-full">
-                            Core
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-neutral-500">{feature.desc}</p>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-
-            <div className="mt-6 p-4 rounded-xl bg-white/80 border border-[#D4856A]/10">
-              <p className="text-sm text-neutral-600 italic">
-                {t.quote}
-              </p>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-interface FeaturesSlideProps {
-  t: typeof translations.en.features
-}
-
-function FeaturesSlide({ t }: FeaturesSlideProps) {
-  return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-6xl mx-auto">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4 text-center"
-        >
-          {t.label}
-        </motion.p>
-
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-12 text-center"
-        >
-          {t.title}
-        </motion.h2>
-
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Moments - For Members */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="p-8 rounded-3xl bg-gradient-to-br from-teal-50 to-white border border-teal-200"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-teal-500 flex items-center justify-center">
-                  <Heart className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-semibold text-neutral-900">{t.moments.title}</h3>
-                  <span className="text-sm text-teal-600">{t.moments.forWho}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-red-50 border border-red-100">
-                <p className="text-sm font-medium text-red-700 mb-1">The problem</p>
-                <p className="text-neutral-700">{t.moments.problem}</p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-teal-50 border border-teal-100">
-                <p className="text-sm font-medium text-teal-700 mb-1">The solution</p>
-                <p className="text-neutral-700">{t.moments.solution}</p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200">
-                <p className="text-sm font-medium text-neutral-600 mb-1">How it works</p>
-                <p className="text-neutral-900 font-medium">{t.moments.howItWorks}</p>
-              </div>
-
-              {/* The hook - why they'll actually do it */}
-              <div className="p-4 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 text-white">
-                <p className="text-sm font-medium text-teal-100 mb-1">{t.moments.whyTheyDoIt}</p>
-                <p className="text-white font-semibold">{t.moments.motivation}</p>
-                <p className="text-teal-100 text-sm mt-1">{t.moments.motivationDetail}</p>
-              </div>
-
-              <div className="pt-4 border-t border-teal-100">
-                <p className="text-sm text-teal-600 italic">{t.moments.whyItWorks}</p>
-                <p className="text-xs text-neutral-500 mt-2">{t.moments.noFriction}</p>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Resources - For Practitioners */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="p-8 rounded-3xl bg-gradient-to-br from-[#D4856A]/10 to-white border border-[#D4856A]/30"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-[#D4856A] flex items-center justify-center">
-                  <Lightbulb className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-semibold text-neutral-900">{t.resources.title}</h3>
-                  <span className="text-sm text-[#D4856A]">{t.resources.forWho}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-red-50 border border-red-100">
-                <p className="text-sm font-medium text-red-700 mb-1">The problem</p>
-                <p className="text-neutral-700">{t.resources.problem}</p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[#D4856A]/10 border border-[#D4856A]/20">
-                <p className="text-sm font-medium text-[#D4856A] mb-1">The solution</p>
-                <p className="text-neutral-700">{t.resources.solution}</p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200">
-                <p className="text-sm font-medium text-neutral-600 mb-1">How it works</p>
-                <p className="text-neutral-900 font-medium">{t.resources.howItWorks}</p>
-              </div>
-
-              {/* The hook - why they'll actually do it */}
-              <div className="p-4 rounded-xl bg-gradient-to-r from-[#D4856A] to-[#E8A87C] text-white">
-                <p className="text-sm font-medium text-orange-100 mb-1">{t.resources.whyTheyDoIt}</p>
-                <p className="text-white font-semibold">{t.resources.motivation}</p>
-                <p className="text-orange-100 text-sm mt-1">{t.resources.motivationDetail}</p>
-              </div>
-
-              <div className="pt-4 border-t border-[#D4856A]/20">
-                <p className="text-sm text-[#D4856A] italic">{t.resources.whyItWorks}</p>
-                <p className="text-xs text-neutral-500 mt-2">{t.resources.noFriction}</p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-interface MarketSlideProps {
-  t: typeof translations.en.market
-}
-
-function MarketSlide({ t }: MarketSlideProps) {
-  const statColors = [
-    'bg-gradient-to-br from-teal-500 to-teal-600',
-    'bg-gradient-to-br from-lavender-500 to-lavender-600',
-    'bg-gradient-to-br from-[#D4856A] to-[#E8A87C]',
-  ]
-  const statTextColors = ['text-teal-100', 'text-lavender-100', 'text-orange-100']
-
+function WhyNowSlide({ t }: { t: typeof translations.en.whyNow }) {
   return (
     <div className="h-full w-full flex items-center justify-center px-6">
       <div className="max-w-5xl mx-auto">
@@ -1587,118 +1061,266 @@ function MarketSlide({ t }: MarketSlideProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-12 text-center"
+          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-10 text-center"
         >
           {t.title}
         </motion.h2>
 
-        <div className="grid sm:grid-cols-3 gap-6 mb-12">
-          {t.stats.map((stat, index) => (
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Left: Why Now reasons */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="p-8 rounded-3xl bg-neutral-50 border border-neutral-200"
+          >
+            <h3 className="font-semibold text-neutral-900 mb-5 text-lg">Tailwinds</h3>
+            <div className="space-y-4">
+              {t.reasons.map((reason, index) => (
+                <div key={index} className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-neutral-600">{reason}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 pt-4 border-t border-neutral-200 text-center">
+              <p className="text-3xl font-bold text-teal-600">{t.marketGrowth}</p>
+              <p className="text-sm text-neutral-500">Annual market growth</p>
+            </div>
+          </motion.div>
+
+          {/* Right: TAM/SAM/SOM stacked */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="flex flex-col gap-4"
+          >
+            {[
+              { data: t.tam, color: 'border-red-300 bg-red-50', valueColor: 'text-red-600', labelColor: 'text-red-500' },
+              { data: t.sam, color: 'border-blue-300 bg-blue-50', valueColor: 'text-blue-600', labelColor: 'text-blue-500' },
+              { data: t.som, color: 'border-teal-300 bg-teal-50', valueColor: 'text-teal-600', labelColor: 'text-teal-500' },
+            ].map(({ data, color, valueColor, labelColor }, index) => (
+              <motion.div
+                key={data.label}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.35 + index * 0.1 }}
+                className={`p-5 rounded-2xl border ${color} flex items-center gap-4`}
+              >
+                <div className={`text-sm font-bold ${labelColor} w-10`}>{data.label}</div>
+                <div className={`text-3xl font-bold ${valueColor}`}>{data.value}</div>
+                <div className="text-sm text-neutral-600 flex-1">{data.desc}</div>
+              </motion.div>
+            ))}
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.7 }}
+              className="text-sm text-neutral-500 italic mt-2 px-2"
+            >
+              {t.wedge}
+            </motion.p>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+// =============================================================================
+// SLIDE 5: DIFFERENTIATION — visual gap
+// =============================================================================
+
+function DifferentiationSlide({ t }: { t: typeof translations.en.differentiation }) {
+  const bucketColors = [
+    { bg: 'bg-neutral-50', border: 'border-neutral-200', text: 'text-neutral-600' },
+    { bg: 'bg-neutral-50', border: 'border-neutral-200', text: 'text-neutral-600' },
+  ]
+
+  return (
+    <div className="h-full w-full flex items-center justify-center px-6">
+      <div className="max-w-4xl mx-auto text-center">
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-teal-600 font-medium mb-4"
+        >
+          {t.label}
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-12"
+        >
+          {t.title}
+        </motion.h2>
+
+        {/* Two existing buckets */}
+        <div className="grid sm:grid-cols-2 gap-6 mb-8">
+          {t.buckets.map((bucket, index) => (
             <motion.div
-              key={index}
+              key={bucket.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-              className={`p-6 rounded-2xl ${statColors[index]} text-white text-center`}
+              className={`p-6 rounded-2xl ${bucketColors[index].bg} border ${bucketColors[index].border}`}
             >
-              <p className="text-4xl font-bold mb-2">{stat.value}</p>
-              <p className={`${statTextColors[index]} text-sm`}>{stat.desc}</p>
+              <p className="text-3xl mb-3">{bucket.emoji}</p>
+              <h3 className="text-lg font-semibold text-neutral-900 mb-1">{bucket.label}</h3>
+              <p className="text-sm text-neutral-400 mb-3">{bucket.examples}</p>
+              <p className="text-base font-medium text-neutral-700 mb-1">{bucket.does}</p>
+              <p className="text-sm text-neutral-500">{bucket.detail}</p>
             </motion.div>
           ))}
         </div>
 
+        {/* The gap */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="mb-6"
+        >
+          <div className="inline-block px-8 py-4 rounded-2xl bg-red-50 border border-red-200">
+            <p className="text-lg sm:text-xl font-medium text-red-600">{t.gap}</p>
+          </div>
+        </motion.div>
+
+        {/* Bloomsline — the answer */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="p-8 rounded-3xl bg-neutral-50 border border-neutral-200"
+          transition={{ duration: 0.6, delay: 0.7 }}
+          className="p-8 rounded-3xl bg-gradient-to-br from-teal-50 to-teal-100/50 border-2 border-teal-300"
         >
-          <h3 className="font-semibold text-neutral-900 mb-4">{t.whyNow}</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {t.reasons.map((reason, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
-                <p className="text-neutral-600">{reason}</p>
-              </div>
-            ))}
-          </div>
+          <p className="text-3xl sm:text-4xl font-bold text-teal-600 mb-2">{t.answer}</p>
+          <p className="text-lg text-neutral-600">{t.answerDetail}</p>
         </motion.div>
       </div>
     </div>
   )
 }
 
-interface MarketSizeSlideProps {
-  t: typeof translations.en.marketSize
-}
 
-function MarketSizeSlide({ t }: MarketSizeSlideProps) {
+// =============================================================================
+// SLIDE 6: PRODUCT — what we built
+// =============================================================================
+
+function ProductSlide({ t }: { t: typeof translations.en.product }) {
   return (
     <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-5xl mx-auto text-center">
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-teal-600 font-medium mb-4"
+        >
+          {t.label}
+        </motion.p>
+
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-4xl sm:text-5xl font-bold text-neutral-900 mb-12"
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-10 leading-[1.1]"
         >
           {t.title}
         </motion.h2>
 
-        {/* TAM/SAM/SOM Nested Ovals */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="relative flex items-center justify-center mb-8"
+          transition={{ duration: 0.5, delay: 0.25 }}
+          className="grid sm:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8"
         >
-          {/* TAM - outermost oval */}
-          <div className="relative border-2 border-dashed border-red-400 rounded-[100px] px-8 py-12 flex items-center">
-            {/* SAM - middle oval */}
-            <div className="border-2 border-dashed border-blue-400 rounded-[80px] px-8 py-10 flex items-center">
-              {/* SOM - innermost oval */}
-              <div className="border-2 border-dashed border-teal-500 rounded-[60px] px-6 py-8 bg-white">
-                <div>
-                  <p className="text-teal-600 font-bold text-xl">{t.som.label}</p>
-                  <p className="text-teal-700 font-bold text-2xl">{t.som.value}</p>
-                  <p className="text-neutral-600 text-sm max-w-[180px] leading-tight mt-1">{t.som.desc}</p>
-                </div>
+          {/* Practitioners column */}
+          <div className="p-6 rounded-2xl bg-[#D4856A]/10 border border-[#D4856A]/30 text-left">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-[#D4856A]/20 flex items-center justify-center">
+                <Stethoscope className="w-5 h-5 text-[#D4856A]" />
               </div>
-              {/* SAM label - positioned to the right */}
-              <div className="ml-6">
-                <p className="text-blue-600 font-bold text-xl">{t.sam.label}</p>
-                <p className="text-blue-700 font-bold text-2xl">{t.sam.value}</p>
-                <p className="text-neutral-600 text-sm max-w-[150px] leading-tight mt-1">{t.sam.desc}</p>
-              </div>
+              <h3 className="font-semibold text-neutral-900 text-lg">{t.practitioners.title}</h3>
             </div>
-            {/* TAM label - positioned to the right */}
-            <div className="ml-6">
-              <p className="text-red-500 font-bold text-xl">{t.tam.label}</p>
-              <p className="text-red-600 font-bold text-2xl">{t.tam.value}</p>
-              <p className="text-neutral-600 text-sm max-w-[150px] leading-tight mt-1">{t.tam.desc}</p>
+            <p className="text-sm font-medium text-[#D4856A] mb-5 ml-[52px]">{t.practitioners.tagline}</p>
+            <div className="space-y-4">
+              {t.practitioners.features.map((feature, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-[#D4856A]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-[#D4856A] text-xs font-bold">{i + 1}</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-neutral-900 text-sm">{feature.name}</p>
+                    <p className="text-[13px] text-neutral-500 leading-snug">{feature.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Members column */}
+          <div className="p-6 rounded-2xl bg-teal-50 border border-teal-200 text-left">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-teal-600" />
+              </div>
+              <h3 className="font-semibold text-neutral-900 text-lg">{t.members.title}</h3>
+            </div>
+            <p className="text-sm font-medium text-teal-600 mb-5 ml-[52px]">{t.members.tagline}</p>
+            <div className="space-y-4">
+              {t.members.features.map((feature, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-teal-600 text-xs font-bold">{i + 1}</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-neutral-900 text-sm">{feature.name}</p>
+                    <p className="text-[13px] text-neutral-500 leading-snug">{feature.desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </motion.div>
 
-        {/* Obtainable note */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
+        {/* The loop — the real USP */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="text-neutral-700 text-lg font-medium text-center"
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-neutral-900 text-sm"
         >
-          **{t.obtainable}
-        </motion.p>
+          {t.loop.map((step, i) => (
+            <span key={i} className="flex items-center gap-2">
+              <span className="text-white font-medium">{step}</span>
+              {i < t.loop.length - 1 && <ArrowRight className="w-3.5 h-3.5 text-teal-400" />}
+            </span>
+          ))}
+        </motion.div>
       </div>
     </div>
   )
 }
 
-interface DifferentiationSlideProps {
-  t: typeof translations.en.differentiation
-}
 
-function DifferentiationSlide({ t }: DifferentiationSlideProps) {
+// =============================================================================
+// SLIDE 7: TRACTION — merged Traction + Progress timeline
+// =============================================================================
+
+function TractionSlide({ t }: { t: typeof translations.en.traction }) {
+  const statusColors = {
+    pivot: { bg: 'bg-amber-100', border: 'border-amber-300', text: 'text-amber-700' },
+    done: { bg: 'bg-teal-100', border: 'border-teal-300', text: 'text-teal-700' },
+    current: { bg: 'bg-gradient-to-r from-teal-500 to-teal-600', border: 'border-teal-500', text: 'text-white' },
+    upcoming: { bg: 'bg-neutral-50', border: 'border-neutral-200', text: 'text-neutral-500' },
+  }
+
   return (
     <div className="h-full w-full flex items-center justify-center px-6">
       <div className="max-w-5xl mx-auto">
@@ -1715,79 +1337,184 @@ function DifferentiationSlide({ t }: DifferentiationSlideProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-12 text-center"
+          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-3 text-center"
         >
           {t.title}
         </motion.h2>
 
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="text-neutral-500 text-center mb-8"
+        >
+          {t.subtitle}
+        </motion.p>
+
+        {/* Top row: research stats + pivot insight */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="overflow-hidden rounded-3xl border border-neutral-200"
+          className="grid sm:grid-cols-3 gap-4 mb-8"
         >
-          <table className="w-full">
-            <thead className="bg-neutral-50">
-              <tr>
-                {t.headers.map((header, index) => (
-                  <th
-                    key={index}
-                    className={`text-center p-4 font-medium ${
-                      index === 3 ? 'text-teal-600 bg-teal-50' : index === 0 ? 'text-left text-neutral-900' : 'text-neutral-500'
-                    }`}
-                  >
-                    {header}
-                    {t.subheaders[index] && (
-                      <><br/><span className="text-xs font-normal">{t.subheaders[index]}</span></>
-                    )}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {t.rows.map((row, rowIndex) => (
-                <tr key={rowIndex}>
-                  <td className="p-4 text-neutral-600">{row.label}</td>
-                  {row.values.map((value, colIndex) => (
-                    <td
-                      key={colIndex}
-                      className={`p-4 text-center ${
-                        colIndex === 2 ? 'bg-teal-50/50' : ''
-                      } ${value === '✓' ? '' : colIndex === 2 ? 'text-sm text-teal-700 font-medium' : 'text-neutral-500 text-sm'}`}
-                    >
-                      {value === '✓' ? (
-                        <Check className="w-5 h-5 text-teal-500 mx-auto" />
-                      ) : value === '—' ? (
-                        <span className="text-neutral-400">—</span>
-                      ) : (
-                        value
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {t.research.map((item, index) => (
+            <div key={index} className="p-5 rounded-2xl bg-teal-50 border border-teal-100 text-center">
+              <p className="text-3xl font-bold text-teal-600">{item.value}</p>
+              <p className="text-sm text-neutral-600 mt-1">{item.desc}</p>
+            </div>
+          ))}
+          <div className="p-5 rounded-2xl bg-white border border-neutral-200 shadow-sm">
+            <p className="text-sm text-neutral-600 leading-relaxed">{t.pivotInsight}</p>
+          </div>
+        </motion.div>
+
+        {/* Timeline */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <div className="relative">
+            <div className="absolute top-6 left-0 right-0 h-0.5 bg-neutral-200 hidden lg:block" />
+            <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
+              {t.timeline.map((item, index) => {
+                const colors = statusColors[item.status as keyof typeof statusColors]
+                const isCurrent = item.status === 'current'
+                return (
+                  <div key={index} className="relative">
+                    <div className="hidden lg:flex justify-center mb-3">
+                      <div className={`w-3 h-3 rounded-full ${isCurrent ? 'bg-teal-500' : item.status === 'done' ? 'bg-teal-400' : item.status === 'pivot' ? 'bg-amber-400' : 'bg-neutral-300'} z-10`}>
+                        {isCurrent && <div className="absolute -inset-1 rounded-full bg-teal-500/30 animate-ping" />}
+                      </div>
+                    </div>
+                    <div className={`p-3 rounded-xl ${colors.bg} ${colors.border} border ${isCurrent ? 'shadow-lg shadow-teal-500/20' : ''}`}>
+                      <p className={`text-xs font-medium mb-0.5 ${isCurrent ? 'text-teal-100' : 'text-neutral-500'}`}>{item.date}</p>
+                      <h4 className={`font-semibold text-sm ${colors.text}`}>{item.title}</h4>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         </motion.div>
 
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="text-center text-neutral-500 mt-6"
+          transition={{ duration: 0.5, delay: 0.6 }}
+          className="text-center text-neutral-500 mt-6 italic text-sm"
         >
-          {t.summary} <span className="text-teal-600 font-medium">{t.summaryHighlight}</span>
+          {t.quote}
         </motion.p>
       </div>
     </div>
   )
 }
 
-interface BusinessModelSlideProps {
-  t: typeof translations.en.business
+
+// =============================================================================
+// SLIDE 7: EXECUTION — Building the Foundation
+// =============================================================================
+
+function ExecutionSlide({ t }: { t: typeof translations.en.execution }) {
+  const areaConfig = [
+    { icon: Code, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-200', statusBg: 'bg-teal-100', statusText: 'text-teal-700' },
+    { icon: Megaphone, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200', statusBg: 'bg-violet-100', statusText: 'text-violet-700' },
+    { icon: Handshake, color: 'text-[#D4856A]', bg: 'bg-[#D4856A]/10', border: 'border-[#D4856A]/30', statusBg: 'bg-[#D4856A]/20', statusText: 'text-[#D4856A]' },
+    { icon: Heart, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', statusBg: 'bg-blue-100', statusText: 'text-blue-700' },
+  ]
+
+  return (
+    <div className="h-full w-full flex items-center justify-center px-6">
+      <div className="max-w-6xl mx-auto">
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-teal-600 font-medium mb-4 text-center"
+        >
+          {t.label}
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-3 text-center"
+        >
+          {t.title}
+        </motion.h2>
+
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="text-neutral-500 text-center mb-4"
+        >
+          {t.subtitle}
+        </motion.p>
+
+        {/* Connecting logic */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="text-center text-sm font-medium text-neutral-400 mb-8"
+        >
+          {t.why}
+        </motion.p>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {t.areas.map((area, index) => {
+            const config = areaConfig[index]
+            const Icon = config.icon
+            return (
+              <motion.div
+                key={area.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.25 + index * 0.1 }}
+                className={`p-5 rounded-2xl ${config.bg} border ${config.border} flex flex-col`}
+              >
+                <div className="flex items-center gap-3 mb-1">
+                  <div className={`w-9 h-9 rounded-xl ${config.statusBg} flex items-center justify-center`}>
+                    <Icon className={`w-4.5 h-4.5 ${config.color}`} />
+                  </div>
+                  <h3 className="font-semibold text-neutral-900">{area.title}</h3>
+                </div>
+
+                <p className={`text-xs font-medium ${config.color} mb-4 ml-12`}>{area.why}</p>
+
+                <ul className="space-y-2 flex-1">
+                  {area.items.map((item, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-neutral-700">
+                      <Check className={`w-3.5 h-3.5 ${config.color} mt-0.5 flex-shrink-0`} />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className={`mt-4 pt-3 border-t ${config.border}`}>
+                  <span className={`text-xs font-semibold ${config.statusText} ${config.statusBg} px-2.5 py-1 rounded-full`}>
+                    {area.status}
+                  </span>
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
 }
 
-function BusinessModelSlide({ t }: BusinessModelSlideProps) {
+
+// =============================================================================
+// SLIDE 8: BUSINESS MODEL
+// =============================================================================
+
+function BusinessSlide({ t }: { t: typeof translations.en.business }) {
   return (
     <div className="h-full w-full flex items-center justify-center px-6">
       <div className="max-w-5xl mx-auto">
@@ -1810,6 +1537,7 @@ function BusinessModelSlide({ t }: BusinessModelSlideProps) {
         </motion.h2>
 
         <div className="grid md:grid-cols-2 gap-8 mb-10">
+          {/* Revenue */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -1818,7 +1546,7 @@ function BusinessModelSlide({ t }: BusinessModelSlideProps) {
           >
             <h3 className="font-semibold text-neutral-900 mb-6 flex items-center gap-2">
               <Target className="w-5 h-5 text-teal-500" />
-              {t.revenueTitle}
+              Revenue Model
             </h3>
             <ul className="space-y-4">
               {t.revenuePoints.map((point, index) => (
@@ -1835,6 +1563,7 @@ function BusinessModelSlide({ t }: BusinessModelSlideProps) {
             </ul>
           </motion.div>
 
+          {/* GTM */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -1843,7 +1572,7 @@ function BusinessModelSlide({ t }: BusinessModelSlideProps) {
           >
             <h3 className="font-semibold text-neutral-900 mb-6 flex items-center gap-2">
               <Globe className="w-5 h-5 text-lavender-500" />
-              {t.gtmTitle}
+              Go-to-Market
             </h3>
             <ul className="space-y-4">
               {t.gtmPoints.map((point, index) => (
@@ -1861,6 +1590,7 @@ function BusinessModelSlide({ t }: BusinessModelSlideProps) {
           </motion.div>
         </div>
 
+        {/* Metrics */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1879,11 +1609,197 @@ function BusinessModelSlide({ t }: BusinessModelSlideProps) {
   )
 }
 
-interface VisionSlideProps {
-  t: typeof translations.en.vision
+
+// =============================================================================
+// SLIDE 8: TEAM
+// =============================================================================
+
+function TeamSlide({ t }: { t: typeof translations.en.team }) {
+  const colors = [
+    'bg-gradient-to-br from-[#D4856A] to-[#E8A87C]',
+    'bg-gradient-to-br from-teal-400 to-teal-600',
+  ]
+  const roleColors = ['text-[#D4856A]', 'text-teal-600']
+
+  return (
+    <div className="h-full w-full flex items-center justify-center px-6">
+      <div className="max-w-5xl mx-auto">
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-teal-600 font-medium mb-4 text-center"
+        >
+          {t.label}
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-10 text-center"
+        >
+          {t.title}
+        </motion.h2>
+
+        <div className="grid lg:grid-cols-2 gap-6 mb-8">
+          {t.members.map((member, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
+              className="p-6 rounded-3xl bg-white border border-neutral-200 shadow-lg"
+            >
+              <div className="flex items-start gap-5">
+                <div className={`w-16 h-16 rounded-full ${colors[index]} flex items-center justify-center flex-shrink-0`}>
+                  <span className="text-xl font-bold text-white">{member.name[0]}</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-neutral-900">{member.name}</h3>
+                  <p className={`${roleColors[index]} font-medium text-sm mb-1`}>{member.role}</p>
+                  <p className="text-xs text-neutral-400 mb-2">{member.background}</p>
+                  <p className="text-neutral-600 text-sm">{member.bio}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Why Us */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="p-6 rounded-2xl bg-teal-50 border border-teal-100"
+        >
+          <ul className="space-y-2">
+            {t.whyUsPoints.map((point, index) => (
+              <li key={index} className="flex items-start gap-2 text-sm text-neutral-700">
+                <Check className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                {point}
+              </li>
+            ))}
+          </ul>
+        </motion.div>
+      </div>
+    </div>
+  )
 }
 
-function VisionSlide({ t }: VisionSlideProps) {
+
+// =============================================================================
+// SLIDE 9: THE ASK — with vision teaser at bottom
+// =============================================================================
+
+function AskSlide({ t }: { t: typeof translations.en.ask }) {
+  const fundColors = ['bg-teal-500', 'bg-lavender-500', 'bg-[#D4856A]', 'bg-neutral-400']
+  const milestoneIcons = [Rocket, Users, Globe, Brain]
+  const milestoneColors = [
+    { bg: 'bg-teal-100', text: 'text-teal-600' },
+    { bg: 'bg-lavender-100', text: 'text-lavender-600' },
+    { bg: 'bg-[#D4856A]/20', text: 'text-[#D4856A]' },
+    { bg: 'bg-neutral-100', text: 'text-neutral-600' },
+  ]
+
+  return (
+    <div className="h-full w-full flex items-center justify-center px-6">
+      <div className="max-w-5xl mx-auto">
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-teal-600 font-medium mb-4 text-center"
+        >
+          {t.label}
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-4 text-center"
+        >
+          {t.title}
+        </motion.h2>
+
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="text-neutral-500 text-center mb-10"
+        >
+          {t.subtitle}
+        </motion.p>
+
+        <div className="grid md:grid-cols-2 gap-8 mb-8">
+          {/* Use of Funds */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="p-8 rounded-3xl bg-white border border-neutral-200 shadow-lg"
+          >
+            <h3 className="font-semibold text-neutral-900 mb-6">Use of Funds</h3>
+            <div className="space-y-4">
+              {t.useOfFunds.map((item, index) => (
+                <div key={item.label}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-neutral-600">{item.label}</span>
+                    <span className="font-medium text-neutral-900">{item.percent}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-neutral-100 overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${item.percent}%` }}
+                      transition={{ duration: 0.8, delay: 0.3 + index * 0.1 }}
+                      className={`h-full rounded-full ${fundColors[index]}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Milestones */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="p-8 rounded-3xl bg-white border border-neutral-200 shadow-lg"
+          >
+            <h3 className="font-semibold text-neutral-900 mb-6">Milestones</h3>
+            <ul className="space-y-4">
+              {t.milestones.map((milestone, index) => {
+                const Icon = milestoneIcons[index]
+                const mColors = milestoneColors[index]
+                return (
+                  <li key={index} className="flex items-start gap-3">
+                    <div className={`w-6 h-6 rounded-full ${mColors.bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                      <Icon className={`w-3.5 h-3.5 ${mColors.text}`} />
+                    </div>
+                    <div>
+                      <p className="font-medium text-neutral-900">{milestone.title}</p>
+                      <p className="text-sm text-neutral-500">{milestone.desc}</p>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          </motion.div>
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
+
+// =============================================================================
+// SLIDE 11: VISION — The Long Game
+// =============================================================================
+
+function VisionSlide({ t }: { t: typeof translations.en.vision }) {
   const phaseIcons = [Zap, Brain, Building2]
   const phaseColors = ['bg-teal-500/20', 'bg-lavender-500/20', 'bg-[#D4856A]/20']
   const phaseTextColors = ['text-teal-400', 'text-lavender-400', 'text-[#E8A87C]']
@@ -1954,408 +1870,12 @@ function VisionSlide({ t }: VisionSlideProps) {
   )
 }
 
-interface TractionSlideProps {
-  t: typeof translations.en.traction
-}
 
-function TractionSlide({ t }: TractionSlideProps) {
-  return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-5xl mx-auto">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4 text-center"
-        >
-          {t.label}
-        </motion.p>
+// =============================================================================
+// SLIDE 12: CONTACT
+// =============================================================================
 
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-3 text-center"
-        >
-          {t.title}
-        </motion.h2>
-
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15 }}
-          className="text-neutral-500 text-center mb-8"
-        >
-          {t.subtitle}
-        </motion.p>
-
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Research */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="p-6 rounded-2xl bg-teal-50 border border-teal-100"
-          >
-            <h3 className="font-semibold text-neutral-900 mb-4">{t.research.title}</h3>
-            <div className="space-y-4">
-              {t.research.items.map((item, index) => (
-                <div key={index} className="flex items-center gap-4">
-                  <div className="text-3xl font-bold text-teal-600">{item.value}</div>
-                  <div>
-                    <p className="font-medium text-neutral-900">{item.desc}</p>
-                    <p className="text-xs text-neutral-500">{item.detail}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Pivot Story */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="p-6 rounded-2xl bg-white border border-neutral-200 shadow-lg lg:col-span-1"
-          >
-            <h3 className="font-semibold text-neutral-900 mb-3">{t.pivot.title}</h3>
-            <p className="text-sm text-neutral-600 mb-3">{t.pivot.before}</p>
-            <p className="text-sm text-neutral-500 mb-3">{t.pivot.learning}</p>
-            <p className="text-sm font-medium text-teal-600 italic">&ldquo;{t.pivot.insight}&rdquo;</p>
-          </motion.div>
-
-          {/* Now */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="p-6 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 text-white"
-          >
-            <h3 className="font-semibold mb-4">{t.now.title}</h3>
-            <div className="space-y-4">
-              {t.now.items.map((item, index) => (
-                <div key={index} className="flex items-center gap-4">
-                  <div className="text-3xl font-bold">{item.value}</div>
-                  <div>
-                    <p className="font-medium">{item.desc}</p>
-                    <p className="text-xs text-teal-100">{item.detail}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="text-center text-neutral-500 mt-8 italic"
-        >
-          {t.quote}
-        </motion.p>
-      </div>
-    </div>
-  )
-}
-
-interface ProgressSlideProps {
-  t: typeof translations.en.progress
-}
-
-function ProgressSlide({ t }: ProgressSlideProps) {
-  const statusColors = {
-    pivot: { bg: 'bg-amber-100', border: 'border-amber-300', dot: 'bg-amber-500', text: 'text-amber-700' },
-    done: { bg: 'bg-teal-100', border: 'border-teal-300', dot: 'bg-teal-500', text: 'text-teal-700' },
-    current: { bg: 'bg-gradient-to-r from-teal-500 to-teal-600', border: 'border-teal-500', dot: 'bg-white', text: 'text-white' },
-    upcoming: { bg: 'bg-neutral-50', border: 'border-neutral-200', dot: 'bg-neutral-300', text: 'text-neutral-500' },
-  }
-
-  return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-5xl mx-auto">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4 text-center"
-        >
-          {t.label}
-        </motion.p>
-
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-10 text-center"
-        >
-          {t.title}
-        </motion.h2>
-
-        {/* Timeline */}
-        <div className="relative">
-          {/* Horizontal line */}
-          <div className="absolute top-8 left-0 right-0 h-0.5 bg-neutral-200 hidden lg:block" />
-
-          {/* Timeline items */}
-          <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-            {t.timeline.map((item, index) => {
-              const colors = statusColors[item.status as keyof typeof statusColors]
-              const isCurrent = item.status === 'current'
-              return (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-                  className="relative"
-                >
-                  {/* Dot on timeline */}
-                  <div className="hidden lg:flex justify-center mb-4">
-                    <div className={`w-4 h-4 rounded-full ${colors.dot} border-2 ${colors.border} z-10 bg-white`}>
-                      {isCurrent && (
-                        <div className="absolute -inset-1 rounded-full bg-teal-500/30 animate-ping" />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Card */}
-                  <div className={`p-4 rounded-xl ${colors.bg} ${colors.border} border ${isCurrent ? 'shadow-lg shadow-teal-500/20' : ''}`}>
-                    <p className={`text-xs font-medium mb-1 ${isCurrent ? 'text-teal-100' : 'text-neutral-500'}`}>
-                      {item.date}
-                    </p>
-                    <h4 className={`font-semibold text-sm mb-1 ${colors.text} ${isCurrent ? '' : ''}`}>
-                      {item.title}
-                    </h4>
-                    <p className={`text-xs ${isCurrent ? 'text-teal-100' : 'text-neutral-500'}`}>
-                      {item.desc}
-                    </p>
-                  </div>
-                </motion.div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Current Focus */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.8 }}
-          className="mt-10 p-6 rounded-2xl bg-teal-50 border border-teal-100"
-        >
-          <h4 className="font-semibold text-neutral-900 mb-3">{t.currentFocus}</h4>
-          <div className="grid sm:grid-cols-2 gap-2">
-            {t.focusItems.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-teal-500 flex-shrink-0" />
-                <span className="text-sm text-neutral-700">{item}</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-    </div>
-  )
-}
-
-interface TeamSlideProps {
-  t: typeof translations.en.team
-}
-
-function TeamSlide({ t }: TeamSlideProps) {
-  const colors = [
-    'bg-gradient-to-br from-[#D4856A] to-[#E8A87C]',
-    'bg-gradient-to-br from-teal-400 to-teal-600',
-  ]
-  const roleColors = ['text-[#D4856A]', 'text-teal-600']
-
-  return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-5xl mx-auto">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4 text-center"
-        >
-          {t.label}
-        </motion.p>
-
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-10 text-center"
-        >
-          {t.title}
-        </motion.h2>
-
-        <div className="grid lg:grid-cols-2 gap-6 mb-8">
-          {t.members.map((member, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-              className="p-6 rounded-3xl bg-white border border-neutral-200 shadow-lg"
-            >
-              <div className="flex items-start gap-5">
-                <div className={`w-16 h-16 rounded-full ${colors[index]} flex items-center justify-center flex-shrink-0`}>
-                  <span className="text-xl font-bold text-white">{member.name[0]}</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-neutral-900">{member.name}</h3>
-                  <p className={`${roleColors[index]} font-medium text-sm mb-1`}>{member.role}</p>
-                  <p className="text-xs text-neutral-400 mb-2">{member.background}</p>
-                  <p className="text-neutral-600 text-sm">{member.bio}</p>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Why Us section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="p-6 rounded-2xl bg-teal-50 border border-teal-100 mb-6"
-        >
-          <h4 className="font-semibold text-neutral-900 mb-3">{t.whyUs}</h4>
-          <ul className="space-y-2">
-            {t.whyUsPoints.map((point, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm text-neutral-700">
-                <Check className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                {point}
-              </li>
-            ))}
-          </ul>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="text-center"
-        >
-          <p className="text-neutral-500 italic text-sm">
-            {t.quote}
-          </p>
-        </motion.div>
-      </div>
-    </div>
-  )
-}
-
-interface AskSlideProps {
-  t: typeof translations.en.ask
-}
-
-function AskSlide({ t }: AskSlideProps) {
-  const fundColors = ['bg-teal-500', 'bg-lavender-500', 'bg-[#D4856A]', 'bg-neutral-400']
-  const milestoneIcons = [Rocket, Users, Globe, Brain]
-  const milestoneColors = [
-    { bg: 'bg-teal-100', text: 'text-teal-600' },
-    { bg: 'bg-lavender-100', text: 'text-lavender-600' },
-    { bg: 'bg-[#D4856A]/20', text: 'text-[#D4856A]' },
-    { bg: 'bg-neutral-100', text: 'text-neutral-600' },
-  ]
-
-  return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-5xl mx-auto">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4 text-center"
-        >
-          {t.label}
-        </motion.p>
-
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-4 text-center"
-        >
-          {t.title}
-        </motion.h2>
-
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15 }}
-          className="text-neutral-500 text-center mb-12"
-        >
-          {t.subtitle}
-        </motion.p>
-
-        <div className="grid md:grid-cols-2 gap-8">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="p-8 rounded-3xl bg-white border border-neutral-200 shadow-lg"
-          >
-            <h3 className="font-semibold text-neutral-900 mb-6">{t.useOfFundsTitle}</h3>
-            <div className="space-y-4">
-              {t.useOfFunds.map((item, index) => (
-                <div key={item.label}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-neutral-600">{item.label}</span>
-                    <span className="font-medium text-neutral-900">{item.percent}%</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-neutral-100 overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${item.percent}%` }}
-                      transition={{ duration: 0.8, delay: 0.3 + index * 0.1 }}
-                      className={`h-full rounded-full ${fundColors[index]}`}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="p-8 rounded-3xl bg-white border border-neutral-200 shadow-lg"
-          >
-            <h3 className="font-semibold text-neutral-900 mb-6">{t.milestonesTitle}</h3>
-            <ul className="space-y-4">
-              {t.milestones.map((milestone, index) => {
-                const Icon = milestoneIcons[index]
-                const colors = milestoneColors[index]
-                return (
-                  <li key={index} className="flex items-start gap-3">
-                    <div className={`w-6 h-6 rounded-full ${colors.bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                      <Icon className={`w-3.5 h-3.5 ${colors.text}`} />
-                    </div>
-                    <div>
-                      <p className="font-medium text-neutral-900">{milestone.title}</p>
-                      <p className="text-sm text-neutral-500">{milestone.desc}</p>
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-          </motion.div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-interface ContactSlideProps {
-  t: typeof translations.en.contact
-}
-
-function ContactSlide({ t }: ContactSlideProps) {
+function ContactSlide({ t }: { t: typeof translations.en.contact }) {
   return (
     <div className="h-full w-full flex items-center justify-center px-6 bg-gradient-to-br from-teal-50 via-white to-lavender-50">
       <div className="max-w-3xl mx-auto text-center">
@@ -2392,17 +1912,12 @@ function ContactSlide({ t }: ContactSlideProps) {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="flex flex-col sm:flex-row gap-4 justify-center"
         >
-          <a
-            href={DEMO_BOOKING_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a href={DEMO_BOOKING_URL} target="_blank" rel="noopener noreferrer">
             <Button className="px-8 py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-medium rounded-full shadow-lg shadow-teal-500/30 hover:shadow-xl hover:from-teal-600 hover:to-teal-700 transition-all duration-300 text-lg">
               <Calendar className="w-5 h-5 mr-2" />
               {t.bookMeeting}
             </Button>
           </a>
-
           <a href="mailto:hi@bloomsline.com">
             <Button variant="outline" className="px-8 py-4 rounded-full border-2 border-neutral-300 text-neutral-700 font-medium hover:border-neutral-400 hover:bg-white transition-all text-lg">
               <Mail className="w-5 h-5 mr-2" />
@@ -2411,15 +1926,14 @@ function ContactSlide({ t }: ContactSlideProps) {
           </a>
         </motion.div>
 
-        <motion.div
+        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.5 }}
           className="mt-12 text-neutral-400 text-sm"
         >
-          <p>hi@bloomsline.com</p>
-          <p className="mt-1">{t.location}</p>
-        </motion.div>
+          hi@bloomsline.com
+        </motion.p>
       </div>
     </div>
   )
