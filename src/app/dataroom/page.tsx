@@ -314,7 +314,7 @@ function getPAGES(t: T): PageItem[] {
       id: 'pitch-old',
       label: t('Pitch Deck (Original)', 'Pitch Deck (Original)'),
       description: t('Earlier version of the pitch — kept for reference only', 'Version antérieure du pitch — conservée pour référence uniquement'),
-      href: '/pitch-new',
+      href: '/pitch-old',
       icon: Presentation,
       color: 'bg-gray-100 text-gray-400',
       borderColor: 'border-gray-200',
