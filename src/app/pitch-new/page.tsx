@@ -43,6 +43,7 @@ const translations = {
       solution: 'Solution',
       whyNow: 'Why Now',
       differentiation: 'Differentiation',
+      product: 'Product',
       traction: 'Traction',
       execution: 'Execution',
       business: 'Business',
@@ -142,6 +143,34 @@ const translations = {
       answer: 'Bloomsline.',
       answerDetail: 'The between-session care platform — where both sides stay connected.',
     },
+    product: {
+      label: 'THE PRODUCT',
+      title: 'The missing layer between sessions',
+      practitioners: {
+        title: 'For Practitioners',
+        tagline: 'Walk into every session already informed',
+        features: [
+          { name: 'Pre-Session Brief', desc: 'AI reads what your client shared all week and gives you context before they sit down. No more "so how was your week?"' },
+          { name: 'Pattern Detection', desc: 'Spots recurring emotional themes across weeks that humans miss in 1-hour snapshots' },
+          { name: 'Contextual Notes', desc: 'After sessions, AI writes notes that understand your client\'s full arc — not a generic template' },
+        ],
+      },
+      members: {
+        title: 'For Members',
+        tagline: 'Stay connected to your care, not just an app',
+        features: [
+          { name: 'Moments', desc: 'Log what matters in 10 seconds. Your practitioner sees what you lived — not just what you remember to say.' },
+          { name: 'Bloom AI', desc: 'Not a replacement therapist. A companion that holds the thread between sessions — and knows your context.' },
+          { name: 'Rituals', desc: 'Practices shaped by what you need today. No streaks. No guilt. Just care that adapts.' },
+        ],
+      },
+      loop: [
+        'Members share',
+        'AI connects the dots',
+        'Practitioners arrive informed',
+        'Every session starts deeper',
+      ],
+    },
     traction: {
       label: 'WHERE WE ARE — HONESTLY',
       title: "Pre-revenue, post-learning",
@@ -232,16 +261,16 @@ const translations = {
       title: '2 founders, full-stack execution',
       members: [
         {
-          name: 'Aditya',
-          role: 'CEO — Product & Technology',
-          background: 'Solo-built the entire platform (web + mobile + AI)',
-          bio: 'Engineer who built Bloomsline end-to-end: Next.js dashboard, React Native mobile app, Supabase backend, Claude AI integration. Personal experience with therapy drove the product insight.',
-        },
-        {
           name: 'Sarah',
-          role: 'COO — Sales & Operations',
+          role: 'Co-founder · Sales & Operations',
           background: 'Building the GTM engine from scratch',
           bio: 'Responsible for practitioner acquisition, partnerships, and operations. First sales conversations happening now — results pending.',
+        },
+        {
+          name: 'Aditya',
+          role: 'Co-founder · Product & Technology',
+          background: 'Solo-built the entire platform (web + mobile + AI)',
+          bio: 'Engineer who built Bloomsline end-to-end: Next.js dashboard, React Native mobile app, Supabase backend, Claude AI integration. Personal experience with therapy drove the product insight.',
         },
       ],
       whyUsPoints: [
@@ -290,6 +319,7 @@ const translations = {
       solution: 'Solution',
       whyNow: 'Pourquoi',
       differentiation: 'Différenciation',
+      product: 'Produit',
       traction: 'Traction',
       execution: 'Exécution',
       business: 'Modèle',
@@ -389,6 +419,34 @@ const translations = {
       answer: 'Bloomsline.',
       answerDetail: 'La plateforme de soin entre les séances — où les deux côtés restent connectés.',
     },
+    product: {
+      label: 'LE PRODUIT',
+      title: 'La couche manquante entre les séances',
+      practitioners: {
+        title: 'Pour les Praticiens',
+        tagline: 'Arrivez à chaque séance déjà informé',
+        features: [
+          { name: 'Brief Pré-Séance', desc: 'L\'IA lit ce que votre client a partagé toute la semaine et vous donne le contexte avant qu\'il ne s\'assoie. Fini le "alors, comment s\'est passée votre semaine ?"' },
+          { name: 'Détection de Patterns', desc: 'Repère les thèmes émotionnels récurrents sur plusieurs semaines — ce que l\'humain rate en 1 heure' },
+          { name: 'Notes Contextuelles', desc: 'Après la séance, l\'IA rédige des notes qui comprennent l\'arc complet de votre client — pas un template générique' },
+        ],
+      },
+      members: {
+        title: 'Pour les Membres',
+        tagline: 'Restez connecté à votre soin, pas juste à une app',
+        features: [
+          { name: 'Moments', desc: 'Capturez ce qui compte en 10 secondes. Votre praticien voit ce que vous avez vécu — pas seulement ce dont vous vous souvenez.' },
+          { name: 'Bloom IA', desc: 'Pas un thérapeute de remplacement. Un compagnon qui tient le fil entre les séances — et connaît votre contexte.' },
+          { name: 'Rituels', desc: 'Des pratiques façonnées par ce dont vous avez besoin aujourd\'hui. Pas de séries. Pas de culpabilité. Juste du soin qui s\'adapte.' },
+        ],
+      },
+      loop: [
+        'Les membres partagent',
+        'L\'IA connecte les points',
+        'Les praticiens arrivent informés',
+        'Chaque séance commence plus profond',
+      ],
+    },
     traction: {
       label: 'OÙ NOUS EN SOMMES — HONNÊTEMENT',
       title: "Pré-revenu, post-apprentissage",
@@ -479,16 +537,16 @@ const translations = {
       title: '2 fondateurs, exécution full-stack',
       members: [
         {
-          name: 'Aditya',
-          role: 'CEO — Produit & Technologie',
-          background: 'A construit seul toute la plateforme (web + mobile + IA)',
-          bio: 'Ingénieur qui a construit Bloomsline de A à Z : dashboard Next.js, app mobile React Native, backend Supabase, intégration IA Claude. Expérience personnelle avec la thérapie a guidé l\'insight produit.',
-        },
-        {
           name: 'Sarah',
-          role: 'COO — Ventes & Opérations',
+          role: 'Co-fondatrice · Ventes & Opérations',
           background: 'Construit le moteur GTM de zéro',
           bio: 'Responsable de l\'acquisition praticiens, partenariats et opérations. Premières conversations commerciales en cours — résultats en attente.',
+        },
+        {
+          name: 'Aditya',
+          role: 'Co-fondateur · Produit & Technologie',
+          background: 'A construit seul toute la plateforme (web + mobile + IA)',
+          bio: 'Ingénieur qui a construit Bloomsline de A à Z : dashboard Next.js, app mobile React Native, backend Supabase, intégration IA Claude. Expérience personnelle avec la thérapie a guidé l\'insight produit.',
         },
       ],
       whyUsPoints: [
@@ -546,6 +604,7 @@ export default function PitchNewPage() {
     { id: 'solution', title: t.slides.solution },
     { id: 'whyNow', title: t.slides.whyNow },
     { id: 'differentiation', title: t.slides.differentiation },
+    { id: 'product', title: t.slides.product },
     { id: 'traction', title: t.slides.traction },
     { id: 'execution', title: t.slides.execution },
     { id: 'business', title: t.slides.business },
@@ -668,12 +727,13 @@ export default function PitchNewPage() {
           {currentSlide === 2 && <SolutionSlide t={t.solution} />}
           {currentSlide === 3 && <WhyNowSlide t={t.whyNow} />}
           {currentSlide === 4 && <DifferentiationSlide t={t.differentiation} />}
-          {currentSlide === 5 && <TractionSlide t={t.traction} />}
-          {currentSlide === 6 && <ExecutionSlide t={t.execution} />}
-          {currentSlide === 7 && <BusinessSlide t={t.business} />}
-          {currentSlide === 8 && <TeamSlide t={t.team} />}
-          {currentSlide === 9 && <AskSlide t={t.ask} />}
-          {currentSlide === 10 && <ContactSlide t={t.contact} />}
+          {currentSlide === 5 && <ProductSlide t={t.product} />}
+          {currentSlide === 6 && <TractionSlide t={t.traction} />}
+          {currentSlide === 7 && <ExecutionSlide t={t.execution} />}
+          {currentSlide === 8 && <BusinessSlide t={t.business} />}
+          {currentSlide === 9 && <TeamSlide t={t.team} />}
+          {currentSlide === 10 && <AskSlide t={t.ask} />}
+          {currentSlide === 11 && <ContactSlide t={t.contact} />}
         </motion.div>
       </AnimatePresence>
 
@@ -1121,7 +1181,108 @@ function DifferentiationSlide({ t }: { t: typeof translations.en.differentiation
 
 
 // =============================================================================
-// SLIDE 6: TRACTION — merged Traction + Progress timeline
+// SLIDE 6: PRODUCT — what we built
+// =============================================================================
+
+function ProductSlide({ t }: { t: typeof translations.en.product }) {
+  return (
+    <div className="h-full w-full flex items-center justify-center px-6">
+      <div className="max-w-5xl mx-auto text-center">
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-teal-600 font-medium mb-4"
+        >
+          {t.label}
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-10 leading-[1.1]"
+        >
+          {t.title}
+        </motion.h2>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
+          className="grid sm:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8"
+        >
+          {/* Practitioners column */}
+          <div className="p-6 rounded-2xl bg-[#D4856A]/10 border border-[#D4856A]/30 text-left">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-[#D4856A]/20 flex items-center justify-center">
+                <Stethoscope className="w-5 h-5 text-[#D4856A]" />
+              </div>
+              <h3 className="font-semibold text-neutral-900 text-lg">{t.practitioners.title}</h3>
+            </div>
+            <p className="text-sm font-medium text-[#D4856A] mb-5 ml-[52px]">{t.practitioners.tagline}</p>
+            <div className="space-y-4">
+              {t.practitioners.features.map((feature, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-[#D4856A]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-[#D4856A] text-xs font-bold">{i + 1}</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-neutral-900 text-sm">{feature.name}</p>
+                    <p className="text-[13px] text-neutral-500 leading-snug">{feature.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Members column */}
+          <div className="p-6 rounded-2xl bg-teal-50 border border-teal-200 text-left">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-teal-600" />
+              </div>
+              <h3 className="font-semibold text-neutral-900 text-lg">{t.members.title}</h3>
+            </div>
+            <p className="text-sm font-medium text-teal-600 mb-5 ml-[52px]">{t.members.tagline}</p>
+            <div className="space-y-4">
+              {t.members.features.map((feature, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-teal-600 text-xs font-bold">{i + 1}</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-neutral-900 text-sm">{feature.name}</p>
+                    <p className="text-[13px] text-neutral-500 leading-snug">{feature.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* The loop — the real USP */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-neutral-900 text-sm"
+        >
+          {t.loop.map((step, i) => (
+            <span key={i} className="flex items-center gap-2">
+              <span className="text-white font-medium">{step}</span>
+              {i < t.loop.length - 1 && <ArrowRight className="w-3.5 h-3.5 text-teal-400" />}
+            </span>
+          ))}
+        </motion.div>
+      </div>
+    </div>
+  )
+}
+
+
+// =============================================================================
+// SLIDE 7: TRACTION — merged Traction + Progress timeline
 // =============================================================================
 
 function TractionSlide({ t }: { t: typeof translations.en.traction }) {
@@ -1427,10 +1588,10 @@ function BusinessSlide({ t }: { t: typeof translations.en.business }) {
 
 function TeamSlide({ t }: { t: typeof translations.en.team }) {
   const colors = [
-    'bg-gradient-to-br from-teal-400 to-teal-600',
     'bg-gradient-to-br from-[#D4856A] to-[#E8A87C]',
+    'bg-gradient-to-br from-teal-400 to-teal-600',
   ]
-  const roleColors = ['text-teal-600', 'text-[#D4856A]']
+  const roleColors = ['text-[#D4856A]', 'text-teal-600']
 
   return (
     <div className="h-full w-full flex items-center justify-center px-6">
