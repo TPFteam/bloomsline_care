@@ -282,7 +282,7 @@ const translations = {
     },
     vision: {
       label: 'THE LONG GAME',
-      title1: 'If this works, the data becomes',
+      title1: 'When this works, the data becomes',
       title2: 'the real asset.',
       description: "Every moment logged, every pattern observed, every therapeutic outcome tracked — with consent, this dataset becomes uniquely valuable for mental health research. But first we need to prove the platform works.",
       phases: [
@@ -309,7 +309,7 @@ const translations = {
         { title: 'If we miss: concrete pivot triggers', desc: 'See financial model for M3/M6/M9/M12 thresholds' },
       ],
       vision: {
-        title1: 'If this works, the data becomes',
+        title1: 'When this works, the data becomes',
         title2: 'the real asset.',
         phases: [
           'Between-session care platform',
@@ -571,7 +571,7 @@ const translations = {
     },
     vision: {
       label: 'LE LONG TERME',
-      title1: 'Si ça marche, les données deviennent',
+      title1: 'Quand ça marche, les données deviennent',
       title2: 'le vrai actif.',
       description: "Chaque moment capturé, chaque pattern observé, chaque résultat thérapeutique suivi — avec consentement, ce dataset devient uniquement précieux pour la recherche en santé mentale. Mais d'abord, nous devons prouver que la plateforme fonctionne.",
       phases: [
@@ -598,7 +598,7 @@ const translations = {
         { title: 'Si on rate : déclencheurs pivot concrets', desc: 'Voir le modèle financier pour les seuils M3/M6/M9/M12' },
       ],
       vision: {
-        title1: 'Si ça marche, les données deviennent',
+        title1: 'Quand ça marche, les données deviennent',
         title2: 'le vrai actif.',
         phases: [
           'Plateforme de soin entre-séances',
