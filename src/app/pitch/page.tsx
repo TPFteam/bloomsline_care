@@ -149,11 +149,11 @@ const translations = {
       title: 'The missing layer between sessions',
       practitioners: {
         title: 'For Practitioners',
-        tagline: 'Walk into every session already informed',
+        tagline: 'See. Understand. Extend.',
         features: [
-          { name: 'Pre-Session Brief', desc: 'AI reads what your client shared all week and gives you context before they sit down. No more "so how was your week?"' },
-          { name: 'Pattern Detection', desc: 'Spots recurring emotional themes across weeks that humans miss in 1-hour snapshots' },
-          { name: 'Contextual Notes', desc: 'After sessions, AI writes notes that understand your client\'s full arc — not a generic template' },
+          { name: 'Between-Session Visibility', desc: 'See your client\'s emotional life as it happens — moods, moments, patterns. A living picture, not a 5-day-old memory.' },
+          { name: 'AI-Powered Preparation', desc: 'Before each session: what happened, what shifted, what to explore. Start at the insight, not the recap. 25 min of catching up — gone.' },
+          { name: 'Therapeutic Reach', desc: 'Resources and exercises you create once, delivered to their phone. They do the work between sessions — you see the engagement. Your 1 hour becomes 168.' },
         ],
       },
       members: {
@@ -438,11 +438,11 @@ const translations = {
       title: 'La couche manquante entre les séances',
       practitioners: {
         title: 'Pour les Praticiens',
-        tagline: 'Arrivez à chaque séance déjà informé',
+        tagline: 'Voir. Comprendre. Étendre.',
         features: [
-          { name: 'Brief Pré-Séance', desc: 'L\'IA lit ce que votre client a partagé toute la semaine et vous donne le contexte avant qu\'il ne s\'assoie. Fini le "alors, comment s\'est passée votre semaine ?"' },
-          { name: 'Détection de Patterns', desc: 'Repère les thèmes émotionnels récurrents sur plusieurs semaines — ce que l\'humain rate en 1 heure' },
-          { name: 'Notes Contextuelles', desc: 'Après la séance, l\'IA rédige des notes qui comprennent l\'arc complet de votre client — pas un template générique' },
+          { name: 'Visibilité Entre-Séances', desc: 'Voir la vie émotionnelle de votre client en temps réel — humeurs, moments, patterns. Une image vivante, pas un souvenir de 5 jours.' },
+          { name: 'Préparation par l\'IA', desc: 'Avant chaque séance : ce qui s\'est passé, ce qui a changé, ce qu\'il faut explorer. Commencez par l\'insight, pas par le rattrapage. 25 min de mise à jour — disparues.' },
+          { name: 'Portée Thérapeutique', desc: 'Ressources et exercices créés une fois, livrés sur leur téléphone. Ils travaillent entre les séances — vous voyez l\'engagement. Votre 1 heure devient 168.' },
         ],
       },
       members: {
