@@ -160,9 +160,9 @@ const translations = {
         title: 'For Members',
         tagline: 'Stay connected to your care, not just an app',
         features: [
-          { name: 'Moments', desc: 'Log what matters in 10 seconds. Your practitioner sees what you lived — not just what you remember to say.' },
+          { name: 'Moments', desc: 'A 10-second reflection that builds self-awareness over time. What you capture between sessions becomes part of your therapeutic journey.' },
           { name: 'Bloom AI', desc: 'Not a replacement therapist. A companion that holds the thread between sessions — and knows your context.' },
-          { name: 'Rituals', desc: 'Practices shaped by what you need today. No streaks. No guilt. Just care that adapts.' },
+          { name: 'My Practitioner', desc: 'Stay connected to your practitioner between visits. See their resources, share what matters, and walk into your next session already on the same page.' },
         ],
       },
       loop: [
@@ -449,9 +449,9 @@ const translations = {
         title: 'Pour les Membres',
         tagline: 'Restez connecté à votre soin, pas juste à une app',
         features: [
-          { name: 'Moments', desc: 'Capturez ce qui compte en 10 secondes. Votre praticien voit ce que vous avez vécu — pas seulement ce dont vous vous souvenez.' },
+          { name: 'Moments', desc: 'Une réflexion de 10 secondes qui construit la conscience de soi au fil du temps. Ce que vous capturez entre les séances fait partie de votre parcours thérapeutique.' },
           { name: 'Bloom IA', desc: 'Pas un thérapeute de remplacement. Un compagnon qui tient le fil entre les séances — et connaît votre contexte.' },
-          { name: 'Rituels', desc: 'Des pratiques façonnées par ce dont vous avez besoin aujourd\'hui. Pas de séries. Pas de culpabilité. Juste du soin qui s\'adapte.' },
+          { name: 'Mon Praticien', desc: 'Restez connecté à votre praticien entre les visites. Consultez ses ressources, partagez ce qui compte, et arrivez à votre prochaine séance déjà sur la même longueur d\'onde.' },
         ],
       },
       loop: [
