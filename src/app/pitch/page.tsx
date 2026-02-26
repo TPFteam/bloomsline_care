@@ -151,7 +151,7 @@ const translations = {
         title: 'For Practitioners',
         tagline: 'See. Understand. Extend.',
         features: [
-          { name: 'Between-Session Visibility', desc: 'See your client\'s emotional life as it happens — moods, moments, patterns. A living picture, not a 5-day-old memory.' },
+          { name: 'Between-Session Visibility', desc: 'See what\'s happening in your client\'s life between visits. Patterns, shifts, and what they chose to share. A living picture, not a 5-day-old memory.' },
           { name: 'AI-Powered Preparation', desc: 'Before each session: what happened, what shifted, what to explore. Start at the insight, not the recap. 25 min of catching up — gone.' },
           { name: 'Therapeutic Resources', desc: 'Worksheets, exercises, and psychoeducation you create once, delivered to their phone. They do the work between sessions, you see the engagement.' },
         ],
@@ -440,7 +440,7 @@ const translations = {
         title: 'Pour les Praticiens',
         tagline: 'Voir. Comprendre. Étendre.',
         features: [
-          { name: 'Visibilité Entre-Séances', desc: 'Voir la vie émotionnelle de votre client en temps réel — humeurs, moments, patterns. Une image vivante, pas un souvenir de 5 jours.' },
+          { name: 'Visibilité Entre-Séances', desc: 'Voir ce qui se passe dans la vie de votre client entre les visites. Patterns, évolutions, et ce qu\'il choisit de partager. Une image vivante, pas un souvenir de 5 jours.' },
           { name: 'Préparation par l\'IA', desc: 'Avant chaque séance : ce qui s\'est passé, ce qui a changé, ce qu\'il faut explorer. Commencez par l\'insight, pas par le rattrapage. 25 min de mise à jour — disparues.' },
           { name: 'Ressources Thérapeutiques', desc: 'Fiches, exercices et psychoéducation créés une fois, livrés sur leur téléphone. Ils travaillent entre les séances, vous voyez l\'engagement.' },
         ],
