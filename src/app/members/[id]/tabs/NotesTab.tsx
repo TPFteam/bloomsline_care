@@ -41,7 +41,7 @@ interface NotesTabProps {
 }
 
 type ViewMode = 'browse' | 'notepad'
-type NoteFilter = 'all' | 'session' | 'general'
+type NoteFilter = 'all' | 'session' | 'general' | 'goal'
 
 interface AssistMessage {
   id: string
@@ -100,9 +100,11 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [customTypeValue, setCustomTypeValue] = useState('')
   const customTypeInputRef = useRef<HTMLInputElement>(null)
   const [customTypeMenu, setCustomTypeMenu] = useState<{ type: string; x: number; y: number } | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [renamingType, setRenamingType] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const customTypeMenuRef = useRef<HTMLDivElement>(null)
+  const longPressTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   const allNoteTypes = [...defaultNoteTypes, ...customNoteTypes]
 
@@ -207,6 +209,8 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
   // Filter state
   const [noteFilter, setNoteFilter] = useState<NoteFilter>('all')
+  const [filterSessionId, setFilterSessionId] = useState<string>('')
+  const [filterMilestoneId, setFilterMilestoneId] = useState<string>('')
   const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -699,7 +703,10 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   // Filter notes
   const filteredNotes = allNotes.filter(note => {
     if (noteFilter === 'session' && !note.session_id) return false
+    if (noteFilter === 'session' && filterSessionId && note.session_id !== filterSessionId) return false
     if (noteFilter === 'general' && note.session_id) return false
+    if (noteFilter === 'goal' && !note.milestone_id) return false
+    if (noteFilter === 'goal' && filterMilestoneId && note.milestone_id !== filterMilestoneId) return false
     if (typeFilters.size > 0 && !typeFilters.has(note.note_type)) return false
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
@@ -1266,16 +1273,40 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     )
                   }
 
+                  const openMenu = (x: number, y: number) => {
+                    if (!isCustom) return
+                    setConfirmingDelete(false)
+                    setCustomTypeMenu({ type, x, y })
+                  }
+
                   return (
                     <button
                       key={type}
                       onClick={() => setPadNoteType(type)}
-                      onContextMenu={(e) => {
+                      onDoubleClick={(e) => {
                         if (!isCustom) return
                         e.preventDefault()
-                        setCustomTypeMenu({ type, x: e.clientX, y: e.clientY })
+                        const rect = (e.target as HTMLElement).getBoundingClientRect()
+                        openMenu(rect.left, rect.bottom + 4)
                       }}
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                      onTouchStart={(e) => {
+                        if (!isCustom) return
+                        const touch = e.touches[0]
+                        const timer = setTimeout(() => {
+                          openMenu(touch.clientX, touch.clientY)
+                          longPressTimers.current.delete(type)
+                        }, 500)
+                        longPressTimers.current.set(type, timer)
+                      }}
+                      onTouchEnd={() => {
+                        const timer = longPressTimers.current.get(type)
+                        if (timer) { clearTimeout(timer); longPressTimers.current.delete(type) }
+                      }}
+                      onTouchMove={() => {
+                        const timer = longPressTimers.current.get(type)
+                        if (timer) { clearTimeout(timer); longPressTimers.current.delete(type) }
+                      }}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all select-none ${
                         padNoteType === type
                           ? `${getNoteColor(type).bg} ${getNoteColor(type).text} ring-1 ring-current ring-opacity-30`
                           : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
@@ -1304,13 +1335,23 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       <Pencil className="w-3 h-3" />
                       {locale === 'fr' ? 'Renommer' : 'Rename'}
                     </button>
-                    <button
-                      onClick={() => deleteCustomType(customTypeMenu.type)}
-                      className="w-full px-3 py-1.5 text-xs text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      {locale === 'fr' ? 'Supprimer' : 'Delete'}
-                    </button>
+                    {confirmingDelete ? (
+                      <button
+                        onClick={() => { deleteCustomType(customTypeMenu.type); setConfirmingDelete(false) }}
+                        className="w-full px-3 py-1.5 text-xs text-left text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        {locale === 'fr' ? 'Confirmer ?' : 'Confirm?'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmingDelete(true)}
+                        className="w-full px-3 py-1.5 text-xs text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -1509,15 +1550,43 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       {/* ================================ */}
       {viewMode === 'browse' && (
         <>
-          {/* Actions bar */}
-          <div className="flex items-center justify-end">
-            <Button
-              onClick={() => setShowAddNote(true)}
-              className="bg-gray-900 text-white hover:bg-gray-800"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              {t.members.notes.addNote}
-            </Button>
+          {/* Actions bar + type filter pills */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
+              <button
+                onClick={() => setTypeFilters(new Set())}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                  typeFilters.size === 0
+                    ? 'bg-gray-200 text-gray-700'
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {locale === 'fr' ? 'Tous' : locale === 'es' ? 'Todos' : 'All'}
+              </button>
+              {allNoteTypes.map(type => {
+                const active = typeFilters.has(type)
+                return (
+                  <button
+                    key={type}
+                    onClick={() => {
+                      setTypeFilters(prev => {
+                        const next = new Set(prev)
+                        if (next.has(type)) next.delete(type)
+                        else next.add(type)
+                        return next
+                      })
+                    }}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                      active
+                        ? `${getNoteColor(type).bg} ${getNoteColor(type).text} ring-1 ring-current ring-opacity-30`
+                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Filter Bar */}
@@ -1528,11 +1597,11 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 {([
                   { id: 'all' as NoteFilter, label: locale === 'fr' ? 'Toutes' : locale === 'es' ? 'Todas' : 'All' },
                   { id: 'session' as NoteFilter, label: locale === 'fr' ? 'Liées à une séance' : locale === 'es' ? 'De sesión' : 'Session Notes' },
-                  { id: 'general' as NoteFilter, label: locale === 'fr' ? 'Générales' : locale === 'es' ? 'Generales' : 'General' },
+                  { id: 'goal' as NoteFilter, label: locale === 'fr' ? 'Jalons' : locale === 'es' ? 'Hitos' : 'Milestones' },
                 ]).map(f => (
                   <button
                     key={f.id}
-                    onClick={() => setNoteFilter(f.id)}
+                    onClick={() => { setNoteFilter(f.id); setFilterSessionId(''); setFilterMilestoneId('') }}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                       noteFilter === f.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
                     }`}
@@ -1542,42 +1611,31 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 ))}
               </div>
 
-              {/* Type filter — multi-select pills */}
-              <div className="flex items-center gap-1 flex-wrap">
-                <button
-                  onClick={() => setTypeFilters(new Set())}
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                    typeFilters.size === 0
-                      ? 'bg-gray-200 text-gray-700'
-                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                  }`}
+              {/* Specific session/milestone picker */}
+              {noteFilter === 'session' && sessions.length > 0 && (
+                <select
+                  value={filterSessionId}
+                  onChange={(e) => setFilterSessionId(e.target.value)}
+                  className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-gray-200 max-w-[220px]"
                 >
-                  {locale === 'fr' ? 'Tous' : locale === 'es' ? 'Todos' : 'All'}
-                </button>
-                {allNoteTypes.map(type => {
-                  const active = typeFilters.has(type)
-                  return (
-                    <button
-                      key={type}
-                      onClick={() => {
-                        setTypeFilters(prev => {
-                          const next = new Set(prev)
-                          if (next.has(type)) next.delete(type)
-                          else next.add(type)
-                          return next
-                        })
-                      }}
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                        active
-                          ? `${getNoteColor(type).bg} ${getNoteColor(type).text} ring-1 ring-current ring-opacity-30`
-                          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
-                    </button>
-                  )
-                })}
-              </div>
+                  <option value="">{locale === 'fr' ? 'Toutes les séances' : 'All sessions'}</option>
+                  {sessions.map(s => (
+                    <option key={s.id} value={s.id}>{getSessionLabel(s.id)}</option>
+                  ))}
+                </select>
+              )}
+              {noteFilter === 'goal' && milestones.length > 0 && (
+                <select
+                  value={filterMilestoneId}
+                  onChange={(e) => setFilterMilestoneId(e.target.value)}
+                  className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-gray-200 max-w-[220px]"
+                >
+                  <option value="">{locale === 'fr' ? 'Tous les jalons' : 'All milestones'}</option>
+                  {milestones.map(m => (
+                    <option key={m.id} value={m.id}>{m.title}</option>
+                  ))}
+                </select>
+              )}
 
               {/* Search */}
               <div className="flex-1 relative">
