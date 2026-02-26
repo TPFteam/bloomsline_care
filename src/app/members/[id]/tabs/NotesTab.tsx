@@ -203,7 +203,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
   // Filter state
   const [noteFilter, setNoteFilter] = useState<NoteFilter>('all')
-  const [typeFilter, setTypeFilter] = useState<NoteType | 'all'>('all')
+  const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
 
   // Delete confirmation
@@ -645,7 +645,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const filteredNotes = allNotes.filter(note => {
     if (noteFilter === 'session' && !note.session_id) return false
     if (noteFilter === 'general' && note.session_id) return false
-    if (typeFilter !== 'all' && note.note_type !== typeFilter) return false
+    if (typeFilters.size > 0 && !typeFilters.has(note.note_type)) return false
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       const matchesTitle = note.title?.toLowerCase().includes(q)
@@ -1430,19 +1430,42 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 ))}
               </div>
 
-              {/* Type filter */}
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as NoteType | 'all')}
-                className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200"
-              >
-                <option value="all">{locale === 'fr' ? 'Tous les types' : locale === 'es' ? 'Todos los tipos' : 'All Types'}</option>
-                {allNoteTypes.map(type => (
-                  <option key={type} value={type}>
-                    {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
-                  </option>
-                ))}
-              </select>
+              {/* Type filter — multi-select pills */}
+              <div className="flex items-center gap-1 flex-wrap">
+                <button
+                  onClick={() => setTypeFilters(new Set())}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                    typeFilters.size === 0
+                      ? 'bg-gray-200 text-gray-700'
+                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {locale === 'fr' ? 'Tous' : locale === 'es' ? 'Todos' : 'All'}
+                </button>
+                {allNoteTypes.map(type => {
+                  const active = typeFilters.has(type)
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => {
+                        setTypeFilters(prev => {
+                          const next = new Set(prev)
+                          if (next.has(type)) next.delete(type)
+                          else next.add(type)
+                          return next
+                        })
+                      }}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                        active
+                          ? `${getNoteColor(type).bg} ${getNoteColor(type).text} ring-1 ring-current ring-opacity-30`
+                          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
+                    </button>
+                  )
+                })}
+              </div>
 
               {/* Search */}
               <div className="flex-1 relative">
