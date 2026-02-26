@@ -14,7 +14,8 @@ export type SessionFormat = 'in_person' | 'virtual' | 'phone'
 
 export type SessionStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show'
 
-export type NoteType = 'general' | 'symptome' | 'recurrence' | 'hypothese' | 'transfert' | 'contre_transfert' | 'ajustement_envisage' | 'milestone'
+export const DEFAULT_NOTE_TYPES = ['general', 'symptome', 'recurrence', 'hypothese', 'transfert', 'contre_transfert', 'ajustement_envisage'] as const
+export type NoteType = string
 
 export type FileCategory = 'general' | 'intake' | 'assessment' | 'consent' | 'insurance' | 'correspondence' | 'other'
 

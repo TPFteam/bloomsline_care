@@ -30,6 +30,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { ProgressNote, NoteType, Session as MemberSession } from '@/types/member'
+import { DEFAULT_NOTE_TYPES } from '@/types/member'
 import type { PromptKey } from '@/lib/assist/prompts'
 
 interface NotesTabProps {
@@ -72,7 +73,7 @@ const noteTypeColors: Record<string, { bg: string; text: string }> = {
 const defaultNoteColor = { bg: 'bg-gray-100', text: 'text-gray-700' }
 const getNoteColor = (type: string) => noteTypeColors[type] || defaultNoteColor
 
-const noteTypes: NoteType[] = ['general', 'symptome', 'recurrence', 'hypothese', 'transfert', 'contre_transfert', 'ajustement_envisage']
+const defaultNoteTypes: readonly string[] = DEFAULT_NOTE_TYPES
 
 export default function NotesTab({ memberId, sessions, notes: initialNotes, onNotesUpdate }: NotesTabProps) {
   const { t, locale } = useLanguage()
@@ -92,6 +93,14 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
   // Milestones for linking
   const [milestones, setMilestones] = useState<{ id: string; title: string; status: string }[]>([])
+
+  // Custom note types
+  const [customNoteTypes, setCustomNoteTypes] = useState<string[]>([])
+  const [showCustomTypeInput, setShowCustomTypeInput] = useState(false)
+  const [customTypeValue, setCustomTypeValue] = useState('')
+  const customTypeInputRef = useRef<HTMLInputElement>(null)
+
+  const allNoteTypes = [...defaultNoteTypes, ...customNoteTypes]
 
   // ==============================
   // NOTEPAD MODE STATE
@@ -238,6 +247,16 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       .order('created_at', { ascending: false })
       .then(({ data }) => { if (data) setMilestones(data) })
   }, [memberId])
+
+  // Derive custom note types from existing notes
+  useEffect(() => {
+    const typesInNotes = new Set(allNotes.map(n => n.note_type).filter(Boolean))
+    const custom = [...typesInNotes].filter(t => !defaultNoteTypes.includes(t) && t !== 'milestone')
+    setCustomNoteTypes(prev => {
+      const merged = new Set([...prev, ...custom])
+      return [...merged]
+    })
+  }, [allNotes])
 
   // Upload images helper
   const uploadImages = async (userId: string, images: File[]): Promise<string[]> => {
@@ -897,7 +916,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                                 {/* Badges — compact */}
                                 <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
                                   <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getNoteColor(note.note_type).bg} ${getNoteColor(note.note_type).text}`}>
-                                    {t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes]}
+                                    {t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes] || note.note_type}
                                   </span>
                                   {note.session_id && (
                                     <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-600">
@@ -1146,8 +1165,8 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 </select>
               )}
 
-              <div className="flex items-center gap-1">
-                {noteTypes.map(type => (
+              <div className="flex items-center gap-1 flex-wrap">
+                {allNoteTypes.map(type => (
                   <button
                     key={type}
                     onClick={() => setPadNoteType(type)}
@@ -1157,9 +1176,51 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                         : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                     }`}
                   >
-                    {t.members.noteTypes[type as keyof typeof t.members.noteTypes]}
+                    {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
                   </button>
                 ))}
+                {showCustomTypeInput ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      const val = customTypeValue.trim().toLowerCase().replace(/\s+/g, '_')
+                      if (val && !allNoteTypes.includes(val)) {
+                        setCustomNoteTypes(prev => [...prev, val])
+                        setPadNoteType(val)
+                      } else if (val) {
+                        setPadNoteType(val)
+                      }
+                      setCustomTypeValue('')
+                      setShowCustomTypeInput(false)
+                    }}
+                    className="flex items-center gap-1"
+                  >
+                    <input
+                      ref={customTypeInputRef}
+                      type="text"
+                      value={customTypeValue}
+                      onChange={(e) => setCustomTypeValue(e.target.value)}
+                      onBlur={() => { if (!customTypeValue.trim()) setShowCustomTypeInput(false) }}
+                      placeholder={locale === 'fr' ? 'Nouveau type...' : 'New type...'}
+                      className="w-24 px-2 py-0.5 text-xs border border-gray-300 rounded-full focus:outline-none focus:border-teal-400"
+                      autoFocus
+                    />
+                    <button type="submit" className="text-teal-500 hover:text-teal-600">
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                    <button type="button" onClick={() => { setShowCustomTypeInput(false); setCustomTypeValue('') }} className="text-gray-400 hover:text-gray-600">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </form>
+                ) : (
+                  <button
+                    onClick={() => setShowCustomTypeInput(true)}
+                    className="px-1.5 py-1 rounded-full text-xs text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-all"
+                    title={locale === 'fr' ? 'Ajouter un type' : 'Add type'}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1352,9 +1413,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200"
               >
                 <option value="all">{locale === 'fr' ? 'Tous les types' : locale === 'es' ? 'Todos los tipos' : 'All Types'}</option>
-                {noteTypes.map(type => (
+                {allNoteTypes.map(type => (
                   <option key={type} value={type}>
-                    {t.members.noteTypes[type as keyof typeof t.members.noteTypes]}
+                    {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
                   </option>
                 ))}
               </select>
@@ -1478,9 +1539,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                         onChange={(e) => setNoteType(e.target.value as NoteType)}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
                       >
-                        {noteTypes.map(type => (
+                        {allNoteTypes.map(type => (
                           <option key={type} value={type}>
-                            {t.members.noteTypes[type as keyof typeof t.members.noteTypes]}
+                            {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
                           </option>
                         ))}
                       </select>
@@ -1672,9 +1733,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                             onChange={(e) => setEditNoteType(e.target.value as NoteType)}
                             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
                           >
-                            {noteTypes.map(type => (
+                            {allNoteTypes.map(type => (
                               <option key={type} value={type}>
-                                {t.members.noteTypes[type as keyof typeof t.members.noteTypes]}
+                                {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
                               </option>
                             ))}
                           </select>
@@ -1773,7 +1834,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                           {/* Badges row */}
                           <div className="flex flex-wrap items-center gap-2 mb-2">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getNoteColor(note.note_type).bg} ${getNoteColor(note.note_type).text}`}>
-                              {t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes]}
+                              {t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes] || note.note_type}
                             </span>
                             {note.session_id && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">

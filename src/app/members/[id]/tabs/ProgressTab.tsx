@@ -25,6 +25,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { Milestone, MilestoneCategory, MilestoneStatus, MilestoneComment, MilestoneStatusHistory, ProgressNote, NoteType, MemberSummary, SummaryContent } from '@/types/member'
+import { DEFAULT_NOTE_TYPES } from '@/types/member'
 
 interface ProgressTabProps {
   memberId: string
@@ -551,6 +552,10 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
   const [initialStatus, setInitialStatus] = useState<MilestoneStatus>('discovery')
   const [saving, setSaving] = useState(false)
   const [dragOverColumn, setDragOverColumn] = useState<MilestoneStatus | null>(null)
+
+  // Derive all note types (defaults + custom from existing notes)
+  const customNoteTypes = [...new Set(notes.map(n => n.note_type).filter(t => t && !(DEFAULT_NOTE_TYPES as readonly string[]).includes(t) && t !== 'milestone'))]
+  const allNoteTypes = [...DEFAULT_NOTE_TYPES, ...customNoteTypes]
 
   // Notes state
   const [showAddNote, setShowAddNote] = useState(false)
@@ -1649,13 +1654,11 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
                     onChange={(e) => setNoteType(e.target.value as NoteType)}
                     className="flex-1 px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none text-sm bg-white"
                   >
-                    <option value="general">{t.members.noteTypes.general}</option>
-                    <option value="symptome">{t.members.noteTypes.symptome}</option>
-                    <option value="recurrence">{t.members.noteTypes.recurrence}</option>
-                    <option value="hypothese">{t.members.noteTypes.hypothese}</option>
-                    <option value="transfert">{t.members.noteTypes.transfert}</option>
-                    <option value="contre_transfert">{t.members.noteTypes.contre_transfert}</option>
-                    <option value="ajustement_envisage">{t.members.noteTypes.ajustement_envisage}</option>
+                    {allNoteTypes.map(type => (
+                      <option key={type} value={type}>
+                        {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
+                      </option>
+                    ))}
                     <option value="milestone">{t.members.noteTypes.milestone}</option>
                   </select>
                 </div>
@@ -1710,7 +1713,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${typeStyle.bg} ${typeStyle.text}`}>
-                        {t.members.noteTypes[note.note_type]}
+                        {t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes] || note.note_type}
                       </span>
                       {note.is_private && (
                         <Lock className="w-3 h-3 text-gray-400" />
