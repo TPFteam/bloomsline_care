@@ -99,6 +99,10 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [showCustomTypeInput, setShowCustomTypeInput] = useState(false)
   const [customTypeValue, setCustomTypeValue] = useState('')
   const customTypeInputRef = useRef<HTMLInputElement>(null)
+  const [customTypeMenu, setCustomTypeMenu] = useState<{ type: string; x: number; y: number } | null>(null)
+  const [renamingType, setRenamingType] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const customTypeMenuRef = useRef<HTMLDivElement>(null)
 
   const allNoteTypes = [...defaultNoteTypes, ...customNoteTypes]
 
@@ -280,6 +284,57 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       { onConflict: 'practitioner_id,type_name' }
     )
   }
+
+  const deleteCustomType = async (typeName: string) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    await supabase.from('custom_note_types')
+      .delete()
+      .eq('practitioner_id', user.id)
+      .eq('type_name', typeName)
+    setCustomNoteTypes(prev => prev.filter(t => t !== typeName))
+    if (padNoteType === typeName) setPadNoteType('general')
+    setCustomTypeMenu(null)
+    toast.success(locale === 'fr' ? 'Type supprimé' : 'Type deleted')
+  }
+
+  const renameCustomType = async (oldName: string, newName: string) => {
+    const val = newName.trim().toLowerCase().replace(/\s+/g, '_')
+    if (!val || val === oldName) { setRenamingType(null); return }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    // Update the saved type
+    await supabase.from('custom_note_types')
+      .update({ type_name: val })
+      .eq('practitioner_id', user.id)
+      .eq('type_name', oldName)
+
+    // Update all notes that used the old type
+    await supabase.from('progress_notes')
+      .update({ note_type: val })
+      .eq('practitioner_id', user.id)
+      .eq('note_type', oldName)
+
+    setCustomNoteTypes(prev => prev.map(t => t === oldName ? val : t))
+    if (padNoteType === oldName) setPadNoteType(val)
+    setRenamingType(null)
+    setCustomTypeMenu(null)
+    onNotesUpdate()
+    toast.success(locale === 'fr' ? 'Type renommé' : 'Type renamed')
+  }
+
+  // Close custom type menu on outside click
+  useEffect(() => {
+    if (!customTypeMenu) return
+    const handleClick = (e: MouseEvent) => {
+      if (customTypeMenuRef.current && !customTypeMenuRef.current.contains(e.target as Node)) {
+        setCustomTypeMenu(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [customTypeMenu])
 
   // Upload images helper
   const uploadImages = async (userId: string, images: File[]): Promise<string[]> => {
@@ -1188,20 +1243,77 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 </select>
               )}
 
-              <div className="flex items-center gap-1 flex-wrap">
-                {allNoteTypes.map(type => (
-                  <button
-                    key={type}
-                    onClick={() => setPadNoteType(type)}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                      padNoteType === type
-                        ? `${getNoteColor(type).bg} ${getNoteColor(type).text} ring-1 ring-current ring-opacity-30`
-                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                    }`}
+              <div className="flex items-center gap-1 flex-wrap relative">
+                {allNoteTypes.map(type => {
+                  const isCustom = customNoteTypes.includes(type)
+
+                  if (renamingType === type) {
+                    return (
+                      <form
+                        key={type}
+                        onSubmit={(e) => { e.preventDefault(); renameCustomType(type, renameValue) }}
+                        className="flex items-center gap-1"
+                      >
+                        <input
+                          type="text"
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onBlur={() => renameCustomType(type, renameValue)}
+                          className="w-24 px-2 py-0.5 text-xs border border-gray-300 rounded-full focus:outline-none focus:border-teal-400"
+                          autoFocus
+                        />
+                      </form>
+                    )
+                  }
+
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => setPadNoteType(type)}
+                      onContextMenu={(e) => {
+                        if (!isCustom) return
+                        e.preventDefault()
+                        setCustomTypeMenu({ type, x: e.clientX, y: e.clientY })
+                      }}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                        padNoteType === type
+                          ? `${getNoteColor(type).bg} ${getNoteColor(type).text} ring-1 ring-current ring-opacity-30`
+                          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
+                    </button>
+                  )
+                })}
+
+                {/* Context menu for custom types */}
+                {customTypeMenu && (
+                  <div
+                    ref={customTypeMenuRef}
+                    className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[120px]"
+                    style={{ left: customTypeMenu.x, top: customTypeMenu.y }}
                   >
-                    {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
-                  </button>
-                ))}
+                    <button
+                      onClick={() => {
+                        setRenamingType(customTypeMenu.type)
+                        setRenameValue(customTypeMenu.type)
+                        setCustomTypeMenu(null)
+                      }}
+                      className="w-full px-3 py-1.5 text-xs text-left text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    >
+                      <Pencil className="w-3 h-3" />
+                      {locale === 'fr' ? 'Renommer' : 'Rename'}
+                    </button>
+                    <button
+                      onClick={() => deleteCustomType(customTypeMenu.type)}
+                      className="w-full px-3 py-1.5 text-xs text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                    </button>
+                  </div>
+                )}
+
                 {showCustomTypeInput ? (
                   <form
                     onSubmit={(e) => {
