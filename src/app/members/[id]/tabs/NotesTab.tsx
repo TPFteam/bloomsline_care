@@ -248,15 +248,38 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       .then(({ data }) => { if (data) setMilestones(data) })
   }, [memberId])
 
-  // Derive custom note types from existing notes
+  // Fetch custom note types from DB + derive from existing notes
   useEffect(() => {
-    const typesInNotes = new Set(allNotes.map(n => n.note_type).filter(Boolean))
-    const custom = [...typesInNotes].filter(t => !defaultNoteTypes.includes(t) && t !== 'milestone')
-    setCustomNoteTypes(prev => {
-      const merged = new Set([...prev, ...custom])
-      return [...merged]
-    })
-  }, [allNotes])
+    const fetchCustomTypes = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data } = await supabase
+        .from('custom_note_types')
+        .select('type_name')
+        .eq('practitioner_id', user.id)
+        .order('created_at')
+
+      const saved = data?.map(d => d.type_name) || []
+
+      // Also pick up any types used in notes but not yet saved
+      const typesInNotes = [...new Set(allNotes.map(n => n.note_type).filter(Boolean))]
+        .filter(t => !(defaultNoteTypes as readonly string[]).includes(t) && t !== 'milestone')
+
+      const merged = [...new Set([...saved, ...typesInNotes])]
+      setCustomNoteTypes(merged)
+    }
+    fetchCustomTypes()
+  }, [memberId, allNotes])
+
+  const saveCustomType = async (typeName: string) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    await supabase.from('custom_note_types').upsert(
+      { practitioner_id: user.id, type_name: typeName },
+      { onConflict: 'practitioner_id,type_name' }
+    )
+  }
 
   // Upload images helper
   const uploadImages = async (userId: string, images: File[]): Promise<string[]> => {
@@ -1186,6 +1209,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       const val = customTypeValue.trim().toLowerCase().replace(/\s+/g, '_')
                       if (val && !allNoteTypes.includes(val)) {
                         setCustomNoteTypes(prev => [...prev, val])
+                        saveCustomType(val)
                         setPadNoteType(val)
                       } else if (val) {
                         setPadNoteType(val)

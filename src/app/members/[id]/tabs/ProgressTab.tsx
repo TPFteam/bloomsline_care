@@ -553,9 +553,25 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
   const [saving, setSaving] = useState(false)
   const [dragOverColumn, setDragOverColumn] = useState<MilestoneStatus | null>(null)
 
-  // Derive all note types (defaults + custom from existing notes)
-  const customNoteTypes = [...new Set(notes.map(n => n.note_type).filter(t => t && !(DEFAULT_NOTE_TYPES as readonly string[]).includes(t) && t !== 'milestone'))]
+  // Custom note types (from DB + derived from existing notes)
+  const [customNoteTypes, setCustomNoteTypes] = useState<string[]>([])
   const allNoteTypes = [...DEFAULT_NOTE_TYPES, ...customNoteTypes]
+
+  useEffect(() => {
+    const fetchCustomTypes = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from('custom_note_types')
+        .select('type_name')
+        .eq('practitioner_id', user.id)
+        .order('created_at')
+      const saved = data?.map(d => d.type_name) || []
+      const fromNotes = [...new Set(notes.map(n => n.note_type).filter(t => t && !(DEFAULT_NOTE_TYPES as readonly string[]).includes(t) && t !== 'milestone'))]
+      setCustomNoteTypes([...new Set([...saved, ...fromNotes])])
+    }
+    fetchCustomTypes()
+  }, [notes])
 
   // Notes state
   const [showAddNote, setShowAddNote] = useState(false)
