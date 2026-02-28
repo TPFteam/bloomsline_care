@@ -7,6 +7,7 @@ import {
   Bell,
   MessageCircle,
   User,
+  Users,
   Settings,
   LogOut,
   Globe,
@@ -20,9 +21,10 @@ import { BloomInlineChat } from '@/components/bloom/bloom-inline-chat'
 interface AppHeaderProps {
   user: UserType | null
   leftContent?: React.ReactNode
+  isAdmin?: boolean
 }
 
-export function AppHeader({ user, leftContent }: AppHeaderProps) {
+export function AppHeader({ user, leftContent, isAdmin = false }: AppHeaderProps) {
   const { locale, setLocale } = useLanguage()
   const router = useRouter()
   const supabase = createClient()
@@ -112,6 +114,16 @@ export function AppHeader({ user, leftContent }: AppHeaderProps) {
                         <Settings className="w-4 h-4" />
                         <span>{locale === 'fr' ? 'Paramètres' : locale === 'es' ? 'Configuración' : 'Settings'}</span>
                       </Link>
+                      {isAdmin && (
+                        <Link
+                          href="/admin/practitioners"
+                          onClick={() => setShowProfileMenu(false)}
+                          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <Users className="w-4 h-4" />
+                          <span>{locale === 'fr' ? 'Gérer praticiens' : 'Manage Practitioners'}</span>
+                        </Link>
+                      )}
                       <div className="flex items-center gap-2 px-3 py-2">
                         <Globe className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                         <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-full p-0.5">

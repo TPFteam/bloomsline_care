@@ -38,6 +38,7 @@ import { AppHeader, AppSidebar } from '@/components/layout'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import type { Member } from '@/types/member'
 import { ConsentModal } from '@/components/consent-modal'
+import { isAdmin } from '@/lib/admin'
 
 interface ActivityItem {
   id: string
@@ -613,6 +614,7 @@ function DashboardContent() {
       <main className="flex-1 ml-64">
         <AppHeader
           user={user}
+          isAdmin={!!user && isAdmin(user.id)}
           leftContent={
             <div className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100">
               <Home className="w-4 h-4" strokeWidth={2.5} />

@@ -19,6 +19,7 @@ const PROTECTED_ROUTES = [
   '/profile',
   '/library',
   '/member',
+  '/admin',
 ]
 
 // Web routes members are allowed to access (subset of PROTECTED_ROUTES)
@@ -32,7 +33,11 @@ function isMemberRoute(pathname: string): boolean {
 const AUTH_ROUTES = ['/sign-in', '/sign-up']
 
 // Public routes (no auth check needed)
-const PUBLIC_ROUTES = ['/', '/early-access', '/onboarding', '/practitioner/', '/stories', '/for-everyone']
+const PUBLIC_ROUTES = ['/', '/early-access', '/onboarding', '/practitioner/', '/stories', '/for-everyone', '/p/']
+
+const ADMIN_USER_IDS = [
+  '3548c40c-22d6-43e9-8835-0ef9db6abe76',
+]
 
 function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_ROUTES.some(route => pathname.startsWith(route))
@@ -139,6 +144,11 @@ export async function middleware(request: NextRequest) {
           return response
         }
         return NextResponse.redirect(new URL('/member', request.url))
+      }
+
+      // Admin routes require admin user ID
+      if (pathname.startsWith('/admin') && !ADMIN_USER_IDS.includes(user.id)) {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
       }
     }
 
