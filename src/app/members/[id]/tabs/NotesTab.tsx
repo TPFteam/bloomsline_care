@@ -1114,7 +1114,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 }`}
               >
                 <BookOpen className="w-3.5 h-3.5" />
-                {locale === 'fr' ? 'Notes rapides' : locale === 'es' ? 'Notas rápidas' : 'Quick Notes'}
+                {locale === 'fr' ? 'Notes' : locale === 'es' ? 'Notas' : 'Notes'}
               </button>
               <button
                 onClick={() => setNotepadSubTab('session')}
