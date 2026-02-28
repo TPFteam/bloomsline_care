@@ -445,7 +445,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                 />
               )}
               {activeTab === 'notes' && (
-                <NotesTab memberId={member.id} sessions={sessions} notes={notes} onNotesUpdate={fetchRelatedData} />
+                <NotesTab memberId={member.id} sessions={sessions} notes={notes} onNotesUpdate={fetchRelatedData} member={member} />
               )}
               {activeTab === 'progress' && (
                 <ProgressTab memberId={member.id} notes={notes} onNotesUpdate={fetchRelatedData} highlightMilestoneId={highlightId} />
