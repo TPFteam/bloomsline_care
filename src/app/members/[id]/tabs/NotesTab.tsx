@@ -10,6 +10,7 @@ import {
   ImagePlus,
   Pencil,
   Calendar,
+  ChevronDown,
   LinkIcon,
   FileText,
   Search,
@@ -174,6 +175,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [snSessionSummaryNotes, setSnSessionSummaryNotes] = useState<Record<string, { id: string; content: string; created_at: string } | null>>({})
   const [snEditorNoteTypes, setSnEditorNoteTypes] = useState<{ type: string; label: string }[]>([])
   const [snIsEditing, setSnIsEditing] = useState(false)
+  const [snShowPast, setSnShowPast] = useState(false)
 
   // ==============================
   // BROWSE MODE STATE
@@ -1610,116 +1612,181 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
           {/* Session Notes sub-tab */}
           {notepadSubTab === 'session' && (
-            <div className="flex-1 flex flex-col overflow-hidden p-5">
-              {/* Session picker */}
-              <div className="mb-4">
-                <select
-                  value={snSelectedSessionId}
-                  onChange={(e) => {
-                    setSnSelectedSessionId(e.target.value)
-                    setSnIsEditing(false)
-                    setSnSummaryDraft('')
-                  }}
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-200"
-                >
-                  <option value="">{locale === 'fr' ? 'Sélectionner une séance...' : locale === 'es' ? 'Seleccionar una sesión...' : 'Select a session...'}</option>
-                  {snUpcoming.length > 0 && (
-                    <optgroup label={locale === 'fr' ? 'À venir' : locale === 'es' ? 'Próximas' : 'Upcoming'}>
-                      {snUpcoming.map(s => (
-                        <option key={s.id} value={s.id}>{getSessionLabel(s.id)}</option>
-                      ))}
-                    </optgroup>
-                  )}
-                  {snCompleted.length > 0 && (
-                    <optgroup label={locale === 'fr' ? 'Terminées' : locale === 'es' ? 'Completadas' : 'Completed'}>
-                      {snCompleted.map(s => (
-                        <option key={s.id} value={s.id}>{getSessionLabel(s.id)}</option>
-                      ))}
-                    </optgroup>
-                  )}
-                </select>
-              </div>
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {!snSelectedSessionId ? (
+              <div className="flex-1 overflow-y-auto px-5 py-4">
+                {/* Upcoming sessions */}
+                {snUpcoming.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">
+                      {locale === 'fr' ? 'À venir' : locale === 'es' ? 'Próximas' : 'Upcoming'}
+                    </p>
+                    <div className="space-y-1.5">
+                      {snUpcoming.map(s => {
+                        const hasNote = !!snSessionSummaryNotes[s.id]
+                        return (
+                          <button
+                            key={s.id}
+                            onClick={() => { setSnSelectedSessionId(s.id); setSnIsEditing(false); setSnSummaryDraft('') }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all text-left"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{getSessionLabel(s.id)}</p>
+                            </div>
+                            {hasNote ? (
+                              <span className="flex-shrink-0 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                {locale === 'fr' ? 'Rédigée' : locale === 'es' ? 'Escrita' : 'Written'}
+                              </span>
+                            ) : (
+                              <span className="flex-shrink-0 text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                                {locale === 'fr' ? 'Vide' : locale === 'es' ? 'Vacía' : 'Empty'}
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
 
-              {/* Content area */}
-              <div className="flex-1 overflow-y-auto">
-                {!snSelectedSessionId ? (
+                {/* No upcoming — show a message */}
+                {snUpcoming.length === 0 && snCompleted.length === 0 && (
                   <div className="flex flex-col items-center justify-center h-full text-center">
                     <FileText className="w-12 h-12 text-gray-200 mb-3" />
                     <p className="text-gray-400 text-sm">
-                      {locale === 'fr' ? 'Choisissez une séance pour rédiger vos notes' : locale === 'es' ? 'Elige una sesión para escribir tus notas' : 'Pick a session to write your notes'}
+                      {locale === 'fr' ? 'Aucune séance disponible' : locale === 'es' ? 'No hay sesiones disponibles' : 'No sessions available'}
                     </p>
                   </div>
-                ) : snIsEditing ? (
-                  <div className="flex flex-col h-full">
-                    <div className="flex-1 min-h-0">
-                      <RichTextEditor
-                        value={snSummaryDraft}
-                        onChange={setSnSummaryDraft}
-                        placeholder={locale === 'fr' ? 'Rédigez votre note de séance...' : locale === 'es' ? 'Escribe tu nota de sesión...' : 'Write your session note...'}
-                        memberId={memberId}
-                        locale={locale}
-                        autoFocus
-                        milestones={milestones}
-                        noteTypes={snEditorNoteTypes}
-                        memberName={member?.first_name}
-                      />
-                    </div>
-                    <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 mt-3">
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          setSnIsEditing(false)
-                          setSnSummaryDraft('')
-                        }}
-                      >
-                        {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
-                      </Button>
-                      <Button
-                        onClick={() => handleSaveSessionNote(snSelectedSessionId, snSummaryDraft)}
-                        disabled={snSavingSummary || !snSummaryDraft.trim()}
-                        className="bg-gray-900 text-white hover:bg-gray-800"
-                      >
-                        {snSavingSummary ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        ) : null}
-                        {locale === 'fr' ? 'Enregistrer' : locale === 'es' ? 'Guardar' : 'Save'}
-                      </Button>
-                    </div>
-                  </div>
-                ) : snSessionSummaryNotes[snSelectedSessionId] ? (
+                )}
+
+                {/* Past sessions — collapsible */}
+                {snCompleted.length > 0 && (
                   <div>
-                    <div
-                      className="prose prose-sm max-w-none cursor-pointer hover:bg-gray-50 rounded-lg p-3 -m-3 transition-colors"
-                      onClick={() => {
-                        setSnSummaryDraft(snSessionSummaryNotes[snSelectedSessionId]!.content)
-                        setSnIsEditing(true)
-                      }}
-                      dangerouslySetInnerHTML={{ __html: snSessionSummaryNotes[snSelectedSessionId]!.content }}
-                    />
-                    <p className="text-xs text-gray-400 mt-4">
-                      {locale === 'fr' ? 'Cliquez pour modifier' : locale === 'es' ? 'Haz clic para editar' : 'Click to edit'}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center">
-                    <FileText className="w-10 h-10 text-gray-200 mb-3" />
-                    <p className="text-gray-400 text-sm mb-3">
-                      {locale === 'fr' ? 'Aucune note pour cette séance' : locale === 'es' ? 'Sin notas para esta sesión' : 'No notes for this session yet'}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSnSummaryDraft('')
-                        setSnIsEditing(true)
-                      }}
+                    <button
+                      onClick={() => setSnShowPast(!snShowPast)}
+                      className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2 hover:text-gray-600 transition-colors"
                     >
-                      <Pencil className="w-3.5 h-3.5 mr-1.5" />
-                      {locale === 'fr' ? 'Rédiger une note' : locale === 'es' ? 'Escribir una nota' : 'Write a note'}
-                    </Button>
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${snShowPast ? '' : '-rotate-90'}`} />
+                      {locale === 'fr' ? 'Terminées' : locale === 'es' ? 'Completadas' : 'Past sessions'} ({snCompleted.length})
+                    </button>
+                    {snShowPast && (
+                      <div className="space-y-1.5">
+                        {snCompleted.map(s => {
+                          const hasNote = !!snSessionSummaryNotes[s.id]
+                          return (
+                            <button
+                              key={s.id}
+                              onClick={() => { setSnSelectedSessionId(s.id); setSnIsEditing(false); setSnSummaryDraft('') }}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all text-left"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-700 truncate">{getSessionLabel(s.id)}</p>
+                              </div>
+                              {hasNote ? (
+                                <span className="flex-shrink-0 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                  {locale === 'fr' ? 'Rédigée' : locale === 'es' ? 'Escrita' : 'Written'}
+                                </span>
+                              ) : (
+                                <span className="flex-shrink-0 text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                                  {locale === 'fr' ? 'Vide' : locale === 'es' ? 'Vacía' : 'Empty'}
+                                </span>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
+              ) : (
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  {/* Session header with back button */}
+                  <div className="flex items-center gap-2 px-5 pt-3 pb-2 border-b border-gray-100">
+                  <button
+                    onClick={() => { setSnSelectedSessionId(''); setSnIsEditing(false); setSnSummaryDraft('') }}
+                    className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <ChevronDown className="w-4 h-4 rotate-90" />
+                  </button>
+                  <p className="text-sm font-medium text-gray-900 truncate">{getSessionLabel(snSelectedSessionId)}</p>
+                </div>
+
+                {/* Editor / read content */}
+                <div className="flex-1 overflow-y-auto px-5 py-4">
+                  {snIsEditing ? (
+                    <div className="flex flex-col h-full">
+                      <div className="flex-1 min-h-0">
+                        <RichTextEditor
+                          value={snSummaryDraft}
+                          onChange={setSnSummaryDraft}
+                          placeholder={locale === 'fr' ? 'Rédigez votre note de séance...' : locale === 'es' ? 'Escribe tu nota de sesión...' : 'Write your session note...'}
+                          memberId={memberId}
+                          locale={locale}
+                          autoFocus
+                          milestones={milestones}
+                          noteTypes={snEditorNoteTypes}
+                          memberName={member?.first_name}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 mt-3">
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setSnIsEditing(false)
+                            setSnSummaryDraft('')
+                          }}
+                        >
+                          {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
+                        </Button>
+                        <Button
+                          onClick={() => handleSaveSessionNote(snSelectedSessionId, snSummaryDraft)}
+                          disabled={snSavingSummary || !snSummaryDraft.trim()}
+                          className="bg-gray-900 text-white hover:bg-gray-800"
+                        >
+                          {snSavingSummary ? (
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          ) : null}
+                          {locale === 'fr' ? 'Enregistrer' : locale === 'es' ? 'Guardar' : 'Save'}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : snSessionSummaryNotes[snSelectedSessionId] ? (
+                    <div>
+                      <div
+                        className="prose prose-sm max-w-none cursor-pointer hover:bg-gray-50 rounded-lg p-3 -m-3 transition-colors"
+                        onClick={() => {
+                          setSnSummaryDraft(snSessionSummaryNotes[snSelectedSessionId]!.content)
+                          setSnIsEditing(true)
+                        }}
+                        dangerouslySetInnerHTML={{ __html: snSessionSummaryNotes[snSelectedSessionId]!.content }}
+                      />
+                      <p className="text-xs text-gray-400 mt-4">
+                        {locale === 'fr' ? 'Cliquez pour modifier' : locale === 'es' ? 'Haz clic para editar' : 'Click to edit'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center">
+                      <FileText className="w-10 h-10 text-gray-200 mb-3" />
+                      <p className="text-gray-400 text-sm mb-3">
+                        {locale === 'fr' ? 'Aucune note pour cette séance' : locale === 'es' ? 'Sin notas para esta sesión' : 'No notes for this session yet'}
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSnSummaryDraft('')
+                          setSnIsEditing(true)
+                        }}
+                      >
+                        <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                        {locale === 'fr' ? 'Rédiger une note' : locale === 'es' ? 'Escribir una nota' : 'Write a note'}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              )}
             </div>
           )}
         </div>
