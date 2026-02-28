@@ -101,7 +101,7 @@
     "progress": "Journey",
     "files": "Information",
     "sharedResources": "Shared Support",
-    "notes": "Notes",
+    "notes": "Quick Notes",
     "submissions": "Submissions",
     "memberSince": "Member since",
     "lastSession": "Last session",
@@ -265,7 +265,7 @@
   },
 
   "noteTypes": {
-    "general": "General",
+    "general": "Supervision",
     "symptome": "Symptom",
     "recurrence": "Recurrence",
     "hypothese": "Hypothesis",

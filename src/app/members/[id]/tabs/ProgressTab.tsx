@@ -12,20 +12,20 @@ import {
   X,
   Trash2,
   MessageSquare,
-  Lock,
-  ChevronRight,
-  ImagePlus,
   Calendar,
   Pencil,
   Lightbulb,
   History,
+  Tag,
+  ChevronDown,
+  FileText,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
-import type { Milestone, MilestoneCategory, MilestoneStatus, MilestoneComment, MilestoneStatusHistory, ProgressNote, NoteType, MemberSummary, SummaryContent } from '@/types/member'
 import { DEFAULT_NOTE_TYPES } from '@/types/member'
+import type { Milestone, MilestoneCategory, MilestoneStatus, MilestoneComment, MilestoneStatusHistory, ProgressNote, MemberSummary, SummaryContent } from '@/types/member'
 
 interface ProgressTabProps {
   memberId: string
@@ -52,6 +52,34 @@ interface SessionLinkedNote {
   session_id: string | null
   session_date?: string
   session_type?: string
+  note_type?: string
+}
+
+interface TaggedExcerpt {
+  text: string
+  sessionDate?: string
+  sessionType?: string
+}
+
+// Helper: parse HTML content and extract text from <mark data-goal-id="..."> elements
+function extractGoalExcerpts(html: string): { goalId: string; text: string }[] {
+  if (!html || !html.includes('data-goal-id')) return []
+  try {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(html, 'text/html')
+    const marks = doc.querySelectorAll('mark[data-goal-id]')
+    const results: { goalId: string; text: string }[] = []
+    marks.forEach((mark) => {
+      const goalId = mark.getAttribute('data-goal-id')
+      const text = mark.textContent?.trim()
+      if (goalId && text) {
+        results.push({ goalId, text })
+      }
+    })
+    return results
+  } catch {
+    return []
+  }
 }
 
 // Status label helpers for history timeline
@@ -80,16 +108,11 @@ function getHistoryDotColor(oldStatus: MilestoneStatus | null, newStatus: Milest
 interface MilestoneCardProps {
   milestone: Milestone
   columnId: MilestoneStatus
-  comments: MilestoneComment[]
-  sessionNotes: SessionLinkedNote[]
-  onToggleShare: (id: string, shared: boolean) => void
+  commentCount: number
+  sessionNoteCount: number
+  hasHistory?: boolean
   onDelete: (id: string) => void
-  onUpdateStatus: (id: string, status: MilestoneStatus) => void
-  onAddComment: (milestoneId: string, content: string) => Promise<void>
-  onUpdateComment: (commentId: string, content: string) => Promise<void>
-  onDeleteComment: (commentId: string) => Promise<void>
-  onFetchHistory: (milestoneId: string) => Promise<MilestoneStatusHistory[]>
-  categoryLabel: string
+  onOpenDetail: (milestoneId: string) => void
   locale: string
   isHighlighted?: boolean
 }
@@ -97,73 +120,19 @@ interface MilestoneCardProps {
 const MilestoneCard = memo(function MilestoneCard({
   milestone,
   columnId,
-  comments,
-  sessionNotes,
-  onToggleShare,
+  commentCount,
+  sessionNoteCount,
   onDelete,
-  onUpdateStatus,
-  onAddComment,
-  onUpdateComment,
-  onDeleteComment,
-  onFetchHistory,
-  categoryLabel,
+  onOpenDetail,
   locale,
   isHighlighted,
 }: MilestoneCardProps) {
-  const [showComments, setShowComments] = useState(false)
-  const [newComment, setNewComment] = useState('')
-  const [savingComment, setSavingComment] = useState(false)
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
-  const [editCommentContent, setEditCommentContent] = useState('')
-  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
   const [confirmDeleteMilestone, setConfirmDeleteMilestone] = useState(false)
-  const [showHistory, setShowHistory] = useState(false)
-  const [history, setHistory] = useState<MilestoneStatusHistory[]>([])
-  const [loadingHistory, setLoadingHistory] = useState(false)
-
-  const handleToggleHistory = async () => {
-    if (showHistory) {
-      setShowHistory(false)
-      return
-    }
-    setShowHistory(true)
-    setLoadingHistory(true)
-    try {
-      const data = await onFetchHistory(milestone.id)
-      setHistory(data)
-    } finally {
-      setLoadingHistory(false)
-    }
-  }
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.dataTransfer.setData('milestoneId', milestone.id)
     e.dataTransfer.setData('sourceColumn', columnId)
     e.dataTransfer.effectAllowed = 'move'
-  }
-
-  const handleAddComment = async () => {
-    if (!newComment.trim()) return
-    setSavingComment(true)
-    await onAddComment(milestone.id, newComment.trim())
-    setNewComment('')
-    setSavingComment(false)
-  }
-
-  const handleSaveEdit = async () => {
-    if (!editCommentContent.trim() || !editingCommentId) return
-    setSavingComment(true)
-    await onUpdateComment(editingCommentId, editCommentContent.trim())
-    setEditingCommentId(null)
-    setEditCommentContent('')
-    setSavingComment(false)
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleAddComment()
-    }
   }
 
   return (
@@ -187,9 +156,10 @@ const MilestoneCard = memo(function MilestoneCard({
           boxShadow: isHighlighted ? { duration: 1.5, repeat: 2 } : {}
         }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className={`bg-white rounded-xl p-4 border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all group ${
+        className={`bg-white rounded-xl p-3 border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all group cursor-pointer ${
           isHighlighted ? 'ring-2 ring-violet-400 ring-offset-2' : ''
         }`}
+        onClick={() => onOpenDetail(milestone.id)}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
@@ -202,32 +172,8 @@ const MilestoneCard = memo(function MilestoneCard({
               </p>
             )}
           </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={handleToggleHistory}
-              className={`p-1.5 rounded-lg transition-all ${
-                showHistory
-                  ? 'text-violet-500 bg-violet-50'
-                  : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-violet-500 hover:bg-violet-50'
-              }`}
-              title={locale === 'fr' ? 'Historique' : 'History'}
-            >
-              <History className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setShowComments(!showComments)}
-              className={`p-1.5 rounded-lg transition-all flex items-center gap-1 ${
-                comments.length > 0
-                  ? 'text-blue-500 bg-blue-50'
-                  : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-500 hover:bg-blue-50'
-              }`}
-              title={locale === 'fr' ? 'Commentaires' : 'Comments'}
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              {comments.length > 0 && (
-                <span className="text-[10px] font-medium">{comments.length}</span>
-              )}
-            </button>
+          {/* Delete button on hover */}
+          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
             {confirmDeleteMilestone ? (
               <div className="flex items-center gap-1">
                 <button
@@ -254,289 +200,615 @@ const MilestoneCard = memo(function MilestoneCard({
           </div>
         </div>
 
-        {/* History Timeline Popover */}
-        {showHistory && (
-          <div className="mt-3 p-3 bg-violet-50 rounded-lg border border-violet-100">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] font-medium text-violet-600 uppercase tracking-wider flex items-center gap-1">
-                <History className="w-3 h-3" />
-                {locale === 'fr' ? 'Historique' : 'History'}
-              </p>
-              <button
-                onClick={() => setShowHistory(false)}
-                className="p-0.5 text-violet-400 hover:text-violet-600 rounded"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-            {loadingHistory ? (
-              <div className="flex items-center gap-2 py-2">
-                <div className="w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs text-violet-500">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</span>
-              </div>
-            ) : history.length === 0 ? (
-              <p className="text-xs text-violet-400 py-1">
-                {locale === 'fr' ? 'Aucun historique' : 'No history yet'}
-              </p>
-            ) : (
-              <div className="relative space-y-0">
-                {/* Vertical connecting line */}
-                {history.length > 1 && (
-                  <div className="absolute left-[5px] top-2 bottom-2 w-0.5 bg-violet-200" />
-                )}
-                {history.map((entry, idx) => {
-                  const isCreation = entry.old_status === null
-                  const dotColor = getHistoryDotColor(entry.old_status, entry.new_status)
-                  const date = new Date(entry.changed_at).toLocaleDateString(
-                    locale === 'fr' ? 'fr-FR' : 'en-US',
-                    { day: 'numeric', month: 'short', year: 'numeric' }
-                  )
-                  return (
-                    <div key={entry.id} className="flex items-start gap-2 py-1.5 relative">
-                      <div className={`w-[11px] h-[11px] rounded-full ${dotColor} border-2 border-white shrink-0 mt-0.5 z-10`} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-700 leading-snug">
-                          {isCreation ? (
-                            <>
-                              {locale === 'fr' ? 'Créé dans ' : 'Created in '}
-                              <span className="font-medium">
-                                {locale === 'fr' ? statusLabels[entry.new_status].fr : statusLabels[entry.new_status].en}
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="font-medium">
-                                {locale === 'fr' ? statusLabels[entry.old_status!].fr : statusLabels[entry.old_status!].en}
-                              </span>
-                              {' → '}
-                              <span className="font-medium">
-                                {locale === 'fr' ? statusLabels[entry.new_status].fr : statusLabels[entry.new_status].en}
-                              </span>
-                            </>
-                          )}
-                        </p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">{date}</p>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+        {/* Bottom indicator row */}
+        {(commentCount > 0 || sessionNoteCount > 0 || (columnId === 'independent' && milestone.achieved_at)) && (
+          <div className="flex items-center gap-3 mt-2 pt-2 border-t border-gray-50">
+            {commentCount > 0 && (
+              <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                <MessageSquare className="w-3 h-3" />
+                {commentCount}
+              </span>
+            )}
+            {sessionNoteCount > 0 && (
+              <span className="flex items-center gap-1 text-[10px] text-amber-500">
+                <Calendar className="w-3 h-3" />
+                {sessionNoteCount}
+              </span>
+            )}
+            {columnId === 'independent' && milestone.achieved_at && (
+              <span className="flex items-center gap-1 text-[10px] text-violet-500 ml-auto">
+                <Sparkles className="w-3 h-3" />
+                {new Date(milestone.achieved_at).toLocaleDateString()}
+              </span>
             )}
           </div>
         )}
 
-        {/* Comments Preview (show latest comment when collapsed) */}
-        {comments.length > 0 && !showComments && (
-          <div
-            onClick={() => setShowComments(true)}
-            className="mt-2 p-2 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors"
-          >
-            <p className="text-xs text-blue-700 line-clamp-2">{comments[0].content}</p>
-            <div className="flex items-center justify-between mt-1">
-              {comments.length > 1 ? (
-                <p className="text-[10px] text-blue-500">
-                  +{comments.length - 1} {locale === 'fr' ? 'autre(s)' : 'more'}
-                </p>
-              ) : <span />}
-              <p className="text-[10px] text-blue-600 font-medium flex items-center gap-1">
-                <Plus className="w-3 h-3" />
-                {locale === 'fr' ? 'Ajouter' : 'Add'}
-              </p>
-            </div>
-          </div>
-        )}
 
-        {/* Add Comment Button (when no comments and collapsed) */}
-        {comments.length === 0 && !showComments && (
-          <button
-            onClick={() => setShowComments(true)}
-            className="mt-2 w-full flex items-center justify-center gap-1.5 py-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>{locale === 'fr' ? 'Ajouter une note' : 'Add note'}</span>
-          </button>
-        )}
-
-        {/* Comments Section */}
-        {showComments && (
-          <div className="mt-3 space-y-2">
-            {/* Existing Comments */}
-            {comments.length > 0 && (
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {comments.map((comment) => (
-                  <div key={comment.id} className="group/comment p-2 bg-gray-50 rounded-lg">
-                    {editingCommentId === comment.id ? (
-                      // Edit mode
-                      <div className="space-y-2">
-                        <textarea
-                          value={editCommentContent}
-                          onChange={(e) => setEditCommentContent(e.target.value)}
-                          rows={2}
-                          autoFocus
-                          className="w-full px-2 py-1.5 text-xs rounded-lg border border-blue-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none resize-none"
-                        />
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => {
-                              setEditingCommentId(null)
-                              setEditCommentContent('')
-                            }}
-                            className="px-2 py-1 text-[10px] text-gray-500 hover:text-gray-700 rounded"
-                          >
-                            {locale === 'fr' ? 'Annuler' : 'Cancel'}
-                          </button>
-                          <button
-                            onClick={handleSaveEdit}
-                            disabled={savingComment || !editCommentContent.trim()}
-                            className="px-2 py-1 text-[10px] bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-                          >
-                            {savingComment ? '...' : (locale === 'fr' ? 'Enregistrer' : 'Save')}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      // View mode
-                      <>
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-xs text-gray-700 flex-1">{comment.content}</p>
-                          <div className="flex items-center gap-0.5 opacity-0 group-hover/comment:opacity-100 transition-all shrink-0">
-                            <button
-                              onClick={() => {
-                                setEditingCommentId(comment.id)
-                                setEditCommentContent(comment.content)
-                              }}
-                              className="p-1 text-gray-400 hover:text-blue-500 rounded"
-                              title={locale === 'fr' ? 'Modifier' : 'Edit'}
-                            >
-                              <Pencil className="w-3 h-3" />
-                            </button>
-                            {deletingCommentId === comment.id ? (
-                              <button
-                                onClick={() => { onDeleteComment(comment.id); setDeletingCommentId(null) }}
-                                className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
-                              >
-                                {locale === 'fr' ? 'Confirmer' : locale === 'es' ? 'Confirmar' : 'Confirm'}
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => setDeletingCommentId(comment.id)}
-                                className="p-1 text-gray-400 hover:text-red-500 rounded"
-                                title={locale === 'fr' ? 'Supprimer' : 'Delete'}
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-gray-400 mt-1">
-                          {new Date(comment.created_at).toLocaleDateString()}
-                        </p>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Add New Comment */}
-            <div className="flex gap-2">
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={locale === 'fr' ? 'Ajouter une note...' : 'Add a note...'}
-                className="flex-1 px-3 py-2 text-xs rounded-lg border border-gray-200 focus:border-blue-300 focus:ring-1 focus:ring-blue-100 outline-none resize-none"
-                rows={2}
-              />
-            </div>
-            <div className="flex justify-between items-center">
-              <button
-                onClick={() => setShowComments(false)}
-                className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
-              >
-                {locale === 'fr' ? 'Fermer' : 'Close'}
-              </button>
-              <button
-                onClick={handleAddComment}
-                disabled={savingComment || !newComment.trim()}
-                className="px-3 py-1.5 text-xs bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50"
-              >
-                {savingComment
-                  ? (locale === 'fr' ? 'Ajout...' : 'Adding...')
-                  : (locale === 'fr' ? 'Ajouter' : 'Add')
-                }
-              </button>
-            </div>
-
-            {/* Session-linked notes */}
-            {sessionNotes.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {locale === 'fr' ? 'Notes de séances' : 'Session notes'}
-                </p>
-                <div className="space-y-2 max-h-24 overflow-y-auto">
-                  {sessionNotes.map((note) => (
-                    <div key={note.id} className="p-2 bg-amber-50 rounded-lg border border-amber-100">
-                      <p className="text-xs text-gray-700 line-clamp-2">{note.content}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-amber-600 flex items-center gap-1">
-                          <Clock className="w-2.5 h-2.5" />
-                          {note.session_date ? new Date(note.session_date).toLocaleDateString() : new Date(note.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Session-linked notes preview (when comments collapsed) */}
-        {sessionNotes.length > 0 && !showComments && (
-          <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-100">
-            <p className="text-[10px] font-medium text-amber-700 uppercase tracking-wider mb-1 flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              {locale === 'fr' ? 'Notes de séances' : 'Session notes'} ({sessionNotes.length})
-            </p>
-            <p className="text-xs text-gray-700 line-clamp-2">{sessionNotes[0].content}</p>
-          </div>
-        )}
-
-        {/* Independent Date */}
-        {columnId === 'independent' && milestone.achieved_at && !showComments && (
-          <div className="flex items-center gap-1.5 mt-3 text-xs text-violet-600">
-            <Sparkles className="w-3 h-3" />
-            <span>{locale === 'fr' ? 'Validé le' : 'Validated'} {new Date(milestone.achieved_at).toLocaleDateString()}</span>
-          </div>
-        )}
-
-        {/* Drag hint */}
-        {!showComments && (
-          <div className="mt-3 pt-2 border-t border-gray-50 text-center">
-            <span className="text-[10px] text-gray-400 uppercase tracking-wider">
-              {locale === 'fr' ? 'Glisser pour déplacer' : 'Drag to move'}
-            </span>
-          </div>
-        )}
       </motion.div>
     </div>
   )
 })
 
-// Note type colors
-const noteTypeColors: Record<string, { bg: string; text: string }> = {
-  general: { bg: 'bg-gray-100', text: 'text-gray-700' },
-  symptome: { bg: 'bg-rose-50', text: 'text-rose-700' },
-  recurrence: { bg: 'bg-purple-50', text: 'text-purple-700' },
-  hypothese: { bg: 'bg-teal-50', text: 'text-teal-700' },
-  transfert: { bg: 'bg-indigo-50', text: 'text-indigo-700' },
-  contre_transfert: { bg: 'bg-pink-50', text: 'text-pink-700' },
-  ajustement_envisage: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
-  milestone: { bg: 'bg-green-50', text: 'text-green-700' },
+// MilestoneDetailModal — full detail view for a milestone
+interface MilestoneDetailModalProps {
+  milestone: Milestone
+  comments: MilestoneComment[]
+  sessionNotes: SessionLinkedNote[]
+  taggedExcerpts: TaggedExcerpt[]
+  noteTypes: { type: string; label: string }[]
+  onClose: () => void
+  onDelete: (id: string) => void
+  onUpdateStatus: (id: string, status: MilestoneStatus) => void
+  onAddComment: (milestoneId: string, content: string, tag: string) => Promise<void>
+  onUpdateComment: (commentId: string, content: string, tag: string) => Promise<void>
+  onDeleteComment: (commentId: string) => Promise<void>
+  onFetchHistory: (milestoneId: string) => Promise<MilestoneStatusHistory[]>
+  onUpdateMilestone: (id: string, title: string, description: string) => Promise<void>
+  locale: string
+  columns: { id: MilestoneStatus; title: string; titleFr: string }[]
 }
-const defaultNoteColor = { bg: 'bg-gray-100', text: 'text-gray-700' }
+
+function MilestoneDetailModal({
+  milestone,
+  comments,
+  sessionNotes,
+  taggedExcerpts,
+  noteTypes,
+  onClose,
+  onDelete,
+  onUpdateStatus,
+  onAddComment,
+  onUpdateComment,
+  onDeleteComment,
+  onFetchHistory,
+  onUpdateMilestone,
+  locale,
+  columns,
+}: MilestoneDetailModalProps) {
+  const [newComment, setNewComment] = useState('')
+  const [newCommentTag, setNewCommentTag] = useState('')
+  const [showTagPicker, setShowTagPicker] = useState(false)
+  const [savingComment, setSavingComment] = useState(false)
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
+  const [editCommentContent, setEditCommentContent] = useState('')
+  const [editCommentTag, setEditCommentTag] = useState('')
+  const [showEditTagPicker, setShowEditTagPicker] = useState(false)
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
+  const [history, setHistory] = useState<MilestoneStatusHistory[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(true)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  // Inline edit state for title/description
+  const [editingDetails, setEditingDetails] = useState(false)
+  const [editTitle, setEditTitle] = useState(milestone.title)
+  const [editDescription, setEditDescription] = useState(milestone.description || '')
+  const [savingDetails, setSavingDetails] = useState(false)
+
+  // Load history on mount
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      setLoadingHistory(true)
+      const data = await onFetchHistory(milestone.id)
+      if (!cancelled) {
+        setHistory(data)
+        setLoadingHistory(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [milestone.id, onFetchHistory])
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return
+    setSavingComment(true)
+    await onAddComment(milestone.id, newComment.trim(), newCommentTag)
+    setNewComment('')
+    setNewCommentTag('')
+    setSavingComment(false)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editCommentContent.trim() || !editingCommentId) return
+    setSavingComment(true)
+    await onUpdateComment(editingCommentId, editCommentContent.trim(), editCommentTag)
+    setEditingCommentId(null)
+    setEditCommentContent('')
+    setEditCommentTag('')
+    setSavingComment(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleAddComment()
+    }
+  }
+
+  // Tag color helper
+  const tagColors: Record<string, { bg: string; text: string }> = {
+    general: { bg: 'bg-gray-100', text: 'text-gray-600' },
+    symptome: { bg: 'bg-rose-50', text: 'text-rose-600' },
+    recurrence: { bg: 'bg-purple-50', text: 'text-purple-600' },
+    hypothese: { bg: 'bg-teal-50', text: 'text-teal-600' },
+    transfert: { bg: 'bg-indigo-50', text: 'text-indigo-600' },
+    contre_transfert: { bg: 'bg-pink-50', text: 'text-pink-600' },
+    ajustement_envisage: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
+  }
+  const getTagColor = (tag: string) => tagColors[tag] || { bg: 'bg-gray-100', text: 'text-gray-600' }
+  const getTagLabel = (tag: string) => noteTypes.find(nt => nt.type === tag)?.label || tag.replace(/_/g, ' ')
+
+  const categoryColor = categoryColors[milestone.category] || categoryColors.general
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              {editingDetails ? (
+                <div className="space-y-2">
+                  <input
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    autoFocus
+                    className="w-full text-lg font-semibold text-gray-900 px-2 py-1 -ml-2 rounded-lg border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-100 outline-none"
+                  />
+                  <textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Description (optionnel)' : 'Description (optional)'}
+                    rows={2}
+                    className="w-full text-sm text-gray-600 px-2 py-1.5 -ml-2 rounded-lg border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-100 outline-none resize-none"
+                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setEditingDetails(false)
+                        setEditTitle(milestone.title)
+                        setEditDescription(milestone.description || '')
+                      }}
+                      className="px-2.5 py-1 text-xs text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!editTitle.trim()) return
+                        setSavingDetails(true)
+                        await onUpdateMilestone(milestone.id, editTitle.trim(), editDescription.trim())
+                        setSavingDetails(false)
+                        setEditingDetails(false)
+                      }}
+                      disabled={savingDetails || !editTitle.trim()}
+                      className="px-2.5 py-1 text-xs bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                    >
+                      {savingDetails ? '...' : (locale === 'fr' ? 'Enregistrer' : 'Save')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="group/title cursor-pointer -ml-2 px-2 py-1 rounded-lg hover:bg-gray-50 transition-colors"
+                  onClick={() => setEditingDetails(true)}
+                >
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold text-gray-900">{milestone.title}</h2>
+                    <Pencil className="w-3.5 h-3.5 text-gray-300 opacity-0 group-hover/title:opacity-100 transition-opacity" />
+                  </div>
+                  {milestone.description && (
+                    <p className="text-sm text-gray-500 mt-1">{milestone.description}</p>
+                  )}
+                </div>
+              )}
+              <div className="flex items-center gap-2 mt-3">
+                <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${categoryColor.bg} ${categoryColor.text}`}>
+                  {milestone.category.replace(/_/g, ' ')}
+                </span>
+                <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700">
+                  {locale === 'fr' ? statusLabels[milestone.status].fr : statusLabels[milestone.status].en}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Status Actions — move between columns */}
+        <div className="px-6 py-4 border-b border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+            {locale === 'fr' ? 'Déplacer vers' : 'Move to'}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {columns.map((col) => (
+              <button
+                key={col.id}
+                onClick={() => {
+                  if (col.id !== milestone.status) {
+                    onUpdateStatus(milestone.id, col.id)
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  col.id === milestone.status
+                    ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                {locale === 'fr' ? col.titleFr : col.title}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Comments Section */}
+        <div className="px-6 py-4 border-b border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <MessageSquare className="w-3.5 h-3.5" />
+            {locale === 'fr' ? 'Commentaires' : 'Comments'}
+            {comments.length > 0 && (
+              <span className="text-gray-400">({comments.length})</span>
+            )}
+          </p>
+
+          {/* Existing Comments */}
+          {comments.length > 0 && (
+            <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
+              {comments.map((comment) => (
+                <div key={comment.id} className="group/comment p-3 bg-gray-50 rounded-lg">
+                  {editingCommentId === comment.id ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editCommentContent}
+                        onChange={(e) => setEditCommentContent(e.target.value)}
+                        rows={2}
+                        autoFocus
+                        className="w-full px-2 py-1.5 text-xs rounded-lg border border-blue-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none resize-none"
+                      />
+                      {/* Edit tag picker */}
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowEditTagPicker(!showEditTagPicker)}
+                          className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] border transition-colors ${
+                            editCommentTag
+                              ? `${getTagColor(editCommentTag).bg} ${getTagColor(editCommentTag).text} border-current/20`
+                              : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <Tag className="w-2.5 h-2.5" />
+                          {editCommentTag ? getTagLabel(editCommentTag) : (locale === 'fr' ? 'Étiquette' : 'Tag')}
+                          <ChevronDown className="w-2.5 h-2.5" />
+                        </button>
+                        {showEditTagPicker && (
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setShowEditTagPicker(false)} />
+                            <div className="absolute bottom-full left-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[160px] max-h-[180px] overflow-y-auto">
+                              <button
+                                onClick={() => { setEditCommentTag(''); setShowEditTagPicker(false) }}
+                                className="w-full text-left px-3 py-1.5 text-[10px] text-gray-400 hover:bg-gray-50"
+                              >
+                                {locale === 'fr' ? 'Aucune étiquette' : 'No tag'}
+                              </button>
+                              {noteTypes.map((nt) => (
+                                <button
+                                  key={nt.type}
+                                  onClick={() => { setEditCommentTag(nt.type); setShowEditTagPicker(false) }}
+                                  className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-2"
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full ${getTagColor(nt.type).text.replace('text-', 'bg-')}`} />
+                                  <span className="text-[10px] text-gray-700">{nt.label}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => { setEditingCommentId(null); setEditCommentContent(''); setEditCommentTag('') }}
+                          className="px-2 py-1 text-[10px] text-gray-500 hover:text-gray-700 rounded"
+                        >
+                          {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                        </button>
+                        <button
+                          onClick={handleSaveEdit}
+                          disabled={savingComment || !editCommentContent.trim()}
+                          className="px-2 py-1 text-[10px] bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                        >
+                          {savingComment ? '...' : (locale === 'fr' ? 'Enregistrer' : 'Save')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          {comment.tag && (
+                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium mb-1.5 ${getTagColor(comment.tag).bg} ${getTagColor(comment.tag).text}`}>
+                              <Tag className="w-2.5 h-2.5" />
+                              {getTagLabel(comment.tag)}
+                            </span>
+                          )}
+                          <p className="text-xs text-gray-700">{comment.content}</p>
+                        </div>
+                        <div className="flex items-center gap-0.5 opacity-0 group-hover/comment:opacity-100 transition-all shrink-0">
+                          <button
+                            onClick={() => { setEditingCommentId(comment.id); setEditCommentContent(comment.content); setEditCommentTag(comment.tag || '') }}
+                            className="p-1 text-gray-400 hover:text-blue-500 rounded"
+                            title={locale === 'fr' ? 'Modifier' : 'Edit'}
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                          {deletingCommentId === comment.id ? (
+                            <button
+                              onClick={() => { onDeleteComment(comment.id); setDeletingCommentId(null) }}
+                              className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                            >
+                              {locale === 'fr' ? 'Confirmer' : 'Confirm'}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setDeletingCommentId(comment.id)}
+                              className="p-1 text-gray-400 hover:text-red-500 rounded"
+                              title={locale === 'fr' ? 'Supprimer' : 'Delete'}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-1">
+                        {new Date(comment.created_at).toLocaleDateString()}
+                      </p>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add New Comment */}
+          <div className="flex gap-2">
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={locale === 'fr' ? 'Ajouter un commentaire...' : 'Add a comment...'}
+              className="flex-1 px-3 py-2 text-xs rounded-lg border border-gray-200 focus:border-blue-300 focus:ring-1 focus:ring-blue-100 outline-none resize-none"
+              rows={2}
+            />
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            {/* Tag picker for new comment */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowTagPicker(!showTagPicker)}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] border transition-colors ${
+                  newCommentTag
+                    ? `${getTagColor(newCommentTag).bg} ${getTagColor(newCommentTag).text} border-current/20`
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <Tag className="w-2.5 h-2.5" />
+                {newCommentTag ? getTagLabel(newCommentTag) : (locale === 'fr' ? 'Étiquette' : 'Tag')}
+                <ChevronDown className="w-2.5 h-2.5" />
+              </button>
+              {showTagPicker && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowTagPicker(false)} />
+                  <div className="absolute bottom-full left-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[160px] max-h-[180px] overflow-y-auto">
+                    <button
+                      onClick={() => { setNewCommentTag(''); setShowTagPicker(false) }}
+                      className="w-full text-left px-3 py-1.5 text-[10px] text-gray-400 hover:bg-gray-50"
+                    >
+                      {locale === 'fr' ? 'Aucune étiquette' : 'No tag'}
+                    </button>
+                    {noteTypes.map((nt) => (
+                      <button
+                        key={nt.type}
+                        onClick={() => { setNewCommentTag(nt.type); setShowTagPicker(false) }}
+                        className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${getTagColor(nt.type).text.replace('text-', 'bg-')}`} />
+                        <span className="text-[10px] text-gray-700">{nt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <button
+              onClick={handleAddComment}
+              disabled={savingComment || !newComment.trim()}
+              className="px-3 py-1.5 text-xs bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50"
+            >
+              {savingComment
+                ? (locale === 'fr' ? 'Ajout...' : 'Adding...')
+                : (locale === 'fr' ? 'Ajouter' : 'Add')
+              }
+            </button>
+          </div>
+        </div>
+
+        {/* Linked Notes */}
+        {sessionNotes.length > 0 && (
+          <div className="px-6 py-4 border-b border-gray-100">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5" />
+              {locale === 'fr' ? 'Notes liées' : locale === 'es' ? 'Notas vinculadas' : 'Linked notes'}
+              <span className="text-gray-400">({sessionNotes.length})</span>
+            </p>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {sessionNotes.map((note) => {
+                const noteTypeLabel = note.note_type ? noteTypes.find(nt => nt.type === note.note_type)?.label : null
+                return (
+                  <div key={note.id} className={`p-3 rounded-lg border ${note.session_id ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100'}`}>
+                    <p className="text-xs text-gray-700">{note.content}</p>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className={`text-[10px] flex items-center gap-1 ${note.session_id ? 'text-amber-600' : 'text-gray-500'}`}>
+                        <Clock className="w-2.5 h-2.5" />
+                        {note.session_date ? new Date(note.session_date).toLocaleDateString() : new Date(note.created_at).toLocaleDateString()}
+                      </span>
+                      {note.session_type && (
+                        <span className="text-[10px] text-amber-500">{note.session_type}</span>
+                      )}
+                      {noteTypeLabel && (
+                        <span className="text-[10px] text-gray-400">{noteTypeLabel}</span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Tagged Excerpts from session notes */}
+        {taggedExcerpts.length > 0 && (
+          <div className="px-6 py-4 border-b border-gray-100">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <Target className="w-3.5 h-3.5" />
+              {locale === 'fr' ? 'Évoqué en séance' : 'Mentioned in session'}
+              <span className="text-gray-400">({taggedExcerpts.length})</span>
+            </p>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {taggedExcerpts.map((excerpt, i) => (
+                <div key={i} className="p-3 bg-emerald-50 rounded-lg border border-emerald-100">
+                  <p className="text-xs text-gray-700 italic">&ldquo;{excerpt.text}&rdquo;</p>
+                  {(excerpt.sessionDate || excerpt.sessionType) && (
+                    <div className="flex items-center gap-2 mt-1.5">
+                      {excerpt.sessionDate && (
+                        <span className="text-[10px] text-emerald-600 flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5" />
+                          {new Date(excerpt.sessionDate).toLocaleDateString()}
+                        </span>
+                      )}
+                      {excerpt.sessionType && (
+                        <span className="text-[10px] text-emerald-500">{excerpt.sessionType}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* History Timeline */}
+        <div className="px-6 py-4 border-b border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <History className="w-3.5 h-3.5" />
+            {locale === 'fr' ? 'Historique' : 'History'}
+          </p>
+          {loadingHistory ? (
+            <div className="flex items-center gap-2 py-2">
+              <div className="w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs text-gray-500">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</span>
+            </div>
+          ) : history.length === 0 ? (
+            <p className="text-xs text-gray-400 py-1">
+              {locale === 'fr' ? 'Aucun historique' : 'No history yet'}
+            </p>
+          ) : (
+            <div className="relative space-y-0">
+              {history.length > 1 && (
+                <div className="absolute left-[5px] top-2 bottom-2 w-0.5 bg-violet-200" />
+              )}
+              {history.map((entry) => {
+                const isCreation = entry.old_status === null
+                const dotColor = getHistoryDotColor(entry.old_status, entry.new_status)
+                const date = new Date(entry.changed_at).toLocaleDateString(
+                  locale === 'fr' ? 'fr-FR' : 'en-US',
+                  { day: 'numeric', month: 'short', year: 'numeric' }
+                )
+                return (
+                  <div key={entry.id} className="flex items-start gap-2 py-1.5 relative">
+                    <div className={`w-[11px] h-[11px] rounded-full ${dotColor} border-2 border-white shrink-0 mt-0.5 z-10`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-700 leading-snug">
+                        {isCreation ? (
+                          <>
+                            {locale === 'fr' ? 'Créé dans ' : 'Created in '}
+                            <span className="font-medium">
+                              {locale === 'fr' ? statusLabels[entry.new_status].fr : statusLabels[entry.new_status].en}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-medium">
+                              {locale === 'fr' ? statusLabels[entry.old_status!].fr : statusLabels[entry.old_status!].en}
+                            </span>
+                            {' → '}
+                            <span className="font-medium">
+                              {locale === 'fr' ? statusLabels[entry.new_status].fr : statusLabels[entry.new_status].en}
+                            </span>
+                          </>
+                        )}
+                      </p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{date}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer — Delete */}
+        <div className="px-6 py-4 flex items-center justify-end">
+          {confirmDelete ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-red-600">
+                {locale === 'fr' ? 'Supprimer ?' : 'Delete?'}
+              </span>
+              <button
+                onClick={() => { onDelete(milestone.id); onClose() }}
+                className="px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 rounded-lg transition-colors"
+              >
+                {locale === 'fr' ? 'Confirmer' : 'Confirm'}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 rounded-lg"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {locale === 'fr' ? 'Supprimer' : 'Delete'}
+            </button>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
 
 export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightMilestoneId }: ProgressTabProps) {
   const { t, locale } = useLanguage()
@@ -545,6 +817,8 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
   const [milestones, setMilestones] = useState<Milestone[]>([])
   const [milestoneComments, setMilestoneComments] = useState<Record<string, MilestoneComment[]>>({})
   const [milestoneSessionNotes, setMilestoneSessionNotes] = useState<Record<string, SessionLinkedNote[]>>({})
+  const [milestoneTaggedExcerpts, setMilestoneTaggedExcerpts] = useState<Record<string, TaggedExcerpt[]>>({})
+  const [editorNoteTypes, setEditorNoteTypes] = useState<{ type: string; label: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddMilestone, setShowAddMilestone] = useState(false)
   const [title, setTitle] = useState('')
@@ -553,36 +827,8 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
   const [saving, setSaving] = useState(false)
   const [dragOverColumn, setDragOverColumn] = useState<MilestoneStatus | null>(null)
 
-  // Custom note types (from DB + derived from existing notes)
-  const [customNoteTypes, setCustomNoteTypes] = useState<string[]>([])
-  const allNoteTypes = [...DEFAULT_NOTE_TYPES, ...customNoteTypes]
-
-  useEffect(() => {
-    const fetchCustomTypes = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data } = await supabase
-        .from('custom_note_types')
-        .select('type_name')
-        .eq('practitioner_id', user.id)
-        .order('created_at')
-      const saved = data?.map(d => d.type_name) || []
-      const fromNotes = [...new Set(notes.map(n => n.note_type).filter(t => t && !(DEFAULT_NOTE_TYPES as readonly string[]).includes(t) && t !== 'milestone'))]
-      setCustomNoteTypes([...new Set([...saved, ...fromNotes])])
-    }
-    fetchCustomTypes()
-  }, [notes])
-
-  // Notes state
-  const [showAddNote, setShowAddNote] = useState(false)
-  const [noteTitle, setNoteTitle] = useState('')
-  const [noteContent, setNoteContent] = useState('')
-  const [noteType, setNoteType] = useState<NoteType>('general')
-  const [isPrivate, setIsPrivate] = useState(true)
-  const [savingNote, setSavingNote] = useState(false)
-  const [noteImages, setNoteImages] = useState<File[]>([])
-  const [noteImagePreviews, setNoteImagePreviews] = useState<string[]>([])
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null)
+  // Detail modal state
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null)
 
   // Goal suggestions from Bloom Pulse
   const [latestSummary, setLatestSummary] = useState<MemberSummary | null>(null)
@@ -719,12 +965,11 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
           setMilestoneComments(groupedComments)
         }
 
-        // Fetch session-linked notes (notes with milestone_id and session_id)
+        // Fetch all notes linked to milestones
         const { data: sessionNotesData, error: sessionNotesError } = await supabase
           .from('progress_notes')
-          .select('id, content, created_at, session_id, milestone_id, sessions(scheduled_at, session_type)')
+          .select('id, content, created_at, session_id, milestone_id, note_type, sessions(scheduled_at, session_type)')
           .in('milestone_id', milestoneIds)
-          .not('session_id', 'is', null)
           .order('created_at', { ascending: false })
 
         if (!sessionNotesError && sessionNotesData) {
@@ -745,10 +990,38 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
                 session_id: note.session_id,
                 session_date: sessionData?.scheduled_at,
                 session_type: sessionData?.session_type,
+                note_type: note.note_type,
               })
             }
           })
           setMilestoneSessionNotes(groupedNotes)
+        }
+
+        // Fetch inline goal-tagged excerpts from session summary notes
+        const { data: summaryNotes } = await supabase
+          .from('progress_notes')
+          .select('content, session_id, sessions(scheduled_at, session_type)')
+          .eq('member_id', memberId)
+          .eq('note_type', 'session_summary')
+          .order('created_at', { ascending: false })
+
+        if (summaryNotes) {
+          const grouped: Record<string, TaggedExcerpt[]> = {}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          summaryNotes.forEach((note: any) => {
+            const excerpts = extractGoalExcerpts(note.content)
+            if (excerpts.length === 0) return
+            const sessionData = Array.isArray(note.sessions) ? note.sessions[0] : note.sessions
+            for (const { goalId, text } of excerpts) {
+              if (!grouped[goalId]) grouped[goalId] = []
+              grouped[goalId].push({
+                text,
+                sessionDate: sessionData?.scheduled_at,
+                sessionType: sessionData?.session_type,
+              })
+            }
+          })
+          setMilestoneTaggedExcerpts(grouped)
         }
       }
     } catch (error) {
@@ -757,6 +1030,34 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
       setLoading(false)
     }
   }
+
+  // Build note types list for inline tagging in comments
+  useEffect(() => {
+    const buildNoteTypes = async () => {
+      const noteTypeLabels = (t.members as any)?.noteTypes as Record<string, string> | undefined
+      const types: { type: string; label: string }[] = DEFAULT_NOTE_TYPES.map(nt => ({
+        type: nt,
+        label: noteTypeLabels?.[nt] || nt,
+      }))
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data } = await supabase
+          .from('custom_note_types')
+          .select('type_name')
+          .eq('practitioner_id', user.id)
+          .order('created_at')
+        if (data) {
+          for (const d of data) {
+            if (!types.some(existing => existing.type === d.type_name)) {
+              types.push({ type: d.type_name, label: noteTypeLabels?.[d.type_name] || d.type_name.replace(/_/g, ' ') })
+            }
+          }
+        }
+      }
+      setEditorNoteTypes(types)
+    }
+    buildNoteTypes()
+  }, [supabase, t])
 
   const [newlyAddedGoalId, setNewlyAddedGoalId] = useState<string | null>(null)
 
@@ -933,27 +1234,24 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
     }
   }, [supabase])
 
-  const handleToggleShare = useCallback(async (milestoneId: string, currentlyShared: boolean) => {
+  const handleUpdateMilestone = useCallback(async (milestoneId: string, title: string, description: string) => {
     try {
       const { error } = await supabase
         .from('milestones')
-        .update({
-          shared_with_member: !currentlyShared,
-          updated_at: new Date().toISOString(),
-        })
+        .update({ title, description: description || null, updated_at: new Date().toISOString() })
         .eq('id', milestoneId)
 
       if (error) throw error
 
-      toast.success(currentlyShared ? 'Journey hidden from member' : 'Journey shared with member')
+      toast.success(locale === 'fr' ? 'Objectif mis à jour' : 'Goal updated')
       fetchMilestones()
     } catch (error) {
-      console.error('Error toggling share:', error)
-      toast.error('Failed to update sharing')
+      console.error('Error updating milestone:', error)
+      toast.error(locale === 'fr' ? 'Échec de la mise à jour' : 'Failed to update goal')
     }
-  }, [supabase])
+  }, [supabase, locale])
 
-  const handleAddComment = useCallback(async (milestoneId: string, content: string) => {
+  const handleAddComment = useCallback(async (milestoneId: string, content: string, tag: string = '') => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -963,7 +1261,8 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
         .insert({
           milestone_id: milestoneId,
           practitioner_id: user.id,
-          content: content,
+          content,
+          tag: tag || null,
         })
 
       if (error) throw error
@@ -976,11 +1275,11 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
     }
   }, [supabase, locale])
 
-  const handleUpdateComment = useCallback(async (commentId: string, content: string) => {
+  const handleUpdateComment = useCallback(async (commentId: string, content: string, tag: string = '') => {
     try {
       const { error } = await supabase
         .from('milestone_comments')
-        .update({ content, updated_at: new Date().toISOString() })
+        .update({ content, tag: tag || null, updated_at: new Date().toISOString() })
         .eq('id', commentId)
 
       if (error) throw error
@@ -1048,95 +1347,6 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
       handleUpdateStatus(milestoneId, targetColumn, sourceColumn)
     }
   }, [handleUpdateStatus])
-
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    if (files.length > 0) {
-      setNoteImages(prev => [...prev, ...files])
-
-      files.forEach(file => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          setNoteImagePreviews(prev => [...prev, reader.result as string])
-        }
-        reader.readAsDataURL(file)
-      })
-    }
-    // Reset input so same file can be selected again
-    e.target.value = ''
-  }
-
-  const removeImage = (index: number) => {
-    setNoteImages(prev => prev.filter((_, i) => i !== index))
-    setNoteImagePreviews(prev => prev.filter((_, i) => i !== index))
-  }
-
-  const clearAllImages = () => {
-    setNoteImages([])
-    setNoteImagePreviews([])
-  }
-
-  const handleAddNote = async () => {
-    if (!noteContent.trim()) {
-      toast.error('Note content is required')
-      return
-    }
-
-    setSavingNote(true)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const imageUrls: string[] = []
-
-      // Upload all images
-      for (const image of noteImages) {
-        const fileExt = image.name.split('.').pop()
-        const fileName = `${user.id}/${memberId}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`
-
-        const { error: uploadError } = await supabase.storage
-          .from('note-images')
-          .upload(fileName, image)
-
-        if (uploadError) {
-          console.error('Error uploading image:', uploadError)
-        } else {
-          const { data: { publicUrl } } = supabase.storage
-            .from('note-images')
-            .getPublicUrl(fileName)
-          imageUrls.push(publicUrl)
-        }
-      }
-
-      const { error } = await supabase
-        .from('progress_notes')
-        .insert({
-          member_id: memberId,
-          practitioner_id: user.id,
-          title: noteTitle.trim() || null,
-          content: noteContent.trim(),
-          note_type: noteType,
-          is_private: isPrivate,
-          image_urls: imageUrls.length > 0 ? imageUrls : null,
-        })
-
-      if (error) throw error
-
-      toast.success(t.members.success.noteAdded)
-      setShowAddNote(false)
-      setNoteTitle('')
-      setNoteContent('')
-      setNoteType('general')
-      setNoteImages([])
-      setNoteImagePreviews([])
-      onNotesUpdate()
-    } catch (error) {
-      console.error('Error adding note:', error)
-      toast.error(t.members.errors.noteFailed)
-    } finally {
-      setSavingNote(false)
-    }
-  }
 
   // Group milestones by status (4 journey stages)
   const discoveryMilestones = milestones.filter(m => m.status === 'discovery')
@@ -1518,16 +1728,10 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
                         key={milestone.id}
                         milestone={milestone}
                         columnId={column.id}
-                        comments={milestoneComments[milestone.id] || []}
-                        sessionNotes={milestoneSessionNotes[milestone.id] || []}
-                        onToggleShare={handleToggleShare}
+                        commentCount={(milestoneComments[milestone.id] || []).length}
+                        sessionNoteCount={(milestoneSessionNotes[milestone.id] || []).length}
                         onDelete={handleDelete}
-                        onUpdateStatus={handleUpdateStatus}
-                        onAddComment={handleAddComment}
-                        onUpdateComment={handleUpdateComment}
-                        onDeleteComment={handleDeleteComment}
-                        onFetchHistory={handleFetchHistory}
-                        categoryLabel={t.members.milestoneCategories[milestone.category]}
+                        onOpenDetail={setSelectedMilestoneId}
                         locale={locale}
                         isHighlighted={highlightMilestoneId === milestone.id || newlyAddedGoalId === milestone.id}
                       />
@@ -1577,230 +1781,33 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
           })}
       </div>
 
-      {/* Progress Summary */}
-      {/* Recent Notes Section - Hidden for now */}
-      {false && <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="bg-white rounded-2xl p-6 border border-gray-200"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-gray-900 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center">
-              <MessageSquare className="w-4 h-4 text-violet-600" />
-            </div>
-            {t.members.overview.recentNotes}
-          </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowAddNote(!showAddNote)}
-            className="text-gray-500 hover:text-gray-700 rounded-lg"
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Add Note Form */}
-        <AnimatePresence>
-          {showAddNote && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mb-4 overflow-hidden"
-            >
-              <div className="bg-gray-50 rounded-xl p-4">
-                <input
-                  type="text"
-                  placeholder={t.members.notes.noteTitle}
-                  value={noteTitle}
-                  onChange={(e) => setNoteTitle(e.target.value)}
-                  className="w-full px-3 py-2 mb-3 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none text-sm bg-white"
-                />
-                <textarea
-                  placeholder={t.members.notes.noteContent}
-                  value={noteContent}
-                  onChange={(e) => setNoteContent(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 mb-3 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none text-sm resize-none bg-white"
-                />
-
-                {/* Image Upload */}
-                <div className="mb-3">
-                  {noteImagePreviews.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {noteImagePreviews.map((preview, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={preview}
-                            alt={`Preview ${index + 1}`}
-                            className="h-20 w-20 object-cover rounded-lg border border-gray-200"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <label className="inline-flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 hover:bg-gray-50 transition-colors">
-                    <ImagePlus className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-500">
-                      {noteImagePreviews.length > 0 ? 'Add more' : 'Add images'}
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageSelect}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                <div className="flex items-center gap-3 mb-3">
-                  <select
-                    value={noteType}
-                    onChange={(e) => setNoteType(e.target.value as NoteType)}
-                    className="flex-1 px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none text-sm bg-white"
-                  >
-                    {allNoteTypes.map(type => (
-                      <option key={type} value={type}>
-                        {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
-                      </option>
-                    ))}
-                    <option value="milestone">{t.members.noteTypes.milestone}</option>
-                  </select>
-                </div>
-                <div className="flex items-center justify-end">
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowAddNote(false)}
-                      className="rounded-lg"
-                    >
-                      {t.members.form.cancel}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={savingNote}
-                      onClick={handleAddNote}
-                      className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
-                    >
-                      {savingNote ? t.members.form.saving : t.members.notes.save}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Notes List */}
-        {notes.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-              <MessageSquare className="w-6 h-6 text-gray-400" />
-            </div>
-            <p className="text-sm text-gray-500">{t.members.overview.noNotes}</p>
-            <p className="text-xs text-gray-400 mt-1">{t.members.overview.noNotesDescription}</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {notes.map((note, index) => {
-              const typeStyle = noteTypeColors[note.note_type] || defaultNoteColor
-              return (
-                <motion.div
-                  key={note.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05 * index }}
-                  className="p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${typeStyle.bg} ${typeStyle.text}`}>
-                        {t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes] || note.note_type}
-                      </span>
-                      {note.is_private && (
-                        <Lock className="w-3 h-3 text-gray-400" />
-                      )}
-                    </div>
-                    <span className="text-xs text-gray-400">
-                      {new Date(note.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  {note.title && (
-                    <h4 className="font-medium text-gray-900 text-sm mb-1">{note.title}</h4>
-                  )}
-                  <p className="text-sm text-gray-600 line-clamp-2">{note.content}</p>
-                  {note.image_urls && note.image_urls.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {note.image_urls.map((url, imgIndex) => (
-                        <img
-                          key={imgIndex}
-                          src={url}
-                          alt={`Attachment ${imgIndex + 1}`}
-                          className="h-16 w-16 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => setLightboxImage(url)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </motion.div>
-              )
-            })}
-
-            {notes.length >= 5 && (
-              <button className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1 rounded-lg hover:bg-gray-50 transition-colors">
-                {t.members.overview.allNotes}
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        )}
-      </motion.div>}
-
-      {/* Image Lightbox */}
+      {/* Milestone Detail Modal */}
       <AnimatePresence>
-        {lightboxImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-            onClick={() => setLightboxImage(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative max-w-4xl max-h-[90vh] p-2"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setLightboxImage(null)}
-                className="absolute -top-2 -right-2 z-10 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors"
-              >
-                <X className="w-4 h-4 text-gray-600" />
-              </button>
-              <img
-                src={lightboxImage}
-                alt="Full size"
-                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-              />
-            </motion.div>
-          </motion.div>
-        )}
+        {selectedMilestoneId && (() => {
+          const selectedMilestone = milestones.find(m => m.id === selectedMilestoneId)
+          if (!selectedMilestone) return null
+          return (
+            <MilestoneDetailModal
+              milestone={selectedMilestone}
+              comments={milestoneComments[selectedMilestoneId] || []}
+              sessionNotes={milestoneSessionNotes[selectedMilestoneId] || []}
+              taggedExcerpts={milestoneTaggedExcerpts[selectedMilestoneId] || []}
+              noteTypes={editorNoteTypes}
+              onClose={() => setSelectedMilestoneId(null)}
+              onDelete={handleDelete}
+              onUpdateStatus={(id, status) => {
+                handleUpdateStatus(id, status, selectedMilestone.status)
+              }}
+              onAddComment={handleAddComment}
+              onUpdateComment={handleUpdateComment}
+              onDeleteComment={handleDeleteComment}
+              onFetchHistory={handleFetchHistory}
+              onUpdateMilestone={handleUpdateMilestone}
+              locale={locale}
+              columns={columns.map(c => ({ id: c.id, title: c.title, titleFr: c.titleFr }))}
+            />
+          )
+        })()}
       </AnimatePresence>
     </div>
   )

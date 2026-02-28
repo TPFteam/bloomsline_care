@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Clock,
@@ -18,7 +18,6 @@ import {
   AlertCircle,
   CalendarCheck,
   MessageSquare,
-  Send,
   ChevronDown,
   ChevronUp,
   ChevronLeft,
@@ -32,7 +31,10 @@ import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import { toast } from 'sonner'
+import { RichTextEditor } from '@/components/notes/RichTextEditor'
+import { MarkdownRenderer } from '@/components/notes/MarkdownRenderer'
 import type { Session, SessionType, SessionFormat, SessionStatus, Member } from '@/types/member'
+import { DEFAULT_NOTE_TYPES } from '@/types/member'
 
 interface SessionsTabProps {
   memberId: string
@@ -62,7 +64,6 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const [editScheduledAt, setEditScheduledAt] = useState('')
   const [editDuration, setEditDuration] = useState(60)
   const [editSummary, setEditSummary] = useState('')
-  const [editNotes, setEditNotes] = useState('')
   const [editStatus, setEditStatus] = useState<SessionStatus>('scheduled')
 
   // Edit date/time picker state
@@ -119,6 +120,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     created_at: string
     milestone_id: string | null
     milestone_title?: string
+    note_type?: string
   }
   interface MilestoneOption {
     id: string
@@ -126,35 +128,16 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     status: string
   }
 
-  // Helper to get status label and color
-  const getStatusInfo = (status: string) => {
-    const info: Record<string, { en: string; fr: string; color: string; bg: string }> = {
-      discovery: { en: 'Discovery', fr: 'Compréhension', color: 'text-emerald-600', bg: 'bg-emerald-100' },
-      building: { en: 'Building', fr: 'Ancrage', color: 'text-emerald-700', bg: 'bg-emerald-200' },
-      thriving: { en: 'Thriving', fr: 'Évolution', color: 'text-emerald-800', bg: 'bg-emerald-300' },
-      independent: { en: 'Independent', fr: 'Autonomie', color: 'text-violet-700', bg: 'bg-violet-100' },
-    }
-    return info[status] || { en: status, fr: status, color: 'text-gray-600', bg: 'bg-gray-100' }
-  }
-
-  const getStatusLabel = (status: string) => {
-    const info = getStatusInfo(status)
-    return locale === 'fr' ? info.fr : info.en
-  }
-
-  // Custom dropdown state
-  const [showMilestoneDropdown, setShowMilestoneDropdown] = useState(false)
-  const [showEditMilestoneDropdown, setShowEditMilestoneDropdown] = useState(false)
-  const [sessionNotes, setSessionNotes] = useState<Record<string, SessionNote[]>>({})
+  const [sessionSummaryNotes, setSessionSummaryNotes] = useState<Record<string, SessionNote | null>>({})
   const [milestones, setMilestones] = useState<MilestoneOption[]>([])
-  const [expandedNotes, setExpandedNotes] = useState<string | null>(null)
-  const [addingNoteToSession, setAddingNoteToSession] = useState<string | null>(null)
-  const [newNoteContent, setNewNoteContent] = useState('')
-  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string>('')
-  const [savingNote, setSavingNote] = useState(false)
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
-  const [editNoteContent, setEditNoteContent] = useState('')
-  const [editNoteMilestoneId, setEditNoteMilestoneId] = useState<string>('')
+  const [editorNoteTypes, setEditorNoteTypes] = useState<{ type: string; label: string }[]>([])
+
+
+  // Session summary note editing state
+  const [editingSummarySession, setEditingSummarySession] = useState<string | null>(null)
+  const [summaryDraft, setSummaryDraft] = useState('')
+  const [savingSummary, setSavingSummary] = useState(false)
+
 
   // Scroll to highlighted session or section
   useEffect(() => {
@@ -190,157 +173,132 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     fetchMilestones()
   }, [memberId, supabase])
 
+  // Build note types list for inline tagging
+  useEffect(() => {
+    const buildNoteTypes = async () => {
+      const noteTypeLabels = (t.members as any)?.noteTypes as Record<string, string> | undefined
+
+      // Start with defaults
+      const types: { type: string; label: string }[] = DEFAULT_NOTE_TYPES.map(nt => ({
+        type: nt,
+        label: noteTypeLabels?.[nt] || nt,
+      }))
+
+      // Fetch custom note types
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data } = await supabase
+          .from('custom_note_types')
+          .select('type_name')
+          .eq('practitioner_id', user.id)
+          .order('created_at')
+
+        if (data) {
+          for (const d of data) {
+            if (!types.some(existing => existing.type === d.type_name)) {
+              types.push({ type: d.type_name, label: noteTypeLabels?.[d.type_name] || d.type_name.replace(/_/g, ' ') })
+            }
+          }
+        }
+      }
+
+      setEditorNoteTypes(types)
+    }
+    buildNoteTypes()
+  }, [supabase, t])
+
   // Fetch notes for all sessions
   useEffect(() => {
-    const fetchSessionNotes = async () => {
+    const fetchSessionSummaryNotes = async () => {
       const sessionIds = sessions.map(s => s.id)
       if (sessionIds.length === 0) return
 
       const { data, error } = await supabase
         .from('progress_notes')
-        .select('id, content, created_at, session_id, milestone_id, milestones(title)')
+        .select('id, content, created_at, session_id, milestone_id, note_type')
         .in('session_id', sessionIds)
+        .eq('note_type', 'session_summary')
         .order('created_at', { ascending: false })
 
       if (!error && data) {
-        const notesBySession: Record<string, SessionNote[]> = {}
+        const summaryBySession: Record<string, SessionNote | null> = {}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data.forEach((note: any) => {
-          if (note.session_id) {
-            if (!notesBySession[note.session_id]) {
-              notesBySession[note.session_id] = []
-            }
-            // Handle milestones relation - it may be an array or single object
-            const milestoneData = Array.isArray(note.milestones) ? note.milestones[0] : note.milestones
-            notesBySession[note.session_id].push({
+          if (note.session_id && !summaryBySession[note.session_id]) {
+            summaryBySession[note.session_id] = {
               id: note.id,
               content: note.content,
               created_at: note.created_at,
               milestone_id: note.milestone_id,
-              milestone_title: milestoneData?.title,
-            })
+              note_type: note.note_type,
+            }
           }
         })
-        setSessionNotes(notesBySession)
+        setSessionSummaryNotes(summaryBySession)
       }
     }
 
-    fetchSessionNotes()
+    fetchSessionSummaryNotes()
   }, [sessions, supabase])
 
-  const handleAddNoteToSession = async (sessionId: string) => {
-    if (!newNoteContent.trim()) return
+  const handleSaveSessionSummary = async (sessionId: string, content: string) => {
+    if (!content.trim()) return
 
-    setSavingNote(true)
+    setSavingSummary(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const milestoneId = selectedMilestoneId || null
-      const milestoneTitle = milestoneId ? milestones.find(m => m.id === milestoneId)?.title : undefined
+      const existing = sessionSummaryNotes[sessionId]
 
-      const { data, error } = await supabase
-        .from('progress_notes')
-        .insert({
-          member_id: memberId,
-          practitioner_id: user.id,
-          session_id: sessionId,
-          milestone_id: milestoneId,
-          content: newNoteContent.trim(),
-          note_type: 'general',
-          is_private: true,
-        })
-        .select('id, content, created_at, milestone_id')
-        .single()
+      if (existing) {
+        const { error } = await supabase
+          .from('progress_notes')
+          .update({ content: content.trim(), updated_at: new Date().toISOString() })
+          .eq('id', existing.id)
 
-      if (error) throw error
+        if (error) throw error
 
-      // Add to local state
-      setSessionNotes(prev => ({
-        ...prev,
-        [sessionId]: [
-          {
+        setSessionSummaryNotes(prev => ({
+          ...prev,
+          [sessionId]: { ...existing, content: content.trim() },
+        }))
+      } else {
+        const { data, error } = await supabase
+          .from('progress_notes')
+          .insert({
+            member_id: memberId,
+            practitioner_id: user.id,
+            session_id: sessionId,
+            content: content.trim(),
+            note_type: 'session_summary',
+            is_private: true,
+          })
+          .select('id, content, created_at, milestone_id')
+          .single()
+
+        if (error) throw error
+
+        setSessionSummaryNotes(prev => ({
+          ...prev,
+          [sessionId]: {
             id: data.id,
             content: data.content,
             created_at: data.created_at,
-            milestone_id: data.milestone_id,
-            milestone_title: milestoneTitle,
+            milestone_id: null,
+            note_type: 'session_summary',
           },
-          ...(prev[sessionId] || [])
-        ]
-      }))
+        }))
+      }
 
-      setNewNoteContent('')
-      setSelectedMilestoneId('')
-      setAddingNoteToSession(null)
-      toast.success(t.members.success.noteAdded)
+      setEditingSummarySession(null)
+      setSummaryDraft('')
+      toast.success(locale === 'fr' ? 'Note de séance enregistrée' : 'Session note saved')
     } catch (error) {
-      console.error('Error adding note:', error)
-      toast.error(t.members.errors.noteFailed)
+      console.error('Error saving session summary:', error)
+      toast.error(locale === 'fr' ? 'Échec de l\'enregistrement' : 'Failed to save note')
     } finally {
-      setSavingNote(false)
-    }
-  }
-
-  const handleUpdateNote = async (sessionId: string, noteId: string) => {
-    if (!editNoteContent.trim()) return
-
-    setSavingNote(true)
-    try {
-      const milestoneId = editNoteMilestoneId || null
-      const milestoneTitle = milestoneId ? milestones.find(m => m.id === milestoneId)?.title : undefined
-
-      const { error } = await supabase
-        .from('progress_notes')
-        .update({
-          content: editNoteContent.trim(),
-          milestone_id: milestoneId,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', noteId)
-
-      if (error) throw error
-
-      // Update local state
-      setSessionNotes(prev => ({
-        ...prev,
-        [sessionId]: prev[sessionId]?.map(note =>
-          note.id === noteId ? {
-            ...note,
-            content: editNoteContent.trim(),
-            milestone_id: milestoneId,
-            milestone_title: milestoneTitle,
-          } : note
-        ) || []
-      }))
-
-      setEditingNoteId(null)
-      setEditNoteContent('')
-      setEditNoteMilestoneId('')
-      toast.success(locale === 'fr' ? 'Note mise à jour' : 'Note updated')
-    } catch (error) {
-      console.error('Error updating note:', error)
-      toast.error(locale === 'fr' ? 'Échec de la mise à jour' : 'Failed to update note')
-    } finally {
-      setSavingNote(false)
-    }
-  }
-
-  const handleDeleteNote = async (sessionId: string, noteId: string) => {
-    try {
-      const { error } = await supabase
-        .from('progress_notes')
-        .delete()
-        .eq('id', noteId)
-
-      if (error) throw error
-
-      setSessionNotes(prev => ({
-        ...prev,
-        [sessionId]: prev[sessionId]?.filter(n => n.id !== noteId) || []
-      }))
-    } catch (error) {
-      console.error('Error deleting note:', error)
+      setSavingSummary(false)
     }
   }
 
@@ -417,7 +375,6 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     setEditScheduledAt(session.scheduled_at.slice(0, 16))
     setEditDuration(session.duration_minutes)
     setEditSummary(session.summary || '')
-    setEditNotes(session.notes || '')
     setEditStatus(session.status)
 
     // Set date picker state from existing session
@@ -453,7 +410,6 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
           scheduled_at: scheduledAtValue,
           duration_minutes: editDuration,
           summary: editSummary.trim() || null,
-          notes: editNotes.trim() || null,
           status: editStatus,
           updated_at: new Date().toISOString(),
         })
@@ -912,6 +868,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             {t.members.sessionFormats[session.session_format]}
                           </span>
                         </div>
+
                         {session.summary && (
                           <div className="mt-3 p-3 rounded-xl bg-white/60 border border-blue-100">
                             <div className="flex items-start gap-2">
@@ -988,6 +945,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                       )}
                     </div>
                   </div>
+
                 </motion.div>
               )
             })}
@@ -1143,296 +1101,82 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                     </div>
                   )}
 
-                  {/* Session Notes Section */}
-                  <div className="mt-3 pl-12">
-                    {/* Notes list */}
-                    {sessionNotes[session.id]?.length > 0 && (
-                      <div className="space-y-2 mb-2">
-                        {(expandedNotes === session.id ? sessionNotes[session.id] : sessionNotes[session.id].slice(0, 2)).map((note) => (
-                          <div key={note.id} className="group/note bg-blue-50 rounded-lg p-2">
-                            {editingNoteId === note.id ? (
-                              // Edit mode
-                              <div className="space-y-2">
-                                <textarea
-                                  value={editNoteContent}
-                                  onChange={(e) => setEditNoteContent(e.target.value)}
-                                  rows={2}
-                                  autoFocus
-                                  className="w-full px-2 py-1.5 text-sm rounded-lg border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none resize-none"
-                                />
-                                {/* Milestone selector for edit */}
-                                {milestones.length > 0 && (
-                                  <div className="relative">
-                                    <button
-                                      type="button"
-                                      onClick={() => setShowEditMilestoneDropdown(!showEditMilestoneDropdown)}
-                                      className="w-full flex items-center justify-between gap-2 px-2 py-1.5 text-xs rounded-lg border border-gray-200 hover:border-gray-300 bg-white transition-colors"
-                                    >
-                                      <div className="flex items-center gap-2 min-w-0">
-                                        <Target className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                                        {editNoteMilestoneId ? (
-                                          <>
-                                            <span className="truncate text-gray-700">{milestones.find(m => m.id === editNoteMilestoneId)?.title}</span>
-                                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${getStatusInfo(milestones.find(m => m.id === editNoteMilestoneId)?.status || '').bg} ${getStatusInfo(milestones.find(m => m.id === editNoteMilestoneId)?.status || '').color}`}>
-                                              {getStatusLabel(milestones.find(m => m.id === editNoteMilestoneId)?.status || '')}
-                                            </span>
-                                          </>
-                                        ) : (
-                                          <span className="text-gray-400">{locale === 'fr' ? 'Aucun axe de travail' : 'No goal linked'}</span>
-                                        )}
-                                      </div>
-                                      <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${showEditMilestoneDropdown ? 'rotate-180' : ''}`} />
-                                    </button>
-                                    <AnimatePresence>
-                                      {showEditMilestoneDropdown && (
-                                        <motion.div
-                                          initial={{ opacity: 0, y: -4 }}
-                                          animate={{ opacity: 1, y: 0 }}
-                                          exit={{ opacity: 0, y: -4 }}
-                                          className="absolute z-50 top-full left-0 right-0 mt-1 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden"
-                                        >
-                                          <div className="max-h-40 overflow-y-auto py-1">
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                setEditNoteMilestoneId('')
-                                                setShowEditMilestoneDropdown(false)
-                                              }}
-                                              className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 flex items-center gap-2 ${!editNoteMilestoneId ? 'bg-gray-50' : ''}`}
-                                            >
-                                              <X className="w-3 h-3 text-gray-400" />
-                                              <span className="text-gray-500">{locale === 'fr' ? 'Aucun axe de travail' : 'No goal linked'}</span>
-                                            </button>
-                                            {milestones.map((m) => {
-                                              const statusInfo = getStatusInfo(m.status)
-                                              return (
-                                                <button
-                                                  key={m.id}
-                                                  type="button"
-                                                  onClick={() => {
-                                                    setEditNoteMilestoneId(m.id)
-                                                    setShowEditMilestoneDropdown(false)
-                                                  }}
-                                                  className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 flex items-center justify-between gap-2 ${editNoteMilestoneId === m.id ? 'bg-blue-50' : ''}`}
-                                                >
-                                                  <div className="flex items-center gap-2 min-w-0">
-                                                    {editNoteMilestoneId === m.id && <Check className="w-3 h-3 text-blue-500 flex-shrink-0" />}
-                                                    <span className="truncate text-gray-700">{m.title}</span>
-                                                  </div>
-                                                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${statusInfo.bg} ${statusInfo.color}`}>
-                                                    {locale === 'fr' ? statusInfo.fr : statusInfo.en}
-                                                  </span>
-                                                </button>
-                                              )
-                                            })}
-                                          </div>
-                                        </motion.div>
-                                      )}
-                                    </AnimatePresence>
-                                  </div>
-                                )}
-                                <div className="flex items-center justify-end gap-1">
-                                  <button
-                                    onClick={() => {
-                                      setEditingNoteId(null)
-                                      setEditNoteContent('')
-                                      setEditNoteMilestoneId('')
-                                      setShowEditMilestoneDropdown(false)
-                                    }}
-                                    className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700 rounded"
-                                  >
-                                    {locale === 'fr' ? 'Annuler' : 'Cancel'}
-                                  </button>
-                                  <button
-                                    onClick={() => handleUpdateNote(session.id, note.id)}
-                                    disabled={savingNote || !editNoteContent.trim()}
-                                    className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-                                  >
-                                    {savingNote ? '...' : (locale === 'fr' ? 'Enregistrer' : 'Save')}
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              // View mode
-                              <div className="flex items-start gap-2">
-                                <MessageSquare className="w-3.5 h-3.5 text-blue-400 mt-0.5 flex-shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm text-gray-700">{note.content}</p>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-xs text-gray-400">
-                                      {new Date(note.created_at).toLocaleDateString()}
-                                    </span>
-                                    {note.milestone_title && (
-                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-medium">
-                                        <Target className="w-2.5 h-2.5" />
-                                        {note.milestone_title}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-0.5 opacity-0 group-hover/note:opacity-100 transition-all">
-                                  <button
-                                    onClick={() => {
-                                      setEditingNoteId(note.id)
-                                      setEditNoteContent(note.content)
-                                      setEditNoteMilestoneId(note.milestone_id || '')
-                                    }}
-                                    className="text-gray-400 hover:text-blue-500 p-1"
-                                    title={locale === 'fr' ? 'Modifier' : 'Edit'}
-                                  >
-                                    <Pencil className="w-3 h-3" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteNote(session.id, note.id)}
-                                    className="text-gray-400 hover:text-red-500 p-1"
-                                    title={locale === 'fr' ? 'Supprimer' : 'Delete'}
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                        {sessionNotes[session.id].length > 2 && (
-                          <button
-                            onClick={() => setExpandedNotes(expandedNotes === session.id ? null : session.id)}
-                            className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                          >
-                            {expandedNotes === session.id ? (
-                              <>
-                                <ChevronUp className="w-3 h-3" />
-                                Show less
-                              </>
-                            ) : (
-                              <>
-                                <ChevronDown className="w-3 h-3" />
-                                Show {sessionNotes[session.id].length - 2} more notes
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Add note inline */}
-                    {addingNoteToSession === session.id ? (
-                      <div className="space-y-2">
-                        <textarea
-                          value={newNoteContent}
-                          onChange={(e) => setNewNoteContent(e.target.value)}
-                          placeholder={locale === 'fr' ? 'Ajouter une note...' : 'Add a note...'}
-                          rows={2}
-                          autoFocus
-                          className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 outline-none resize-none"
-                        />
-                        {/* Milestone selector */}
-                        {milestones.length > 0 && (
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={() => setShowMilestoneDropdown(!showMilestoneDropdown)}
-                              className="w-full flex items-center justify-between gap-2 px-3 py-2 text-xs rounded-lg border border-gray-200 hover:border-gray-300 bg-white transition-colors"
+                  {/* Inline Session Note */}
+                  {(session.status === 'completed' || session.status === 'no_show') && (
+                    <div className="mt-3 pl-12">
+                      {editingSummarySession === session.id ? (
+                        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                          <RichTextEditor
+                            value={summaryDraft}
+                            onChange={setSummaryDraft}
+                            placeholder={locale === 'fr' ? 'Rédigez votre note de séance...' : 'Write your session note...'}
+                            memberId={memberId}
+                            locale={locale}
+                            autoFocus
+                            milestones={milestones}
+                            noteTypes={editorNoteTypes}
+                            memberName={member?.first_name}
+                          />
+                          <div className="flex items-center justify-end gap-2 px-3 py-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setEditingSummarySession(null)
+                                setSummaryDraft('')
+                              }}
+                              className="h-8 px-3 text-gray-500 hover:text-gray-700 rounded-lg"
                             >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <Target className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                                {selectedMilestoneId ? (
-                                  <>
-                                    <span className="truncate text-gray-700">{milestones.find(m => m.id === selectedMilestoneId)?.title}</span>
-                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${getStatusInfo(milestones.find(m => m.id === selectedMilestoneId)?.status || '').bg} ${getStatusInfo(milestones.find(m => m.id === selectedMilestoneId)?.status || '').color}`}>
-                                      {getStatusLabel(milestones.find(m => m.id === selectedMilestoneId)?.status || '')}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <span className="text-gray-400">{locale === 'fr' ? 'Lier à un axe de travail (optionnel)' : 'Link to a goal (optional)'}</span>
-                                )}
-                              </div>
-                              <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${showMilestoneDropdown ? 'rotate-180' : ''}`} />
-                            </button>
-                            <AnimatePresence>
-                              {showMilestoneDropdown && (
-                                <motion.div
-                                  initial={{ opacity: 0, y: -4 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: -4 }}
-                                  className="absolute z-50 top-full left-0 right-0 mt-1 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden"
-                                >
-                                  <div className="max-h-48 overflow-y-auto py-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedMilestoneId('')
-                                        setShowMilestoneDropdown(false)
-                                      }}
-                                      className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 flex items-center gap-2 ${!selectedMilestoneId ? 'bg-gray-50' : ''}`}
-                                    >
-                                      <X className="w-3 h-3 text-gray-400" />
-                                      <span className="text-gray-500">{locale === 'fr' ? 'Aucun axe de travail' : 'No goal linked'}</span>
-                                    </button>
-                                    {milestones.map((m) => {
-                                      const statusInfo = getStatusInfo(m.status)
-                                      return (
-                                        <button
-                                          key={m.id}
-                                          type="button"
-                                          onClick={() => {
-                                            setSelectedMilestoneId(m.id)
-                                            setShowMilestoneDropdown(false)
-                                          }}
-                                          className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 flex items-center justify-between gap-2 ${selectedMilestoneId === m.id ? 'bg-blue-50' : ''}`}
-                                        >
-                                          <div className="flex items-center gap-2 min-w-0">
-                                            {selectedMilestoneId === m.id && <Check className="w-3 h-3 text-blue-500 flex-shrink-0" />}
-                                            <span className="truncate text-gray-700">{m.title}</span>
-                                          </div>
-                                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${statusInfo.bg} ${statusInfo.color}`}>
-                                            {locale === 'fr' ? statusInfo.fr : statusInfo.en}
-                                          </span>
-                                        </button>
-                                      )
-                                    })}
-                                  </div>
-                                </motion.div>
+                              {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleSaveSessionSummary(session.id, summaryDraft)}
+                              disabled={savingSummary || !summaryDraft.replace(/<[^>]*>/g, '').trim()}
+                              className="h-8 px-3 bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+                            >
+                              {savingSummary ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                locale === 'fr' ? 'Enregistrer' : 'Save'
                               )}
-                            </AnimatePresence>
+                            </Button>
                           </div>
-                        )}
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setAddingNoteToSession(null)
-                              setNewNoteContent('')
-                              setSelectedMilestoneId('')
-                              setShowMilestoneDropdown(false)
-                            }}
-                            className="h-8 px-2 text-gray-400 hover:text-gray-600 rounded-lg"
-                          >
-                            <X className="w-3.5 h-3.5 mr-1" />
-                            {locale === 'fr' ? 'Annuler' : 'Cancel'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleAddNoteToSession(session.id)}
-                            disabled={savingNote || !newNoteContent.trim()}
-                            className="h-8 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
-                          >
-                            <Send className="w-3.5 h-3.5 mr-1" />
-                            {locale === 'fr' ? 'Ajouter' : 'Add'}
-                          </Button>
                         </div>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setAddingNoteToSession(session.id)}
-                        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-blue-500 transition-colors"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        Add note
-                      </button>
-                    )}
-                  </div>
+                      ) : sessionSummaryNotes[session.id] ? (
+                        <div
+                          className="group/summary bg-white border border-gray-200 rounded-xl p-3 cursor-pointer hover:border-gray-300 transition-colors"
+                          onClick={() => {
+                            setEditingSummarySession(session.id)
+                            setSummaryDraft(sessionSummaryNotes[session.id]?.content || '')
+                          }}
+                        >
+                          <div className="flex items-start gap-2">
+                            <FileText className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0 line-clamp-4">
+                              <MarkdownRenderer
+                                content={sessionSummaryNotes[session.id]?.content || ''}
+                                onContentChange={(html) => handleSaveSessionSummary(session.id, html)}
+                              />
+                            </div>
+                            <Pencil className="w-3.5 h-3.5 text-gray-300 opacity-0 group-hover/summary:opacity-100 transition-opacity flex-shrink-0 mt-0.5" />
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setEditingSummarySession(session.id)
+                            setSummaryDraft('')
+                          }}
+                          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-500 transition-colors text-sm"
+                        >
+                          <FileText className="w-4 h-4" />
+                          {locale === 'fr' ? 'Rédiger une note de séance' : 'Write session note'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {/* Show action buttons for past sessions still marked as scheduled */}
                   {session.status === 'scheduled' && new Date(session.scheduled_at) < new Date() && (
                     <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200">
@@ -1697,22 +1441,6 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   />
                 </div>
 
-                {/* Notes */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <span className="flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4 text-blue-500" />
-                      Notes
-                    </span>
-                  </label>
-                  <textarea
-                    value={editNotes}
-                    onChange={(e) => setEditNotes(e.target.value)}
-                    placeholder="Private notes about this session..."
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 outline-none resize-none bg-white"
-                  />
-                </div>
               </div>
 
               {/* Modal Footer */}

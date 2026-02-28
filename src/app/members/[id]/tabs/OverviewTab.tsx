@@ -353,45 +353,44 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
       try {
         const combined: CombinedNote[] = []
 
-        // 1. Fetch session summaries (sessions with notes)
-        const sessionsWithNotes = sessions.filter(s => s.notes && s.notes.trim())
-        sessionsWithNotes.forEach(session => {
-          combined.push({
-            id: `session-${session.id}`,
-            content: session.notes!,
-            created_at: session.scheduled_at,
-            type: 'session_summary',
-            source_label: locale === 'fr' ? 'Résumé de séance' : 'Session Summary',
-            session_date: session.scheduled_at,
-            session_id: session.id,
-          })
-        })
-
-        // 2. Fetch session notes (progress_notes with session_id)
+        // 1 & 2. Fetch session notes and summaries from progress_notes
         const { data: sessionNotes } = await supabase
           .from('progress_notes')
-          .select('id, content, created_at, session_id, milestone_id, milestones(title), sessions(scheduled_at)')
+          .select('id, content, created_at, session_id, milestone_id, note_type, milestones(title), sessions(scheduled_at)')
           .eq('member_id', member.id)
           .not('session_id', 'is', null)
           .order('created_at', { ascending: false })
-          .limit(10)
+          .limit(20)
 
         if (sessionNotes) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           sessionNotes.forEach((note: any) => {
             const milestoneData = Array.isArray(note.milestones) ? note.milestones[0] : note.milestones
             const sessionData = Array.isArray(note.sessions) ? note.sessions[0] : note.sessions
-            combined.push({
-              id: `note-${note.id}`,
-              content: note.content,
-              created_at: note.created_at,
-              type: 'session_note',
-              source_label: locale === 'fr' ? 'Note de séance' : 'Session Note',
-              milestone_title: milestoneData?.title,
-              session_date: sessionData?.scheduled_at,
-              session_id: note.session_id,
-              milestone_id: note.milestone_id,
-            })
+
+            if (note.note_type === 'session_summary') {
+              combined.push({
+                id: `session-${note.id}`,
+                content: note.content,
+                created_at: note.created_at,
+                type: 'session_summary',
+                source_label: locale === 'fr' ? 'Résumé de séance' : 'Session Summary',
+                session_date: sessionData?.scheduled_at,
+                session_id: note.session_id,
+              })
+            } else {
+              combined.push({
+                id: `note-${note.id}`,
+                content: note.content,
+                created_at: note.created_at,
+                type: 'session_note',
+                source_label: locale === 'fr' ? 'Note de séance' : 'Session Note',
+                milestone_title: milestoneData?.title,
+                session_date: sessionData?.scheduled_at,
+                session_id: note.session_id,
+                milestone_id: note.milestone_id,
+              })
+            }
           })
         }
 

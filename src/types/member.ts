@@ -14,7 +14,9 @@ export type SessionFormat = 'in_person' | 'virtual' | 'phone'
 
 export type SessionStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show'
 
-export const DEFAULT_NOTE_TYPES = ['general', 'symptome', 'recurrence', 'hypothese', 'transfert', 'contre_transfert', 'ajustement_envisage'] as const
+export const FIXED_NOTE_TYPES = ['general', 'recurrence', 'hypothese'] as const
+export const DELETABLE_DEFAULT_NOTE_TYPES = ['symptome', 'transfert', 'contre_transfert', 'ajustement_envisage'] as const
+export const DEFAULT_NOTE_TYPES = [...FIXED_NOTE_TYPES, ...DELETABLE_DEFAULT_NOTE_TYPES] as const
 export type NoteType = string
 
 export type FileCategory = 'general' | 'intake' | 'assessment' | 'consent' | 'insurance' | 'correspondence' | 'other'
@@ -124,9 +126,25 @@ export interface Session {
   practitioner_proposed_date: string | null
   reschedule_status: RescheduleStatus | null
 
+  // AI-generated session preparation briefing
+  preparation: SessionPreparation | null
+
   // Metadata
   created_at: string
   updated_at: string
+}
+
+export interface SessionPreparation {
+  quick_context: string
+  last_session: {
+    date: string
+    summary: string
+    mood: number | null
+    key_takeaways: string[]
+  } | null
+  open_threads: string[]
+  suggested_focus: string[]
+  things_to_note: string[]
 }
 
 export interface SessionGoal {
@@ -260,6 +278,7 @@ export interface MilestoneComment {
   milestone_id: string
   practitioner_id: string
   content: string
+  tag: string | null
   created_at: string
   updated_at: string
 }
