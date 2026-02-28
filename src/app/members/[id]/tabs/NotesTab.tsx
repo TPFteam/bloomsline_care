@@ -1064,38 +1064,51 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
   return (
     <div className="space-y-4">
-      {/* Header: title + mode toggle */}
+      {/* Header: sub-tab toggle + mode toggle */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">
-            {t.members.profile.notes}
-          </h2>
-          <p className="text-sm text-gray-500">
-            {allNotes.length} {allNotes.length === 1 ? 'note' : 'notes'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Mode toggle */}
+        {/* Notes / Session Notes sub-tabs (only in notepad mode) */}
+        {viewMode === 'notepad' ? (
           <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
             <button
-              onClick={() => setViewMode('notepad')}
+              onClick={() => setNotepadSubTab('quick')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                viewMode === 'notepad' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                notepadSubTab === 'quick' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
-              {locale === 'fr' ? 'Bloc-notes' : locale === 'es' ? 'Bloc de notas' : 'Notepad'}
+              {locale === 'fr' ? 'Notes' : locale === 'es' ? 'Notas' : 'Notes'}
             </button>
             <button
-              onClick={() => setViewMode('browse')}
+              onClick={() => setNotepadSubTab('session')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                viewMode === 'browse' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                notepadSubTab === 'session' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <List className="w-3.5 h-3.5" />
-              {locale === 'fr' ? 'Parcourir' : locale === 'es' ? 'Explorar' : 'Browse'}
+              <FileText className="w-3.5 h-3.5" />
+              {locale === 'fr' ? 'Notes de séance' : locale === 'es' ? 'Notas de sesión' : 'Session Notes'}
             </button>
           </div>
+        ) : <div />}
+        {/* Mode toggle */}
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setViewMode('notepad')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              viewMode === 'notepad' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            {locale === 'fr' ? 'Bloc-notes' : locale === 'es' ? 'Bloc de notas' : 'Notepad'}
+          </button>
+          <button
+            onClick={() => setViewMode('browse')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              viewMode === 'browse' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <List className="w-3.5 h-3.5" />
+            {locale === 'fr' ? 'Parcourir' : locale === 'es' ? 'Explorar' : 'Browse'}
+          </button>
         </div>
       </div>
 
@@ -1104,30 +1117,6 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       {/* ================================ */}
       {viewMode === 'notepad' && (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 340px)', minHeight: '500px' }}>
-          {/* Sub-tab toggle */}
-          <div className="flex items-center gap-1 px-5 pt-3 pb-0">
-            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setNotepadSubTab('quick')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  notepadSubTab === 'quick' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                {locale === 'fr' ? 'Notes' : locale === 'es' ? 'Notas' : 'Notes'}
-              </button>
-              <button
-                onClick={() => setNotepadSubTab('session')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  notepadSubTab === 'session' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                {locale === 'fr' ? 'Notes de séance' : locale === 'es' ? 'Notas de sesión' : 'Session Notes'}
-              </button>
-            </div>
-          </div>
-
           {/* Quick Notes sub-tab */}
           {notepadSubTab === 'quick' && (
           <>
