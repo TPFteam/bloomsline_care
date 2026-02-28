@@ -473,7 +473,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                   </div>
                 </div>
               </div>
-              <div className="grid gap-4">
+              <div className="grid gap-4 p-4">
                 {filteredLibraryResources.length === 0 ? (
                   <div className="p-8 text-center text-gray-500">
                     <p className="text-sm">
@@ -631,14 +631,14 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                   <h3 className="font-semibold text-gray-900">{locale === 'fr' ? 'Histoires Partagées' : 'Shared Stories'}</h3>
                   <span className="text-xs bg-lavender-100 text-lavender-700 px-2 py-0.5 rounded-full">{sharedResources.length}</span>
                 </div>
-                <div className="divide-y divide-gray-100/50">
+                <div className="grid gap-4 p-4">
                   {sharedResources.map((resource, index) => (
                     <motion.div
                       key={resource.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.05 * index }}
-                      className="p-5 hover:bg-white/60 transition-all group"
+                      className="p-5 rounded-2xl border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all group"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-4">
