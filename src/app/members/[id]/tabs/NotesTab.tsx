@@ -24,6 +24,10 @@ import {
   ScanLine,
   Check,
   Target,
+  Video,
+  Phone,
+  User,
+  Clock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -395,6 +399,12 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     )
     const typeLabel = t.members.sessionTypes[session.session_type as keyof typeof t.members.sessionTypes] || session.session_type
     return `${typeLabel} · ${date}`
+  }
+
+  const snFormatIcon: Record<string, typeof Video> = {
+    in_person: User,
+    virtual: Video,
+    phone: Phone,
   }
 
   // Format date for note card
@@ -1617,28 +1627,54 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
               <div className="flex-1 overflow-y-auto px-5 py-4">
                 {/* Upcoming sessions */}
                 {snUpcoming.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">
+                  <div className="mb-5">
+                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center">
+                        <Calendar className="w-3 h-3 text-blue-600" />
+                      </div>
                       {locale === 'fr' ? 'À venir' : locale === 'es' ? 'Próximas' : 'Upcoming'}
-                    </p>
-                    <div className="space-y-1.5">
+                      <span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-semibold">
+                        {snUpcoming.length}
+                      </span>
+                    </h4>
+                    <div className="space-y-2">
                       {snUpcoming.map(s => {
                         const hasNote = !!snSessionSummaryNotes[s.id]
+                        const FormatIcon = snFormatIcon[s.session_format] || User
                         return (
                           <button
                             key={s.id}
                             onClick={() => { setSnSelectedSessionId(s.id); setSnIsEditing(false); setSnSummaryDraft('') }}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all text-left"
+                            className="w-full flex items-start gap-3 p-3 rounded-xl bg-gradient-to-r from-blue-50/80 to-blue-100/40 border border-blue-200/50 hover:border-blue-300/60 hover:shadow-sm transition-all text-left group"
                           >
+                            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center flex-shrink-0">
+                              <FormatIcon className="w-4.5 h-4.5 text-blue-600" />
+                            </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">{getSessionLabel(s.id)}</p>
+                              <p className="text-sm font-semibold text-gray-900">
+                                {t.members.sessionTypes[s.session_type as keyof typeof t.members.sessionTypes] || s.session_type}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {new Date(s.scheduled_at).toLocaleDateString(
+                                  locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US',
+                                  { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
+                                )}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <span className="text-[10px] text-gray-400 bg-white/60 px-1.5 py-0.5 rounded">
+                                  {s.duration_minutes} {t.members.sessions.minutes}
+                                </span>
+                                <span className="text-[10px] text-gray-400 bg-white/60 px-1.5 py-0.5 rounded">
+                                  {t.members.sessionFormats[s.session_format as keyof typeof t.members.sessionFormats]}
+                                </span>
+                              </div>
                             </div>
                             {hasNote ? (
-                              <span className="flex-shrink-0 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                              <span className="flex-shrink-0 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded mt-0.5">
                                 {locale === 'fr' ? 'Rédigée' : locale === 'es' ? 'Escrita' : 'Written'}
                               </span>
                             ) : (
-                              <span className="flex-shrink-0 text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                              <span className="flex-shrink-0 text-[10px] font-medium text-gray-400 bg-white/60 px-1.5 py-0.5 rounded mt-0.5">
                                 {locale === 'fr' ? 'Vide' : locale === 'es' ? 'Vacía' : 'Empty'}
                               </span>
                             )}
@@ -1649,45 +1685,76 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                   </div>
                 )}
 
-                {/* No upcoming — show a message */}
-                {snUpcoming.length === 0 && snCompleted.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-full text-center">
-                    <FileText className="w-12 h-12 text-gray-200 mb-3" />
-                    <p className="text-gray-400 text-sm">
-                      {locale === 'fr' ? 'Aucune séance disponible' : locale === 'es' ? 'No hay sesiones disponibles' : 'No sessions available'}
+                {/* No upcoming — friendly empty state */}
+                {snUpcoming.length === 0 && (
+                  <div className="mb-5 text-center py-6 rounded-xl bg-gradient-to-br from-blue-50/60 to-blue-100/30 border border-dashed border-blue-200/50">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center mx-auto mb-2">
+                      <Calendar className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <p className="text-sm font-medium text-gray-500">
+                      {locale === 'fr' ? 'Aucune séance à venir' : locale === 'es' ? 'No hay sesiones próximas' : 'No upcoming sessions'}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {locale === 'fr' ? 'Sélectionnez une séance passée ci-dessous' : locale === 'es' ? 'Selecciona una sesión pasada abajo' : 'Select a past session below'}
                     </p>
                   </div>
                 )}
 
-                {/* Past sessions — collapsible */}
+                {/* Past sessions — collapsible, auto-expanded when no upcoming */}
                 {snCompleted.length > 0 && (
                   <div>
                     <button
                       onClick={() => setSnShowPast(!snShowPast)}
-                      className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2 hover:text-gray-600 transition-colors"
+                      className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 hover:text-gray-600 transition-colors"
                     >
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${snShowPast ? '' : '-rotate-90'}`} />
-                      {locale === 'fr' ? 'Terminées' : locale === 'es' ? 'Completadas' : 'Past sessions'} ({snCompleted.length})
+                      <div className="w-5 h-5 rounded-md bg-gray-100 flex items-center justify-center">
+                        <Clock className="w-3 h-3 text-gray-500" />
+                      </div>
+                      {locale === 'fr' ? 'Terminées' : locale === 'es' ? 'Completadas' : 'Past sessions'}
+                      <span className="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 text-[10px] font-semibold">
+                        {snCompleted.length}
+                      </span>
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ml-auto ${(snShowPast || snUpcoming.length === 0) ? '' : '-rotate-90'}`} />
                     </button>
-                    {snShowPast && (
-                      <div className="space-y-1.5">
+                    {(snShowPast || snUpcoming.length === 0) && (
+                      <div className="space-y-2">
                         {snCompleted.map(s => {
                           const hasNote = !!snSessionSummaryNotes[s.id]
+                          const FormatIcon = snFormatIcon[s.session_format] || User
                           return (
                             <button
                               key={s.id}
                               onClick={() => { setSnSelectedSessionId(s.id); setSnIsEditing(false); setSnSummaryDraft('') }}
-                              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all text-left"
+                              className="w-full flex items-start gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 hover:shadow-sm transition-all text-left group"
                             >
+                              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center flex-shrink-0">
+                                <FormatIcon className="w-4.5 h-4.5 text-gray-500" />
+                              </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm text-gray-700 truncate">{getSessionLabel(s.id)}</p>
+                                <p className="text-sm font-medium text-gray-700">
+                                  {t.members.sessionTypes[s.session_type as keyof typeof t.members.sessionTypes] || s.session_type}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                  {new Date(s.scheduled_at).toLocaleDateString(
+                                    locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US',
+                                    { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
+                                  )}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <span className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">
+                                    {s.duration_minutes} {t.members.sessions.minutes}
+                                  </span>
+                                  <span className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">
+                                    {t.members.sessionFormats[s.session_format as keyof typeof t.members.sessionFormats]}
+                                  </span>
+                                </div>
                               </div>
                               {hasNote ? (
-                                <span className="flex-shrink-0 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                <span className="flex-shrink-0 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded mt-0.5">
                                   {locale === 'fr' ? 'Rédigée' : locale === 'es' ? 'Escrita' : 'Written'}
                                 </span>
                               ) : (
-                                <span className="flex-shrink-0 text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                                <span className="flex-shrink-0 text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded mt-0.5">
                                   {locale === 'fr' ? 'Vide' : locale === 'es' ? 'Vacía' : 'Empty'}
                                 </span>
                               )}
