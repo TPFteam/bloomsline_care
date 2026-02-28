@@ -521,39 +521,6 @@ function DashboardContent() {
 
   const quickActions = [
     {
-      id: 'education',
-      type: 'psychoeducation' as ResourceType,
-      title: locale === 'fr' ? 'Psychoéducation' : 'Psychoeducation',
-      icon: BookOpen,
-      color: 'from-purple-400 to-purple-500',
-      bgColor: 'bg-purple-50',
-    },
-    {
-      id: 'worksheet',
-      type: 'worksheet' as ResourceType,
-      title: locale === 'fr' ? 'Exercice' : 'Worksheet',
-      icon: FileText,
-      color: 'from-blue-400 to-blue-500',
-      bgColor: 'bg-blue-50',
-    },
-    {
-      id: 'table',
-      type: 'table' as ResourceType,
-      title: locale === 'fr' ? 'Tableau' : 'Table',
-      icon: Table2,
-      color: 'from-emerald-400 to-emerald-500',
-      bgColor: 'bg-emerald-50',
-    },
-    {
-      id: 'activity',
-      type: null,
-      title: locale === 'fr' ? 'Activité' : 'Activity',
-      icon: Puzzle,
-      color: 'from-amber-400 to-amber-500',
-      bgColor: 'bg-amber-50',
-      comingSoon: true,
-    },
-    {
       id: 'add-patient',
       type: null,
       title: locale === 'fr' ? 'Nouveau suivi' : 'New Follow-up',
@@ -626,150 +593,25 @@ function DashboardContent() {
             transition={{ delay: 0.1 }}
             className="mb-10"
           >
-            <div className="grid grid-cols-5 gap-4">
-              {quickActions.filter(action => action.id !== 'activity').map((action, index) => (
+            <div className="flex gap-4">
+              {quickActions.map((action, index) => (
                 <motion.div
                   key={action.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 + index * 0.05 }}
-                  whileHover={action.comingSoon ? {} : { y: -2, scale: 1.02 }}
+                  whileHover={{ y: -2, scale: 1.02 }}
                   onClick={() => {
-                    if (action.comingSoon) return
                     if ('isAddPatient' in action && action.isAddPatient) {
                       setShowAddMemberModal(true)
                     } else if (action.type) {
                       setSelectedType(action.type)
                     }
                   }}
-                  className={`flex flex-col items-center group ${action.comingSoon ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+                  className="flex flex-col items-center group cursor-pointer"
                 >
                     <div className="w-full aspect-square bg-gray-100 rounded-2xl flex items-center justify-center mb-3 group-hover:bg-gray-200/80 transition-colors relative overflow-hidden p-4 isolate">
                       {/* Custom illustrations for each card */}
-                      {action.id === 'worksheet' && (
-                        <div className="relative">
-                          {/* Document */}
-                          <motion.div
-                            className="w-16 h-20 bg-white rounded-lg shadow-md flex flex-col p-2 gap-1.5"
-                            animate={{ y: [0, -2, 0] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <div className="w-full h-1.5 bg-blue-200 rounded-full" />
-                            <div className="w-3/4 h-1.5 bg-blue-100 rounded-full" />
-                            <div className="w-full h-1.5 bg-blue-200 rounded-full" />
-                            <div className="w-1/2 h-1.5 bg-blue-100 rounded-full" />
-                          </motion.div>
-                          {/* Floating checkmark */}
-                          <motion.div
-                            className="absolute -right-3 -top-2 w-7 h-7 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg"
-                            animate={{ scale: [1, 1.1, 1], rotate: [0, 5, 0] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <FileText className="w-3.5 h-3.5 text-white" />
-                          </motion.div>
-                        </div>
-                      )}
-
-                      {action.id === 'table' && (
-                        <div className="relative">
-                          {/* Table grid */}
-                          <motion.div
-                            className="grid grid-cols-3 gap-1 p-2 bg-white rounded-lg shadow-md"
-                            animate={{ y: [0, -2, 0] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
-                          >
-                            {[...Array(9)].map((_, i) => (
-                              <motion.div
-                                key={i}
-                                className={`w-4 h-4 rounded ${i < 3 ? 'bg-emerald-300' : 'bg-emerald-100'}`}
-                                animate={{ opacity: [0.7, 1, 0.7] }}
-                                transition={{ duration: 2, repeat: Infinity, delay: i * 0.1 }}
-                              />
-                            ))}
-                          </motion.div>
-                          {/* Floating badge */}
-                          <motion.div
-                            className="absolute -right-2 -bottom-2 w-7 h-7 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center shadow-lg"
-                            animate={{ scale: [1, 1.1, 1] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                          >
-                            <Table2 className="w-3.5 h-3.5 text-white" />
-                          </motion.div>
-                        </div>
-                      )}
-
-                      {action.id === 'education' && (
-                        <div className="relative">
-                          {/* Book */}
-                          <motion.div
-                            className="w-14 h-18 bg-gradient-to-br from-purple-500 to-purple-600 rounded-r-lg rounded-l shadow-md flex flex-col justify-center items-center"
-                            animate={{ rotateY: [0, 5, 0] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <div className="w-10 h-1 bg-white/30 rounded mb-1" />
-                            <div className="w-8 h-1 bg-white/20 rounded mb-1" />
-                            <div className="w-10 h-1 bg-white/30 rounded" />
-                          </motion.div>
-                          {/* Floating elements */}
-                          <motion.div
-                            className="absolute -left-3 -top-2 w-6 h-6 bg-purple-200 rounded-lg flex items-center justify-center"
-                            animate={{ y: [0, -4, 0], rotate: [-5, 5, -5] }}
-                            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <span className="text-xs">💡</span>
-                          </motion.div>
-                          <motion.div
-                            className="absolute -right-2 top-0 w-5 h-5 bg-purple-300 rounded-full"
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-                          />
-                        </div>
-                      )}
-
-                      {action.id === 'activity' && (
-                        <div className="relative">
-                          {/* Activity checklist card */}
-                          <motion.div
-                            className="w-16 h-20 bg-white rounded-lg shadow-md flex flex-col p-2 gap-1.5"
-                            animate={{ y: [0, -2, 0] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <div className="flex items-center gap-1.5">
-                              <motion.div
-                                className="w-3 h-3 rounded bg-amber-400"
-                                animate={{ scale: [1, 1.2, 1] }}
-                                transition={{ duration: 2, repeat: Infinity, delay: 0 }}
-                              />
-                              <div className="flex-1 h-1.5 bg-amber-200 rounded-full" />
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <motion.div
-                                className="w-3 h-3 rounded bg-amber-300"
-                                animate={{ scale: [1, 1.2, 1] }}
-                                transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
-                              />
-                              <div className="flex-1 h-1.5 bg-amber-100 rounded-full" />
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <motion.div
-                                className="w-3 h-3 rounded bg-amber-200"
-                                animate={{ scale: [1, 1.2, 1] }}
-                                transition={{ duration: 2, repeat: Infinity, delay: 0.6 }}
-                              />
-                              <div className="flex-1 h-1.5 bg-amber-100 rounded-full" />
-                            </div>
-                          </motion.div>
-                          {/* Floating badge */}
-                          <motion.div
-                            className="absolute -right-2 -top-2 w-7 h-7 bg-gradient-to-br from-amber-400 to-amber-500 rounded-full flex items-center justify-center shadow-lg"
-                            animate={{ scale: [1, 1.1, 1], rotate: [0, 5, 0] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <Puzzle className="w-3.5 h-3.5 text-white" />
-                          </motion.div>
-                        </div>
-                      )}
-
                       {action.id === 'add-patient' && (
                         <div className="relative">
                           {/* Patient profile card */}
@@ -799,12 +641,6 @@ function DashboardContent() {
                         </div>
                       )}
 
-                      {/* Coming Soon badge */}
-                      {action.comingSoon && (
-                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-semibold rounded-full">
-                          {locale === 'fr' ? 'Bientôt' : 'Soon'}
-                        </div>
-                      )}
                     </div>
                     <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900 text-center">{action.title}</p>
                   </motion.div>
