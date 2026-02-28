@@ -19,6 +19,7 @@ import {
   Tag,
   ChevronDown,
   FileText,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -1217,9 +1218,9 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="bg-white rounded-2xl  border border-gray-200 p-8 text-center">
-          <div className="w-12 h-12 border-4 border-lavender-500 border-t-transparent rounded-full animate-spin mx-auto mb-4 animate-pulse-glow"></div>
-          <p className="text-gray-500 font-medium">Loading journeys...</p>
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+          <span className="text-gray-500 text-sm">{locale === 'fr' ? 'Chargement...' : locale === 'es' ? 'Cargando...' : 'Loading...'}</span>
         </div>
       </div>
     )
