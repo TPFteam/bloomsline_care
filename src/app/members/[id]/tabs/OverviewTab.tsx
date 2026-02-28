@@ -1235,12 +1235,13 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
 
     const isDragging = draggedCard === cardConfig.id
     const isDropTarget = dragOverColumn === columnIndex && dragOverIndex === cardIndex
+    const isEditing = (cardConfig.id === 'about' && editingAbout) || (cardConfig.id === 'preferences' && editingPreferences)
 
     return (
       <div
         key={cardConfig.id}
-        draggable
-        onDragStart={(e) => handleDragStart(e, cardConfig.id)}
+        draggable={!isEditing}
+        onDragStart={(e) => isEditing ? e.preventDefault() : handleDragStart(e, cardConfig.id)}
         onDragOver={(e) => handleDragOver(e, columnIndex as 0 | 1, cardIndex)}
         onDragLeave={handleDragLeave}
         onDrop={(e) => handleDrop(e, columnIndex as 0 | 1, cardIndex)}
@@ -1251,7 +1252,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
           <div className="h-2 mb-2 bg-blue-100 rounded-full transition-all" />
         )}
         <motion.div
-          layout
+          layout={!isEditing}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           ref={cardConfig.id === 'preferences' ? preferencesRef : undefined}
