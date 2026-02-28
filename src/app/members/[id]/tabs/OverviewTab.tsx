@@ -32,7 +32,7 @@ import { formatRelativeTime, getSessionTypeLabel, getSessionFormatLabel, getMemb
 import { MemberSummaryModal } from '@/components/members/MemberSummaryModal'
 import { getUserPreferences, updateUserPreferences, DEFAULT_CARD_LAYOUT, type CardLayoutItem } from '@/lib/services/preferences'
 
-type TabId = 'overview' | 'sessions' | 'progress' | 'files' | 'shared'
+type TabId = 'overview' | 'sessions' | 'notes' | 'progress' | 'files' | 'shared'
 
 interface OverviewTabProps {
   member: Member
@@ -120,7 +120,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
     id: string
     content: string
     created_at: string
-    type: 'session_summary' | 'session_note' | 'milestone_comment'
+    type: 'session_summary' | 'session_note' | 'milestone_comment' | 'note'
     source_label: string
     milestone_title?: string
     session_date?: string
@@ -353,18 +353,17 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
       try {
         const combined: CombinedNote[] = []
 
-        // 1 & 2. Fetch session notes and summaries from progress_notes
-        const { data: sessionNotes } = await supabase
+        // 1 & 2. Fetch all notes from progress_notes (session notes, summaries, and regular notes)
+        const { data: allProgressNotes } = await supabase
           .from('progress_notes')
           .select('id, content, created_at, session_id, milestone_id, note_type, milestones(title), sessions(scheduled_at)')
           .eq('member_id', member.id)
-          .not('session_id', 'is', null)
           .order('created_at', { ascending: false })
-          .limit(20)
+          .limit(30)
 
-        if (sessionNotes) {
+        if (allProgressNotes) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          sessionNotes.forEach((note: any) => {
+          allProgressNotes.forEach((note: any) => {
             const milestoneData = Array.isArray(note.milestones) ? note.milestones[0] : note.milestones
             const sessionData = Array.isArray(note.sessions) ? note.sessions[0] : note.sessions
 
@@ -374,20 +373,30 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                 content: note.content,
                 created_at: note.created_at,
                 type: 'session_summary',
-                source_label: locale === 'fr' ? 'Résumé de séance' : 'Session Summary',
+                source_label: locale === 'fr' ? 'Résumé de séance' : locale === 'es' ? 'Resumen de sesión' : 'Session Summary',
                 session_date: sessionData?.scheduled_at,
                 session_id: note.session_id,
+              })
+            } else if (note.session_id) {
+              combined.push({
+                id: `note-${note.id}`,
+                content: note.content,
+                created_at: note.created_at,
+                type: 'session_note',
+                source_label: locale === 'fr' ? 'Note de séance' : locale === 'es' ? 'Nota de sesión' : 'Session Note',
+                milestone_title: milestoneData?.title,
+                session_date: sessionData?.scheduled_at,
+                session_id: note.session_id,
+                milestone_id: note.milestone_id,
               })
             } else {
               combined.push({
                 id: `note-${note.id}`,
                 content: note.content,
                 created_at: note.created_at,
-                type: 'session_note',
-                source_label: locale === 'fr' ? 'Note de séance' : 'Session Note',
+                type: 'note',
+                source_label: locale === 'fr' ? 'Note' : 'Note',
                 milestone_title: milestoneData?.title,
-                session_date: sessionData?.scheduled_at,
-                session_id: note.session_id,
                 milestone_id: note.milestone_id,
               })
             }
@@ -446,6 +455,11 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
       setCommStyles([...commStyles, commStyleInput.trim()])
       setCommStyleInput('')
     }
+  }
+
+  const stripHtml = (html: string) => {
+    return html.replace(/<br\s*\/?>/gi, ' ').replace(/<\/p>\s*<p>/gi, ' ').replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'").trim()
   }
 
   const handleAddStrength = () => {
@@ -1148,11 +1162,11 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
           session_summary: { bg: 'bg-blue-50', text: 'text-blue-700', icon: <FileText className="w-3 h-3" />, tab: 'sessions' },
           session_note: { bg: 'bg-emerald-50', text: 'text-emerald-700', icon: <MessageSquare className="w-3 h-3" />, tab: 'sessions' },
           milestone_comment: { bg: 'bg-violet-50', text: 'text-violet-700', icon: <Target className="w-3 h-3" />, tab: 'progress' },
+          note: { bg: 'bg-gray-100', text: 'text-gray-700', icon: <MessageSquare className="w-3 h-3" />, tab: 'notes' },
         }
         const handleNoteClick = (note: CombinedNote) => {
           const style = noteTypeStyles[note.type]
           if (onNavigateToTab) {
-            // Pass the appropriate ID for highlighting
             const highlightId = note.type === 'milestone_comment' ? note.milestone_id : note.session_id
             onNavigateToTab(style.tab, highlightId)
           }
@@ -1198,7 +1212,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                       <span className="text-xs text-gray-500">{note.milestone_title}</span>
                     </div>
                   )}
-                  <p className="text-sm text-gray-600 line-clamp-2">{note.content}</p>
+                  <p className="text-sm text-gray-600 line-clamp-2">{note.type === 'session_summary' ? stripHtml(note.content) : note.content}</p>
                 </motion.div>
               )
             })}
@@ -1458,6 +1472,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                       session_summary: { bg: 'bg-blue-50', text: 'text-blue-700', icon: <FileText className="w-3 h-3" />, tab: 'sessions' },
                       session_note: { bg: 'bg-emerald-50', text: 'text-emerald-700', icon: <MessageSquare className="w-3 h-3" />, tab: 'sessions' },
                       milestone_comment: { bg: 'bg-violet-50', text: 'text-violet-700', icon: <Target className="w-3 h-3" />, tab: 'progress' },
+                      note: { bg: 'bg-gray-100', text: 'text-gray-700', icon: <MessageSquare className="w-3 h-3" />, tab: 'notes' },
                     }
                     const style = noteStyles[note.type]
                     return (
@@ -1493,7 +1508,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                             <span className="text-xs text-gray-500">{note.milestone_title}</span>
                           </div>
                         )}
-                        <p className="text-sm text-gray-600 line-clamp-2">{note.content}</p>
+                        <p className="text-sm text-gray-600 line-clamp-2">{note.type === 'session_summary' ? stripHtml(note.content) : note.content}</p>
                       </motion.div>
                     )
                   })}
