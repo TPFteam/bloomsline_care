@@ -120,13 +120,11 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
     id: string
     content: string
     created_at: string
-    type: 'session_note' | 'milestone_comment' | 'note'
+    type: 'session_summary' | 'note'
     isHtml?: boolean
     source_label: string
-    milestone_title?: string
     session_date?: string
     session_id?: string
-    milestone_id?: string
   }
   const [combinedNotes, setCombinedNotes] = useState<CombinedNote[]>([])
   const [allNotes, setAllNotes] = useState<CombinedNote[]>([])
@@ -354,10 +352,10 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
       try {
         const combined: CombinedNote[] = []
 
-        // 1 & 2. Fetch all notes from progress_notes (session notes, summaries, and regular notes)
+        // Fetch session summaries and regular notes from progress_notes
         const { data: allProgressNotes } = await supabase
           .from('progress_notes')
-          .select('id, content, created_at, session_id, milestone_id, note_type, milestones(title), sessions(scheduled_at)')
+          .select('id, content, created_at, session_id, note_type, sessions(scheduled_at)')
           .eq('member_id', member.id)
           .order('created_at', { ascending: false })
           .limit(30)
@@ -365,21 +363,18 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
         if (allProgressNotes) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           allProgressNotes.forEach((note: any) => {
-            const milestoneData = Array.isArray(note.milestones) ? note.milestones[0] : note.milestones
             const sessionData = Array.isArray(note.sessions) ? note.sessions[0] : note.sessions
 
-            if (note.session_id) {
+            if (note.note_type === 'session_summary') {
               combined.push({
                 id: `note-${note.id}`,
                 content: note.content,
                 created_at: note.created_at,
-                type: 'session_note',
-                source_label: locale === 'fr' ? 'Note de séance' : locale === 'es' ? 'Nota de sesión' : 'Session Note',
-                isHtml: note.note_type === 'session_summary',
-                milestone_title: milestoneData?.title,
+                type: 'session_summary',
+                isHtml: true,
+                source_label: locale === 'fr' ? 'Résumé de séance' : locale === 'es' ? 'Resumen de sesión' : 'Session Summary',
                 session_date: sessionData?.scheduled_at,
                 session_id: note.session_id,
-                milestone_id: note.milestone_id,
               })
             } else {
               combined.push({
@@ -387,44 +382,10 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                 content: note.content,
                 created_at: note.created_at,
                 type: 'note',
-                source_label: locale === 'fr' ? 'Note' : 'Note',
-                milestone_title: milestoneData?.title,
-                milestone_id: note.milestone_id,
+                source_label: 'Note',
               })
             }
           })
-        }
-
-        // 3. Fetch milestone comments (first get milestones for this member, then get their comments)
-        const { data: memberMilestones } = await supabase
-          .from('milestones')
-          .select('id, title')
-          .eq('member_id', member.id)
-
-        if (memberMilestones && memberMilestones.length > 0) {
-          const milestoneIds = memberMilestones.map(m => m.id)
-          const milestoneMap = new Map(memberMilestones.map(m => [m.id, m.title]))
-
-          const { data: milestoneComments } = await supabase
-            .from('milestone_comments')
-            .select('id, content, created_at, milestone_id')
-            .in('milestone_id', milestoneIds)
-            .order('created_at', { ascending: false })
-            .limit(10)
-
-          if (milestoneComments) {
-            milestoneComments.forEach((comment) => {
-              combined.push({
-                id: `comment-${comment.id}`,
-                content: comment.content,
-                created_at: comment.created_at,
-                type: 'milestone_comment',
-                source_label: locale === 'fr' ? 'Note d\'axe de travail' : 'Goal Note',
-                milestone_title: milestoneMap.get(comment.milestone_id),
-                milestone_id: comment.milestone_id,
-              })
-            })
-          }
         }
 
         // Sort by created_at descending
@@ -1151,15 +1112,13 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
 
       case 'recent_notes':
         const noteTypeStyles: Record<string, { bg: string; text: string; icon: React.ReactNode; tab: TabId }> = {
-          session_note: { bg: 'bg-blue-50', text: 'text-blue-700', icon: <FileText className="w-3 h-3" />, tab: 'sessions' },
-          milestone_comment: { bg: 'bg-violet-50', text: 'text-violet-700', icon: <Target className="w-3 h-3" />, tab: 'progress' },
+          session_summary: { bg: 'bg-blue-50', text: 'text-blue-700', icon: <FileText className="w-3 h-3" />, tab: 'sessions' },
           note: { bg: 'bg-gray-100', text: 'text-gray-700', icon: <MessageSquare className="w-3 h-3" />, tab: 'notes' },
         }
         const handleNoteClick = (note: CombinedNote) => {
           const style = noteTypeStyles[note.type]
           if (onNavigateToTab) {
-            const highlightId = note.type === 'milestone_comment' ? note.milestone_id : note.session_id
-            onNavigateToTab(style.tab, highlightId)
+            onNavigateToTab(style.tab, note.session_id)
           }
         }
         return combinedNotes.length === 0 ? (
@@ -1197,12 +1156,6 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                       <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
                     </div>
                   </div>
-                  {note.milestone_title && (
-                    <div className="flex items-center gap-1 mb-1">
-                      <Target className="w-3 h-3 text-gray-400" />
-                      <span className="text-xs text-gray-500">{note.milestone_title}</span>
-                    </div>
-                  )}
                   <p className="text-sm text-gray-600 line-clamp-2">{note.isHtml ? stripHtml(note.content) : note.content}</p>
                 </motion.div>
               )
@@ -1461,8 +1414,6 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                   {allNotes.map((note, index) => {
                     const noteStyles: Record<string, { bg: string; text: string; icon: React.ReactNode; tab: TabId }> = {
                       session_summary: { bg: 'bg-blue-50', text: 'text-blue-700', icon: <FileText className="w-3 h-3" />, tab: 'sessions' },
-                      session_note: { bg: 'bg-emerald-50', text: 'text-emerald-700', icon: <MessageSquare className="w-3 h-3" />, tab: 'sessions' },
-                      milestone_comment: { bg: 'bg-violet-50', text: 'text-violet-700', icon: <Target className="w-3 h-3" />, tab: 'progress' },
                       note: { bg: 'bg-gray-100', text: 'text-gray-700', icon: <MessageSquare className="w-3 h-3" />, tab: 'notes' },
                     }
                     const style = noteStyles[note.type]
@@ -1475,8 +1426,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                         className="group p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                         onClick={() => {
                           setShowAllNotesModal(false)
-                          const highlightId = note.type === 'milestone_comment' ? note.milestone_id : note.session_id
-                          onNavigateToTab?.(style.tab, highlightId)
+                          onNavigateToTab?.(style.tab, note.session_id)
                         }}
                       >
                         <div className="flex items-start justify-between mb-2">
@@ -1493,12 +1443,6 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                             <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
                           </div>
                         </div>
-                        {note.milestone_title && (
-                          <div className="flex items-center gap-1 mb-1">
-                            <Target className="w-3 h-3 text-gray-400" />
-                            <span className="text-xs text-gray-500">{note.milestone_title}</span>
-                          </div>
-                        )}
                         <p className="text-sm text-gray-600 line-clamp-2">{note.isHtml ? stripHtml(note.content) : note.content}</p>
                       </motion.div>
                     )
