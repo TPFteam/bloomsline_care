@@ -28,12 +28,15 @@ import {
   Phone,
   Save,
   Loader2,
+  Search,
+  RefreshCw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { useLanguage, lt } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
+import type { Member } from '@/types/member'
 import { ConsentModal } from '@/components/consent-modal'
 
 interface ActivityItem {
@@ -102,6 +105,14 @@ function DashboardContent() {
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
   const [selectedType, setSelectedType] = useState<ResourceType | null>(null)
+  const [upcomingSessions, setUpcomingSessions] = useState<{ id: string; client_name: string; session_type: string; start_time: string; member_id: string | null }[]>([])
+
+  // Member picker for quick actions
+  const [members, setMembers] = useState<{ id: string; first_name: string; last_name: string; status: string; last_session_at: string | null; email: string | null; phone: string | null; user_id: string | null }[]>([])
+  const [showMemberPicker, setShowMemberPicker] = useState(false)
+  const [memberPickerAction, setMemberPickerAction] = useState<'share' | 'reengage' | 'summary' | null>(null)
+  const [memberSearchQuery, setMemberSearchQuery] = useState('')
+  const [schedulePreselectedMember, setSchedulePreselectedMember] = useState<Member | null>(null)
 
   // Add Member Modal
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
@@ -425,6 +436,25 @@ function DashboardContent() {
 
       setLoading(false)
 
+      // Fetch members for quick action picker
+      const { data: membersData } = await supabase
+        .from('members')
+        .select('id, first_name, last_name, status, last_session_at, email, phone, user_id')
+        .eq('practitioner_id', authUser.id)
+        .order('first_name')
+      if (membersData) setMembers(membersData)
+
+      // Fetch upcoming sessions
+      const { data: sessionsData } = await supabase
+        .from('bookings')
+        .select('id, client_name, session_type, start_time, member_id')
+        .eq('practitioner_id', authUser.id)
+        .in('status', ['confirmed', 'pending'])
+        .gte('start_time', new Date().toISOString())
+        .order('start_time', { ascending: true })
+        .limit(3)
+      if (sessionsData) setUpcomingSessions(sessionsData)
+
       if (searchParams.get('welcome') === 'true') {
         toast.success(`Welcome to Bloomsline, ${authUser.user_metadata?.full_name || 'there'}!`)
       }
@@ -527,7 +557,30 @@ function DashboardContent() {
       icon: HeartHandshake,
       color: 'from-rose-400 to-rose-500',
       bgColor: 'bg-rose-50',
-      isAddPatient: true,
+    },
+    {
+      id: 'share-resource',
+      type: null,
+      title: locale === 'fr' ? 'Envoyer un support' : 'Share a Resource',
+      icon: Share2,
+      color: 'from-indigo-400 to-indigo-500',
+      bgColor: 'bg-indigo-50',
+    },
+    {
+      id: 'reengage',
+      type: null,
+      title: locale === 'fr' ? 'Réengager un suivi' : 'Re-engage',
+      icon: Calendar,
+      color: 'from-amber-400 to-amber-500',
+      bgColor: 'bg-amber-50',
+    },
+    {
+      id: 'bloom-pulse',
+      type: null,
+      title: locale === 'fr' ? 'Obtenir un résumé' : 'Get a Summary',
+      icon: Sparkles,
+      color: 'from-violet-400 to-violet-500',
+      bgColor: 'bg-violet-50',
     },
   ]
 
@@ -602,41 +655,138 @@ function DashboardContent() {
                   transition={{ delay: 0.1 + index * 0.05 }}
                   whileHover={{ y: -2, scale: 1.02 }}
                   onClick={() => {
-                    if ('isAddPatient' in action && action.isAddPatient) {
+                    if (action.id === 'add-patient') {
                       setShowAddMemberModal(true)
+                    } else if (action.id === 'share-resource') {
+                      setMemberPickerAction('share')
+                      setMemberSearchQuery('')
+                      setShowMemberPicker(true)
+                    } else if (action.id === 'reengage') {
+                      setMemberPickerAction('reengage')
+                      setMemberSearchQuery('')
+                      setShowMemberPicker(true)
+                    } else if (action.id === 'bloom-pulse') {
+                      setMemberPickerAction('summary')
+                      setMemberSearchQuery('')
+                      setShowMemberPicker(true)
                     } else if (action.type) {
                       setSelectedType(action.type)
                     }
                   }}
-                  className="flex flex-col items-center group cursor-pointer"
+                  className="flex flex-col items-center group cursor-pointer w-[140px]"
                 >
-                    <div className="w-full aspect-square bg-gray-100 rounded-2xl flex items-center justify-center mb-3 group-hover:bg-gray-200/80 transition-colors relative overflow-hidden p-4 isolate">
+                    <div className="w-[140px] h-[140px] bg-gray-100 rounded-2xl flex items-center justify-center mb-3 group-hover:bg-gray-200/80 transition-colors relative overflow-hidden p-4 isolate">
                       {/* Custom illustrations for each card */}
                       {action.id === 'add-patient' && (
                         <div className="relative">
-                          {/* Patient profile card */}
                           <motion.div
                             className="w-16 h-20 bg-white rounded-lg shadow-md flex flex-col items-center pt-3 gap-1"
                             animate={{ y: [0, -2, 0] }}
                             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                           >
-                            {/* Avatar placeholder */}
                             <motion.div
                               className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-300 to-rose-400"
                               animate={{ scale: [1, 1.05, 1] }}
                               transition={{ duration: 2, repeat: Infinity }}
                             />
-                            {/* Name lines */}
                             <div className="w-10 h-1.5 bg-rose-200 rounded-full mt-1" />
                             <div className="w-6 h-1 bg-rose-100 rounded-full" />
                           </motion.div>
-                          {/* Plus badge */}
                           <motion.div
                             className="absolute -right-2 -bottom-2 w-7 h-7 bg-gradient-to-br from-rose-400 to-rose-500 rounded-full flex items-center justify-center shadow-lg"
                             animate={{ scale: [1, 1.1, 1] }}
                             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
                           >
                             <Plus className="w-3.5 h-3.5 text-white" />
+                          </motion.div>
+                        </div>
+                      )}
+
+                      {action.id === 'share-resource' && (
+                        <div className="relative">
+                          <motion.div
+                            className="w-14 h-18 bg-white rounded-lg shadow-md flex flex-col items-center justify-center gap-1.5 p-2"
+                            animate={{ y: [0, -2, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <div className="w-10 h-1.5 bg-indigo-200 rounded-full" />
+                            <div className="w-8 h-1.5 bg-indigo-100 rounded-full" />
+                            <div className="w-10 h-1.5 bg-indigo-200 rounded-full" />
+                            <div className="w-6 h-1.5 bg-indigo-100 rounded-full" />
+                          </motion.div>
+                          <motion.div
+                            className="absolute -right-3 -top-1 w-7 h-7 bg-gradient-to-br from-indigo-400 to-indigo-500 rounded-full flex items-center justify-center shadow-lg"
+                            animate={{ x: [0, 3, 0], y: [0, -2, 0] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <Share2 className="w-3.5 h-3.5 text-white" />
+                          </motion.div>
+                        </div>
+                      )}
+
+                      {action.id === 'reengage' && (
+                        <div className="relative">
+                          <motion.div
+                            className="w-16 h-18 bg-white rounded-lg shadow-md flex flex-col items-center pt-2 gap-1"
+                            animate={{ y: [0, -2, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <div className="w-10 h-2 bg-amber-200 rounded-full" />
+                            <div className="grid grid-cols-3 gap-0.5 mt-1">
+                              {[...Array(6)].map((_, i) => (
+                                <motion.div
+                                  key={i}
+                                  className="w-2.5 h-2.5 rounded-sm bg-amber-100"
+                                  animate={i === 4 ? { backgroundColor: ['#fde68a', '#fbbf24', '#fde68a'] } : {}}
+                                  transition={{ duration: 2, repeat: Infinity }}
+                                />
+                              ))}
+                            </div>
+                          </motion.div>
+                          <motion.div
+                            className="absolute -right-2 -bottom-2 w-7 h-7 bg-gradient-to-br from-amber-400 to-amber-500 rounded-full flex items-center justify-center shadow-lg"
+                            animate={{ rotate: [0, -180, -360] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <RefreshCw className="w-3.5 h-3.5 text-white" />
+                          </motion.div>
+                        </div>
+                      )}
+
+                      {action.id === 'bloom-pulse' && (
+                        <div className="relative">
+                          <motion.div
+                            className="w-16 h-18 bg-white rounded-lg shadow-md flex items-end justify-center gap-1 p-2 pt-3"
+                            animate={{ y: [0, -2, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <motion.div
+                              className="w-2.5 bg-violet-200 rounded-full"
+                              animate={{ height: [12, 18, 12] }}
+                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                            />
+                            <motion.div
+                              className="w-2.5 bg-violet-300 rounded-full"
+                              animate={{ height: [18, 10, 18] }}
+                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                            />
+                            <motion.div
+                              className="w-2.5 bg-violet-400 rounded-full"
+                              animate={{ height: [10, 22, 10] }}
+                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+                            />
+                            <motion.div
+                              className="w-2.5 bg-violet-300 rounded-full"
+                              animate={{ height: [16, 12, 16] }}
+                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.9 }}
+                            />
+                          </motion.div>
+                          <motion.div
+                            className="absolute -right-2 -top-2 w-7 h-7 bg-gradient-to-br from-violet-400 to-violet-500 rounded-full flex items-center justify-center shadow-lg"
+                            animate={{ scale: [1, 1.15, 1] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-white" />
                           </motion.div>
                         </div>
                       )}
@@ -709,47 +859,121 @@ function DashboardContent() {
               </div>
             </motion.div>
 
-            {/* Explore Templates */}
+            {/* Upcoming Sessions */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                {locale === 'fr' ? 'Modèles à explorer' : 'Explore templates'}
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {locale === 'fr' ? 'Prochaines séances' : 'Upcoming sessions'}
+                </h2>
+              </div>
 
               <div className="flex flex-col gap-3">
-                {featuredTemplates.map((template, index) => {
-                  const TemplateIcon = getTemplateIcon(template.type)
-                  const colorClass = getTemplateColor(template.type)
-                  return (
-                    <Link key={template.id} href={template.href}>
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.35 + index * 0.05 }}
-                        className="flex items-center gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group"
-                      >
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass.split(' ')[0]}`}>
-                          <TemplateIcon className={`w-5 h-5 ${colorClass.split(' ')[1]}`} />
+                {upcomingSessions.length === 0 ? (
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-8 text-center">
+                    <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500">
+                      {locale === 'fr' ? 'Aucune séance à venir' : 'No upcoming sessions'}
+                    </p>
+                  </div>
+                ) : (
+                  upcomingSessions.map((session, index) => {
+                    const sessionDate = new Date(session.start_time)
+                    const isToday = sessionDate.toDateString() === new Date().toDateString()
+                    const isTomorrow = sessionDate.toDateString() === new Date(Date.now() + 86400000).toDateString()
+                    const dayLabel = isToday
+                      ? (locale === 'fr' ? "Aujourd'hui" : 'Today')
+                      : isTomorrow
+                        ? (locale === 'fr' ? 'Demain' : 'Tomorrow')
+                        : sessionDate.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                    const timeLabel = sessionDate.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })
+
+                    const content = (
+                      <div className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 flex flex-col items-center justify-center">
+                          <span className="text-[10px] font-semibold text-blue-600 uppercase leading-none">
+                            {sessionDate.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short' })}
+                          </span>
+                          <span className="text-sm font-bold text-blue-700 leading-none mt-0.5">
+                            {sessionDate.getDate()}
+                          </span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-gray-700">
-                            {lt(template.name, locale)}
+                            {session.client_name}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {getTemplateTypeLabel(template.type)}
+                            {dayLabel} · {timeLabel}
                           </p>
                         </div>
                         <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
+                      </div>
+                    )
+
+                    return (
+                      <motion.div
+                        key={session.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.35 + index * 0.05 }}
+                      >
+                        {session.member_id ? (
+                          <Link href={`/members/${session.member_id}`}>{content}</Link>
+                        ) : (
+                          content
+                        )}
                       </motion.div>
-                    </Link>
-                  )
-                })}
+                    )
+                  })
+                )}
               </div>
             </motion.div>
           </div>
+
+          {/* Explore Templates */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mt-10"
+          >
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {locale === 'fr' ? 'Modèles à explorer' : 'Explore templates'}
+            </h2>
+
+            <div className="grid grid-cols-3 gap-3">
+              {featuredTemplates.map((template, index) => {
+                const TemplateIcon = getTemplateIcon(template.type)
+                const colorClass = getTemplateColor(template.type)
+                return (
+                  <Link key={template.id} href={template.href}>
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.45 + index * 0.05 }}
+                      className="flex items-center gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group"
+                    >
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass.split(' ')[0]}`}>
+                        <TemplateIcon className={`w-5 h-5 ${colorClass.split(' ')[1]}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-gray-700">
+                          {lt(template.name, locale)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {getTemplateTypeLabel(template.type)}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
+                    </motion.div>
+                  </Link>
+                )
+              })}
+            </div>
+          </motion.div>
 
         </div>
       </main>
@@ -757,8 +981,9 @@ function DashboardContent() {
       {/* Schedule Session Modal */}
       <ScheduleSessionModal
         isOpen={showScheduleModal}
-        onClose={() => setShowScheduleModal(false)}
-        onSuccess={() => setShowScheduleModal(false)}
+        onClose={() => { setShowScheduleModal(false); setSchedulePreselectedMember(null) }}
+        onSuccess={() => { setShowScheduleModal(false); setSchedulePreselectedMember(null) }}
+        preselectedMember={schedulePreselectedMember}
       />
 
       {/* Template Selection Modal */}
@@ -985,6 +1210,137 @@ function DashboardContent() {
                   </Button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Member Picker Modal */}
+      <AnimatePresence>
+        {showMemberPicker && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
+            onClick={() => setShowMemberPicker(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-5 border-b border-gray-100">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {locale === 'fr' ? 'Choisir un patient' : 'Choose a member'}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {memberPickerAction === 'share' && (locale === 'fr' ? 'Envoyer un support' : 'Share a resource')}
+                    {memberPickerAction === 'reengage' && (locale === 'fr' ? 'Réengager un suivi' : 'Schedule a session')}
+                    {memberPickerAction === 'summary' && (locale === 'fr' ? 'Obtenir un résumé' : 'View summary')}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowMemberPicker(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Search */}
+              <div className="px-5 pt-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={memberSearchQuery}
+                    onChange={(e) => setMemberSearchQuery(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Rechercher un patient...' : 'Search members...'}
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              {/* Members List */}
+              <div className="p-4 max-h-80 overflow-y-auto space-y-1">
+                {(() => {
+                  const query = memberSearchQuery.toLowerCase()
+                  let filtered = members.filter(m =>
+                    `${m.first_name} ${m.last_name}`.toLowerCase().includes(query)
+                  )
+                  // For reengage: sort inactive/no recent sessions first
+                  if (memberPickerAction === 'reengage') {
+                    filtered.sort((a, b) => {
+                      const aInactive = a.status === 'inactive' ? 0 : 1
+                      const bInactive = b.status === 'inactive' ? 0 : 1
+                      if (aInactive !== bInactive) return aInactive - bInactive
+                      // Then by oldest last session
+                      const aDate = a.last_session_at ? new Date(a.last_session_at).getTime() : 0
+                      const bDate = b.last_session_at ? new Date(b.last_session_at).getTime() : 0
+                      return aDate - bDate
+                    })
+                  }
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="text-center py-8">
+                        <p className="text-sm text-gray-500">
+                          {locale === 'fr' ? 'Aucun patient trouvé' : 'No members found'}
+                        </p>
+                      </div>
+                    )
+                  }
+                  return filtered.map((member, index) => {
+                    const initials = `${member.first_name?.[0] || ''}${member.last_name?.[0] || ''}`.toUpperCase()
+                    const statusColor = member.status === 'active' ? 'bg-emerald-400' : member.status === 'inactive' ? 'bg-gray-400' : 'bg-amber-400'
+                    return (
+                      <motion.button
+                        key={member.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.03 }}
+                        onClick={() => {
+                          setShowMemberPicker(false)
+                          if (memberPickerAction === 'share') {
+                            router.push(`/members/${member.id}?tab=shared`)
+                          } else if (memberPickerAction === 'reengage') {
+                            setSchedulePreselectedMember(member as unknown as Member)
+                            setShowScheduleModal(true)
+                          } else if (memberPickerAction === 'summary') {
+                            router.push(`/members/${member.id}?tab=overview`)
+                          }
+                        }}
+                        className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors text-left group"
+                      >
+                        <div className="relative">
+                          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-600">
+                            {initials}
+                          </div>
+                          <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${statusColor}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {member.first_name} {member.last_name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {member.status === 'active' ? (locale === 'fr' ? 'Actif' : 'Active') :
+                             member.status === 'inactive' ? (locale === 'fr' ? 'Inactif' : 'Inactive') :
+                             (locale === 'fr' ? 'En attente' : 'Pending')}
+                            {member.last_session_at && ` · ${formatTimeAgo(member.last_session_at)}`}
+                          </p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
+                      </motion.button>
+                    )
+                  })
+                })()}
+              </div>
             </motion.div>
           </motion.div>
         )}
