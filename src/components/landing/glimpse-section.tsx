@@ -844,18 +844,21 @@ function AnimatedConnection() {
 
 interface GlimpseSectionProps {
   isPractitionerPage?: boolean
+  onCtaClick?: () => void
 }
 
-export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionProps) {
+export function GlimpseSection({ isPractitionerPage = false, onCtaClick }: GlimpseSectionProps) {
   const { locale } = useLanguage()
 
   // Use shared modal context (only on practitioner page)
-  let openModal: (() => void) | null = null
-  try {
-    const modalContext = useEarlyAccessModal()
-    openModal = modalContext.openModal
-  } catch {
-    // Not within provider
+  let openModal: (() => void) | null = onCtaClick || null
+  if (!openModal) {
+    try {
+      const modalContext = useEarlyAccessModal()
+      openModal = modalContext.openModal
+    } catch {
+      // Not within provider
+    }
   }
 
   // Practitioner-specific journey items
@@ -1000,7 +1003,7 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
           <p className="text-neutral-500 max-w-2xl mx-auto leading-relaxed">
             {isPractitionerPage
               ? (locale === 'fr'
-                ? 'Des outils pens\u00e9s pour accompagner vos clients entre les s\u00e9ances, sans alourdir votre quotidien.'
+                ? 'Des outils pens\u00e9s pour accompagner sans alourdir le quotidien.'
                 : locale === 'es'
                 ? 'Herramientas dise\u00f1adas para acompa\u00f1ar a sus clientes entre sesiones, sin a\u00f1adir carga a su d\u00eda a d\u00eda.'
                 : 'Tools designed to support your clients between sessions, without adding to your daily workload.')
@@ -1129,7 +1132,7 @@ export function GlimpseSection({ isPractitionerPage = false }: GlimpseSectionPro
               onClick={openModal}
               className="inline-block px-8 py-4 bg-gradient-to-r from-teal-600 to-teal-500 text-white font-medium rounded-full shadow-lg shadow-teal-600/30 hover:shadow-xl hover:from-teal-700 hover:to-teal-600 transition-all duration-300"
             >
-              {locale === 'fr' ? 'Tester Bloomsline gratuitement' : locale === 'es' ? 'Prueba Bloomsline gratis' : 'Try Bloomsline for free'}
+              {locale === 'fr' ? 'Découvrir Bloomsline' : locale === 'es' ? 'Descubrir Bloomsline' : 'Discover Bloomsline'}
             </button>
           </motion.div>
         )}

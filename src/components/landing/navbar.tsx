@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Calendar } from 'lucide-react'
+import { Menu, X, Calendar, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
 import Link from 'next/link'
@@ -12,9 +12,11 @@ import { useEarlyAccessModal } from '@/lib/landing/early-access-modal-context'
 
 interface NavbarProps {
   isMemberPage?: boolean
+  minimal?: boolean
+  onCtaClick?: () => void
 }
 
-export function Navbar({ isMemberPage = false }: NavbarProps) {
+export function Navbar({ isMemberPage = false, minimal = false, onCtaClick }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { t, locale } = useLanguage()
   const { openModal } = useEarlyAccessModal()
@@ -22,7 +24,11 @@ export function Navbar({ isMemberPage = false }: NavbarProps) {
   const DEMO_BOOKING_URL = 'https://calendar.app.google/DwruLrgYZ6TEegL58'
 
   const handleOpenModal = () => {
-    openModal(isMemberPage ? undefined : 'practitioner')
+    if (onCtaClick) {
+      onCtaClick()
+    } else {
+      openModal(isMemberPage ? undefined : 'practitioner')
+    }
   }
 
   const navItems = [
@@ -52,29 +58,31 @@ export function Navbar({ isMemberPage = false }: NavbarProps) {
           </motion.div>
 
           {/* Desktop Navigation */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="hidden md:flex items-center gap-8"
-          >
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className={`text-sm font-normal transition-colors ${
-                  item.active
-                    ? 'text-gray-900 flex items-center gap-1.5'
-                    : 'text-gray-500 hover:text-gray-900'
-                }`}
-              >
-                {item.active && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
-                )}
-                {item.label}
-              </a>
-            ))}
-          </motion.div>
+          {!minimal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="hidden md:flex items-center gap-8"
+            >
+              {navItems.map((item) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className={`text-sm font-normal transition-colors ${
+                    item.active
+                      ? 'text-gray-900 flex items-center gap-1.5'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                >
+                  {item.active && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                  )}
+                  {item.label}
+                </a>
+              ))}
+            </motion.div>
+          )}
 
           {/* CTA Buttons */}
           <motion.div
@@ -84,7 +92,7 @@ export function Navbar({ isMemberPage = false }: NavbarProps) {
             className="hidden md:flex items-center gap-3"
           >
             <LanguageSwitcher />
-            {!isMemberPage && (
+            {!isMemberPage && !minimal && (
               <a
                 href={DEMO_BOOKING_URL}
                 target="_blank"
@@ -100,22 +108,50 @@ export function Navbar({ isMemberPage = false }: NavbarProps) {
                 </Button>
               </a>
             )}
-            <Link href="/sign-in">
+            {minimal && (
+              <a
+                href="https://wa.me/33671482004"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button
+                  variant="outline"
+                  className="font-medium text-gray-700 hover:text-gray-900 rounded-full border-gray-300 hover:border-gray-400 gap-2"
+                  suppressHydrationWarning
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {locale === 'fr' ? 'Contacter sur WhatsApp' : locale === 'es' ? 'Contactar en WhatsApp' : 'Chat on WhatsApp'}
+                </Button>
+              </a>
+            )}
+            {!minimal && (
+              <Link href="/sign-in">
+                <Button
+                  variant="ghost"
+                  className="font-normal text-gray-600 hover:text-gray-900 rounded-full"
+                  suppressHydrationWarning
+                >
+                  {t.nav.signIn}
+                </Button>
+              </Link>
+            )}
+            {minimal ? (
               <Button
-                variant="ghost"
-                className="font-normal text-gray-600 hover:text-gray-900 rounded-full"
+                onClick={handleOpenModal}
+                className="font-medium text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] shadow-[#4A9A86]/30 hover:from-[#3d8a76] hover:to-[#4da38c]"
                 suppressHydrationWarning
               >
-                {t.nav.signIn}
+                {locale === 'fr' ? 'Nous contacter' : locale === 'es' ? 'Contáctenos' : 'Contact us'}
               </Button>
-            </Link>
-            <Button
-              onClick={handleOpenModal}
-              className="font-medium text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] shadow-[#4A9A86]/30 hover:from-[#3d8a76] hover:to-[#4da38c]"
-              suppressHydrationWarning
-            >
-              {locale === 'fr' ? 'Accès anticipé' : locale === 'es' ? 'Acceso anticipado' : 'Early Access'}
-            </Button>
+            ) : (
+              <Button
+                onClick={handleOpenModal}
+                className="font-medium text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] shadow-[#4A9A86]/30 hover:from-[#3d8a76] hover:to-[#4da38c]"
+                suppressHydrationWarning
+              >
+                {locale === 'fr' ? 'Accès anticipé' : locale === 'es' ? 'Acceso anticipado' : 'Early Access'}
+              </Button>
+            )}
           </motion.div>
 
           {/* Mobile menu button */}
@@ -160,7 +196,7 @@ export function Navbar({ isMemberPage = false }: NavbarProps) {
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-white/60">
                 <LanguageSwitcher />
-                {!isMemberPage && (
+                {!isMemberPage && !minimal && (
                   <a
                     href={DEMO_BOOKING_URL}
                     target="_blank"
@@ -175,6 +211,24 @@ export function Navbar({ isMemberPage = false }: NavbarProps) {
                     >
                       <Calendar className="w-4 h-4" />
                       {locale === 'fr' ? 'Réserver une démo' : locale === 'es' ? 'Reservar una demo' : 'Book a Demo'}
+                    </Button>
+                  </a>
+                )}
+                {minimal && (
+                  <a
+                    href="https://wa.me/33671482004"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Button
+                      variant="outline"
+                      className="w-full font-medium text-gray-700 rounded-full border-gray-300 gap-2"
+                      suppressHydrationWarning
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      {locale === 'fr' ? 'Contacter sur WhatsApp' : locale === 'es' ? 'Contactar en WhatsApp' : 'Chat on WhatsApp'}
                     </Button>
                   </a>
                 )}
