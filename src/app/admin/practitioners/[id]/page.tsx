@@ -22,6 +22,7 @@ import {
   ArrowLeft,
   Users,
   Camera,
+  BookOpen,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -36,12 +37,23 @@ import type {
   ClientAcceptanceStatus,
   Education,
   License,
+  Publication,
+  PublicationType,
 } from '@/types/practitioner-profile'
 import { generateSlug } from '@/types/practitioner-profile'
 import type { PublicPractitioner } from '@/types/public-practitioner'
 import type { User as UserType } from '@/types/user'
 
-type TabId = 'about' | 'credentials' | 'practice' | 'contact' | 'settings'
+type TabId = 'about' | 'credentials' | 'practice' | 'publications' | 'contact' | 'settings'
+
+const PUBLICATION_TYPES: { value: PublicationType; label: string }[] = [
+  { value: 'book', label: 'Book' },
+  { value: 'podcast', label: 'Podcast' },
+  { value: 'blog', label: 'Blog' },
+  { value: 'article', label: 'Article' },
+  { value: 'video', label: 'Video' },
+  { value: 'other', label: 'Other' },
+]
 
 const SPECIALTIES: Specialty[] = [
   'anxiety', 'depression', 'trauma_ptsd', 'grief_loss', 'relationships',
@@ -86,6 +98,7 @@ const EMPTY_FORM: Partial<PublicPractitioner> = {
   social_links: { website: null, linkedin: null, twitter: null, instagram: null },
   contact_email: '',
   contact_phone: '',
+  publications: [],
   is_published: false,
   slug: '',
 }
@@ -101,6 +114,7 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [uploadingPubImage, setUploadingPubImage] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabId>('about')
   const [authUser, setAuthUser] = useState<UserType | null>(null)
   const [form, setForm] = useState<Partial<PublicPractitioner>>(EMPTY_FORM)
@@ -226,6 +240,7 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
           social_links: form.social_links || null,
           contact_email: form.contact_email || null,
           contact_phone: form.contact_phone || null,
+          publications: form.publications || [],
           is_published: form.is_published ?? false,
           slug: form.slug,
         }),
@@ -299,10 +314,78 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
     setForm(prev => ({ ...prev, licenses: (prev.licenses || []).filter(lic => lic.id !== id) }))
   }
 
+  const addPublication = () => {
+    const newPub: Publication = {
+      id: crypto.randomUUID(),
+      type: 'article',
+      title: '',
+      description: null,
+      url: '',
+      image_url: null,
+    }
+    setForm(prev => ({ ...prev, publications: [...(prev.publications || []), newPub] }))
+  }
+
+  const updatePublication = (id: string, field: keyof Publication, value: string | null) => {
+    setForm(prev => ({
+      ...prev,
+      publications: (prev.publications || []).map(pub => pub.id === id ? { ...pub, [field]: value } : pub),
+    }))
+  }
+
+  const removePublication = (id: string) => {
+    setForm(prev => ({ ...prev, publications: (prev.publications || []).filter(pub => pub.id !== id) }))
+  }
+
+  const handlePublicationImageUpload = async (pubId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB')
+      return
+    }
+
+    setUploadingPubImage(pubId)
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `publications/${Date.now()}-${pubId}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true })
+
+      if (uploadError) {
+        if (uploadError.message.includes('not found')) {
+          toast.error('Storage is being set up. Please try again later.')
+          return
+        }
+        throw uploadError
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName)
+
+      updatePublication(pubId, 'image_url', publicUrl)
+      toast.success('Image uploaded!')
+    } catch (error) {
+      console.error('Error uploading publication image:', error)
+      toast.error('Failed to upload image')
+    } finally {
+      setUploadingPubImage(null)
+    }
+  }
+
   const tabs: { id: TabId; label: string; icon: typeof User }[] = [
     { id: 'about', label: t.profile.tabs.about, icon: User },
     { id: 'credentials', label: t.profile.tabs.credentials, icon: GraduationCap },
     { id: 'practice', label: t.profile.tabs.practice, icon: Briefcase },
+    { id: 'publications', label: locale === 'fr' ? 'Publications' : 'Publications', icon: BookOpen },
     { id: 'contact', label: t.profile.tabs.contact, icon: Mail },
     { id: 'settings', label: t.profile.tabs.settings, icon: Settings },
   ]
@@ -907,6 +990,132 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
                       />
                       <p className="text-xs text-gray-500 mt-1">{t.profile.practice.languages.help}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Publications Tab */}
+              {activeTab === 'publications' && (
+                <div className="space-y-6">
+                  <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h2 className="text-xl font-semibold text-gray-900">Publications</h2>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {locale === 'fr' ? 'Livres, podcasts, blogs, articles, vidéos' : 'Books, podcasts, blogs, articles, videos'}
+                        </p>
+                      </div>
+                      <Button onClick={addPublication} variant="outline" size="sm" className="rounded-xl">
+                        <Plus className="w-4 h-4 mr-1" />
+                        {locale === 'fr' ? 'Ajouter' : 'Add'}
+                      </Button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {(form.publications || []).map((pub) => (
+                        <div key={pub.id} className="bg-gray-50/80 rounded-xl p-5 border border-gray-100">
+                          <div className="flex items-start justify-between gap-4 mb-4">
+                            <select
+                              value={pub.type}
+                              onChange={(e) => updatePublication(pub.id, 'type', e.target.value)}
+                              className="px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none text-sm bg-white"
+                            >
+                              {PUBLICATION_TYPES.map((pt) => (
+                                <option key={pt.value} value={pt.value}>{pt.label}</option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => removePublication(pub.id)}
+                              className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1">
+                                {locale === 'fr' ? 'Titre' : 'Title'} *
+                              </label>
+                              <input
+                                type="text"
+                                value={pub.title}
+                                onChange={(e) => updatePublication(pub.id, 'title', e.target.value)}
+                                placeholder={locale === 'fr' ? 'Titre de la publication' : 'Publication title'}
+                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1">URL *</label>
+                              <input
+                                type="url"
+                                value={pub.url}
+                                onChange={(e) => updatePublication(pub.id, 'url', e.target.value)}
+                                placeholder="https://..."
+                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none text-sm"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1">
+                                {locale === 'fr' ? 'Description' : 'Description'}
+                              </label>
+                              <input
+                                type="text"
+                                value={pub.description || ''}
+                                onChange={(e) => updatePublication(pub.id, 'description', e.target.value || null)}
+                                placeholder={locale === 'fr' ? 'Courte description' : 'Short description'}
+                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1">
+                                {locale === 'fr' ? 'Image' : 'Cover Image'}
+                              </label>
+                              <div className="flex items-center gap-3">
+                                {pub.image_url && (
+                                  <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
+                                    <img src={pub.image_url} alt="" className="w-full h-full object-cover" />
+                                    <button
+                                      type="button"
+                                      onClick={() => updatePublication(pub.id, 'image_url', null)}
+                                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                )}
+                                <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors text-sm text-gray-600">
+                                  {uploadingPubImage === pub.id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Camera className="w-4 h-4" />
+                                  )}
+                                  <span>{pub.image_url ? (locale === 'fr' ? 'Changer' : 'Change') : (locale === 'fr' ? 'Télécharger' : 'Upload')}</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handlePublicationImageUpload(pub.id, e)}
+                                    className="hidden"
+                                    disabled={uploadingPubImage === pub.id}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {(!form.publications || form.publications.length === 0) && (
+                        <div className="text-center py-8">
+                          <BookOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                          <p className="text-sm text-gray-500">
+                            {locale === 'fr' ? 'Aucune publication ajoutée' : 'No publications added yet'}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -9,6 +9,7 @@ import type {
   Certification,
   PracticeLocation,
   SocialLinks,
+  Publication,
 } from './practitioner-profile'
 
 export interface PublicPractitioner {
@@ -52,6 +53,9 @@ export interface PublicPractitioner {
   social_links: SocialLinks | null
   contact_email: string | null
   contact_phone: string | null
+
+  // Publications
+  publications: Publication[]
 
   // Settings
   slug: string

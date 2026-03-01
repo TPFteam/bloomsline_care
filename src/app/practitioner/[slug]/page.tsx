@@ -28,7 +28,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
-import type { PractitionerProfileWithUser, Specialty, TherapeuticApproach } from '@/types/practitioner-profile'
+import type { PractitionerProfileWithUser, Specialty, TherapeuticApproach, Publication } from '@/types/practitioner-profile'
 
 export default function PublicProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = use(params)
@@ -488,6 +488,49 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                     >
                       {getApproachLabel(approach as TherapeuticApproach)}
                     </span>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Publications */}
+            {profile.publications && (profile.publications as Publication[]).length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.22 }}
+                className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8"
+              >
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-teal-500" />
+                  Publications
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {(profile.publications as Publication[]).map((pub) => (
+                    <a
+                      key={pub.id}
+                      href={pub.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex gap-4 p-4 rounded-xl bg-gray-50/80 border border-gray-100 hover:border-teal-200 hover:shadow-sm transition-all"
+                    >
+                      {pub.image_url && (
+                        <div className="w-16 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200">
+                          <img src={pub.image_url} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-teal-50 text-teal-600 mb-1.5">
+                          {pub.type}
+                        </span>
+                        <p className="font-medium text-gray-900 text-sm group-hover:text-teal-700 transition-colors line-clamp-2">
+                          {pub.title}
+                        </p>
+                        {pub.description && (
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{pub.description}</p>
+                        )}
+                      </div>
+                    </a>
                   ))}
                 </div>
               </motion.div>

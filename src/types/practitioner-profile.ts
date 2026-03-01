@@ -123,6 +123,17 @@ export interface SocialLinks {
   instagram: string | null
 }
 
+export type PublicationType = 'book' | 'podcast' | 'blog' | 'article' | 'video' | 'other'
+
+export interface Publication {
+  id: string
+  type: PublicationType
+  title: string
+  description: string | null
+  url: string
+  image_url: string | null
+}
+
 // ============================================
 // MAIN PROFILE INTERFACE
 // ============================================
@@ -168,6 +179,9 @@ export interface PractitionerProfile {
   social_links: SocialLinks | null
   contact_email: string | null // public contact email (can differ from account email)
   contact_phone: string | null
+
+  // Publications
+  publications: Publication[]
 
   // Profile Settings
   slug: string // URL-friendly identifier for public profile
