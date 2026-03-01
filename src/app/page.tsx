@@ -36,14 +36,6 @@ function HeroConveyor({ locale, l, content, onCta }: { locale: string; l: (obj: 
     { icon: Brain, iconColor: 'text-violet-500', iconBg: 'bg-violet-100' },
   ]
 
-  const captions = [
-    fr ? 'Prêt en quelques secondes' : 'Ready in seconds',
-    fr ? 'Capturé sans effort' : 'Captured effortlessly',
-    fr ? 'Toujours connecté' : 'Always connected',
-    fr ? 'Des progrès visibles' : 'Progress you can see',
-    fr ? 'L\'IA qui vous écoute' : 'AI that listens to you',
-  ]
-
   const CardContent = ({ idx }: { idx: number }) => {
     if (idx === 0) {
       return (
@@ -235,35 +227,6 @@ function HeroConveyor({ locale, l, content, onCta }: { locale: string; l: (obj: 
             </motion.div>
           </div>
 
-          {/* Caption + dots — pinned to bottom of carousel area */}
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center">
-            <AnimatePresence mode="wait">
-              <motion.span
-                key={activeIdx}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-                className="inline-block text-sm text-neutral-400 italic"
-              >
-                {captions[activeIdx]}
-              </motion.span>
-            </AnimatePresence>
-
-            <div className="flex items-center gap-2 mt-2">
-              {cards.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => goTo(i)}
-                  className={`rounded-full transition-all duration-300 ${
-                    i === activeIdx
-                      ? 'w-6 h-2 bg-teal-500'
-                      : 'w-2 h-2 bg-neutral-300 hover:bg-neutral-400'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
 
           {(() => { const c = cards[getIdx(1)]; const I = c.icon; return (
             <motion.div key={`r-${activeIdx}`} initial={{ x: -10, opacity: 0.2 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 1.8, ease: [0.25, 0.1, 0.25, 1] }} className="absolute right-[10%] sm:right-[14%] top-1/2 -translate-y-1/2 cursor-pointer" onClick={() => goTo(getIdx(1))}>
