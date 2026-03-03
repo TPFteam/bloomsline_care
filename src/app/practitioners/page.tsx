@@ -237,7 +237,7 @@ function PractitionerContent() {
   const { locale } = useLanguage()
   const { openModal } = usePractitionerSignupModal()
   const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const [testimonialExpanded, setTestimonialExpanded] = useState(false)
+  const [testimonialExpanded, setTestimonialExpanded] = useState(true)
 
   const fr = locale === 'fr'
 
@@ -436,22 +436,6 @@ function PractitionerContent() {
                 )}
               </AnimatePresence>
 
-              {/* Read more */}
-              {!testimonialExpanded && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  viewport={{ once: true }}
-                  className="text-center"
-                >
-                  <button
-                    onClick={() => setTestimonialExpanded(true)}
-                    className="text-teal-400 text-sm font-medium hover:text-teal-300 transition-colors"
-                  >
-                    {fr ? 'Lire la suite\u2026' : 'Read more\u2026'}
-                  </button>
-                </motion.div>
-              )}
 
               {/* Author */}
               <motion.div
@@ -505,13 +489,29 @@ function PractitionerContent() {
                   )
                 })}
               </div>
+              {/* Audience — inline */}
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.4 }}
-                className="text-center mt-12"
+                className="text-center mt-24"
               >
+                <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-4">{l(content.audience.headline)}</h2>
+                <p className="text-lg text-neutral-600 mb-8 max-w-2xl mx-auto">{l(content.audience.subtitle)}</p>
+                <div className="flex flex-wrap justify-center gap-3 mb-10">
+                  {content.audience.types.map((type, i) => (
+                    <div key={i} className="relative group">
+                      <span className="px-5 py-3 bg-neutral-100 rounded-full text-neutral-700 font-medium hover:bg-neutral-200 transition-colors cursor-default inline-block">{l(type)}</span>
+                      {type.hint && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-4 py-2.5 bg-neutral-800 text-white text-xs leading-relaxed rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none w-56 text-center z-10">
+                          {l(type.hint)}
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-neutral-800" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
                 <button
                   onClick={handleOpenModal}
                   className="px-8 py-4 bg-gradient-to-r from-teal-600 to-teal-500 text-white font-medium rounded-full shadow-lg shadow-teal-600/30 hover:shadow-xl hover:from-teal-700 hover:to-teal-600 transition-all duration-300 inline-flex items-center gap-2"
@@ -525,30 +525,6 @@ function PractitionerContent() {
         </section>
 
         <GlimpseSection isPractitionerPage onCtaClick={handleOpenModal} />
-
-
-        {/* Audience */}
-        <section className="py-20 bg-neutral-50">
-          <div className="container mx-auto px-6">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="max-w-4xl mx-auto text-center">
-              <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-4">{l(content.audience.headline)}</h2>
-              <p className="text-lg text-neutral-600 mb-10 max-w-2xl mx-auto">{l(content.audience.subtitle)}</p>
-              <div className="flex flex-wrap justify-center gap-3">
-                {content.audience.types.map((type, i) => (
-                  <div key={i} className="relative group">
-                    <span className="px-5 py-3 bg-neutral-100 rounded-full text-neutral-700 font-medium hover:bg-neutral-200 transition-colors cursor-default inline-block">{l(type)}</span>
-                    {type.hint && (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-4 py-2.5 bg-neutral-800 text-white text-xs leading-relaxed rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none w-56 text-center z-10">
-                        {l(type.hint)}
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-neutral-800" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        </section>
 
         {/* Security */}
         <section className="py-20 bg-white">
@@ -567,24 +543,6 @@ function PractitionerContent() {
         </section>
 
 
-        {/* Final CTA */}
-        <section className="py-24 bg-gradient-to-b from-neutral-50 to-white">
-          <div className="container mx-auto px-6">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="max-w-2xl mx-auto text-center">
-              <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-4">{l(content.cta.headline)}</h2>
-              <p className="text-lg text-neutral-600 mb-10">{l(content.cta.subtitle)}</p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <button onClick={handleOpenModal} className="px-8 py-4 bg-teal-600 text-white rounded-full font-medium inline-flex items-center gap-2 hover:bg-teal-700 transition-colors shadow-lg shadow-teal-600/30">
-                  {l(content.hero.cta)} <ArrowRight className="w-4 h-4" />
-                </button>
-                <a href={DEMO_BOOKING_URL} target="_blank" rel="noopener noreferrer" className="px-8 py-4 rounded-full border-2 border-neutral-300 text-neutral-700 font-medium inline-flex items-center gap-2 hover:border-neutral-400 transition-colors">
-                  <Calendar className="w-4 h-4" />
-                  {locale === 'fr' ? 'Parlons-en' : 'Talk to us'}
-                </a>
-              </div>
-            </motion.div>
-          </div>
-        </section>
       </main>
 
       <Footer />

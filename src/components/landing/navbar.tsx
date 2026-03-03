@@ -120,7 +120,7 @@ export function Navbar({ isMemberPage = false, minimal = false, onCtaClick }: Na
                   suppressHydrationWarning
                 >
                   <MessageCircle className="w-4 h-4" />
-                  {locale === 'fr' ? 'Contacter sur WhatsApp' : locale === 'es' ? 'Contactar en WhatsApp' : 'Chat on WhatsApp'}
+                  WhatsApp
                 </Button>
               </a>
             )}
@@ -228,7 +228,7 @@ export function Navbar({ isMemberPage = false, minimal = false, onCtaClick }: Na
                       suppressHydrationWarning
                     >
                       <MessageCircle className="w-4 h-4" />
-                      {locale === 'fr' ? 'Contacter sur WhatsApp' : locale === 'es' ? 'Contactar en WhatsApp' : 'Chat on WhatsApp'}
+                      WhatsApp
                     </Button>
                   </a>
                 )}
