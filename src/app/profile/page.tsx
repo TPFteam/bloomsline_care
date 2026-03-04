@@ -75,7 +75,7 @@ const AGE_GROUPS: AgeGroup[] = ['children', 'adolescents', 'young_adults', 'adul
 const SESSION_TYPES: SessionType[] = ['individual', 'couples', 'family', 'group']
 
 export default function ProfilePage() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const router = useRouter()
   const supabase = createClient()
 
@@ -249,6 +249,8 @@ export default function ProfilePage() {
         contact_email: profile.contact_email || null,
         contact_phone: profile.contact_phone || null,
         publications: profile.publications || [],
+        show_availability: profile.show_availability !== false,
+        show_languages: profile.show_languages !== false,
         is_public: profile.is_public ?? false,
         slug: profile.slug || null,
         profile_completeness: profileCompleteness,
@@ -495,7 +497,7 @@ export default function ProfilePage() {
       <AppSidebar />
 
       {/* Main Content */}
-      <main className="flex-1 ml-64">
+      <main className="flex-1 ml-16">
         <AppHeader
           user={user as any}
           leftContent={
@@ -988,67 +990,109 @@ export default function ProfilePage() {
 
                   {/* Availability */}
                   <div className="mb-8">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">{t.profile.practice.availability.title}</h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-6">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={profile.offers_telehealth}
-                            onChange={(e) => setProfile(prev => ({ ...prev, offers_telehealth: e.target.checked }))}
-                            className="w-4 h-4 rounded border-gray-300 text-gray-600 focus:ring-gray-500"
-                          />
-                          <span className="text-sm text-gray-700">{t.profile.practice.availability.telehealth}</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={profile.offers_in_person}
-                            onChange={(e) => setProfile(prev => ({ ...prev, offers_in_person: e.target.checked }))}
-                            className="w-4 h-4 rounded border-gray-300 text-gray-600 focus:ring-gray-500"
-                          />
-                          <span className="text-sm text-gray-700">{t.profile.practice.availability.inPerson}</span>
-                        </label>
-                      </div>
-
-                      <div className="flex flex-wrap gap-3">
-                        {(['accepting', 'waitlist', 'not_accepting'] as ClientAcceptanceStatus[]).map((status) => (
-                          <button
-                            key={status}
-                            onClick={() => setProfile(prev => ({ ...prev, client_acceptance_status: status }))}
-                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                              profile.client_acceptance_status === status
-                                ? status === 'accepting'
-                                  ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-400'
-                                  : status === 'waitlist'
-                                  ? 'bg-amber-100 text-amber-700 border-2 border-amber-400'
-                                  : 'bg-red-100 text-red-700 border-2 border-red-400'
-                                : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
-                            }`}
-                          >
-                            {t.profile.practice.availability[status === 'accepting' ? 'acceptingClients' : status === 'waitlist' ? 'waitlistOnly' : 'notAccepting']}
-                          </button>
-                        ))}
-                      </div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-medium text-gray-900">{t.profile.practice.availability.title}</h3>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <span className="text-xs text-gray-400">
+                          {profile.show_availability !== false
+                            ? (locale === 'fr' ? 'Visible' : 'Visible')
+                            : (locale === 'fr' ? 'Masqué' : 'Hidden')}
+                        </span>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={profile.show_availability !== false}
+                          onClick={() => setProfile(prev => ({ ...prev, show_availability: !(prev.show_availability !== false) }))}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${profile.show_availability !== false ? 'bg-gray-900' : 'bg-gray-200'}`}
+                        >
+                          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${profile.show_availability !== false ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                        </button>
+                      </label>
                     </div>
+                    {profile.show_availability !== false && (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-6">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={profile.offers_telehealth}
+                              onChange={(e) => setProfile(prev => ({ ...prev, offers_telehealth: e.target.checked }))}
+                              className="w-4 h-4 rounded border-gray-300 text-gray-600 focus:ring-gray-500"
+                            />
+                            <span className="text-sm text-gray-700">{t.profile.practice.availability.telehealth}</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={profile.offers_in_person}
+                              onChange={(e) => setProfile(prev => ({ ...prev, offers_in_person: e.target.checked }))}
+                              className="w-4 h-4 rounded border-gray-300 text-gray-600 focus:ring-gray-500"
+                            />
+                            <span className="text-sm text-gray-700">{t.profile.practice.availability.inPerson}</span>
+                          </label>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3">
+                          {(['accepting', 'waitlist', 'not_accepting'] as ClientAcceptanceStatus[]).map((status) => (
+                            <button
+                              key={status}
+                              onClick={() => setProfile(prev => ({ ...prev, client_acceptance_status: status }))}
+                              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                                profile.client_acceptance_status === status
+                                  ? status === 'accepting'
+                                    ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-400'
+                                    : status === 'waitlist'
+                                    ? 'bg-amber-100 text-amber-700 border-2 border-amber-400'
+                                    : 'bg-red-100 text-red-700 border-2 border-red-400'
+                                  : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                              }`}
+                            >
+                              {t.profile.practice.availability[status === 'accepting' ? 'acceptingClients' : status === 'waitlist' ? 'waitlistOnly' : 'notAccepting']}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Languages */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t.profile.practice.languages.label}
-                    </label>
-                    <input
-                      type="text"
-                      value={profile.languages?.join(', ') || ''}
-                      onChange={(e) => setProfile(prev => ({
-                        ...prev,
-                        languages: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                      }))}
-                      placeholder={t.profile.practice.languages.placeholder}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">{t.profile.practice.languages.help}</p>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        {t.profile.practice.languages.label}
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <span className="text-xs text-gray-400">
+                          {profile.show_languages !== false
+                            ? (locale === 'fr' ? 'Visible' : 'Visible')
+                            : (locale === 'fr' ? 'Masqué' : 'Hidden')}
+                        </span>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={profile.show_languages !== false}
+                          onClick={() => setProfile(prev => ({ ...prev, show_languages: !(prev.show_languages !== false) }))}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${profile.show_languages !== false ? 'bg-gray-900' : 'bg-gray-200'}`}
+                        >
+                          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${profile.show_languages !== false ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                        </button>
+                      </label>
+                    </div>
+                    {profile.show_languages !== false && (
+                      <>
+                        <input
+                          type="text"
+                          value={profile.languages?.join(', ') || ''}
+                          onChange={(e) => setProfile(prev => ({
+                            ...prev,
+                            languages: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                          }))}
+                          placeholder={t.profile.practice.languages.placeholder}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">{t.profile.practice.languages.help}</p>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

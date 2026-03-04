@@ -310,8 +310,8 @@ function CreateTableExerciseContent() {
 
   // Add column
   const addColumn = () => {
-    if (columns.length >= 6) {
-      toast.error(locale === 'fr' ? 'Maximum 6 colonnes' : 'Maximum 6 columns')
+    if (columns.length >= 10) {
+      toast.error(locale === 'fr' ? 'Maximum 10 colonnes' : 'Maximum 10 columns')
       return
     }
     setColumns([...columns, { id: generateId(), header: '', description: '' }])
@@ -1035,7 +1035,7 @@ function CreateTableExerciseContent() {
                 {/* Add Column Button - at the bottom */}
                 <motion.button
                   onClick={addColumn}
-                  disabled={columns.length >= 6}
+                  disabled={columns.length >= 10}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   className="w-full py-4 border-2 border-dashed border-gray-300 hover:border-emerald-400 rounded-xl text-gray-500 hover:text-emerald-600 flex items-center justify-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:text-gray-500"
@@ -1044,7 +1044,7 @@ function CreateTableExerciseContent() {
                   <span className="font-medium">
                     {locale === 'fr' ? 'Ajouter une colonne' : 'Add Column'}
                   </span>
-                  <span className="text-sm text-gray-400">({columns.length}/6)</span>
+                  <span className="text-sm text-gray-400">({columns.length}/10)</span>
                 </motion.button>
               </div>
             </motion.div>

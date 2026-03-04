@@ -137,6 +137,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const [editingSummarySession, setEditingSummarySession] = useState<string | null>(null)
   const [summaryDraft, setSummaryDraft] = useState('')
   const [savingSummary, setSavingSummary] = useState(false)
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
 
 
   // Scroll to highlighted session or section
@@ -1144,23 +1145,44 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           </div>
                         </div>
                       ) : sessionSummaryNotes[session.id] ? (
-                        <div
-                          className="group/summary bg-white border border-gray-200 rounded-xl p-3 cursor-pointer hover:border-gray-300 transition-colors"
-                          onClick={() => {
-                            setEditingSummarySession(session.id)
-                            setSummaryDraft(sessionSummaryNotes[session.id]?.content || '')
-                          }}
-                        >
-                          <div className="flex items-start gap-2">
-                            <FileText className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1 min-w-0 line-clamp-4">
-                              <MarkdownRenderer
-                                content={sessionSummaryNotes[session.id]?.content || ''}
-                                onContentChange={(html) => handleSaveSessionSummary(session.id, html)}
-                              />
-                            </div>
-                            <Pencil className="w-3.5 h-3.5 text-gray-300 opacity-0 group-hover/summary:opacity-100 transition-opacity flex-shrink-0 mt-0.5" />
-                          </div>
+                        <div>
+                          <button
+                            onClick={() => setExpandedNotes(prev => {
+                              const next = new Set(prev)
+                              if (next.has(session.id)) next.delete(session.id)
+                              else next.add(session.id)
+                              return next
+                            })}
+                            className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            {expandedNotes.has(session.id)
+                              ? (locale === 'fr' ? 'Masquer la note' : 'Hide note')
+                              : (locale === 'fr' ? 'Voir la note' : 'View note')}
+                            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedNotes.has(session.id) ? 'rotate-180' : ''}`} />
+                          </button>
+                          <AnimatePresence>
+                            {expandedNotes.has(session.id) && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="mt-2 bg-white border border-gray-200 rounded-xl p-3">
+                                  <MarkdownRenderer
+                                    content={sessionSummaryNotes[session.id]?.content || ''}
+                                    onContentChange={(html) => handleSaveSessionSummary(session.id, html)}
+                                    onEdit={() => {
+                                      setEditingSummarySession(session.id)
+                                      setSummaryDraft(sessionSummaryNotes[session.id]?.content || '')
+                                    }}
+                                  />
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       ) : (
                         <button

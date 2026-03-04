@@ -183,6 +183,10 @@ export interface PractitionerProfile {
   // Publications
   publications: Publication[]
 
+  // Section Visibility
+  show_availability: boolean
+  show_languages: boolean
+
   // Profile Settings
   slug: string // URL-friendly identifier for public profile
   is_public: boolean // whether profile is visible to others

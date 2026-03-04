@@ -41,6 +41,8 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
   const [notFound, setNotFound] = useState(false)
   const [publishedResources, setPublishedResources] = useState<{ id: string; title: string; type: string }[]>([])
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [externalBookingUrl, setExternalBookingUrl] = useState<string | null>(null)
+  const [bookingPageEnabled, setBookingPageEnabled] = useState(false)
 
   useEffect(() => {
     fetchProfile()
@@ -205,6 +207,22 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
         } catch {
           // resources table query failed, ignore
         }
+
+        // Fetch booking settings for this practitioner
+        try {
+          const { data: bookingSettings } = await supabase
+            .from('booking_settings')
+            .select('external_booking_url, booking_page_enabled')
+            .eq('user_id', userId)
+            .single()
+
+          if (bookingSettings) {
+            setExternalBookingUrl(bookingSettings.external_booking_url || null)
+            setBookingPageEnabled(bookingSettings.booking_page_enabled ?? false)
+          }
+        } catch {
+          // booking_settings query failed, ignore
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error)
@@ -273,7 +291,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
     ? acceptanceStatusStyles[profile.client_acceptance_status]
     : acceptanceStatusStyles.not_accepting
 
-  const hasBookingEnabled = profile.slug
+  const hasBookingEnabled = profile.slug && (externalBookingUrl || bookingPageEnabled)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50/60 via-white to-gray-50">
@@ -285,12 +303,21 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
               <Logo size="md" showText />
             </Link>
             {hasBookingEnabled && (
-              <Link href={`/practitioner/${profile.slug}/book`}>
-                <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-md shadow-teal-200/50">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Book Appointment
-                </Button>
-              </Link>
+              externalBookingUrl ? (
+                <a href={externalBookingUrl} target="_blank" rel="noopener noreferrer">
+                  <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-md shadow-teal-200/50">
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Book Appointment
+                  </Button>
+                </a>
+              ) : (
+                <Link href={`/practitioner/${profile.slug}/book`}>
+                  <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-md shadow-teal-200/50">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Book Appointment
+                  </Button>
+                </Link>
+              )
             )}
           </div>
         </div>
@@ -344,23 +371,27 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
             {/* Tags */}
             <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-5">
-              <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${status.bg} ${status.text}`}>
-                <span className={`w-2 h-2 rounded-full ${status.dot} mr-2`} />
-                {status.label}
-              </span>
+              {profile.show_availability !== false && (
+                <>
+                  <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${status.bg} ${status.text}`}>
+                    <span className={`w-2 h-2 rounded-full ${status.dot} mr-2`} />
+                    {status.label}
+                  </span>
 
-              {profile.offers_telehealth && (
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-teal-50 text-teal-700">
-                  <Video className="w-3.5 h-3.5 mr-1.5" />
-                  Telehealth
-                </span>
-              )}
+                  {profile.offers_telehealth && (
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-teal-50 text-teal-700">
+                      <Video className="w-3.5 h-3.5 mr-1.5" />
+                      Telehealth
+                    </span>
+                  )}
 
-              {profile.offers_in_person && (
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-slate-50 text-slate-700">
-                  <Building className="w-3.5 h-3.5 mr-1.5" />
-                  In-Person
-                </span>
+                  {profile.offers_in_person && (
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-slate-50 text-slate-700">
+                      <Building className="w-3.5 h-3.5 mr-1.5" />
+                      In-Person
+                    </span>
+                  )}
+                </>
               )}
 
               {profile.years_experience && (
@@ -381,12 +412,21 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
             {/* Action buttons */}
             <div className="flex flex-wrap justify-center sm:justify-start gap-3 mt-6">
               {hasBookingEnabled && (
-                <Link href={`/practitioner/${profile.slug}/book`}>
-                  <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-md shadow-teal-200/50 h-11 px-6">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Book a Session
-                  </Button>
-                </Link>
+                externalBookingUrl ? (
+                  <a href={externalBookingUrl} target="_blank" rel="noopener noreferrer">
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-md shadow-teal-200/50 h-11 px-6">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Book a Session
+                    </Button>
+                  </a>
+                ) : (
+                  <Link href={`/practitioner/${profile.slug}/book`}>
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-md shadow-teal-200/50 h-11 px-6">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Book a Session
+                    </Button>
+                  </Link>
+                )
               )}
               {profile.contact_email && (
                 <a href={`mailto:${profile.contact_email}`}>
@@ -582,12 +622,21 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 <p className="text-teal-100 text-sm mb-4">
                   Book a session with {profile.user?.full_name?.split(' ')[0]} and take the next step in your journey.
                 </p>
-                <Link href={`/practitioner/${profile.slug}/book`}>
-                  <Button className="w-full bg-white text-teal-700 hover:bg-teal-50 rounded-xl font-semibold h-11">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Book a Session
-                  </Button>
-                </Link>
+                {externalBookingUrl ? (
+                  <a href={externalBookingUrl} target="_blank" rel="noopener noreferrer" className="block">
+                    <Button className="w-full bg-white text-teal-700 hover:bg-teal-50 rounded-xl font-semibold h-11">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Book a Session
+                    </Button>
+                  </a>
+                ) : (
+                  <Link href={`/practitioner/${profile.slug}/book`}>
+                    <Button className="w-full bg-white text-teal-700 hover:bg-teal-50 rounded-xl font-semibold h-11">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Book a Session
+                    </Button>
+                  </Link>
+                )}
               </motion.div>
             )}
 
@@ -690,7 +739,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
               )}
 
               {/* Languages */}
-              {profile.languages && profile.languages.length > 0 && (
+              {profile.show_languages !== false && profile.languages && profile.languages.length > 0 && (
                 <div>
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Languages</h3>
                   <p className="text-sm text-gray-700">{profile.languages.join(', ')}</p>
