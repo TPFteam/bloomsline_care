@@ -336,11 +336,16 @@ function PractitionerContent() {
                   <span className="text-5xl sm:text-6xl font-serif text-teal-400/60 leading-none mt-2">&ldquo;</span>
                 </div>
                 <p className="text-xl sm:text-2xl leading-relaxed">
-                  <span className="font-semibold text-white">{fr ? 'Un véritable atout' : 'A real asset'}</span>
                   <span className="text-neutral-400">
                     {fr
-                      ? ' pour les psychologues. Centraliser les séances, les progrès et les ressources dans un espace calme et organisé.'
-                      : ' for psychologists. Centralizing sessions, progress, and resources in a calm, organized space.'}
+                      ? 'Cette plateforme est '
+                      : 'This platform is '}
+                  </span>
+                  <span className="font-semibold text-white">{fr ? 'un véritable atout' : 'a real asset'}</span>
+                  <span className="text-neutral-400">
+                    {fr
+                      ? ' pour les psychologues. Elle permet de centraliser toutes les informations essentielles concernant les séances, les progrès des patients et les ressources thérapeutiques dans un espace calme et organisé.'
+                      : ' for psychologists. It centralizes all essential information about sessions, patient progress, and therapeutic resources in a calm, organized space.'}
                   </span>
                 </p>
               </motion.div>
@@ -356,16 +361,14 @@ function PractitionerContent() {
                 <p className="text-xl sm:text-2xl leading-relaxed">
                   <span className="text-neutral-400">
                     {fr
-                      ? 'Cela libère du temps pour '
-                      : 'It frees up time for '}
+                      ? 'Cela libère du temps précieux pour se concentrer sur '
+                      : 'It frees up precious time to focus on '}
                   </span>
                   <span className="font-semibold text-white">
                     {fr ? "l\u2019essentiel" : 'what matters most'}
                   </span>
-                  <span className="text-neutral-400">.</span>
-                  <br />
                   <span className="text-neutral-400">
-                    {fr ? "L\u2019accompagnement des patients." : 'Supporting patients.'}
+                    {fr ? " : l\u2019accompagnement des patients." : ': supporting patients.'}
                   </span>
                 </p>
               </motion.div>
@@ -379,11 +382,16 @@ function PractitionerContent() {
                 className="text-left"
               >
                 <p className="text-xl sm:text-2xl leading-relaxed">
-                  <span className="font-semibold text-white">{fr ? 'Interface intuitive' : 'Intuitive interface'}</span>
                   <span className="text-neutral-400">
                     {fr
-                      ? ', idéale pour les thérapies brèves.'
-                      : ', ideal for brief therapies.'}
+                      ? 'La facilité d\u2019utilisation et l\u2019'
+                      : 'The ease of use and the '}
+                  </span>
+                  <span className="font-semibold text-white">{fr ? 'interface intuitive' : 'intuitive interface'}</span>
+                  <span className="text-neutral-400">
+                    {fr
+                      ? ' rendent cette plateforme idéale, notamment pour les thérapies brèves.'
+                      : ' make this platform ideal, especially for brief therapies.'}
                   </span>
                 </p>
               </motion.div>
@@ -409,7 +417,9 @@ function PractitionerContent() {
                         <span className="font-semibold text-white">
                           {fr ? 'optimiser leur pratique' : 'optimize their practice'}
                         </span>
-                        <span className="text-neutral-400">.</span>
+                        <span className="text-neutral-400">
+                          {fr ? " et améliorer l\u2019expérience de leurs patients." : ' and improve their patients\u2019 experience.'}
+                        </span>
                       </p>
                     </div>
 
@@ -417,9 +427,9 @@ function PractitionerContent() {
                     <div className="text-left">
                       <p className="text-xl sm:text-2xl leading-relaxed text-neutral-400">
                         {fr ? <>
-                          Quelle que soit la technologie, <span className="font-semibold text-white">rien ne remplace le travail sur soi, la supervision, la formation continue et un sens du contact humain</span> développé.
+                          Mais n&apos;oublions pas l&apos;essentiel : quelle que soit la technologie, aussi pointue soit-elle, <span className="font-semibold text-white">rien ne remplace le travail sur soi, la supervision, la formation continue et un sens du contact humain</span> développé.
                         </> : <>
-                          No matter how advanced the technology, <span className="font-semibold text-white">nothing replaces self-work, supervision, continuing education, and a strong sense of human connection</span>.
+                          But let&apos;s not forget what matters most: no matter how advanced the technology, <span className="font-semibold text-white">nothing replaces self-work, supervision, continuing education, and a strong sense of human connection</span>.
                         </>}
                       </p>
                     </div>
@@ -428,8 +438,8 @@ function PractitionerContent() {
                     <div className="text-center">
                       <p className="text-xl sm:text-2xl leading-relaxed font-semibold text-white">
                         {fr
-                          ? "Un excellent investissement pour une gestion sereine de votre activité."
-                          : "An excellent investment for serene management of your practice."}
+                          ? "Un excellent investissement pour une gestion efficace et sereine de votre activité !"
+                          : "An excellent investment for efficient and serene management of your practice!"}
                       </p>
                     </div>
                   </motion.div>
