@@ -89,6 +89,12 @@ export default function BookingPage() {
           return
         }
 
+        // Redirect to external booking system if configured
+        if (info.settings.external_booking_url) {
+          window.location.href = info.settings.external_booking_url
+          return
+        }
+
         setPractitioner(info as PractitionerInfo)
       } catch {
         setError('Failed to load practitioner information.')

@@ -60,7 +60,7 @@ interface Booking {
 }
 
 type MainTab = 'appointments' | 'settings'
-type AppointmentFilter = 'pending' | 'upcoming' | 'past' | 'all'
+type AppointmentFilter = 'upcoming' | 'past' | 'all'
 
 const STATUS_CONFIG = {
   pending: {
@@ -143,7 +143,7 @@ export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [sessionTypes, setSessionTypes] = useState<SessionType[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [appointmentFilter, setAppointmentFilter] = useState<AppointmentFilter>('pending')
+  const [appointmentFilter, setAppointmentFilter] = useState<AppointmentFilter>('upcoming')
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -295,8 +295,6 @@ export default function BookingsPage() {
     const now = new Date()
 
     switch (appointmentFilter) {
-      case 'pending':
-        return booking.status === 'pending'
       case 'upcoming':
         return (booking.status === 'confirmed' || booking.status === 'pending') && startTime > now
       case 'past':
@@ -502,6 +500,7 @@ export default function BookingsPage() {
       cancellation_policy: bookingSettings?.cancellation_policy ?? null,
       booking_instructions: bookingSettings?.booking_instructions ?? null,
       email_notifications: bookingSettings?.email_notifications ?? true,
+      external_booking_url: bookingSettings?.external_booking_url ?? null,
     }
     console.log('[bookings/handleSave] Payload:', JSON.stringify(payload))
 
@@ -532,7 +531,7 @@ export default function BookingsPage() {
       <AppSidebar activeItem="members" />
 
       {/* Main Content */}
-      <main className="flex-1 ml-64">
+      <main className="flex-1 ml-16">
         <AppHeader
           user={user}
           leftContent={
@@ -632,9 +631,24 @@ export default function BookingsPage() {
           {/* Appointments Tab Content */}
           {mainTab === 'appointments' && (
             <>
+              {/* External booking info banner */}
+              {bookingSettings?.external_booking_url && (
+                <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-800">
+                      You&apos;re using an external booking system
+                    </p>
+                    <p className="text-sm text-amber-700 mt-0.5">
+                      Bookings made through your external platform won&apos;t sync to Bloomsline automatically. Remember to create a manual session when needed to keep your records up to date.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Sub Tabs */}
               <div className="flex gap-2 flex-wrap">
-                {(['pending', 'upcoming', 'past', 'all'] as AppointmentFilter[]).map((tab) => {
+                {(['upcoming', 'past', 'all'] as AppointmentFilter[]).map((tab) => {
                   const isActive = appointmentFilter === tab
 
                   return (
@@ -648,11 +662,6 @@ export default function BookingsPage() {
                       }`}
                     >
                       {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                      {tab === 'pending' && pendingCount > 0 && (
-                        <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
-                          {pendingCount}
-                        </span>
-                      )}
                     </button>
                   )
                 })}
@@ -675,19 +684,12 @@ export default function BookingsPage() {
                     </div>
                   </div>
                   <p className="text-gray-600 font-medium">
-                    {appointmentFilter === 'pending'
-                      ? 'No pending booking requests'
-                      : appointmentFilter === 'upcoming'
+                    {appointmentFilter === 'upcoming'
                       ? 'No upcoming appointments'
                       : appointmentFilter === 'past'
                       ? 'No past appointments'
                       : 'No bookings yet'}
                   </p>
-                  {appointmentFilter === 'pending' && (
-                    <p className="text-sm text-gray-400 mt-2">
-                      New booking requests will appear here for your approval
-                    </p>
-                  )}
                 </motion.div>
               ) : (
                 <div className="space-y-4">
@@ -867,8 +869,8 @@ export default function BookingsPage() {
           {/* Settings Tab Content */}
           {mainTab === 'settings' && (
             <div className="space-y-6">
-              {/* Booking Link */}
-              {practitionerSlug && bookingSettings?.booking_page_enabled && (
+              {/* Booking Link — only for native booking */}
+              {!bookingSettings?.external_booking_url && practitionerSlug && bookingSettings?.booking_page_enabled && (
                 <Card className="border-gray-200 bg-white">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -915,7 +917,8 @@ export default function BookingsPage() {
                 </Card>
               )}
 
-              {/* Calendar Connection */}
+              {/* Calendar Connection — only for native booking */}
+              {!bookingSettings?.external_booking_url && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -967,8 +970,10 @@ export default function BookingsPage() {
                   )}
                 </CardContent>
               </Card>
+              )}
 
-              {/* Availability Schedule */}
+              {/* Availability Schedule — only for native booking */}
+              {!bookingSettings?.external_booking_url && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -1065,6 +1070,7 @@ export default function BookingsPage() {
                   </Button>
                 </CardContent>
               </Card>
+              )}
 
               {/* Booking Settings */}
               <Card>
@@ -1083,12 +1089,23 @@ export default function BookingsPage() {
                       </p>
                     </div>
                     <button
-                      onClick={() =>
-                        setBookingSettings((prev) => ({
-                          ...prev!,
-                          booking_page_enabled: !prev?.booking_page_enabled,
-                        }))
-                      }
+                      onClick={() => {
+                        const turningOn = !bookingSettings?.booking_page_enabled
+                        const externalIsActive = !!bookingSettings?.external_booking_url
+                        if (turningOn && externalIsActive) {
+                          if (!window.confirm('This will disable the external booking system. Continue?')) return
+                          setBookingSettings((prev) => ({
+                            ...prev!,
+                            booking_page_enabled: true,
+                            external_booking_url: null,
+                          }))
+                        } else {
+                          setBookingSettings((prev) => ({
+                            ...prev!,
+                            booking_page_enabled: !prev?.booking_page_enabled,
+                          }))
+                        }
+                      }}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         bookingSettings?.booking_page_enabled ? 'bg-gray-900' : 'bg-gray-200'
                       }`}
@@ -1101,6 +1118,80 @@ export default function BookingsPage() {
                     </button>
                   </div>
 
+                  {/* External Booking System */}
+                  <div className="space-y-3 border border-gray-100 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Use external booking system</p>
+                        <p className="text-sm text-gray-500">
+                          Redirect clients to Calendly, Doctolib, or another booking tool
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const isCurrentlyOff = bookingSettings?.external_booking_url === null || bookingSettings?.external_booking_url === undefined
+                          const nativeIsActive = !!bookingSettings?.booking_page_enabled
+                          if (isCurrentlyOff && nativeIsActive) {
+                            if (!window.confirm('This will disable the built-in booking page. Continue?')) return
+                            setBookingSettings((prev) => ({
+                              ...prev!,
+                              booking_page_enabled: false,
+                              external_booking_url: '',
+                            }))
+                          } else {
+                            setBookingSettings((prev) => ({
+                              ...prev!,
+                              external_booking_url: prev?.external_booking_url !== null && prev?.external_booking_url !== undefined ? null : '',
+                            }))
+                          }
+                        }}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          bookingSettings?.external_booking_url !== null && bookingSettings?.external_booking_url !== undefined ? 'bg-gray-900' : 'bg-gray-200'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            bookingSettings?.external_booking_url !== null && bookingSettings?.external_booking_url !== undefined ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                    {bookingSettings?.external_booking_url !== null && bookingSettings?.external_booking_url !== undefined && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Booking URL
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <ExternalLink className="w-4 h-4 text-gray-400 shrink-0" />
+                          <input
+                            type="url"
+                            value={bookingSettings.external_booking_url || ''}
+                            onChange={(e) =>
+                              setBookingSettings((prev) => ({
+                                ...prev!,
+                                external_booking_url: e.target.value,
+                              }))
+                            }
+                            placeholder="https://calendly.com/your-link"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1.5">
+                          The &quot;Book&quot; button on your public profile will open this URL instead of the built-in booking page.
+                        </p>
+                        <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-lg p-3 mt-3">
+                          <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                          <p className="text-xs text-amber-700">
+                            Bookings made externally won&apos;t sync to Bloomsline. Remember to create a manual session when needed to keep your records up to date.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Native booking settings — hidden when external booking is active */}
+                  {!(bookingSettings?.external_booking_url) && (
+                    <>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Require Approval</p>
@@ -1204,6 +1295,8 @@ export default function BookingsPage() {
                       />
                     </div>
                   </div>
+                    </>
+                  )}
 
                   <Button
                     type="button"

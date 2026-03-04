@@ -72,6 +72,16 @@ function getPAGES(t: T): PageItem[] {
       tag: t('Interactive', 'Interactif'),
     },
     {
+      id: 'business-model',
+      label: t('Business Model Analysis', 'Analyse du modèle économique'),
+      description: t('McKinsey-style memo — value proposition, unit economics, moat strategy, 5-year revenue model, risk matrix, and investor framing', 'Mémo style McKinsey — proposition de valeur, unit economics, stratégie de moat, modèle de revenus 5 ans, matrice des risques et cadrage investisseur'),
+      href: '/business-model',
+      icon: Briefcase,
+      color: 'bg-gray-800 text-white',
+      borderColor: 'border-gray-300 hover:border-gray-400',
+      tag: t('New', 'Nouveau'),
+    },
+    {
       id: 'one-pager',
       label: t('One Pager', 'One Pager'),
       description: t('Executive summary — single page overview for quick sharing', 'Résumé exécutif — vue d\'ensemble sur une page pour un partage rapide'),
@@ -335,7 +345,7 @@ export default function DataroomPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="sticky top-0 z-30 bg-white border-b border-gray-200 px-8 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
               <FolderOpen className="w-4 h-4 text-white" />
@@ -354,7 +364,7 @@ export default function DataroomPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-8 py-10">
+      <main className="max-w-6xl mx-auto px-8 py-10">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -365,7 +375,7 @@ export default function DataroomPage() {
         </motion.div>
 
         {/* ── Live Pages ───────────────────────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {livePages.map((page, i) => {
             const Icon = page.icon
             const isExternal = page.external

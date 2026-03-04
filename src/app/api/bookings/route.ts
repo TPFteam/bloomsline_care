@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server-client';
 import type { CreateBookingInput, GoogleCalendarEvent } from '@/types/calendar';
-import { notifyBookingRequest } from '@/lib/notifications';
+import { getNotificationContent } from '@/lib/notifications/templates';
+import { generateEmailHtml, getEmailContent } from '@/lib/notifications/email';
+import { sendEmail } from '@/lib/email';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
 
@@ -93,17 +95,65 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send notification to practitioner about new booking request
+    // Send notification + email to practitioner about new booking request
     try {
-      await notifyBookingRequest(supabase, {
-        practitionerUserId: body.practitioner_id,
+      const metadata = {
         bookingId: booking.id,
         clientName: body.client_name,
         clientEmail: body.client_email,
         sessionType: sessionType.name,
         requestedTime: body.start_time,
         notes: body.notes,
+      };
+
+      // Look up practitioner's preferred language
+      const { data: practitionerProfile } = await supabase
+        .from('users')
+        .select('preferred_language')
+        .eq('id', body.practitioner_id)
+        .single();
+      const practitionerLocale = (practitionerProfile?.preferred_language as 'en' | 'fr' | 'es') || 'en';
+
+      const content = getNotificationContent('booking_request', metadata, practitionerLocale);
+
+      // Create notification record
+      await supabase.from('notifications').insert({
+        user_id: body.practitioner_id,
+        user_type: 'practitioner',
+        type: 'booking_request',
+        title: content.title,
+        body: content.body,
+        entity_type: 'booking',
+        entity_id: booking.id,
+        metadata,
+        action_url: content.actionUrl,
       });
+
+      // Send email via Postmark (fire-and-forget)
+      ;(async () => {
+        try {
+          const { data: { user: practitionerUser } } = await supabase.auth.admin.getUserById(body.practitioner_id);
+          const practitionerEmail = practitionerUser?.email;
+          if (!practitionerEmail) return;
+
+          const emailContent = getEmailContent('booking_request', metadata, practitionerLocale);
+          const htmlBody = generateEmailHtml({
+            subject: content.emailSubject,
+            body: content.body,
+            actionUrl: content.actionUrl,
+            actionText: emailContent.actionText,
+          });
+
+          await sendEmail({
+            to: practitionerEmail,
+            subject: content.emailSubject,
+            htmlBody,
+            tag: 'booking_request',
+          });
+        } catch (emailError) {
+          console.error('Error sending booking email:', emailError);
+        }
+      })();
     } catch (notifyError) {
       console.error('Error sending booking notification:', notifyError);
       // Don't fail the booking if notification fails

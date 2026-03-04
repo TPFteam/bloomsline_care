@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/browser-client'
+import { notifyResourceSubmitted } from '@/lib/notifications'
 import type {
   Resource,
   ResourceType,
@@ -497,6 +498,36 @@ export async function createResponse(response: CreateResponseDTO): Promise<Resou
     throw error
   }
 
+  // Notify practitioner when a resource response is submitted
+  if (response.status === 'submitted') {
+    try {
+      const { data: member } = await supabase
+        .from('members')
+        .select('first_name, last_name')
+        .eq('id', response.member_id)
+        .single()
+
+      const { data: resource } = await supabase
+        .from('resources')
+        .select('title')
+        .eq('id', response.resource_id)
+        .single()
+
+      if (member && resource) {
+        await notifyResourceSubmitted(supabase, {
+          practitionerUserId: user.id,
+          memberId: response.member_id,
+          memberName: `${member.first_name} ${member.last_name}`,
+          resourceId: response.resource_id,
+          resourceTitle: resource.title,
+          responseId: data.id,
+        })
+      }
+    } catch (notifyError) {
+      console.error('Error sending resource submitted notification:', notifyError)
+    }
+  }
+
   return data as ResourceResponse
 }
 
@@ -525,6 +556,38 @@ export async function updateResponse(
   if (error) {
     console.error('Error updating response:', error)
     throw error
+  }
+
+  // Notify practitioner when a resource response is submitted
+  if (updates.status === 'submitted' && data.member_id && data.resource_id) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+
+      const { data: member } = await supabase
+        .from('members')
+        .select('first_name, last_name')
+        .eq('id', data.member_id)
+        .single()
+
+      const { data: resource } = await supabase
+        .from('resources')
+        .select('title')
+        .eq('id', data.resource_id)
+        .single()
+
+      if (user && member && resource) {
+        await notifyResourceSubmitted(supabase, {
+          practitionerUserId: user.id,
+          memberId: data.member_id,
+          memberName: `${member.first_name} ${member.last_name}`,
+          resourceId: data.resource_id,
+          resourceTitle: resource.title,
+          responseId: data.id,
+        })
+      }
+    } catch (notifyError) {
+      console.error('Error sending resource submitted notification:', notifyError)
+    }
   }
 
   return data as ResourceResponse

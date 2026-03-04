@@ -20,4 +20,4 @@ export {
 } from './service'
 
 // Email
-export { sendEmail, getEmailContent } from './email'
+export { sendEmail, getEmailContent, generateEmailHtml } from './email'

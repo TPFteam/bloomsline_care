@@ -1,0 +1,331 @@
+'use client'
+
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import { GripVertical, Minus, X, Maximize2, Save, Loader2, FileText } from 'lucide-react'
+import { useFloatingNotes } from '@/lib/floating-notes/context'
+import { RichTextEditor } from '@/components/notes/RichTextEditor'
+import { createClient } from '@/lib/supabase/browser-client'
+import { useLanguage } from '@/lib/i18n/context'
+import { toast } from 'sonner'
+
+const MIN_WIDTH = 360
+const MIN_HEIGHT = 250
+const DEFAULT_WIDTH = 420
+const DEFAULT_HEIGHT = 400
+
+export function FloatingNotesPanel() {
+  const { floatingNote, isMinimized, closeFloat, updateContent, setMinimized } = useFloatingNotes()
+  const { locale } = useLanguage()
+  const fr = locale === 'fr'
+  const supabase = createClient()
+
+  // Position & size
+  const [pos, setPos] = useState({ x: -1, y: -1 })
+  const [size, setSize] = useState({ w: DEFAULT_WIDTH, h: DEFAULT_HEIGHT })
+  const [mounted, setMounted] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  // Drag state
+  const dragging = useRef(false)
+  const dragOffset = useRef({ x: 0, y: 0 })
+
+  // Resize state
+  const resizing = useRef(false)
+  const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0 })
+
+  // Portal mount
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Reset position when a new floating note opens
+  useEffect(() => {
+    if (floatingNote) {
+      setPos({ x: window.innerWidth - DEFAULT_WIDTH - 24, y: window.innerHeight - DEFAULT_HEIGHT - 24 })
+      setSize({ w: DEFAULT_WIDTH, h: DEFAULT_HEIGHT })
+      setShowConfirm(false)
+    }
+  }, [floatingNote?.memberId, floatingNote?.mode])
+
+  // Escape key minimizes
+  useEffect(() => {
+    if (!floatingNote) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMinimized(true)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [floatingNote, setMinimized])
+
+  // Drag handlers
+  const onDragStart = useCallback((e: React.PointerEvent) => {
+    dragging.current = true
+    dragOffset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y }
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+  }, [pos])
+
+  const onDragMove = useCallback((e: React.PointerEvent) => {
+    if (!dragging.current) return
+    const nx = Math.max(0, Math.min(window.innerWidth - size.w, e.clientX - dragOffset.current.x))
+    const ny = Math.max(0, Math.min(window.innerHeight - 40, e.clientY - dragOffset.current.y))
+    setPos({ x: nx, y: ny })
+  }, [size.w])
+
+  const onDragEnd = useCallback(() => {
+    dragging.current = false
+  }, [])
+
+  // Resize handlers
+  const onResizeStart = useCallback((e: React.PointerEvent) => {
+    resizing.current = true
+    resizeStart.current = { x: e.clientX, y: e.clientY, w: size.w, h: size.h }
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    e.stopPropagation()
+  }, [size])
+
+  const onResizeMove = useCallback((e: React.PointerEvent) => {
+    if (!resizing.current) return
+    const dw = e.clientX - resizeStart.current.x
+    const dh = e.clientY - resizeStart.current.y
+    setSize({
+      w: Math.max(MIN_WIDTH, resizeStart.current.w + dw),
+      h: Math.max(MIN_HEIGHT, resizeStart.current.h + dh),
+    })
+  }, [])
+
+  const onResizeEnd = useCallback(() => {
+    resizing.current = false
+  }, [])
+
+  // Close with confirmation
+  const handleClose = useCallback(() => {
+    if (floatingNote?.content?.trim()) {
+      setShowConfirm(true)
+    } else {
+      closeFloat()
+    }
+  }, [floatingNote, closeFloat])
+
+  // Save from floating panel
+  const handleSave = useCallback(async () => {
+    if (!floatingNote || !floatingNote.content.trim()) return
+    setSaving(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      if (floatingNote.mode === 'session' && floatingNote.sessionId) {
+        // Session note — upsert
+        if (floatingNote.existingNoteId) {
+          const { error } = await supabase
+            .from('progress_notes')
+            .update({ content: floatingNote.content.trim(), updated_at: new Date().toISOString() })
+            .eq('id', floatingNote.existingNoteId)
+          if (error) throw error
+        } else {
+          const { error } = await supabase
+            .from('progress_notes')
+            .insert({
+              member_id: floatingNote.memberId,
+              practitioner_id: user.id,
+              session_id: floatingNote.sessionId,
+              content: floatingNote.content.trim(),
+              note_type: 'session_summary',
+              is_private: true,
+            })
+          if (error) throw error
+        }
+      } else {
+        // Quick note
+        const { error } = await supabase
+          .from('progress_notes')
+          .insert({
+            member_id: floatingNote.memberId,
+            practitioner_id: user.id,
+            content: floatingNote.content.trim(),
+            note_type: floatingNote.noteType || 'general',
+            is_private: true,
+          })
+        if (error) throw error
+      }
+
+      toast.success(fr ? 'Note enregistrée' : 'Note saved')
+      closeFloat()
+    } catch (error) {
+      console.error('Error saving floating note:', error)
+      toast.error(fr ? 'Échec de l\'enregistrement' : 'Failed to save note')
+    } finally {
+      setSaving(false)
+    }
+  }, [floatingNote, supabase, fr, closeFloat])
+
+  if (!mounted || !floatingNote) return null
+
+  // Minimized pill
+  if (isMinimized) {
+    return createPortal(
+      <div
+        className="fixed bottom-4 right-4 z-[90] flex items-center gap-2 bg-white border border-gray-200 rounded-full px-3 py-2 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+        onClick={() => setMinimized(false)}
+      >
+        <FileText className="w-4 h-4 text-gray-500" />
+        <span className="text-sm font-medium text-gray-700 max-w-[150px] truncate">
+          {floatingNote.memberName}
+        </span>
+        <span className="text-xs text-gray-400">
+          {floatingNote.mode === 'session' ? (fr ? 'Séance' : 'Session') : (fr ? 'Note' : 'Note')}
+        </span>
+        <Maximize2 className="w-3.5 h-3.5 text-gray-400" />
+      </div>,
+      document.body
+    )
+  }
+
+  // Full window
+  return createPortal(
+    <>
+      {/* Floating window */}
+      <div
+        className="fixed z-[90] bg-white rounded-xl border border-gray-200 shadow-2xl flex flex-col overflow-hidden"
+        style={{
+          left: pos.x,
+          top: pos.y,
+          width: size.w,
+          height: size.h,
+        }}
+      >
+        {/* Title bar */}
+        <div
+          className="flex items-center gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200 cursor-grab active:cursor-grabbing select-none shrink-0"
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+        >
+          <GripVertical className="w-4 h-4 text-gray-300 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-gray-700 truncate">
+              {floatingNote.memberName}
+            </div>
+            <div className="text-[10px] text-gray-400">
+              {floatingNote.mode === 'session' ? (fr ? 'Note de séance' : 'Session note') : (fr ? 'Note rapide' : 'Quick note')}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setMinimized(true)}
+            className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {floatingNote.mode === 'session' ? (
+            <RichTextEditor
+              value={floatingNote.content}
+              onChange={updateContent}
+              placeholder={fr ? 'Rédigez votre note de séance...' : 'Write your session note...'}
+              memberId={floatingNote.memberId}
+              locale={locale}
+              autoFocus
+              milestones={floatingNote.milestones}
+              noteTypes={floatingNote.editorNoteTypes}
+              memberName={floatingNote.memberName}
+            />
+          ) : (
+            <div className="p-3">
+              <textarea
+                value={floatingNote.content}
+                onChange={(e) => updateContent(e.target.value)}
+                placeholder={fr ? 'Écrivez une note...' : 'Write a note...'}
+                className="w-full h-full min-h-[120px] text-sm border border-gray-200 rounded-lg px-3 py-2 focus:border-gray-400 focus:ring-2 focus:ring-gray-100 outline-none resize-none"
+                autoFocus
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-3 py-2 border-t border-gray-100 bg-gray-50/50 shrink-0">
+          <span className="text-[10px] text-gray-400 uppercase tracking-wider">
+            {floatingNote.noteType || 'general'}
+          </span>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || !floatingNote.content?.trim()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            {fr ? 'Enregistrer' : 'Save'}
+          </button>
+        </div>
+
+        {/* Resize handle */}
+        <div
+          className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize"
+          onPointerDown={onResizeStart}
+          onPointerMove={onResizeMove}
+          onPointerUp={onResizeEnd}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" className="text-gray-300">
+            <path d="M14 14L8 14L14 8Z" fill="currentColor" />
+            <path d="M14 14L11 14L14 11Z" fill="currentColor" opacity="0.5" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Confirmation dialog */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/20">
+          <div className="bg-white rounded-xl shadow-2xl p-5 max-w-sm mx-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">
+              {fr ? 'Abandonner la note ?' : 'Discard note?'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              {fr
+                ? 'Vous avez du contenu non enregistré. Voulez-vous l\'enregistrer ou l\'abandonner ?'
+                : 'You have unsaved content. Would you like to save or discard it?'}
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowConfirm(false)}
+                className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                {fr ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowConfirm(false); closeFloat() }}
+                className="px-3 py-1.5 text-sm text-red-600 hover:text-red-700 transition-colors"
+              >
+                {fr ? 'Abandonner' : 'Discard'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowConfirm(false); handleSave() }}
+                className="px-3 py-1.5 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                {fr ? 'Enregistrer' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>,
+    document.body
+  )
+}

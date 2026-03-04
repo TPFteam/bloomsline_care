@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server-client'
 import { getNotificationContent } from '@/lib/notifications/templates'
+import { generateEmailHtml, getEmailContent } from '@/lib/notifications/email'
+import { sendEmail } from '@/lib/email'
 import type { NotificationType, UserType, EntityType } from '@/lib/notifications/types'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit'
 
@@ -100,8 +102,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get notification content from template
-    const content = getNotificationContent(type, metadata, locale)
+    // Look up recipient's preferred language
+    const { data: recipientProfile } = await supabaseAdmin
+      .from('users')
+      .select('preferred_language')
+      .eq('id', userId)
+      .single()
+    const recipientLocale = (recipientProfile?.preferred_language as 'en' | 'fr' | 'es') || locale
+
+    // Get notification content from template in recipient's language
+    const content = getNotificationContent(type, metadata, recipientLocale)
 
     // Create the notification (reuse admin client)
     const { data: notification, error } = await supabaseAdmin
@@ -124,6 +134,35 @@ export async function POST(request: NextRequest) {
       console.error('Error creating notification:', error)
       return NextResponse.json({ error: 'Failed to create notification' }, { status: 500 })
     }
+
+    // Fire-and-forget: send email via Postmark
+    ;(async () => {
+      try {
+        const { data: { user: recipientUser } } = await supabaseAdmin.auth.admin.getUserById(userId)
+        const recipientEmail = recipientUser?.email
+        if (!recipientEmail) {
+          console.warn('No email found for user', userId)
+          return
+        }
+
+        const emailContent = getEmailContent(type, metadata, recipientLocale)
+        const htmlBody = generateEmailHtml({
+          subject: content.emailSubject,
+          body: content.body,
+          actionUrl: content.actionUrl,
+          actionText: emailContent.actionText,
+        })
+
+        await sendEmail({
+          to: recipientEmail,
+          subject: content.emailSubject,
+          htmlBody,
+          tag: type,
+        })
+      } catch (emailError) {
+        console.error('Error sending notification email:', emailError)
+      }
+    })()
 
     return NextResponse.json({ notification })
   } catch (error) {

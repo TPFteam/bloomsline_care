@@ -1,263 +1,77 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { ArrowLeft, Calendar, Clock, Check, X, Plus, Trash2, Loader2, Link as LinkIcon, Copy, ExternalLink } from 'lucide-react'
-import { AnimatedIcon } from '@/components/ui/animated-icons'
+import { useState, Suspense } from 'react'
+import { ArrowLeft, Check, X, Loader2, ExternalLink, Shield, UserCog, AlertTriangle, FileText, Lock, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import {
-  getCalendarConnection,
-  disconnectCalendar,
-  getAvailabilitySchedules,
-  bulkUpdateAvailability,
-  getBookingSettings,
-  saveBookingSettings,
-} from '@/lib/services/calendar'
-import type { CalendarConnection, BookingSettings, DayOfWeek, SessionType } from '@/types/calendar'
-import { NotificationSettings } from '@/components/notifications/NotificationSettings'
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 
-const DAYS_OF_WEEK: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+type SettingsTab = 'legal' | 'account'
 
-const DAY_LABELS: Record<DayOfWeek, string> = {
-  monday: 'Monday',
-  tuesday: 'Tuesday',
-  wednesday: 'Wednesday',
-  thursday: 'Thursday',
-  friday: 'Friday',
-  saturday: 'Saturday',
-  sunday: 'Sunday',
-}
-
-const DEFAULT_SESSION_TYPES: SessionType[] = [
-  { id: 'initial', name: 'Initial Consultation', duration: 60, price: null },
-  { id: 'follow_up', name: 'Follow-up Session', duration: 50, price: null },
-  { id: 'check_in', name: 'Check-in', duration: 30, price: null },
+const TABS: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
+  { id: 'legal', label: 'Legal', icon: Shield },
+  { id: 'account', label: 'Account', icon: UserCog },
 ]
-
-interface AvailabilitySlot {
-  day: DayOfWeek
-  startTime: string
-  endTime: string
-  isActive: boolean
-}
 
 function SettingsContent() {
   const { t } = useLanguage()
-  const searchParams = useSearchParams()
+  const router = useRouter()
 
-  // State
-  const [userId, setUserId] = useState<string | null>(null)
-  const [practitionerSlug, setPractitionerSlug] = useState<string | null>(null)
-  const [calendarConnection, setCalendarConnection] = useState<CalendarConnection | null>(null)
-  const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([])
-  const [bookingSettings, setBookingSettings] = useState<BookingSettings | null>(null)
-  const [timezone, setTimezone] = useState('America/New_York')
-  const [linkCopied, setLinkCopied] = useState(false)
+  const [activeTab, setActiveTab] = useState<SettingsTab>('legal')
 
-  // Loading states
-  const [isLoadingConnection, setIsLoadingConnection] = useState(true)
-  const [isConnecting, setIsConnecting] = useState(false)
-  const [isDisconnecting, setIsDisconnecting] = useState(false)
-  const [isSavingAvailability, setIsSavingAvailability] = useState(false)
-  const [isSavingSettings, setIsSavingSettings] = useState(false)
+  // Account deletion state
+  const [deleteConfirmation, setDeleteConfirmation] = useState('')
+  const [isDeactivating, setIsDeactivating] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   // Success/error messages
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  // Load initial data
-  useEffect(() => {
-    async function loadData() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (!user) return
-
-      setUserId(user.id)
-
-      // Load practitioner profile to get slug
-      const { data: profile } = await supabase
-        .from('practitioner_profiles')
-        .select('slug')
-        .eq('user_id', user.id)
-        .single()
-
-      if (profile?.slug) {
-        setPractitionerSlug(profile.slug)
-      }
-
-      // Load calendar connection
-      const connection = await getCalendarConnection()
-      setCalendarConnection(connection)
-
-      // Load availability schedules
-      const schedules = await getAvailabilitySchedules()
-      if (schedules.length > 0) {
-        setAvailabilitySlots(
-          schedules.map((s) => ({
-            day: s.day_of_week,
-            startTime: s.start_time.slice(0, 5),
-            endTime: s.end_time.slice(0, 5),
-            isActive: s.is_active,
-          }))
-        )
-        setTimezone(schedules[0].timezone)
-      } else {
-        // Set default availability (Mon-Fri 9am-5pm)
-        setAvailabilitySlots(
-          ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].map((day) => ({
-            day: day as DayOfWeek,
-            startTime: '09:00',
-            endTime: '17:00',
-            isActive: true,
-          }))
-        )
-      }
-
-      // Load booking settings
-      const settings = await getBookingSettings(user.id)
-      setBookingSettings(settings)
-
-      setIsLoadingConnection(false)
-    }
-
-    loadData()
-
-    // Detect timezone
-    setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone)
-  }, [])
-
-  // Check for URL params (success/error from OAuth callback)
-  useEffect(() => {
-    const connected = searchParams.get('calendar_connected')
-    const error = searchParams.get('calendar_error')
-
-    if (connected) {
-      setMessage({ type: 'success', text: 'Google Calendar connected successfully!' })
-      // Reload connection
-      getCalendarConnection().then(setCalendarConnection)
-    } else if (error) {
-      setMessage({ type: 'error', text: `Failed to connect calendar: ${error}` })
-    }
-  }, [searchParams])
-
-  // Connect Google Calendar
-  const handleConnectGoogle = async () => {
-    setIsConnecting(true)
+  // Handle account deactivation
+  const handleDeactivateAccount = async () => {
+    setIsDeactivating(true)
     try {
-      const response = await fetch('/api/calendar/google')
-      const { url } = await response.json()
-      window.location.href = url
+      const response = await fetch('/api/account/deactivate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmation: deleteConfirmation }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to deactivate account')
+      }
+
+      // Sign out and redirect
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      toast.success('Your account has been deactivated.')
+      router.push('/')
     } catch (err) {
-      setMessage({ type: 'error', text: 'Failed to initiate calendar connection' })
-      setIsConnecting(false)
+      toast.error(err instanceof Error ? err.message : 'Failed to deactivate account')
+    } finally {
+      setIsDeactivating(false)
+      setDeleteDialogOpen(false)
+      setDeleteConfirmation('')
     }
-  }
-
-  // Disconnect calendar
-  const handleDisconnect = async () => {
-    setIsDisconnecting(true)
-    const success = await disconnectCalendar()
-    if (success) {
-      setCalendarConnection(null)
-      setMessage({ type: 'success', text: 'Calendar disconnected' })
-    } else {
-      setMessage({ type: 'error', text: 'Failed to disconnect calendar' })
-    }
-    setIsDisconnecting(false)
-  }
-
-  // Add availability slot
-  const addAvailabilitySlot = (day: DayOfWeek) => {
-    setAvailabilitySlots([
-      ...availabilitySlots,
-      { day, startTime: '09:00', endTime: '17:00', isActive: true },
-    ])
-  }
-
-  // Remove availability slot
-  const removeAvailabilitySlot = (index: number) => {
-    setAvailabilitySlots(availabilitySlots.filter((_, i) => i !== index))
-  }
-
-  // Update availability slot
-  const updateAvailabilitySlot = (index: number, field: keyof AvailabilitySlot, value: string | boolean) => {
-    const updated = [...availabilitySlots]
-    updated[index] = { ...updated[index], [field]: value }
-    setAvailabilitySlots(updated)
-  }
-
-  // Save availability
-  const handleSaveAvailability = async () => {
-    if (!userId) return
-
-    setIsSavingAvailability(true)
-    const success = await bulkUpdateAvailability(
-      userId,
-      availabilitySlots.map((slot) => ({
-        day_of_week: slot.day,
-        start_time: slot.startTime + ':00',
-        end_time: slot.endTime + ':00',
-        is_active: slot.isActive,
-        timezone,
-      }))
-    )
-
-    if (success) {
-      setMessage({ type: 'success', text: 'Availability saved!' })
-    } else {
-      setMessage({ type: 'error', text: 'Failed to save availability' })
-    }
-    setIsSavingAvailability(false)
-  }
-
-  // Save booking settings
-  const handleSaveBookingSettings = async () => {
-    if (!userId) {
-      console.error('[handleSave] No userId!')
-      return
-    }
-
-    console.log('[handleSave] Saving with userId:', userId, 'booking_page_enabled:', bookingSettings?.booking_page_enabled)
-
-    setIsSavingSettings(true)
-    const saved = await saveBookingSettings({
-      user_id: userId,
-      default_duration: bookingSettings?.default_duration || 60,
-      buffer_before: bookingSettings?.buffer_before ?? 0,
-      buffer_after: bookingSettings?.buffer_after ?? 15,
-      min_notice_hours: bookingSettings?.min_notice_hours || 24,
-      max_advance_days: bookingSettings?.max_advance_days || 60,
-      session_types: bookingSettings?.session_types || DEFAULT_SESSION_TYPES,
-      booking_page_enabled: bookingSettings?.booking_page_enabled ?? true,
-      require_approval: bookingSettings?.require_approval ?? false,
-      cancellation_policy: bookingSettings?.cancellation_policy ?? null,
-      booking_instructions: bookingSettings?.booking_instructions ?? null,
-      email_notifications: bookingSettings?.email_notifications ?? true,
-    })
-
-    console.log('[handleSave] Result:', saved)
-    if (saved) {
-      setBookingSettings(saved)
-      setMessage({ type: 'success', text: 'Booking settings saved!' })
-    } else {
-      setMessage({ type: 'error', text: 'Failed to save booking settings. Check console.' })
-    }
-    setIsSavingSettings(false)
-  }
-
-  // Get slots for a specific day
-  const getSlotsForDay = (day: DayOfWeek) => {
-    return availabilitySlots
-      .map((slot, index) => ({ ...slot, index }))
-      .filter((slot) => slot.day === day)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-teal-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <Link href="/dashboard">
           <Button variant="ghost" className="mb-8">
@@ -266,16 +80,16 @@ function SettingsContent() {
           </Button>
         </Link>
 
-        <div className="max-w-4xl mx-auto space-y-8">
-          <div>
+        <div className="max-w-5xl mx-auto">
+          <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">Settings</h1>
-            <p className="text-gray-600">Manage your calendar integration and booking preferences</p>
+            <p className="text-gray-600">Manage your preferences and account</p>
           </div>
 
           {/* Message Toast */}
           {message && (
             <div
-              className={`p-4 rounded-lg flex items-center gap-3 ${
+              className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${
                 message.type === 'success'
                   ? 'bg-green-50 text-green-800 border border-green-200'
                   : 'bg-red-50 text-red-800 border border-red-200'
@@ -296,360 +110,196 @@ function SettingsContent() {
             </div>
           )}
 
-          {/* Booking Link */}
-          {practitionerSlug && bookingSettings?.booking_page_enabled && (
-            <Card className="border-lavender-200 bg-gradient-to-r from-lavender-50/50 to-white">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <LinkIcon className="w-5 h-5 text-lavender-600" />
-                  Your Booking Link
-                </CardTitle>
-                <CardDescription>
-                  Share this link with clients so they can book appointments with you
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 bg-white border rounded-lg px-4 py-2.5 font-mono text-sm text-gray-700 truncate">
-                    bloomsline.com/practitioner/{practitionerSlug}/book
-                  </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`https://bloomsline.com/practitioner/${practitionerSlug}/book`)
-                      setLinkCopied(true)
-                      setTimeout(() => setLinkCopied(false), 2000)
-                    }}
-                  >
-                    {linkCopied ? (
-                      <>
-                        <Check className="w-4 h-4 mr-2 text-green-600" />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4 mr-2" />
-                        Copy
-                      </>
-                    )}
-                  </Button>
-                  <Link href={`/practitioner/${practitionerSlug}/book`} target="_blank">
-                    <Button variant="outline">
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Preview
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Calendar Connection */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Calendar Integration
-              </CardTitle>
-              <CardDescription>
-                Connect your Google Calendar to sync appointments and show real-time availability
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoadingConnection ? (
-                <div className="flex items-center gap-2 text-gray-500">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Loading...
-                </div>
-              ) : calendarConnection ? (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                      <Check className="w-5 h-5 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Google Calendar Connected</p>
-                      <p className="text-sm text-gray-500">{calendarConnection.provider_email}</p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    onClick={handleDisconnect}
-                    disabled={isDisconnecting}
-                  >
-                    {isDisconnecting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      'Disconnect'
-                    )}
-                  </Button>
-                </div>
-              ) : (
-                <Button onClick={handleConnectGoogle} disabled={isConnecting}>
-                  {isConnecting ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <Calendar className="w-4 h-4 mr-2" />
-                  )}
-                  Connect Google Calendar
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Availability Schedule */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                Availability Schedule
-              </CardTitle>
-              <CardDescription>
-                Set your weekly availability for client bookings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Timezone selector */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Timezone
-                </label>
-                <select
-                  value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
-                  className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lavender-500 focus:border-transparent"
-                >
-                  <option value="America/New_York">Eastern Time (ET)</option>
-                  <option value="America/Chicago">Central Time (CT)</option>
-                  <option value="America/Denver">Mountain Time (MT)</option>
-                  <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                  <option value="Europe/London">London (GMT)</option>
-                  <option value="Europe/Paris">Paris (CET)</option>
-                  <option value="Asia/Tokyo">Tokyo (JST)</option>
-                </select>
-              </div>
-
-              {/* Days */}
-              <div className="space-y-4">
-                {DAYS_OF_WEEK.map((day) => {
-                  const slots = getSlotsForDay(day)
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Sidebar - Desktop */}
+            <nav className="hidden md:block w-56 shrink-0">
+              <div className="sticky top-12 space-y-1">
+                {TABS.map((tab) => {
+                  const Icon = tab.icon
+                  const isActive = activeTab === tab.id
                   return (
-                    <div key={day} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="font-medium">{DAY_LABELS[day]}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => addAvailabilitySlot(day)}
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Add slot
-                        </Button>
-                      </div>
-                      {slots.length === 0 ? (
-                        <p className="text-sm text-gray-500">Unavailable</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {slots.map((slot) => (
-                            <div
-                              key={slot.index}
-                              className="flex items-center gap-3"
-                            >
-                              <input
-                                type="time"
-                                value={slot.startTime}
-                                onChange={(e) =>
-                                  updateAvailabilitySlot(slot.index, 'startTime', e.target.value)
-                                }
-                                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
-                              />
-                              <span className="text-gray-500">to</span>
-                              <input
-                                type="time"
-                                value={slot.endTime}
-                                onChange={(e) =>
-                                  updateAvailabilitySlot(slot.index, 'endTime', e.target.value)
-                                }
-                                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
-                              />
-                              <button
-                                onClick={() => removeAvailabilitySlot(slot.index)}
-                                className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
+                        isActive
+                          ? 'bg-teal-100 text-teal-800'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {tab.label}
+                    </button>
                   )
                 })}
               </div>
+            </nav>
 
-              <Button onClick={handleSaveAvailability} disabled={isSavingAvailability}>
-                {isSavingAvailability ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : null}
-                Save Availability
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Booking Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Booking Settings</CardTitle>
-              <CardDescription>
-                Configure how clients can book appointments with you
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Enable booking page */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Enable Booking Page</p>
-                  <p className="text-sm text-gray-500">
-                    Allow clients to book appointments through your public profile
-                  </p>
-                </div>
-                <button
-                  onClick={() =>
-                    setBookingSettings((prev) => ({
-                      ...prev!,
-                      booking_page_enabled: !prev?.booking_page_enabled,
-                    }))
-                  }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    bookingSettings?.booking_page_enabled ? 'bg-lavender-600' : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      bookingSettings?.booking_page_enabled ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+            {/* Tab bar - Mobile */}
+            <div className="md:hidden overflow-x-auto -mx-4 px-4">
+              <div className="flex gap-1 min-w-max pb-2">
+                {TABS.map((tab) => {
+                  const Icon = tab.icon
+                  const isActive = activeTab === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                        isActive
+                          ? 'bg-teal-100 text-teal-800'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {tab.label}
+                    </button>
+                  )
+                })}
               </div>
+            </div>
 
-              {/* Require approval */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Require Approval</p>
-                  <p className="text-sm text-gray-500">
-                    Manually approve booking requests before they're confirmed
-                  </p>
-                </div>
-                <button
-                  onClick={() =>
-                    setBookingSettings((prev) => ({
-                      ...prev!,
-                      require_approval: !prev?.require_approval,
-                    }))
-                  }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    bookingSettings?.require_approval ? 'bg-lavender-600' : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      bookingSettings?.require_approval ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
+            {/* Content area */}
+            <div className="flex-1 min-w-0 space-y-8">
+              {/* Legal Tab */}
+              {activeTab === 'legal' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="w-5 h-5" />
+                      Legal & Compliance
+                    </CardTitle>
+                    <CardDescription>
+                      Review our legal documents and policies
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="divide-y">
+                      <a
+                        href="/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between py-4 hover:bg-gray-50 -mx-6 px-6 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-5 h-5 text-gray-500" />
+                          <span className="font-medium">Terms of Service</span>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </a>
+                      <a
+                        href="/privacy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between py-4 hover:bg-gray-50 -mx-6 px-6 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Lock className="w-5 h-5 text-gray-500" />
+                          <span className="font-medium">Privacy Policy</span>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </a>
+                      <a
+                        href="/data-protection"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between py-4 hover:bg-gray-50 -mx-6 px-6 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <ShieldCheck className="w-5 h-5 text-gray-500" />
+                          <span className="font-medium">Data Protection</span>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </a>
+                      <a
+                        href="/security"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between py-4 hover:bg-gray-50 -mx-6 px-6 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Shield className="w-5 h-5 text-gray-500" />
+                          <span className="font-medium">Security</span>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </a>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-              {/* Buffer times */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Buffer before (minutes)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="60"
-                    value={bookingSettings?.buffer_before || 0}
-                    onChange={(e) =>
-                      setBookingSettings((prev) => ({
-                        ...prev!,
-                        buffer_before: parseInt(e.target.value) || 0,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Buffer after (minutes)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="60"
-                    value={bookingSettings?.buffer_after || 15}
-                    onChange={(e) =>
-                      setBookingSettings((prev) => ({
-                        ...prev!,
-                        buffer_after: parseInt(e.target.value) || 0,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
-                </div>
-              </div>
-
-              {/* Notice and advance booking */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Minimum notice (hours)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="168"
-                    value={bookingSettings?.min_notice_hours || 24}
-                    onChange={(e) =>
-                      setBookingSettings((prev) => ({
-                        ...prev!,
-                        min_notice_hours: parseInt(e.target.value) || 24,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Max advance booking (days)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="365"
-                    value={bookingSettings?.max_advance_days || 60}
-                    onChange={(e) =>
-                      setBookingSettings((prev) => ({
-                        ...prev!,
-                        max_advance_days: parseInt(e.target.value) || 60,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
-                </div>
-              </div>
-
-              <Button onClick={() => { console.log('[BUTTON CLICKED]'); handleSaveBookingSettings() }} disabled={isSavingSettings}>
-                {isSavingSettings ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : null}
-                Save Settings
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Notification Settings */}
-          <NotificationSettings />
+              {/* Account Tab */}
+              {activeTab === 'account' && (
+                <Card className="border-red-200">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-red-700">
+                      <AlertTriangle className="w-5 h-5" />
+                      Danger Zone
+                    </CardTitle>
+                    <CardDescription>
+                      Irreversible actions that affect your account
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Delete Account</h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Your account will be deactivated and you will no longer be able to log in.
+                          Your data will be preserved. To reactivate your account, please contact support.
+                        </p>
+                      </div>
+                      <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => {
+                        setDeleteDialogOpen(open)
+                        if (!open) setDeleteConfirmation('')
+                      }}>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" className="border-red-300 text-red-700 hover:bg-red-50">
+                            Delete Account
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure you want to delete your account?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Your account will be deactivated and you will be signed out immediately.
+                              Your data will be preserved, but you will not be able to log in until support reactivates your account.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <div className="py-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Type <span className="font-bold">DELETE</span> to confirm
+                            </label>
+                            <input
+                              type="text"
+                              value={deleteConfirmation}
+                              onChange={(e) => setDeleteConfirmation(e.target.value)}
+                              placeholder="DELETE"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            />
+                          </div>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <Button
+                              variant="outline"
+                              className="border-red-300 bg-red-600 text-white hover:bg-red-700"
+                              disabled={deleteConfirmation !== 'DELETE' || isDeactivating}
+                              onClick={handleDeactivateAccount}
+                            >
+                              {isDeactivating ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              ) : null}
+                              Delete Account
+                            </Button>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -658,7 +308,7 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-rose-50/30 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500"></div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-teal-50 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div></div>}>
       <SettingsContent />
     </Suspense>
   )

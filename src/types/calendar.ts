@@ -60,6 +60,7 @@ export interface BookingSettings {
   cancellation_policy: string | null;
   booking_instructions: string | null;
   email_notifications: boolean;
+  external_booking_url: string | null;
   created_at: string;
   updated_at: string;
 }

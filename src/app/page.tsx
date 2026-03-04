@@ -8,6 +8,7 @@ import {
   Lock,
   Brain,
   Heart,
+  FileText,
   Calendar,
   Clock,
   ChevronDown,
@@ -23,278 +24,206 @@ import { GlimpseSection } from '@/components/landing/glimpse-section'
 
 const DEMO_BOOKING_URL = 'https://calendar.app.google/DwruLrgYZ6TEegL58'
 
-/* ─── Hero Conveyor ─── */
+/* ─── Hero Section ─── */
 
-function HeroConveyor({ locale, l, content, onCta }: { locale: string; l: (obj: { en: string; fr: string }) => string; content: any; onCta: () => void }) {
+function HeroSection({ locale, l, content }: { locale: string; l: (obj: { en: string; fr: string }) => string; content: any }) {
   const fr = locale === 'fr'
+  const [activeCard, setActiveCard] = useState(0)
 
-  const cards = [
-    { icon: Clock, iconColor: 'text-blue-500', iconBg: 'bg-blue-100' },
-    { icon: Heart, iconColor: 'text-rose-500', iconBg: 'bg-rose-100' },
-    { icon: MessageSquare, iconColor: 'text-teal-500', iconBg: 'bg-teal-100' },
-    { icon: Zap, iconColor: 'text-amber-500', iconBg: 'bg-amber-100' },
-    { icon: Brain, iconColor: 'text-violet-500', iconBg: 'bg-violet-100' },
-  ]
-
-  const CardContent = ({ idx }: { idx: number }) => {
-    if (idx === 0) {
-      return (
-        <div className="p-4 w-56 sm:w-64">
-          <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-3">{fr ? 'Avant la séance' : 'Before session'}</p>
-          <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center">
-              <span className="text-white text-[10px] font-bold">SL</span>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-neutral-700">Sarah L.</p>
-              <p className="text-[10px] text-neutral-400">{fr ? 'Contexte chargé' : 'Context loaded'}</p>
-            </div>
-          </div>
-          {[0.4, 0.6, 0.8].map((d, i) => (
-            <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: d }} className={`h-2 bg-blue-100 rounded mb-1.5 ${i === 2 ? 'w-3/5' : i === 1 ? 'w-4/5' : 'w-full'}`} />
-          ))}
-        </div>
-      )
-    }
-    if (idx === 1) {
-      return (
-        <div className="p-4 w-56 sm:w-64">
-          <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-3">{fr ? 'Pendant la séance' : 'During session'}</p>
-          {[0, 0.3, 0.6].map((d, i) => (
-            <motion.div key={i} initial={{ scaleX: 0, originX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: d, duration: 0.3 }}
-              className={`h-2 bg-rose-100 rounded mb-2 ${i === 2 ? 'w-3/5' : i === 1 ? 'w-full' : 'w-5/6'}`}
-            />
-          ))}
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="text-[10px] text-rose-400 mt-1 italic">
-            {fr ? '"Se sent plus légère"' : '"Feeling lighter this week"'}
-          </motion.p>
-        </div>
-      )
-    }
-    if (idx === 2) {
-      return (
-        <div className="p-4 w-56 sm:w-64">
-          <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-3">{fr ? 'Entre les séances' : 'Between sessions'}</p>
-          <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="bg-neutral-100 rounded-2xl rounded-tl-sm px-3 py-2 w-4/5 mb-2">
-            <p className="text-[10px] text-neutral-500">{fr ? 'Soirée difficile...' : 'Tough evening...'}</p>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
-            className="bg-teal-100 rounded-2xl rounded-tr-sm px-3 py-2 w-4/5 ml-auto">
-            <p className="text-[10px] text-teal-600">{fr ? 'Bloom est là pour vous' : 'Bloom is here for you'}</p>
-          </motion.div>
-        </div>
-      )
-    }
-    if (idx === 3) {
-      const stages = [
-        { label: fr ? 'Compréhension' : 'Discovery', color: 'bg-blue-400' },
-        { label: fr ? 'Évolution' : 'Thriving', color: 'bg-teal-400' },
-        { label: fr ? 'Ancrage' : 'Building', color: 'bg-amber-400' },
-        { label: fr ? 'Autonomie' : 'Independent', color: 'bg-violet-400' },
-      ]
-      return (
-        <div className="p-4 w-56 sm:w-64">
-          <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-4">{fr ? 'Parcours' : 'Journey'}</p>
-          <div className="flex items-center gap-1">
-            {stages.map((s, i) => (
-              <div key={i} className="flex items-center flex-1">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.3 + i * 0.35, type: 'spring', stiffness: 200 }}
-                  className={`w-5 h-5 rounded-full ${i < 3 ? s.color : 'bg-neutral-200'} flex items-center justify-center shrink-0`}
-                >
-                  {i < 3 && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 + i * 0.35 }} className="w-1.5 h-1.5 rounded-full bg-white" />}
-                </motion.div>
-                {i < stages.length - 1 && (
-                  <motion.div initial={{ scaleX: 0, originX: 0 }} animate={{ scaleX: i < 2 ? 1 : 0 }} transition={{ delay: 0.6 + i * 0.35, duration: 0.3 }}
-                    className={`h-0.5 flex-1 mx-0.5 ${s.color}`} />
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-between mt-2">
-            {stages.map((s, i) => (
-              <motion.span key={i} initial={{ opacity: 0 }} animate={{ opacity: i < 3 ? 1 : 0.3 }} transition={{ delay: 0.4 + i * 0.35 }}
-                className="text-[8px] text-neutral-400 w-1/4 text-center">{s.label}</motion.span>
-            ))}
-          </div>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.8 }} className="text-[10px] text-teal-500 mt-3 font-medium text-center">
-            {fr ? 'Sarah avance bien' : 'Sarah is making progress'}
-          </motion.p>
-        </div>
-      )
-    }
-    /* Bloom pulse */
-    return (
-      <div className="p-4 w-56 sm:w-64">
-        <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-3">Bloom Pulse</p>
-        <div className="flex items-center gap-3">
-          <motion.div animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            className="w-10 h-10 rounded-full bg-violet-200 flex items-center justify-center shrink-0">
-            <div className="w-4 h-4 rounded-full bg-violet-400" />
-          </motion.div>
-          <div className="flex-1 space-y-1.5">
-            {[0.3, 0.5, 0.7].map((d, i) => (
-              <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: d }}
-                className={`h-2 bg-violet-100 rounded ${i === 2 ? 'w-3/5' : i === 1 ? 'w-4/5' : 'w-full'}`}
-              />
-            ))}
-          </div>
-        </div>
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="text-[10px] text-violet-400 mt-2 italic">
-          {fr ? 'Tendance positive détectée' : 'Positive trend detected'}
-        </motion.p>
-      </div>
-    )
-  }
-
-  const n = cards.length
-  const [activeIdx, setActiveIdx] = useState(0)
-  const [paused, setPaused] = useState(false)
   useEffect(() => {
-    if (paused) return
     const interval = setInterval(() => {
-      setActiveIdx(prev => (prev + 1) % n)
+      setActiveCard(prev => (prev + 1) % 3)
     }, 5000)
     return () => clearInterval(interval)
-  }, [n, paused])
+  }, [])
 
-  // Resume auto-play after 10s of no interaction
-  useEffect(() => {
-    if (!paused) return
-    const timeout = setTimeout(() => setPaused(false), 10000)
-    return () => clearTimeout(timeout)
-  }, [paused, activeIdx])
+  const cards = [
+    // Session prep
+    <div key="prep" className="p-4 text-left">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
+          <Clock className="w-3.5 h-3.5 text-blue-500" />
+        </div>
+        <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">{fr ? 'Séance à venir' : 'Upcoming session'}</p>
+      </div>
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center shrink-0">
+          <span className="text-white text-xs font-bold">SL</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-neutral-800">Sarah Laurent</p>
+          <p className="text-xs text-neutral-400 flex items-center gap-1.5 mt-0.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block shrink-0" />
+            {fr ? 'Dans 30 min' : 'In 30 min'}
+          </p>
+        </div>
+      </div>
+      <div className="bg-blue-50/70 rounded-xl px-3.5 py-2.5 flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{fr ? 'Hypothèse' : 'Hypothesis'}</span>
+        <span className="text-sm text-neutral-600">{fr ? 'Hypervigilance liée à insécurité' : 'Hypervigilance linked to insecurity'}</span>
+      </div>
+    </div>,
 
-  const goTo = (idx: number) => {
-    setPaused(true)
-    setActiveIdx(idx)
-  }
+    // Progress — client journey
+    <div key="progress" className="p-4 text-left">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center">
+          <Zap className="w-3.5 h-3.5 text-amber-500" />
+        </div>
+        <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">{fr ? 'Parcours de Marc' : 'Marc\u2019s journey'}</p>
+      </div>
+      <div className="space-y-2.5 relative ml-3">
+        <div className="absolute left-[5px] top-2 bottom-2 w-px bg-neutral-100" />
+        {[
+          { text: fr ? 'Stress récurrent au travail' : 'Recurring work stress', time: fr ? 'Sem. 2' : 'Week 2', done: true },
+          { text: fr ? 'Réalisation d\'un exercice d\'ancrage' : 'Completed a grounding exercise', time: fr ? 'Sem. 5' : 'Week 5', done: true },
+          { text: fr ? 'Intégration d\'une nouvelle habitude' : 'Integrating a new habit', time: fr ? 'Maintenant' : 'Now', done: false, current: true },
+        ].map((step, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 + i * 0.2 }}
+            className="flex items-start gap-3 relative"
+          >
+            <div className={`w-2.5 h-2.5 rounded-full mt-0.5 shrink-0 relative z-10 ${step.current ? 'bg-teal-400 ring-4 ring-teal-50' : step.done ? 'bg-teal-400' : 'bg-neutral-200'}`} />
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm leading-snug ${step.current ? 'text-neutral-800 font-medium' : 'text-neutral-600'}`}>{step.text}</p>
+              <p className={`text-[10px] ${step.current ? 'text-teal-500 font-medium' : 'text-neutral-400'}`}>{step.time}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>,
 
-  const getIdx = (offset: number) => ((activeIdx + offset) % n + n) % n
+    // Resources
+    <div key="resources" className="p-4 text-left">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-7 h-7 rounded-lg bg-rose-100 flex items-center justify-center">
+          <Heart className="w-3.5 h-3.5 text-rose-500" />
+        </div>
+        <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">{fr ? 'Ressources partagées' : 'Shared resources'}</p>
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center gap-3 px-3 py-2 bg-neutral-50 rounded-xl">
+          <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+            <FileText className="w-3 h-3 text-blue-500" />
+          </div>
+          <p className="text-sm text-neutral-700 flex-1">{fr ? 'Schémas précoces inadaptés' : 'Early Maladaptive Schemas'}</p>
+          <span className="px-2 py-0.5 bg-green-100 text-green-600 text-[10px] font-medium rounded-full">{fr ? 'Vu' : 'Viewed'}</span>
+        </div>
+        <div className="flex items-center gap-3 px-3 py-2 bg-neutral-50 rounded-xl">
+          <div className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+            <Zap className="w-3 h-3 text-emerald-500" />
+          </div>
+          <p className="text-sm text-neutral-700 flex-1">{fr ? 'Journal des pensées automatiques' : 'Automatic Thought Journal'}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 mt-2.5">
+        <p className="text-xs text-neutral-400">{fr ? '1/2 consulté' : '1/2 viewed'}</p>
+        <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+          <motion.div initial={{ width: 0 }} animate={{ width: '50%' }} transition={{ delay: 0.3, duration: 0.5 }} className="h-full bg-teal-400 rounded-full" />
+        </div>
+      </div>
+    </div>,
+  ]
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-24 sm:pt-28 pb-12 bg-white overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center pt-24 sm:pt-28 pb-16 bg-white overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-neutral-50/80 via-white to-white" />
 
       <div className="relative container mx-auto px-6 text-center">
+        {/* Tagline */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.7 }}
-          className="mb-4 text-xs font-medium uppercase tracking-wider text-neutral-400"
+          className="mb-6 text-xs font-medium uppercase tracking-wider text-neutral-400"
         >
           {l(content.hero.tagline)}
         </motion.p>
 
-        {/* Conveyor */}
+        {/* Animated cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.1 }}
-          className="relative w-full max-w-4xl mx-auto overflow-hidden"
-          style={{ height: 'clamp(240px, 30vw, 300px)' }}
+          transition={{ duration: 0.8, delay: 0.1 }}
+          className="mb-10 sm:mb-12 max-w-md sm:max-w-lg mx-auto"
         >
-          {(() => { const c = cards[getIdx(-2)]; const I = c.icon; return (
-            <motion.div key={`fl-${activeIdx}`} initial={{ x: -15, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 1.8, ease: [0.25, 0.1, 0.25, 1] }} className="absolute left-0 top-1/2 -translate-y-1/2">
-              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl ${c.iconBg} flex items-center justify-center opacity-30`}><I className={`w-5 h-5 ${c.iconColor}`} /></div>
-            </motion.div>
-          ) })()}
-
-          {(() => { const c = cards[getIdx(-1)]; const I = c.icon; return (
-            <motion.div key={`l-${activeIdx}`} initial={{ x: 10, opacity: 0.2 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 1.8, ease: [0.25, 0.1, 0.25, 1] }} className="absolute left-[10%] sm:left-[14%] top-1/2 -translate-y-1/2 cursor-pointer" onClick={() => goTo(getIdx(-1))}>
-              <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ${c.iconBg} flex items-center justify-center opacity-50 shadow-sm hover:opacity-70 transition-opacity`}><I className={`w-7 h-7 ${c.iconColor}`} /></div>
-            </motion.div>
-          ) })()}
-
-          {/* CENTER — card in fixed area */}
-          <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 z-10">
-            <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}>
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={activeIdx}
-                  initial={{ opacity: 0, scale: 0.92 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.92 }}
-                  transition={{ duration: 0.6 }}
-                  className="bg-white border border-neutral-100 rounded-2xl shadow-lg overflow-hidden"
-                >
-                  <CardContent idx={activeIdx} />
-                </motion.div>
-              </AnimatePresence>
-            </motion.div>
+          <div className="relative bg-white border border-neutral-200/80 rounded-2xl shadow-xl shadow-neutral-200/50 overflow-hidden" style={{ height: 195 }}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeCard}
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -30 }}
+                transition={{ duration: 0.4 }}
+              >
+                {cards[activeCard]}
+              </motion.div>
+            </AnimatePresence>
           </div>
 
-
-          {(() => { const c = cards[getIdx(1)]; const I = c.icon; return (
-            <motion.div key={`r-${activeIdx}`} initial={{ x: -10, opacity: 0.2 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 1.8, ease: [0.25, 0.1, 0.25, 1] }} className="absolute right-[10%] sm:right-[14%] top-1/2 -translate-y-1/2 cursor-pointer" onClick={() => goTo(getIdx(1))}>
-              <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ${c.iconBg} flex items-center justify-center opacity-50 shadow-sm hover:opacity-70 transition-opacity`}><I className={`w-7 h-7 ${c.iconColor}`} /></div>
-            </motion.div>
-          ) })()}
-
-          {(() => { const c = cards[getIdx(2)]; const I = c.icon; return (
-            <motion.div key={`fr-${activeIdx}`} initial={{ x: 15, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 1.8, ease: [0.25, 0.1, 0.25, 1] }} className="absolute right-0 top-1/2 -translate-y-1/2">
-              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl ${c.iconBg} flex items-center justify-center opacity-30`}><I className={`w-5 h-5 ${c.iconColor}`} /></div>
-            </motion.div>
-          ) })()}
+          {/* Dots */}
+          <div className="flex items-center justify-center gap-2 mt-4">
+            {[0, 1, 2].map(i => (
+              <button
+                key={i}
+                onClick={() => setActiveCard(i)}
+                className={`h-1.5 rounded-full transition-all duration-300 ${activeCard === i ? 'w-6 bg-teal-500' : 'w-1.5 bg-neutral-200 hover:bg-neutral-300'}`}
+              />
+            ))}
+          </div>
         </motion.div>
 
-        {/* Text */}
+        {/* Headline */}
         <motion.h1
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.1 }}
-          className="mt-6 text-2xl sm:text-3xl font-semibold text-neutral-700 tracking-tight"
+          transition={{ duration: 0.7, delay: 0.3 }}
+          className="text-3xl sm:text-5xl font-semibold text-neutral-800 tracking-tight"
         >
           {l(content.hero.headline)}
         </motion.h1>
 
+        {/* Subtitle */}
         <motion.p
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.25 }}
-          className="mt-3 sm:mt-4 text-sm sm:text-lg text-neutral-500 max-w-xl mx-auto"
+          transition={{ duration: 0.7, delay: 0.4 }}
+          className="mt-5 text-base sm:text-lg text-neutral-500 max-w-xl mx-auto"
         >
-          {l(content.hero.subtitle)}{' '}
-          <span className="text-neutral-700 font-semibold">{l(content.hero.subtitleHighlight)}</span>
+          {l(content.hero.subtitle)}
         </motion.p>
 
-        {/* CTAs */}
+        {/* CTA */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.3 }}
-          className="mt-5 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4"
+          transition={{ duration: 0.7, delay: 0.5 }}
+          className="mt-8 sm:mt-10"
         >
-          <button
-            onClick={onCta}
-            className="px-6 py-3 sm:px-8 sm:py-4 rounded-full text-white font-medium tracking-wide inline-flex items-center gap-2 hover:opacity-90 transition-colors shadow-lg shadow-teal-600/25 text-sm sm:text-base"
-            style={{ background: 'linear-gradient(135deg, #0d9488, #14b8a6)' }}
-          >
-            {l(content.hero.cta)}
-            <ArrowRight className="w-4 h-4" />
-          </button>
           <a
             href={DEMO_BOOKING_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-6 py-3 sm:px-8 sm:py-4 rounded-full border border-neutral-200 text-neutral-500 font-medium inline-flex items-center gap-2 hover:border-neutral-300 hover:text-neutral-700 transition-colors text-sm sm:text-base"
+            className="px-8 py-4 rounded-full text-white font-medium tracking-wide inline-flex items-center gap-2 hover:opacity-90 transition-colors shadow-lg shadow-teal-600/25 text-base"
+            style={{ background: 'linear-gradient(135deg, #0d9488, #14b8a6)' }}
           >
-            {locale === 'fr' ? 'Parlons-en' : 'Talk to us'}
+            {fr ? 'Parlons-en' : 'Talk to us'}
             <ArrowRight className="w-4 h-4" />
           </a>
         </motion.div>
 
+        {/* Wellbeing link */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.7, delay: 0.6 }}
-          className="mt-4 text-sm text-neutral-400"
+          transition={{ duration: 0.7, delay: 0.65 }}
+          className="mt-10 text-sm sm:hidden"
         >
-          <a href="/for-everyone" className="text-neutral-500 underline underline-offset-2 hover:text-neutral-700 transition-colors">
-            {locale === 'fr' ? 'Pour votre bien-être personnel →' : 'For your personal wellbeing →'}
+          <a href="/for-everyone" className="text-neutral-400 underline underline-offset-2 hover:text-neutral-600 transition-colors">
+            {fr ? 'Pour votre bien-être personnel →' : 'For your personal wellbeing →'}
           </a>
         </motion.p>
       </div>
@@ -316,20 +245,19 @@ function PractitionerContent() {
   const content = {
     hero: {
       tagline: { en: 'For Mental Health Practitioners', fr: 'Pour les praticiens en santé mentale' },
-      headline: { en: 'Less admin, more presence.', fr: 'Moins d\'admin, plus de présence.' },
-      subtitle: { en: 'Prepare faster, keep everything organized, track real progress, and share the right resources.', fr: 'Préparez plus vite, gardez tout organisé, suivez les vrais progrès et partagez les bonnes ressources.' },
-      subtitleHighlight: { en: 'All from one simple place.', fr: 'Le tout depuis un seul endroit.' },
+      headline: { en: 'A simpler way to manage your practice.', fr: 'Une façon plus simple de gérer votre pratique.' },
+      subtitle: { en: 'Sessions, progress, and resources. All in one calm, organized space.', fr: 'Séances, évolutions et ressources. Dans un seul espace calme et organisé.' },
       cta: { en: 'Get Early Access', fr: 'Accès anticipé' },
       trust: { en: 'No credit card required', fr: 'Pas de carte de crédit requise' },
     },
     dayWith: {
-      headline: { en: 'How it fits into your day', fr: 'Comment ça s\'intègre à votre journée' },
-      subtitle: { en: 'Same people. Same practice. Less friction.', fr: 'Les mêmes personnes. La même pratique. Moins de friction.' },
+      headline: { en: 'How it fits into your day', fr: 'S\'intègre naturellement à votre quotidien' },
+      subtitle: { en: '', fr: '' },
       moments: [
         { time: { en: 'Before a session', fr: 'Avant une séance' }, pain: { en: 'Notes pile up, context gets lost', fr: 'Les notes s\'accumulent, le contexte se perd' }, description: { en: 'Everything you need, already there. No digging.', fr: 'Tout ce qu\'il vous faut, déjà là. Sans chercher.' }, icon: Clock },
-        { time: { en: 'During a session', fr: 'Pendant une séance' }, pain: { en: 'Admin steals time from what matters', fr: 'L\'administratif vole du temps à l\'essentiel' }, description: { en: 'Stay present. Notes flow. Nothing gets lost.', fr: 'Restez présent. Les notes coulent. Rien ne se perd.' }, icon: Heart },
-        { time: { en: 'Between sessions', fr: 'Entre les séances' }, pain: { en: 'The connection fades', fr: 'La connexion s\'estompe' }, description: { en: 'They reflect, access resources, and feel supported on their own.', fr: 'Ils réfléchissent, accèdent aux ressources et se sentent soutenus seuls.' }, icon: MessageSquare },
-        { time: { en: 'Over time', fr: 'Au fil du temps' }, pain: { en: 'Progress lives in your head, not on screen', fr: 'Les progrès restent dans votre tête, pas à l\'écran' }, description: { en: 'See real progress, not just snapshots.', fr: 'Voyez les vrais progrès, pas juste des instantanés.' }, icon: Zap },
+        { time: { en: 'During a session', fr: 'Pendant une séance' }, pain: { en: 'Admin steals time from what matters', fr: 'L\'administratif vole du temps à l\'essentiel' }, description: { en: 'Stay present. Notes flow. Nothing gets lost.', fr: 'Restez présent. Les notes se structurent toutes seules.' }, icon: Heart },
+        { time: { en: 'Between sessions', fr: 'Entre les séances' }, pain: { en: 'The connection fades', fr: 'Le travail s\'interrompt' }, description: { en: 'Reflection continues with the right resources.', fr: 'La réflexion se poursuit avec des supports adaptés.' }, icon: MessageSquare },
+        { time: { en: 'Over time', fr: 'Au fil du temps' }, pain: { en: 'Progress lives in your head, not on screen', fr: 'L\'évolution se perçoit, mais ne se formalise pas' }, description: { en: 'See real progress, not just snapshots.', fr: 'Voyez les vrais progrès, pas juste des instantanés.' }, icon: Zap },
       ],
     },
     aiTrust: {
@@ -340,31 +268,32 @@ function PractitionerContent() {
     },
     audience: {
       headline: { en: 'Built for', fr: 'Conçu pour' },
-      subtitle: { en: 'Less admin, more time with the people you care about.', fr: 'Moins d\'administratif, plus de temps avec ceux qui comptent.' },
+      subtitle: { en: '', fr: '' },
       types: [
+        { en: 'Brief Therapy Practitioners', fr: 'Praticiens en thérapies brèves', hint: { en: 'Structured homework and between-session tools your clients actually use', fr: 'Des exercices structurés et des outils inter-séances que vos clients utilisent vraiment' } },
         { en: 'Psychologists', fr: 'Psychologues', hint: { en: 'Track client progress between sessions with AI-powered insights', fr: 'Suivez les progrès de vos clients entre les séances grâce à l\'IA' } },
+        { en: 'Psychoanalysts', fr: 'Psychanalystes', hint: { en: 'Organize long-term follow-ups and session notes across years of work', fr: 'Organisez le suivi au long cours et les notes de séance sur des années de travail' } },
         { en: 'Psychotherapists', fr: 'Psychothérapeutes', hint: { en: 'Reduce session notes from 30 min to 5 min with smart templates', fr: 'Réduisez vos notes de séance de 30 min à 5 min avec des modèles intelligents' } },
-        { en: 'Professional Coaches', fr: 'Coachs professionnels', hint: { en: 'Share exercises and track goals with your coachees in one place', fr: 'Partagez des exercices et suivez les objectifs de vos coachés en un seul endroit' } },
+        { en: 'Therapists & Coaches', fr: 'Thérapeutes et coachs', hint: { en: 'A flexible space that adapts to your approach and your rhythm', fr: 'Un espace flexible qui s\'adapte à votre approche et à votre rythme' } },
         { en: 'Institutional Psychologists', fr: 'Psychologues institutionnels', hint: { en: 'Manage caseloads across teams with unified dashboards', fr: 'Gérez vos dossiers en équipe avec des tableaux de bord unifiés' } },
         { en: 'Cabinets', fr: 'Cabinets', hint: { en: 'One platform for your whole team — shared notes, referrals, and outcomes', fr: 'Une plateforme pour toute votre équipe — notes partagées, orientations et résultats' } },
-        { en: 'Brief Therapy Practitioners', fr: 'Praticiens en thérapies brèves', hint: { en: 'Structured homework and between-session tools your clients actually use', fr: 'Des exercices structurés et des outils inter-séances que vos clients utilisent vraiment' } },
       ],
     },
     security: {
-      headline: { en: 'Their trust is everything', fr: 'Leur confiance est primordiale' },
-      subtitle: { en: 'We take that as seriously as you do.', fr: 'Nous prenons cela aussi au sérieux que vous.' },
+      headline: { en: 'A secure space that respects the therapeutic framework.', fr: 'Un espace sécurisé, respectueux du cadre thérapeutique.' },
+      subtitle: { en: 'We take that as seriously as you do.', fr: 'Nous prenons cela TRÈS au sérieux.' },
     },
     faq: {
       items: [
-        { q: { en: 'Will Bloomsline change how I work?', fr: 'Bloomsline va-t-il changer ma façon de travailler ?' }, a: { en: 'No. Bloomsline adapts to your workflow. Use as much or as little as you need. Start small and expand when you\'re ready.', fr: 'Non. Bloomsline s\'adapte à votre flux de travail. Utilisez autant ou aussi peu que nécessaire. Commencez petit et étendez quand vous êtes prêt.' } },
-        { q: { en: 'Is AI required?', fr: 'L\'IA est-elle obligatoire ?' }, a: { en: 'No. AI features are completely optional. You can use Bloomsline purely for organizing your practice — no AI needed.', fr: 'Non. Les fonctionnalités IA sont entièrement optionnelles. Vous pouvez utiliser Bloomsline uniquement pour organiser votre pratique — aucune IA nécessaire.' } },
-        { q: { en: 'Is my clients\' data safe?', fr: 'Les données de mes clients sont-elles en sécurité ?' }, a: { en: 'Yes. Encryption at every level, GDPR compliant, and your data is never used to train anything. You can delete any data permanently at any time.', fr: 'Oui. Chiffrement à tous les niveaux, conforme RGPD, et vos données ne sont jamais utilisées pour entraîner quoi que ce soit. Vous pouvez tout supprimer définitivement à tout moment.' } },
-        { q: { en: 'What if it doesn\'t fit my practice?', fr: 'Et si ça ne correspond pas à ma pratique ?' }, a: { en: 'Try it free. No commitment, no credit card. If it\'s not for you, no hard feelings.', fr: 'Essayez gratuitement. Sans engagement, sans carte de crédit. Si ce n\'est pas pour vous, pas de problème.' } },
+        { q: { en: 'Will Bloomsline change how I work?', fr: 'Bloomsline va-t-il changer ma façon de travailler ?' }, a: { en: 'No. Bloomsline fits into your practice without changing how you work. Use it at your own pace, based on your needs. Start simple, then expand gradually.', fr: 'Non. Bloomsline s\'intègre à votre pratique sans en modifier le cadre. Vous l\'utilisez à votre rythme, selon vos besoins. Commencez simplement, puis développez progressivement.' } },
+        { q: { en: 'Is AI required?', fr: 'L\'IA est-elle obligatoire ?' }, a: { en: 'No. AI features are entirely optional. You can use Bloomsline purely to structure and organize your practice, without using AI.', fr: 'Non. Les fonctionnalités d\'IA sont entièrement optionnelles. Vous pouvez utiliser Bloomsline uniquement pour structurer et organiser votre pratique, sans recourir à l\'IA.' } },
+        { q: { en: 'Is my clients\' data safe?', fr: 'Les données de mes clients sont-elles en sécurité ?' }, a: { en: 'Yes. Data is encrypted and hosted in compliance with GDPR. It is never resold or used for any other purpose. You retain full control and can permanently delete your data at any time.', fr: 'Oui. Les données sont chiffrées et hébergées conformément au RGPD. Elles ne sont jamais revendues ni utilisées à d\'autres fins. Vous conservez le contrôle total et pouvez supprimer définitivement vos données à tout moment.' } },
+        { q: { en: 'What if it doesn\'t fit my practice?', fr: 'Et si ça ne correspond pas à ma pratique ?' }, a: { en: 'You can try it for free, with no commitment or credit card required. If the tool doesn\'t suit you, you can stop at any time.', fr: 'Vous pouvez essayer gratuitement, sans engagement ni carte bancaire. Si l\'outil ne vous convient pas, vous pouvez arrêter à tout moment.' } },
       ],
     },
     cta: {
-      headline: { en: 'Less admin. More connection.', fr: 'Moins d\'administratif. Plus de connexion.' },
-      subtitle: { en: 'Join practitioners who are reclaiming their time for what actually matters.', fr: 'Rejoignez les praticiens qui récupèrent leur temps pour ce qui compte vraiment.' },
+      headline: { en: 'Less admin. More connection.', fr: 'Moins d\'administratif. Plus de continuité.' },
+      subtitle: { en: 'Join those who chose to simplify their work so they can better improve the lives of others.', fr: 'Rejoignez ceux qui ont choisi de se simplifier la vie pour mieux améliorer celle des autres.' },
     },
   }
 
@@ -375,33 +304,7 @@ function PractitionerContent() {
       <Navbar />
 
       <main>
-        <HeroConveyor locale={locale} l={l} content={content} onCta={handleOpenModal} />
-
-        {/* What is Bloomsline */}
-        <section className="py-16 bg-gray-50">
-          <div className="container mx-auto px-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="max-w-2xl mx-auto text-center"
-            >
-              <h2 className="text-2xl sm:text-3xl font-light text-neutral-900 mb-4">
-                {locale === 'fr'
-                  ? 'Une plateforme clinique tout-en-un.'
-                  : 'An all-in-one clinical platform.'
-                }
-              </h2>
-              <p className="text-base sm:text-lg text-neutral-500 leading-relaxed">
-                {locale === 'fr'
-                  ? <>Séances, suivi des progrès, notes et ressources thérapeutiques dans un seul espace calme et concentré. <span className="font-medium text-neutral-700">Pour passer moins de temps sur l&apos;administratif et plus à faire ce que vous faites le mieux.</span></>
-                  : <>Sessions, client progress, notes, and therapeutic resources in one calm, focused space. <span className="font-medium text-neutral-700">So you spend less time on admin and more time doing what you do best.</span></>
-                }
-              </p>
-            </motion.div>
-          </div>
-        </section>
+        <HeroSection locale={locale} l={l} content={content} />
 
         {/* A Day With Bloomsline */}
         <section className="py-20 bg-white">
@@ -481,7 +384,7 @@ function PractitionerContent() {
               <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-4">{l(content.security.headline)}</h2>
               <p className="text-lg text-neutral-600 mb-8">{l(content.security.subtitle)}</p>
               <div className="flex flex-wrap justify-center gap-3">
-                {[{ en: 'Encrypted', fr: 'Chiffré' }, { en: 'GDPR compliant', fr: 'Conforme RGPD' }, { en: 'Your data stays yours', fr: 'Vos données restent vôtres' }, { en: 'Delete anytime', fr: 'Supprimez à tout moment' }].map((item, i) => (
+                {[{ en: 'Protected', fr: 'Protection' }, { en: 'GDPR compliant', fr: 'Conformité RGPD' }, { en: 'Your data stays yours', fr: 'Aucune exploitation des données' }, { en: 'Delete anytime', fr: 'Suppression à tout moment' }].map((item, i) => (
                   <span key={i} className="px-4 py-2 bg-white rounded-full text-sm text-neutral-700 border border-neutral-200">{l(item)}</span>
                 ))}
               </div>

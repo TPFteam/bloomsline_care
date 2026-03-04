@@ -163,6 +163,9 @@ export default async function PublicPractitionerPage(
 
   const hasCredentials = education.length > 0 || licenses.length > 0 || certifications.length > 0
   const hasLocation = location && (location.city || location.state_province)
+  const hasSessionInfo = (p.session_types && p.session_types.length > 0) || (p.age_groups && p.age_groups.length > 0) || (p.show_languages !== false && p.languages && p.languages.length > 0)
+  const hasFees = p.show_fees && (p.session_fee_min || p.session_fee_max)
+  const hasSidebar = hasCredentials || hasSessionInfo || hasLocation || hasFees
 
   const acceptanceStatusStyles: Record<string, { bg: string; text: string; dot: string; label: string }> = {
     accepting: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', label: t.accepting },
@@ -342,9 +345,9 @@ export default async function PublicPractitionerPage(
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className={`grid grid-cols-1 ${hasSidebar ? 'lg:grid-cols-3' : ''} gap-6`}>
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className={`${hasSidebar ? 'lg:col-span-2' : ''} space-y-6`}>
               {/* About */}
               {p.bio && (
                 <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
@@ -436,7 +439,7 @@ export default async function PublicPractitionerPage(
             </div>
 
             {/* Sidebar */}
-            <div className="space-y-6">
+            {hasSidebar && <div className="space-y-6">
               {/* Credentials */}
               {hasCredentials && (
                 <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 p-6">
@@ -500,45 +503,47 @@ export default async function PublicPractitionerPage(
               )}
 
               {/* Session Info */}
-              <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-teal-500" />
-                  {t.sessionInfo}
-                </h2>
+              {((p.session_types && p.session_types.length > 0) || (p.age_groups && p.age_groups.length > 0) || (p.show_languages !== false && p.languages && p.languages.length > 0)) && (
+                <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-teal-500" />
+                    {t.sessionInfo}
+                  </h2>
 
-                {p.session_types && p.session_types.length > 0 && (
-                  <div className="mb-4">
-                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{t.sessionTypes}</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {p.session_types.map((st) => (
-                        <span key={st} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-teal-50 text-teal-700 capitalize">
-                          {getSessionTypeLabel(st, locale)}
-                        </span>
-                      ))}
+                  {p.session_types && p.session_types.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{t.sessionTypes}</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {p.session_types.map((st) => (
+                          <span key={st} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-teal-50 text-teal-700 capitalize">
+                            {getSessionTypeLabel(st, locale)}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {p.age_groups && p.age_groups.length > 0 && (
-                  <div className="mb-4">
-                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{t.agesServed}</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {p.age_groups.map((ag) => (
-                        <span key={ag} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-50 text-gray-600">
-                          {getAgeGroupLabel(ag, locale)}
-                        </span>
-                      ))}
+                  {p.age_groups && p.age_groups.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{t.agesServed}</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {p.age_groups.map((ag) => (
+                          <span key={ag} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-50 text-gray-600">
+                            {getAgeGroupLabel(ag, locale)}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {p.show_languages !== false && p.languages && p.languages.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{t.languages}</h3>
-                    <p className="text-sm text-gray-700">{p.languages.join(', ')}</p>
-                  </div>
-                )}
-              </div>
+                  {p.show_languages !== false && p.languages && p.languages.length > 0 && (
+                    <div>
+                      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{t.languages}</h3>
+                      <p className="text-sm text-gray-700">{p.languages.join(', ')}</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Location */}
               {hasLocation && (
@@ -583,7 +588,7 @@ export default async function PublicPractitionerPage(
                   </div>
                 </div>
               )}
-            </div>
+            </div>}
           </div>
 
           {/* Footer */}

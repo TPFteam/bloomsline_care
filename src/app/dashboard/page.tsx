@@ -30,6 +30,7 @@ import {
   Loader2,
   Search,
   RefreshCw,
+  CalendarPlus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -111,7 +112,7 @@ function DashboardContent() {
   // Member picker for quick actions
   const [members, setMembers] = useState<{ id: string; first_name: string; last_name: string; status: string; last_session_at: string | null; email: string | null; phone: string | null; user_id: string | null }[]>([])
   const [showMemberPicker, setShowMemberPicker] = useState(false)
-  const [memberPickerAction, setMemberPickerAction] = useState<'share' | 'reengage' | 'summary' | null>(null)
+  const [memberPickerAction, setMemberPickerAction] = useState<'share' | 'reengage' | 'summary' | 'session' | null>(null)
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
   const [schedulePreselectedMember, setSchedulePreselectedMember] = useState<Member | null>(null)
 
@@ -583,6 +584,14 @@ function DashboardContent() {
       color: 'from-violet-400 to-violet-500',
       bgColor: 'bg-violet-50',
     },
+    {
+      id: 'book-session',
+      type: null,
+      title: locale === 'fr' ? 'Créer une séance' : 'Book a Session',
+      icon: CalendarPlus,
+      color: 'from-teal-400 to-teal-500',
+      bgColor: 'bg-teal-50',
+    },
   ]
 
   const getTypeLabel = (type: ResourceType) => {
@@ -611,7 +620,7 @@ function DashboardContent() {
       <AppSidebar activeItem="home" />
 
       {/* Main Content */}
-      <main className="flex-1 ml-64">
+      <main className="flex-1 ml-16">
         <AppHeader
           user={user}
           isAdmin={!!user && isAdmin(user.id)}
@@ -669,6 +678,10 @@ function DashboardContent() {
                       setShowMemberPicker(true)
                     } else if (action.id === 'bloom-pulse') {
                       setMemberPickerAction('summary')
+                      setMemberSearchQuery('')
+                      setShowMemberPicker(true)
+                    } else if (action.id === 'book-session') {
+                      setMemberPickerAction('session')
                       setMemberSearchQuery('')
                       setShowMemberPicker(true)
                     } else if (action.type) {
@@ -789,6 +802,35 @@ function DashboardContent() {
                             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                           >
                             <Sparkles className="w-3.5 h-3.5 text-white" />
+                          </motion.div>
+                        </div>
+                      )}
+
+                      {action.id === 'book-session' && (
+                        <div className="relative">
+                          <motion.div
+                            className="w-16 h-18 bg-white rounded-lg shadow-md flex flex-col items-center pt-2 gap-1"
+                            animate={{ y: [0, -2, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <div className="w-10 h-2 bg-teal-300 rounded-full" />
+                            <div className="grid grid-cols-4 gap-0.5 mt-1">
+                              {[...Array(8)].map((_, i) => (
+                                <motion.div
+                                  key={i}
+                                  className={`w-2 h-2 rounded-sm ${i === 5 ? 'bg-teal-400' : 'bg-teal-100'}`}
+                                  animate={i === 5 ? { scale: [1, 1.3, 1] } : {}}
+                                  transition={{ duration: 2, repeat: Infinity }}
+                                />
+                              ))}
+                            </div>
+                          </motion.div>
+                          <motion.div
+                            className="absolute -right-2 -bottom-2 w-7 h-7 bg-gradient-to-br from-teal-400 to-teal-500 rounded-full flex items-center justify-center shadow-lg"
+                            animate={{ scale: [1, 1.1, 1] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                          >
+                            <Plus className="w-3.5 h-3.5 text-white" />
                           </motion.div>
                         </div>
                       )}
@@ -1245,6 +1287,7 @@ function DashboardContent() {
                     {memberPickerAction === 'share' && (locale === 'fr' ? 'Envoyer un support' : 'Share a resource')}
                     {memberPickerAction === 'reengage' && (locale === 'fr' ? 'Réengager un suivi' : 'Schedule a session')}
                     {memberPickerAction === 'summary' && (locale === 'fr' ? 'Obtenir un résumé' : 'View summary')}
+                    {memberPickerAction === 'session' && (locale === 'fr' ? 'Créer une séance' : 'Book a session')}
                   </p>
                 </div>
                 <button
@@ -1311,7 +1354,7 @@ function DashboardContent() {
                           setShowMemberPicker(false)
                           if (memberPickerAction === 'share') {
                             router.push(`/members/${member.id}?tab=shared`)
-                          } else if (memberPickerAction === 'reengage') {
+                          } else if (memberPickerAction === 'reengage' || memberPickerAction === 'session') {
                             setSchedulePreselectedMember(member as unknown as Member)
                             setShowScheduleModal(true)
                           } else if (memberPickerAction === 'summary') {

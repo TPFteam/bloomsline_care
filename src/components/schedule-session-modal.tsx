@@ -58,6 +58,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [manualSessionFormat, setManualSessionFormat] = useState<'in_person' | 'virtual'>('in_person')
   const [manualDuration, setManualDuration] = useState(60)
   const [manualTime, setManualTime] = useState('10:00')
+  const [hasExternalBooking, setHasExternalBooking] = useState(false)
 
   // Session type options for manual mode (must match database enum)
   const sessionTypeOptions = [
@@ -102,7 +103,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       setSelectedTime(null)
       setNotes('')
       setSearchQuery('')
-      setScheduleMode('calendar')
+      setScheduleMode(hasExternalBooking ? 'manual' : 'calendar')
       setManualSessionType('follow_up')
       setManualSessionFormat('in_person')
       setManualDuration(60)
@@ -136,16 +137,21 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         setMembers(membersData)
       }
 
-      // Fetch session types from booking settings
+      // Fetch booking settings
       const { data: settings } = await supabase
         .from('booking_settings')
-        .select('session_types')
+        .select('*')
         .eq('user_id', user.id)
         .single()
 
       if (settings?.session_types) {
         setSessionTypes(settings.session_types as SessionType[])
       }
+      // Check if external booking is enabled (field is non-null, including empty string)
+      const extUrl = (settings as Record<string, unknown>)?.external_booking_url
+      const isExternal = extUrl !== null && extUrl !== undefined
+      setHasExternalBooking(isExternal)
+      setScheduleMode(isExternal ? 'manual' : 'calendar')
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -546,8 +552,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
             {/* Step 2: Select Session Type */}
             {step === 'session' && (
               <div className="space-y-4">
-                {/* Mode Toggle */}
-                {sessionTypes.length > 0 && (
+                {/* Mode Toggle — hide "From Calendar" entirely when external booking is active */}
+                {sessionTypes.length > 0 && !hasExternalBooking && (
                   <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
                     <button
                       onClick={() => setScheduleMode('calendar')}
@@ -569,6 +575,14 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                     >
                       {locale === 'fr' ? 'Saisie manuelle' : locale === 'es' ? 'Entrada manual' : 'Manual Entry'}
                     </button>
+                  </div>
+                )}
+                {hasExternalBooking && (
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-500">
+                    <Calendar className="w-4 h-4 shrink-0" />
+                    {locale === 'fr'
+                      ? 'Le calendrier intégré n\'est pas disponible — vos réservations sont gérées par votre système externe.'
+                      : 'Calendar booking is not available — your bookings are managed by your external system.'}
                   </div>
                 )}
 

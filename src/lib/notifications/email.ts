@@ -66,7 +66,7 @@ export async function sendEmail(params: SendEmailParams): Promise<boolean> {
 /**
  * Generate HTML email template
  */
-function generateEmailHtml(params: {
+export function generateEmailHtml(params: {
   subject: string
   body: string
   actionUrl?: string

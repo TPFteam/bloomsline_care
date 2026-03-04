@@ -509,7 +509,7 @@ export default function LibraryPage() {
       <AppSidebar activeItem="library" />
 
       {/* Main Content */}
-      <main className="flex-1 ml-64">
+      <main className="flex-1 ml-16">
         <AppHeader
           user={user}
           leftContent={
