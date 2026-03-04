@@ -72,8 +72,8 @@ const translations = {
     years: 'Ans',
     contact: 'Contact',
     call: 'Appeler',
-    website: 'Site web',
-    about: 'À propos',
+    website: 'Site internet',
+    about: 'Portrait',
     specialties: 'Spécialités',
     approaches: 'Approches thérapeutiques',
     publications: 'Publications',
@@ -258,23 +258,27 @@ export default async function PublicPractitionerPage(
 
               {/* Tags */}
               <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-5">
-                <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${status.bg} ${status.text}`}>
-                  <span className={`w-2 h-2 rounded-full ${status.dot} mr-2`} />
-                  {status.label}
-                </span>
+                {p.show_availability !== false && (
+                  <>
+                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${status.bg} ${status.text}`}>
+                      <span className={`w-2 h-2 rounded-full ${status.dot} mr-2`} />
+                      {status.label}
+                    </span>
 
-                {p.offers_telehealth && (
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-teal-50 text-teal-700">
-                    <Video className="w-3.5 h-3.5 mr-1.5" />
-                    {t.telehealth}
-                  </span>
-                )}
+                    {p.offers_telehealth && (
+                      <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-teal-50 text-teal-700">
+                        <Video className="w-3.5 h-3.5 mr-1.5" />
+                        {t.telehealth}
+                      </span>
+                    )}
 
-                {p.offers_in_person && (
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-slate-50 text-slate-700">
-                    <Building className="w-3.5 h-3.5 mr-1.5" />
-                    {t.inPerson}
-                  </span>
+                    {p.offers_in_person && (
+                      <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-slate-50 text-slate-700">
+                        <Building className="w-3.5 h-3.5 mr-1.5" />
+                        {t.inPerson}
+                      </span>
+                    )}
+                  </>
                 )}
 
                 {p.years_experience && (
@@ -528,7 +532,7 @@ export default async function PublicPractitionerPage(
                   </div>
                 )}
 
-                {p.languages && p.languages.length > 0 && (
+                {p.show_languages !== false && p.languages && p.languages.length > 0 && (
                   <div>
                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{t.languages}</h3>
                     <p className="text-sm text-gray-700">{p.languages.join(', ')}</p>

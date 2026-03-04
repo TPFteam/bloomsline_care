@@ -57,6 +57,10 @@ export interface PublicPractitioner {
   // Publications
   publications: Publication[]
 
+  // Visibility
+  show_availability: boolean
+  show_languages: boolean
+
   // Settings
   slug: string
   is_published: boolean
