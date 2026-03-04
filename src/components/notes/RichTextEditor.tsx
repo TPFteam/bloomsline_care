@@ -2,21 +2,21 @@
 
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Bold, ChevronDown, ListOrdered, Minus, ScanLine, Loader2, Type, Target, Tag, Quote, X } from 'lucide-react'
+import { Bold, Italic, ChevronDown, List, ListOrdered, Minus, ScanLine, Loader2, Type, Target, Tag, Quote, X, Eye, EyeOff, Undo2, Redo2, Lock, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 
 // Inline style colors for goal marks (hex so they persist in stored HTML)
 const GOAL_COLORS: Record<string, { bg: string; border: string }> = {
-  discovery: { bg: '#d1fae5', border: '#059669' },
-  planned: { bg: '#d1fae5', border: '#059669' },
-  building: { bg: '#a7f3d0', border: '#047857' },
-  in_progress: { bg: '#a7f3d0', border: '#047857' },
-  thriving: { bg: '#6ee7b7', border: '#065f46' },
-  achieved: { bg: '#6ee7b7', border: '#065f46' },
-  independent: { bg: '#ede9fe', border: '#6d28d9' },
+  discovery: { bg: '#dbeafe', border: '#1e3a5f' },
+  planned: { bg: '#dbeafe', border: '#1e3a5f' },
+  building: { bg: '#dbeafe', border: '#1e3a5f' },
+  in_progress: { bg: '#dbeafe', border: '#1e3a5f' },
+  thriving: { bg: '#dbeafe', border: '#1e3a5f' },
+  achieved: { bg: '#dbeafe', border: '#1e3a5f' },
+  independent: { bg: '#dbeafe', border: '#1e3a5f' },
 }
-const DEFAULT_GOAL_COLOR = { bg: '#dbeafe', border: '#2563eb' }
+const DEFAULT_GOAL_COLOR = { bg: '#dbeafe', border: '#1e3a5f' }
 
 function getGoalColor(status: string) {
   return GOAL_COLORS[status] || DEFAULT_GOAL_COLOR
@@ -39,6 +39,89 @@ function getTagColor(type: string) {
   return TAG_COLORS[type] || DEFAULT_TAG_COLOR
 }
 
+const GOAL_NAVY = '#1e3a5f'
+const GOAL_BG = '#dbeafe'
+const OLD_GOAL_COLORS = ['#059669','#047857','#065f46','#6d28d9','#2563eb','#d1fae5','#a7f3d0','#6ee7b7','#ede9fe']
+
+/** Hoist mid-sentence tag labels to start of their parent block */
+function hoistEditorLabels(el: HTMLElement) {
+  // Clean previous
+  el.querySelectorAll('[data-hoisted-label]').forEach(n => n.remove())
+  el.querySelectorAll('.label-hoisted').forEach(n => n.classList.remove('label-hoisted'))
+
+  const blockTags = new Set(['p', 'div', 'li', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
+  const marks = el.querySelectorAll('mark[data-tag], mark[data-goal-id], mark[data-verbatim]')
+
+  marks.forEach(mark => {
+    const markEl = mark as HTMLElement
+    let block: HTMLElement | null = markEl.parentElement
+    while (block && block !== el) {
+      if (blockTags.has(block.tagName.toLowerCase())) break
+      block = block.parentElement
+    }
+    if (!block || block === el) block = el
+
+    let isFirst = true
+    let node: ChildNode | null = block.firstChild
+    while (node && node !== mark) {
+      if (node.nodeType === 1 || (node.nodeType === 3 && node.textContent?.trim())) {
+        isFirst = false
+        break
+      }
+      node = node.nextSibling
+    }
+    if (isFirst) return
+
+    const style = markEl.getAttribute('style') || ''
+    const colorMatch = style.match(/--tag-color:\s*([^;]+)/)
+    const bgMatch = style.match(/--tag-bg:\s*([^;]+)/)
+    const color = colorMatch?.[1]?.trim() || '#6b7280'
+    const bg = bgMatch?.[1]?.trim() || '#f3f4f6'
+    const tagLabel = markEl.dataset.tagLabel || markEl.dataset.goalTitle || markEl.dataset.verbatim || ''
+
+    const label = document.createElement('span')
+    label.setAttribute('data-hoisted-label', '')
+    label.contentEditable = 'false'
+    label.setAttribute('style', `font-weight:700;color:${color};background:${bg};padding:2px 4px;border-radius:3px;margin-right:2px;user-select:none;`)
+    label.textContent = tagLabel + ': '
+
+    markEl.classList.add('label-hoisted')
+    block.insertBefore(label, block.firstChild)
+  })
+}
+
+/** Inject --tag-color and --tag-bg + recolor old goal greens to navy */
+function injectTagColors(html: string): string {
+  let result = html.replace(/<mark\b([^>]*)\bstyle="([^"]*)"([^>]*)>/gi, (full, before, style, after) => {
+    let extras = ''
+    if (!style.includes('--tag-color')) {
+      const borderMatch = style.match(/border-(?:bottom|left):[^;]*solid\s+(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))/)
+      const colorMatch = style.match(/(?:^|;)\s*color:\s*(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))/)
+      const tagColor = borderMatch?.[1] || colorMatch?.[1]
+      if (tagColor) extras += `--tag-color:${tagColor};`
+    }
+    if (!style.includes('--tag-bg')) {
+      const bgMatch = style.match(/background-color:\s*(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))/)
+      if (bgMatch) extras += `--tag-bg:${bgMatch[1]};`
+    }
+    if (!extras) return full
+    return `<mark${before}style="${style};${extras}"${after}>`
+  })
+  // Recolor goal sections + headers + marks from old greens to navy
+  result = result.replace(/(<div[^>]*data-goal-section(?!-)[^>]*style=")([^"]*)(")/gi, (_f, pre, style, post) => {
+    let s = style; for (const c of OLD_GOAL_COLORS) s = s.replace(new RegExp(c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), GOAL_NAVY); return pre + s + post
+  })
+  result = result.replace(/(<div[^>]*data-goal-section-header[^>]*style=")([^"]*)(")/gi, (_f, pre, style, post) => {
+    let s = style; for (const c of OLD_GOAL_COLORS) s = s.replace(new RegExp(c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), GOAL_NAVY)
+    s = s.replace(/font-size:\s*13px/, 'font-size:16px').replace(/font-weight:\s*600/, 'font-weight:700'); return pre + s + post
+  })
+  result = result.replace(/(<mark[^>]*data-goal-id[^>]*style=")([^"]*)(")/gi, (_f, pre, style, post) => {
+    let s = style; for (const c of OLD_GOAL_COLORS) s = s.replace(new RegExp(c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), GOAL_NAVY)
+    s = s.replace(/background-color:\s*#[0-9a-fA-F]{3,8}/, `background-color:${GOAL_BG}`); return pre + s + post
+  })
+  return result
+}
+
 type PopoverMode = 'choices' | 'goals' | 'tags'
 
 interface RichTextEditorProps {
@@ -50,24 +133,54 @@ interface RichTextEditorProps {
   autoFocus?: boolean
   milestones?: { id: string; title: string; status: string }[]
   noteTypes?: { type: string; label: string }[]
+  /** Types that cannot be removed (shown with lock icon) */
+  lockedTypes?: string[]
+  /** Called when user adds a custom type from the tag sidebar */
+  onAddType?: (typeName: string) => void
+  /** Max number of tags allowed (default 10) */
+  maxTypes?: number
   memberName?: string
+  onAutoSave?: (html: string) => void | Promise<void>
+  autoSaveDelay?: number
+  toolbarActions?: React.ReactNode
+  compact?: boolean
+  onSubmit?: () => void
 }
 
-export function RichTextEditor({ value, onChange, placeholder, memberId, locale, autoFocus, milestones, noteTypes, memberName }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, placeholder, memberId, locale, autoFocus, milestones, noteTypes, memberName, onAutoSave, autoSaveDelay = 2000, toolbarActions, compact, onSubmit, lockedTypes, onAddType, maxTypes = 10 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [extracting, setExtracting] = useState(false)
   const [isEmpty, setIsEmpty] = useState(!value)
   const [headingOpen, setHeadingOpen] = useState(false)
+  const [sideMenu, setSideMenu] = useState<'tags' | 'goals' | null>(null)
+  const [activeGoal, setActiveGoal] = useState<{ id: string; title: string; status: string } | null>(null)
+  const [activeTag, setActiveTag] = useState<{ type: string; label: string } | null>(null)
+  const [activeVerbatim, setActiveVerbatim] = useState(false)
+  const [showLabels, setShowLabels] = useState(true)
   const supabase = createClient()
   const initialized = useRef(false)
   const fr = locale === 'fr'
+
+  // P2 — Inline trigger state
+  const [inlineTrigger, setInlineTrigger] = useState<{
+    type: 'tag' | 'goal' | 'end-tag' | 'end-goal' | 'verbatim' | 'end-verbatim'
+    query: string
+    position: { top: number; left: number }
+  } | null>(null)
+  const [inlineHighlight, setInlineHighlight] = useState(0)
 
   // Tagging state
   const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null)
   const [popoverMode, setPopoverMode] = useState<PopoverMode>('choices')
   const [markTooltip, setMarkTooltip] = useState<{ top: number; left: number; markEl: HTMLElement; kind: 'goal' | 'tag' | 'verbatim' } | null>(null)
+  const [hoverTooltip, setHoverTooltip] = useState<{ top: number; left: number; label: string; kind: 'goal' | 'tag' | 'verbatim' } | null>(null)
   const savedRange = useRef<Range | null>(null)
+
+  // Autosave state
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastSavedHtml = useRef(value)
 
   const hasGoals = !!milestones?.length
   const hasTags = !!noteTypes?.length
@@ -76,14 +189,23 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
   // Set initial content once
   useEffect(() => {
     if (editorRef.current && !initialized.current) {
-      editorRef.current.innerHTML = value || ''
+      editorRef.current.innerHTML = value ? injectTagColors(value) : ''
       initialized.current = true
       setIsEmpty(!value)
+      // Hoist mid-sentence tag labels to start of their block
+      if (showLabels && value) {
+        hoistEditorLabels(editorRef.current)
+      }
       if (autoFocus) {
         requestAnimationFrame(() => editorRef.current?.focus())
       }
     }
   }, [value, autoFocus])
+
+  // Cleanup autosave timer on unmount
+  useEffect(() => {
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current) }
+  }, [])
 
   const handleInput = useCallback(() => {
     if (!editorRef.current) return
@@ -91,7 +213,133 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     const text = editorRef.current.textContent || ''
     setIsEmpty(!text.trim() && html !== '<hr>')
     onChange(html)
-  }, [onChange])
+
+    // Autosave — debounce
+    if (onAutoSave && html !== lastSavedHtml.current) {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+      setSaveStatus('idle')
+      autoSaveTimer.current = setTimeout(async () => {
+        setSaveStatus('saving')
+        try {
+          await onAutoSave(html)
+          lastSavedHtml.current = html
+          setSaveStatus('saved')
+          setTimeout(() => setSaveStatus(prev => prev === 'saved' ? 'idle' : prev), 2000)
+        } catch {
+          setSaveStatus('idle')
+        }
+      }, autoSaveDelay)
+    }
+
+    // Sync activeGoal from DOM cursor position
+    {
+      const syncSel = window.getSelection()
+      if (syncSel && syncSel.rangeCount) {
+        let n: Node | null = syncSel.anchorNode
+        let foundSection: HTMLElement | null = null
+        while (n && n !== editorRef.current) {
+          if (n instanceof HTMLElement && n.hasAttribute('data-goal-section')) {
+            foundSection = n
+            break
+          }
+          n = n.parentNode
+        }
+        if (foundSection) {
+          const id = foundSection.dataset.goalId || ''
+          const title = foundSection.dataset.goalTitle || ''
+          const status = foundSection.dataset.goalStatus || ''
+          if (!activeGoal || activeGoal.id !== id) {
+            setActiveGoal({ id, title, status })
+          }
+        } else if (activeGoal) {
+          setActiveGoal(null)
+        }
+      }
+    }
+
+    // P2 — Detect inline triggers (# or @)
+    const sel = window.getSelection()
+    if (!sel || !sel.rangeCount || !sel.isCollapsed) {
+      setInlineTrigger(null)
+      return
+    }
+    const anchor = sel.anchorNode
+    if (!anchor || anchor.nodeType !== Node.TEXT_NODE) {
+      setInlineTrigger(null)
+      return
+    }
+    const textContent = anchor.textContent || ''
+    const offset = sel.anchorOffset
+    const before = textContent.slice(0, offset)
+
+    // Walk backwards to find #, @, or >
+    const hashIdx = before.lastIndexOf('#')
+    const atIdx = before.lastIndexOf('@')
+    const gtIdx = before.lastIndexOf('>')
+    const triggerIdx = Math.max(hashIdx, atIdx, gtIdx)
+
+    if (triggerIdx >= 0) {
+      const triggerChar = before[triggerIdx]
+      // Must be preceded by whitespace or be at start of text
+      if (triggerIdx === 0 || /\s/.test(before[triggerIdx - 1])) {
+        const query = before.slice(triggerIdx + 1)
+        // No spaces in query (single-word trigger)
+        if (!/\s/.test(query)) {
+          const range = sel.getRangeAt(0)
+          const rect = range.getBoundingClientRect()
+          const pos = { top: rect.bottom + 4, left: rect.left }
+
+          if (triggerChar === '#') {
+            // Check if cursor is inside a goal section (no nesting)
+            let insideSection = false
+            let walkNode: Node | null = anchor
+            while (walkNode && walkNode !== editorRef.current) {
+              if (walkNode instanceof HTMLElement && walkNode.hasAttribute('data-goal-section')) {
+                insideSection = true
+                break
+              }
+              walkNode = walkNode.parentNode
+            }
+            if (insideSection) {
+              setInlineTrigger({ type: 'end-goal', query, position: pos })
+              setInlineHighlight(0)
+              return
+            }
+            if (hasGoals) {
+              setInlineTrigger({ type: 'goal', query, position: pos })
+              setInlineHighlight(0)
+              return
+            }
+          }
+
+          if (triggerChar === '@') {
+            if (activeTag) {
+              setInlineTrigger({ type: 'end-tag', query, position: pos })
+              setInlineHighlight(0)
+              return
+            }
+            if (hasTags) {
+              setInlineTrigger({ type: 'tag', query, position: pos })
+              setInlineHighlight(0)
+              return
+            }
+          }
+
+          if (triggerChar === '>' && memberName) {
+            if (activeVerbatim) {
+              setInlineTrigger({ type: 'end-verbatim', query, position: pos })
+              setInlineHighlight(0)
+              return
+            }
+            setInlineTrigger({ type: 'verbatim', query, position: pos })
+            setInlineHighlight(0)
+            return
+          }
+        }
+      }
+    }
+    setInlineTrigger(null)
+  }, [onChange, hasGoals, hasTags, activeGoal, activeTag, activeVerbatim, onAutoSave, autoSaveDelay, memberName])
 
   const exec = useCallback((command: string, val?: string) => {
     editorRef.current?.focus()
@@ -99,10 +347,410 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     handleInput()
   }, [handleInput])
 
+  // P2 — Get filtered items for inline trigger
+  const getFilteredInlineItems = useCallback(() => {
+    if (!inlineTrigger) return []
+    const q = inlineTrigger.query.toLowerCase()
+    if (inlineTrigger.type === 'tag' && noteTypes?.length) {
+      return noteTypes.filter(nt => nt.label.toLowerCase().includes(q)).slice(0, 6)
+    }
+    if (inlineTrigger.type === 'goal' && milestones?.length) {
+      return milestones.filter(m => m.title.toLowerCase().includes(q)).slice(0, 6)
+    }
+    return []
+  }, [inlineTrigger, noteTypes, milestones])
+
+  // Delete the inline trigger text (@query or #query) from the DOM
+  const deleteTriggerText = useCallback(() => {
+    if (!inlineTrigger) return
+    const sel = window.getSelection()
+    if (!sel || !sel.rangeCount) return
+    const anchor = sel.anchorNode
+    if (!anchor || anchor.nodeType !== Node.TEXT_NODE) return
+    const text = anchor.textContent || ''
+    const offset = sel.anchorOffset
+    const before = text.slice(0, offset)
+    const triggerChar = (inlineTrigger.type === 'end-goal' || inlineTrigger.type === 'goal') ? '#'
+      : (inlineTrigger.type === 'verbatim' || inlineTrigger.type === 'end-verbatim') ? '>'
+      : '@'
+    const triggerIdx = before.lastIndexOf(triggerChar)
+    if (triggerIdx < 0) return
+    anchor.textContent = text.slice(0, triggerIdx) + text.slice(offset)
+    // Reposition cursor
+    const range = document.createRange()
+    range.setStart(anchor, Math.min(triggerIdx, anchor.textContent?.length || 0))
+    range.collapse(true)
+    sel.removeAllRanges()
+    sel.addRange(range)
+  }, [inlineTrigger])
+
+  // Start goal annotation mode — insert section at cursor
+  const startGoalAnnotation = useCallback((milestone: { id: string; title: string; status: string }) => {
+    const editor = editorRef.current
+    if (!editor) return
+    editor.focus()
+
+    const sel = window.getSelection()
+    if (!sel || !sel.rangeCount) return
+
+    // Collapse any selection
+    const range = sel.getRangeAt(0)
+    range.collapse(false)
+
+    const colors = getGoalColor(milestone.status)
+
+    // Create section wrapper
+    const section = document.createElement('div')
+    section.setAttribute('data-goal-section', '')
+    section.dataset.goalId = milestone.id
+    section.dataset.goalTitle = milestone.title
+    section.dataset.goalStatus = milestone.status
+    section.setAttribute('style',
+      `margin:16px 0 8px;border-left:3px solid ${colors.border};padding:0 0 4px 16px;`
+    )
+
+    // Non-editable header
+    const header = document.createElement('div')
+    header.contentEditable = 'false'
+    header.setAttribute('data-goal-section-header', '')
+    header.setAttribute('style',
+      `font-size:16px;font-weight:700;color:${colors.border};padding:8px 0;user-select:none;`
+    )
+    header.textContent = `\u25CF ${milestone.title}`
+
+    // Content paragraph
+    const contentP = document.createElement('p')
+    contentP.appendChild(document.createElement('br'))
+
+    section.appendChild(header)
+    section.appendChild(contentP)
+
+    // Find the direct-child block that contains the cursor
+    let blockNode: Node | null = sel.anchorNode
+    while (blockNode && blockNode !== editor && blockNode.parentNode !== editor) {
+      blockNode = blockNode.parentNode
+    }
+
+    if (!blockNode || blockNode === editor) {
+      editor.appendChild(section)
+    } else {
+      if (blockNode.nextSibling) {
+        editor.insertBefore(section, blockNode.nextSibling)
+      } else {
+        editor.appendChild(section)
+      }
+    }
+
+    // Ensure a <p><br></p> exists after the section for typing outside
+    const nextEl = section.nextElementSibling
+    if (!nextEl || nextEl.tagName !== 'P') {
+      const trailingP = document.createElement('p')
+      trailingP.appendChild(document.createElement('br'))
+      section.parentNode?.insertBefore(trailingP, section.nextSibling)
+    }
+
+    // Place cursor inside the content <p>
+    const newRange = document.createRange()
+    newRange.setStart(contentP, 0)
+    newRange.collapse(true)
+    sel.removeAllRanges()
+    sel.addRange(newRange)
+
+    setActiveGoal(milestone)
+    setSideMenu(null)
+    handleInput()
+  }, [handleInput])
+
+  // End goal annotation — move cursor out of section
+  const endGoalAnnotation = useCallback(() => {
+    const editor = editorRef.current
+    if (!editor || !activeGoal) { setActiveGoal(null); return }
+
+    const section = editor.querySelector(`div[data-goal-section][data-goal-id="${activeGoal.id}"]`) as HTMLElement | null
+    setActiveGoal(null)
+
+    if (section) {
+      // Ensure a <p><br></p> exists after the section
+      let nextEl = section.nextElementSibling
+      if (!nextEl || nextEl.tagName !== 'P') {
+        const trailingP = document.createElement('p')
+        trailingP.appendChild(document.createElement('br'))
+        section.parentNode?.insertBefore(trailingP, section.nextSibling)
+        nextEl = trailingP
+      }
+      // Move cursor to the paragraph after the section
+      editor.focus()
+      const sel = window.getSelection()
+      if (sel && nextEl) {
+        const range = document.createRange()
+        range.setStart(nextEl, 0)
+        range.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(range)
+      }
+    }
+    handleInput()
+  }, [handleInput, activeGoal])
+
+  // P2 — Insert inline trigger mark
+  const insertInlineMark = useCallback((item: { type: 'tag'; data: { type: string; label: string } } | { type: 'goal'; data: { id: string; title: string; status: string } }) => {
+    const editor = editorRef.current
+    if (!editor || !inlineTrigger) return
+
+    // For goals: delete trigger text and create a section
+    if (item.type === 'goal') {
+      deleteTriggerText()
+      startGoalAnnotation(item.data)
+      setInlineTrigger(null)
+      setInlineHighlight(0)
+      return
+    }
+
+    // Tag path
+    const sel = window.getSelection()
+    if (!sel || !sel.rangeCount) return
+
+    const anchor = sel.anchorNode
+    if (!anchor || anchor.nodeType !== Node.TEXT_NODE) return
+
+    const textContent = anchor.textContent || ''
+    const offset = sel.anchorOffset
+    const before = textContent.slice(0, offset)
+    const triggerIdx = before.lastIndexOf('@')
+
+    if (triggerIdx < 0) return
+
+    // Delete trigger text from the text node
+    const afterTrigger = textContent.slice(offset)
+    const beforeTrigger = textContent.slice(0, triggerIdx)
+    anchor.textContent = beforeTrigger + afterTrigger
+
+    // Create the tag mark
+    const colors = getTagColor(item.data.type)
+    const mark = document.createElement('mark')
+    mark.dataset.tag = item.data.type
+    mark.dataset.tagLabel = item.data.label
+    mark.setAttribute('style',
+      `background-color:${colors.bg};border-bottom:2px solid ${colors.border};padding:1px 2px;border-radius:2px;cursor:pointer;--tag-color:${colors.border};--tag-bg:${colors.bg};`
+    )
+    mark.appendChild(document.createTextNode('\u200B'))
+
+    // Position range at triggerIdx in the text node
+    const range = document.createRange()
+    range.setStart(anchor, Math.min(triggerIdx, anchor.textContent?.length || 0))
+    range.collapse(true)
+    range.insertNode(mark)
+
+    // Place cursor inside the mark for annotation mode
+    const newRange = document.createRange()
+    const lastChild = mark.lastChild || mark
+    if (lastChild.nodeType === Node.TEXT_NODE) {
+      newRange.setStart(lastChild, lastChild.textContent?.length || 0)
+    } else {
+      newRange.selectNodeContents(mark)
+      newRange.collapse(false)
+    }
+    newRange.collapse(true)
+    sel.removeAllRanges()
+    sel.addRange(newRange)
+
+    setActiveTag(item.data)
+    setInlineTrigger(null)
+    setInlineHighlight(0)
+    handleInput()
+  }, [inlineTrigger, handleInput, deleteTriggerText, startGoalAnnotation])
+
+  // Shared helper: clean up a mark, move cursor out of it
+  const finishMark = useCallback((mark: HTMLElement) => {
+    const editor = editorRef.current
+    if (!editor) return
+    // Clean zero-width spaces
+    const walker = document.createTreeWalker(mark, NodeFilter.SHOW_TEXT)
+    let tn: Node | null
+    while ((tn = walker.nextNode())) {
+      if (tn.textContent) tn.textContent = tn.textContent.replace(/\u200B/g, '')
+    }
+    if (!mark.textContent?.trim()) {
+      mark.parentNode?.removeChild(mark)
+      editor.focus()
+    } else {
+      // Insert a real text node with a space AFTER the mark, place cursor in it
+      const spacer = document.createTextNode('\u00A0')
+      if (mark.nextSibling) {
+        mark.parentNode!.insertBefore(spacer, mark.nextSibling)
+      } else {
+        mark.parentNode!.appendChild(spacer)
+      }
+      editor.focus()
+      const sel = window.getSelection()
+      if (sel) {
+        const range = document.createRange()
+        range.setStart(spacer, spacer.length)
+        range.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(range)
+      }
+    }
+    handleInput()
+  }, [handleInput])
+
   // Break out of <mark> on Enter — let browser handle Enter, then unwrap
-  // the mark that gets carried into the new line
+  // the mark that gets carried into the new line (skip if in active annotation mode)
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // Compact mode: Enter (without Shift) submits, Shift+Enter inserts newline
+    if (compact && onSubmit && e.key === 'Enter' && !e.shiftKey && !activeGoal && !activeTag && !activeVerbatim && !inlineTrigger) {
+      e.preventDefault()
+      onSubmit()
+      return
+    }
+
+    // Enter or Escape ends the innermost active annotation the cursor is in
+    // Skip if an inline trigger dropdown is open — let the trigger handler below handle it
+    if ((e.key === 'Enter' || e.key === 'Escape') && (activeGoal || activeTag || activeVerbatim) && !inlineTrigger) {
+      const editor = editorRef.current
+      if (!editor) return
+
+      // If a verbatim "said" annotation is active, end it first (innermost)
+      if (activeVerbatim) {
+        e.preventDefault()
+        setActiveVerbatim(false)
+        const marks = editor.querySelectorAll('mark[data-verbatim-type="said"]')
+        const mark = marks.length ? marks[marks.length - 1] as HTMLElement : null
+        if (mark) finishMark(mark)
+        else handleInput()
+        return
+      }
+
+      // If a tag annotation is active, end it first (innermost annotation)
+      if (activeTag) {
+        e.preventDefault()
+        setActiveTag(null)
+        const marks = editor.querySelectorAll(`mark[data-tag="${activeTag.type}"]`)
+        const mark = marks.length ? marks[marks.length - 1] as HTMLElement : null
+        if (mark) finishMark(mark)
+        else handleInput()
+        return
+      }
+
+      // Goal section: only Escape exits the section
+      if (activeGoal) {
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          endGoalAnnotation()
+          return
+        }
+        // Enter: let browser handle it (new line inside section)
+        return
+      }
+    }
+
+    // P2 — Inline trigger keyboard handling
+    if (inlineTrigger) {
+      const items = getFilteredInlineItems()
+      const maxIdx = inlineTrigger.type === 'verbatim' ? 1 : (inlineTrigger.type === 'end-goal' || inlineTrigger.type === 'end-tag' || inlineTrigger.type === 'end-verbatim') ? 0 : items.length - 1
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setInlineTrigger(null)
+        return
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setInlineHighlight(prev => Math.min(prev + 1, maxIdx))
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setInlineHighlight(prev => Math.max(prev - 1, 0))
+        return
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        if (inlineTrigger.type === 'end-goal') {
+          deleteTriggerText()
+          endGoalAnnotation()
+          setInlineTrigger(null)
+        } else if (inlineTrigger.type === 'end-verbatim') {
+          deleteTriggerText()
+          setActiveVerbatim(false)
+          const editor = editorRef.current
+          if (editor) {
+            const marks = editor.querySelectorAll('mark[data-verbatim-type="said"]')
+            const mark = marks.length ? marks[marks.length - 1] as HTMLElement : null
+            if (mark) finishMark(mark)
+          }
+          setInlineTrigger(null)
+        } else if (inlineTrigger.type === 'end-tag') {
+          deleteTriggerText()
+          const editor = editorRef.current
+          if (editor && activeTag) {
+            const marks = editor.querySelectorAll(`mark[data-tag="${activeTag.type}"]`)
+            const mark = marks.length ? marks[marks.length - 1] as HTMLElement : null
+            setActiveTag(null)
+            if (mark) finishMark(mark)
+          }
+          setInlineTrigger(null)
+        } else if (inlineTrigger.type === 'verbatim' && memberName) {
+          deleteTriggerText()
+          const editor = editorRef.current
+          if (editor) {
+            const sel = window.getSelection()
+            if (sel && sel.rangeCount) {
+              const range = sel.getRangeAt(0)
+              const mark = document.createElement('mark')
+              mark.dataset.verbatim = memberName
+              if (inlineHighlight === 0) {
+                // Name mention — subtle tag, cursor placed after
+                mark.dataset.verbatimType = 'mention'
+                mark.setAttribute('style',
+                  'background-color:#e0f2fe;padding:1px 4px;border-radius:3px;color:#0369a1;font-weight:500;--tag-color:#0369a1;'
+                )
+                mark.appendChild(document.createTextNode(memberName))
+                range.insertNode(mark)
+                const spacer = document.createTextNode('\u00A0')
+                mark.parentNode?.insertBefore(spacer, mark.nextSibling)
+                const newRange = document.createRange()
+                newRange.setStart(spacer, spacer.length)
+                newRange.collapse(true)
+                sel.removeAllRanges()
+                sel.addRange(newRange)
+              } else {
+                // "Name said:" — enter annotation mode, cursor inside mark
+                mark.dataset.verbatimType = 'said'
+                mark.setAttribute('style',
+                  'background-color:#f0f9ff;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;'
+                )
+                const prefix = document.createTextNode(`${memberName} ${fr ? 'a dit' : 'said'}: `)
+                const zwsp = document.createTextNode('\u200B')
+                mark.appendChild(prefix)
+                mark.appendChild(zwsp)
+                range.insertNode(mark)
+                // Place cursor inside the mark after the prefix
+                const newRange = document.createRange()
+                newRange.setStart(zwsp, zwsp.length)
+                newRange.collapse(true)
+                sel.removeAllRanges()
+                sel.addRange(newRange)
+                setActiveVerbatim(true)
+              }
+              handleInput()
+            }
+          }
+          setInlineTrigger(null)
+        } else if (items.length > 0) {
+          const item = items[inlineHighlight]
+          if (inlineTrigger.type === 'tag' && 'label' in item) {
+            insertInlineMark({ type: 'tag', data: item as { type: string; label: string } })
+          } else if (inlineTrigger.type === 'goal' && 'title' in item) {
+            insertInlineMark({ type: 'goal', data: item as { id: string; title: string; status: string } })
+          }
+        }
+        return
+      }
+    }
+
     if (e.key !== 'Enter') return
+    // If in active annotation mode, let text stay inside the mark
+    if (activeGoal || activeTag || activeVerbatim) return
     const sel = window.getSelection()
     if (!sel || !sel.rangeCount) return
     const editor = editorRef.current
@@ -160,21 +808,23 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
 
       handleInput()
     })
-  }, [handleInput])
+  }, [handleInput, activeGoal, activeTag, activeVerbatim, inlineTrigger, getFilteredInlineItems, inlineHighlight, insertInlineMark, deleteTriggerText, finishMark, endGoalAnnotation, memberName, fr, compact, onSubmit])
 
-  // Dismiss popover/tooltip on click outside
+  // Dismiss popover/tooltip/side menu/inline trigger on click outside
   useEffect(() => {
-    if (!popoverPos && !markTooltip) return
+    if (!popoverPos && !markTooltip && !sideMenu && !inlineTrigger) return
     const handler = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      if (target.closest('[data-goal-popover]') || target.closest('[data-goal-tooltip]')) return
+      if (target.closest('[data-goal-popover]') || target.closest('[data-goal-tooltip]') || target.closest('[data-side-menu]') || target.closest('[data-inline-trigger]')) return
       setPopoverPos(null)
       setPopoverMode('choices')
       setMarkTooltip(null)
+      setSideMenu(null)
+      setInlineTrigger(null)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [popoverPos, markTooltip])
+  }, [popoverPos, markTooltip, sideMenu, inlineTrigger])
 
   // Handle text selection to show popover
   const handleMouseUp = useCallback(() => {
@@ -193,14 +843,28 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       node = node.parentNode
     }
 
+    // Check if inside a goal section
+    let insideGoalSection = false
+    node = range.commonAncestorContainer
+    while (node && node !== editor) {
+      if (node instanceof HTMLElement && node.hasAttribute('data-goal-section')) {
+        insideGoalSection = true
+        break
+      }
+      node = node.parentNode
+    }
+
     const rect = range.getBoundingClientRect()
     const top = rect.bottom + 4
     const left = rect.left + rect.width / 2
 
     savedRange.current = range.cloneRange()
     setPopoverPos({ top, left })
-    // If only one type available, skip the choices step
-    if (hasGoals && !hasTags) setPopoverMode('goals')
+    // If inside a goal section, only show tags (no goals)
+    if (insideGoalSection) {
+      if (hasTags) setPopoverMode('tags')
+      else { setPopoverPos(null); return }
+    } else if (hasGoals && !hasTags) setPopoverMode('goals')
     else if (hasTags && !hasGoals) setPopoverMode('tags')
     else setPopoverMode('choices')
     setMarkTooltip(null)
@@ -238,7 +902,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     mark.dataset.goalTitle = milestone.title
     mark.dataset.goalStatus = milestone.status
     mark.setAttribute('style',
-      `background-color:${colors.bg};border-bottom:2px solid ${colors.border};padding:1px 2px;border-radius:2px;cursor:pointer;`
+      `background-color:${colors.bg};border-bottom:2px solid ${colors.border};padding:1px 2px;border-radius:2px;cursor:pointer;--tag-color:${colors.border};--tag-bg:${colors.bg};`
     )
     wrapWithMark(mark)
   }, [wrapWithMark])
@@ -249,7 +913,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     mark.dataset.tag = noteType.type
     mark.dataset.tagLabel = noteType.label
     mark.setAttribute('style',
-      `background-color:${colors.bg};border-bottom:2px solid ${colors.border};padding:1px 2px;border-radius:2px;cursor:pointer;`
+      `background-color:${colors.bg};border-bottom:2px solid ${colors.border};padding:1px 2px;border-radius:2px;cursor:pointer;--tag-color:${colors.border};--tag-bg:${colors.bg};`
     )
     wrapWithMark(mark)
   }, [wrapWithMark])
@@ -266,7 +930,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     const mark = document.createElement('mark')
     mark.dataset.verbatim = memberName
     mark.setAttribute('style',
-      'background-color:#f0f9ff;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;'
+      'background-color:#f0f9ff;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;'
     )
     wrapWithMark(mark)
     // Refocus editor so user can keep typing after wrapping
@@ -285,26 +949,136 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     handleInput()
   }, [handleInput])
 
-  // Handle click on existing marks
+  // Side menu handlers
+  const openSideMenu = useCallback((menu: 'tags' | 'goals') => {
+    setSideMenu(prev => prev === menu ? null : menu)
+    setPopoverPos(null)
+    setMarkTooltip(null)
+  }, [])
+
+  // Start tag annotation mode
+  const startTagAnnotation = useCallback((noteType: { type: string; label: string }) => {
+    const editor = editorRef.current
+    if (!editor) return
+    editor.focus()
+
+    const sel = window.getSelection()
+    if (!sel || !sel.rangeCount) return
+    const range = sel.getRangeAt(0)
+
+    const colors = getTagColor(noteType.type)
+    const mark = document.createElement('mark')
+    mark.dataset.tag = noteType.type
+    mark.dataset.tagLabel = noteType.label
+    mark.setAttribute('style',
+      `background-color:${colors.bg};border-bottom:2px solid ${colors.border};padding:1px 2px;border-radius:2px;cursor:pointer;--tag-color:${colors.border};--tag-bg:${colors.bg};`
+    )
+
+    if (!sel.isCollapsed) {
+      try { range.surroundContents(mark) } catch {
+        const fragment = range.extractContents()
+        mark.appendChild(fragment)
+        range.insertNode(mark)
+      }
+    } else {
+      mark.appendChild(document.createTextNode('\u200B'))
+      range.collapse(false)
+      range.insertNode(mark)
+    }
+
+    const newRange = document.createRange()
+    const lastChild = mark.lastChild || mark
+    if (lastChild.nodeType === Node.TEXT_NODE) {
+      newRange.setStart(lastChild, lastChild.textContent?.length || 0)
+    } else {
+      newRange.selectNodeContents(mark)
+      newRange.collapse(false)
+    }
+    newRange.collapse(true)
+    sel.removeAllRanges()
+    sel.addRange(newRange)
+
+    setActiveTag(noteType)
+    // Don't clear activeGoal — allow both active simultaneously
+    setSideMenu(null)
+    handleInput()
+  }, [handleInput])
+
+  // End tag annotation — clean up mark, move cursor out
+  const endTagAnnotation = useCallback(() => {
+    const editor = editorRef.current
+    if (!editor || !activeTag) { setActiveTag(null); return }
+
+    const marks = editor.querySelectorAll(`mark[data-tag="${activeTag.type}"]`)
+    const mark = marks.length ? marks[marks.length - 1] as HTMLElement : null
+
+    setActiveTag(null)
+    if (mark) finishMark(mark)
+    else handleInput()
+  }, [handleInput, activeTag, finishMark])
+
+  // Handle click on existing marks and goal sections
   const handleEditorClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement
-    const goalMark = target.closest('mark[data-goal-id]') as HTMLElement | null
-    const tagMark = target.closest('mark[data-tag]') as HTMLElement | null
-    const verbatimMark = target.closest('mark[data-verbatim]') as HTMLElement | null
-    const markEl = goalMark || tagMark || verbatimMark
-    if (!markEl || !editorRef.current) return
+    const editor = editorRef.current
+    if (!editor) return
 
-    e.stopPropagation()
+    // Check for mark click (goal/tag/verbatim tooltips)
+    const markEl = target.closest('mark[data-goal-id], mark[data-tag], mark[data-verbatim]') as HTMLElement | null
+    if (markEl) {
+      e.stopPropagation()
+      const rect = markEl.getBoundingClientRect()
+      setMarkTooltip({
+        top: rect.bottom + 4,
+        left: rect.left + rect.width / 2,
+        markEl,
+        kind: markEl.dataset.goalId ? 'goal' : markEl.dataset.tag ? 'tag' : 'verbatim',
+      })
+      setPopoverPos(null)
+      setPopoverMode('choices')
+      return
+    }
+
+    // Sync activeGoal from goal section detection
+    const sectionEl = target.closest('[data-goal-section]') as HTMLElement | null
+    if (sectionEl) {
+      const id = sectionEl.dataset.goalId || ''
+      const title = sectionEl.dataset.goalTitle || ''
+      const status = sectionEl.dataset.goalStatus || ''
+      if (!activeGoal || activeGoal.id !== id) {
+        setActiveGoal({ id, title, status })
+      }
+    } else if (activeGoal) {
+      setActiveGoal(null)
+    }
+  }, [activeGoal])
+
+  // Hover tooltip on marks
+  const handleEditorMouseOver = useCallback((e: React.MouseEvent) => {
+    if (markTooltip) return // click tooltip is open, skip hover
+    const target = e.target as HTMLElement
+    // Find the innermost (closest) mark to the hover target
+    const markEl = target.closest('mark[data-goal-id], mark[data-tag], mark[data-verbatim]') as HTMLElement | null
+    if (!markEl) { setHoverTooltip(null); return }
+
+    const isGoal = !!markEl.dataset.goalId
+    const isTag = !!markEl.dataset.tag
     const rect = markEl.getBoundingClientRect()
-
-    setMarkTooltip({
-      top: rect.bottom + 4,
+    const label = isGoal
+      ? markEl.dataset.goalTitle || ''
+      : isTag
+        ? markEl.dataset.tagLabel || ''
+        : markEl.dataset.verbatim || ''
+    setHoverTooltip({
+      top: rect.bottom + 6,
       left: rect.left + rect.width / 2,
-      markEl,
-      kind: goalMark ? 'goal' : tagMark ? 'tag' : 'verbatim',
+      label,
+      kind: isGoal ? 'goal' : isTag ? 'tag' : 'verbatim',
     })
-    setPopoverPos(null)
-    setPopoverMode('choices')
+  }, [markTooltip])
+
+  const handleEditorMouseLeave = useCallback(() => {
+    setHoverTooltip(null)
   }, [])
 
   // OCR
@@ -387,7 +1161,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     if (popoverMode === 'choices') {
       return (
         <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg shadow-lg p-1">
-          {hasGoals && (
+          {hasGoals && !activeGoal && (
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
@@ -426,7 +1200,12 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                 key={m.id}
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
-                onClick={() => wrapSelectionWithGoal(m)}
+                onClick={() => {
+                  setPopoverPos(null)
+                  setPopoverMode('choices')
+                  savedRange.current = null
+                  startGoalAnnotation(m)
+                }}
                 className="w-full text-left px-3 py-1.5 hover:bg-gray-50 transition-colors flex items-center gap-2"
               >
                 <span
@@ -474,23 +1253,357 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
 
   return (
     <>
-      {/* Editable area */}
-      <div className="p-3 pb-0">
-        <div className="relative">
-          <div
-            ref={editorRef}
-            contentEditable
-            onInput={handleInput}
-            onMouseUp={handleMouseUp}
-            onKeyDown={handleKeyDown}
-            onClick={handleEditorClick}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-100 outline-none min-h-[150px] overflow-y-auto [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-gray-900 [&_h1]:mt-2 [&_h1]:mb-0.5 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-gray-900 [&_h2]:mt-2 [&_h2]:mb-0.5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-gray-900 [&_h3]:mt-2 [&_h3]:mb-0.5 [&_hr]:border-gray-200 [&_hr]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+      {/* Show all annotation labels as floating bubbles when toggled */}
+      <style>{`
+        .rte-editor.show-labels mark[data-goal-id],
+        .rte-editor.show-labels mark[data-tag],
+        .rte-editor.show-labels mark[data-verbatim] {
+          background-color: var(--tag-bg, #f3f4f6) !important;
+          border-bottom: none !important;
+          border-left: none !important;
+          padding: 2px 4px;
+          border-radius: 3px;
+          color: inherit;
+        }
+        .rte-editor.show-labels mark[data-goal-id]::before,
+        .rte-editor.show-labels mark[data-tag]::before,
+        .rte-editor.show-labels mark[data-verbatim]::before {
+          font-size: inherit;
+          font-style: normal;
+          font-weight: 700;
+          color: var(--tag-color, #6b7280);
+        }
+        .rte-editor.show-labels mark[data-goal-id]::before {
+          content: attr(data-goal-title) ": ";
+        }
+        .rte-editor.show-labels mark[data-tag]::before {
+          content: attr(data-tag-label) ": ";
+        }
+        .rte-editor.show-labels mark[data-verbatim]::before {
+          content: attr(data-verbatim) ": ";
+        }
+        .rte-editor.show-labels mark.label-hoisted::before {
+          display: none !important;
+        }
+      `}</style>
+
+      {/* P0 — Toolbar at top */}
+      {compact ? (
+        <div className="flex items-center px-2 py-1 border-b border-gray-100 bg-white">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleOCR(file)
+            }}
           />
-          {isEmpty && (
-            <div className="absolute top-2 left-3 text-sm text-gray-400 pointer-events-none">
-              {placeholder}
+          <div className="ml-auto flex items-center gap-2">
+            {toolbarActions}
+          </div>
+        </div>
+      ) : (
+      <div className="flex items-center flex-wrap gap-0.5 px-2 py-1.5 border-b border-gray-200 bg-white">
+        {btn(<Undo2 className="w-3.5 h-3.5" />, fr ? 'Annuler' : 'Undo', () => exec('undo'))}
+        {btn(<Redo2 className="w-3.5 h-3.5" />, fr ? 'Rétablir' : 'Redo', () => exec('redo'))}
+        <div className="w-px h-4 bg-gray-200 mx-0.5" />
+        {btn(<Bold className="w-3.5 h-3.5" />, fr ? 'Gras' : 'Bold', () => exec('bold'))}
+        {/* Heading dropdown */}
+        <div className="relative">
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setHeadingOpen(!headingOpen)}
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+          >
+            <Type className="w-3.5 h-3.5" />
+            <span>{fr ? 'Titre' : 'Heading'}</span>
+            <ChevronDown className="w-3 h-3" />
+          </button>
+          {headingOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setHeadingOpen(false)} />
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[140px]">
+                {([
+                  { tag: 'h1', label: fr ? 'Grand titre' : 'Large heading', className: 'text-base font-bold' },
+                  { tag: 'h2', label: fr ? 'Titre moyen' : 'Medium heading', className: 'text-sm font-semibold' },
+                  { tag: 'h3', label: fr ? 'Petit titre' : 'Small heading', className: 'text-xs font-semibold' },
+                  { tag: 'p', label: fr ? 'Texte normal' : 'Normal text', className: 'text-xs font-normal' },
+                ] as const).map(({ tag, label, className }) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      exec('formatBlock', tag)
+                      setHeadingOpen(false)
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-gray-50 transition-colors"
+                  >
+                    <span className={`text-gray-700 ${className}`}>{label}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+        <div className="w-px h-4 bg-gray-200 mx-0.5" />
+        {btn(<ListOrdered className="w-3.5 h-3.5" />, fr ? 'Numéros' : 'Numbers', () => exec('insertOrderedList'))}
+        <div className="w-px h-4 bg-gray-200 mx-0.5" />
+        {btn(<Minus className="w-3.5 h-3.5" />, fr ? 'Séparateur' : 'Divider', () => exec('insertHorizontalRule'))}
+
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => fileInputRef.current?.click()}
+          disabled={extracting}
+          className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors disabled:opacity-50"
+        >
+          {extracting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ScanLine className="w-3.5 h-3.5" />}
+          <span>{extracting ? (fr ? 'Extraction...' : 'Scanning...') : (fr ? 'Scanner image' : 'Scan image')}</span>
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) handleOCR(file)
+          }}
+        />
+
+        {/* Right side: autosave indicator + action buttons */}
+        <div className="ml-auto flex items-center gap-2">
+          {onAutoSave && (
+            <div className="flex items-center gap-1 text-[11px] text-gray-400">
+              {saveStatus === 'saving' ? (
+                <><Loader2 className="w-3 h-3 animate-spin" /><span>{fr ? 'Enregistrement...' : 'Saving...'}</span></>
+              ) : saveStatus === 'saved' ? (
+                <span>{fr ? 'Enregistré' : 'Saved'}</span>
+              ) : (
+                <span className="text-gray-300">{fr ? 'Brouillon' : 'Draft'}</span>
+              )}
             </div>
           )}
+          {toolbarActions}
+        </div>
+      </div>
+      )}
+
+      {/* Editable area with side rail */}
+      <div className="flex-1 flex flex-col">
+        <div className="relative flex flex-1 gap-0">
+          {/* Side rail — tag & goal toggle (hidden in compact mode) */}
+          {!compact && hasAnnotations && (
+            <div data-side-menu className="relative flex flex-col pt-2 bg-white">
+              {hasGoals && (
+                activeGoal ? (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={endGoalAnnotation}
+                    className="p-1.5 transition-colors text-emerald-600 bg-emerald-100 animate-pulse"
+                    title={fr ? `Fin: ${activeGoal.title}` : `End: ${activeGoal.title}`}
+                  >
+                    <Target className="w-3.5 h-3.5" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => openSideMenu('goals')}
+                    className={`p-1.5 transition-colors ${sideMenu === 'goals' ? 'text-emerald-600 bg-emerald-50' : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50/50'}`}
+                    title={fr ? 'Objectifs' : 'Goals'}
+                  >
+                    <Target className="w-3.5 h-3.5" />
+                  </button>
+                )
+              )}
+              {hasTags && (
+                activeTag ? (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={endTagAnnotation}
+                    className="p-1.5 transition-colors text-violet-600 bg-violet-100 animate-pulse"
+                    title={fr ? `Fin: ${activeTag.label}` : `End: ${activeTag.label}`}
+                  >
+                    <Tag className="w-3.5 h-3.5" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => openSideMenu('tags')}
+                    className={`p-1.5 transition-colors ${sideMenu === 'tags' ? 'text-violet-600 bg-violet-50' : 'text-gray-400 hover:text-violet-600 hover:bg-violet-50/50'}`}
+                    title={fr ? 'Étiquettes' : 'Tags'}
+                  >
+                    <Tag className="w-3.5 h-3.5" />
+                  </button>
+                )
+              )}
+
+              {/* Quote button */}
+              {memberName && (
+                activeVerbatim ? (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      const editor = editorRef.current
+                      if (!editor) return
+                      const marks = editor.querySelectorAll('mark[data-verbatim-type="said"]')
+                      if (marks.length > 0) {
+                        const last = marks[marks.length - 1] as HTMLElement
+                        finishMark(last)
+                      }
+                      setActiveVerbatim(false)
+                      setTimeout(() => handleInput(), 0)
+                    }}
+                    className="p-1.5 transition-colors text-sky-600 bg-sky-100 animate-pulse"
+                    title={fr ? `Fin: ${memberName} said` : `End: ${memberName} said`}
+                  >
+                    <Quote className="w-3.5 h-3.5" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      const editor = editorRef.current
+                      if (!editor) return
+                      const sel = window.getSelection()
+                      if (!sel || !sel.rangeCount) return
+                      const range = sel.getRangeAt(0)
+                      range.collapse(false)
+                      const mark = document.createElement('mark')
+                      mark.dataset.verbatim = memberName
+                      mark.dataset.verbatimType = 'said'
+                      mark.setAttribute('style',
+                        'background-color:#f0f9ff;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;'
+                      )
+                      const prefix = document.createTextNode(`${memberName} ${fr ? 'a dit' : 'said'}: `)
+                      const zwsp = document.createTextNode('\u200B')
+                      mark.appendChild(prefix)
+                      mark.appendChild(zwsp)
+                      range.insertNode(mark)
+                      const newRange = document.createRange()
+                      newRange.setStart(zwsp, zwsp.length)
+                      newRange.collapse(true)
+                      sel.removeAllRanges()
+                      sel.addRange(newRange)
+                      setActiveVerbatim(true)
+                      handleInput()
+                    }}
+                    className="p-1.5 transition-colors text-gray-400 hover:text-sky-600 hover:bg-sky-50/50"
+                    title={fr ? `${memberName} a dit` : `${memberName} said`}
+                  >
+                    <Quote className="w-3.5 h-3.5" />
+                  </button>
+                )
+              )}
+
+
+              {/* Goal dropdown */}
+              {sideMenu === 'goals' && !activeGoal && milestones?.length && (
+                <div className="absolute top-0 left-full ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px] max-h-[220px] overflow-y-auto z-50">
+                  <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                    {fr ? 'Objectifs' : 'Goals'}
+                  </div>
+                  {milestones.map((m) => {
+                    const colors = getGoalColor(m.status)
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => startGoalAnnotation(m)}
+                        className="w-full text-left px-3 py-1.5 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                      >
+                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.border }} />
+                        <span className="text-xs text-gray-700 truncate">{m.title}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              {/* Tag dropdown */}
+              {sideMenu === 'tags' && !activeTag && noteTypes?.length && (
+                <div className="absolute top-0 left-full ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[180px] max-h-[260px] overflow-y-auto z-50">
+                  <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                    {fr ? 'Étiquettes' : 'Tags'}
+                  </div>
+                  {noteTypes.map((nt) => {
+                    const colors = getTagColor(nt.type)
+                    const isLocked = lockedTypes?.includes(nt.type)
+                    return (
+                      <button
+                        key={nt.type}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => startTagAnnotation(nt)}
+                        className="w-full text-left px-3 py-1.5 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                      >
+                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.border }} />
+                        <span className="text-xs text-gray-700 truncate flex-1">{nt.label}</span>
+                        {isLocked && <Lock className="w-2.5 h-2.5 text-gray-300 flex-shrink-0" />}
+                      </button>
+                    )
+                  })}
+                  {onAddType && (noteTypes?.length || 0) < maxTypes && (
+                    <div className="border-t border-gray-100 mt-1 pt-1 px-3 py-1">
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault()
+                          const input = (e.target as HTMLFormElement).elements.namedItem('newTag') as HTMLInputElement
+                          const val = input.value.trim().toLowerCase().replace(/\s+/g, '_')
+                          if (val && !noteTypes.some(nt => nt.type === val)) {
+                            onAddType(val)
+                            input.value = ''
+                          }
+                        }}
+                        className="flex items-center gap-1"
+                      >
+                        <input
+                          name="newTag"
+                          type="text"
+                          placeholder={fr ? 'Nouveau...' : 'New...'}
+                          className="flex-1 text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:border-violet-300"
+                          onMouseDown={(e) => e.stopPropagation()}
+                        />
+                        <button type="submit" className="p-0.5 text-violet-500 hover:text-violet-700" onMouseDown={(e) => e.preventDefault()}>
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </form>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Editor */}
+          <div className="flex-1 relative">
+            <div
+              ref={editorRef}
+              contentEditable
+              onInput={handleInput}
+              onMouseUp={handleMouseUp}
+              onKeyDown={handleKeyDown}
+              onClick={handleEditorClick}
+              onMouseOver={handleEditorMouseOver}
+              onMouseLeave={handleEditorMouseLeave}
+              className={`rte-editor ${showLabels ? 'show-labels' : ''} w-full px-6 ${compact ? 'py-2' : 'py-4'} text-sm bg-white outline-none [line-height:1.8] ${compact ? 'min-h-[60px] max-h-[140px]' : 'min-h-[300px]'} overflow-y-auto [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-gray-900 [&_h1]:mt-2 [&_h1]:mb-0.5 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-gray-900 [&_h2]:mt-2 [&_h2]:mb-0.5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-gray-900 [&_h3]:mt-2 [&_h3]:mb-0.5 [&_hr]:border-gray-200 [&_hr]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5`}
+            />
+            {isEmpty && (
+              <div className="absolute top-4 left-6 text-sm text-gray-400 pointer-events-none">
+                {placeholder}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -498,7 +1611,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       {popoverPos && hasAnnotations && createPortal(
         <div
           data-goal-popover
-          className="fixed z-50"
+          className="fixed z-[100]"
           style={{ top: popoverPos.top, left: popoverPos.left, transform: 'translateX(-50%)' }}
         >
           {renderPopoverContent()}
@@ -510,7 +1623,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       {markTooltip && createPortal(
         <div
           data-goal-tooltip
-          className="fixed z-50"
+          className="fixed z-[100]"
           style={{ top: markTooltip.top, left: markTooltip.left, transform: 'translateX(-50%)' }}
         >
           <div className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-900 text-white rounded-lg shadow-lg text-xs whitespace-nowrap">
@@ -543,90 +1656,211 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         document.body
       )}
 
-      {/* Toolbar */}
-      <div className="flex items-center flex-wrap gap-0.5 px-1.5 py-1 border-t border-gray-100 bg-gray-50/50 rounded-b-xl mt-1">
-        {btn(<Bold className="w-3.5 h-3.5" />, fr ? 'Gras' : 'Bold', () => exec('bold'))}
-        {/* Heading dropdown */}
-        <div className="relative">
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => setHeadingOpen(!headingOpen)}
-            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
-          >
-            <Type className="w-3.5 h-3.5" />
-            <span>{fr ? 'Titre' : 'Heading'}</span>
-            <ChevronDown className="w-3 h-3" />
-          </button>
-          {headingOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setHeadingOpen(false)} />
-              <div className="absolute bottom-full left-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[140px]">
-                {([
-                  { tag: 'h1', label: fr ? 'Grand titre' : 'Large heading', className: 'text-base font-bold' },
-                  { tag: 'h2', label: fr ? 'Titre moyen' : 'Medium heading', className: 'text-sm font-semibold' },
-                  { tag: 'h3', label: fr ? 'Petit titre' : 'Small heading', className: 'text-xs font-semibold' },
-                  { tag: 'p', label: fr ? 'Texte normal' : 'Normal text', className: 'text-xs font-normal' },
-                ] as const).map(({ tag, label, className }) => (
+      {/* Hover tooltip on marks — portal to body */}
+      {hoverTooltip && !markTooltip && createPortal(
+        <div
+          className="fixed z-[100] pointer-events-none"
+          style={{ top: hoverTooltip.top, left: hoverTooltip.left, transform: 'translateX(-50%)' }}
+        >
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-900 text-white rounded-lg shadow-lg text-xs whitespace-nowrap max-w-[220px]">
+            {hoverTooltip.kind === 'goal' ? (
+              <Target className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+            ) : hoverTooltip.kind === 'tag' ? (
+              <Tag className="w-3 h-3 text-violet-400 flex-shrink-0" />
+            ) : (
+              <Quote className="w-3 h-3 text-sky-400 flex-shrink-0" />
+            )}
+            <span className="truncate">{hoverTooltip.label}</span>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* P2 — Inline trigger dropdown — portal to body */}
+      {inlineTrigger && createPortal(
+        <div
+          data-inline-trigger
+          className="fixed z-[100]"
+          style={{ top: inlineTrigger.position.top, left: inlineTrigger.position.left }}
+        >
+          <div className="bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px] max-h-[220px] overflow-y-auto">
+            {(inlineTrigger.type === 'end-goal' || inlineTrigger.type === 'end-tag' || inlineTrigger.type === 'end-verbatim') ? (
+              <>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  {inlineTrigger.type === 'end-goal'
+                    ? (fr ? 'Objectif actif' : 'Active goal')
+                    : inlineTrigger.type === 'end-verbatim'
+                    ? (fr ? 'Citation active' : 'Active quote')
+                    : (fr ? 'Étiquette active' : 'Active tag')}
+                </div>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    deleteTriggerText()
+                    if (inlineTrigger?.type === 'end-goal') {
+                      endGoalAnnotation()
+                    } else if (inlineTrigger?.type === 'end-verbatim') {
+                      setActiveVerbatim(false)
+                      const editor = editorRef.current
+                      if (editor) {
+                        const marks = editor.querySelectorAll('mark[data-verbatim-type="said"]')
+                        const mark = marks.length ? marks[marks.length - 1] as HTMLElement : null
+                        if (mark) finishMark(mark)
+                      }
+                    } else {
+                      const editor = editorRef.current
+                      if (editor && activeTag) {
+                        const marks = editor.querySelectorAll(`mark[data-tag="${activeTag.type}"]`)
+                        const mark = marks.length ? marks[marks.length - 1] as HTMLElement : null
+                        setActiveTag(null)
+                        if (mark) finishMark(mark)
+                      }
+                    }
+                    setInlineTrigger(null)
+                  }}
+                  className={`w-full text-left px-3 py-1.5 transition-colors flex items-center gap-2 ${
+                    inlineHighlight === 0 ? 'bg-gray-100' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  {inlineTrigger.type === 'end-goal' ? (
+                    <Target className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : inlineTrigger.type === 'end-verbatim' ? (
+                    <Quote className="w-3.5 h-3.5 text-sky-500" />
+                  ) : (
+                    <Tag className="w-3.5 h-3.5 text-violet-600" />
+                  )}
+                  <span className="text-xs text-gray-700">
+                    {fr ? 'Terminer' : 'End'}: {inlineTrigger.type === 'end-verbatim' ? `${memberName} ${fr ? 'a dit' : 'said'}` : (activeGoal?.title || activeTag?.label)}
+                  </span>
+                </button>
+              </>
+            ) : inlineTrigger.type === 'verbatim' && memberName ? (
+              <>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  {fr ? 'Mention' : 'Mention'}
+                </div>
+                {[
+                  { label: memberName, isVerbatim: false },
+                  { label: `${memberName} ${fr ? 'a dit' : 'said'}`, isVerbatim: true },
+                ].map((opt, idx) => (
                   <button
-                    key={tag}
+                    key={idx}
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
-                      exec('formatBlock', tag)
-                      setHeadingOpen(false)
+                      deleteTriggerText()
+                      const editor = editorRef.current
+                      if (editor) {
+                        const sel = window.getSelection()
+                        if (sel && sel.rangeCount) {
+                          const range = sel.getRangeAt(0)
+                          const mark = document.createElement('mark')
+                          mark.dataset.verbatim = memberName
+                          if (opt.isVerbatim) {
+                            // "Name said:" — enter annotation mode
+                            mark.dataset.verbatimType = 'said'
+                            mark.setAttribute('style',
+                              'background-color:#f0f9ff;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;'
+                            )
+                            const prefix = document.createTextNode(`${opt.label}: `)
+                            const zwsp = document.createTextNode('\u200B')
+                            mark.appendChild(prefix)
+                            mark.appendChild(zwsp)
+                            range.insertNode(mark)
+                            const newRange = document.createRange()
+                            newRange.setStart(zwsp, zwsp.length)
+                            newRange.collapse(true)
+                            sel.removeAllRanges()
+                            sel.addRange(newRange)
+                            setActiveVerbatim(true)
+                          } else {
+                            // Name mention — insert and place cursor after
+                            mark.dataset.verbatimType = 'mention'
+                            mark.setAttribute('style',
+                              'background-color:#e0f2fe;padding:1px 4px;border-radius:3px;color:#0369a1;font-weight:500;--tag-color:#0369a1;'
+                            )
+                            mark.appendChild(document.createTextNode(opt.label))
+                            range.insertNode(mark)
+                            const spacer = document.createTextNode('\u00A0')
+                            mark.parentNode?.insertBefore(spacer, mark.nextSibling)
+                            const newRange = document.createRange()
+                            newRange.setStart(spacer, spacer.length)
+                            newRange.collapse(true)
+                            sel.removeAllRanges()
+                            sel.addRange(newRange)
+                          }
+                          handleInput()
+                        }
+                      }
+                      setInlineTrigger(null)
                     }}
-                    className="w-full text-left px-3 py-1.5 hover:bg-gray-50 transition-colors"
+                    className={`w-full text-left px-3 py-1.5 transition-colors flex items-center gap-2 ${
+                      idx === inlineHighlight ? 'bg-gray-100' : 'hover:bg-gray-50'
+                    }`}
                   >
-                    <span className={`text-gray-700 ${className}`}>{label}</span>
+                    {opt.isVerbatim
+                      ? <Quote className="w-3.5 h-3.5 text-sky-500" />
+                      : <span className="w-3.5 h-3.5 text-center text-[11px] font-semibold text-gray-500">@</span>
+                    }
+                    <span className="text-xs text-gray-700">{opt.label}</span>
                   </button>
                 ))}
-              </div>
-            </>
-          )}
-        </div>
-
-        {btn(<ListOrdered className="w-3.5 h-3.5" />, fr ? 'Numéros' : 'Numbers', () => exec('insertOrderedList'))}
-        {btn(<Minus className="w-3.5 h-3.5" />, fr ? 'Séparateur' : 'Divider', () => exec('insertHorizontalRule'))}
-
-        {memberName && (
-          <>
-            <div className="w-px h-4 bg-gray-200 mx-0.5" />
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={wrapSelectionWithVerbatim}
-              className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-sky-600 hover:text-sky-800 hover:bg-sky-50 transition-colors"
-            >
-              <Quote className="w-3.5 h-3.5" />
-              <span>&ldquo;{memberName} {fr ? 'a dit' : 'said'}&rdquo;</span>
-            </button>
-          </>
-        )}
-
-        <div className="w-px h-4 bg-gray-200 mx-0.5" />
-
-        <button
-          type="button"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => fileInputRef.current?.click()}
-          disabled={extracting}
-          className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors disabled:opacity-50"
-        >
-          {extracting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ScanLine className="w-3.5 h-3.5" />}
-          <span>{extracting ? (fr ? 'Extraction...' : 'Scanning...') : (fr ? 'Scanner image' : 'Scan image')}</span>
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) handleOCR(file)
-          }}
-        />
-      </div>
+              </>
+            ) : (
+              <>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  {inlineTrigger.type === 'goal'
+                    ? (fr ? 'Objectifs' : 'Goals')
+                    : (fr ? 'Étiquettes' : 'Tags')}
+                </div>
+                {(() => {
+                  const items = getFilteredInlineItems()
+                  if (items.length === 0) {
+                    return (
+                      <div className="px-3 py-2 text-xs text-gray-400">
+                        {fr ? 'Aucun résultat' : 'No results'}
+                      </div>
+                    )
+                  }
+                  return items.map((item, idx) => {
+                    const isGoal = 'title' in item
+                    const colors = isGoal
+                      ? getGoalColor((item as { id: string; title: string; status: string }).status)
+                      : getTagColor((item as { type: string; label: string }).type)
+                    return (
+                      <button
+                        key={isGoal ? (item as { id: string }).id : (item as { type: string }).type}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          if (isGoal) {
+                            insertInlineMark({ type: 'goal', data: item as { id: string; title: string; status: string } })
+                          } else {
+                            insertInlineMark({ type: 'tag', data: item as { type: string; label: string } })
+                          }
+                        }}
+                        className={`w-full text-left px-3 py-1.5 transition-colors flex items-center gap-2 ${
+                          idx === inlineHighlight ? 'bg-gray-100' : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: colors.border }}
+                        />
+                        <span className="text-xs text-gray-700 truncate">
+                          {isGoal ? (item as { title: string }).title : (item as { label: string }).label}
+                        </span>
+                      </button>
+                    )
+                  })
+                })()}
+              </>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   )
 }
