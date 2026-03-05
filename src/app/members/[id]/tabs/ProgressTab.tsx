@@ -58,29 +58,125 @@ interface SessionLinkedNote {
 
 interface TaggedExcerpt {
   text: string
+  html?: string
   sessionDate?: string
   sessionType?: string
 }
 
-// Helper: parse HTML content and extract text from <mark data-goal-id="..."> elements
-function extractGoalExcerpts(html: string): { goalId: string; text: string }[] {
+// Helper: parse HTML content and extract goal-related excerpts from both
+// <mark data-goal-id="..."> inline highlights AND <div data-goal-section data-goal-id="..."> section containers
+function extractGoalExcerpts(html: string): { goalId: string; text: string; html?: string }[] {
   if (!html || !html.includes('data-goal-id')) return []
   try {
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
+    const results: { goalId: string; text: string; html?: string }[] = []
+    const sectionGoalIds = new Set<string>()
+
+    // 1. Extract full goal sections with their HTML preserved
+    const sections = doc.querySelectorAll('div[data-goal-section][data-goal-id]')
+    sections.forEach((section) => {
+      const goalId = section.getAttribute('data-goal-id')
+      if (!goalId) return
+      sectionGoalIds.add(goalId)
+      const text = section.textContent?.trim()
+      if (text) {
+        results.push({ goalId, text, html: (section as HTMLElement).outerHTML })
+      }
+    })
+
+    // 2. Extract inline <mark data-goal-id> highlights that are NOT inside a section
     const marks = doc.querySelectorAll('mark[data-goal-id]')
-    const results: { goalId: string; text: string }[] = []
     marks.forEach((mark) => {
       const goalId = mark.getAttribute('data-goal-id')
       const text = mark.textContent?.trim()
-      if (goalId && text) {
-        results.push({ goalId, text })
-      }
+      if (!goalId || !text) return
+      // Skip if this mark is inside a goal section we already captured
+      if (mark.closest('div[data-goal-section]')) return
+      results.push({ goalId, text, html: (mark as HTMLElement).outerHTML })
     })
+
     return results
   } catch {
     return []
   }
+}
+
+// Strip HTML tags for plain text preview
+function stripHtml(input: string | undefined | null): string {
+  if (!input) return ''
+  return input.replace(/<[^>]*>/g, '')
+}
+
+// Tag color palette — must match RichTextEditor's TAG_COLOR_PALETTE
+const TAG_COLOR_PALETTE: { bg: string; border: string }[] = [
+  { bg: '#fef2f2', border: '#ef4444' },  // red
+  { bg: '#eff6ff', border: '#3b82f6' },  // blue
+  { bg: '#fff7ed', border: '#f97316' },  // orange
+  { bg: '#f5f3ff', border: '#8b5cf6' },  // violet
+  { bg: '#fef9c3', border: '#ca8a04' },  // gold
+  { bg: '#fdf2f8', border: '#ec4899' },  // pink
+  { bg: '#ecfdf5', border: '#10b981' },  // emerald
+  { bg: '#eef2ff', border: '#6366f1' },  // indigo
+  { bg: '#ecfeff', border: '#06b6d4' },  // cyan
+  { bg: '#faf5ff', border: '#a21caf' },  // fuchsia
+]
+
+const GOAL_NAVY = '#1e3a5f'
+const GOAL_BG = '#dbeafe'
+const OLD_GOAL_COLORS = ['#059669','#047857','#065f46','#6d28d9','#2563eb','#d1fae5','#a7f3d0','#6ee7b7','#ede9fe']
+
+function getExcerptTagColor(type: string, allTypes?: string[]) {
+  if (allTypes) {
+    const idx = allTypes.indexOf(type)
+    if (idx >= 0) return TAG_COLOR_PALETTE[idx % TAG_COLOR_PALETTE.length]
+  }
+  return TAG_COLOR_PALETTE[TAG_COLOR_PALETTE.length - 1]
+}
+
+/** Rewrite tag/goal colors in excerpt HTML to match the current palette */
+function recolorExcerptHtml(html: string, allTypes?: string[]): string {
+  let result = html.replace(/<mark\b([^>]*)\bstyle="([^"]*)"([^>]*)>/gi, (full, before: string, style: string, after: string) => {
+    // Rewrite tag colors to current palette
+    const tagMatch = (before + after).match(/data-tag="([^"]*)"/)
+    if (tagMatch && allTypes) {
+      const colors = getExcerptTagColor(tagMatch[1], allTypes)
+      let s = style
+      s = s.replace(/background-color:\s*#[0-9a-fA-F]{3,8}/, `background-color:${colors.bg}`)
+      s = s.replace(/border-bottom:\s*2px\s+solid\s+#[0-9a-fA-F]{3,8}/, `border-bottom:2px solid ${colors.border}`)
+      s = s.replace(/--tag-color:\s*#[0-9a-fA-F]{3,8}/, `--tag-color:${colors.border}`)
+      s = s.replace(/--tag-bg:\s*#[0-9a-fA-F]{3,8}/, `--tag-bg:${colors.bg}`)
+      if (!s.includes('--tag-color')) s += `;--tag-color:${colors.border}`
+      if (!s.includes('--tag-bg')) s += `;--tag-bg:${colors.bg}`
+      return `<mark${before}style="${s}"${after}>`
+    }
+    // Inject CSS vars for non-tag marks
+    let extras = ''
+    if (!style.includes('--tag-color')) {
+      const borderMatch = style.match(/border-(?:bottom|left):[^;]*solid\s+(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))/)
+      const colorMatch = style.match(/(?:^|;)\s*color:\s*(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))/)
+      const tagColor = borderMatch?.[1] || colorMatch?.[1]
+      if (tagColor) extras += `--tag-color:${tagColor};`
+    }
+    if (!style.includes('--tag-bg')) {
+      const bgMatch = style.match(/background-color:\s*(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))/)
+      if (bgMatch) extras += `--tag-bg:${bgMatch[1]};`
+    }
+    if (!extras) return full
+    return `<mark${before}style="${style};${extras}"${after}>`
+  })
+  // Recolor old goal greens to navy
+  result = result.replace(/(<div[^>]*data-goal-section(?!-)[^>]*style=")([^"]*)(")/gi, (_f, pre, style, post) => {
+    let s = style; for (const c of OLD_GOAL_COLORS) s = s.replace(new RegExp(c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), GOAL_NAVY); return pre + s + post
+  })
+  result = result.replace(/(<div[^>]*data-goal-section-header[^>]*style=")([^"]*)(")/gi, (_f, pre, style, post) => {
+    let s = style; for (const c of OLD_GOAL_COLORS) s = s.replace(new RegExp(c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), GOAL_NAVY); return pre + s + post
+  })
+  result = result.replace(/(<mark[^>]*data-goal-id[^>]*style=")([^"]*)(")/gi, (_f, pre, style, post) => {
+    let s = style; for (const c of OLD_GOAL_COLORS) s = s.replace(new RegExp(c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), GOAL_NAVY)
+    s = s.replace(/background-color:\s*#[0-9a-fA-F]{3,8}/, `background-color:${GOAL_BG}`); return pre + s + post
+  })
+  return result
 }
 
 // Status label helpers for history timeline
@@ -358,6 +454,40 @@ function MilestoneDetailModal({
         className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Annotation label styles for excerpts */}
+        <style>{`
+          .rte-read.show-labels mark[data-goal-id],
+          .rte-read.show-labels mark[data-tag],
+          .rte-read.show-labels mark[data-verbatim] {
+            background-color: var(--tag-bg, #f3f4f6) !important;
+            border-bottom: none !important;
+            border-left: none !important;
+            padding: 1px 3px;
+            border-radius: 3px;
+            color: inherit;
+          }
+          .rte-read.show-labels mark[data-goal-id]::before {
+            content: attr(data-goal-title) ": ";
+            font-size: inherit;
+            font-style: normal;
+            font-weight: 700;
+            color: var(--tag-color, #6b7280);
+          }
+          .rte-read.show-labels mark[data-tag]::before {
+            content: attr(data-tag-label) ": ";
+            font-size: inherit;
+            font-style: normal;
+            font-weight: 700;
+            color: var(--tag-color, #6b7280);
+          }
+          .rte-read.show-labels mark[data-verbatim]::before {
+            content: attr(data-verbatim) ": ";
+            font-size: inherit;
+            font-style: normal;
+            font-weight: 700;
+            color: var(--tag-color, #6b7280);
+          }
+        `}</style>
         {/* Header */}
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-start justify-between gap-4">
@@ -462,19 +592,19 @@ function MilestoneDetailModal({
         </div>
 
         {/* Linked Notes */}
-        {sessionNotes.length > 0 && (
-          <div className="px-6 py-4 border-b border-gray-100">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5" />
-              {locale === 'fr' ? 'Notes liées' : locale === 'es' ? 'Notas vinculadas' : 'Linked notes'}
-              <span className="text-gray-400">({sessionNotes.length})</span>
-            </p>
+        <div className="px-6 py-4 border-b border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5" />
+            {locale === 'fr' ? 'Notes liées' : locale === 'es' ? 'Notas vinculadas' : 'Linked notes'}
+            {sessionNotes.length > 0 && <span className="text-gray-400">({sessionNotes.length})</span>}
+          </p>
+          {sessionNotes.length > 0 ? (
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {sessionNotes.map((note) => {
                 const noteTypeLabel = note.note_type ? noteTypes.find(nt => nt.type === note.note_type)?.label : null
                 return (
                   <div key={note.id} className={`p-3 rounded-lg border ${note.session_id ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100'}`}>
-                    <p className="text-xs text-gray-700">{note.content}</p>
+                    <p className="text-xs text-gray-700">{stripHtml(note.content).slice(0, 200)}{stripHtml(note.content).length > 200 ? '...' : ''}</p>
                     <div className="flex items-center gap-2 mt-1.5">
                       <span className={`text-[10px] flex items-center gap-1 ${note.session_id ? 'text-amber-600' : 'text-gray-500'}`}>
                         <Clock className="w-2.5 h-2.5" />
@@ -491,39 +621,54 @@ function MilestoneDetailModal({
                 )
               })}
             </div>
-          </div>
-        )}
+          ) : (
+            <p className="text-xs text-gray-400 italic py-1">
+              {locale === 'fr' ? 'Aucune note liée' : locale === 'es' ? 'Sin notas vinculadas' : 'No linked notes yet'}
+            </p>
+          )}
+        </div>
 
         {/* Tagged Excerpts from session notes */}
-        {taggedExcerpts.length > 0 && (
-          <div className="px-6 py-4 border-b border-gray-100">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <Target className="w-3.5 h-3.5" />
-              {locale === 'fr' ? 'Évoqué en séance' : 'Mentioned in session'}
-              <span className="text-gray-400">({taggedExcerpts.length})</span>
-            </p>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <Target className="w-3.5 h-3.5" />
+            {locale === 'fr' ? 'Évoqué en séance' : 'Mentioned in session'}
+            {taggedExcerpts.length > 0 && <span className="text-gray-400">({taggedExcerpts.length})</span>}
+          </p>
+          {taggedExcerpts.length > 0 ? (
+            <div className="space-y-2 max-h-60 overflow-y-auto">
               {taggedExcerpts.map((excerpt, i) => (
-                <div key={i} className="p-3 bg-emerald-50 rounded-lg border border-emerald-100">
-                  <p className="text-xs text-gray-700 italic">&ldquo;{excerpt.text}&rdquo;</p>
+                <div key={i} className="rounded-lg border border-gray-100 overflow-hidden">
+                  {excerpt.html ? (
+                    <div
+                      className="rte-read show-labels text-xs text-gray-700 [&_div[data-goal-section]]:m-0 [&_div[data-goal-section]]:text-xs [&_div[data-goal-section-header]]:text-sm [&_div[data-goal-section-header]]:py-1 [&_p]:my-1 [&_mark]:text-xs"
+                      dangerouslySetInnerHTML={{ __html: recolorExcerptHtml(excerpt.html, noteTypes.map(nt => nt.type)) }}
+                    />
+                  ) : (
+                    <p className="text-xs text-gray-700 italic p-3">&ldquo;{excerpt.text.slice(0, 200)}{excerpt.text.length > 200 ? '...' : ''}&rdquo;</p>
+                  )}
                   {(excerpt.sessionDate || excerpt.sessionType) && (
-                    <div className="flex items-center gap-2 mt-1.5">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-t border-gray-100">
                       {excerpt.sessionDate && (
-                        <span className="text-[10px] text-emerald-600 flex items-center gap-1">
+                        <span className="text-[10px] text-gray-500 flex items-center gap-1">
                           <Clock className="w-2.5 h-2.5" />
                           {new Date(excerpt.sessionDate).toLocaleDateString()}
                         </span>
                       )}
                       {excerpt.sessionType && (
-                        <span className="text-[10px] text-emerald-500">{excerpt.sessionType}</span>
+                        <span className="text-[10px] text-gray-500">{excerpt.sessionType}</span>
                       )}
                     </div>
                   )}
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <p className="text-xs text-gray-400 italic py-1">
+              {locale === 'fr' ? 'Aucune mention en séance' : locale === 'es' ? 'Sin menciones en sesión' : 'No tagged excerpts yet'}
+            </p>
+          )}
+        </div>
 
         {/* History Timeline */}
         <div className="px-6 py-4 border-b border-gray-100">
@@ -807,12 +952,11 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
           setMilestoneSessionNotes(groupedNotes)
         }
 
-        // Fetch inline goal-tagged excerpts from session summary notes
+        // Fetch inline goal-tagged excerpts from all notes (observations + session summaries)
         const { data: summaryNotes } = await supabase
           .from('progress_notes')
           .select('content, session_id, sessions(scheduled_at, session_type)')
           .eq('member_id', memberId)
-          .eq('note_type', 'session_summary')
           .order('created_at', { ascending: false })
 
         if (summaryNotes) {
@@ -822,10 +966,11 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
             const excerpts = extractGoalExcerpts(note.content)
             if (excerpts.length === 0) return
             const sessionData = Array.isArray(note.sessions) ? note.sessions[0] : note.sessions
-            for (const { goalId, text } of excerpts) {
+            for (const { goalId, text, html } of excerpts) {
               if (!grouped[goalId]) grouped[goalId] = []
               grouped[goalId].push({
                 text,
+                html,
                 sessionDate: sessionData?.scheduled_at,
                 sessionType: sessionData?.session_type,
               })
