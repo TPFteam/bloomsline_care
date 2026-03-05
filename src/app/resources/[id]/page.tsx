@@ -199,7 +199,7 @@ function renderResponseValue(block: ResourceBlock, value: unknown, locale: strin
 export default function ResourceDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { locale } = useLanguage()
+  const { locale, t } = useLanguage()
   const supabase = createClient()
   const [resource, setResource] = useState<Resource | null>(null)
   const [loading, setLoading] = useState(true)
@@ -1895,7 +1895,7 @@ export default function ResourceDetailPage() {
                   <div className="flex flex-wrap items-center gap-3 mb-5">
                     {resource.category && (
                       <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-sm font-medium">
-                        {typeof resource.category === 'string' ? resource.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : ''}
+                        {typeof resource.category === 'string' ? ((t.library.categories as Record<string, string>)[resource.category] || resource.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())) : ''}
                       </span>
                     )}
                   </div>
@@ -2126,7 +2126,7 @@ export default function ResourceDetailPage() {
                 <div className="flex flex-wrap items-center gap-3 mb-5">
                   {resource.category && (
                     <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-sm font-medium">
-                      {typeof resource.category === 'string' ? resource.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : ''}
+                      {typeof resource.category === 'string' ? ((t.library.categories as Record<string, string>)[resource.category] || resource.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())) : ''}
                     </span>
                   )}
                   {/* Visibility badge - only show for owner */}
@@ -2339,7 +2339,7 @@ export default function ResourceDetailPage() {
                       {locale === 'fr' ? 'Catégorie' : 'Category'}
                     </p>
                     <span className="inline-flex px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-sm font-medium">
-                      {typeof resource.category === 'string' ? resource.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : ''}
+                      {typeof resource.category === 'string' ? ((t.library.categories as Record<string, string>)[resource.category] || resource.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())) : ''}
                     </span>
                   </div>
                 )}

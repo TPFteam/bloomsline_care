@@ -55,7 +55,7 @@ function hoistEditorLabels(el: HTMLElement) {
   el.querySelectorAll('.label-hoisted').forEach(n => n.classList.remove('label-hoisted'))
 
   const blockTags = new Set(['p', 'div', 'li', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
-  const marks = el.querySelectorAll('mark[data-tag], mark[data-goal-id], mark[data-verbatim]')
+  const marks = el.querySelectorAll('mark[data-tag], mark[data-goal-id]')
 
   marks.forEach(mark => {
     const markEl = mark as HTMLElement
@@ -167,9 +167,11 @@ interface RichTextEditorProps {
   onSubmit?: () => void
   /** Called when user inserts an inline @tag — receives the tag type string */
   onTagInsert?: (tagType: string) => void
+  /** When parent changes the note type while a tag annotation is active, update the mark */
+  activeTagType?: string
 }
 
-export function RichTextEditor({ value, onChange, placeholder, memberId, locale, autoFocus, milestones, noteTypes, memberName, onAutoSave, autoSaveDelay = 2000, toolbarActions, compact, onSubmit, lockedTypes, onAddType, maxTypes = 10, onTagInsert }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, placeholder, memberId, locale, autoFocus, milestones, noteTypes, memberName, onAutoSave, autoSaveDelay = 2000, toolbarActions, compact, onSubmit, lockedTypes, onAddType, maxTypes = 10, onTagInsert, activeTagType }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [extracting, setExtracting] = useState(false)
@@ -185,6 +187,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
   const supabase = createClient()
   const initialized = useRef(false)
   const fr = locale === 'fr'
+  const es = locale === 'es'
 
   // P2 — Inline trigger state
   const [inlineTrigger, setInlineTrigger] = useState<{
@@ -226,7 +229,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
   })
 
   // Tagging state
-  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null)
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number; flipped?: boolean } | null>(null)
   const [popoverMode, setPopoverMode] = useState<PopoverMode>('choices')
   const [markTooltip, setMarkTooltip] = useState<{ top: number; left: number; markEl: HTMLElement; kind: 'goal' | 'tag' | 'verbatim' } | null>(null)
   const [hoverTooltip, setHoverTooltip] = useState<{ top: number; left: number; label: string; kind: 'goal' | 'tag' | 'verbatim' } | null>(null)
@@ -276,6 +279,110 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
   useEffect(() => {
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current) }
   }, [])
+
+  // When parent changes the note type: update active mark OR start annotation if editor is empty
+  useEffect(() => {
+    if (activeTagType === undefined) return
+    const editor = editorRef.current
+    if (!editor) return
+    // Case 0: Tag deselected while annotating → end the annotation
+    if (!activeTagType && activeTag) {
+      const marks = editor.querySelectorAll(`mark[data-tag="${activeTag.type}"]`)
+      const mark = marks.length ? marks[marks.length - 1] as HTMLElement : null
+      setActiveTag(null)
+      if (mark) {
+        // Clean zero-width spaces
+        const walker = document.createTreeWalker(mark, NodeFilter.SHOW_TEXT)
+        let tn: Node | null
+        while ((tn = walker.nextNode())) {
+          if (tn.textContent) tn.textContent = tn.textContent.replace(/\u200B/g, '')
+        }
+        if (!mark.textContent?.trim()) {
+          mark.parentNode?.removeChild(mark)
+        } else {
+          const spacer = document.createTextNode('\u00A0')
+          if (mark.nextSibling) {
+            mark.parentNode?.insertBefore(spacer, mark.nextSibling)
+          } else {
+            mark.parentNode?.appendChild(spacer)
+          }
+          const sel = window.getSelection()
+          if (sel) {
+            const r = document.createRange()
+            r.setStart(spacer, spacer.length)
+            r.collapse(true)
+            sel.removeAllRanges()
+            sel.addRange(r)
+          }
+        }
+        onChange(editor.innerHTML)
+      }
+      return
+    }
+
+    const newNoteType = noteTypes?.find(nt => nt.type === activeTagType)
+
+    // Case 1: Active tag exists but type changed → update the existing mark
+    if (activeTag && activeTag.type !== activeTagType && newNoteType) {
+      const marks = editor.querySelectorAll(`mark[data-tag="${activeTag.type}"]`)
+      const mark = marks.length ? marks[marks.length - 1] as HTMLElement : null
+      if (mark) {
+        const colors = getTagColor(newNoteType.type, allTagTypes)
+        mark.dataset.tag = newNoteType.type
+        mark.dataset.tagLabel = newNoteType.label
+        mark.setAttribute('style',
+          `background-color:${colors.bg};border-bottom:2px solid ${colors.border};padding:1px 2px;border-radius:2px;cursor:pointer;--tag-color:${colors.border};--tag-bg:${colors.bg};`
+        )
+        if (showLabels) hoistEditorLabels(editor)
+        onChange(editor.innerHTML)
+      }
+      setActiveTag(newNoteType)
+      return
+    }
+
+    // Case 2: No active tag, editor empty, non-default type → auto-start annotation
+    if (!activeTag && newNoteType) {
+      const text = editor.textContent || ''
+      if (!text.trim()) {
+        editor.focus()
+        // Ensure cursor is inside the editor
+        const sel = window.getSelection()
+        if (!sel || !sel.rangeCount) {
+          const range = document.createRange()
+          range.selectNodeContents(editor)
+          range.collapse(false)
+          sel?.removeAllRanges()
+          sel?.addRange(range)
+        }
+        const range = sel!.getRangeAt(0)
+        const colors = getTagColor(newNoteType.type, allTagTypes)
+        const mark = document.createElement('mark')
+        mark.dataset.tag = newNoteType.type
+        mark.dataset.tagLabel = newNoteType.label
+        mark.setAttribute('style',
+          `background-color:${colors.bg};border-bottom:2px solid ${colors.border};padding:1px 2px;border-radius:2px;cursor:pointer;--tag-color:${colors.border};--tag-bg:${colors.bg};`
+        )
+        mark.appendChild(document.createTextNode('\u200B'))
+        // Clear any existing content and insert the mark
+        editor.innerHTML = ''
+        editor.appendChild(mark)
+        const newRange = document.createRange()
+        const lastChild = mark.lastChild || mark
+        if (lastChild.nodeType === Node.TEXT_NODE) {
+          newRange.setStart(lastChild, lastChild.textContent?.length || 0)
+        } else {
+          newRange.selectNodeContents(mark)
+          newRange.collapse(false)
+        }
+        newRange.collapse(true)
+        sel!.removeAllRanges()
+        sel!.addRange(newRange)
+        setActiveTag(newNoteType)
+        setIsEmpty(false)
+        onChange(editor.innerHTML)
+      }
+    }
+  }, [activeTagType])
 
   const handleInput = useCallback(() => {
     if (!editorRef.current) return
@@ -487,7 +594,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     document.execCommand('delete', false)
   }, [inlineTrigger])
 
-  // Start goal annotation mode — insert section at cursor
+  // Start goal annotation mode — insert section at cursor, wrapping selected text if any
   const startGoalAnnotation = useCallback((milestone: { id: string; title: string; status: string }) => {
     const editor = editorRef.current
     if (!editor) return
@@ -495,40 +602,89 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
 
     const sel = window.getSelection()
     if (!sel || !sel.rangeCount) return
-
-    // Move cursor to end of the current block so the section inserts after it
     const range = sel.getRangeAt(0)
-    let blockNode: Node | null = sel.anchorNode
-    while (blockNode && blockNode !== editor && blockNode.parentNode !== editor) {
-      blockNode = blockNode.parentNode
-    }
-    if (blockNode && blockNode !== editor) {
-      range.setStartAfter(blockNode)
-      range.collapse(true)
-      sel.removeAllRanges()
-      sel.addRange(range)
-    }
+    const hasSelection = !sel.isCollapsed && editor.contains(range.commonAncestorContainer)
 
     const colors = getGoalColor(milestone.status)
-    const sectionHTML =
-      `<div data-goal-section="" data-goal-id="${milestone.id}" data-goal-title="${milestone.title.replace(/"/g, '&quot;')}" data-goal-status="${milestone.status}" style="margin:16px 0 8px;border-left:3px solid ${colors.border};padding:0 0 4px 16px;">` +
-      `<div contenteditable="false" data-goal-section-header="" style="font-size:16px;font-weight:700;color:${colors.border};padding:8px 0;user-select:none;">\u25CF ${milestone.title}</div>` +
-      `<p><br></p>` +
-      `</div>` +
-      `<p><br></p>`
 
-    document.execCommand('insertHTML', false, sectionHTML)
+    if (hasSelection) {
+      // Extract selected content, wrap it inside the goal section
+      const fragment = range.extractContents()
+      const section = document.createElement('div')
+      section.dataset.goalSection = ''
+      section.dataset.goalId = milestone.id
+      section.dataset.goalTitle = milestone.title
+      section.dataset.goalStatus = milestone.status
+      section.setAttribute('style', `margin:16px 0 8px;border-left:3px solid ${colors.border};padding:0 0 4px 16px;`)
 
-    // Place cursor inside the content <p> within the section
-    const section = editor.querySelector(`div[data-goal-section][data-goal-id="${milestone.id}"]`) as HTMLElement | null
-    if (section) {
-      const contentP = section.querySelector('p')
-      if (contentP) {
+      const header = document.createElement('div')
+      header.contentEditable = 'false'
+      header.dataset.goalSectionHeader = ''
+      header.setAttribute('style', `font-size:16px;font-weight:700;color:${colors.border};padding:8px 0;user-select:none;`)
+      header.textContent = `\u25CF ${milestone.title}`
+      section.appendChild(header)
+
+      // Wrap fragment nodes in <p> if they're bare text
+      const wrapper = document.createElement('div')
+      wrapper.appendChild(fragment)
+      if (wrapper.childNodes.length > 0) {
+        Array.from(wrapper.childNodes).forEach(child => {
+          section.appendChild(child)
+        })
+      } else {
+        const p = document.createElement('p')
+        p.appendChild(document.createElement('br'))
+        section.appendChild(p)
+      }
+
+      range.insertNode(section)
+
+      // Add trailing <p> after section
+      const trailingP = document.createElement('p')
+      trailingP.appendChild(document.createElement('br'))
+      section.parentNode?.insertBefore(trailingP, section.nextSibling)
+
+      // Place cursor at end of content inside the section
+      const lastChild = section.lastChild
+      if (lastChild) {
         const newRange = document.createRange()
-        newRange.setStart(contentP, 0)
-        newRange.collapse(true)
+        newRange.selectNodeContents(lastChild)
+        newRange.collapse(false)
         sel.removeAllRanges()
         sel.addRange(newRange)
+      }
+    } else {
+      // No selection — insert empty section after current block
+      let blockNode: Node | null = sel.anchorNode
+      while (blockNode && blockNode !== editor && blockNode.parentNode !== editor) {
+        blockNode = blockNode.parentNode
+      }
+      if (blockNode && blockNode !== editor) {
+        range.setStartAfter(blockNode)
+        range.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(range)
+      }
+
+      const sectionHTML =
+        `<div data-goal-section="" data-goal-id="${milestone.id}" data-goal-title="${milestone.title.replace(/"/g, '&quot;')}" data-goal-status="${milestone.status}" style="margin:16px 0 8px;border-left:3px solid ${colors.border};padding:0 0 4px 16px;">` +
+        `<div contenteditable="false" data-goal-section-header="" style="font-size:16px;font-weight:700;color:${colors.border};padding:8px 0;user-select:none;">\u25CF ${milestone.title}</div>` +
+        `<p><br></p>` +
+        `</div>` +
+        `<p><br></p>`
+
+      document.execCommand('insertHTML', false, sectionHTML)
+
+      const section = editor.querySelector(`div[data-goal-section][data-goal-id="${milestone.id}"]`) as HTMLElement | null
+      if (section) {
+        const contentP = section.querySelector('p')
+        if (contentP) {
+          const newRange = document.createRange()
+          newRange.setStart(contentP, 0)
+          newRange.collapse(true)
+          sel.removeAllRanges()
+          sel.addRange(newRange)
+        }
       }
     }
 
@@ -777,9 +933,8 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                 document.execCommand('insertHTML', false, mentionHTML)
               } else {
                 // "Name said:" — enter annotation mode, cursor inside mark
-                const prefixText = `${memberName} ${fr ? 'a dit' : 'said'}: `
                 const saidHTML =
-                  `<mark data-verbatim="${memberName}" data-verbatim-type="said" style="background-color:#f0f9ff;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;">${prefixText}\u200B</mark>`
+                  `<mark data-verbatim="${memberName}" data-verbatim-type="said" style="background-color:#e0f2fe;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;--tag-bg:#e0f2fe;">\u200B</mark>`
                 document.execCommand('insertHTML', false, saidHTML)
                 // Place cursor inside the mark
                 const marks = editor.querySelectorAll('mark[data-verbatim-type="said"]')
@@ -919,11 +1074,13 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     }
 
     const rect = range.getBoundingClientRect()
-    const top = rect.bottom + 4
+    // Flip upward if near the bottom of the viewport (within 250px)
+    const nearBottom = rect.bottom + 250 > window.innerHeight
+    const top = nearBottom ? rect.top - 8 : rect.bottom + 4
     const left = rect.left + rect.width / 2
 
     savedRange.current = range.cloneRange()
-    setPopoverPos({ top, left })
+    setPopoverPos({ top, left, flipped: nearBottom })
     // If inside a goal section, only show tags (no goals)
     if (insideGoalSection) {
       if (hasTags) setPopoverMode('tags')
@@ -994,10 +1151,9 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     const mark = document.createElement('mark')
     mark.dataset.verbatim = memberName
     mark.setAttribute('style',
-      'background-color:#f0f9ff;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;'
+      'background-color:#e0f2fe;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;--tag-bg:#e0f2fe;'
     )
     wrapWithMark(mark)
-    // Refocus editor so user can keep typing after wrapping
     editor.focus()
   }, [memberName, wrapWithMark])
 
@@ -1338,8 +1494,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
           color: inherit;
         }
         .rte-editor.show-labels mark[data-goal-id]::before,
-        .rte-editor.show-labels mark[data-tag]::before,
-        .rte-editor.show-labels mark[data-verbatim]::before {
+        .rte-editor.show-labels mark[data-tag]::before {
           font-size: inherit;
           font-style: normal;
           font-weight: 700;
@@ -1350,9 +1505,6 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         }
         .rte-editor.show-labels mark[data-tag]::before {
           content: attr(data-tag-label) ": ";
-        }
-        .rte-editor.show-labels mark[data-verbatim]::before {
-          content: attr(data-verbatim) ": ";
         }
         .rte-editor.show-labels mark.label-hoisted::before {
           display: none !important;
@@ -1550,16 +1702,20 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                       const sel = window.getSelection()
                       if (!sel || !sel.rangeCount) return
                       const range = sel.getRangeAt(0)
+                      // If text is selected, wrap it as a quote highlight
+                      if (!sel.isCollapsed && editor.contains(range.commonAncestorContainer)) {
+                        wrapSelectionWithVerbatim()
+                        return
+                      }
+                      // Otherwise start annotation mode
                       range.collapse(false)
                       const mark = document.createElement('mark')
                       mark.dataset.verbatim = memberName
                       mark.dataset.verbatimType = 'said'
                       mark.setAttribute('style',
-                        'background-color:#f0f9ff;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;'
+                        'background-color:#e0f2fe;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;--tag-bg:#e0f2fe;'
                       )
-                      const prefix = document.createTextNode(`${memberName} ${fr ? 'a dit' : 'said'}: `)
                       const zwsp = document.createTextNode('\u200B')
-                      mark.appendChild(prefix)
                       mark.appendChild(zwsp)
                       range.insertNode(mark)
                       const newRange = document.createRange()
@@ -1570,7 +1726,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                       setActiveVerbatim(true)
                       handleInput()
                     }}
-                    className="p-1.5 transition-colors text-gray-400 hover:text-sky-600 hover:bg-sky-50/50"
+                    className="p-1.5 transition-colors text-sky-500 hover:text-sky-600 hover:bg-sky-50/50"
                     title={fr ? `${memberName} a dit` : `${memberName} said`}
                   >
                     <Quote className="w-3.5 h-3.5" />
@@ -1687,7 +1843,11 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         <div
           data-goal-popover
           className="fixed z-[100]"
-          style={{ top: popoverPos.top, left: popoverPos.left, transform: 'translateX(-50%)' }}
+          style={{
+            ...(popoverPos.flipped
+              ? { bottom: window.innerHeight - popoverPos.top, left: popoverPos.left, transform: 'translateX(-50%)' }
+              : { top: popoverPos.top, left: popoverPos.left, transform: 'translateX(-50%)' }),
+          }}
         >
           {renderPopoverContent()}
         </div>,
@@ -1714,7 +1874,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                 ? markTooltip.markEl.dataset.goalTitle
                 : markTooltip.kind === 'tag'
                   ? markTooltip.markEl.dataset.tagLabel
-                  : `${markTooltip.markEl.dataset.verbatim} ${fr ? 'a dit' : 'said'}`}
+                  : `${markTooltip.markEl.dataset.verbatim} ${fr ? 'a dit' : es ? 'dijo' : 'said'}`}
             </span>
             <div className="w-px h-3 bg-gray-600" />
             <button
@@ -1807,7 +1967,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                     <Tag className="w-3.5 h-3.5 text-violet-600" />
                   )}
                   <span className="text-xs text-gray-700">
-                    {fr ? 'Terminer' : 'End'}: {inlineTrigger.type === 'end-verbatim' ? `${memberName} ${fr ? 'a dit' : 'said'}` : (activeGoal?.title || activeTag?.label)}
+                    {fr ? 'Terminer' : 'End'}: {inlineTrigger.type === 'end-verbatim' ? `${memberName} ${fr ? 'a dit' : es ? 'dijo' : 'said'}` : (activeGoal?.title || activeTag?.label)}
                   </span>
                 </button>
               </>
@@ -1818,7 +1978,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                 </div>
                 {[
                   { label: memberName, isVerbatim: false },
-                  { label: `${memberName} ${fr ? 'a dit' : 'said'}`, isVerbatim: true },
+                  { label: `${memberName} ${fr ? 'a dit' : es ? 'dijo' : 'said'}`, isVerbatim: true },
                 ].map((opt, idx) => (
                   <button
                     key={idx}
@@ -1837,11 +1997,9 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                             // "Name said:" — enter annotation mode
                             mark.dataset.verbatimType = 'said'
                             mark.setAttribute('style',
-                              'background-color:#f0f9ff;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;'
+                              'background-color:#e0f2fe;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;--tag-bg:#e0f2fe;'
                             )
-                            const prefix = document.createTextNode(`${opt.label}: `)
                             const zwsp = document.createTextNode('\u200B')
-                            mark.appendChild(prefix)
                             mark.appendChild(zwsp)
                             range.insertNode(mark)
                             const newRange = document.createRange()

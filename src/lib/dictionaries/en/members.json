@@ -272,7 +272,8 @@
     "transfert": "Transference",
     "contre_transfert": "Countertransference",
     "ajustement_envisage": "Planned Adjustment",
-    "milestone": "Milestone"
+    "milestone": "Milestone",
+    "session_summary": "Session"
   },
 
   "errors": {

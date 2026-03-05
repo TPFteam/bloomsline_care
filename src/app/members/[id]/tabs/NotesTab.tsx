@@ -68,27 +68,30 @@ const ASSIST_PROMPT_KEYS: PromptKey[] = [
   'note_suggestions',
 ]
 
+// Matches TAG_COLOR_PALETTE order from RichTextEditor (by DEFAULT_NOTE_TYPES index)
+// 0 red, 1 blue, 2 orange, 3 violet, 4 yellow, 5 pink, 6 emerald, 7 indigo, 8 cyan, 9 fuchsia
 const noteTypeColors: Record<string, { bg: string; text: string; border: string }> = {
-  general: { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-l-gray-300' },
-  symptome: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-l-rose-400' },
-  recurrence: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-l-purple-400' },
-  hypothese: { bg: 'bg-teal-50', text: 'text-teal-700', border: 'border-l-teal-400' },
-  transfert: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-l-indigo-400' },
-  contre_transfert: { bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-l-pink-400' },
+  general:             { bg: 'bg-red-50',     text: 'text-red-700',     border: 'border-l-red-400' },
+  recurrence:          { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-l-blue-400' },
+  hypothese:           { bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-l-orange-400' },
+  symptome:            { bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-l-violet-400' },
+  transfert:           { bg: 'bg-yellow-50',  text: 'text-yellow-700',  border: 'border-l-yellow-400' },
+  contre_transfert:    { bg: 'bg-pink-50',    text: 'text-pink-700',    border: 'border-l-pink-400' },
   ajustement_envisage: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-l-emerald-400' },
-  milestone: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-l-green-400' },
+  milestone:           { bg: 'bg-green-50',   text: 'text-green-700',   border: 'border-l-green-400' },
 }
+// Follows TAG_COLOR_PALETTE indices 7+ for custom types
 const extraColorPool = [
-  { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-l-amber-400' },
-  { bg: 'bg-cyan-50', text: 'text-cyan-700', border: 'border-l-cyan-400' },
-  { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-l-orange-400' },
-  { bg: 'bg-lime-50', text: 'text-lime-700', border: 'border-l-lime-400' },
-  { bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-l-sky-400' },
+  { bg: 'bg-indigo-50',  text: 'text-indigo-700',  border: 'border-l-indigo-400' },
+  { bg: 'bg-cyan-50',    text: 'text-cyan-700',    border: 'border-l-cyan-400' },
   { bg: 'bg-fuchsia-50', text: 'text-fuchsia-700', border: 'border-l-fuchsia-400' },
-  { bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-l-violet-400' },
-  { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-l-yellow-400' },
-  { bg: 'bg-red-50', text: 'text-red-700', border: 'border-l-red-400' },
-  { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-l-blue-400' },
+  { bg: 'bg-red-50',     text: 'text-red-700',     border: 'border-l-red-400' },
+  { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-l-blue-400' },
+  { bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-l-orange-400' },
+  { bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-l-violet-400' },
+  { bg: 'bg-yellow-50',  text: 'text-yellow-700',  border: 'border-l-yellow-400' },
+  { bg: 'bg-pink-50',    text: 'text-pink-700',    border: 'border-l-pink-400' },
+  { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-l-emerald-400' },
 ]
 const dynamicColorCache: Record<string, { bg: string; text: string; border: string }> = {}
 let colorIndex = 0
@@ -99,6 +102,48 @@ const getNoteColor = (type: string) => {
     colorIndex++
   }
   return dynamicColorCache[type]
+}
+
+/** Strip HTML tags and decode entities like &nbsp; */
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+}
+
+// Extract only text inside <mark data-tag="..."> for the given tag types
+function extractTaggedText(html: string, tags: string[]): string {
+  const fragments: string[] = []
+  for (const tag of tags) {
+    const regex = new RegExp(`<mark[^>]*data-tag="${tag}"[^>]*>(.*?)</mark>`, 'gis')
+    let match
+    while ((match = regex.exec(html)) !== null) {
+      const text = stripHtml(match[1]).trim()
+      if (text) fragments.push(text)
+    }
+  }
+  return fragments.join(' ... ')
+}
+
+// Same but returns structured fragments with tag info
+function extractTaggedFragments(html: string, tags: string[]): { tag: string; label: string; text: string }[] {
+  const fragments: { tag: string; label: string; text: string }[] = []
+  for (const tag of tags) {
+    const regex = new RegExp(`<mark[^>]*data-tag="${tag}"[^>]*?data-tag-label="([^"]*)"[^>]*>(.*?)</mark>`, 'gis')
+    let match
+    while ((match = regex.exec(html)) !== null) {
+      const text = stripHtml(match[2]).trim()
+      if (text) fragments.push({ tag, label: match[1], text })
+    }
+    // Fallback: try without data-tag-label
+    if (!fragments.some(f => f.tag === tag)) {
+      const fallbackRegex = new RegExp(`<mark[^>]*data-tag="${tag}"[^>]*>(.*?)</mark>`, 'gis')
+      let m
+      while ((m = fallbackRegex.exec(html)) !== null) {
+        const text = stripHtml(m[1]).trim()
+        if (text) fragments.push({ tag, label: tag, text })
+      }
+    }
+  }
+  return fragments
 }
 
 const defaultNoteTypes: readonly string[] = DEFAULT_NOTE_TYPES
@@ -149,7 +194,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   // ==============================
   const [padSessionId, setPadSessionId] = useState<string>('')
   const [padMilestoneId, setPadMilestoneId] = useState<string>('')
-  const [padNoteType, setPadNoteType] = useState<NoteType>('general')
+  const [padNoteType, setPadNoteType] = useState<NoteType>('')
   const [padInput, setPadInput] = useState('')
   const [padRichContent, setPadRichContent] = useState('')
   const [padSaving, setPadSaving] = useState(false)
@@ -327,7 +372,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       setCustomNoteTypes(prev => prev.filter(t => t !== typeName))
     }
 
-    if (padNoteType === typeName) setPadNoteType('general')
+    if (padNoteType === typeName) setPadNoteType('')
     setCustomTypeMenu(null)
     toast.success(locale === 'fr' ? 'Type supprimé' : 'Type deleted')
   }
@@ -583,7 +628,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
           milestone_id: padMilestoneId || null,
           title: null,
           content: padInput.trim(),
-          note_type: padNoteType,
+          note_type: padNoteType || 'general',
           is_private: true,
           image_urls: imageUrls.length > 0 ? imageUrls : null,
         })
@@ -593,6 +638,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       setPadInput('')
       setPadImages([])
       setPadImagePreviews([])
+      setPadNoteType('')
       fetchAllNotes()
       onNotesUpdate()
 
@@ -625,13 +671,14 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
           milestone_id: padMilestoneId || null,
           title: null,
           content: padRichContent,
-          note_type: padNoteType,
+          note_type: padNoteType || 'general',
           is_private: true,
         })
 
       if (error) throw error
 
       setPadRichContent('')
+      setPadNoteType('')
       fetchAllNotes()
       onNotesUpdate()
     } catch (error) {
@@ -966,7 +1013,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     if (typeFilters.size > 0) {
       const wantsNoTag = typeFilters.has('__no_tag__')
       const tagFilters = [...typeFilters].filter(t => t !== '__no_tag__')
-      const hasAnyTag = allNoteTypes.some(t => note.note_type === t || note.content.includes(`data-tag="${t}"`))
+      const hasInlineTag = allNoteTypes.some(t => note.content.includes(`data-tag="${t}"`))
+      const hasExplicitType = note.note_type !== 'general' && allNoteTypes.includes(note.note_type)
+      const hasAnyTag = hasInlineTag || hasExplicitType
       const matchesNoTag = wantsNoTag && !hasAnyTag
       const matchesTagFilter = tagFilters.length > 0 && (
         tagFilters.some(tag => note.note_type === tag) ||
@@ -1278,9 +1327,11 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     }`}
                   >
                     <div className="flex items-center gap-1.5 mb-1">
-                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getNoteColor(note.note_type).bg} ${getNoteColor(note.note_type).text}`}>
-                        {t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes] || note.note_type}
-                      </span>
+                      {note.note_type !== 'general' && !note.content.includes(`data-tag="${note.note_type}"`) && (
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getNoteColor(note.note_type).bg} ${getNoteColor(note.note_type).text}`}>
+                          {t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes] || note.note_type}
+                        </span>
+                      )}
                       <span className="text-[10px] text-gray-300 ml-auto tabular-nums flex-shrink-0">
                         {new Date(note.created_at).toLocaleDateString(
                           locale === 'fr' ? 'fr-FR' : 'en-US',
@@ -1293,7 +1344,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     {note.title && (
                       <p className="text-xs font-medium text-gray-800 truncate">{note.title}</p>
                     )}
-                    <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mt-0.5">{note.content.replace(/<[^>]*>/g, '')}</p>
+                    <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mt-0.5">{stripHtml(note.content)}</p>
                   </button>
                 ))}
               </div>
@@ -1325,7 +1376,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     <div className="px-2 space-y-0.5">
                       {snUpcoming.map(s => {
                         const hasNote = !!snSessionSummaryNotes[s.id]
-                        const notePreview = snSessionSummaryNotes[s.id]?.content?.replace(/<[^>]*>/g, '').slice(0, 60) || ''
+                        const notePreview = snSessionSummaryNotes[s.id]?.content ? stripHtml(snSessionSummaryNotes[s.id]!.content).slice(0, 60) : ''
                         const isSelected = selectedItemId === s.id
                         const FormatIcon = snFormatIcon[s.session_format] || User
                         return (
@@ -1398,7 +1449,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     <div className="px-2 space-y-0.5">
                       {snCompleted.map(s => {
                         const hasNote = !!snSessionSummaryNotes[s.id]
-                        const notePreview = snSessionSummaryNotes[s.id]?.content?.replace(/<[^>]*>/g, '').slice(0, 60) || ''
+                        const notePreview = snSessionSummaryNotes[s.id]?.content ? stripHtml(snSessionSummaryNotes[s.id]!.content).slice(0, 60) : ''
                         const isSelected = selectedItemId === s.id
                         const FormatIcon = snFormatIcon[s.session_format] || User
                         return (
@@ -1927,7 +1978,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
               <RichTextEditor
                 value={padRichContent}
                 onChange={setPadRichContent}
-                placeholder={locale === 'fr' ? 'Écrivez une observation... (Enter pour envoyer)' : locale === 'es' ? 'Escribe una observación... (Enter para enviar)' : 'Write an observation... (Enter to send)'}
+                placeholder={locale === 'fr' ? 'Écrivez une observation... (@tag · Enter pour envoyer)' : locale === 'es' ? 'Escribe una observación... (@tag · Enter para enviar)' : 'Write an observation... (@tag · Enter to send)'}
                 memberId={memberId}
                 locale={locale}
                 milestones={milestones}
@@ -1939,6 +1990,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 compact
                 onSubmit={handlePadRichSubmit}
                 onTagInsert={(tagType) => setPadNoteType(tagType as NoteType)}
+                activeTagType={padNoteType}
                 toolbarActions={
                   <button
                     type="button"
@@ -2006,7 +2058,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     return (
                       <button
                         key={type}
-                        onClick={() => setPadNoteType(type)}
+                        onClick={() => setPadNoteType(prev => prev === type ? '' : type)}
                         onDoubleClick={(e) => {
                           if (!isDeletable) return
                           e.preventDefault()
@@ -2559,9 +2611,11 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getNoteColor(note.note_type).bg} ${getNoteColor(note.note_type).text}`}>
-                            {t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes] || note.note_type}
-                          </span>
+                          {note.note_type !== 'general' && !note.content.includes(`data-tag="${note.note_type}"`) && (
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getNoteColor(note.note_type).bg} ${getNoteColor(note.note_type).text}`}>
+                              {t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes] || note.note_type}
+                            </span>
+                          )}
                           {note.milestone_id && (note as any).milestones?.title && (
                             <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600">
                               <Target className="w-2.5 h-2.5" />
@@ -2578,7 +2632,33 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                         {note.title && (
                           <p className="text-sm font-medium text-gray-900 mb-0.5 truncate">{note.title}</p>
                         )}
-                        <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{note.content.replace(/<[^>]*>/g, '')}</p>
+                        {(() => {
+                          const activeTags = [...typeFilters].filter(tf => tf !== '__no_tag__')
+                          if (activeTags.length > 0) {
+                            const fragments = extractTaggedFragments(note.content, activeTags)
+                            if (fragments.length > 0) {
+                              return (
+                                <div className="space-y-1">
+                                  {fragments.slice(0, 3).map((frag, i) => {
+                                    const colors = getNoteColor(frag.tag)
+                                    return (
+                                      <div key={i} className="flex items-start gap-1.5">
+                                        <span className={`inline-flex items-center px-1 py-0 rounded text-[9px] font-semibold flex-shrink-0 mt-0.5 ${colors.bg} ${colors.text}`}>
+                                          {frag.label}
+                                        </span>
+                                        <span className="text-xs text-gray-600 line-clamp-1">{frag.text}</span>
+                                      </div>
+                                    )
+                                  })}
+                                  {fragments.length > 3 && (
+                                    <span className="text-[10px] text-gray-400">+{fragments.length - 3} {locale === 'fr' ? 'de plus' : 'more'}</span>
+                                  )}
+                                </div>
+                              )
+                            }
+                          }
+                          return <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{stripHtml(note.content)}</p>
+                        })()}
                       </div>
                     </div>
                   </button>
@@ -2636,10 +2716,34 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 {selectedNote.title && (
                   <h3 className="text-base font-semibold text-gray-900 mb-2">{selectedNote.title}</h3>
                 )}
-                <MarkdownRenderer
-                  content={selectedNote.content}
-                  className="leading-relaxed"
-                />
+                {(() => {
+                  const activeTags = [...typeFilters].filter(t => t !== '__no_tag__')
+                  if (activeTags.length > 0) {
+                    // Inject highlight styles: dim all text, make matching marks pop
+                    const highlightCss = `
+                      .browse-highlight { color: rgba(107, 114, 128, 0.45); }
+                      .browse-highlight mark[data-tag] { opacity: 0.4; }
+                      ${activeTags.map(tag =>
+                        `.browse-highlight mark[data-tag="${tag}"] { opacity: 1 !important; background-color: var(--tag-bg, #fef9c3) !important; padding: 2px 4px; border-radius: 3px; box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.3); color: #111827 !important; }`
+                      ).join('\n')}
+                    `
+                    return (
+                      <>
+                        <style>{highlightCss}</style>
+                        <MarkdownRenderer
+                          content={selectedNote.content}
+                          className="leading-relaxed browse-highlight"
+                        />
+                      </>
+                    )
+                  }
+                  return (
+                    <MarkdownRenderer
+                      content={selectedNote.content}
+                      className="leading-relaxed"
+                    />
+                  )
+                })()}
 
                 {selectedNote.image_urls && selectedNote.image_urls.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-4">

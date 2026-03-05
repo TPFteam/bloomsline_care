@@ -272,7 +272,8 @@
     "transfert": "Transfert",
     "contre_transfert": "Contre-transfert",
     "ajustement_envisage": "Ajustement envisagé",
-    "milestone": "Jalon"
+    "milestone": "Jalon",
+    "session_summary": "Séance"
   },
 
   "errors": {
