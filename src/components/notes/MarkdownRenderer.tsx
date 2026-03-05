@@ -33,10 +33,44 @@ const GOAL_BG = '#dbeafe'
 // Old goal greens to replace with navy
 const OLD_GOAL_COLORS = ['#059669','#047857','#065f46','#6d28d9','#2563eb','#d1fae5','#a7f3d0','#6ee7b7','#ede9fe']
 
-/** Inject --tag-color and --tag-bg into mark inline styles that don't already have them */
+// Same palette as RichTextEditor — must stay in sync
+const TAG_COLOR_PALETTE: { bg: string; border: string }[] = [
+  { bg: '#fef2f2', border: '#ef4444' },  // red
+  { bg: '#eff6ff', border: '#3b82f6' },  // blue
+  { bg: '#fff7ed', border: '#f97316' },  // orange
+  { bg: '#f5f3ff', border: '#8b5cf6' },  // violet
+  { bg: '#fef9c3', border: '#ca8a04' },  // gold
+  { bg: '#fdf2f8', border: '#ec4899' },  // pink
+  { bg: '#ecfdf5', border: '#10b981' },  // emerald
+  { bg: '#eef2ff', border: '#6366f1' },  // indigo
+  { bg: '#ecfeff', border: '#06b6d4' },  // cyan
+  { bg: '#faf5ff', border: '#a21caf' },  // fuchsia
+]
+
+/** Inject --tag-color and --tag-bg into mark inline styles + rewrite tag colors to current palette */
 function injectTagColors(html: string): string {
-  // 1. Inject CSS vars into marks
-  let result = html.replace(/<mark\b([^>]*)\bstyle="([^"]*)"([^>]*)>/gi, (full, before, style, after) => {
+  // Collect all tag types in document order for palette assignment
+  const tagTypes: string[] = []
+  html.replace(/data-tag="([^"]*)"/gi, (_m, type) => { if (!tagTypes.includes(type)) tagTypes.push(type); return '' })
+
+  // 1. Inject CSS vars into marks + recolor to palette
+  let result = html.replace(/<mark\b([^>]*)\bstyle="([^"]*)"([^>]*)>/gi, (full, before: string, style: string, after: string) => {
+    // Rewrite tag colors to current palette
+    const tagMatch = (before + after).match(/data-tag="([^"]*)"/)
+    if (tagMatch && tagTypes.length) {
+      const tagType = tagMatch[1]
+      const idx = tagTypes.indexOf(tagType)
+      const colors = idx >= 0 ? TAG_COLOR_PALETTE[idx % TAG_COLOR_PALETTE.length] : TAG_COLOR_PALETTE[TAG_COLOR_PALETTE.length - 1]
+      let s = style
+      s = s.replace(/background-color:\s*#[0-9a-fA-F]{3,8}/, `background-color:${colors.bg}`)
+      s = s.replace(/border-bottom:\s*2px\s+solid\s+#[0-9a-fA-F]{3,8}/, `border-bottom:2px solid ${colors.border}`)
+      s = s.replace(/--tag-color:\s*#[0-9a-fA-F]{3,8}/, `--tag-color:${colors.border}`)
+      s = s.replace(/--tag-bg:\s*#[0-9a-fA-F]{3,8}/, `--tag-bg:${colors.bg}`)
+      if (!s.includes('--tag-color')) s += `;--tag-color:${colors.border}`
+      if (!s.includes('--tag-bg')) s += `;--tag-bg:${colors.bg}`
+      return `<mark${before}style="${s}"${after}>`
+    }
+
     let extras = ''
     if (!style.includes('--tag-color')) {
       const borderMatch = style.match(/border-(?:bottom|left):[^;]*solid\s+(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))/)
@@ -89,7 +123,8 @@ export function MarkdownRenderer({ content, className, onContentChange, onEdit, 
 
   // Preprocess HTML: inject CSS custom properties for tag colors
   const processedHtml = useMemo(() => {
-    if (!content || !isHtml(content)) return ''
+    if (!content) return ''
+    if (!isHtml(content)) return `<p>${content}</p>`
     return injectTagColors(sanitize(content))
   }, [content])
 
@@ -315,8 +350,34 @@ export function MarkdownRenderer({ content, className, onContentChange, onEdit, 
 
   // Legacy plain text — render with preserved line breaks
   return (
-    <p className={`text-sm text-gray-700 whitespace-pre-wrap ${className || ''}`}>
-      {content}
-    </p>
+    <div className="relative flex">
+      {(onEdit || onDelete) && (
+        <div className="flex flex-col items-center gap-1 pt-1 pr-1.5">
+          {onEdit && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onEdit() }}
+              className="p-1.5 rounded transition-colors text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+              title="Edit"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDelete() }}
+              className="p-1.5 rounded transition-colors text-gray-400 hover:text-red-500 hover:bg-red-50"
+              title="Delete"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+      <p className={`flex-1 text-sm text-gray-700 whitespace-pre-wrap ${className || ''}`}>
+        {content}
+      </p>
+    </div>
   )
 }

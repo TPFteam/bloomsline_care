@@ -103,7 +103,7 @@ export default function ProfilePage() {
     show_fees: false,
     insurance_accepted: [],
     offers_sliding_scale: false,
-    social_links: { website: null, linkedin: null, twitter: null, instagram: null },
+    social_links: { website: null, linkedin: null, twitter: null, instagram: null, facebook: null },
     contact_email: '',
     contact_phone: '',
     publications: [],
@@ -1261,12 +1261,7 @@ export default function ProfilePage() {
                           value={profile.social_links?.website || ''}
                           onChange={(e) => setProfile(prev => ({
                             ...prev,
-                            social_links: {
-                              website: e.target.value || null,
-                              linkedin: prev.social_links?.linkedin ?? null,
-                              twitter: prev.social_links?.twitter ?? null,
-                              instagram: prev.social_links?.instagram ?? null,
-                            }
+                            social_links: { ...prev.social_links, website: e.target.value || null } as any
                           }))}
                           placeholder="https://yourwebsite.com"
                           className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
@@ -1281,14 +1276,39 @@ export default function ProfilePage() {
                           value={profile.social_links?.linkedin || ''}
                           onChange={(e) => setProfile(prev => ({
                             ...prev,
-                            social_links: {
-                              website: prev.social_links?.website ?? null,
-                              linkedin: e.target.value || null,
-                              twitter: prev.social_links?.twitter ?? null,
-                              instagram: prev.social_links?.instagram ?? null,
-                            }
+                            social_links: { ...prev.social_links, linkedin: e.target.value || null } as any
                           }))}
                           placeholder="https://linkedin.com/in/yourprofile"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Instagram
+                        </label>
+                        <input
+                          type="url"
+                          value={profile.social_links?.instagram || ''}
+                          onChange={(e) => setProfile(prev => ({
+                            ...prev,
+                            social_links: { ...prev.social_links, instagram: e.target.value || null } as any
+                          }))}
+                          placeholder="https://instagram.com/yourprofile"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Facebook
+                        </label>
+                        <input
+                          type="url"
+                          value={profile.social_links?.facebook || ''}
+                          onChange={(e) => setProfile(prev => ({
+                            ...prev,
+                            social_links: { ...prev.social_links, facebook: e.target.value || null } as any
+                          }))}
+                          placeholder="https://facebook.com/yourpage"
                           className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
                         />
                       </div>

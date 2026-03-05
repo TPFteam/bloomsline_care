@@ -121,6 +121,7 @@ export interface SocialLinks {
   linkedin: string | null
   twitter: string | null
   instagram: string | null
+  facebook: string | null
 }
 
 export type PublicationType = 'book' | 'podcast' | 'blog' | 'article' | 'video' | 'other'

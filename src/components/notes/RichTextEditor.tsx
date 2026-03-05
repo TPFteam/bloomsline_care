@@ -22,21 +22,26 @@ function getGoalColor(status: string) {
   return GOAL_COLORS[status] || DEFAULT_GOAL_COLOR
 }
 
-// Inline style colors for tag marks
-const TAG_COLORS: Record<string, { bg: string; border: string }> = {
-  general: { bg: '#f3f4f6', border: '#6b7280' },
-  symptome: { bg: '#fff1f2', border: '#f43f5e' },
-  recurrence: { bg: '#faf5ff', border: '#a855f7' },
-  hypothese: { bg: '#f0fdfa', border: '#14b8a6' },
-  transfert: { bg: '#eef2ff', border: '#6366f1' },
-  contre_transfert: { bg: '#fdf2f8', border: '#ec4899' },
-  ajustement_envisage: { bg: '#ecfdf5', border: '#10b981' },
-  milestone: { bg: '#f0fdf4', border: '#22c55e' },
-}
-const DEFAULT_TAG_COLOR = { bg: '#f3f4f6', border: '#6b7280' }
+// 10 unique colors — evenly spaced hues, no two neighbors look alike
+const TAG_COLOR_PALETTE: { bg: string; border: string }[] = [
+  { bg: '#fef2f2', border: '#ef4444' },  // 0 red
+  { bg: '#eff6ff', border: '#3b82f6' },  // 1 blue
+  { bg: '#fff7ed', border: '#f97316' },  // 2 orange
+  { bg: '#f5f3ff', border: '#8b5cf6' },  // 3 violet
+  { bg: '#fef9c3', border: '#ca8a04' },  // 4 gold
+  { bg: '#fdf2f8', border: '#ec4899' },  // 5 pink
+  { bg: '#ecfdf5', border: '#10b981' },  // 6 emerald
+  { bg: '#eef2ff', border: '#6366f1' },  // 7 indigo
+  { bg: '#ecfeff', border: '#06b6d4' },  // 8 cyan
+  { bg: '#faf5ff', border: '#a21caf' },  // 9 fuchsia
+]
 
-function getTagColor(type: string) {
-  return TAG_COLORS[type] || DEFAULT_TAG_COLOR
+function getTagColor(type: string, allTypes?: string[]) {
+  if (allTypes) {
+    const idx = allTypes.indexOf(type)
+    if (idx >= 0) return TAG_COLOR_PALETTE[idx % TAG_COLOR_PALETTE.length]
+  }
+  return TAG_COLOR_PALETTE[TAG_COLOR_PALETTE.length - 1]
 }
 
 const GOAL_NAVY = '#1e3a5f'
@@ -90,9 +95,24 @@ function hoistEditorLabels(el: HTMLElement) {
   })
 }
 
-/** Inject --tag-color and --tag-bg + recolor old goal greens to navy */
-function injectTagColors(html: string): string {
-  let result = html.replace(/<mark\b([^>]*)\bstyle="([^"]*)"([^>]*)>/gi, (full, before, style, after) => {
+/** Inject --tag-color and --tag-bg + recolor old goal greens to navy + rewrite tag colors to palette */
+function injectTagColors(html: string, allTypes?: string[]): string {
+  let result = html.replace(/<mark\b([^>]*)\bstyle="([^"]*)"([^>]*)>/gi, (full, before: string, style: string, after: string) => {
+    // Rewrite tag colors to current palette
+    const tagMatch = (before + after).match(/data-tag="([^"]*)"/)
+    if (tagMatch && allTypes) {
+      const tagType = tagMatch[1]
+      const colors = getTagColor(tagType, allTypes)
+      let s = style
+      s = s.replace(/background-color:\s*#[0-9a-fA-F]{3,8}/, `background-color:${colors.bg}`)
+      s = s.replace(/border-bottom:\s*2px\s+solid\s+#[0-9a-fA-F]{3,8}/, `border-bottom:2px solid ${colors.border}`)
+      s = s.replace(/--tag-color:\s*#[0-9a-fA-F]{3,8}/, `--tag-color:${colors.border}`)
+      s = s.replace(/--tag-bg:\s*#[0-9a-fA-F]{3,8}/, `--tag-bg:${colors.bg}`)
+      if (!s.includes('--tag-color')) s += `;--tag-color:${colors.border}`
+      if (!s.includes('--tag-bg')) s += `;--tag-bg:${colors.bg}`
+      return `<mark${before}style="${s}"${after}>`
+    }
+
     let extras = ''
     if (!style.includes('--tag-color')) {
       const borderMatch = style.match(/border-(?:bottom|left):[^;]*solid\s+(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))/)
@@ -154,6 +174,8 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
   const [isEmpty, setIsEmpty] = useState(!value)
   const [headingOpen, setHeadingOpen] = useState(false)
   const [sideMenu, setSideMenu] = useState<'tags' | 'goals' | null>(null)
+  const [sideMenuPos, setSideMenuPos] = useState<{ top: number; left: number } | null>(null)
+  const sideMenuRef = useRef<HTMLDivElement>(null)
   const [activeGoal, setActiveGoal] = useState<{ id: string; title: string; status: string } | null>(null)
   const [activeTag, setActiveTag] = useState<{ type: string; label: string } | null>(null)
   const [activeVerbatim, setActiveVerbatim] = useState(false)
@@ -185,12 +207,15 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
   const hasGoals = !!milestones?.length
   const hasTags = !!noteTypes?.length
   const hasAnnotations = hasGoals || hasTags
+  const allTagTypes = noteTypes?.map(nt => nt.type) || []
 
   // Set initial content once
+  const baselineHtml = useRef('')
   useEffect(() => {
     if (editorRef.current && !initialized.current) {
-      editorRef.current.innerHTML = value ? injectTagColors(value) : ''
+      editorRef.current.innerHTML = value ? injectTagColors(value, allTagTypes) : ''
       initialized.current = true
+      baselineHtml.current = editorRef.current.innerHTML
       setIsEmpty(!value)
       // Hoist mid-sentence tag labels to start of their block
       if (showLabels && value) {
@@ -201,6 +226,18 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       }
     }
   }, [value, autoFocus])
+
+  // Reset editor when value is cleared externally (e.g. after submit)
+  useEffect(() => {
+    if (initialized.current && editorRef.current && !value) {
+      const currentText = editorRef.current.textContent || ''
+      if (currentText.trim()) {
+        editorRef.current.innerHTML = ''
+        baselineHtml.current = ''
+        setIsEmpty(true)
+      }
+    }
+  }, [value])
 
   // Cleanup autosave timer on unmount
   useEffect(() => {
@@ -287,7 +324,11 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         if (!/\s/.test(query)) {
           const range = sel.getRangeAt(0)
           const rect = range.getBoundingClientRect()
-          const pos = { top: rect.bottom + 4, left: rect.left }
+          const spaceBelow = window.innerHeight - rect.bottom
+          const dropdownHeight = 380 // approximate max height
+          const pos = spaceBelow < dropdownHeight
+            ? { top: rect.top - dropdownHeight - 4, left: rect.left }
+            : { top: rect.bottom + 4, left: rect.left }
 
           if (triggerChar === '#') {
             // Check if cursor is inside a goal section (no nesting)
@@ -342,20 +383,49 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
   }, [onChange, hasGoals, hasTags, activeGoal, activeTag, activeVerbatim, onAutoSave, autoSaveDelay, memberName])
 
   const exec = useCallback((command: string, val?: string) => {
-    editorRef.current?.focus()
+    const editor = editorRef.current
+    if (!editor) return
+    editor.focus()
+
+    if (command === 'undo' || command === 'redo') {
+      // Cancel any pending autosave so it doesn't save stale content
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current)
+        autoSaveTimer.current = null
+      }
+      const before = editor.innerHTML
+      document.execCommand(command, false)
+      const after = editor.innerHTML
+      // Only block undo if: editor became empty AND baseline had content (went past initial state)
+      if (command === 'undo' && !after.replace(/<br\s*\/?>/gi, '').replace(/&nbsp;/gi, '').trim()) {
+        const baselineHad = baselineHtml.current.replace(/<br\s*\/?>/gi, '').replace(/&nbsp;/gi, '').trim()
+        if (baselineHad) {
+          document.execCommand('redo', false)
+          return
+        }
+      }
+      // Update state without triggering autosave
+      if (after !== before) {
+        const text = editor.textContent || ''
+        setIsEmpty(!text.trim() && after !== '<hr>')
+        onChange(after)
+      }
+      return
+    }
+
     document.execCommand(command, false, val)
     handleInput()
-  }, [handleInput])
+  }, [handleInput, onChange])
 
   // P2 — Get filtered items for inline trigger
   const getFilteredInlineItems = useCallback(() => {
     if (!inlineTrigger) return []
     const q = inlineTrigger.query.toLowerCase()
     if (inlineTrigger.type === 'tag' && noteTypes?.length) {
-      return noteTypes.filter(nt => nt.label.toLowerCase().includes(q)).slice(0, 6)
+      return noteTypes.filter(nt => nt.label.toLowerCase().includes(q)).slice(0, 10)
     }
     if (inlineTrigger.type === 'goal' && milestones?.length) {
-      return milestones.filter(m => m.title.toLowerCase().includes(q)).slice(0, 6)
+      return milestones.filter(m => m.title.toLowerCase().includes(q)).slice(0, 10)
     }
     return []
   }, [inlineTrigger, noteTypes, milestones])
@@ -375,13 +445,13 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       : '@'
     const triggerIdx = before.lastIndexOf(triggerChar)
     if (triggerIdx < 0) return
-    anchor.textContent = text.slice(0, triggerIdx) + text.slice(offset)
-    // Reposition cursor
+    // Select the trigger text and delete via execCommand so it's undoable
     const range = document.createRange()
-    range.setStart(anchor, Math.min(triggerIdx, anchor.textContent?.length || 0))
-    range.collapse(true)
+    range.setStart(anchor, triggerIdx)
+    range.setEnd(anchor, offset)
     sel.removeAllRanges()
     sel.addRange(range)
+    document.execCommand('delete', false)
   }, [inlineTrigger])
 
   // Start goal annotation mode — insert section at cursor
@@ -393,68 +463,41 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     const sel = window.getSelection()
     if (!sel || !sel.rangeCount) return
 
-    // Collapse any selection
+    // Move cursor to end of the current block so the section inserts after it
     const range = sel.getRangeAt(0)
-    range.collapse(false)
-
-    const colors = getGoalColor(milestone.status)
-
-    // Create section wrapper
-    const section = document.createElement('div')
-    section.setAttribute('data-goal-section', '')
-    section.dataset.goalId = milestone.id
-    section.dataset.goalTitle = milestone.title
-    section.dataset.goalStatus = milestone.status
-    section.setAttribute('style',
-      `margin:16px 0 8px;border-left:3px solid ${colors.border};padding:0 0 4px 16px;`
-    )
-
-    // Non-editable header
-    const header = document.createElement('div')
-    header.contentEditable = 'false'
-    header.setAttribute('data-goal-section-header', '')
-    header.setAttribute('style',
-      `font-size:16px;font-weight:700;color:${colors.border};padding:8px 0;user-select:none;`
-    )
-    header.textContent = `\u25CF ${milestone.title}`
-
-    // Content paragraph
-    const contentP = document.createElement('p')
-    contentP.appendChild(document.createElement('br'))
-
-    section.appendChild(header)
-    section.appendChild(contentP)
-
-    // Find the direct-child block that contains the cursor
     let blockNode: Node | null = sel.anchorNode
     while (blockNode && blockNode !== editor && blockNode.parentNode !== editor) {
       blockNode = blockNode.parentNode
     }
+    if (blockNode && blockNode !== editor) {
+      range.setStartAfter(blockNode)
+      range.collapse(true)
+      sel.removeAllRanges()
+      sel.addRange(range)
+    }
 
-    if (!blockNode || blockNode === editor) {
-      editor.appendChild(section)
-    } else {
-      if (blockNode.nextSibling) {
-        editor.insertBefore(section, blockNode.nextSibling)
-      } else {
-        editor.appendChild(section)
+    const colors = getGoalColor(milestone.status)
+    const sectionHTML =
+      `<div data-goal-section="" data-goal-id="${milestone.id}" data-goal-title="${milestone.title.replace(/"/g, '&quot;')}" data-goal-status="${milestone.status}" style="margin:16px 0 8px;border-left:3px solid ${colors.border};padding:0 0 4px 16px;">` +
+      `<div contenteditable="false" data-goal-section-header="" style="font-size:16px;font-weight:700;color:${colors.border};padding:8px 0;user-select:none;">\u25CF ${milestone.title}</div>` +
+      `<p><br></p>` +
+      `</div>` +
+      `<p><br></p>`
+
+    document.execCommand('insertHTML', false, sectionHTML)
+
+    // Place cursor inside the content <p> within the section
+    const section = editor.querySelector(`div[data-goal-section][data-goal-id="${milestone.id}"]`) as HTMLElement | null
+    if (section) {
+      const contentP = section.querySelector('p')
+      if (contentP) {
+        const newRange = document.createRange()
+        newRange.setStart(contentP, 0)
+        newRange.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(newRange)
       }
     }
-
-    // Ensure a <p><br></p> exists after the section for typing outside
-    const nextEl = section.nextElementSibling
-    if (!nextEl || nextEl.tagName !== 'P') {
-      const trailingP = document.createElement('p')
-      trailingP.appendChild(document.createElement('br'))
-      section.parentNode?.insertBefore(trailingP, section.nextSibling)
-    }
-
-    // Place cursor inside the content <p>
-    const newRange = document.createRange()
-    newRange.setStart(contentP, 0)
-    newRange.collapse(true)
-    sel.removeAllRanges()
-    sel.addRange(newRange)
 
     setActiveGoal(milestone)
     setSideMenu(null)
@@ -520,39 +563,37 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
 
     if (triggerIdx < 0) return
 
-    // Delete trigger text from the text node
-    const afterTrigger = textContent.slice(offset)
-    const beforeTrigger = textContent.slice(0, triggerIdx)
-    anchor.textContent = beforeTrigger + afterTrigger
-
-    // Create the tag mark
-    const colors = getTagColor(item.data.type)
-    const mark = document.createElement('mark')
-    mark.dataset.tag = item.data.type
-    mark.dataset.tagLabel = item.data.label
-    mark.setAttribute('style',
-      `background-color:${colors.bg};border-bottom:2px solid ${colors.border};padding:1px 2px;border-radius:2px;cursor:pointer;--tag-color:${colors.border};--tag-bg:${colors.bg};`
-    )
-    mark.appendChild(document.createTextNode('\u200B'))
-
-    // Position range at triggerIdx in the text node
+    // Select the trigger text (@query) and replace via execCommand so it's undoable
     const range = document.createRange()
-    range.setStart(anchor, Math.min(triggerIdx, anchor.textContent?.length || 0))
-    range.collapse(true)
-    range.insertNode(mark)
+    range.setStart(anchor, triggerIdx)
+    range.setEnd(anchor, offset)
+    sel.removeAllRanges()
+    sel.addRange(range)
+
+    const colors = getTagColor(item.data.type, allTagTypes)
+    const markHTML =
+      `<mark data-tag="${item.data.type}" data-tag-label="${item.data.label.replace(/"/g, '&quot;')}" style="background-color:${colors.bg};border-bottom:2px solid ${colors.border};padding:1px 2px;border-radius:2px;cursor:pointer;--tag-color:${colors.border};--tag-bg:${colors.bg};">\u200B</mark>`
+
+    document.execCommand('insertHTML', false, markHTML)
 
     // Place cursor inside the mark for annotation mode
-    const newRange = document.createRange()
-    const lastChild = mark.lastChild || mark
-    if (lastChild.nodeType === Node.TEXT_NODE) {
-      newRange.setStart(lastChild, lastChild.textContent?.length || 0)
-    } else {
-      newRange.selectNodeContents(mark)
-      newRange.collapse(false)
+    if (editor) {
+      const marks = editor.querySelectorAll(`mark[data-tag="${item.data.type}"]`)
+      const mark = marks[marks.length - 1]
+      if (mark) {
+        const newRange = document.createRange()
+        const lastChild = mark.lastChild || mark
+        if (lastChild.nodeType === Node.TEXT_NODE) {
+          newRange.setStart(lastChild, lastChild.textContent?.length || 0)
+        } else {
+          newRange.selectNodeContents(mark)
+          newRange.collapse(false)
+        }
+        newRange.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(newRange)
+      }
     }
-    newRange.collapse(true)
-    sel.removeAllRanges()
-    sel.addRange(newRange)
 
     setActiveTag(item.data)
     setInlineTrigger(null)
@@ -695,41 +736,30 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
           if (editor) {
             const sel = window.getSelection()
             if (sel && sel.rangeCount) {
-              const range = sel.getRangeAt(0)
-              const mark = document.createElement('mark')
-              mark.dataset.verbatim = memberName
               if (inlineHighlight === 0) {
                 // Name mention — subtle tag, cursor placed after
-                mark.dataset.verbatimType = 'mention'
-                mark.setAttribute('style',
-                  'background-color:#e0f2fe;padding:1px 4px;border-radius:3px;color:#0369a1;font-weight:500;--tag-color:#0369a1;'
-                )
-                mark.appendChild(document.createTextNode(memberName))
-                range.insertNode(mark)
-                const spacer = document.createTextNode('\u00A0')
-                mark.parentNode?.insertBefore(spacer, mark.nextSibling)
-                const newRange = document.createRange()
-                newRange.setStart(spacer, spacer.length)
-                newRange.collapse(true)
-                sel.removeAllRanges()
-                sel.addRange(newRange)
+                const mentionHTML =
+                  `<mark data-verbatim="${memberName}" data-verbatim-type="mention" style="background-color:#e0f2fe;padding:1px 4px;border-radius:3px;color:#0369a1;font-weight:500;--tag-color:#0369a1;">${memberName}</mark>\u00A0`
+                document.execCommand('insertHTML', false, mentionHTML)
               } else {
                 // "Name said:" — enter annotation mode, cursor inside mark
-                mark.dataset.verbatimType = 'said'
-                mark.setAttribute('style',
-                  'background-color:#f0f9ff;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;'
-                )
-                const prefix = document.createTextNode(`${memberName} ${fr ? 'a dit' : 'said'}: `)
-                const zwsp = document.createTextNode('\u200B')
-                mark.appendChild(prefix)
-                mark.appendChild(zwsp)
-                range.insertNode(mark)
-                // Place cursor inside the mark after the prefix
-                const newRange = document.createRange()
-                newRange.setStart(zwsp, zwsp.length)
-                newRange.collapse(true)
-                sel.removeAllRanges()
-                sel.addRange(newRange)
+                const prefixText = `${memberName} ${fr ? 'a dit' : 'said'}: `
+                const saidHTML =
+                  `<mark data-verbatim="${memberName}" data-verbatim-type="said" style="background-color:#f0f9ff;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;">${prefixText}\u200B</mark>`
+                document.execCommand('insertHTML', false, saidHTML)
+                // Place cursor inside the mark
+                const marks = editor.querySelectorAll('mark[data-verbatim-type="said"]')
+                const mark = marks[marks.length - 1]
+                if (mark) {
+                  const lastChild = mark.lastChild
+                  if (lastChild && lastChild.nodeType === Node.TEXT_NODE) {
+                    const newRange = document.createRange()
+                    newRange.setStart(lastChild, lastChild.textContent?.length || 0)
+                    newRange.collapse(true)
+                    sel.removeAllRanges()
+                    sel.addRange(newRange)
+                  }
+                }
                 setActiveVerbatim(true)
               }
               handleInput()
@@ -908,7 +938,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
   }, [wrapWithMark])
 
   const wrapSelectionWithTag = useCallback((noteType: { type: string; label: string }) => {
-    const colors = getTagColor(noteType.type)
+    const colors = getTagColor(noteType.type, allTagTypes)
     const mark = document.createElement('mark')
     mark.dataset.tag = noteType.type
     mark.dataset.tagLabel = noteType.label
@@ -951,7 +981,15 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
 
   // Side menu handlers
   const openSideMenu = useCallback((menu: 'tags' | 'goals') => {
-    setSideMenu(prev => prev === menu ? null : menu)
+    setSideMenu(prev => {
+      if (prev === menu) { setSideMenuPos(null); return null }
+      // Calculate position from side rail
+      if (sideMenuRef.current) {
+        const rect = sideMenuRef.current.getBoundingClientRect()
+        setSideMenuPos({ top: rect.top, left: rect.right + 4 })
+      }
+      return menu
+    })
     setPopoverPos(null)
     setMarkTooltip(null)
   }, [])
@@ -966,7 +1004,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     if (!sel || !sel.rangeCount) return
     const range = sel.getRangeAt(0)
 
-    const colors = getTagColor(noteType.type)
+    const colors = getTagColor(noteType.type, allTagTypes)
     const mark = document.createElement('mark')
     mark.dataset.tag = noteType.type
     mark.dataset.tagLabel = noteType.label
@@ -1227,7 +1265,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
             {fr ? 'Étiquettes' : 'Tags'}
           </div>
           {noteTypes.map((nt) => {
-            const colors = getTagColor(nt.type)
+            const colors = getTagColor(nt.type, allTagTypes)
             return (
               <button
                 key={nt.type}
@@ -1398,7 +1436,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         <div className="relative flex flex-1 gap-0">
           {/* Side rail — tag & goal toggle (hidden in compact mode) */}
           {!compact && hasAnnotations && (
-            <div data-side-menu className="relative flex flex-col pt-2 bg-white">
+            <div ref={sideMenuRef} data-side-menu className="sticky top-0 z-50 flex flex-col pt-2 bg-white self-start">
               {hasGoals && (
                 activeGoal ? (
                   <button
@@ -1507,82 +1545,85 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
               )}
 
 
-              {/* Goal dropdown */}
-              {sideMenu === 'goals' && !activeGoal && milestones?.length && (
-                <div className="absolute top-0 left-full ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px] max-h-[220px] overflow-y-auto z-50">
-                  <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                    {fr ? 'Objectifs' : 'Goals'}
-                  </div>
-                  {milestones.map((m) => {
-                    const colors = getGoalColor(m.status)
-                    return (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => startGoalAnnotation(m)}
-                        className="w-full text-left px-3 py-1.5 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                      >
-                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.border }} />
-                        <span className="text-xs text-gray-700 truncate">{m.title}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-              {/* Tag dropdown */}
-              {sideMenu === 'tags' && !activeTag && noteTypes?.length && (
-                <div className="absolute top-0 left-full ml-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[180px] max-h-[260px] overflow-y-auto z-50">
-                  <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                    {fr ? 'Étiquettes' : 'Tags'}
-                  </div>
-                  {noteTypes.map((nt) => {
-                    const colors = getTagColor(nt.type)
-                    const isLocked = lockedTypes?.includes(nt.type)
-                    return (
-                      <button
-                        key={nt.type}
-                        type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => startTagAnnotation(nt)}
-                        className="w-full text-left px-3 py-1.5 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                      >
-                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.border }} />
-                        <span className="text-xs text-gray-700 truncate flex-1">{nt.label}</span>
-                        {isLocked && <Lock className="w-2.5 h-2.5 text-gray-300 flex-shrink-0" />}
-                      </button>
-                    )
-                  })}
-                  {onAddType && (noteTypes?.length || 0) < maxTypes && (
-                    <div className="border-t border-gray-100 mt-1 pt-1 px-3 py-1">
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault()
-                          const input = (e.target as HTMLFormElement).elements.namedItem('newTag') as HTMLInputElement
-                          const val = input.value.trim().toLowerCase().replace(/\s+/g, '_')
-                          if (val && !noteTypes.some(nt => nt.type === val)) {
-                            onAddType(val)
-                            input.value = ''
-                          }
-                        }}
-                        className="flex items-center gap-1"
-                      >
-                        <input
-                          name="newTag"
-                          type="text"
-                          placeholder={fr ? 'Nouveau...' : 'New...'}
-                          className="flex-1 text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:border-violet-300"
-                          onMouseDown={(e) => e.stopPropagation()}
-                        />
-                        <button type="submit" className="p-0.5 text-violet-500 hover:text-violet-700" onMouseDown={(e) => e.preventDefault()}>
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                      </form>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
+          )}
+
+          {/* Goal dropdown — portaled to body so it escapes overflow containers */}
+          {sideMenu === 'goals' && !activeGoal && milestones?.length && sideMenuPos && createPortal(
+            <div data-side-menu className="fixed z-[100] bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px] max-h-[360px] overflow-y-auto" style={{ top: sideMenuPos.top, left: sideMenuPos.left }}>
+              <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                {fr ? 'Objectifs' : 'Goals'}
+              </div>
+              {milestones.map((m) => {
+                const colors = getGoalColor(m.status)
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => startGoalAnnotation(m)}
+                    className="w-full text-left px-3 py-1.5 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  >
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.border }} />
+                    <span className="text-xs text-gray-700 truncate">{m.title}</span>
+                  </button>
+                )
+              })}
+            </div>,
+            document.body
+          )}
+          {/* Tag dropdown — portaled to body */}
+          {sideMenu === 'tags' && !activeTag && noteTypes?.length && sideMenuPos && createPortal(
+            <div data-side-menu className="fixed z-[100] bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[180px] max-h-[360px] overflow-y-auto" style={{ top: sideMenuPos.top, left: sideMenuPos.left }}>
+              <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                {fr ? 'Étiquettes' : 'Tags'}
+              </div>
+              {noteTypes.map((nt) => {
+                const colors = getTagColor(nt.type, allTagTypes)
+                const isLocked = lockedTypes?.includes(nt.type)
+                return (
+                  <button
+                    key={nt.type}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => startTagAnnotation(nt)}
+                    className="w-full text-left px-3 py-1.5 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  >
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.border }} />
+                    <span className="text-xs text-gray-700 truncate flex-1">{nt.label}</span>
+                    {isLocked && <Lock className="w-2.5 h-2.5 text-gray-300 flex-shrink-0" />}
+                  </button>
+                )
+              })}
+              {onAddType && (noteTypes?.length || 0) < maxTypes && (
+                <div className="border-t border-gray-100 mt-1 pt-1 px-3 py-1">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      const input = (e.target as HTMLFormElement).elements.namedItem('newTag') as HTMLInputElement
+                      const val = input.value.trim().toLowerCase().replace(/\s+/g, '_')
+                      if (val && !noteTypes.some(nt => nt.type === val)) {
+                        onAddType(val)
+                        input.value = ''
+                      }
+                    }}
+                    className="flex items-center gap-1"
+                  >
+                    <input
+                      name="newTag"
+                      type="text"
+                      placeholder={fr ? 'Nouveau...' : 'New...'}
+                      className="flex-1 text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:border-violet-300"
+                      onMouseDown={(e) => e.stopPropagation()}
+                    />
+                    <button type="submit" className="p-0.5 text-violet-500 hover:text-violet-700" onMouseDown={(e) => e.preventDefault()}>
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>,
+            document.body
           )}
 
           {/* Editor */}
@@ -1683,7 +1724,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
           className="fixed z-[100]"
           style={{ top: inlineTrigger.position.top, left: inlineTrigger.position.left }}
         >
-          <div className="bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px] max-h-[220px] overflow-y-auto">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px] max-h-[360px] overflow-y-auto">
             {(inlineTrigger.type === 'end-goal' || inlineTrigger.type === 'end-tag' || inlineTrigger.type === 'end-verbatim') ? (
               <>
                 <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
@@ -1827,7 +1868,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                     const isGoal = 'title' in item
                     const colors = isGoal
                       ? getGoalColor((item as { id: string; title: string; status: string }).status)
-                      : getTagColor((item as { type: string; label: string }).type)
+                      : getTagColor((item as { type: string; label: string }).type, allTagTypes)
                     return (
                       <button
                         key={isGoal ? (item as { id: string }).id : (item as { type: string }).type}

@@ -17,6 +17,8 @@ import {
   BookOpen,
   Calendar,
   CheckCircle2,
+  Instagram,
+  Facebook,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { createAdminClient } from '@/lib/supabase/server-client'
@@ -339,6 +341,28 @@ export default async function PublicPractitionerPage(
                   >
                     <Linkedin className="w-4 h-4" />
                     LinkedIn
+                  </a>
+                )}
+                {social?.instagram && (
+                  <a
+                    href={social.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-6 h-11 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    <Instagram className="w-4 h-4" />
+                    Instagram
+                  </a>
+                )}
+                {social?.facebook && (
+                  <a
+                    href={social.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-6 h-11 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    <Facebook className="w-4 h-4" />
+                    Facebook
                   </a>
                 )}
               </div>

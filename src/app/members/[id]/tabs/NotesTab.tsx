@@ -179,6 +179,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [snSessionSummaryNotes, setSnSessionSummaryNotes] = useState<Record<string, { id: string; content: string; created_at: string } | null>>({})
   const [snEditorNoteTypes, setSnEditorNoteTypes] = useState<{ type: string; label: string }[]>([])
   const [snIsEditing, setSnIsEditing] = useState(false)
+  const snAutoSavedId = useRef<string | null>(null) // track autosaved note id without triggering re-render
   const [snShowPast, setSnShowPast] = useState(false)
 
   // ==============================
@@ -864,18 +865,19 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       if (!user) return
 
       const existing = snSessionSummaryNotes[sessionId]
+      const existingId = existing?.id || snAutoSavedId.current
 
-      if (existing) {
+      if (existingId) {
         const { error } = await supabase
           .from('progress_notes')
           .update({ content: content.trim(), updated_at: new Date().toISOString() })
-          .eq('id', existing.id)
+          .eq('id', existingId)
 
         if (error) throw error
 
         setSnSessionSummaryNotes(prev => ({
           ...prev,
-          [sessionId]: { ...existing, content: content.trim() },
+          [sessionId]: { id: existingId, content: content.trim(), created_at: existing?.created_at || new Date().toISOString() },
         }))
       } else {
         const { data, error } = await supabase
@@ -903,6 +905,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
         }))
       }
 
+      snAutoSavedId.current = null
       setSnIsEditing(false)
       setSnSummaryDraft('')
       fetchAllNotes()
@@ -923,11 +926,12 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     if (!user) return
 
     const existing = snSessionSummaryNotes[selectedItemId]
-    if (existing) {
+    const existingId = existing?.id || snAutoSavedId.current
+    if (existingId) {
       await supabase
         .from('progress_notes')
         .update({ content: content.trim(), updated_at: new Date().toISOString() })
-        .eq('id', existing.id)
+        .eq('id', existingId)
     } else {
       const { data } = await supabase
         .from('progress_notes')
@@ -942,10 +946,8 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
         .select('id, content, created_at')
         .single()
       if (data) {
-        setSnSessionSummaryNotes(prev => ({
-          ...prev,
-          [selectedItemId]: { id: data.id, content: data.content, created_at: data.created_at },
-        }))
+        // Store ID in ref so subsequent autosaves use UPDATE — no state change to avoid editor remount
+        snAutoSavedId.current = data.id
       }
     }
   }, [selectedItemId, snSessionSummaryNotes, memberId, supabase])
@@ -1324,6 +1326,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                               setSnSelectedSessionId(s.id)
                               setSnIsEditing(false)
                               setSnSummaryDraft('')
+                              snAutoSavedId.current = null
                             }}
                             className={`w-full text-left px-3 py-2.5 rounded-lg transition-all ${
                               isSelected
@@ -1396,6 +1399,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                               setSnSelectedSessionId(s.id)
                               setSnIsEditing(false)
                               setSnSummaryDraft('')
+                              snAutoSavedId.current = null
                             }}
                             className={`w-full text-left px-3 py-2.5 rounded-lg transition-all ${
                               isSelected
