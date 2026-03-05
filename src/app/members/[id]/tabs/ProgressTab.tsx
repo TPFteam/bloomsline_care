@@ -298,14 +298,8 @@ const MilestoneCard = memo(function MilestoneCard({
         </div>
 
         {/* Bottom indicator row */}
-        {(commentCount > 0 || sessionNoteCount > 0 || (columnId === 'independent' && milestone.achieved_at)) && (
+        {(sessionNoteCount > 0 || (columnId === 'independent' && milestone.achieved_at)) && (
           <div className="flex items-center gap-3 mt-2 pt-2 border-t border-gray-50">
-            {commentCount > 0 && (
-              <span className="flex items-center gap-1 text-[10px] text-gray-400">
-                <MessageSquare className="w-3 h-3" />
-                {commentCount}
-              </span>
-            )}
             {sessionNoteCount > 0 && (
               <span className="flex items-center gap-1 text-[10px] text-amber-500">
                 <Calendar className="w-3 h-3" />
@@ -487,6 +481,25 @@ function MilestoneDetailModal({
             font-weight: 700;
             color: var(--tag-color, #6b7280);
           }
+          /* Compact excerpt overrides for modal context */
+          .excerpt-compact div[data-goal-section] {
+            margin: 0 !important;
+            padding: 0 !important;
+            border-left: 2px solid #1e3a5f !important;
+            padding-left: 10px !important;
+          }
+          .excerpt-compact div[data-goal-section-header] {
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            padding: 0 0 4px 0 !important;
+            color: #1e3a5f !important;
+          }
+          .excerpt-compact p {
+            margin: 2px 0 !important;
+          }
+          .excerpt-compact mark {
+            font-size: 11px !important;
+          }
         `}</style>
         {/* Header */}
         <div className="p-6 border-b border-gray-100">
@@ -595,7 +608,7 @@ function MilestoneDetailModal({
         <div className="px-6 py-4 border-b border-gray-100">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5" />
-            {locale === 'fr' ? 'Notes liées' : locale === 'es' ? 'Notas vinculadas' : 'Linked notes'}
+            {locale === 'fr' ? 'Notes d\'observation' : locale === 'es' ? 'Notas de observación' : 'Observation notes'}
             {sessionNotes.length > 0 && <span className="text-gray-400">({sessionNotes.length})</span>}
           </p>
           {sessionNotes.length > 0 ? (
@@ -636,27 +649,27 @@ function MilestoneDetailModal({
             {taggedExcerpts.length > 0 && <span className="text-gray-400">({taggedExcerpts.length})</span>}
           </p>
           {taggedExcerpts.length > 0 ? (
-            <div className="space-y-2 max-h-60 overflow-y-auto">
+            <div className="space-y-2.5 max-h-60 overflow-y-auto">
               {taggedExcerpts.map((excerpt, i) => (
-                <div key={i} className="rounded-lg border border-gray-100 overflow-hidden">
+                <div key={i} className="rounded-lg bg-gray-50 border border-gray-100 overflow-hidden">
                   {excerpt.html ? (
                     <div
-                      className="rte-read show-labels text-xs text-gray-700 [&_div[data-goal-section]]:m-0 [&_div[data-goal-section]]:text-xs [&_div[data-goal-section-header]]:text-sm [&_div[data-goal-section-header]]:py-1 [&_p]:my-1 [&_mark]:text-xs"
+                      className="rte-read show-labels text-[11px] leading-relaxed text-gray-600 p-3 excerpt-compact"
                       dangerouslySetInnerHTML={{ __html: recolorExcerptHtml(excerpt.html, noteTypes.map(nt => nt.type)) }}
                     />
                   ) : (
-                    <p className="text-xs text-gray-700 italic p-3">&ldquo;{excerpt.text.slice(0, 200)}{excerpt.text.length > 200 ? '...' : ''}&rdquo;</p>
+                    <p className="text-[11px] text-gray-600 italic p-3">&ldquo;{excerpt.text.slice(0, 200)}{excerpt.text.length > 200 ? '...' : ''}&rdquo;</p>
                   )}
                   {(excerpt.sessionDate || excerpt.sessionType) && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-t border-gray-100">
+                    <div className="flex items-center gap-2 px-3 py-1.5 border-t border-gray-100">
                       {excerpt.sessionDate && (
-                        <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                        <span className="text-[10px] text-gray-400 flex items-center gap-1">
                           <Clock className="w-2.5 h-2.5" />
                           {new Date(excerpt.sessionDate).toLocaleDateString()}
                         </span>
                       )}
                       {excerpt.sessionType && (
-                        <span className="text-[10px] text-gray-500">{excerpt.sessionType}</span>
+                        <span className="text-[10px] text-gray-400">{excerpt.sessionType}</span>
                       )}
                     </div>
                   )}
