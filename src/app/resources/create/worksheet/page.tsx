@@ -79,6 +79,7 @@ import type { ResourceBlock, WorksheetSettings, ScoringRange, WorksheetQuestion,
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { ResourceCategory } from '@/types/library'
 import { toast } from 'sonner'
+import DescriptionEditor from '@/components/resources/DescriptionEditor'
 
 // Block types for worksheet
 // Content blocks: heading, paragraph, image, divider, quote, tip (practitioner adds content)
@@ -475,6 +476,7 @@ function CreateWorksheetContent() {
   const selectedTemplateIdRef = useRef<string | null>(null)
   const hasModifiedContentRef = useRef(false)
   const [showTemplateWarningDialog, setShowTemplateWarningDialog] = useState(false)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
   // Get user ID on mount
   useEffect(() => {
@@ -696,7 +698,7 @@ function CreateWorksheetContent() {
   const handleGoBackToTemplates = () => {
     setShowTemplateWarningDialog(false)
     // Navigate back to resource creation page
-    router.push('/resources/create')
+    router.push(templateParam ? '/dashboard' : '/resources/create')
   }
 
   // Default mood options - nature/wellness themed
@@ -962,8 +964,14 @@ function CreateWorksheetContent() {
 
   // Delete block
   const deleteBlock = (id: string) => {
-    setBlocks(blocks.filter(b => b.id !== id))
-    markAsModified()
+    setDeleteConfirmId(id)
+  }
+  const confirmDeleteBlock = () => {
+    if (deleteConfirmId) {
+      setBlocks(blocks.filter(b => b.id !== deleteConfirmId))
+      markAsModified()
+    }
+    setDeleteConfirmId(null)
   }
 
   // Duplicate block
@@ -4237,7 +4245,7 @@ function CreateWorksheetContent() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center justify-between mb-6"
               >
-                <Link href="/resources/create">
+                <Link href={templateParam ? '/dashboard' : '/resources/create'}>
                   <motion.div whileHover={{ x: -4 }} className="inline-block">
                     <Button
                       variant="ghost"
@@ -5006,22 +5014,11 @@ function CreateWorksheetContent() {
                     {locale === 'fr' ? 'Description' : 'Description'}
                     <span className="text-red-500 ml-1">*</span>
                   </h2>
-                  <textarea
+                  <DescriptionEditor
                     value={description}
-                    onChange={(e) => {
-                      setDescription(e.target.value)
-                      e.target.style.height = 'auto'
-                      e.target.style.height = `${e.target.scrollHeight}px`
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.height = 'auto'
-                      e.target.style.height = `${e.target.scrollHeight}px`
-                    }}
+                    onChange={setDescription}
                     placeholder={locale === 'fr' ? 'Décrivez brièvement cet exercice...' : 'Briefly describe this worksheet...'}
-                    rows={4}
-                    className={`w-full px-4 py-3 bg-gray-50/80 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[100px] mb-4 ${
-                      !description.trim() ? 'border-gray-200/60' : 'border-emerald-300'
-                    }`}
+                    className="mb-4"
                   />
 
                   <h2 className="text-lg font-semibold text-gray-900 mb-3">
@@ -5570,6 +5567,30 @@ function CreateWorksheetContent() {
               className="flex-1 sm:flex-none bg-blue-500 hover:bg-blue-600"
             >
               {locale === 'fr' ? 'Modifier' : 'Modify'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Block Confirmation */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null) }}>
+        <AlertDialogContent className="sm:max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {locale === 'fr' ? 'Supprimer ce bloc ?' : 'Delete this block?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {locale === 'fr'
+                ? 'Cette action est irréversible. Le bloc et son contenu seront supprimés.'
+                : 'This action cannot be undone. The block and its content will be removed.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="flex-1 sm:flex-none">
+              {locale === 'fr' ? 'Annuler' : 'Cancel'}
+            </Button>
+            <Button onClick={confirmDeleteBlock} className="flex-1 sm:flex-none bg-red-500 hover:bg-red-600 text-white">
+              {locale === 'fr' ? 'Supprimer' : 'Delete'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

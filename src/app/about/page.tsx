@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/i18n/context'
 import { Navbar } from '@/components/landing/navbar'
@@ -12,6 +13,16 @@ const valueIcons = [Sprout, Hand, Heart, Users, Globe]
 function AboutContent() {
   const { locale } = useLanguage()
   const { openModal } = useEarlyAccessModal()
+
+  // Scroll to hash anchor after mount (Next.js client nav doesn't auto-scroll)
+  useEffect(() => {
+    const hash = window.location.hash
+    if (hash) {
+      setTimeout(() => {
+        document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth' })
+      }, 600)
+    }
+  }, [])
 
   const content = {
     en: {

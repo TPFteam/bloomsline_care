@@ -75,8 +75,9 @@ export interface Member {
   // Notes
   internal_notes: string | null
 
-  // Demo flag
+  // Flags
   is_demo: boolean // Identifies demo/example profiles for new practitioners
+  is_minor: boolean // Student/minor flag
 
   // Metadata
   created_at: string

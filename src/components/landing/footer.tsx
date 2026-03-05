@@ -12,7 +12,7 @@ import { Logo } from '@/components/ui/logo'
 
 const socialLinks = [
   { icon: Linkedin, href: 'https://www.linkedin.com/company/bloomsline/', key: 'linkedin' },
-  { icon: Instagram, href: '#', key: 'instagram' },
+  { icon: Instagram, href: 'https://www.instagram.com/bloomsline_/', key: 'instagram' },
 ]
 
 export function Footer() {

@@ -27,6 +27,13 @@ interface SimpleMember {
   avatar_url?: string | null
 }
 
+interface ShareGroup {
+  id: string
+  name: string
+  color: string
+  member_ids: string[]
+}
+
 interface ShareResourceModalProps {
   isOpen: boolean
   onClose: () => void
@@ -35,6 +42,7 @@ interface ShareResourceModalProps {
   locale: 'en' | 'fr' | 'es'
   onShare: (resourceId: string, memberIds: string[], message?: string) => Promise<void>
   onAddMember?: () => void
+  groups?: ShareGroup[]
 }
 
 const resourceTypeIcons: Record<string, React.ElementType> = {
@@ -61,6 +69,26 @@ const typeLabels: Record<string, { en: string; fr: string; es: string }> = {
   table: { en: 'Table', fr: 'Tableau', es: 'Tabla' },
 }
 
+const groupColorDotMap: Record<string, string> = {
+  blue: 'bg-blue-500',
+  emerald: 'bg-emerald-500',
+  purple: 'bg-purple-500',
+  amber: 'bg-amber-500',
+  red: 'bg-red-500',
+  pink: 'bg-pink-500',
+  cyan: 'bg-cyan-500',
+}
+
+const groupColorBgMap: Record<string, { active: string; inactive: string }> = {
+  blue: { active: 'bg-blue-100 text-blue-800 border-blue-200', inactive: 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50' },
+  emerald: { active: 'bg-emerald-100 text-emerald-800 border-emerald-200', inactive: 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50' },
+  purple: { active: 'bg-purple-100 text-purple-800 border-purple-200', inactive: 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50' },
+  amber: { active: 'bg-amber-100 text-amber-800 border-amber-200', inactive: 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50' },
+  red: { active: 'bg-red-100 text-red-800 border-red-200', inactive: 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50' },
+  pink: { active: 'bg-pink-100 text-pink-800 border-pink-200', inactive: 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50' },
+  cyan: { active: 'bg-cyan-100 text-cyan-800 border-cyan-200', inactive: 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50' },
+}
+
 export function ShareResourceModal({
   isOpen,
   onClose,
@@ -69,6 +97,7 @@ export function ShareResourceModal({
   locale,
   onShare,
   onAddMember,
+  groups,
 }: ShareResourceModalProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set())
@@ -89,7 +118,7 @@ export function ShareResourceModal({
     })
   }, [members, searchQuery])
 
-  const MAX_SELECTIONS = 5
+  const MAX_SELECTIONS = groups && groups.length > 0 ? 50 : 5
 
   const toggleMember = (memberId: string) => {
     setSelectedMembers(prev => {
@@ -101,6 +130,27 @@ export function ShareResourceModal({
         if (newSet.size < MAX_SELECTIONS) {
           newSet.add(memberId)
         }
+      }
+      return newSet
+    })
+  }
+
+  const toggleGroup = (group: ShareGroup) => {
+    setSelectedMembers(prev => {
+      const newSet = new Set(prev)
+      const groupMemberIds = group.member_ids.filter(id => members.some(m => m.id === id))
+      const allSelected = groupMemberIds.every(id => newSet.has(id))
+
+      if (allSelected) {
+        // Deselect all group members
+        groupMemberIds.forEach(id => newSet.delete(id))
+      } else {
+        // Select all group members (up to limit)
+        groupMemberIds.forEach(id => {
+          if (newSet.size < MAX_SELECTIONS) {
+            newSet.add(id)
+          }
+        })
       }
       return newSet
     })
@@ -224,6 +274,31 @@ export function ShareResourceModal({
                 )}
               </div>
             </div>
+
+            {/* Group Chips */}
+            {groups && groups.length > 0 && (
+              <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap gap-2">
+                {groups.map((group) => {
+                  const groupMemberIds = group.member_ids.filter(id => members.some(m => m.id === id))
+                  const allSelected = groupMemberIds.length > 0 && groupMemberIds.every(id => selectedMembers.has(id))
+                  const dotColor = groupColorDotMap[group.color] || groupColorDotMap.blue
+                  const chipColors = groupColorBgMap[group.color] || groupColorBgMap.blue
+                  return (
+                    <button
+                      key={group.id}
+                      onClick={() => toggleGroup(group)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                        allSelected ? chipColors.active : chipColors.inactive
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${dotColor} flex-shrink-0`} />
+                      {group.name}
+                      <span className="opacity-60">{groupMemberIds.length}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
 
             {/* Members List */}
             <div className="max-h-64 overflow-y-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>

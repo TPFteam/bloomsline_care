@@ -215,6 +215,7 @@ export default function ResourceDetailPage() {
   const [copied, setCopied] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [members, setMembers] = useState<SimpleMember[]>([])
+  const [memberGroups, setMemberGroups] = useState<{ id: string; name: string; color: string; member_ids: string[] }[]>([])
   const [accessStatus, setAccessStatus] = useState<'allowed' | 'private' | 'not_found' | null>(null)
   const [privateResourceCreator, setPrivateResourceCreator] = useState<{
     id: string
@@ -264,6 +265,34 @@ export default function ResourceDetailPage() {
             .eq('status', 'active')
             .order('first_name', { ascending: true })
           setMembers(membersData || [])
+
+          // Fetch member groups for share modal
+          const { data: groups } = await supabase
+            .from('member_groups')
+            .select('id, name, color')
+            .eq('practitioner_id', user.id)
+            .order('name', { ascending: true })
+
+          if (groups && groups.length > 0) {
+            const groupIds = groups.map(g => g.id)
+            const { data: groupMembers } = await supabase
+              .from('member_group_members')
+              .select('group_id, member_id')
+              .in('group_id', groupIds)
+
+            const membersByGroup: Record<string, string[]> = {}
+            groupMembers?.forEach((gm: { group_id: string; member_id: string }) => {
+              if (!membersByGroup[gm.group_id]) membersByGroup[gm.group_id] = []
+              membersByGroup[gm.group_id].push(gm.member_id)
+            })
+
+            setMemberGroups(groups.map(g => ({
+              id: g.id,
+              name: g.name,
+              color: g.color,
+              member_ids: membersByGroup[g.id] || [],
+            })))
+          }
         } else if (data) {
           // If not owner, check if the resource is saved in their collections
           const saved = await isResourceSaved(data.id)
@@ -1851,7 +1880,7 @@ export default function ResourceDetailPage() {
                   <div className="flex-1 min-w-0">
                     <h1 className="text-2xl font-bold text-gray-900 mb-1">{typeof resource.title === 'string' ? resource.title : ''}</h1>
                     {resource.description && (
-                      <p className="text-gray-600 leading-relaxed">{typeof resource.description === 'string' ? resource.description : ''}</p>
+                      <div className="text-gray-600 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: typeof resource.description === 'string' ? resource.description : '' }} />
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
@@ -1865,8 +1894,8 @@ export default function ResourceDetailPage() {
                   {/* Meta Row */}
                   <div className="flex flex-wrap items-center gap-3 mb-5">
                     {resource.category && (
-                      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600">
-                        {typeof resource.category === 'string' ? resource.category : ''}
+                      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-sm font-medium">
+                        {typeof resource.category === 'string' ? resource.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : ''}
                       </span>
                     )}
                   </div>
@@ -2027,6 +2056,7 @@ export default function ResourceDetailPage() {
             members={members}
             locale={locale as 'en' | 'fr' | 'es'}
             onShare={handleShareWithMembers}
+            groups={memberGroups}
           />
         )}
       </div>
@@ -2073,7 +2103,7 @@ export default function ResourceDetailPage() {
                 <div className="flex-1 min-w-0">
                   <h1 className="text-2xl font-bold text-gray-900 mb-1">{typeof resource.title === 'string' ? resource.title : ''}</h1>
                   {resource.description && (
-                    <p className="text-gray-600 leading-relaxed">{typeof resource.description === 'string' ? resource.description : ''}</p>
+                    <div className="text-gray-600 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: typeof resource.description === 'string' ? resource.description : '' }} />
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -2095,8 +2125,8 @@ export default function ResourceDetailPage() {
                 {/* Meta Row */}
                 <div className="flex flex-wrap items-center gap-3 mb-5">
                   {resource.category && (
-                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600">
-                      {typeof resource.category === 'string' ? resource.category : ''}
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-sm font-medium">
+                      {typeof resource.category === 'string' ? resource.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : ''}
                     </span>
                   )}
                   {/* Visibility badge - only show for owner */}
@@ -2308,7 +2338,9 @@ export default function ResourceDetailPage() {
                     <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
                       {locale === 'fr' ? 'Catégorie' : 'Category'}
                     </p>
-                    <span className="text-sm text-gray-700">{typeof resource.category === 'string' ? resource.category : ''}</span>
+                    <span className="inline-flex px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-sm font-medium">
+                      {typeof resource.category === 'string' ? resource.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : ''}
+                    </span>
                   </div>
                 )}
 
@@ -2708,6 +2740,7 @@ export default function ResourceDetailPage() {
             members={members}
             locale={locale as 'en' | 'fr' | 'es'}
             onShare={handleShareWithMembers}
+            groups={memberGroups}
           />
         )}
       </main>

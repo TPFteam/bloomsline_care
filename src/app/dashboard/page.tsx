@@ -125,25 +125,25 @@ function DashboardContent() {
   // Featured templates - one from each type
   const featuredTemplates: TemplateOption[] = [
     {
-      id: 'thought-record',
+      id: 'gratitude',
       type: 'worksheet',
-      name: { en: 'Thought Record', fr: 'Journal de pensées' },
-      description: { en: 'Classic CBT thought record', fr: 'Journal de pensées TCC classique' },
-      href: '/resources/create/worksheet?template=thought-record',
+      name: { en: 'Gratitude Journal', fr: 'Journal de gratitude' },
+      description: { en: 'Daily gratitude reflection practice', fr: 'Pratique quotidienne de réflexion de gratitude' },
+      href: '/resources/create/worksheet?template=gratitude',
     },
     {
-      id: 'thought-log',
+      id: 'cognitive-restructuring',
       type: 'table',
-      name: { en: 'Thought Log', fr: 'Suivi des pensées' },
-      description: { en: 'Track thoughts over time', fr: 'Suivre les pensées au fil du temps' },
-      href: '/resources/create/table?template=thought-log',
+      name: { en: 'Cognitive Restructuring', fr: 'Restructuration cognitive' },
+      description: { en: 'Challenge and reframe negative thoughts', fr: 'Remettre en question les pensées négatives' },
+      href: '/resources/create/table?template=cognitive-restructuring',
     },
     {
-      id: 'condition-overview',
+      id: 'cbt-introduction',
       type: 'psychoeducation',
-      name: { en: 'Condition Overview', fr: 'Aperçu d\'une condition' },
-      description: { en: 'Explain a mental health topic', fr: 'Expliquer un sujet de santé mentale' },
-      href: '/resources/create/psychoeducation?template=condition-overview',
+      name: { en: 'CBT Introduction', fr: 'Introduction à la TCC' },
+      description: { en: 'Simple introduction to CBT', fr: 'Introduction simple à la TCC' },
+      href: '/resources/create/psychoeducation?template=cbt-introduction',
     },
   ]
   const router = useRouter()

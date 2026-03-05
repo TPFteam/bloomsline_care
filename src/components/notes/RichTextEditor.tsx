@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useEffect, useCallback } from 'react'
+import { useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { Bold, Italic, ChevronDown, List, ListOrdered, Minus, ScanLine, Loader2, Type, Target, Tag, Quote, X, Eye, EyeOff, Undo2, Redo2, Lock, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -165,9 +165,11 @@ interface RichTextEditorProps {
   toolbarActions?: React.ReactNode
   compact?: boolean
   onSubmit?: () => void
+  /** Called when user inserts an inline @tag — receives the tag type string */
+  onTagInsert?: (tagType: string) => void
 }
 
-export function RichTextEditor({ value, onChange, placeholder, memberId, locale, autoFocus, milestones, noteTypes, memberName, onAutoSave, autoSaveDelay = 2000, toolbarActions, compact, onSubmit, lockedTypes, onAddType, maxTypes = 10 }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, placeholder, memberId, locale, autoFocus, milestones, noteTypes, memberName, onAutoSave, autoSaveDelay = 2000, toolbarActions, compact, onSubmit, lockedTypes, onAddType, maxTypes = 10, onTagInsert }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [extracting, setExtracting] = useState(false)
@@ -191,6 +193,37 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     position: { top: number; left: number }
   } | null>(null)
   const [inlineHighlight, setInlineHighlight] = useState(0)
+  const inlineDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Reposition inline dropdown after render using current caret position
+  useLayoutEffect(() => {
+    if (!inlineTrigger || !inlineDropdownRef.current || !editorRef.current) return
+    const sel = window.getSelection()
+    if (!sel || !sel.rangeCount) return
+    // Only reposition if selection is within our editor
+    if (!editorRef.current.contains(sel.anchorNode)) return
+    const range = sel.getRangeAt(0)
+    let rect = range.getBoundingClientRect()
+    // Collapsed ranges can return {0,0} — use temp span fallback
+    if (rect.top === 0 && rect.left === 0 && rect.width === 0) {
+      const span = document.createElement('span')
+      span.textContent = '\u200B'
+      const cloned = range.cloneRange()
+      cloned.collapse(false)
+      cloned.insertNode(span)
+      rect = span.getBoundingClientRect()
+      span.parentNode?.removeChild(span)
+    }
+    if (rect.top > 0 || rect.left > 0) {
+      const el = inlineDropdownRef.current
+      const dropdownHeight = el.offsetHeight || 380
+      const spaceBelow = window.innerHeight - rect.bottom
+      el.style.top = spaceBelow < dropdownHeight
+        ? `${rect.top - dropdownHeight - 4}px`
+        : `${rect.bottom + 4}px`
+      el.style.left = `${rect.left}px`
+    }
+  })
 
   // Tagging state
   const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null)
@@ -596,10 +629,11 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     }
 
     setActiveTag(item.data)
+    onTagInsert?.(item.data.type)
     setInlineTrigger(null)
     setInlineHighlight(0)
     handleInput()
-  }, [inlineTrigger, handleInput, deleteTriggerText, startGoalAnnotation])
+  }, [inlineTrigger, handleInput, deleteTriggerText, startGoalAnnotation, onTagInsert])
 
   // Shared helper: clean up a mark, move cursor out of it
   const finishMark = useCallback((mark: HTMLElement) => {
@@ -1720,6 +1754,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       {/* P2 — Inline trigger dropdown — portal to body */}
       {inlineTrigger && createPortal(
         <div
+          ref={inlineDropdownRef}
           data-inline-trigger
           className="fixed z-[100]"
           style={{ top: inlineTrigger.position.top, left: inlineTrigger.position.left }}

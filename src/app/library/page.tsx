@@ -78,6 +78,7 @@ export default function LibraryPage() {
 
   // Members for "Share with Members" dropdown
   const [members, setMembers] = useState<SimpleMember[]>([])
+  const [memberGroups, setMemberGroups] = useState<{ id: string; name: string; color: string; member_ids: string[] }[]>([])
 
   // Bookmarked resources tracking
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
@@ -194,6 +195,34 @@ export default function LibraryPage() {
       }
 
       setMembers(data || [])
+
+      // Fetch member groups
+      const { data: groups } = await supabase
+        .from('member_groups')
+        .select('id, name, color')
+        .eq('practitioner_id', user.id)
+        .order('name', { ascending: true })
+
+      if (groups && groups.length > 0) {
+        const groupIds = groups.map(g => g.id)
+        const { data: groupMembers } = await supabase
+          .from('member_group_members')
+          .select('group_id, member_id')
+          .in('group_id', groupIds)
+
+        const membersByGroup: Record<string, string[]> = {}
+        groupMembers?.forEach((gm: { group_id: string; member_id: string }) => {
+          if (!membersByGroup[gm.group_id]) membersByGroup[gm.group_id] = []
+          membersByGroup[gm.group_id].push(gm.member_id)
+        })
+
+        setMemberGroups(groups.map(g => ({
+          id: g.id,
+          name: g.name,
+          color: g.color,
+          member_ids: membersByGroup[g.id] || [],
+        })))
+      }
     } catch (error) {
       console.error('Error fetching members:', error)
     }
@@ -737,6 +766,7 @@ export default function LibraryPage() {
                       variant="library"
                       index={index}
                       members={members}
+                      groups={memberGroups}
                       onShareWithMembers={handleShareWithMembers}
                       onAddMember={() => setShowAddMemberModal(true)}
                       onBookmark={handleBookmark}

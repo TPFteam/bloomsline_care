@@ -16,8 +16,8 @@
     "company": {
       "title": "Empresa",
       "links": [
-        { "label": "Sobre Bloomsline", "href": "#about" },
-        { "label": "Nuestra misión", "href": "#" }
+        { "label": "Sobre Bloomsline", "href": "/about" },
+        { "label": "Nuestra misión", "href": "/about#mission" }
       ]
     },
     "resources": {

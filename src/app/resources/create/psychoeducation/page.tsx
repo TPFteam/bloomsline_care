@@ -59,6 +59,7 @@ import { toast } from 'sonner'
 import { ShareResourceModal } from '@/components/resources/ShareResourceModal'
 import type { ResourceCategory } from '@/types/library'
 import type { ResourceBlock, PsychoeducationSettings, Resource } from '@/types/resource'
+import DescriptionEditor from '@/components/resources/DescriptionEditor'
 
 interface SimpleMember {
   id: string
@@ -315,12 +316,14 @@ function CreatePsychoeducationContent() {
   const [savedResourceForShare, setSavedResourceForShare] = useState<Resource | null>(null)
   const [showShareModal, setShowShareModal] = useState(false)
   const [members, setMembers] = useState<SimpleMember[]>([])
+  const [memberGroups, setMemberGroups] = useState<{ id: string; name: string; color: string; member_ids: string[] }[]>([])
 
   // Template modification tracking using refs for reliable synchronous access
   // Using refs to avoid closure issues with state
   const selectedTemplateIdRef = useRef<string | null>(null)
   const hasModifiedContentRef = useRef(false)
   const [showTemplateWarningDialog, setShowTemplateWarningDialog] = useState(false)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
   // Get user ID on mount
   useEffect(() => {
@@ -529,7 +532,7 @@ function CreatePsychoeducationContent() {
   const handleGoBackToTemplates = () => {
     setShowTemplateWarningDialog(false)
     // Navigate back to resource creation page
-    router.push('/resources/create')
+    router.push(templateParam ? '/dashboard' : '/resources/create')
   }
 
   // Helper to mark content as modified (call this in any edit handler)
@@ -566,8 +569,14 @@ function CreatePsychoeducationContent() {
 
   // Delete block
   const deleteBlock = (id: string) => {
-    setBlocks(blocks.filter(b => b.id !== id))
-    markAsModified()
+    setDeleteConfirmId(id)
+  }
+  const confirmDeleteBlock = () => {
+    if (deleteConfirmId) {
+      setBlocks(blocks.filter(b => b.id !== deleteConfirmId))
+      markAsModified()
+    }
+    setDeleteConfirmId(null)
   }
 
   // Handle file upload for media blocks
@@ -1083,6 +1092,35 @@ function CreatePsychoeducationContent() {
           if (membersData && membersData.length > 0) {
             setSavedResourceForShare(resourceData)
             setMembers(membersData)
+
+            // Fetch member groups
+            const { data: groups } = await supabaseClient
+              .from('member_groups')
+              .select('id, name, color')
+              .eq('practitioner_id', userId)
+              .order('name', { ascending: true })
+
+            if (groups && groups.length > 0) {
+              const groupIds = groups.map(g => g.id)
+              const { data: groupMembers } = await supabaseClient
+                .from('member_group_members')
+                .select('group_id, member_id')
+                .in('group_id', groupIds)
+
+              const membersByGroup: Record<string, string[]> = {}
+              groupMembers?.forEach((gm: { group_id: string; member_id: string }) => {
+                if (!membersByGroup[gm.group_id]) membersByGroup[gm.group_id] = []
+                membersByGroup[gm.group_id].push(gm.member_id)
+              })
+
+              setMemberGroups(groups.map(g => ({
+                id: g.id,
+                name: g.name,
+                color: g.color,
+                member_ids: membersByGroup[g.id] || [],
+              })))
+            }
+
             setShowShareAfterSave(true)
             setIsSaving(false)
             return // Don't redirect yet
@@ -2406,7 +2444,7 @@ function CreatePsychoeducationContent() {
                     </motion.div>
                   </Link>
                 ) : (
-                  <Link href="/resources/create">
+                  <Link href={templateParam ? '/dashboard' : '/resources/create'}>
                     <motion.div whileHover={{ x: -4 }} className="inline-block">
                       <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
                         <ArrowLeft className="w-4 h-4 mr-2" />
@@ -2890,14 +2928,11 @@ function CreatePsychoeducationContent() {
                       {locale === 'fr' ? 'Description' : 'Description'}
                       <span className="text-red-500 ml-1">*</span>
                     </h2>
-                    <textarea
+                    <DescriptionEditor
                       value={description}
-                      onChange={(e) => setDescription(e.target.value)}
+                      onChange={setDescription}
                       placeholder={locale === 'fr' ? 'Décrivez brièvement ce document...' : 'Briefly describe this resource...'}
-                      rows={4}
-                      className={`w-full px-4 py-3 bg-gray-50/80 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none mb-4 ${
-                        !description.trim() ? 'border-gray-200/60' : 'border-purple-300'
-                      }`}
+                      className="mb-4"
                     />
 
                     <h2 className="text-lg font-semibold text-gray-900 mb-3">
@@ -3346,6 +3381,7 @@ function CreatePsychoeducationContent() {
           members={members}
           locale={locale}
           onShare={handleShareWithMembers}
+          groups={memberGroups}
         />
       )}
 
@@ -3375,6 +3411,30 @@ function CreatePsychoeducationContent() {
               className="flex-1 sm:flex-none bg-purple-500 hover:bg-purple-600"
             >
               {locale === 'fr' ? 'Modifier' : 'Modify'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Block Confirmation */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null) }}>
+        <AlertDialogContent className="sm:max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {locale === 'fr' ? 'Supprimer ce bloc ?' : 'Delete this block?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {locale === 'fr'
+                ? 'Cette action est irréversible. Le bloc et son contenu seront supprimés.'
+                : 'This action cannot be undone. The block and its content will be removed.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="flex-1 sm:flex-none">
+              {locale === 'fr' ? 'Annuler' : 'Cancel'}
+            </Button>
+            <Button onClick={confirmDeleteBlock} className="flex-1 sm:flex-none bg-red-500 hover:bg-red-600 text-white">
+              {locale === 'fr' ? 'Supprimer' : 'Delete'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

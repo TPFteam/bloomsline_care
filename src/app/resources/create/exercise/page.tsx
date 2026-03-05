@@ -42,6 +42,7 @@ import { useLanguage, lt } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { ResourceCategory } from '@/types/library'
+import DescriptionEditor from '@/components/resources/DescriptionEditor'
 
 // Step types for exercises
 type StepType = 'instruction' | 'timed_action' | 'breathing' | 'visualization' | 'body_scan' | 'reflection'
@@ -224,6 +225,7 @@ export default function CreateExercisePage() {
     steps: ExerciseStep[]
   } | null>(null)
   const [showTemplateWarningDialog, setShowTemplateWarningDialog] = useState(false)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
   // Generate unique ID
   const generateId = () => Math.random().toString(36).substr(2, 9)
@@ -313,7 +315,13 @@ export default function CreateExercisePage() {
 
   // Delete step
   const deleteStep = (id: string) => {
-    setSteps(steps.filter(s => s.id !== id))
+    setDeleteConfirmId(id)
+  }
+  const confirmDeleteStep = () => {
+    if (deleteConfirmId) {
+      setSteps(steps.filter(s => s.id !== deleteConfirmId))
+    }
+    setDeleteConfirmId(null)
   }
 
   // Duplicate step
@@ -1360,12 +1368,11 @@ export default function CreateExercisePage() {
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">
                     {locale === 'fr' ? 'Description' : 'Description'}
                   </h2>
-                  <textarea
+                  <DescriptionEditor
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={setDescription}
                     placeholder={locale === 'fr' ? 'Décrivez brièvement cet exercice...' : 'Briefly describe this exercise...'}
-                    rows={4}
-                    className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none mb-4"
+                    className="mb-4"
                   />
 
                   <h2 className="text-lg font-semibold text-gray-900 mb-3">
@@ -1469,6 +1476,30 @@ export default function CreateExercisePage() {
               className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-600"
             >
               {locale === 'fr' ? 'Modifier' : 'Modify'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Step Confirmation */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null) }}>
+        <AlertDialogContent className="sm:max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {locale === 'fr' ? 'Supprimer cette étape ?' : 'Delete this step?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {locale === 'fr'
+                ? 'Cette action est irréversible. L\'étape et son contenu seront supprimés.'
+                : 'This action cannot be undone. The step and its content will be removed.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="flex-1 sm:flex-none">
+              {locale === 'fr' ? 'Annuler' : 'Cancel'}
+            </Button>
+            <Button onClick={confirmDeleteStep} className="flex-1 sm:flex-none bg-red-500 hover:bg-red-600 text-white">
+              {locale === 'fr' ? 'Supprimer' : 'Delete'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

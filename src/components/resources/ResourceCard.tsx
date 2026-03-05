@@ -106,6 +106,7 @@ interface ResourceCardProps {
   onDuplicate?: () => void
   onBookmark?: (resourceId: string) => void
   members?: SimpleMember[]
+  groups?: { id: string; name: string; color: string; member_ids: string[] }[]
   onShareWithMembers?: (resourceId: string, memberIds: string[], message?: string) => Promise<void>
   onAddMember?: () => void
   isDeleting?: boolean
@@ -130,6 +131,7 @@ export function ResourceCard({
   onDuplicate,
   onBookmark,
   members = [],
+  groups,
   onShareWithMembers,
   onAddMember,
   isDeleting = false,
@@ -479,6 +481,7 @@ export function ResourceCard({
         locale={locale}
         onShare={onShareWithMembers}
         onAddMember={onAddMember}
+        groups={groups}
       />
     )}
   </>

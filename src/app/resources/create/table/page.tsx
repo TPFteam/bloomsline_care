@@ -39,6 +39,7 @@ import { useLanguage, lt } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { ResourceCategory } from '@/types/library'
+import DescriptionEditor from '@/components/resources/DescriptionEditor'
 
 interface TableColumn {
   id: string
@@ -181,6 +182,7 @@ function CreateTableExerciseContent() {
     instructions: string
   } | null>(null)
   const [showTemplateWarningDialog, setShowTemplateWarningDialog] = useState(false)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
   // Load existing resource when editing
   useEffect(() => {
@@ -323,7 +325,13 @@ function CreateTableExerciseContent() {
       toast.error(locale === 'fr' ? 'Minimum 2 colonnes requises' : 'Minimum 2 columns required')
       return
     }
-    setColumns(columns.filter(col => col.id !== id))
+    setDeleteConfirmId(id)
+  }
+  const confirmDeleteColumn = () => {
+    if (deleteConfirmId) {
+      setColumns(columns.filter(col => col.id !== deleteConfirmId))
+    }
+    setDeleteConfirmId(null)
   }
 
   // Update column
@@ -411,7 +419,7 @@ function CreateTableExerciseContent() {
   const handleGoBackToTemplates = () => {
     setShowTemplateWarningDialog(false)
     // Navigate back to resource creation page
-    router.push('/resources/create')
+    router.push(templateParam ? '/dashboard' : '/resources/create')
   }
 
   // Save resource
@@ -771,7 +779,7 @@ function CreateTableExerciseContent() {
                     </motion.div>
                   </Link>
                 ) : (
-                  <Link href="/resources/create">
+                  <Link href={templateParam ? '/dashboard' : '/resources/create'}>
                     <motion.div whileHover={{ x: -4 }} className="inline-block">
                       <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
                         <ArrowLeft className="w-4 h-4 mr-2" />
@@ -1321,14 +1329,11 @@ function CreateTableExerciseContent() {
                       {locale === 'fr' ? 'Description' : 'Description'}
                       <span className="text-red-500 ml-1">*</span>
                     </h2>
-                    <textarea
+                    <DescriptionEditor
                       value={description}
-                      onChange={(e) => setDescription(e.target.value)}
+                      onChange={setDescription}
                       placeholder={locale === 'fr' ? 'Décrivez brièvement cet exercice...' : 'Briefly describe this exercise...'}
-                      rows={4}
-                      className={`w-full px-4 py-3 bg-gray-50/80 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent resize-none mb-4 ${
-                        !description.trim() ? 'border-gray-200/60' : 'border-emerald-300'
-                      }`}
+                      className="mb-4"
                     />
 
                     <h2 className="text-lg font-semibold text-gray-900 mb-3">
@@ -1887,6 +1892,30 @@ function CreateTableExerciseContent() {
               className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-600"
             >
               {locale === 'fr' ? 'Modifier' : 'Modify'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Column Confirmation */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null) }}>
+        <AlertDialogContent className="sm:max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {locale === 'fr' ? 'Supprimer cette colonne ?' : 'Delete this column?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {locale === 'fr'
+                ? 'Cette action est irréversible. La colonne et son contenu seront supprimés.'
+                : 'This action cannot be undone. The column and its content will be removed.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="flex-1 sm:flex-none">
+              {locale === 'fr' ? 'Annuler' : 'Cancel'}
+            </Button>
+            <Button onClick={confirmDeleteColumn} className="flex-1 sm:flex-none bg-red-500 hover:bg-red-600 text-white">
+              {locale === 'fr' ? 'Supprimer' : 'Delete'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

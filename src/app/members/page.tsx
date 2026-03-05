@@ -34,6 +34,7 @@ import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { Member, MemberFilter, MemberHubStats, Session } from '@/types/member'
 import { getMemberFullName, getMemberInitials } from '@/types/member'
+import type { MemberGroup } from '@/types/member-group'
 
 // Import row type for CSV bulk import
 type ImportRow = {
@@ -106,8 +107,17 @@ export default function MembersPage() {
 
   // Add Member Modal
   const [showAddModal, setShowAddModal] = useState(false)
-  const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '' })
+  const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '', isMinor: false })
   const [saving, setSaving] = useState(false)
+
+  // Groups
+  const [memberGroups, setMemberGroups] = useState<MemberGroup[]>([])
+  const [showGroupsView, setShowGroupsView] = useState(false)
+  const [showGroupModal, setShowGroupModal] = useState(false)
+  const [editingGroup, setEditingGroup] = useState<MemberGroup | null>(null)
+  const [groupForm, setGroupForm] = useState({ name: '', color: 'blue', memberIds: [] as string[] })
+  const [savingGroup, setSavingGroup] = useState(false)
+  const [groupSearchQuery, setGroupSearchQuery] = useState('')
 
   // CSV Import Modal
   const [showImportModal, setShowImportModal] = useState(false)
@@ -221,6 +231,38 @@ export default function MembersPage() {
         })
 
         setLastSharedResources(sharedMap)
+      }
+
+      // Fetch member groups
+      const { data: groups } = await supabase
+        .from('member_groups')
+        .select('*')
+        .eq('practitioner_id', authUser.id)
+        .order('name', { ascending: true })
+
+      if (groups && groups.length > 0) {
+        const groupIds = groups.map(g => g.id)
+        const { data: groupMembers } = await supabase
+          .from('member_group_members')
+          .select('group_id, member_id')
+          .in('group_id', groupIds)
+
+        const membersByGroup: Record<string, string[]> = {}
+        groupMembers?.forEach((gm: { group_id: string; member_id: string }) => {
+          if (!membersByGroup[gm.group_id]) membersByGroup[gm.group_id] = []
+          membersByGroup[gm.group_id].push(gm.member_id)
+        })
+
+        setMemberGroups(groups.map(g => ({
+          id: g.id,
+          practitioner_id: g.practitioner_id,
+          name: g.name,
+          color: g.color,
+          created_at: g.created_at,
+          updated_at: g.updated_at,
+          member_count: membersByGroup[g.id]?.length || 0,
+          member_ids: membersByGroup[g.id] || [],
+        })))
       }
     } catch (error) {
       console.error('Error fetching members:', error)
@@ -365,7 +407,7 @@ export default function MembersPage() {
           setMembers(updatedMembers)
           calculateStats(updatedMembers)
 
-          setNewMember({ firstName: '', lastName: '', email: '', phone: '' })
+          setNewMember({ firstName: '', lastName: '', email: '', phone: '', isMinor: false })
           setShowAddModal(false)
           toast.success(t.members.success.memberCreated)
           setSaving(false)
@@ -381,6 +423,7 @@ export default function MembersPage() {
         phone: newMember.phone.trim() || null,
         status: 'active' as const,
         engagement_level: 'medium' as const,
+        is_minor: newMember.isMinor,
       }
 
       const { data, error } = await supabase
@@ -397,7 +440,7 @@ export default function MembersPage() {
       calculateStats(updatedMembers)
 
       // Reset form and close modal
-      setNewMember({ firstName: '', lastName: '', email: '', phone: '' })
+      setNewMember({ firstName: '', lastName: '', email: '', phone: '', isMinor: false })
       setShowAddModal(false)
       toast.success(t.members.success.memberCreated)
     } catch (error) {
@@ -626,6 +669,129 @@ export default function MembersPage() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  // Group CRUD
+  const GROUP_COLORS = ['blue', 'emerald', 'purple', 'amber', 'red', 'pink', 'cyan']
+
+  const openGroupModal = (group?: MemberGroup) => {
+    if (group) {
+      setEditingGroup(group)
+      setGroupForm({ name: group.name, color: group.color, memberIds: group.member_ids || [] })
+    } else {
+      setEditingGroup(null)
+      setGroupForm({ name: '', color: 'blue', memberIds: [] })
+    }
+    setGroupSearchQuery('')
+    setShowGroupModal(true)
+  }
+
+  const handleSaveGroup = async () => {
+    if (!groupForm.name.trim()) return
+    setSavingGroup(true)
+
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
+
+      if (editingGroup) {
+        // Update group
+        const { error } = await supabase
+          .from('member_groups')
+          .update({ name: groupForm.name.trim(), color: groupForm.color })
+          .eq('id', editingGroup.id)
+
+        if (error) throw error
+
+        // Sync members: delete all, re-insert
+        await supabase
+          .from('member_group_members')
+          .delete()
+          .eq('group_id', editingGroup.id)
+
+        if (groupForm.memberIds.length > 0) {
+          const { error: insertError } = await supabase
+            .from('member_group_members')
+            .insert(groupForm.memberIds.map(mid => ({ group_id: editingGroup.id, member_id: mid })))
+
+          if (insertError) throw insertError
+        }
+
+        toast.success(locale === 'fr' ? 'Groupe mis à jour' : 'Group updated')
+      } else {
+        // Create group
+        const { data: newGroup, error } = await supabase
+          .from('member_groups')
+          .insert({ practitioner_id: authUser.id, name: groupForm.name.trim(), color: groupForm.color })
+          .select()
+          .single()
+
+        if (error) throw error
+
+        if (groupForm.memberIds.length > 0) {
+          const { error: insertError } = await supabase
+            .from('member_group_members')
+            .insert(groupForm.memberIds.map(mid => ({ group_id: newGroup.id, member_id: mid })))
+
+          if (insertError) throw insertError
+        }
+
+        toast.success(locale === 'fr' ? 'Groupe créé' : 'Group created')
+      }
+
+      setShowGroupModal(false)
+      fetchMembers()
+    } catch (error) {
+      console.error('Error saving group:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors de la sauvegarde' : 'Failed to save group')
+    } finally {
+      setSavingGroup(false)
+    }
+  }
+
+  const handleDeleteGroup = async (groupId: string) => {
+    if (!confirm(locale === 'fr' ? 'Supprimer ce groupe ?' : 'Delete this group?')) return
+
+    try {
+      const { error } = await supabase
+        .from('member_groups')
+        .delete()
+        .eq('id', groupId)
+
+      if (error) throw error
+
+      setMemberGroups(memberGroups.filter(g => g.id !== groupId))
+      toast.success(locale === 'fr' ? 'Groupe supprimé' : 'Group deleted')
+    } catch (error) {
+      console.error('Error deleting group:', error)
+      toast.error(locale === 'fr' ? 'Erreur lors de la suppression' : 'Failed to delete group')
+    }
+  }
+
+  const toggleGroupMember = (memberId: string) => {
+    setGroupForm(prev => ({
+      ...prev,
+      memberIds: prev.memberIds.includes(memberId)
+        ? prev.memberIds.filter(id => id !== memberId)
+        : [...prev.memberIds, memberId]
+    }))
+  }
+
+  const filteredGroupMembers = members.filter(m => {
+    if (!groupSearchQuery.trim()) return true
+    const query = groupSearchQuery.toLowerCase()
+    const fullName = getMemberFullName(m).toLowerCase()
+    return fullName.includes(query) || (m.email?.toLowerCase() || '').includes(query)
+  })
+
+  const groupColorMap: Record<string, { bg: string; dot: string; text: string; chipBg: string }> = {
+    blue: { bg: 'bg-blue-50', dot: 'bg-blue-500', text: 'text-blue-700', chipBg: 'bg-blue-100' },
+    emerald: { bg: 'bg-emerald-50', dot: 'bg-emerald-500', text: 'text-emerald-700', chipBg: 'bg-emerald-100' },
+    purple: { bg: 'bg-purple-50', dot: 'bg-purple-500', text: 'text-purple-700', chipBg: 'bg-purple-100' },
+    amber: { bg: 'bg-amber-50', dot: 'bg-amber-500', text: 'text-amber-700', chipBg: 'bg-amber-100' },
+    red: { bg: 'bg-red-50', dot: 'bg-red-500', text: 'text-red-700', chipBg: 'bg-red-100' },
+    pink: { bg: 'bg-pink-50', dot: 'bg-pink-500', text: 'text-pink-700', chipBg: 'bg-pink-100' },
+    cyan: { bg: 'bg-cyan-50', dot: 'bg-cyan-500', text: 'text-cyan-700', chipBg: 'bg-cyan-100' },
+  }
+
   const filteredMembers = members.filter(member => {
     if (filter !== 'all' && member.status !== filter) return false
 
@@ -692,16 +858,16 @@ export default function MembersPage() {
                 {filterOptions.map((option) => (
                   <button
                     key={option.value}
-                    onClick={() => setFilter(option.value)}
+                    onClick={() => { setFilter(option.value); setShowGroupsView(false) }}
                     className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                      filter === option.value
+                      filter === option.value && !showGroupsView
                         ? 'bg-gray-900 text-white'
                         : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                     }`}
                   >
                     {option.label}
                     <span className={`px-1.5 py-0.5 rounded-md text-xs ${
-                      filter === option.value
+                      filter === option.value && !showGroupsView
                         ? 'bg-white/20 text-white'
                         : 'bg-gray-100 text-gray-500'
                     }`}>
@@ -709,6 +875,29 @@ export default function MembersPage() {
                     </span>
                   </button>
                 ))}
+
+                {/* Divider */}
+                <div className="w-px h-6 bg-gray-200 mx-1" />
+
+                {/* Groups Pill */}
+                <button
+                  onClick={() => setShowGroupsView(true)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                    showGroupsView
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  {locale === 'fr' ? 'Groupes' : locale === 'es' ? 'Grupos' : 'Groups'}
+                  <span className={`px-1.5 py-0.5 rounded-md text-xs ${
+                    showGroupsView
+                      ? 'bg-white/20 text-white'
+                      : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {memberGroups.length}
+                  </span>
+                </button>
               </div>
 
               {/* Right Side Actions */}
@@ -767,18 +956,127 @@ export default function MembersPage() {
                   <Upload className="w-4 h-4" />
                 </Button>
 
-                {/* Add Member Button */}
+                {/* Add Member / Group Button */}
                 <Button
-                  onClick={() => setShowAddModal(true)}
+                  onClick={() => showGroupsView ? openGroupModal() : setShowAddModal(true)}
                   className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-4"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  {t.members.actions.addMember}
+                  {showGroupsView
+                    ? (locale === 'fr' ? 'Nouveau groupe' : locale === 'es' ? 'Nuevo grupo' : 'New Group')
+                    : t.members.actions.addMember}
                 </Button>
               </div>
             </div>
           </motion.div>
 
+          {/* Groups View */}
+          {showGroupsView ? (
+            <div>
+              {memberGroups.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-20"
+                >
+                  <div className="bg-white rounded-2xl p-12 max-w-md mx-auto border border-gray-200">
+                    <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                      <Users className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                      {locale === 'fr' ? 'Aucun groupe' : locale === 'es' ? 'Sin grupos' : 'No groups yet'}
+                    </h2>
+                    <p className="text-gray-500 mb-6">
+                      {locale === 'fr'
+                        ? 'Créez des groupes pour partager des ressources en masse'
+                        : locale === 'es'
+                        ? 'Cree grupos para compartir recursos en masa'
+                        : 'Create groups to share resources in bulk'}
+                    </p>
+                    <Button
+                      onClick={() => openGroupModal()}
+                      className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-6"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      {locale === 'fr' ? 'Créer un groupe' : locale === 'es' ? 'Crear grupo' : 'Create Group'}
+                    </Button>
+                  </div>
+                </motion.div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                  <AnimatePresence mode="popLayout">
+                    {memberGroups.map((group, index) => {
+                      const colors = groupColorMap[group.color] || groupColorMap.blue
+                      const groupMembers = members.filter(m => group.member_ids?.includes(m.id))
+                      return (
+                        <motion.div
+                          key={group.id}
+                          layout
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          transition={{ duration: 0.2, delay: index * 0.03 }}
+                          className="group bg-white rounded-2xl p-5 border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all"
+                        >
+                          {/* Header */}
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-3 h-3 rounded-full ${colors.dot}`} />
+                              <h3 className="font-semibold text-gray-900 text-base">{group.name}</h3>
+                            </div>
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => openGroupModal(group)}
+                                className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteGroup(group.id)}
+                                className="p-2 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Member count */}
+                          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${colors.bg} ${colors.text} text-xs font-medium mb-4`}>
+                            <Users className="w-3 h-3" />
+                            {group.member_count || 0} {locale === 'fr' ? 'membres' : 'members'}
+                          </div>
+
+                          {/* Stacked avatar initials */}
+                          <div className="flex items-center">
+                            {groupMembers.slice(0, 5).map((m, i) => (
+                              <div
+                                key={m.id}
+                                className={`w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-gray-600 font-medium text-xs ${i > 0 ? '-ml-2' : ''}`}
+                                title={getMemberFullName(m)}
+                              >
+                                {getMemberInitials(m)}
+                              </div>
+                            ))}
+                            {groupMembers.length > 5 && (
+                              <div className="-ml-2 w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-gray-500 font-medium text-xs">
+                                +{groupMembers.length - 5}
+                              </div>
+                            )}
+                            {groupMembers.length === 0 && (
+                              <span className="text-sm text-gray-400">
+                                {locale === 'fr' ? 'Aucun membre' : 'No members'}
+                              </span>
+                            )}
+                          </div>
+                        </motion.div>
+                      )
+                    })}
+                  </AnimatePresence>
+                </div>
+              )}
+            </div>
+          ) : (
+          <>
           {/* Results Count */}
           <AnimatePresence>
             {(searchQuery || filter !== 'all') && members.length > 0 && (
@@ -873,8 +1171,169 @@ export default function MembersPage() {
               </AnimatePresence>
             </div>
           )}
+          </>
+          )}
         </div>
       </main>
+
+      {/* Group Modal */}
+      <AnimatePresence>
+        {showGroupModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-4"
+            onClick={() => setShowGroupModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-xl w-full max-w-md shadow-xl max-h-[80vh] flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {editingGroup
+                    ? (locale === 'fr' ? 'Modifier le groupe' : locale === 'es' ? 'Editar grupo' : 'Edit Group')
+                    : (locale === 'fr' ? 'Nouveau groupe' : locale === 'es' ? 'Nuevo grupo' : 'New Group')}
+                </h2>
+                <button
+                  onClick={() => setShowGroupModal(false)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Form */}
+              <div className="p-5 space-y-4 flex-shrink-0">
+                {/* Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {locale === 'fr' ? 'Nom du groupe' : locale === 'es' ? 'Nombre del grupo' : 'Group name'} *
+                  </label>
+                  <input
+                    type="text"
+                    value={groupForm.name}
+                    onChange={(e) => setGroupForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                    placeholder={locale === 'fr' ? 'ex: Groupe Anxiété' : 'e.g. Anxiety Group'}
+                    autoFocus
+                  />
+                </div>
+
+                {/* Color Picker */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {locale === 'fr' ? 'Couleur' : locale === 'es' ? 'Color' : 'Color'}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {GROUP_COLORS.map((color) => {
+                      const colors = groupColorMap[color] || groupColorMap.blue
+                      return (
+                        <button
+                          key={color}
+                          onClick={() => setGroupForm(prev => ({ ...prev, color }))}
+                          className={`w-8 h-8 rounded-full ${colors.dot} transition-all ${
+                            groupForm.color === color
+                              ? 'ring-2 ring-offset-2 ring-gray-400 scale-110'
+                              : 'hover:scale-105'
+                          }`}
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Member Search */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {locale === 'fr' ? 'Membres' : locale === 'es' ? 'Miembros' : 'Members'}
+                    <span className="text-gray-400 font-normal ml-1">({groupForm.memberIds.length})</span>
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder={locale === 'fr' ? 'Rechercher...' : 'Search...'}
+                      value={groupSearchQuery}
+                      onChange={(e) => setGroupSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Member Checklist */}
+              <div className="flex-1 overflow-y-auto border-t border-gray-100 max-h-60" style={{ scrollbarWidth: 'none' }}>
+                {filteredGroupMembers.map((member) => {
+                  const isChecked = groupForm.memberIds.includes(member.id)
+                  return (
+                    <button
+                      key={member.id}
+                      onClick={() => toggleGroupMember(member.id)}
+                      className={`w-full flex items-center gap-3 px-5 py-2.5 transition-colors ${
+                        isChecked ? 'bg-blue-50' : 'hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+                        isChecked ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'
+                      }`}>
+                        {isChecked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-xs flex-shrink-0">
+                        {getMemberInitials(member)}
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <p className={`font-medium text-sm truncate ${isChecked ? 'text-blue-900' : 'text-gray-900'}`}>
+                          {getMemberFullName(member)}
+                        </p>
+                        {member.email && (
+                          <p className="text-xs text-gray-500 truncate">{member.email}</p>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-gray-100 flex-shrink-0">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowGroupModal(false)}
+                  className="text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+                >
+                  {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
+                </Button>
+                <Button
+                  onClick={handleSaveGroup}
+                  disabled={!groupForm.name.trim() || savingGroup}
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg px-4 text-sm"
+                >
+                  {savingGroup ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      {editingGroup
+                        ? (locale === 'fr' ? 'Mettre à jour' : locale === 'es' ? 'Actualizar' : 'Update')
+                        : (locale === 'fr' ? 'Créer' : locale === 'es' ? 'Crear' : 'Create')}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Add Member Modal */}
       <AnimatePresence>
@@ -971,6 +1430,23 @@ export default function MembersPage() {
                       placeholder={locale === 'fr' ? '+33 6 12 34 56 78' : '+1 (555) 123-4567'}
                     />
                   </div>
+
+                  {/* Minor/Student Toggle */}
+                  <label className="flex items-center gap-3 cursor-pointer group/minor">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={newMember.isMinor}
+                        onChange={(e) => setNewMember({ ...newMember, isMinor: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-gray-200 rounded-full peer-checked:bg-gray-900 transition-colors" />
+                      <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-4" />
+                    </div>
+                    <span className="text-sm text-gray-700 group-hover/minor:text-gray-900 transition-colors">
+                      {locale === 'fr' ? 'Mineur / Étudiant' : locale === 'es' ? 'Menor / Estudiante' : 'Minor / Student'}
+                    </span>
+                  </label>
                 </div>
 
                 {/* Actions */}

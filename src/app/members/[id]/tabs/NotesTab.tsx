@@ -963,7 +963,17 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     if (noteFilter === 'general' && note.session_id) return false
     if (noteFilter === 'goal' && !note.milestone_id) return false
     if (noteFilter === 'goal' && filterMilestoneId && note.milestone_id !== filterMilestoneId) return false
-    if (typeFilters.size > 0 && !typeFilters.has(note.note_type)) return false
+    if (typeFilters.size > 0) {
+      const wantsNoTag = typeFilters.has('__no_tag__')
+      const tagFilters = [...typeFilters].filter(t => t !== '__no_tag__')
+      const hasAnyTag = allNoteTypes.some(t => note.note_type === t || note.content.includes(`data-tag="${t}"`))
+      const matchesNoTag = wantsNoTag && !hasAnyTag
+      const matchesTagFilter = tagFilters.length > 0 && (
+        tagFilters.some(tag => note.note_type === tag) ||
+        tagFilters.some(tag => note.content.includes(`data-tag="${tag}"`))
+      )
+      if (!matchesNoTag && !matchesTagFilter) return false
+    }
     if (browseSessionFilters.length > 0 && !(note.session_id && browseSessionFilters.includes(note.session_id))) return false
     if (browseMilestoneFilters.length > 0 && !(note.milestone_id && browseMilestoneFilters.includes(note.milestone_id))) return false
     if (searchQuery.trim()) {
@@ -1100,7 +1110,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
   // Save edited note
   const handleSaveEdit = async () => {
-    if (!editContent.trim()) {
+    if (!editContent.replace(/<[^>]*>/g, '').trim()) {
       toast.error(locale === 'fr' ? 'Le contenu est requis' : locale === 'es' ? 'El contenido es obligatorio' : 'Note content is required')
       return
     }
@@ -1495,6 +1505,23 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
                     </button>
                   ))}
+                  <button
+                    onClick={() => {
+                      setTypeFilters(prev => {
+                        const next = new Set(prev)
+                        if (next.has('__no_tag__')) next.delete('__no_tag__')
+                        else next.add('__no_tag__')
+                        return next
+                      })
+                    }}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
+                      typeFilters.has('__no_tag__')
+                        ? 'bg-gray-700 text-white ring-1 ring-gray-500 ring-opacity-30'
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    }`}
+                  >
+                    {locale === 'fr' ? 'Sans tag' : locale === 'es' ? 'Sin tag' : 'No tag'}
+                  </button>
                 </div>
               </div>
 
@@ -1662,85 +1689,126 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                             animate={{ opacity: 1, y: 0 }}
                             className="group bg-white rounded-lg border border-gray-100 px-4 py-3 hover:shadow-sm transition-shadow relative"
                           >
-                            {/* Top row: time + hover actions */}
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <span className="text-[10px] text-gray-300 tabular-nums">
-                                {formatNoteTime(note.created_at)}
-                              </span>
+                            {editingNoteId === note.id ? (
+                              /* Inline edit */
+                              <div>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <span className="text-[10px] text-gray-300 tabular-nums">
+                                    {formatNoteTime(note.created_at)}
+                                  </span>
+                                </div>
+                                <RichTextEditor
+                                  value={editContent}
+                                  onChange={setEditContent}
+                                  placeholder={locale === 'fr' ? 'Contenu de la note...' : 'Note content...'}
+                                  memberId={memberId}
+                                  locale={locale}
+                                  milestones={milestones}
+                                  noteTypes={snEditorNoteTypes}
+                                  lockedTypes={FIXED_NOTE_TYPES as unknown as string[]}
+                                  onAddType={handleEditorAddType}
+                                  maxTypes={10}
+                                  memberName={member?.first_name}
+                                  autoFocus
+                                  compact
+                                  toolbarActions={
+                                    <div className="flex items-center gap-2">
+                                      <Button variant="ghost" size="sm" onClick={cancelEditing}>
+                                        {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        onClick={handleSaveEdit}
+                                        disabled={savingEdit || !editContent.replace(/<[^>]*>/g, '').trim()}
+                                        className="bg-gray-900 text-white hover:bg-gray-800"
+                                      >
+                                        {savingEdit ? (
+                                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5" />
+                                        ) : null}
+                                        {t.members.notes.save}
+                                      </Button>
+                                    </div>
+                                  }
+                                />
+                              </div>
+                            ) : (
+                              /* Read-only view */
+                              <>
+                                {/* Top row: time + hover actions */}
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <span className="text-[10px] text-gray-300 tabular-nums">
+                                    {formatNoteTime(note.created_at)}
+                                  </span>
 
-                              {/* Quick actions — visible on hover */}
-                              <div className="flex items-center gap-0.5 ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                <button
-                                  onClick={() => {
-                                    setSelectedItemId(note.id)
-                                    startEditing(note)
-                                  }}
-                                  className="p-1 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                                >
-                                  <Pencil className="w-3 h-3" />
-                                </button>
-                                {deletingNoteId === note.id ? (
-                                  <div className="flex items-center gap-1">
+                                  {/* Quick actions — visible on hover */}
+                                  <div className="flex items-center gap-0.5 ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                                     <button
-                                      onClick={() => handleDeleteNote(note.id)}
-                                      className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
-                                    >
-                                      {locale === 'fr' ? 'Confirmer' : locale === 'es' ? 'Confirmar' : 'Confirm'}
-                                    </button>
-                                    <button
-                                      onClick={() => setDeletingNoteId(null)}
+                                      onClick={() => startEditing(note)}
                                       className="p-1 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                                     >
-                                      <X className="w-3 h-3" />
+                                      <Pencil className="w-3 h-3" />
                                     </button>
+                                    {deletingNoteId === note.id ? (
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          onClick={() => handleDeleteNote(note.id)}
+                                          className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                                        >
+                                          {locale === 'fr' ? 'Confirmer' : locale === 'es' ? 'Confirmar' : 'Confirm'}
+                                        </button>
+                                        <button
+                                          onClick={() => setDeletingNoteId(null)}
+                                          className="p-1 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => setDeletingNoteId(note.id)}
+                                        className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    )}
                                   </div>
-                                ) : (
-                                  <button
-                                    onClick={() => setDeletingNoteId(note.id)}
-                                    className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
+                                </div>
+
+                                {/* Content */}
+                                {note.title && (
+                                  <p className="text-sm font-medium text-gray-900">{note.title}</p>
                                 )}
-                              </div>
-                            </div>
+                                <MarkdownRenderer content={note.content} className="break-all leading-relaxed" />
 
-                            {/* Content */}
-                            {note.title && (
-                              <p className="text-sm font-medium text-gray-900">{note.title}</p>
-                            )}
-                            <MarkdownRenderer content={note.content} className="break-all leading-relaxed" />
+                                {/* Inline tags after content */}
+                                <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                  {note.session_id && (
+                                    <span className="text-[10px] italic text-blue-500">
+                                      {getSessionLabelShort(note.session_id)}
+                                    </span>
+                                  )}
+                                  {note.milestone_id && (note as any).milestones?.title && (
+                                    <span className="text-[10px] italic text-emerald-500">
+                                      {(note as any).milestones.title}
+                                    </span>
+                                  )}
+                                </div>
 
-                            {/* Inline tags after content */}
-                            <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                              <span className={`text-[10px] italic ${getNoteColor(note.note_type).text}`}>
-                                {t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes] || note.note_type}
-                              </span>
-                              {note.session_id && (
-                                <span className="text-[10px] italic text-blue-500">
-                                  {getSessionLabelShort(note.session_id)}
-                                </span>
-                              )}
-                              {note.milestone_id && (note as any).milestones?.title && (
-                                <span className="text-[10px] italic text-emerald-500">
-                                  {(note as any).milestones.title}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Images */}
-                            {note.image_urls && note.image_urls.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                                {note.image_urls.map((url, index) => (
-                                  <a key={index} href={url} target="_blank" rel="noopener noreferrer">
-                                    <img
-                                      src={url}
-                                      alt=""
-                                      className="w-16 h-16 object-cover rounded-lg border border-gray-200 hover:border-gray-400 transition-colors"
-                                    />
-                                  </a>
-                                ))}
-                              </div>
+                                {/* Images */}
+                                {note.image_urls && note.image_urls.length > 0 && (
+                                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                    {note.image_urls.map((url, index) => (
+                                      <a key={index} href={url} target="_blank" rel="noopener noreferrer">
+                                        <img
+                                          src={url}
+                                          alt=""
+                                          className="w-16 h-16 object-cover rounded-lg border border-gray-200 hover:border-gray-400 transition-colors"
+                                        />
+                                      </a>
+                                    ))}
+                                  </div>
+                                )}
+                              </>
                             )}
                           </motion.div>
                         ))}
@@ -1870,6 +1938,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 memberName={member?.first_name}
                 compact
                 onSubmit={handlePadRichSubmit}
+                onTagInsert={(tagType) => setPadNoteType(tagType as NoteType)}
                 toolbarActions={
                   <button
                     type="button"
@@ -2153,168 +2222,40 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
             {/* Body */}
             <div className="flex-1 overflow-y-auto px-5 py-4">
               {editingNoteId === selectedNote.id ? (
-                /* Edit form */
+                /* Edit form — inline rich text editor */
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        {locale === 'fr' ? 'Séance' : locale === 'es' ? 'Sesión' : 'Session'}
-                      </label>
-                      <select
-                        value={editSessionId}
-                        onChange={(e) => setEditSessionId(e.target.value)}
-                        className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-gray-200"
-                      >
-                        <option value="">{locale === 'fr' ? 'Aucune' : locale === 'es' ? 'Ninguna' : 'None'}</option>
-                        {sessions.map(session => (
-                          <option key={session.id} value={session.id}>{getSessionLabel(session.id)}</option>
-                        ))}
-                      </select>
-                    </div>
-                    {milestones.length > 0 && (
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          {locale === 'fr' ? 'Objectif' : locale === 'es' ? 'Objetivo' : 'Goal'}
-                        </label>
-                        <select
-                          value={editMilestoneId}
-                          onChange={(e) => setEditMilestoneId(e.target.value)}
-                          className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-gray-200"
+                  <RichTextEditor
+                    value={editContent}
+                    onChange={setEditContent}
+                    placeholder={locale === 'fr' ? 'Contenu de la note...' : 'Note content...'}
+                    memberId={memberId}
+                    locale={locale}
+                    milestones={milestones}
+                    noteTypes={snEditorNoteTypes}
+                    lockedTypes={FIXED_NOTE_TYPES as unknown as string[]}
+                    onAddType={handleEditorAddType}
+                    maxTypes={10}
+                    memberName={member?.first_name}
+                    autoFocus
+                    toolbarActions={
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={cancelEditing}>
+                          {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={handleSaveEdit}
+                          disabled={savingEdit || !editContent.replace(/<[^>]*>/g, '').trim()}
+                          className="bg-gray-900 text-white hover:bg-gray-800"
                         >
-                          <option value="">{locale === 'fr' ? 'Aucun' : locale === 'es' ? 'Ninguno' : 'None'}</option>
-                          {milestones.map(m => (
-                            <option key={m.id} value={m.id}>{m.title}</option>
-                          ))}
-                        </select>
+                          {savingEdit ? (
+                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5" />
+                          ) : null}
+                          {t.members.notes.save}
+                        </Button>
                       </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">{t.members.notes.noteTitle}</label>
-                    <input
-                      type="text"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">{t.members.notes.noteContent} *</label>
-                    <textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      rows={6}
-                      className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200 resize-none"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <select
-                      value={editNoteType}
-                      onChange={(e) => setEditNoteType(e.target.value as NoteType)}
-                      className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-gray-200"
-                    >
-                      {allNoteTypes.map(type => (
-                        <option key={type} value={type}>
-                          {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
-                        </option>
-                      ))}
-                    </select>
-                    <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-600">
-                      <input
-                        type="checkbox"
-                        checked={editIsPrivate}
-                        onChange={(e) => setEditIsPrivate(e.target.checked)}
-                        className="rounded border-gray-300 text-gray-900 focus:ring-gray-200 w-3.5 h-3.5"
-                      />
-                      <Lock className="w-3 h-3" />
-                      {t.members.notes.private}
-                    </label>
-                  </div>
-
-                  {/* Existing + new images */}
-                  {(existingImageUrls.length > 0 || editImagePreviews.length > 0) && (
-                    <div className="flex flex-wrap gap-2">
-                      {existingImageUrls.map((url, index) => (
-                        <div key={`existing-${index}`} className="relative group">
-                          <img src={url} alt="" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
-                          <button
-                            onClick={() => removeExistingImage(index)}
-                            className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-2.5 h-2.5" />
-                          </button>
-                        </div>
-                      ))}
-                      {editImagePreviews.map((preview, index) => (
-                        <div key={`new-${index}`} className="relative group">
-                          <img src={preview} alt="" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
-                          <button
-                            onClick={() => removeEditImage(index)}
-                            className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-2.5 h-2.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <input ref={editImageInputRef} type="file" accept="image/*" multiple onChange={handleEditImageSelect} className="hidden" />
-
-                  <div className="flex items-center justify-between pt-1">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => editImageInputRef.current?.click()}
-                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        <ImagePlus className="w-3.5 h-3.5" />
-                        {locale === 'fr' ? 'Images' : 'Images'}
-                      </button>
-                      {deletingNoteId === selectedNote.id ? (
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => { handleDeleteNote(selectedNote.id); setSelectedItemId(null) }}
-                            className="px-2 py-1 rounded text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
-                          >
-                            {locale === 'fr' ? 'Confirmer' : locale === 'es' ? 'Confirmar' : 'Confirm'}
-                          </button>
-                          <button
-                            onClick={() => setDeletingNoteId(null)}
-                            className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setDeletingNoteId(selectedNote.id)}
-                          className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                          title={locale === 'fr' ? 'Supprimer' : 'Delete'}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" onClick={cancelEditing}>
-                        {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleSaveEdit}
-                        disabled={savingEdit || !editContent.trim()}
-                        className="bg-gray-900 text-white hover:bg-gray-800"
-                      >
-                        {savingEdit ? (
-                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5" />
-                        ) : null}
-                        {t.members.notes.save}
-                      </Button>
-                    </div>
-                  </div>
+                    }
+                  />
                 </div>
               ) : (
                 /* Read-only detail */
@@ -2653,7 +2594,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
             {/* Header */}
             <div className="flex items-center gap-2 px-5 pt-3 pb-2 border-b border-gray-100">
               <button
-                onClick={() => { setSelectedItemId(null); cancelEditing(); setDeletingNoteId(null) }}
+                onClick={() => setSelectedItemId(null)}
                 className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
               >
                 <ChevronDown className="w-4 h-4 rotate-90" />
@@ -2664,276 +2605,56 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
               <p className="text-sm font-medium text-gray-900 truncate flex-1">
                 {selectedNote.title || (locale === 'fr' ? 'Note' : 'Note')}
               </p>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                {editingNoteId !== selectedNote.id && (
-                  <button
-                    onClick={() => startEditing(selectedNote)}
-                    className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                )}
-                {deletingNoteId === selectedNote.id ? (
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => { handleDeleteNote(selectedNote.id); setSelectedItemId(null) }}
-                      className="px-2 py-1 rounded text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
-                    >
-                      {locale === 'fr' ? 'Confirmer' : locale === 'es' ? 'Confirmar' : 'Confirm'}
-                    </button>
-                    <button
-                      onClick={() => setDeletingNoteId(null)}
-                      className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setDeletingNoteId(selectedNote.id)}
-                    className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
             </div>
 
-            {/* Body */}
+            {/* Body (read-only) */}
             <div className="flex-1 overflow-y-auto px-5 py-4">
-              {editingNoteId === selectedNote.id ? (
-                /* Edit form */
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        {locale === 'fr' ? 'Séance' : locale === 'es' ? 'Sesión' : 'Session'}
-                      </label>
-                      <select
-                        value={editSessionId}
-                        onChange={(e) => setEditSessionId(e.target.value)}
-                        className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-gray-200"
-                      >
-                        <option value="">{locale === 'fr' ? 'Aucune' : locale === 'es' ? 'Ninguna' : 'None'}</option>
-                        {sessions.map(session => (
-                          <option key={session.id} value={session.id}>{getSessionLabel(session.id)}</option>
-                        ))}
-                      </select>
-                    </div>
-                    {milestones.length > 0 && (
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          {locale === 'fr' ? 'Objectif' : locale === 'es' ? 'Objetivo' : 'Goal'}
-                        </label>
-                        <select
-                          value={editMilestoneId}
-                          onChange={(e) => setEditMilestoneId(e.target.value)}
-                          className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-gray-200"
-                        >
-                          <option value="">{locale === 'fr' ? 'Aucun' : locale === 'es' ? 'Ninguno' : 'None'}</option>
-                          {milestones.map(m => (
-                            <option key={m.id} value={m.id}>{m.title}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">{t.members.notes.noteTitle}</label>
-                    <input
-                      type="text"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">{t.members.notes.noteContent} *</label>
-                    <textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      rows={6}
-                      className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200 resize-none"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <select
-                      value={editNoteType}
-                      onChange={(e) => setEditNoteType(e.target.value as NoteType)}
-                      className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-gray-200"
-                    >
-                      {allNoteTypes.map(type => (
-                        <option key={type} value={type}>
-                          {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
-                        </option>
-                      ))}
-                    </select>
-                    <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-600">
-                      <input
-                        type="checkbox"
-                        checked={editIsPrivate}
-                        onChange={(e) => setEditIsPrivate(e.target.checked)}
-                        className="rounded border-gray-300 text-gray-900 focus:ring-gray-200 w-3.5 h-3.5"
-                      />
-                      <Lock className="w-3 h-3" />
-                      {t.members.notes.private}
-                    </label>
-                  </div>
-
-                  {/* Existing + new images */}
-                  {(existingImageUrls.length > 0 || editImagePreviews.length > 0) && (
-                    <div className="flex flex-wrap gap-2">
-                      {existingImageUrls.map((url, index) => (
-                        <div key={`existing-${index}`} className="relative group">
-                          <img src={url} alt="" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
-                          <button
-                            onClick={() => removeExistingImage(index)}
-                            className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-2.5 h-2.5" />
-                          </button>
-                        </div>
-                      ))}
-                      {editImagePreviews.map((preview, index) => (
-                        <div key={`new-${index}`} className="relative group">
-                          <img src={preview} alt="" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
-                          <button
-                            onClick={() => removeEditImage(index)}
-                            className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-2.5 h-2.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <input ref={editImageInputRef} type="file" accept="image/*" multiple onChange={handleEditImageSelect} className="hidden" />
-
-                  <div className="flex items-center justify-between pt-1">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => editImageInputRef.current?.click()}
-                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        <ImagePlus className="w-3.5 h-3.5" />
-                        {locale === 'fr' ? 'Images' : 'Images'}
-                      </button>
-                      {deletingNoteId === selectedNote.id ? (
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => { handleDeleteNote(selectedNote.id); setSelectedItemId(null) }}
-                            className="px-2 py-1 rounded text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
-                          >
-                            {locale === 'fr' ? 'Confirmer' : locale === 'es' ? 'Confirmar' : 'Confirm'}
-                          </button>
-                          <button
-                            onClick={() => setDeletingNoteId(null)}
-                            className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setDeletingNoteId(selectedNote.id)}
-                          className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                          title={locale === 'fr' ? 'Supprimer' : 'Delete'}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" onClick={cancelEditing}>
-                        {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleSaveEdit}
-                        disabled={savingEdit || !editContent.trim()}
-                        className="bg-gray-900 text-white hover:bg-gray-800"
-                      >
-                        {savingEdit ? (
-                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5" />
-                        ) : null}
-                        {t.members.notes.save}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* Read-only detail */
-                <div>
-                  <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
-                    <span>{formatNoteDate(selectedNote.created_at)}</span>
-                    {selectedNote.updated_at !== selectedNote.created_at && (
-                      <span className="italic">({locale === 'fr' ? 'modifiée' : locale === 'es' ? 'editada' : 'edited'})</span>
-                    )}
-                  </div>
-
-                  {/* Linked session / goal */}
-                  <div className="flex flex-wrap items-center gap-2 mb-3">
-                    {selectedNote.session_id && (
-                      <span className="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                        <LinkIcon className="w-3 h-3" />
-                        {getSessionLabelShort(selectedNote.session_id)}
-                      </span>
-                    )}
-                    {selectedNote.milestone_id && (selectedNote as any).milestones?.title && (
-                      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                        <Target className="w-3 h-3" />
-                        {(selectedNote as any).milestones.title}
-                      </span>
-                    )}
-                  </div>
-
-                  {selectedNote.title && (
-                    <h3 className="text-base font-semibold text-gray-900 mb-2">{selectedNote.title}</h3>
-                  )}
-                  <MarkdownRenderer
-                    content={selectedNote.content}
-                    className="leading-relaxed"
-                    onEdit={() => startEditing(selectedNote)}
-                    onDelete={() => setDeletingNoteId(selectedNote.id)}
-                  />
-
-                  {deletingNoteId === selectedNote.id && (
-                    <div className="flex items-center gap-2 mt-3 p-2 bg-red-50 rounded-lg">
-                      <span className="text-xs text-red-700">{locale === 'fr' ? 'Supprimer cette note ?' : locale === 'es' ? '¿Eliminar esta nota?' : 'Delete this note?'}</span>
-                      <button
-                        onClick={() => { handleDeleteNote(selectedNote.id); setSelectedItemId(null) }}
-                        className="px-2 py-1 rounded text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
-                      >
-                        {locale === 'fr' ? 'Confirmer' : locale === 'es' ? 'Confirmar' : 'Confirm'}
-                      </button>
-                      <button
-                        onClick={() => setDeletingNoteId(null)}
-                        className="px-2 py-1 rounded text-xs text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
-                      </button>
-                    </div>
-                  )}
-
-                  {selectedNote.image_urls && selectedNote.image_urls.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      {selectedNote.image_urls.map((url, index) => (
-                        <a key={index} href={url} target="_blank" rel="noopener noreferrer">
-                          <img
-                            src={url}
-                            alt=""
-                            className="w-20 h-20 object-cover rounded-lg border border-gray-200 hover:border-gray-400 transition-colors"
-                          />
-                        </a>
-                      ))}
-                    </div>
+              <div>
+                <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
+                  <span>{formatNoteDate(selectedNote.created_at)}</span>
+                  {selectedNote.updated_at !== selectedNote.created_at && (
+                    <span className="italic">({locale === 'fr' ? 'modifiée' : locale === 'es' ? 'editada' : 'edited'})</span>
                   )}
                 </div>
-              )}
+
+                {/* Linked session / goal */}
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  {selectedNote.session_id && (
+                    <span className="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                      <LinkIcon className="w-3 h-3" />
+                      {getSessionLabelShort(selectedNote.session_id)}
+                    </span>
+                  )}
+                  {selectedNote.milestone_id && (selectedNote as any).milestones?.title && (
+                    <span className="inline-flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                      <Target className="w-3 h-3" />
+                      {(selectedNote as any).milestones.title}
+                    </span>
+                  )}
+                </div>
+
+                {selectedNote.title && (
+                  <h3 className="text-base font-semibold text-gray-900 mb-2">{selectedNote.title}</h3>
+                )}
+                <MarkdownRenderer
+                  content={selectedNote.content}
+                  className="leading-relaxed"
+                />
+
+                {selectedNote.image_urls && selectedNote.image_urls.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {selectedNote.image_urls.map((url, index) => (
+                      <a key={index} href={url} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={url}
+                          alt=""
+                          className="w-20 h-20 object-cover rounded-lg border border-gray-200 hover:border-gray-400 transition-colors"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

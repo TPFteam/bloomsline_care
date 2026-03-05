@@ -120,6 +120,7 @@ export default function MyResourcesPage() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [selectedResourceToShare, setSelectedResourceToShare] = useState<Resource | null>(null)
   const [members, setMembers] = useState<SimpleMember[]>([])
+  const [memberGroups, setMemberGroups] = useState<{ id: string; name: string; color: string; member_ids: string[] }[]>([])
 
   // Add Member Modal state
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
@@ -350,8 +351,44 @@ export default function MyResourcesPage() {
         .eq('status', 'active')
         .order('first_name', { ascending: true })
       setMembers(data || [])
+
     } catch (error) {
       console.error('Error fetching members:', error)
+    }
+
+    // Fetch member groups (separate try/catch so it doesn't block members)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: groups } = await supabase
+        .from('member_groups')
+        .select('id, name, color')
+        .eq('practitioner_id', user.id)
+        .order('name', { ascending: true })
+
+      if (groups && groups.length > 0) {
+        const groupIds = groups.map(g => g.id)
+        const { data: groupMembers } = await supabase
+          .from('member_group_members')
+          .select('group_id, member_id')
+          .in('group_id', groupIds)
+
+        const membersByGroup: Record<string, string[]> = {}
+        groupMembers?.forEach((gm: { group_id: string; member_id: string }) => {
+          if (!membersByGroup[gm.group_id]) membersByGroup[gm.group_id] = []
+          membersByGroup[gm.group_id].push(gm.member_id)
+        })
+
+        setMemberGroups(groups.map(g => ({
+          id: g.id,
+          name: g.name,
+          color: g.color,
+          member_ids: membersByGroup[g.id] || [],
+        })))
+      }
+    } catch (error) {
+      console.error('Error fetching member groups:', error)
     }
   }
 
@@ -1013,6 +1050,7 @@ export default function MyResourcesPage() {
           locale={locale}
           onShare={handleShareWithMembers}
           onAddMember={() => setShowAddMemberModal(true)}
+          groups={memberGroups}
         />
       )}
 
