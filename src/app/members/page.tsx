@@ -107,7 +107,7 @@ export default function MembersPage() {
 
   // Add Member Modal
   const [showAddModal, setShowAddModal] = useState(false)
-  const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '', isMinor: false })
+  const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] as string[] })
   const [saving, setSaving] = useState(false)
 
   // Groups
@@ -402,14 +402,22 @@ export default function MembersPage() {
 
           if (error) throw error
 
+          // Add to groups if any selected
+          if (newMember.groupIds.length > 0 && data.id) {
+            await supabase.from('member_group_members').insert(
+              newMember.groupIds.map(gid => ({ group_id: gid, member_id: data.id }))
+            )
+          }
+
           // Add to list and recalculate stats
           const updatedMembers = [data, ...members]
           setMembers(updatedMembers)
           calculateStats(updatedMembers)
 
-          setNewMember({ firstName: '', lastName: '', email: '', phone: '', isMinor: false })
+          setNewMember({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] })
           setShowAddModal(false)
           toast.success(t.members.success.memberCreated)
+          fetchMembers() // refresh group counts
           setSaving(false)
           return
         }
@@ -434,15 +442,23 @@ export default function MembersPage() {
 
       if (error) throw error
 
+      // Add to groups if any selected
+      if (newMember.groupIds.length > 0 && data.id) {
+        await supabase.from('member_group_members').insert(
+          newMember.groupIds.map(gid => ({ group_id: gid, member_id: data.id }))
+        )
+      }
+
       // Add to list and recalculate stats
       const updatedMembers = [data, ...members]
       setMembers(updatedMembers)
       calculateStats(updatedMembers)
 
       // Reset form and close modal
-      setNewMember({ firstName: '', lastName: '', email: '', phone: '', isMinor: false })
+      setNewMember({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] })
       setShowAddModal(false)
       toast.success(t.members.success.memberCreated)
+      fetchMembers() // refresh group counts
     } catch (error) {
       console.error('Error creating member:', error)
       toast.error(error instanceof Error ? error.message : t.members.errors.saveFailed)
@@ -831,7 +847,7 @@ export default function MembersPage() {
       <AppSidebar activeItem="members" />
 
       {/* Main Content */}
-      <main className="flex-1 ml-16">
+      <main className="flex-1 ml-14">
         <AppHeader
           user={user}
           leftContent={
@@ -1447,6 +1463,41 @@ export default function MembersPage() {
                       {locale === 'fr' ? 'Mineur / Étudiant' : locale === 'es' ? 'Menor / Estudiante' : 'Minor / Student'}
                     </span>
                   </label>
+
+                  {/* Group selector */}
+                  {memberGroups.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Groupes' : locale === 'es' ? 'Grupos' : 'Groups'}
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {memberGroups.map(group => {
+                          const colors = groupColorMap[group.color] || groupColorMap.blue
+                          const isSelected = newMember.groupIds.includes(group.id)
+                          return (
+                            <button
+                              key={group.id}
+                              type="button"
+                              onClick={() => setNewMember(prev => ({
+                                ...prev,
+                                groupIds: isSelected
+                                  ? prev.groupIds.filter(id => id !== group.id)
+                                  : [...prev.groupIds, group.id]
+                              }))}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                                isSelected
+                                  ? `${colors.chipBg} ${colors.text} ring-1 ring-current ring-opacity-30`
+                                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                              }`}
+                            >
+                              <span className={`w-2 h-2 rounded-full ${colors.dot}`} />
+                              {group.name}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Actions */}

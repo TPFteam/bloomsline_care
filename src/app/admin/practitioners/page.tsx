@@ -98,7 +98,7 @@ export default function AdminPractitionersPage() {
     <div className="min-h-screen bg-gray-50 flex">
       <AppSidebar />
 
-      <main className="flex-1 ml-16">
+      <main className="flex-1 ml-14">
         <AppHeader
           user={user}
           isAdmin

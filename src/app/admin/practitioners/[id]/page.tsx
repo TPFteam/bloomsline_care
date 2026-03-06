@@ -406,7 +406,7 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
     <div className="min-h-screen bg-gray-50 flex">
       <AppSidebar />
 
-      <main className="flex-1 ml-16">
+      <main className="flex-1 ml-14">
         <AppHeader
           user={authUser}
           isAdmin

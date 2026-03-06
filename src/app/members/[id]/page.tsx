@@ -253,7 +253,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
       <AppSidebar activeItem="members" />
 
       {/* Main Content */}
-      <main className="flex-1 ml-16">
+      <main className="flex-1 ml-14">
         <AppHeader
           user={user}
           leftContent={

@@ -366,7 +366,7 @@ export default function AnalyticsPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex">
         <AppSidebar activeItem="analytics" />
-        <main className="flex-1 ml-16">
+        <main className="flex-1 ml-14">
           <AppHeader
             user={null}
             leftContent={
@@ -776,7 +776,7 @@ export default function AnalyticsPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex">
         <AppSidebar activeItem="analytics" />
-        <main className="flex-1 ml-16">
+        <main className="flex-1 ml-14">
           <AppHeader
             user={userProfile}
             leftContent={
@@ -828,7 +828,7 @@ export default function AnalyticsPage() {
     <div className="min-h-screen bg-gray-50 flex">
       <AppSidebar activeItem="analytics" />
 
-      <main className="flex-1 ml-16">
+      <main className="flex-1 ml-14">
         <AppHeader
           user={userProfile}
           leftContent={

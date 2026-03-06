@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import {
   Home,
@@ -19,7 +18,6 @@ interface AppSidebarProps {
 
 export function AppSidebar({ activeItem }: AppSidebarProps) {
   const { locale } = useLanguage()
-  const [expanded, setExpanded] = useState(false)
 
   const navItems = [
     { id: 'home' as NavItem, href: '/dashboard', icon: Home, label: locale === 'fr' ? 'Accueil' : locale === 'es' ? 'Inicio' : 'Home' },
@@ -29,58 +27,42 @@ export function AppSidebar({ activeItem }: AppSidebarProps) {
   ]
 
   return (
-    <>
-      {/* Backdrop */}
-      {expanded && (
-        <div
-          className="fixed inset-0 z-[109] bg-black/10 backdrop-blur-[1px] transition-opacity duration-200"
-          onClick={() => setExpanded(false)}
-        />
-      )}
+    <aside className="fixed left-0 top-0 bottom-0 z-[110] bg-teal-700 flex flex-col h-screen w-14">
+      {/* Logo */}
+      <div className="h-[65px] flex items-center justify-center">
+        <Link href="/dashboard" className="flex items-center">
+          <Logo size="sm" showText={false} />
+        </Link>
+      </div>
 
-      <aside
-        className={`fixed left-0 top-0 bottom-0 z-[110] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out ${
-          expanded ? 'w-56 shadow-2xl shadow-black/10' : 'w-16'
-        }`}
-        onMouseEnter={() => setExpanded(true)}
-        onMouseLeave={() => setExpanded(false)}
-      >
-        {/* Logo */}
-        <div className={`h-[65px] flex items-center border-b border-gray-100 dark:border-gray-800 ${
-          expanded ? 'px-4' : 'justify-center'
-        }`}>
-          <Link href="/dashboard" className="flex items-center">
-            <Logo size="sm" showText={expanded} />
-          </Link>
-        </div>
+      {/* Navigation */}
+      <nav className="flex-1 py-3 space-y-1 px-2">
+        {navItems.map((item) => {
+          const Icon = item.icon
+          const isActive = activeItem === item.id
 
-        {/* Navigation */}
-        <nav className={`flex-1 py-4 space-y-0.5 overflow-y-auto ${expanded ? 'px-3' : 'px-2'}`}>
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const isActive = activeItem === item.id
-
-            return (
-              <Link key={item.id} href={item.href}>
+          return (
+            <Link key={item.id} href={item.href}>
+              <div className="relative group">
                 <div
-                  className={`flex items-center gap-3 rounded-lg text-[13px] transition-all duration-150 ${
-                    expanded ? 'px-3 py-2.5' : 'px-0 py-2.5 justify-center'
-                  } ${
+                  className={`flex items-center justify-center rounded-lg py-2.5 transition-all duration-150 ${
                     isActive
-                      ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 font-medium shadow-sm'
-                      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
+                      ? 'bg-white/20 text-white'
+                      : 'text-teal-100 hover:bg-white/10 hover:text-white'
                   }`}
                 >
-                  <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? '' : ''}`} />
-                  <span className={`whitespace-nowrap transition-opacity duration-200 ${expanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
-                    {item.label}
-                  </span>
+                  <Icon className="w-[18px] h-[18px]" strokeWidth={isActive ? 2.2 : 1.8} />
                 </div>
-              </Link>
-            )
-          })}
-        </nav>
-      </aside>
-    </>
+                {/* Tooltip */}
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2.5 px-2.5 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 pointer-events-none shadow-lg">
+                  {item.label}
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
+                </div>
+              </div>
+            </Link>
+          )
+        })}
+      </nav>
+    </aside>
   )
 }

@@ -620,7 +620,7 @@ function DashboardContent() {
       <AppSidebar activeItem="home" />
 
       {/* Main Content */}
-      <main className="flex-1 ml-16">
+      <main className="flex-1 ml-14">
         <AppHeader
           user={user}
           isAdmin={!!user && isAdmin(user.id)}

@@ -2069,7 +2069,7 @@ export default function ResourceDetailPage() {
       <AppSidebar activeItem="library" />
 
       {/* Main Content */}
-      <main className="flex-1 ml-16">
+      <main className="flex-1 ml-14">
         <AppHeader
           user={user as any}
           leftContent={
