@@ -411,8 +411,9 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
   }
 
   const stripHtml = (html: string) => {
-    return html.replace(/<br\s*\/?>/gi, ' ').replace(/<\/p>\s*<p>/gi, ' ').replace(/<[^>]+>/g, '')
-      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'").trim()
+    // Decode entities first so encoded tags like &lt;mark&gt; become <mark> before stripping
+    const decoded = html.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&nbsp;/g, ' ')
+    return decoded.replace(/<br\s*\/?>/gi, ' ').replace(/<\/p>\s*<p>/gi, ' ').replace(/<[^>]+>/g, '').trim()
   }
 
   const handleAddStrength = () => {
@@ -1156,7 +1157,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                       <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 line-clamp-2">{note.isHtml ? stripHtml(note.content) : note.content}</p>
+                  <p className="text-sm text-gray-600 line-clamp-2">{stripHtml(note.content)}</p>
                 </motion.div>
               )
             })}
@@ -1444,7 +1445,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                             <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
                           </div>
                         </div>
-                        <p className="text-sm text-gray-600 line-clamp-2">{note.isHtml ? stripHtml(note.content) : note.content}</p>
+                        <p className="text-sm text-gray-600 line-clamp-2">{stripHtml(note.content)}</p>
                       </motion.div>
                     )
                   })}
