@@ -149,7 +149,7 @@ export function Navbar({ isMemberPage = false, minimal = false, onCtaClick }: Na
                 className="font-medium text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] shadow-[#4A9A86]/30 hover:from-[#3d8a76] hover:to-[#4da38c]"
                 suppressHydrationWarning
               >
-                {locale === 'fr' ? 'Accès anticipé' : locale === 'es' ? 'Acceso anticipado' : 'Early Access'}
+                {locale === 'fr' ? 'Nous contacter' : locale === 'es' ? 'Contáctenos' : 'Contact us'}
               </Button>
             )}
           </motion.div>
@@ -245,7 +245,7 @@ export function Navbar({ isMemberPage = false, minimal = false, onCtaClick }: Na
                   className="w-full font-medium text-white rounded-full shadow-lg bg-gradient-to-r from-[#4A9A86] to-[#5AB39C] hover:from-[#3d8a76] hover:to-[#4da38c]"
                   suppressHydrationWarning
                 >
-                  {locale === 'fr' ? 'Accès anticipé' : locale === 'es' ? 'Acceso anticipado' : 'Early Access'}
+                  {locale === 'fr' ? 'Nous contacter' : locale === 'es' ? 'Contáctenos' : 'Contact us'}
                 </Button>
               </div>
             </div>

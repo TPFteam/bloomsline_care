@@ -31,6 +31,8 @@ import {
   Globe,
   Briefcase,
   Route,
+  LayoutGrid,
+  Compass,
 } from 'lucide-react'
 
 type Lang = 'en' | 'fr'
@@ -70,6 +72,26 @@ function getPAGES(t: T): PageItem[] {
       color: 'bg-emerald-50 text-emerald-600',
       borderColor: 'border-emerald-200 hover:border-emerald-300',
       tag: t('Interactive', 'Interactif'),
+    },
+    {
+      id: 'business-canvas',
+      label: t('Business Model Canvas', 'Business Model Canvas'),
+      description: t('9-block canvas — who we serve, how we win, where the money flows', 'Canvas 9 blocs — qui nous servons, comment nous gagnons, o\u00f9 va l\'argent'),
+      href: '/business-canvas',
+      icon: LayoutGrid,
+      color: 'bg-teal-50 text-teal-600',
+      borderColor: 'border-teal-200 hover:border-teal-300',
+      tag: t('New', 'Nouveau'),
+    },
+    {
+      id: 'what-we-need',
+      label: t('What We Need to Succeed', 'Ce Dont Nous Avons Besoin'),
+      description: t('Honest founder assessment — team gaps, real blockers, next 90 days, and what it takes to go from 0 to 1', '\u00c9valuation honn\u00eate — manques \u00e9quipe, vrais blocages, 90 prochains jours, et ce qu\'il faut pour passer de 0 \u00e0 1'),
+      href: '/what-we-need',
+      icon: Compass,
+      color: 'bg-rose-50 text-rose-600',
+      borderColor: 'border-rose-200 hover:border-rose-300',
+      tag: t('Internal', 'Interne'),
     },
     {
       id: 'business-model',

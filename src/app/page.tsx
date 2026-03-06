@@ -18,7 +18,8 @@ import {
 import { Navbar } from '@/components/landing/navbar'
 import { Footer } from '@/components/landing/footer'
 import { TabProvider } from '@/lib/landing/tab-context'
-import { EarlyAccessModalProvider, useEarlyAccessModal } from '@/lib/landing/early-access-modal-context'
+import { EarlyAccessModalProvider } from '@/lib/landing/early-access-modal-context'
+import { PractitionerSignupModalProvider, usePractitionerSignupModal } from '@/lib/landing/practitioner-signup-modal-context'
 import { useLanguage } from '@/lib/i18n/context'
 import { GlimpseSection } from '@/components/landing/glimpse-section'
 
@@ -26,7 +27,7 @@ const DEMO_BOOKING_URL = 'https://calendar.app.google/DwruLrgYZ6TEegL58'
 
 /* ─── Hero Section ─── */
 
-function HeroSection({ locale, l, content }: { locale: string; l: (obj: { en: string; fr: string }) => string; content: any }) {
+function HeroSection({ locale, l, content, onCtaClick }: { locale: string; l: (obj: { en: string; fr: string }) => string; content: any; onCtaClick?: () => void }) {
   const fr = locale === 'fr'
   const [activeCard, setActiveCard] = useState(0)
 
@@ -203,16 +204,14 @@ function HeroSection({ locale, l, content }: { locale: string; l: (obj: { en: st
           transition={{ duration: 0.7, delay: 0.5 }}
           className="mt-8 sm:mt-10"
         >
-          <a
-            href={DEMO_BOOKING_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={onCtaClick}
             className="px-8 py-4 rounded-full text-white font-medium tracking-wide inline-flex items-center gap-2 hover:opacity-90 transition-colors shadow-lg shadow-teal-600/25 text-base"
             style={{ background: 'linear-gradient(135deg, #0d9488, #14b8a6)' }}
           >
-            {fr ? 'Parlons-en' : 'Talk to us'}
+            {fr ? 'En savoir plus' : 'Learn more'}
             <ArrowRight className="w-4 h-4" />
-          </a>
+          </button>
         </motion.div>
 
         {/* Wellbeing link */}
@@ -235,11 +234,11 @@ function HeroSection({ locale, l, content }: { locale: string; l: (obj: { en: st
 
 function PractitionerContent() {
   const { locale } = useLanguage()
-  const { openModal } = useEarlyAccessModal()
+  const { openModal } = usePractitionerSignupModal()
   const [openFaq, setOpenFaq] = useState<number | null>(null)
 
   const handleOpenModal = () => {
-    openModal('practitioner')
+    openModal()
   }
 
   const content = {
@@ -301,10 +300,10 @@ function PractitionerContent() {
 
   return (
     <div className="bg-white text-gray-900">
-      <Navbar />
+      <Navbar onCtaClick={handleOpenModal} />
 
       <main>
-        <HeroSection locale={locale} l={l} content={content} />
+        <HeroSection locale={locale} l={l} content={content} onCtaClick={handleOpenModal} />
 
         {/* A Day With Bloomsline */}
         <section className="py-20 bg-white">
@@ -327,54 +326,43 @@ function PractitionerContent() {
                   )
                 })}
               </div>
+
+              {/* Audience — inline after day boxes */}
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                className="text-center mt-24"
+              >
+                <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-4">{l(content.audience.headline)}</h2>
+                <p className="text-lg text-neutral-600 mb-8 max-w-2xl mx-auto">{l(content.audience.subtitle)}</p>
+                <div className="flex flex-wrap justify-center gap-3 mb-10">
+                  {content.audience.types.map((type, i) => (
+                    <div key={i} className="relative group">
+                      <span className="px-5 py-3 bg-neutral-100 rounded-full text-neutral-700 font-medium hover:bg-neutral-200 transition-colors cursor-default inline-block">{l(type)}</span>
+                      {type.hint && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-4 py-2.5 bg-neutral-800 text-white text-xs leading-relaxed rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none w-56 text-center z-10">
+                          {l(type.hint)}
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-neutral-800" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={handleOpenModal}
+                  className="px-8 py-4 bg-gradient-to-r from-teal-600 to-teal-500 text-white font-medium rounded-full shadow-lg shadow-teal-600/30 hover:shadow-xl hover:from-teal-700 hover:to-teal-600 transition-all duration-300 inline-flex items-center gap-2"
+                >
+                  {locale === 'fr' ? 'Découvrir Bloomsline' : 'Discover Bloomsline'}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </motion.div>
             </motion.div>
           </div>
         </section>
 
-        <GlimpseSection isPractitionerPage />
-
-        {/* AI Trust */}
-        <section className="py-20 bg-white">
-          <div className="container mx-auto px-6">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="max-w-3xl mx-auto text-center">
-              <span className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full text-sm text-neutral-600 mb-6 border border-neutral-200">
-                <Brain className="w-4 h-4" />
-                {l(content.aiTrust.badge)}
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-4">
-                {l(content.aiTrust.headline)}<br />
-                <span className="text-teal-600">{l(content.aiTrust.headlineAccent)}</span>
-              </h2>
-              <div className="inline-flex items-center gap-2 px-5 py-3 bg-teal-500/10 rounded-xl text-teal-600 text-sm font-medium">
-                <Shield className="w-4 h-4" />
-                {l(content.aiTrust.highlight)}
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Audience */}
-        <section className="py-20 bg-neutral-50">
-          <div className="container mx-auto px-6">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="max-w-4xl mx-auto text-center">
-              <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-4">{l(content.audience.headline)}</h2>
-              <p className="text-lg text-neutral-600 mb-10 max-w-2xl mx-auto">{l(content.audience.subtitle)}</p>
-              <div className="flex flex-wrap justify-center gap-3">
-                {content.audience.types.map((type, i) => (
-                  <div key={i} className="relative group">
-                    <span className="px-5 py-3 bg-neutral-100 rounded-full text-neutral-700 font-medium hover:bg-neutral-200 transition-colors cursor-default inline-block">{l(type)}</span>
-                    {type.hint && (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-4 py-2.5 bg-neutral-800 text-white text-xs leading-relaxed rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none w-56 text-center z-10">
-                        {l(type.hint)}
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-neutral-800" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        </section>
+        <GlimpseSection isPractitionerPage onCtaClick={handleOpenModal} />
 
         {/* Security */}
         <section className="py-20 bg-white">
@@ -428,14 +416,10 @@ function PractitionerContent() {
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="max-w-2xl mx-auto text-center">
               <h2 className="text-3xl sm:text-4xl font-light text-neutral-900 mb-4">{l(content.cta.headline)}</h2>
               <p className="text-lg text-neutral-600 mb-10">{l(content.cta.subtitle)}</p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="flex items-center justify-center">
                 <button onClick={handleOpenModal} className="px-8 py-4 bg-teal-600 text-white rounded-full font-medium inline-flex items-center gap-2 hover:bg-teal-700 transition-colors shadow-lg shadow-teal-600/30">
                   {l(content.hero.cta)} <ArrowRight className="w-4 h-4" />
                 </button>
-                <a href={DEMO_BOOKING_URL} target="_blank" rel="noopener noreferrer" className="px-8 py-4 rounded-full border-2 border-neutral-300 text-neutral-700 font-medium inline-flex items-center gap-2 hover:border-neutral-400 transition-colors">
-                  <Calendar className="w-4 h-4" />
-                  {locale === 'fr' ? 'Parlons-en' : 'Talk to us'}
-                </a>
               </div>
             </motion.div>
           </div>
@@ -451,7 +435,9 @@ export default function HomePage() {
   return (
     <TabProvider defaultTab="practitioner">
       <EarlyAccessModalProvider>
-        <PractitionerContent />
+        <PractitionerSignupModalProvider>
+          <PractitionerContent />
+        </PractitionerSignupModalProvider>
       </EarlyAccessModalProvider>
     </TabProvider>
   )
