@@ -831,7 +831,12 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     // Compact mode: Enter (without Shift) submits, Shift+Enter inserts newline
     if (compact && onSubmit && e.key === 'Enter' && !e.shiftKey && !activeGoal && !activeTag && !activeVerbatim && !inlineTrigger) {
       e.preventDefault()
-      onSubmit()
+      // Flush current content to parent state before submitting (Firefox may not have fired onInput yet)
+      if (editorRef.current) {
+        onChange(editorRef.current.innerHTML)
+      }
+      // Use setTimeout to let React process the state update before submit reads it
+      setTimeout(() => onSubmit(), 0)
       return
     }
 
