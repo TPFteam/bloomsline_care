@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.auth);
   if (!rateLimitResult.success) {
     return NextResponse.redirect(
-      new URL('/settings?calendar_error=rate_limited', request.url)
+      new URL('/bookings?tab=settings&calendar_error=rate_limited', request.url)
     );
   }
   const searchParams = request.nextUrl.searchParams;
@@ -23,13 +23,13 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     return NextResponse.redirect(
-      new URL(`/settings?calendar_error=${encodeURIComponent(error)}`, request.url)
+      new URL(`/bookings?tab=settings&calendar_error=${encodeURIComponent(error)}`, request.url)
     );
   }
 
   if (!code) {
     return NextResponse.redirect(
-      new URL('/settings?calendar_error=no_code', request.url)
+      new URL('/bookings?tab=settings&calendar_error=no_code', request.url)
     );
   }
 
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       const errorData = await tokenResponse.text();
       console.error('Token exchange failed:', errorData);
       return NextResponse.redirect(
-        new URL('/settings?calendar_error=token_exchange_failed', request.url)
+        new URL('/bookings?tab=settings&calendar_error=token_exchange_failed', request.url)
       );
     }
 
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
 
     if (!user) {
       return NextResponse.redirect(
-        new URL('/sign-in?redirect=/settings', request.url)
+        new URL('/sign-in?redirect=/bookings', request.url)
       );
     }
 
@@ -111,17 +111,17 @@ export async function GET(request: NextRequest) {
     if (dbError) {
       console.error('Failed to save calendar connection:', dbError);
       return NextResponse.redirect(
-        new URL('/settings?calendar_error=save_failed', request.url)
+        new URL('/bookings?tab=settings&calendar_error=save_failed', request.url)
       );
     }
 
     return NextResponse.redirect(
-      new URL('/settings?calendar_connected=true', request.url)
+      new URL('/bookings?tab=settings&calendar_connected=true', request.url)
     );
   } catch (err) {
     console.error('Calendar callback error:', err);
     return NextResponse.redirect(
-      new URL('/settings?calendar_error=unknown', request.url)
+      new URL('/bookings?tab=settings&calendar_error=unknown', request.url)
     );
   }
 }
