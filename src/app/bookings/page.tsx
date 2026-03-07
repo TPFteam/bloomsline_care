@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   Calendar,
@@ -135,9 +136,13 @@ interface AvailabilitySlot {
 
 export default function BookingsPage() {
   useLanguage() // For locale context
+  const searchParams = useSearchParams()
 
-  // Main tab state
-  const [mainTab, setMainTab] = useState<MainTab>('appointments')
+  // Main tab state — read from URL query param (e.g. ?tab=settings after calendar OAuth callback)
+  const [mainTab, setMainTab] = useState<MainTab>(() => {
+    const tab = searchParams.get('tab')
+    return tab === 'settings' ? 'settings' : 'appointments'
+  })
 
   // Appointments state
   const [bookings, setBookings] = useState<Booking[]>([])
@@ -163,6 +168,17 @@ export default function BookingsPage() {
   const [isDisconnecting, setIsDisconnecting] = useState(false)
   const [isSavingAvailability, setIsSavingAvailability] = useState(false)
   const [isSavingSettings, setIsSavingSettings] = useState(false)
+
+  // Show toast for calendar OAuth callback results
+  useEffect(() => {
+    if (searchParams.get('calendar_connected') === 'true') {
+      toast.success('Google Calendar connected successfully')
+    }
+    const calError = searchParams.get('calendar_error')
+    if (calError) {
+      toast.error(`Calendar connection failed: ${calError}`)
+    }
+  }, [searchParams])
 
   // Load all data
   useEffect(() => {
