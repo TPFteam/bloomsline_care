@@ -44,14 +44,63 @@ type ImportRow = {
   email: string
   phone?: string
   date_of_birth?: string
-  status?: string
-  internal_notes?: string
+  is_minor?: boolean
   valid: boolean
   error?: string
 }
 
+// Known field names for smart column detection (supports EN/FR/ES headers)
+const FIELD_PATTERNS: Record<string, RegExp> = {
+  first_name: /^(first.?name|prénom|prenom|nombre|given.?name|firstname)$/i,
+  last_name: /^(last.?name|nom|apellido|surname|family.?name|lastname)$/i,
+  email: /^(e?.?mail|courriel|correo)$/i,
+  phone: /^(phone|tel|téléphone|telephone|telefono|mobile|cell)$/i,
+  date_of_birth: /^(date.?of.?birth|dob|birth.?date|date.?naissance|date.?de.?naissance|fecha.?nacimiento|birthday)$/i,
+  is_minor: /^(is.?minor|minor|mineur|menor)$/i,
+}
+
 const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
+
+// Normalize various date formats to YYYY-MM-DD
+const normalizeDate = (input: string): string | null => {
+  const trimmed = input.trim()
+  if (!trimmed) return null
+  // Already YYYY-MM-DD
+  if (DATE_REGEX.test(trimmed)) {
+    const d = new Date(trimmed)
+    return isNaN(d.getTime()) ? null : trimmed
+  }
+  // DD/MM/YYYY or MM/DD/YYYY or DD-MM-YYYY or DD.MM.YYYY
+  const parts = trimmed.split(/[/.\-]/)
+  if (parts.length === 3) {
+    let day: number, month: number, year: number
+    if (parts[2].length === 4) {
+      // DD/MM/YYYY or MM/DD/YYYY
+      year = parseInt(parts[2])
+      const a = parseInt(parts[0])
+      const b = parseInt(parts[1])
+      // If first part > 12, it must be day (DD/MM/YYYY)
+      if (a > 12) { day = a; month = b }
+      // If second part > 12, it must be day (MM/DD/YYYY)
+      else if (b > 12) { month = a; day = b }
+      // Ambiguous — assume DD/MM/YYYY (more common internationally)
+      else { day = a; month = b }
+    } else if (parts[0].length === 4) {
+      // YYYY/MM/DD
+      year = parseInt(parts[0])
+      month = parseInt(parts[1])
+      day = parseInt(parts[2])
+    } else {
+      return null
+    }
+    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900 || year > 2100) return null
+    const str = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const d = new Date(str)
+    return isNaN(d.getTime()) ? null : str
+  }
+  return null
+}
 
 // Helper function for relative time
 function getRelativeTime(dateString: string, locale: 'en' | 'fr' | 'es'): string {
@@ -122,11 +171,16 @@ export default function MembersPage() {
 
   // CSV Import Modal
   const [showImportModal, setShowImportModal] = useState(false)
-  const [importStep, setImportStep] = useState<'upload' | 'preview' | 'result'>('upload')
+  const [importStep, setImportStep] = useState<'upload' | 'mapping' | 'preview' | 'result'>('upload')
+  const [importMode, setImportMode] = useState<'paste' | 'csv'>('paste')
+  const [pasteText, setPasteText] = useState('')
   const [importRows, setImportRows] = useState<ImportRow[]>([])
   const [importing, setImporting] = useState(false)
   const [bulkImportSupportOpen, setBulkImportSupportOpen] = useState(false)
   const [importResult, setImportResult] = useState<{ imported: number; skipped: number } | null>(null)
+  const [rawHeaders, setRawHeaders] = useState<string[]>([])
+  const [rawRows, setRawRows] = useState<string[][]>([])
+  const [columnMapping, setColumnMapping] = useState<Record<number, string>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -471,29 +525,48 @@ export default function MembersPage() {
 
   // CSV Import Helpers
   const downloadTemplate = () => {
-    const headers = 'first_name,last_name,email,phone,date_of_birth,status,internal_notes'
-    const example = 'Jane,Doe,jane@example.com,+1 555-123-4567,1990-01-15,active,Initial intake completed'
+    const isFr = locale === 'fr'
+    const headers = isFr
+      ? 'prénom,nom,email,téléphone,date_de_naissance,mineur'
+      : 'first_name,last_name,email,phone,date_of_birth,is_minor'
+    const example = isFr
+      ? 'Marie,Dupont,marie@exemple.com,+33 6 12 34 56 78,1990-01-15,false'
+      : 'Jane,Doe,jane@example.com,+1 555-123-4567,1990-01-15,false'
+    const filename = isFr ? 'modele_import_clients.csv' : 'members_template.csv'
     const blob = new Blob([headers + '\n' + example + '\n'], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'members_template.csv'
+    a.download = filename
     a.click()
     URL.revokeObjectURL(url)
   }
 
-  const parseCSV = (text: string): { headers: string[]; rows: string[][] } => {
+  // Detect delimiter: tab, comma, or semicolon
+  const detectDelimiter = (text: string): string => {
+    const firstLine = text.split(/\r?\n/)[0] || ''
+    const tabCount = (firstLine.match(/\t/g) || []).length
+    const commaCount = (firstLine.match(/,/g) || []).length
+    const semiCount = (firstLine.match(/;/g) || []).length
+    if (tabCount >= commaCount && tabCount >= semiCount) return '\t'
+    if (semiCount > commaCount) return ';'
+    return ','
+  }
+
+  const parseDelimited = (text: string): { headers: string[]; rows: string[][] } => {
     const lines = text.split(/\r?\n/).filter(line => line.trim())
     if (lines.length === 0) return { headers: [], rows: [] }
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
-    const rows = lines.slice(1).map(line => {
+    const delimiter = detectDelimiter(text)
+
+    const splitLine = (line: string): string[] => {
+      if (delimiter === '\t') return line.split('\t').map(c => c.trim())
       const result: string[] = []
       let current = ''
       let inQuotes = false
       for (const char of line) {
         if (char === '"') {
           inQuotes = !inQuotes
-        } else if (char === ',' && !inQuotes) {
+        } else if (char === delimiter && !inQuotes) {
           result.push(current.trim())
           current = ''
         } else {
@@ -502,29 +575,63 @@ export default function MembersPage() {
       }
       result.push(current.trim())
       return result
-    })
-    return { headers, rows }
+    }
+
+    const headerRow = splitLine(lines[0])
+    // Check if the first row looks like headers (contains known field patterns or non-email text)
+    const looksLikeHeaders = headerRow.some(h =>
+      Object.values(FIELD_PATTERNS).some(pattern => pattern.test(h))
+    ) || !headerRow.some(h => EMAIL_REGEX.test(h))
+
+    if (looksLikeHeaders) {
+      return {
+        headers: headerRow.map(h => h.toLowerCase()),
+        rows: lines.slice(1).map(splitLine),
+      }
+    }
+    // No headers detected — return empty headers
+    return {
+      headers: Array.from({ length: headerRow.length }, (_, i) => `column_${i + 1}`),
+      rows: lines.map(splitLine),
+    }
   }
 
-  const validateRows = (headers: string[], rows: string[][]): ImportRow[] => {
-    const firstNameIdx = headers.indexOf('first_name')
-    const lastNameIdx = headers.indexOf('last_name')
-    const emailIdx = headers.indexOf('email')
-    const phoneIdx = headers.indexOf('phone')
-    const dobIdx = headers.indexOf('date_of_birth')
-    const statusIdx = headers.indexOf('status')
-    const notesIdx = headers.indexOf('internal_notes')
+  // Auto-detect column mapping from headers
+  const autoMapColumns = (headers: string[]): Record<number, string> => {
+    const mapping: Record<number, string> = {}
+    const usedFields = new Set<string>()
+
+    headers.forEach((header, idx) => {
+      for (const [field, pattern] of Object.entries(FIELD_PATTERNS)) {
+        if (!usedFields.has(field) && pattern.test(header)) {
+          mapping[idx] = field
+          usedFields.add(field)
+          break
+        }
+      }
+    })
+
+    // If no headers matched, try to guess by content heuristics on first few rows
+    return mapping
+  }
+
+  const applyMappingAndValidate = (headers: string[], rows: string[][], mapping: Record<number, string>): ImportRow[] => {
+    const fieldToIdx: Record<string, number> = {}
+    Object.entries(mapping).forEach(([idx, field]) => {
+      if (field && field !== 'skip') fieldToIdx[field] = parseInt(idx)
+    })
 
     const seenEmails = new Set<string>()
 
     return rows.map(row => {
-      const firstName = firstNameIdx >= 0 ? (row[firstNameIdx] || '').trim() : ''
-      const lastName = lastNameIdx >= 0 ? (row[lastNameIdx] || '').trim() : ''
-      const email = emailIdx >= 0 ? (row[emailIdx] || '').trim().toLowerCase() : ''
-      const phone = phoneIdx >= 0 ? (row[phoneIdx] || '').trim() : ''
-      const dob = dobIdx >= 0 ? (row[dobIdx] || '').trim() : ''
-      const status = statusIdx >= 0 ? (row[statusIdx] || '').trim().toLowerCase() : ''
-      const notes = notesIdx >= 0 ? (row[notesIdx] || '').trim() : ''
+      const firstName = fieldToIdx.first_name !== undefined ? (row[fieldToIdx.first_name] || '').trim() : ''
+      const lastName = fieldToIdx.last_name !== undefined ? (row[fieldToIdx.last_name] || '').trim() : ''
+      const email = fieldToIdx.email !== undefined ? (row[fieldToIdx.email] || '').trim().toLowerCase() : ''
+      const phone = fieldToIdx.phone !== undefined ? (row[fieldToIdx.phone] || '').trim() : ''
+      const dobRaw = fieldToIdx.date_of_birth !== undefined ? (row[fieldToIdx.date_of_birth] || '').trim() : ''
+      const dob = dobRaw ? normalizeDate(dobRaw) : undefined
+      const minorStr = fieldToIdx.is_minor !== undefined ? (row[fieldToIdx.is_minor] || '').trim().toLowerCase() : ''
+      const isMinor = ['true', 'yes', 'oui', '1', 'vrai'].includes(minorStr)
 
       const base: ImportRow = {
         first_name: firstName,
@@ -532,88 +639,83 @@ export default function MembersPage() {
         email,
         phone: phone || undefined,
         date_of_birth: dob || undefined,
-        status: status || undefined,
-        internal_notes: notes || undefined,
+        is_minor: isMinor,
         valid: true,
       }
 
-      // Validation
-      if (!firstName) {
-        return { ...base, valid: false, error: locale === 'fr' ? 'Prénom requis' : 'First name required' }
-      }
-      if (!lastName) {
-        return { ...base, valid: false, error: locale === 'fr' ? 'Nom requis' : 'Last name required' }
-      }
-      if (!email) {
-        return { ...base, valid: false, error: locale === 'fr' ? 'Email requis' : 'Email required' }
-      }
-      if (!EMAIL_REGEX.test(email)) {
-        return { ...base, valid: false, error: locale === 'fr' ? 'Email invalide' : 'Invalid email' }
-      }
-      if (seenEmails.has(email)) {
-        return { ...base, valid: false, error: locale === 'fr' ? 'Email en double dans le CSV' : 'Duplicate email in CSV' }
-      }
-      if (dob && !DATE_REGEX.test(dob)) {
-        return { ...base, valid: false, error: locale === 'fr' ? 'Date invalide (AAAA-MM-JJ)' : 'Invalid date (YYYY-MM-DD)' }
-      }
-      if (dob && DATE_REGEX.test(dob)) {
-        const d = new Date(dob)
-        if (isNaN(d.getTime())) {
-          return { ...base, valid: false, error: locale === 'fr' ? 'Date invalide' : 'Invalid date' }
-        }
-      }
-      if (status && !['active', 'inactive', 'pending'].includes(status)) {
-        return { ...base, valid: false, error: locale === 'fr' ? 'Statut invalide (active/inactive/pending)' : 'Invalid status (active/inactive/pending)' }
-      }
+      if (!firstName) return { ...base, valid: false, error: locale === 'fr' ? 'Prénom requis' : 'First name required' }
+      if (!lastName) return { ...base, valid: false, error: locale === 'fr' ? 'Nom requis' : 'Last name required' }
+      if (!email) return { ...base, valid: false, error: locale === 'fr' ? 'Email requis' : 'Email required' }
+      if (!EMAIL_REGEX.test(email)) return { ...base, valid: false, error: locale === 'fr' ? 'Email invalide' : 'Invalid email' }
+      if (seenEmails.has(email)) return { ...base, valid: false, error: locale === 'fr' ? 'Email en double' : 'Duplicate email' }
+      if (dobRaw && !dob) return { ...base, valid: false, error: locale === 'fr' ? 'Date invalide' : 'Invalid date' }
 
       seenEmails.add(email)
       return base
     })
   }
 
+  // Process parsed data — auto-map and go to mapping step or directly to preview
+  const processImportData = (text: string) => {
+    const { headers, rows } = parseDelimited(text)
+
+    if (rows.length === 0) {
+      toast.error(locale === 'fr' ? 'Aucune donnée trouvée' : 'No data found')
+      return
+    }
+    if (rows.length > 50) {
+      toast.error(locale === 'fr' ? `Maximum 50 lignes (${rows.length} trouvées)` : `Maximum 50 rows (${rows.length} found)`)
+      return
+    }
+
+    const mapping = autoMapColumns(headers)
+    setRawHeaders(headers)
+    setRawRows(rows)
+    setColumnMapping(mapping)
+
+    // If we have the 3 required fields mapped, go directly to preview
+    const mappedFields = new Set(Object.values(mapping))
+    if (mappedFields.has('first_name') && mappedFields.has('last_name') && mappedFields.has('email')) {
+      const validated = applyMappingAndValidate(headers, rows, mapping)
+      setImportRows(validated)
+      setImportStep('preview')
+    } else {
+      // Need user to map columns
+      setImportStep('mapping')
+    }
+  }
+
+  const handlePasteSubmit = () => {
+    if (!pasteText.trim()) {
+      toast.error(locale === 'fr' ? 'Veuillez coller vos données' : 'Please paste your data')
+      return
+    }
+    processImportData(pasteText)
+  }
+
   const handleFileSelect = (file: File) => {
-    if (!file.name.endsWith('.csv')) {
-      toast.error(locale === 'fr' ? 'Veuillez sélectionner un fichier CSV' : 'Please select a CSV file')
+    if (!file.name.endsWith('.csv') && !file.name.endsWith('.tsv') && !file.name.endsWith('.txt')) {
+      toast.error(locale === 'fr' ? 'Format accepté : CSV, TSV ou TXT' : 'Accepted formats: CSV, TSV, or TXT')
       return
     }
 
     const reader = new FileReader()
     reader.onload = (e) => {
       const text = e.target?.result as string
-      const { headers, rows } = parseCSV(text)
-
-      // Validate required headers
-      const requiredHeaders = ['first_name', 'last_name', 'email']
-      const missingHeaders = requiredHeaders.filter(h => !headers.includes(h))
-      if (missingHeaders.length > 0) {
-        toast.error(
-          locale === 'fr'
-            ? `Colonnes manquantes : ${missingHeaders.join(', ')}`
-            : `Missing columns: ${missingHeaders.join(', ')}`
-        )
-        return
-      }
-
-      // Check max rows
-      if (rows.length > 50) {
-        toast.error(
-          locale === 'fr'
-            ? `Maximum 50 lignes par import (${rows.length} trouvées)`
-            : `Maximum 50 rows per import (${rows.length} found)`
-        )
-        return
-      }
-
-      if (rows.length === 0) {
-        toast.error(locale === 'fr' ? 'Le fichier CSV est vide' : 'CSV file is empty')
-        return
-      }
-
-      const validated = validateRows(headers, rows)
-      setImportRows(validated)
-      setImportStep('preview')
+      processImportData(text)
     }
     reader.readAsText(file)
+  }
+
+  const handleMappingConfirm = () => {
+    const mappedFields = new Set(Object.values(columnMapping))
+    if (!mappedFields.has('first_name') || !mappedFields.has('last_name') || !mappedFields.has('email')) {
+      toast.error(locale === 'fr' ? 'Veuillez associer Prénom, Nom et Email' : 'Please map First Name, Last Name and Email')
+      return
+    }
+    const validated = applyMappingAndValidate(rawHeaders, rawRows, columnMapping)
+    setImportRows(validated)
+    setImportStep('preview')
   }
 
   const handleBulkImport = async () => {
@@ -649,9 +751,9 @@ export default function MembersPage() {
           email: row.email,
           phone: row.phone || null,
           date_of_birth: row.date_of_birth || null,
-          status: (row.status || 'active') as 'active' | 'inactive' | 'pending',
+          status: 'active' as const,
           engagement_level: 'medium' as const,
-          internal_notes: row.internal_notes || null,
+          is_minor: row.is_minor || false,
         }))
 
         const { error } = await supabase
@@ -679,11 +781,33 @@ export default function MembersPage() {
     setImportRows(prev => prev.filter((_, i) => i !== index))
   }
 
+  const updateImportRow = (index: number, field: keyof ImportRow, value: string | boolean) => {
+    setImportRows(prev => {
+      const updated = [...prev]
+      const row = { ...updated[index], [field]: value }
+      // Re-validate
+      row.valid = true
+      row.error = undefined
+      if (!row.first_name) { row.valid = false; row.error = locale === 'fr' ? 'Prénom requis' : 'First name required' }
+      else if (!row.last_name) { row.valid = false; row.error = locale === 'fr' ? 'Nom requis' : 'Last name required' }
+      else if (!row.email) { row.valid = false; row.error = locale === 'fr' ? 'Email requis' : 'Email required' }
+      else if (!EMAIL_REGEX.test(row.email)) { row.valid = false; row.error = locale === 'fr' ? 'Email invalide' : 'Invalid email' }
+      else if (row.date_of_birth && !normalizeDate(row.date_of_birth)) { row.valid = false; row.error = locale === 'fr' ? 'Date invalide' : 'Invalid date' }
+      updated[index] = row
+      return updated
+    })
+  }
+
   const resetImportModal = () => {
     setShowImportModal(false)
     setImportStep('upload')
+    setImportMode('paste')
+    setPasteText('')
     setImportRows([])
     setImportResult(null)
+    setRawHeaders([])
+    setRawRows([])
+    setColumnMapping({})
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -1543,7 +1667,7 @@ export default function MembersPage() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl w-full max-w-2xl shadow-xl max-h-[80vh] flex flex-col"
+              className="bg-white rounded-xl w-full max-w-4xl shadow-xl max-h-[80vh] flex flex-col"
             >
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
@@ -1558,60 +1682,200 @@ export default function MembersPage() {
                 </button>
               </div>
 
-              {/* Step 1: Upload */}
+              {/* Step 1: Upload / Paste */}
               {importStep === 'upload' && (
                 <div className="p-5">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) handleFileSelect(file)
-                    }}
-                  />
-
-                  <div
-                    className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center cursor-pointer hover:border-gray-300 hover:bg-gray-50 transition-all"
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-gray-400', 'bg-gray-50') }}
-                    onDragLeave={(e) => { e.currentTarget.classList.remove('border-gray-400', 'bg-gray-50') }}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      e.currentTarget.classList.remove('border-gray-400', 'bg-gray-50')
-                      const file = e.dataTransfer.files[0]
-                      if (file) handleFileSelect(file)
-                    }}
-                  >
-                    <Upload className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                    <p className="text-sm font-medium text-gray-700 mb-1">
-                      {locale === 'fr' ? 'Glissez votre fichier CSV ici' : locale === 'es' ? 'Arrastra tu archivo CSV aquí' : 'Drag your CSV file here'}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {locale === 'fr' ? 'ou cliquez pour parcourir' : locale === 'es' ? 'o haz clic para explorar' : 'or click to browse'}
-                    </p>
+                  {/* Tabs: Paste | Upload */}
+                  <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-4">
+                    <button
+                      onClick={() => setImportMode('paste')}
+                      className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${
+                        importMode === 'paste' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      {locale === 'fr' ? 'Coller' : 'Paste'}
+                    </button>
+                    <button
+                      onClick={() => setImportMode('csv')}
+                      className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${
+                        importMode === 'csv' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      {locale === 'fr' ? 'Fichier CSV' : 'CSV File'}
+                    </button>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between">
-                    <button
-                      onClick={downloadTemplate}
-                      className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1.5 transition-colors"
-                    >
-                      <Download className="w-4 h-4" />
-                      {locale === 'fr' ? 'Télécharger le modèle' : locale === 'es' ? 'Descargar plantilla' : 'Download template'}
-                    </button>
-                    <span className="text-xs text-gray-400">
-                      {locale === 'fr' ? 'Max 50 lignes' : locale === 'es' ? 'Máx 50 filas' : 'Max 50 rows'}
-                      {' · '}
-                      <button
-                        type="button"
-                        onClick={() => setBulkImportSupportOpen(true)}
-                        className="text-teal-500 hover:text-teal-600 underline underline-offset-2"
+                  {importMode === 'paste' ? (
+                    <>
+                      <p className="text-xs text-gray-400 mb-2">
+                        {locale === 'fr'
+                          ? 'Copiez vos données depuis Excel, Google Sheets ou Notion et collez-les ici'
+                          : 'Copy your data from Excel, Google Sheets, or Notion and paste it here'}
+                      </p>
+                      <textarea
+                        value={pasteText}
+                        onChange={(e) => setPasteText(e.target.value)}
+                        onPaste={(e) => {
+                          // Let the paste happen naturally via onChange
+                        }}
+                        className="w-full h-40 px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:border-teal-400 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all resize-none font-mono"
+                        placeholder={locale === 'fr'
+                          ? 'Prénom\tNom\tEmail\tTéléphone\nJean\tDupont\tjean@email.com\t0612345678\nMarie\tMartin\tmarie@email.com'
+                          : 'First Name\tLast Name\tEmail\tPhone\nJane\tDoe\tjane@email.com\t+15551234567\nJohn\tSmith\tjohn@email.com'}
+                      />
+                      <div className="mt-3 flex items-center justify-between">
+                        <p className="text-xs text-gray-400">
+                          {locale === 'fr' ? 'Max 50 lignes' : 'Max 50 rows'}
+                          {' · '}
+                          <button
+                            type="button"
+                            onClick={() => setBulkImportSupportOpen(true)}
+                            className="text-teal-500 hover:text-teal-600 underline underline-offset-2"
+                          >
+                            {locale === 'fr' ? 'Besoin de plus ?' : 'Need more?'}
+                          </button>
+                        </p>
+                        <Button
+                          onClick={handlePasteSubmit}
+                          disabled={!pasteText.trim()}
+                          className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg px-4 text-sm"
+                        >
+                          {locale === 'fr' ? 'Continuer' : 'Continue'}
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv,.tsv,.txt"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleFileSelect(file)
+                        }}
+                      />
+
+                      <div
+                        className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center cursor-pointer hover:border-gray-300 hover:bg-gray-50 transition-all"
+                        onClick={() => fileInputRef.current?.click()}
+                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-gray-400', 'bg-gray-50') }}
+                        onDragLeave={(e) => { e.currentTarget.classList.remove('border-gray-400', 'bg-gray-50') }}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          e.currentTarget.classList.remove('border-gray-400', 'bg-gray-50')
+                          const file = e.dataTransfer.files[0]
+                          if (file) handleFileSelect(file)
+                        }}
                       >
-                        {locale === 'fr' ? 'Besoin de plus ?' : locale === 'es' ? 'Necesitas más?' : 'Need more?'}
-                      </button>
-                    </span>
+                        <Upload className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                        <p className="text-sm font-medium text-gray-700 mb-1">
+                          {locale === 'fr' ? 'Glissez votre fichier ici' : 'Drag your file here'}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {locale === 'fr' ? 'CSV, TSV ou TXT · ou cliquez pour parcourir' : 'CSV, TSV, or TXT · or click to browse'}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between">
+                        <button
+                          onClick={downloadTemplate}
+                          className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1.5 transition-colors"
+                        >
+                          <Download className="w-4 h-4" />
+                          {locale === 'fr' ? 'Télécharger le modèle' : 'Download template'}
+                        </button>
+                        <span className="text-xs text-gray-400">
+                          {locale === 'fr' ? 'Max 50 lignes' : 'Max 50 rows'}
+                          {' · '}
+                          <button
+                            type="button"
+                            onClick={() => setBulkImportSupportOpen(true)}
+                            className="text-teal-500 hover:text-teal-600 underline underline-offset-2"
+                          >
+                            {locale === 'fr' ? 'Besoin de plus ?' : 'Need more?'}
+                          </button>
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Step 1b: Column Mapping */}
+              {importStep === 'mapping' && (
+                <div className="p-5">
+                  <p className="text-sm text-gray-600 mb-4">
+                    {locale === 'fr'
+                      ? 'Associez chaque colonne au bon champ. Prénom, Nom et Email sont obligatoires.'
+                      : 'Map each column to the right field. First Name, Last Name and Email are required.'}
+                  </p>
+
+                  {/* Preview of first 2 rows */}
+                  <div className="overflow-x-auto mb-4">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr>
+                          {rawHeaders.map((header, idx) => (
+                            <th key={idx} className="px-2 py-1.5 text-left">
+                              <select
+                                value={columnMapping[idx] || ''}
+                                onChange={(e) => setColumnMapping(prev => ({ ...prev, [idx]: e.target.value }))}
+                                className={`w-full px-2 py-1.5 text-xs border rounded-lg transition-colors ${
+                                  columnMapping[idx] ? 'border-teal-300 bg-teal-50 text-teal-700 font-medium' : 'border-gray-200 text-gray-500'
+                                }`}
+                              >
+                                <option value="">{locale === 'fr' ? '— Ignorer —' : '— Skip —'}</option>
+                                <option value="first_name">{locale === 'fr' ? 'Prénom' : 'First Name'} *</option>
+                                <option value="last_name">{locale === 'fr' ? 'Nom' : 'Last Name'} *</option>
+                                <option value="email">Email *</option>
+                                <option value="phone">{locale === 'fr' ? 'Téléphone' : 'Phone'}</option>
+                                <option value="date_of_birth">{locale === 'fr' ? 'Date de naissance' : 'Date of Birth'}</option>
+                                <option value="is_minor">{locale === 'fr' ? 'Mineur' : 'Minor'}</option>
+                              </select>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rawRows.slice(0, 3).map((row, rIdx) => (
+                          <tr key={rIdx} className="border-t border-gray-100">
+                            {rawHeaders.map((_, cIdx) => (
+                              <td key={cIdx} className="px-2 py-1.5 text-gray-600 truncate max-w-[140px]">
+                                {row[cIdx] || <span className="text-gray-300">—</span>}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {rawRows.length > 3 && (
+                    <p className="text-xs text-gray-400 mb-4">
+                      {locale === 'fr' ? `+ ${rawRows.length - 3} autres lignes` : `+ ${rawRows.length - 3} more rows`}
+                    </p>
+                  )}
+
+                  <div className="flex items-center justify-between pt-2">
+                    <Button
+                      variant="ghost"
+                      onClick={() => { setImportStep('upload'); setRawHeaders([]); setRawRows([]); setColumnMapping({}) }}
+                      className="text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+                    >
+                      {locale === 'fr' ? 'Retour' : 'Back'}
+                    </Button>
+                    <Button
+                      onClick={handleMappingConfirm}
+                      disabled={(() => {
+                        const mapped = new Set(Object.values(columnMapping).filter(v => v && v !== 'skip'))
+                        return !mapped.has('first_name') || !mapped.has('last_name') || !mapped.has('email')
+                      })()}
+                      className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg px-4 text-sm"
+                    >
+                      {locale === 'fr' ? 'Continuer' : 'Continue'}
+                    </Button>
                   </div>
                 </div>
               )}
@@ -1650,7 +1914,10 @@ export default function MembersPage() {
                           <th className="text-left py-2 px-2 text-gray-500 font-medium">{locale === 'fr' ? 'Prénom' : 'First Name'}</th>
                           <th className="text-left py-2 px-2 text-gray-500 font-medium">{locale === 'fr' ? 'Nom' : 'Last Name'}</th>
                           <th className="text-left py-2 px-2 text-gray-500 font-medium">Email</th>
-                          <th className="text-left py-2 px-2 text-gray-500 font-medium">{locale === 'fr' ? 'Statut' : 'Status'}</th>
+                          <th className="text-left py-2 px-2 text-gray-500 font-medium">{locale === 'fr' ? 'Téléphone' : 'Phone'}</th>
+                          <th className="text-left py-2 px-2 text-gray-500 font-medium">{locale === 'fr' ? 'Naissance' : 'DOB'}</th>
+                          <th className="text-left py-2 px-2 text-gray-500 font-medium">{locale === 'fr' ? 'Mineur' : 'Minor'}</th>
+                          <th className="text-left py-2 px-2 text-gray-500 font-medium">{locale === 'fr' ? 'Erreur' : 'Issue'}</th>
                           <th className="w-8"></th>
                         </tr>
                       </thead>
@@ -1664,13 +1931,28 @@ export default function MembersPage() {
                                 <AlertCircle className="w-4 h-4 text-red-400" />
                               )}
                             </td>
-                            <td className="py-2 px-2 text-gray-700">{row.first_name || '—'}</td>
-                            <td className="py-2 px-2 text-gray-700">{row.last_name || '—'}</td>
-                            <td className="py-2 px-2 text-gray-700">{row.email || '—'}</td>
+                            <td className="py-1 px-1">
+                              <input value={row.first_name} onChange={(e) => updateImportRow(idx, 'first_name', e.target.value)} className="w-full px-2 py-1 text-sm text-gray-700 border border-transparent rounded hover:border-gray-200 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none transition-all bg-transparent" />
+                            </td>
+                            <td className="py-1 px-1">
+                              <input value={row.last_name} onChange={(e) => updateImportRow(idx, 'last_name', e.target.value)} className="w-full px-2 py-1 text-sm text-gray-700 border border-transparent rounded hover:border-gray-200 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none transition-all bg-transparent" />
+                            </td>
+                            <td className="py-1 px-1">
+                              <input value={row.email} onChange={(e) => updateImportRow(idx, 'email', e.target.value)} className="w-full px-2 py-1 text-sm text-gray-700 border border-transparent rounded hover:border-gray-200 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none transition-all bg-transparent" />
+                            </td>
+                            <td className="py-1 px-1">
+                              <input value={row.phone || ''} onChange={(e) => updateImportRow(idx, 'phone', e.target.value)} placeholder="—" className="w-full px-2 py-1 text-sm text-gray-400 border border-transparent rounded hover:border-gray-200 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none transition-all bg-transparent" />
+                            </td>
+                            <td className="py-1 px-1">
+                              <input type="date" value={row.date_of_birth || ''} onChange={(e) => updateImportRow(idx, 'date_of_birth', e.target.value)} className="px-2 py-1 text-sm text-gray-400 border border-transparent rounded hover:border-gray-200 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none transition-all bg-transparent" />
+                            </td>
+                            <td className="py-1 px-1 text-center">
+                              <button type="button" onClick={() => updateImportRow(idx, 'is_minor', !row.is_minor)} className={`px-2 py-1 text-xs rounded-md transition-colors ${row.is_minor ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}>
+                                {row.is_minor ? (locale === 'fr' ? 'Oui' : 'Yes') : (locale === 'fr' ? 'Non' : 'No')}
+                              </button>
+                            </td>
                             <td className="py-2 px-2">
-                              {row.valid ? (
-                                <span className="text-gray-500">{row.status || 'active'}</span>
-                              ) : (
+                              {!row.valid && (
                                 <span className="text-red-500 text-xs">{row.error}</span>
                               )}
                             </td>
@@ -1692,7 +1974,7 @@ export default function MembersPage() {
                   <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 flex-shrink-0">
                     <Button
                       variant="ghost"
-                      onClick={() => { setImportStep('upload'); setImportRows([]); if (fileInputRef.current) fileInputRef.current.value = '' }}
+                      onClick={() => { setImportStep('upload'); setImportRows([]); setPasteText(''); setRawHeaders([]); setRawRows([]); setColumnMapping({}); if (fileInputRef.current) fileInputRef.current.value = '' }}
                       className="text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
                     >
                       {locale === 'fr' ? 'Retour' : locale === 'es' ? 'Volver' : 'Back'}
