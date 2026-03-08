@@ -17,7 +17,9 @@ import {
   startOfWeek,
   endOfWeek,
 } from 'date-fns'
+import { fr, es } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
+import { useLanguage } from '@/lib/i18n/context'
 
 interface CalendarPickerProps {
   selectedDate: Date
@@ -34,6 +36,8 @@ export function CalendarPicker({
   maxDate,
   className = '',
 }: CalendarPickerProps) {
+  const { locale } = useLanguage()
+  const dateFnsLocale = locale === 'fr' ? fr : locale === 'es' ? es : undefined
   const [isOpen, setIsOpen] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(selectedDate))
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
@@ -149,7 +153,7 @@ export function CalendarPicker({
             <ChevronLeft className="w-5 h-5 text-gray-600" />
           </button>
           <h3 className="font-semibold text-gray-900">
-            {format(currentMonth, 'MMMM yyyy')}
+            {format(currentMonth, 'MMMM yyyy', { locale: dateFnsLocale })}
           </h3>
           <button
             type="button"
@@ -237,7 +241,7 @@ export function CalendarPicker({
       >
         <Calendar className="w-4 h-4 text-gray-400" />
         <span className="flex-1 text-left text-gray-700">
-          {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+          {format(selectedDate, 'EEEE, MMMM d, yyyy', { locale: dateFnsLocale })}
         </span>
         <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
       </button>

@@ -122,9 +122,9 @@ const DAY_LABELS: Record<DayOfWeek, string> = {
 }
 
 const DEFAULT_SESSION_TYPES: SessionType[] = [
-  { id: 'initial', name: 'Initial Consultation', duration: 60, price: null },
-  { id: 'follow_up', name: 'Follow-up Session', duration: 50, price: null },
-  { id: 'check_in', name: 'Check-in', duration: 30, price: null },
+  { id: 'initial', name: 'Initial Consultation', name_fr: 'Consultation initiale', duration: 60, price: null, is_default: true },
+  { id: 'follow_up', name: 'Follow-up Session', name_fr: 'Séance de suivi', duration: 50, price: null, is_default: true },
+  { id: 'check_in', name: 'Check-in', name_fr: 'Point de situation', duration: 30, price: null },
 ]
 
 interface AvailabilitySlot {
@@ -135,7 +135,7 @@ interface AvailabilitySlot {
 }
 
 export default function BookingsPage() {
-  useLanguage() // For locale context
+  const { locale } = useLanguage()
   const searchParams = useSearchParams()
 
   // Main tab state — read from URL query param (e.g. ?tab=settings after calendar OAuth callback)
@@ -293,6 +293,14 @@ export default function BookingsPage() {
       setBookingSettings(bookingSettingsData)
 
       setIsLoadingSettings(false)
+
+      // Scroll to hash target after settings load
+      if (window.location.hash) {
+        setTimeout(() => {
+          const el = document.querySelector(window.location.hash)
+          el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 100)
+      }
     }
 
     loadData()
@@ -544,7 +552,7 @@ export default function BookingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <AppSidebar activeItem="members" />
+      <AppSidebar activeItem="bookings" />
 
       {/* Main Content */}
       <main className="flex-1 ml-14">
@@ -984,6 +992,113 @@ export default function BookingsPage() {
                       Connect Google Calendar
                     </Button>
                   )}
+                </CardContent>
+              </Card>
+              )}
+
+              {/* Session Types — only for native booking */}
+              {!bookingSettings?.external_booking_url && (
+              <Card id="session-types">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-gray-600" />
+                    Session Types
+                  </CardTitle>
+                  <CardDescription>
+                    Configure the types of sessions you offer and their durations
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {(sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES).map((type, index) => {
+                    const isLocked = type.id === 'initial' || type.id === 'follow_up'
+                    const lockedNameFr: Record<string, string> = { initial: 'Consultation initiale', follow_up: 'Séance de suivi' }
+                    return (
+                    <div
+                      key={type.id}
+                      className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50/50"
+                    >
+                      <div className="flex-1 grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Name</label>
+                          <input
+                            type="text"
+                            value={isLocked && locale === 'fr' ? lockedNameFr[type.id] : type.name}
+                            readOnly={isLocked}
+                            onChange={(e) => {
+                              if (isLocked) return
+                              const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
+                              updated[index] = { ...updated[index], name: e.target.value }
+                              setSessionTypes(updated)
+                              setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
+                            }}
+                            className={`w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 ${isLocked ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                            placeholder="e.g. Initial Consultation"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Duration (min)</label>
+                          <select
+                            value={type.duration}
+                            onChange={(e) => {
+                              const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
+                              updated[index] = { ...updated[index], duration: parseInt(e.target.value) }
+                              setSessionTypes(updated)
+                              setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
+                            }}
+                            className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 bg-white"
+                          >
+                            {[15, 20, 25, 30, 45, 50, 60, 75, 90, 120].map((d) => (
+                              <option key={d} value={d}>{d} min</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      {!isLocked && (sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES).length > 1 && (
+                        <button
+                          onClick={() => {
+                            const updated = (sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES).filter((_, i) => i !== index)
+                            setSessionTypes(updated)
+                            setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
+                          }}
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  )})}
+
+                  <button
+                    onClick={() => {
+                      const current = sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES
+                      const newType: SessionType = {
+                        id: `custom_${Date.now()}`,
+                        name: '',
+                        duration: 60,
+                        price: null,
+                      }
+                      const updated = [...current, newType]
+                      setSessionTypes(updated)
+                      setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
+                    }}
+                    className="flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 font-medium px-3 py-2 rounded-lg hover:bg-teal-50 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add session type
+                  </button>
+
+                  <div className="pt-2">
+                    <Button
+                      onClick={handleSaveBookingSettings}
+                      disabled={isSavingSettings}
+                      className="bg-gray-900 hover:bg-gray-800 text-white"
+                    >
+                      {isSavingSettings ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : null}
+                      Save Session Types
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
               )}

@@ -6,11 +6,12 @@ import {
   BookOpen,
   Users,
   Activity,
+  CalendarCheck,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { useLanguage } from '@/lib/i18n/context'
 
-type NavItem = 'home' | 'library' | 'members' | 'analytics'
+type NavItem = 'home' | 'library' | 'bookings' | 'members' | 'analytics'
 
 interface AppSidebarProps {
   activeItem?: NavItem
@@ -23,6 +24,7 @@ export function AppSidebar({ activeItem }: AppSidebarProps) {
     { id: 'home' as NavItem, href: '/dashboard', icon: Home, label: locale === 'fr' ? 'Accueil' : locale === 'es' ? 'Inicio' : 'Home' },
     { id: 'members' as NavItem, href: '/members', icon: Users, label: locale === 'fr' ? 'Personnes suivies' : locale === 'es' ? 'Personas' : 'People' },
     { id: 'library' as NavItem, href: '/library', icon: BookOpen, label: locale === 'fr' ? 'Bibliothèque' : locale === 'es' ? 'Biblioteca' : 'Library' },
+    { id: 'bookings' as NavItem, href: '/bookings', icon: CalendarCheck, label: locale === 'fr' ? 'Réservations' : locale === 'es' ? 'Reservas' : 'Bookings' },
     { id: 'analytics' as NavItem, href: '/analytics', icon: Activity, label: locale === 'fr' ? 'Signaux' : locale === 'es' ? 'Señales' : 'Signals' },
   ]
 

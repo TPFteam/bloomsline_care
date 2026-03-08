@@ -36,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useLanguage } from '@/lib/i18n/context'
-import { AppSidebar } from '@/components/app-sidebar'
+import { AppSidebar } from '@/components/layout'
 import {
   getCollectionById,
   getCollectionResourcesWithDetails,
@@ -223,8 +223,8 @@ export default function CollectionDetailPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen gradient-mesh flex">
-        <AppSidebar />
-        <main className="flex-1 ml-80 p-8 flex items-center justify-center">
+        <AppSidebar activeItem="library" />
+        <main className="flex-1 ml-14 p-8 flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="w-8 h-8 animate-spin text-lavender-500 mx-auto mb-4" />
             <p className="text-gray-500">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</p>
@@ -237,8 +237,8 @@ export default function CollectionDetailPage() {
   if (!collection) {
     return (
       <div className="min-h-screen gradient-mesh flex">
-        <AppSidebar />
-        <main className="flex-1 ml-80 p-8 flex items-center justify-center">
+        <AppSidebar activeItem="library" />
+        <main className="flex-1 ml-14 p-8 flex items-center justify-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -280,10 +280,10 @@ export default function CollectionDetailPage() {
       </div>
 
       {/* Sidebar */}
-      <AppSidebar />
+      <AppSidebar activeItem="library" />
 
       {/* Main Content */}
-      <main className="flex-1 ml-80 p-8 relative">
+      <main className="flex-1 ml-14 p-8 relative">
         {/* Breadcrumb */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}

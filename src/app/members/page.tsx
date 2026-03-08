@@ -14,7 +14,6 @@ import {
   LayoutGrid,
   List,
   Loader2,
-  CalendarCheck,
   Calendar,
   Phone,
   X,
@@ -25,6 +24,7 @@ import {
   Check,
   AlertCircle,
   Download,
+  UserPlus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -35,6 +35,7 @@ import { toast } from 'sonner'
 import type { Member, MemberFilter, MemberHubStats, Session } from '@/types/member'
 import { getMemberFullName, getMemberInitials } from '@/types/member'
 import type { MemberGroup } from '@/types/member-group'
+import { FeedbackButton } from '@/components/feedback-button'
 
 // Import row type for CSV bulk import
 type ImportRow = {
@@ -124,6 +125,7 @@ export default function MembersPage() {
   const [importStep, setImportStep] = useState<'upload' | 'preview' | 'result'>('upload')
   const [importRows, setImportRows] = useState<ImportRow[]>([])
   const [importing, setImporting] = useState(false)
+  const [bulkImportSupportOpen, setBulkImportSupportOpen] = useState(false)
   const [importResult, setImportResult] = useState<{ imported: number; skipped: number } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -954,14 +956,6 @@ export default function MembersPage() {
                   </button>
                 </div>
 
-                {/* Bookings Button */}
-                <Link href="/bookings">
-                  <Button variant="outline" className="rounded-xl px-4 border-gray-200">
-                    <CalendarCheck className="w-4 h-4 mr-2" />
-                    {locale === 'fr' ? 'Séances' : 'Bookings'}
-                  </Button>
-                </Link>
-
                 {/* Import CSV Button */}
                 <Button
                   variant="outline"
@@ -977,7 +971,7 @@ export default function MembersPage() {
                   onClick={() => showGroupsView ? openGroupModal() : setShowAddModal(true)}
                   className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-4"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  {showGroupsView ? <Plus className="w-4 h-4 mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
                   {showGroupsView
                     ? (locale === 'fr' ? 'Nouveau groupe' : locale === 'es' ? 'Nuevo grupo' : 'New Group')
                     : t.members.actions.addMember}
@@ -1371,7 +1365,7 @@ export default function MembersPage() {
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  {locale === 'fr' ? 'Nouveau Client' : 'New Member'}
+                  {locale === 'fr' ? 'Ajouter un nouveau patient / client' : 'Add a New Person'}
                 </h2>
                 <button
                   onClick={() => setShowAddModal(false)}
@@ -1460,7 +1454,7 @@ export default function MembersPage() {
                       <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-4" />
                     </div>
                     <span className="text-sm text-gray-700 group-hover/minor:text-gray-900 transition-colors">
-                      {locale === 'fr' ? 'Mineur / Étudiant' : locale === 'es' ? 'Menor / Estudiante' : 'Minor / Student'}
+                      {locale === 'fr' ? 'Mineur' : locale === 'es' ? 'Menor' : 'Minor'}
                     </span>
                   </label>
 
@@ -1468,7 +1462,7 @@ export default function MembersPage() {
                   {memberGroups.length > 0 && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        {locale === 'fr' ? 'Groupes' : locale === 'es' ? 'Grupos' : 'Groups'}
+                        {locale === 'fr' ? 'Ajouter à un groupe' : locale === 'es' ? 'Añadir a un grupo' : 'Add to a Group'}
                       </label>
                       <div className="flex flex-wrap gap-1.5">
                         {memberGroups.map(group => {
@@ -1609,6 +1603,14 @@ export default function MembersPage() {
                     </button>
                     <span className="text-xs text-gray-400">
                       {locale === 'fr' ? 'Max 50 lignes' : locale === 'es' ? 'Máx 50 filas' : 'Max 50 rows'}
+                      {' · '}
+                      <button
+                        type="button"
+                        onClick={() => setBulkImportSupportOpen(true)}
+                        className="text-teal-500 hover:text-teal-600 underline underline-offset-2"
+                      >
+                        {locale === 'fr' ? 'Besoin de plus ?' : locale === 'es' ? 'Necesitas más?' : 'Need more?'}
+                      </button>
                     </span>
                   </div>
                 </div>
@@ -1751,6 +1753,22 @@ export default function MembersPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Bulk import support modal */}
+      <FeedbackButton
+        showFloatingButton={false}
+        isOpen={bulkImportSupportOpen}
+        onClose={() => setBulkImportSupportOpen(false)}
+        userEmail={user?.email}
+        userName={user?.full_name}
+        initialData={{
+          type: 'feature' as const,
+          subject: locale === 'fr' ? 'Import en masse - Plus de 50 membres' : 'Bulk import - More than 50 members',
+          description: locale === 'fr'
+            ? 'Bonjour,\n\nJ\'aimerais importer plus de 50 membres en une seule fois. Pouvez-vous m\'aider ?'
+            : 'Hi,\n\nI\'d like to import more than 50 members at once. Can you help?',
+        }}
+      />
     </div>
   )
 }

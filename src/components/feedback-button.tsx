@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MessageCircleQuestion, X, Send, Bug, Lightbulb, HelpCircle, Loader2, ImagePlus, Trash2, CheckCircle } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
@@ -14,6 +14,7 @@ interface FeedbackButtonProps {
   showFloatingButton?: boolean
   isOpen?: boolean
   onClose?: () => void
+  initialData?: { type?: TicketType; subject?: string; description?: string }
 }
 
 const ticketTypes: { value: TicketType; icon: typeof Bug; labelEn: string; labelFr: string; labelEs: string }[] = [
@@ -46,6 +47,7 @@ export function FeedbackButton({
   showFloatingButton = true,
   isOpen: controlledIsOpen,
   onClose: controlledOnClose,
+  initialData,
 }: FeedbackButtonProps) {
   const { locale } = useLanguage()
   const [internalIsOpen, setInternalIsOpen] = useState(false)
@@ -65,6 +67,17 @@ export function FeedbackButton({
     subject: '',
     description: '',
   })
+
+  // Apply initial data when modal opens with it
+  useEffect(() => {
+    if (isOpen && initialData) {
+      setFormData(prev => ({
+        type: initialData.type || prev.type,
+        subject: initialData.subject || prev.subject,
+        description: initialData.description || prev.description,
+      }))
+    }
+  }, [isOpen, initialData])
 
   const resetAndClose = () => {
     setIsOpen(false)

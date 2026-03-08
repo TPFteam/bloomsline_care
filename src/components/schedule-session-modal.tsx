@@ -1,14 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video } from 'lucide-react'
+import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video, Settings } from 'lucide-react'
 import { CalendarPicker } from '@/components/ui/calendar-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import { notifySessionScheduled } from '@/lib/notifications'
 import { format, startOfDay } from 'date-fns'
+import { fr as frLocale, es as esLocale } from 'date-fns/locale'
 import { useLanguage } from '@/lib/i18n/context'
 import type { Member } from '@/types/member'
 
@@ -37,6 +39,7 @@ type ScheduleMode = 'calendar' | 'manual'
 
 export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMember }: ScheduleSessionModalProps) {
   const { locale } = useLanguage()
+  const router = useRouter()
   const [step, setStep] = useState<Step>(preselectedMember ? 'session' : 'member')
   const [members, setMembers] = useState<Member[]>([])
   const [sessionTypes, setSessionTypes] = useState<SessionType[]>([])
@@ -58,6 +61,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [manualSessionFormat, setManualSessionFormat] = useState<'in_person' | 'virtual'>('in_person')
   const [manualDuration, setManualDuration] = useState(60)
   const [manualTime, setManualTime] = useState('10:00')
+  const [use24Hour, setUse24Hour] = useState(locale === 'fr')
   const [hasExternalBooking, setHasExternalBooking] = useState(false)
 
   // Session type options for manual mode (must match database enum)
@@ -69,6 +73,12 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
     { value: 'group', label: 'Group Session', labelFr: 'Séance de groupe', labelEs: 'Sesión grupal' },
     { value: 'other', label: 'Other', labelFr: 'Autre', labelEs: 'Otro' },
   ]
+
+  const lockedNameFr: Record<string, string> = { initial: 'Consultation initiale', follow_up: 'Séance de suivi', check_in: 'Point de situation' }
+
+  const getLocaleName = (type: { id: string; name: string }) => {
+    return locale === 'fr' && lockedNameFr[type.id] ? lockedNameFr[type.id] : type.name
+  }
 
   const getSessionTypeLabel = (value: string) => {
     return sessionTypeOptions.find(opt => opt.value === value)?.label || value
@@ -554,26 +564,38 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               <div className="space-y-4">
                 {/* Mode Toggle — hide "From Calendar" entirely when external booking is active */}
                 {sessionTypes.length > 0 && !hasExternalBooking && (
-                  <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 flex gap-2 p-1 bg-gray-100 rounded-xl">
+                      <button
+                        onClick={() => setScheduleMode('calendar')}
+                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                          scheduleMode === 'calendar'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        {locale === 'fr' ? 'Depuis le calendrier' : locale === 'es' ? 'Desde el calendario' : 'From Calendar'}
+                      </button>
+                      <button
+                        onClick={() => setScheduleMode('manual')}
+                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                          scheduleMode === 'manual'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        {locale === 'fr' ? 'Saisie manuelle' : locale === 'es' ? 'Entrada manual' : 'Manual Entry'}
+                      </button>
+                    </div>
                     <button
-                      onClick={() => setScheduleMode('calendar')}
-                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                        scheduleMode === 'calendar'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
+                      onClick={() => {
+                        onClose()
+                        router.push('/bookings?tab=settings#session-types')
+                      }}
+                      className="p-2.5 rounded-xl text-gray-400 hover:text-teal-600 hover:bg-teal-50 border border-gray-200 hover:border-teal-300 transition-colors"
+                      title={locale === 'fr' ? 'Configurer les types de séance' : 'Configure session types'}
                     >
-                      {locale === 'fr' ? 'Depuis le calendrier' : locale === 'es' ? 'Desde el calendario' : 'From Calendar'}
-                    </button>
-                    <button
-                      onClick={() => setScheduleMode('manual')}
-                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                        scheduleMode === 'manual'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      {locale === 'fr' ? 'Saisie manuelle' : locale === 'es' ? 'Entrada manual' : 'Manual Entry'}
+                      <Settings className="w-4 h-4" />
                     </button>
                   </div>
                 )}
@@ -616,7 +638,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-gray-900">{type.name}</p>
+                            <p className="font-medium text-gray-900">{getLocaleName(type)}</p>
                             <p className="text-sm text-gray-500">{type.duration} minutes</p>
                           </div>
                           {selectedSessionType?.id === type.id && (
@@ -634,39 +656,34 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                         {locale === 'fr' ? 'Type de séance' : locale === 'es' ? 'Tipo de sesión' : 'Session Type'}
                       </label>
                       <div className="grid grid-cols-2 gap-2">
-                        {sessionTypeOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => setManualSessionType(option.value)}
-                            className={`px-3 py-2.5 rounded-xl border text-sm font-medium transition-all text-left ${
-                              manualSessionType === option.value
-                                ? 'border-mint-500 bg-mint-50 text-mint-700'
-                                : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                            }`}
-                          >
-                            {locale === 'fr' ? option.labelFr : locale === 'es' ? (option.labelEs || option.label) : option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        {locale === 'fr' ? 'Durée (minutes)' : locale === 'es' ? 'Duración (minutos)' : 'Duration (minutes)'}
-                      </label>
-                      <div className="flex gap-2">
-                        {[30, 45, 60, 90].map((duration) => (
-                          <button
-                            key={duration}
-                            onClick={() => setManualDuration(duration)}
-                            className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all ${
-                              manualDuration === duration
-                                ? 'border-mint-500 bg-mint-50 text-mint-700'
-                                : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                          >
-                            {duration}m
-                          </button>
-                        ))}
+                        {(sessionTypes.length > 0 ? sessionTypes : sessionTypeOptions).map((option) => {
+                          const isDbType = 'duration' in option
+                          const value = isDbType ? (option as SessionType).id : (option as typeof sessionTypeOptions[0]).value
+                          const label = isDbType
+                            ? getLocaleName(option as SessionType)
+                            : locale === 'fr' ? (option as typeof sessionTypeOptions[0]).labelFr : (option as typeof sessionTypeOptions[0]).label
+                          return (
+                            <button
+                              key={value}
+                              onClick={() => {
+                                setManualSessionType(value)
+                                if (isDbType) {
+                                  setManualDuration((option as SessionType).duration)
+                                }
+                              }}
+                              className={`px-3 py-2.5 rounded-xl border text-sm font-medium transition-all text-left ${
+                                manualSessionType === value
+                                  ? 'border-mint-500 bg-mint-50 text-mint-700'
+                                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                              }`}
+                            >
+                              <span className="block">{label}</span>
+                              {isDbType && (
+                                <span className="block text-xs text-gray-400 mt-0.5">{(option as SessionType).duration} min</span>
+                              )}
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
                     <div>
@@ -719,9 +736,18 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
                 {/* Time Selection */}
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">
-                    {locale === 'fr' ? 'Sélectionner l\'heure' : locale === 'es' ? 'Seleccionar hora' : 'Select Time'}
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      {locale === 'fr' ? 'Sélectionner l\'heure' : locale === 'es' ? 'Seleccionar hora' : 'Select Time'}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setUse24Hour(!use24Hour)}
+                      className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors"
+                    >
+                      {use24Hour ? '24h' : '12h'}
+                    </button>
+                  </div>
                   {scheduleMode === 'manual' ? (
                     /* Manual time input - themed picker */
                     <TimePicker
@@ -749,7 +775,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
-                            {format(slotDate, 'h:mm a')}
+                            {format(slotDate, use24Hour ? 'HH:mm' : 'h:mm a')}
                           </button>
                         )
                       })}
@@ -779,7 +805,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">{locale === 'fr' ? 'Type de séance' : locale === 'es' ? 'Tipo de sesión' : 'Session Type'}</span>
                       <span className="font-medium text-gray-900">
-                        {scheduleMode === 'manual' ? getSessionTypeLabel(manualSessionType) : selectedSessionType?.name}
+                        {scheduleMode === 'manual' ? getSessionTypeLabel(manualSessionType) : selectedSessionType ? getLocaleName(selectedSessionType) : ''}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -802,14 +828,14 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                     )}
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">{locale === 'fr' ? 'Date' : locale === 'es' ? 'Fecha' : 'Date'}</span>
-                      <span className="font-medium text-gray-900">{format(selectedDate, 'EEEE, MMMM d, yyyy')}</span>
+                      <span className="font-medium text-gray-900">{format(selectedDate, 'EEEE, MMMM d, yyyy', { locale: locale === 'fr' ? frLocale : locale === 'es' ? esLocale : undefined })}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">{locale === 'fr' ? 'Heure' : locale === 'es' ? 'Hora' : 'Time'}</span>
                       <span className="font-medium text-gray-900">
                         {scheduleMode === 'manual'
-                          ? format(new Date(`2000-01-01T${manualTime}`), 'h:mm a')
-                          : selectedTime && format(new Date(`2000-01-01T${selectedTime}`), 'h:mm a')}
+                          ? format(new Date(`2000-01-01T${manualTime}`), use24Hour ? 'HH:mm' : 'h:mm a')
+                          : selectedTime && format(new Date(`2000-01-01T${selectedTime}`), use24Hour ? 'HH:mm' : 'h:mm a')}
                       </span>
                     </div>
                     {scheduleMode === 'manual' && (

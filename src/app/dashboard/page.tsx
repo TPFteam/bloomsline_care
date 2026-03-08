@@ -561,6 +561,14 @@ function DashboardContent() {
       bgColor: 'bg-rose-50',
     },
     {
+      id: 'book-session',
+      type: null,
+      title: locale === 'fr' ? 'Créer une séance' : 'Book a Session',
+      icon: CalendarPlus,
+      color: 'from-teal-400 to-teal-500',
+      bgColor: 'bg-teal-50',
+    },
+    {
       id: 'share-resource',
       type: null,
       title: locale === 'fr' ? 'Envoyer un support' : 'Share a Resource',
@@ -569,28 +577,12 @@ function DashboardContent() {
       bgColor: 'bg-indigo-50',
     },
     {
-      id: 'reengage',
-      type: null,
-      title: locale === 'fr' ? 'Réengager un suivi' : 'Re-engage',
-      icon: Calendar,
-      color: 'from-amber-400 to-amber-500',
-      bgColor: 'bg-amber-50',
-    },
-    {
       id: 'bloom-pulse',
       type: null,
       title: locale === 'fr' ? 'Obtenir un résumé' : 'Get a Summary',
       icon: Sparkles,
       color: 'from-violet-400 to-violet-500',
       bgColor: 'bg-violet-50',
-    },
-    {
-      id: 'book-session',
-      type: null,
-      title: locale === 'fr' ? 'Créer une séance' : 'Book a Session',
-      icon: CalendarPlus,
-      color: 'from-teal-400 to-teal-500',
-      bgColor: 'bg-teal-50',
     },
   ]
 
@@ -1281,7 +1273,7 @@ function DashboardContent() {
               <div className="flex items-center justify-between p-5 border-b border-gray-100">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Choisir un patient' : 'Choose a member'}
+                    {locale === 'fr' ? 'Rechercher une personne' : 'Search for a person'}
                   </h3>
                   <p className="text-sm text-gray-500">
                     {memberPickerAction === 'share' && (locale === 'fr' ? 'Envoyer un support' : 'Share a resource')}

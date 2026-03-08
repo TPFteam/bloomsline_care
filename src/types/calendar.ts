@@ -42,8 +42,10 @@ export interface AvailabilityOverride {
 export interface SessionType {
   id: string;
   name: string;
+  name_fr?: string;
   duration: number; // minutes
   price: number | null;
+  is_default?: boolean;
 }
 
 export interface BookingSettings {
