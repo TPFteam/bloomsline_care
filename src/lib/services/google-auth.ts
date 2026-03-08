@@ -17,12 +17,16 @@ export async function getValidGoogleToken(
   userId: string,
   supabase: { from: (table: string) => any }
 ): Promise<GoogleAuthResult | null> {
+  console.log('=== getValidGoogleToken called for user:', userId, '===');
+
   const { data: connection, error } = await supabase
     .from('calendar_connections')
     .select('*')
     .eq('user_id', userId)
     .eq('provider', 'google')
     .single();
+
+  console.log('Calendar connection query result:', { found: !!connection, error: error?.message || null });
 
   if (error || !connection) {
     return null;
@@ -49,7 +53,9 @@ export async function getValidGoogleToken(
   }
 
   // Token expired, refresh it
+  console.log('Google token expired, attempting refresh for user:', userId);
   if (!connection.refresh_token) {
+    console.error('No refresh token available for user:', userId);
     return null;
   }
 
@@ -59,12 +65,14 @@ export async function getValidGoogleToken(
     refreshToken = isEncrypted(connection.refresh_token)
       ? decryptToken(connection.refresh_token)
       : connection.refresh_token;
-  } catch {
-    console.error('Failed to decrypt refresh token');
+    console.log('Refresh token decrypted successfully, length:', refreshToken.length);
+  } catch (e) {
+    console.error('Failed to decrypt refresh token:', e);
     return null;
   }
 
   try {
+    console.log('Refreshing token with client_id:', GOOGLE_CLIENT_ID?.substring(0, 20) + '...');
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: {
@@ -79,7 +87,8 @@ export async function getValidGoogleToken(
     });
 
     if (!tokenResponse.ok) {
-      console.error('Failed to refresh Google token');
+      const errBody = await tokenResponse.text().catch(() => '');
+      console.error('Failed to refresh Google token:', tokenResponse.status, errBody);
       return null;
     }
 

@@ -3,6 +3,9 @@ import { createClient, createAdminClient } from '@/lib/supabase/server-client';
 import type { GoogleCalendarEvent } from '@/types/calendar';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
+import { getNotificationContent } from '@/lib/notifications/templates';
+import { generateEmailHtml, getEmailContent } from '@/lib/notifications/email';
+import { sendEmail } from '@/lib/email';
 
 // PATCH /api/bookings/[id] - Update booking status (approve/reject)
 export async function PATCH(
@@ -99,11 +102,94 @@ export async function PATCH(
       );
     }
 
+    // If approving, create a session record and link to member
+    let sessionCreated = false;
+    if (status === 'confirmed' && booking.status === 'pending') {
+      try {
+        // Try to find existing member by email for this practitioner
+        let memberId = booking.member_id;
+        console.log('[booking→session] booking.member_id:', memberId, 'client_email:', booking.client_email);
+        if (!memberId && booking.client_email) {
+          // Find all members with this email to debug duplicates
+          const { data: allMatches } = await adminSupabase
+            .from('members')
+            .select('id, email, first_name, last_name, status')
+            .eq('practitioner_id', user.id)
+            .eq('email', booking.client_email);
+
+          console.log('[booking→session] all member matches for', booking.client_email, ':', JSON.stringify(allMatches));
+
+          // Prefer active member, fallback to first match
+          const existingMember = allMatches?.find(m => m.status === 'active') || allMatches?.[0];
+          const memberLookupError = allMatches === null ? { message: 'query failed' } : null;
+
+          console.log('[booking→session] member lookup:', { existingMember, memberLookupError: memberLookupError?.message });
+
+          if (existingMember) {
+            memberId = existingMember.id;
+            // Link member to booking for future reference
+            await adminSupabase
+              .from('bookings')
+              .update({ member_id: memberId })
+              .eq('id', id);
+          }
+        }
+
+        // Map booking session_type to sessions table session_type enum
+        const sessionTypeMap: Record<string, string> = {
+          'initial_consultation': 'initial_consultation',
+          'follow_up': 'follow_up',
+          'check_in': 'check_in',
+          'crisis': 'crisis',
+          'group': 'group',
+        };
+        const mappedSessionType = sessionTypeMap[booking.session_type] || 'check_in';
+
+        // Calculate duration from start/end times
+        const durationMinutes = Math.round(
+          (new Date(booking.end_time).getTime() - new Date(booking.start_time).getTime()) / 60000
+        );
+
+        const sessionData: Record<string, unknown> = {
+          practitioner_id: user.id,
+          session_type: mappedSessionType,
+          session_format: 'virtual',
+          scheduled_at: booking.start_time,
+          duration_minutes: durationMinutes,
+          status: 'scheduled',
+          notes: booking.notes || null,
+        };
+
+        if (memberId) {
+          sessionData.member_id = memberId;
+        }
+
+        console.log('[booking→session] creating session:', JSON.stringify(sessionData));
+
+        const { data: session, error: sessionError } = await adminSupabase
+          .from('sessions')
+          .insert(sessionData)
+          .select('id')
+          .single();
+
+        if (sessionError) {
+          console.error('Failed to create session from booking:', sessionError);
+        } else {
+          sessionCreated = true;
+          console.log('Session created from booking:', session.id);
+        }
+      } catch (err) {
+        console.error('Error creating session from booking:', err);
+      }
+    }
+
     // If approving (confirming), sync to Google Calendar
     let calendarSynced = false;
     let calendarError: string | null = null;
 
+    console.log('=== Booking approval ===', { status, bookingStatus: booking.status, userId: user.id });
     if (status === 'confirmed' && booking.status === 'pending') {
+      console.log('Attempting calendar sync for user:', user.id);
       const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
 
       if (!googleAuth) {
@@ -200,10 +286,58 @@ export async function PATCH(
       }
     }
 
+    // Send confirmation email to client when booking is approved
+    if (status === 'confirmed' && booking.status === 'pending' && booking.client_email) {
+      ;(async () => {
+        try {
+          const { data: settings } = await adminSupabase
+            .from('booking_settings')
+            .select('session_types')
+            .eq('user_id', user.id)
+            .single();
+
+          const sessionTypes = settings?.session_types as Array<{ id: string; name: string }> || [];
+          const sessionType = sessionTypes.find(st => st.id === booking.session_type);
+          const sessionTypeName = sessionType?.name || booking.session_type;
+
+          const scheduledAt = new Date(booking.start_time).toLocaleString('en-US', {
+            weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+            hour: 'numeric', minute: '2-digit', hour12: true,
+          });
+
+          const metadata = {
+            bookingId: booking.id,
+            sessionType: sessionTypeName,
+            scheduledAt,
+            clientName: booking.client_name,
+          };
+
+          const content = getNotificationContent('booking_confirmed', metadata, 'en');
+          const emailContent = getEmailContent('booking_confirmed', metadata, 'en');
+          const htmlBody = generateEmailHtml({
+            subject: content.emailSubject,
+            body: content.body,
+            actionUrl: content.actionUrl,
+            actionText: emailContent.actionText,
+          });
+
+          await sendEmail({
+            to: booking.client_email,
+            subject: content.emailSubject,
+            htmlBody,
+            tag: 'booking_confirmed',
+          });
+        } catch (emailError) {
+          console.error('Error sending booking confirmation email to client:', emailError);
+        }
+      })();
+    }
+
     return NextResponse.json({
       booking: updatedBooking,
       calendarSynced,
       calendarError,
+      sessionCreated,
     });
   } catch (err) {
     console.error('Booking update error:', err);

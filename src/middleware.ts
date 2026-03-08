@@ -54,20 +54,20 @@ function isPublicRoute(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // CORS for Expo app API routes (bloom + auth setup)
-  if (pathname.startsWith('/api/bloom/') || pathname.startsWith('/api/auth/')) {
+  // CORS for Expo mobile app API routes
+  if (pathname.startsWith('/api/')) {
     if (request.method === 'OPTIONS') {
       return new NextResponse(null, {
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         },
       })
     }
     const response = NextResponse.next()
     response.headers.set('Access-Control-Allow-Origin', '*')
-    response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS')
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     return response
   }
