@@ -179,6 +179,13 @@ const translations = {
       people: {
         title: 'People We Need',
         subtitle: 'What\'s covered, what\'s missing, what to hire for',
+        team: {
+          title: 'People We Have',
+          members: [
+            { name: 'Aditya', role: 'Product & Tech', description: 'Owns company, product and tech vision. Builds everything — product, AI, infrastructure, design. Ships the platform end to end.' },
+            { name: 'Sarah', role: 'Sales & Customer Success', description: 'Owns sales, partnerships, practitioner relationships, and everything client-facing. Turns conversations into traction.' },
+          ],
+        },
         roles: [
           {
             role: 'Practitioner Success Lead',
@@ -203,6 +210,24 @@ const translations = {
             type: 'Covered internally',
             why: 'Building the system for blog posts, social content, and newsletter is something we can handle ourselves for now. Friends are already helping with this. What matters is having the system — not a full-time person. Revisit when the content machine needs more volume than we can produce.',
             when: 'Covered for now (revisit after seed)',
+          },
+          {
+            role: 'Tech Lead',
+            type: 'Key position — Founding team or senior hire',
+            why: 'Right now, one founder builds everything: product, AI, infra, design. That works at zero users — it won\'t work at 100. A tech lead owns the architecture, makes sure the codebase doesn\'t become technical debt, and unblocks the founder to focus on product decisions instead of debugging deployment issues at 2am. They set engineering standards, review code, own the CI/CD pipeline, and make the hard calls on what to build vs. buy. Ideally someone who\'s shipped a SaaS product before and understands healthtech constraints. Equity + salary — this person shapes how the platform scales.',
+            when: 'Key position — as soon as possible',
+          },
+          {
+            role: 'Tech Security & Compliance',
+            type: 'Key position — Founding team or specialized hire',
+            why: 'We handle sensitive mental health data. Patricia\'s reaction — "patient data on a platform? Absolutely not" — is the norm, not the exception. We need someone who owns GDPR compliance, HDS (Hébergeur de Données de Santé) certification, data encryption standards, penetration testing, and security audits. They write the security policies that let us tell practitioners "your data is safer with us than in your Google Drive folder." They also handle SOC 2 readiness, incident response plans, and make sure we\'re not one breach away from losing every practitioner\'s trust forever. This isn\'t optional — it\'s the foundation that makes everything else possible in healthtech.',
+            when: 'Key position — now (before scaling user acquisition)',
+          },
+          {
+            role: 'Legal & Regulatory Compliance',
+            type: 'Consultant or agency (to start)',
+            why: 'Healthcare platforms operate in a regulatory maze: GDPR, patient data laws, professional practice regulations, terms of service for handling clinical notes, liability questions around AI-generated briefs. We don\'t need a full-time lawyer on day one — but we need a specialized consultant or agency who knows French healthtech regulation. They review our data processing agreements, draft practitioner contracts, ensure Bloom AI recommendations carry the right disclaimers, and tell us what certifications we actually need vs. what can wait. Start with a retainer or project-based engagement. Upgrade to in-house counsel when the regulatory surface area grows with scale.',
+            when: 'Now — consultant/agency engagement',
           },
         ],
       },
@@ -401,6 +426,13 @@ const translations = {
       people: {
         title: 'Les Gens Dont On a Besoin',
         subtitle: 'Ce qui est couvert, ce qui manque, pour quoi recruter',
+        team: {
+          title: 'L\'Équipe Actuelle',
+          members: [
+            { name: 'Aditya', role: 'Produit & Tech', description: 'Porte la vision entreprise, produit et tech. Construit tout — produit, IA, infrastructure, design. Livre la plateforme de bout en bout.' },
+            { name: 'Sarah', role: 'Ventes & Succès Client', description: 'Porte les ventes, partenariats, relations praticiens, et tout ce qui est côté client. Transforme les conversations en traction.' },
+          ],
+        },
         roles: [
           {
             role: 'Responsable Succès Praticiens',
@@ -425,6 +457,24 @@ const translations = {
             type: 'Couvert en interne',
             why: 'Construire le système pour les articles, contenu social et newsletter, c\'est quelque chose qu\'on peut gérer nous-mêmes pour l\'instant. Des amis aident déjà avec ça. Ce qui compte c\'est avoir le système — pas une personne à temps plein. À revoir quand la machine à contenu a besoin de plus de volume qu\'on peut produire.',
             when: 'Couvert pour l\'instant (revoir après le seed)',
+          },
+          {
+            role: 'Tech Lead',
+            type: 'Poste clé — Équipe fondatrice ou recrutement senior',
+            why: 'Aujourd\'hui, un fondateur construit tout : produit, IA, infra, design. Ça marche à zéro utilisateur — ça ne marchera pas à 100. Un tech lead prend en charge l\'architecture, s\'assure que la codebase ne devienne pas de la dette technique, et libère le fondateur pour qu\'il se concentre sur les décisions produit au lieu de débugger des déploiements à 2h du matin. Il définit les standards d\'ingénierie, fait les revues de code, gère le pipeline CI/CD, et prend les décisions difficiles sur ce qu\'on construit vs. ce qu\'on achète. Idéalement quelqu\'un qui a déjà livré un produit SaaS et qui comprend les contraintes du healthtech. Equity + salaire — cette personne façonne comment la plateforme scale.',
+            when: 'Poste clé — dès que possible',
+          },
+          {
+            role: 'Sécurité Tech & Conformité',
+            type: 'Poste clé — Équipe fondatrice ou recrutement spécialisé',
+            why: 'On gère des données sensibles de santé mentale. La réaction de Patricia — "les données patients sur une plateforme ? Absolument pas" — c\'est la norme, pas l\'exception. On a besoin de quelqu\'un qui prend en charge la conformité RGPD, la certification HDS (Hébergeur de Données de Santé), les standards de chiffrement, les tests de pénétration et les audits de sécurité. Cette personne écrit les politiques de sécurité qui nous permettent de dire aux praticiens "vos données sont plus en sécurité chez nous que dans votre dossier Google Drive." Elle gère aussi la préparation SOC 2, les plans de réponse aux incidents, et s\'assure qu\'on n\'est pas à une fuite de données de perdre la confiance de chaque praticien pour toujours. Ce n\'est pas optionnel — c\'est le socle qui rend tout le reste possible en healthtech.',
+            when: 'Poste clé — maintenant (avant de scaler l\'acquisition)',
+          },
+          {
+            role: 'Conformité Juridique & Réglementaire',
+            type: 'Consultant ou cabinet (pour commencer)',
+            why: 'Les plateformes de santé évoluent dans un labyrinthe réglementaire : RGPD, lois sur les données patients, réglementations sur l\'exercice professionnel, CGU pour le traitement des notes cliniques, questions de responsabilité autour des briefs générés par l\'IA. On n\'a pas besoin d\'un juriste à temps plein dès le premier jour — mais on a besoin d\'un consultant ou cabinet spécialisé qui connaît la réglementation healthtech française. Ils relisent nos accords de traitement des données, rédigent les contrats praticiens, s\'assurent que les recommandations de Bloom AI portent les bons avertissements, et nous disent quelles certifications sont vraiment nécessaires vs. ce qui peut attendre. Commencer avec un forfait ou engagement par projet. Passer à un juriste interne quand la surface réglementaire grandit avec le scale.',
+            when: 'Maintenant — engagement consultant/cabinet',
           },
         ],
       },
@@ -679,6 +729,29 @@ export default function WhatWeNeedPage() {
             <h2 className="text-lg font-semibold text-neutral-900">{s.people.title}</h2>
           </div>
           <p className="text-xs text-neutral-400 mb-4">{s.people.subtitle}</p>
+
+          {/* People We Have */}
+          <div className="mb-5">
+            <p className="text-sm font-semibold text-neutral-700 mb-2">{(s.people as any).team.title}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {(s.people as any).team.members.map((member: any, i: number) => (
+                <div key={i} className="rounded-xl p-4 border border-teal-200 bg-teal-50/50">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-8 h-8 rounded-full bg-teal-500 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                      {member.name[0]}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-neutral-900">{member.name}</p>
+                      <p className="text-[11px] font-medium text-teal-700">{member.role}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-neutral-600 mt-1.5">{member.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <p className="text-sm font-semibold text-neutral-700 mb-2">{locale === 'fr' ? 'Postes à Pourvoir' : 'Positions Needed'}</p>
           <div className="space-y-3">
             {s.people.roles.map((role, i) => {
               const r = role as any
@@ -691,13 +764,19 @@ export default function WhatWeNeedPage() {
                 'Covered internally': 'bg-teal-100 text-teal-700',
                 'Couvert en interne': 'bg-teal-100 text-teal-700',
               }
+              const getTypeColor = (type: string) => {
+                if (typeColors[type]) return typeColors[type]
+                if (type.toLowerCase().includes('key position') || type.toLowerCase().includes('poste clé')) return 'bg-red-100 text-red-700'
+                if (type.toLowerCase().includes('consultant') || type.toLowerCase().includes('agency') || type.toLowerCase().includes('cabinet')) return 'bg-blue-100 text-blue-700'
+                return 'bg-neutral-100 text-neutral-600'
+              }
               return (
                 <div key={i} className="rounded-xl p-4 border border-neutral-100 bg-neutral-50/50">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-sm font-semibold text-neutral-900">{role.role}</p>
                     <div className="flex items-center gap-1.5 shrink-0">
                       {r.type && (
-                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${typeColors[r.type] || 'bg-neutral-100 text-neutral-600'}`}>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${getTypeColor(r.type)}`}>
                           {r.type}
                         </span>
                       )}
@@ -710,6 +789,206 @@ export default function WhatWeNeedPage() {
                 </div>
               )
             })}
+          </div>
+
+          {/* Team Scope Diagram */}
+          <div className="mt-6 rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50/50 to-teal-50/50 p-5">
+            <p className="text-sm font-semibold text-neutral-800 mb-1">{locale === 'fr' ? 'Comment tout s\'assemble' : 'How It All Fits Together'}</p>
+            <p className="text-[11px] text-neutral-400 mb-4">{locale === 'fr' ? 'Chaque personne couvre un domaine — ensemble, on couvre tout' : 'Each person owns a domain — together, we cover everything'}</p>
+
+            {/* Core Team Row */}
+            <div className="mb-3">
+              <p className="text-[10px] font-bold text-teal-600 uppercase tracking-wider mb-2">{locale === 'fr' ? 'Équipe Actuelle' : 'Current Team'}</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-lg border-2 border-teal-400 bg-teal-50 p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center text-[10px] font-bold">A</div>
+                    <p className="text-xs font-bold text-teal-800">Aditya</p>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {['Product', 'AI / ML', 'UX / Design', 'Infrastructure', 'Frontend', 'Backend'].map(tag => (
+                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-teal-100 text-teal-700 font-medium">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-lg border-2 border-teal-400 bg-teal-50 p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center text-[10px] font-bold">S</div>
+                    <p className="text-xs font-bold text-teal-800">Sarah</p>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {['Sales', 'Partnerships', 'Onboarding', 'Customer Success', 'Content'].map(tag => (
+                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-teal-100 text-teal-700 font-medium">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Arrow */}
+            <div className="flex justify-center my-2">
+              <div className="flex flex-col items-center">
+                <div className="w-px h-3 bg-neutral-300" />
+                <div className="text-[10px] text-neutral-400 font-medium px-2 py-0.5 rounded-full border border-neutral-200 bg-white">{locale === 'fr' ? 'Soutenu par' : 'Supported by'}</div>
+                <div className="w-px h-3 bg-neutral-300" />
+              </div>
+            </div>
+
+            {/* Key Positions - Strategic */}
+            <div className="mb-3">
+              <p className="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-2">{locale === 'fr' ? 'Postes Clés — Stratégiques' : 'Key Positions — Strategic'}</p>
+              <div className="grid grid-cols-4 gap-2">
+                <div className="rounded-lg border-2 border-red-300 bg-red-50 p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-bold text-red-800">Tech Lead</p>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500 text-white">{locale === 'fr' ? 'Post-levée' : 'Post-raise'}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {['Architecture', 'Code Review', 'CI/CD', 'Scalability', 'Tech Debt'].map(tag => (
+                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-lg border-2 border-red-300 bg-red-50 p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-bold text-red-800">{locale === 'fr' ? 'Sécurité & Conformité' : 'Security & Compliance'}</p>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500 text-white shrink-0">{locale === 'fr' ? 'Post-levée' : 'Post-raise'}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {['GDPR', 'HDS', 'Encryption', 'SOC 2', 'Pen Testing', 'Audits'].map(tag => (
+                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-lg border-2 border-violet-300 bg-violet-50 p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-bold text-violet-800">{locale === 'fr' ? 'Conseiller Clinique' : 'Clinical Advisor'}</p>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-600 text-white">{locale === 'fr' ? 'Maintenant' : 'Now'}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {[locale === 'fr' ? 'Validation Produit' : 'Product Validation', locale === 'fr' ? 'Confiance Praticien' : 'Practitioner Trust', locale === 'fr' ? 'Pertinence Clinique' : 'Clinical Relevance'].map(tag => (
+                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 font-medium">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-lg border-2 border-red-300 bg-red-50 p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-bold text-red-800">{locale === 'fr' ? 'Finance & Revenus' : 'Finance & Revenue'}</p>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-600 text-white">{locale === 'fr' ? 'Maintenant' : 'Now'}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {[locale === 'fr' ? 'Budgétisation' : 'Budgeting', locale === 'fr' ? 'Modèle de revenus' : 'Revenue Model', locale === 'fr' ? 'Trésorerie' : 'Cash Flow', locale === 'fr' ? 'Levée de fonds' : 'Fundraising', 'KPIs'].map(tag => (
+                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-2 my-3">
+              <div className="flex-1 h-px bg-neutral-200" />
+              <span className="text-[9px] text-neutral-400 font-medium">{locale === 'fr' ? 'PLUS' : 'PLUS'}</span>
+              <div className="flex-1 h-px bg-neutral-200" />
+            </div>
+
+            {/* Key Positions - Growth & Operations */}
+            <div className="mb-3">
+              <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-2">{locale === 'fr' ? 'Postes Clés — Croissance & Opérations' : 'Key Positions — Growth & Operations'}</p>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-bold text-amber-800">{locale === 'fr' ? 'Succès Praticiens' : 'Practitioner Success'}</p>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-600 text-white">{locale === 'fr' ? 'Maintenant' : 'Now'}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {[locale === 'fr' ? 'Onboarding' : 'Onboarding', locale === 'fr' ? 'Rétention' : 'Retention', locale === 'fr' ? 'Feedback' : 'Feedback', locale === 'fr' ? 'Recommandations' : 'Referrals'].map(tag => (
+                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-bold text-amber-800">{locale === 'fr' ? 'Ops & Automatisation' : 'Ops & Automation'}</p>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-white shrink-0">{locale === 'fr' ? '2 mois' : '2 months'}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {['CRM', locale === 'fr' ? 'Emails auto' : 'Auto Emails', locale === 'fr' ? 'Workflows' : 'Workflows', locale === 'fr' ? 'Alertes' : 'Alerts'].map(tag => (
+                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-bold text-amber-800">{locale === 'fr' ? 'Présence Digitale' : 'Digital Presence'}</p>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500 text-white shrink-0">{locale === 'fr' ? 'Post-levée' : 'Post-raise'}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {[locale === 'fr' ? 'Blog' : 'Blog', locale === 'fr' ? 'Réseaux sociaux' : 'Social Media', 'SEO', 'Newsletter', locale === 'fr' ? 'Contenu' : 'Content'].map(tag => (
+                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Arrow */}
+            <div className="flex justify-center my-2">
+              <div className="flex flex-col items-center">
+                <div className="w-px h-3 bg-neutral-300" />
+                <div className="text-[10px] text-neutral-400 font-medium px-2 py-0.5 rounded-full border border-neutral-200 bg-white">{locale === 'fr' ? 'Complété par' : 'Complemented by'}</div>
+                <div className="w-px h-3 bg-neutral-300" />
+              </div>
+            </div>
+
+            {/* Consultant Layer */}
+            <div className="mb-4">
+              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-2">{locale === 'fr' ? 'Consultant / Cabinet' : 'Consultant / Agency'}</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-bold text-blue-800">{locale === 'fr' ? 'Juridique & Réglementaire' : 'Legal & Regulatory'}</p>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500 text-white">{locale === 'fr' ? 'Post-levée' : 'Post-raise'}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {[locale === 'fr' ? 'Contrats' : 'Contracts', locale === 'fr' ? 'Données patients' : 'Patient Data Law', locale === 'fr' ? 'Responsabilité IA' : 'AI Liability', locale === 'fr' ? 'Certifications' : 'Certifications'].map(tag => (
+                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-bold text-blue-800">{locale === 'fr' ? 'Comptabilité' : 'Accountant / Bookkeeper'}</p>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-600 text-white">{locale === 'fr' ? 'Maintenant' : 'Now'}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {[locale === 'fr' ? 'Facturation' : 'Invoicing', locale === 'fr' ? 'Fiscalité' : 'Tax Filing', locale === 'fr' ? 'Reporting' : 'Financial Reporting', locale === 'fr' ? 'Paie' : 'Payroll'].map(tag => (
+                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Coverage Summary */}
+            <div className="rounded-lg border border-neutral-200 bg-white p-3">
+              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">{locale === 'fr' ? 'Couverture Complète' : 'Full Coverage'}</p>
+              <div className="grid grid-cols-5 gap-2">
+                {[
+                  { area: locale === 'fr' ? 'Produit & Tech' : 'Product & Tech', owners: 'Aditya + Tech Lead', color: 'bg-teal-500' },
+                  { area: locale === 'fr' ? 'Croissance & Ventes' : 'Growth & Sales', owners: 'Sarah + Ops', color: 'bg-amber-500' },
+                  { area: locale === 'fr' ? 'Finance & Revenus' : 'Finance & Revenue', owners: (locale === 'fr' ? 'Finance + Compta' : 'Finance + Accounting'), color: 'bg-red-500' },
+                  { area: locale === 'fr' ? 'Clinique & Confiance' : 'Clinical & Trust', owners: (locale === 'fr' ? 'Conseiller' : 'Advisor') + ' + Sarah', color: 'bg-violet-500' },
+                  { area: locale === 'fr' ? 'Sécurité & Juridique' : 'Security & Legal', owners: (locale === 'fr' ? 'Sécu + Juridique' : 'SecComp + Legal'), color: 'bg-blue-500' },
+                ].map((item, i) => (
+                  <div key={i} className="text-center">
+                    <div className={`w-full h-1.5 rounded-full ${item.color} mb-1.5`} />
+                    <p className="text-[10px] font-semibold text-neutral-700">{item.area}</p>
+                    <p className="text-[9px] text-neutral-400">{item.owners}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
