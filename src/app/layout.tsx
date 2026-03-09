@@ -24,10 +24,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Bloomsline — A simpler way to manage your practice.",
   description: "Sessions, progress, and resources. All in one calm, organized space built for mental health practitioners.",
+  manifest: "/manifest.json",
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
   },
 };
 
