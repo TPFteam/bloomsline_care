@@ -598,8 +598,8 @@ export default function CreateExercisePage() {
             <GripVertical className="w-5 h-5" />
           </div>
 
-          <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-            <Icon className="w-4 h-4 text-amber-600" />
+          <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+            <Icon className="w-4 h-4 text-gray-700" />
           </div>
 
           <div className="flex-1 min-w-0">
@@ -662,7 +662,7 @@ export default function CreateExercisePage() {
                     value={exerciseStep.title}
                     onChange={(e) => updateStep(exerciseStep.id, { title: e.target.value })}
                     placeholder={locale === 'fr' ? 'Ex: Inspirez profondément' : 'e.g., Take a deep breath'}
-                    className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                    className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                   />
                 </div>
 
@@ -676,7 +676,7 @@ export default function CreateExercisePage() {
                     onChange={(e) => updateStep(exerciseStep.id, { content: e.target.value })}
                     placeholder={locale === 'fr' ? 'Instructions détaillées pour cette étape...' : 'Detailed instructions for this step...'}
                     rows={3}
-                    className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
+                    className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none"
                   />
                 </div>
 
@@ -693,9 +693,9 @@ export default function CreateExercisePage() {
                         max="120"
                         value={exerciseStep.duration || 30}
                         onChange={(e) => updateStep(exerciseStep.id, { duration: parseInt(e.target.value) })}
-                        className="flex-1 accent-amber-500"
+                        className="flex-1 accent-gray-900"
                       />
-                      <span className="w-16 text-center text-lg font-semibold text-amber-600">
+                      <span className="w-16 text-center text-lg font-semibold text-gray-700">
                         {formatDuration(exerciseStep.duration || 30)}
                       </span>
                     </div>
@@ -714,7 +714,7 @@ export default function CreateExercisePage() {
                           <button
                             key={index}
                             onClick={() => applyBreathingPreset(exerciseStep.id, preset)}
-                            className="px-3 py-1.5 text-sm rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                            className="px-3 py-1.5 text-sm rounded-lg bg-gray-50 text-gray-800 hover:bg-gray-100 transition-colors"
                           >
                             {lt(preset.name, locale)}
                           </button>
@@ -732,7 +732,7 @@ export default function CreateExercisePage() {
                           max="10"
                           value={exerciseStep.inhale || 4}
                           onChange={(e) => updateStep(exerciseStep.id, { inhale: parseInt(e.target.value) })}
-                          className="w-full px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-amber-400"
+                          className="w-full px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-gray-400"
                         />
                       </div>
                       <div>
@@ -745,7 +745,7 @@ export default function CreateExercisePage() {
                           max="10"
                           value={exerciseStep.hold || 0}
                           onChange={(e) => updateStep(exerciseStep.id, { hold: parseInt(e.target.value) })}
-                          className="w-full px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-amber-400"
+                          className="w-full px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-gray-400"
                         />
                       </div>
                       <div>
@@ -758,7 +758,7 @@ export default function CreateExercisePage() {
                           max="10"
                           value={exerciseStep.exhale || 4}
                           onChange={(e) => updateStep(exerciseStep.id, { exhale: parseInt(e.target.value) })}
-                          className="w-full px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-amber-400"
+                          className="w-full px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-gray-400"
                         />
                       </div>
                       <div>
@@ -771,12 +771,12 @@ export default function CreateExercisePage() {
                           max="20"
                           value={exerciseStep.cycles || 4}
                           onChange={(e) => updateStep(exerciseStep.id, { cycles: parseInt(e.target.value) })}
-                          className="w-full px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-amber-400"
+                          className="w-full px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-gray-400"
                         />
                       </div>
                     </div>
-                    <div className="p-4 bg-amber-50/80 rounded-xl">
-                      <p className="text-sm text-amber-800 text-center">
+                    <div className="p-4 bg-gray-50/80 rounded-xl">
+                      <p className="text-sm text-gray-800 text-center">
                         {locale === 'fr' ? 'Durée totale' : 'Total duration'}: <span className="font-semibold">{formatDuration(((exerciseStep.inhale || 4) + (exerciseStep.hold || 0) + (exerciseStep.exhale || 4)) * (exerciseStep.cycles || 4))}</span>
                       </p>
                     </div>
@@ -797,7 +797,7 @@ export default function CreateExercisePage() {
                             onClick={() => updateStep(exerciseStep.id, { bodyPart: part.en })}
                             className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
                               exerciseStep.bodyPart === part.en
-                                ? 'bg-amber-500 text-white'
+                                ? 'bg-gray-900 text-white'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                           >
@@ -817,9 +817,9 @@ export default function CreateExercisePage() {
                           max="60"
                           value={exerciseStep.duration || 20}
                           onChange={(e) => updateStep(exerciseStep.id, { duration: parseInt(e.target.value) })}
-                          className="flex-1 accent-amber-500"
+                          className="flex-1 accent-gray-900"
                         />
-                        <span className="w-16 text-center text-lg font-semibold text-amber-600">
+                        <span className="w-16 text-center text-lg font-semibold text-gray-700">
                           {formatDuration(exerciseStep.duration || 20)}
                         </span>
                       </div>
@@ -838,7 +838,7 @@ export default function CreateExercisePage() {
                       onChange={(e) => updateStep(exerciseStep.id, { imagePrompt: e.target.value })}
                       placeholder={locale === 'fr' ? 'Décrivez ce que le client doit visualiser...' : 'Describe what the client should visualize...'}
                       rows={3}
-                      className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
+                      className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none"
                     />
                   </div>
                 )}
@@ -854,9 +854,9 @@ export default function CreateExercisePage() {
     <div className="min-h-screen gradient-mesh relative">
       {/* Decorative Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-amber-200/30 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-orange-200/30 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-yellow-200/20 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-transparent" />
+        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-transparent" />
+        <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-transparent" />
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
@@ -890,9 +890,9 @@ export default function CreateExercisePage() {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-100/80 mb-6"
+                  className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-100 mb-6"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-200/50">
+                  <div className="w-12 h-12 rounded-xl bg-gray-900 flex items-center justify-center shadow-lg ">
                     <Lightbulb className="w-6 h-6 text-white" />
                   </div>
                 </motion.div>
@@ -920,17 +920,17 @@ export default function CreateExercisePage() {
                       onClick={() => handleSelectTemplate(template.id)}
                       className={`bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-5 cursor-pointer transition-all duration-300 border-2 shadow-lg shadow-gray-200/40 hover:shadow-xl ${
                         template.id === 'blank'
-                          ? 'border-dashed border-gray-300 hover:border-amber-400'
-                          : 'border-white/60 hover:border-amber-200'
+                          ? 'border-dashed border-gray-300 hover:border-gray-400'
+                          : 'border-white/60 hover:border-gray-200'
                       }`}
                     >
                       <div className={`w-10 h-10 rounded-xl mb-4 flex items-center justify-center ${
-                        template.id === 'blank' ? 'bg-gray-100' : 'bg-amber-100'
+                        template.id === 'blank' ? 'bg-gray-100' : 'bg-gray-100'
                       }`}>
                         {template.id === 'blank' ? (
                           <Plus className="w-5 h-5 text-gray-500" />
                         ) : (
-                          <Lightbulb className="w-5 h-5 text-amber-600" />
+                          <Lightbulb className="w-5 h-5 text-gray-700" />
                         )}
                       </div>
                       <h3 className="font-semibold text-gray-900 mb-1">
@@ -940,7 +940,7 @@ export default function CreateExercisePage() {
                         {lt(template.description, locale)}
                       </p>
                       {template.id !== 'blank' && (
-                        <p className="text-xs text-amber-600 mt-2">
+                        <p className="text-xs text-gray-700 mt-2">
                           {template.steps.length} {locale === 'fr' ? 'étapes' : 'steps'}
                         </p>
                       )}
@@ -1005,7 +1005,7 @@ export default function CreateExercisePage() {
                     )}
                     {autoSaveStatus === 'idle' && hasUnsavedChanges && (
                       <>
-                        <div className="w-2 h-2 rounded-full bg-amber-400" />
+                        <div className="w-2 h-2 rounded-full bg-gray-400" />
                         <span className="text-xs text-gray-500">
                           {locale === 'fr' ? 'Non enregistré' : 'Unsaved'}
                         </span>
@@ -1037,7 +1037,7 @@ export default function CreateExercisePage() {
                       size="sm"
                       onClick={handleContinueToDetails}
                       disabled={!canProceedToDetails}
-                      className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-lg shadow-amber-200/50 rounded-xl"
+                      className="bg-gray-900 hover:bg-gray-800 shadow-lg rounded-xl"
                     >
                       {locale === 'fr' ? 'Continuer' : 'Continue'}
                     </Button>
@@ -1082,7 +1082,7 @@ export default function CreateExercisePage() {
                   >
                     <button
                       onClick={() => setShowStepPicker(!showStepPicker)}
-                      className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-amber-400 hover:text-amber-600 hover:bg-amber-50/50 transition-all flex items-center justify-center gap-2"
+                      className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-gray-400 hover:text-gray-700 hover:bg-gray-50/50 transition-all flex items-center justify-center gap-2"
                     >
                       <Plus className="w-5 h-5" />
                       {locale === 'fr' ? 'Ajouter une étape' : 'Add a step'}
@@ -1104,10 +1104,10 @@ export default function CreateExercisePage() {
                                 <button
                                   key={st.type}
                                   onClick={() => addStep(st.type)}
-                                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-amber-50 transition-colors text-left"
+                                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
                                 >
-                                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                                    <Icon className="w-4 h-4 text-amber-600" />
+                                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                                    <Icon className="w-4 h-4 text-gray-700" />
                                   </div>
                                   <div>
                                     <p className="text-sm font-medium text-gray-900">{lt(st.label, locale)}</p>
@@ -1139,7 +1139,7 @@ export default function CreateExercisePage() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-3xl font-bold text-amber-600">{formatDuration(calculateTotalDuration())}</p>
+                        <p className="text-3xl font-bold text-gray-700">{formatDuration(calculateTotalDuration())}</p>
                         <p className="text-sm text-gray-500">
                           {locale === 'fr' ? 'durée totale' : 'total time'}
                         </p>
@@ -1169,7 +1169,7 @@ export default function CreateExercisePage() {
                       <button
                         onClick={() => setEnableAudio(!enableAudio)}
                         className={`relative w-11 h-6 rounded-full transition-colors ${
-                          enableAudio ? 'bg-amber-500' : 'bg-gray-200'
+                          enableAudio ? 'bg-gray-500' : 'bg-gray-200'
                         }`}
                       >
                         <span
@@ -1191,7 +1191,7 @@ export default function CreateExercisePage() {
                       <select
                         value={repeatCount}
                         onChange={(e) => setRepeatCount(parseInt(e.target.value))}
-                        className="px-3 py-1.5 bg-gray-50/80 border border-gray-200/60 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        className="px-3 py-1.5 bg-gray-50/80 border border-gray-200/60 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
                       >
                         {[1, 2, 3, 4, 5].map(n => (
                           <option key={n} value={n}>{n}x</option>
@@ -1205,11 +1205,11 @@ export default function CreateExercisePage() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-gradient-to-br from-amber-50 via-orange-50/50 to-yellow-50/30 rounded-[1.5rem] border-2 border-amber-200/60 p-5 shadow-lg shadow-amber-100/30"
+                    className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] border-2 border-gray-200 p-5 shadow-lg shadow-gray-200/40"
                   >
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-xl bg-amber-100/80 flex items-center justify-center">
-                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
+                      <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                        <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center shadow-md">
                           <Target className="w-4 h-4 text-white" />
                         </div>
                       </div>
@@ -1219,15 +1219,15 @@ export default function CreateExercisePage() {
                     </div>
                     <ul className="space-y-2 text-sm text-gray-700">
                       <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 flex-shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 flex-shrink-0" />
                         {locale === 'fr' ? 'Commencez par des instructions claires' : 'Start with clear instructions'}
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 flex-shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 flex-shrink-0" />
                         {locale === 'fr' ? 'Gardez les durées réalistes' : 'Keep durations realistic'}
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 flex-shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 flex-shrink-0" />
                         {locale === 'fr' ? 'Terminez par une réflexion' : 'End with a reflection'}
                       </li>
                     </ul>
@@ -1291,7 +1291,7 @@ export default function CreateExercisePage() {
                     )}
                     {autoSaveStatus === 'idle' && hasUnsavedChanges && (
                       <>
-                        <div className="w-2 h-2 rounded-full bg-amber-400" />
+                        <div className="w-2 h-2 rounded-full bg-gray-400" />
                         <span className="text-xs text-gray-500">
                           {locale === 'fr' ? 'Non enregistré' : 'Unsaved'}
                         </span>
@@ -1323,7 +1323,7 @@ export default function CreateExercisePage() {
                       size="sm"
                       onClick={handleSave}
                       disabled={isSaving}
-                      className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-lg shadow-amber-200/50 rounded-xl"
+                      className="bg-gray-900 hover:bg-gray-800 shadow-lg rounded-xl"
                     >
                       {isSaving ? (
                         <>
@@ -1344,8 +1344,8 @@ export default function CreateExercisePage() {
               {/* Title */}
               <div className="mb-8">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-amber-100/80 flex items-center justify-center">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg">
+                  <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center shadow-lg">
                       <Lightbulb className="w-5 h-5 text-white" />
                     </div>
                   </div>
@@ -1387,7 +1387,7 @@ export default function CreateExercisePage() {
                         onClick={() => setSelectedCategory(category)}
                         className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                           selectedCategory === category
-                            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-200/50'
+                            ? 'bg-gray-900 text-white shadow-md '
                             : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
                         }`}
                       >
@@ -1413,7 +1413,7 @@ export default function CreateExercisePage() {
                       const Icon = sType?.icon || PlayCircle
                       return (
                         <div key={s.id} className="flex items-center gap-3 text-sm">
-                          <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-medium">
+                          <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center text-xs font-medium">
                             {index + 1}
                           </span>
                           <Icon className="w-4 h-4 text-gray-400" />
@@ -1434,7 +1434,7 @@ export default function CreateExercisePage() {
                   <div className="mt-6 pt-4 border-t border-gray-100">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">{locale === 'fr' ? 'Durée totale' : 'Total Duration'}</span>
-                      <span className="font-semibold text-amber-600">{formatDuration(calculateTotalDuration())}</span>
+                      <span className="font-semibold text-gray-700">{formatDuration(calculateTotalDuration())}</span>
                     </div>
                     {repeatCount > 1 && (
                       <div className="flex items-center justify-between text-sm mt-2">
@@ -1473,7 +1473,7 @@ export default function CreateExercisePage() {
             </Button>
             <Button
               onClick={() => setShowTemplateWarningDialog(false)}
-              className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-600"
+              className="flex-1 sm:flex-none bg-gray-500 hover:bg-gray-800"
             >
               {locale === 'fr' ? 'Modifier' : 'Modify'}
             </Button>

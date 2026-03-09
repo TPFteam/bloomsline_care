@@ -114,8 +114,8 @@ function LoadingFallback() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
+        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 text-gray-700 animate-spin" />
         </div>
         <span className="text-gray-500 text-sm">Loading...</span>
       </div>
@@ -666,10 +666,6 @@ function CreateTableExerciseContent() {
   return (
     <div className="min-h-screen gradient-mesh relative">
       {/* Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-emerald-200/30 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-teal-200/30 rounded-full blur-3xl" />
-      </div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <AnimatePresence mode="wait">
@@ -694,9 +690,9 @@ function CreateTableExerciseContent() {
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-100/80 mb-6"
+                  className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-100 mb-6"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-200/50">
+                  <div className="w-12 h-12 rounded-xl bg-gray-900 flex items-center justify-center shadow-lg ">
                     <Table2 className="w-6 h-6 text-white" />
                   </div>
                 </motion.div>
@@ -724,17 +720,17 @@ function CreateTableExerciseContent() {
                       onClick={() => handleSelectTemplate(template.id)}
                       className={`bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-5 cursor-pointer transition-all duration-300 border-2 shadow-lg shadow-gray-200/40 hover:shadow-xl ${
                         template.id === 'blank'
-                          ? 'border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/50'
-                          : 'border-white/60 hover:border-emerald-200'
+                          ? 'border-dashed border-gray-300 hover:border-gray-500 bg-gray-50/50'
+                          : 'border-white/60 hover:border-gray-200'
                       }`}
                     >
                       <div className={`w-10 h-10 rounded-xl mb-4 flex items-center justify-center ${
-                        template.id === 'blank' ? 'bg-emerald-100' : 'bg-emerald-100'
+                        template.id === 'blank' ? 'bg-gray-100' : 'bg-gray-100'
                       }`}>
                         {template.id === 'blank' ? (
-                          <Plus className="w-5 h-5 text-emerald-600" />
+                          <Plus className="w-5 h-5 text-gray-700" />
                         ) : (
-                          <Table2 className="w-5 h-5 text-emerald-600" />
+                          <Table2 className="w-5 h-5 text-gray-700" />
                         )}
                       </div>
                       <h3 className="font-semibold text-gray-900 mb-1">
@@ -744,7 +740,7 @@ function CreateTableExerciseContent() {
                         {lt(template.description, locale)}
                       </p>
                       {template.id !== 'blank' && (
-                        <p className="text-xs text-emerald-600 mt-2">
+                        <p className="text-xs text-gray-700 mt-2">
                           {template.columns.length} {locale === 'fr' ? 'colonnes' : 'columns'}
                         </p>
                       )}
@@ -801,8 +797,8 @@ function CreateTableExerciseContent() {
                     )}
                     {autoSaveStatus === 'saved' && (
                       <>
-                        <Cloud className="w-3.5 h-3.5 text-emerald-500" />
-                        <span className="text-xs text-emerald-600 font-medium">
+                        <Cloud className="w-3.5 h-3.5 text-gray-600" />
+                        <span className="text-xs text-gray-700 font-medium">
                           {locale === 'fr' ? 'Enregistré' : 'Saved'}
                         </span>
                       </>
@@ -825,7 +821,7 @@ function CreateTableExerciseContent() {
                     )}
                     {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
                       <>
-                        <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+                        <Cloud className="w-3.5 h-3.5 text-gray-400" />
                         <span className="text-xs text-gray-500">
                           {locale === 'fr' ? 'Tout est enregistré' : 'All saved'}
                         </span>
@@ -854,7 +850,7 @@ function CreateTableExerciseContent() {
                       size="sm"
                       onClick={handleContinueToDetails}
                       disabled={!canProceedToDetails}
-                      className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-200/50 rounded-xl"
+                      className="bg-gray-900 hover:bg-gray-800 shadow-lg rounded-xl"
                     >
                       {locale === 'fr' ? 'Continuer' : 'Continue'}
                     </Button>
@@ -867,7 +863,7 @@ function CreateTableExerciseContent() {
                 <div className="flex items-center justify-center gap-3">
                   {/* Step 1: Build */}
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-emerald-500 text-white">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-900 text-white">
                       1
                     </div>
                     <span className="text-sm font-medium text-gray-900 hidden sm:inline">
@@ -916,8 +912,8 @@ function CreateTableExerciseContent() {
               {/* Title Section */}
               <div className="mb-6">
                 <div className="flex items-center gap-4 mb-2">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-100/80 flex items-center justify-center">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg">
+                  <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center shadow-lg">
                       <Table2 className="w-5 h-5 text-white" />
                     </div>
                   </div>
@@ -952,7 +948,7 @@ function CreateTableExerciseContent() {
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder={locale === 'fr' ? 'ex: Registre de pensées' : 'e.g., Thought Record'}
-                      className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all text-lg"
+                      className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all text-lg"
                     />
                   </motion.div>
 
@@ -1011,7 +1007,7 @@ function CreateTableExerciseContent() {
                             value={column.header}
                             onChange={(e) => updateColumn(column.id, 'header', e.target.value)}
                             placeholder={locale === 'fr' ? 'ex: Situation' : 'e.g., Situation'}
-                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent text-sm"
+                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent text-sm"
                           />
                         </div>
                         <div>
@@ -1023,7 +1019,7 @@ function CreateTableExerciseContent() {
                             value={column.description}
                             onChange={(e) => updateColumn(column.id, 'description', e.target.value)}
                             placeholder={locale === 'fr' ? 'ex: Décrivez ce qui s\'est passé' : 'e.g., Describe what happened'}
-                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent text-sm"
+                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent text-sm"
                           />
                         </div>
                       </div>
@@ -1046,7 +1042,7 @@ function CreateTableExerciseContent() {
                   disabled={columns.length >= 10}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
-                  className="w-full py-4 border-2 border-dashed border-gray-300 hover:border-emerald-400 rounded-xl text-gray-500 hover:text-emerald-600 flex items-center justify-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:text-gray-500"
+                  className="w-full py-4 border-2 border-dashed border-gray-300 hover:border-gray-400 rounded-xl text-gray-500 hover:text-gray-700 flex items-center justify-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:text-gray-500"
                 >
                   <Plus className="w-5 h-5" />
                   <span className="font-medium">
@@ -1074,7 +1070,7 @@ function CreateTableExerciseContent() {
                   ? 'ex: Remplissez ce tableau chaque fois que vous ressentez une émotion forte...'
                   : 'e.g., Fill out this table whenever you experience a strong emotion...'}
                 rows={3}
-                className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all resize-none"
+                className="w-full px-4 py-3 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all resize-none"
               />
             </motion.div>
                   </div>
@@ -1093,11 +1089,11 @@ function CreateTableExerciseContent() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-emerald-50">
+                    <tr className="bg-gray-50">
                       {columns.map((col, i) => (
                         <th
                           key={col.id}
-                          className="px-3 py-2 text-left font-semibold text-emerald-800 border border-emerald-200"
+                          className="px-3 py-2 text-left font-semibold text-gray-800 border border-gray-200"
                         >
                           {col.header || `Col ${i + 1}`}
                         </th>
@@ -1105,11 +1101,11 @@ function CreateTableExerciseContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="bg-emerald-50/50">
+                    <tr className="bg-gray-50/50">
                       {columns.map((col) => (
                         <td
                           key={col.id}
-                          className="px-3 py-2 text-xs text-emerald-600 italic border border-emerald-100"
+                          className="px-3 py-2 text-xs text-gray-700 italic border border-gray-200"
                         >
                           {col.description || '-'}
                         </td>
@@ -1141,11 +1137,11 @@ function CreateTableExerciseContent() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-gradient-to-br from-emerald-50 via-teal-50/50 to-cyan-50/30 rounded-[1.5rem] border-2 border-emerald-200/60 p-6 shadow-lg shadow-emerald-100/30"
+              className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] border-2 border-gray-200 p-6 shadow-lg shadow-gray-200/40"
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100/80 flex items-center justify-center">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center shadow-md">
                     <Settings className="w-4 h-4 text-white" />
                   </div>
                 </div>
@@ -1155,19 +1151,19 @@ function CreateTableExerciseContent() {
               </div>
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 flex-shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-900 mt-2 flex-shrink-0" />
                   {locale === 'fr'
                     ? 'Utilisez des en-têtes courts et clairs'
                     : 'Use short, clear headers'}
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 flex-shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-900 mt-2 flex-shrink-0" />
                   {locale === 'fr'
                     ? 'Les descriptions aident les membres à comprendre quoi écrire'
                     : 'Descriptions help members understand what to write'}
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 flex-shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-900 mt-2 flex-shrink-0" />
                   {locale === 'fr'
                     ? '3-4 colonnes sont généralement idéales'
                     : '3-4 columns are usually ideal'}
@@ -1222,7 +1218,7 @@ function CreateTableExerciseContent() {
               {/* Title Card */}
               <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-5 mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-200/50">
+                  <div className="w-12 h-12 rounded-xl bg-gray-900 flex items-center justify-center shadow-lg ">
                     <Table2 className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -1242,7 +1238,7 @@ function CreateTableExerciseContent() {
                     onClick={() => setStep('build')}
                     className="flex items-center gap-2"
                   >
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-emerald-500 text-white">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-900 text-white">
                       <CheckCircle2 className="w-4 h-4" />
                     </div>
                     <span className="text-sm font-medium text-gray-900 hidden sm:inline">
@@ -1250,7 +1246,7 @@ function CreateTableExerciseContent() {
                     </span>
                   </button>
 
-                  <div className="w-6 h-0.5 bg-emerald-500" />
+                  <div className="w-6 h-0.5 bg-gray-900" />
 
                   {/* Step 2: Details */}
                   <button
@@ -1258,7 +1254,7 @@ function CreateTableExerciseContent() {
                     className="flex items-center gap-2"
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                      detailsStep >= 1 ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'
+                      detailsStep >= 1 ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500'
                     }`}>
                       {detailsStep > 1 ? <CheckCircle2 className="w-4 h-4" /> : '2'}
                     </div>
@@ -1267,7 +1263,7 @@ function CreateTableExerciseContent() {
                     </span>
                   </button>
 
-                  <div className={`w-6 h-0.5 ${detailsStep > 1 ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+                  <div className={`w-6 h-0.5 ${detailsStep > 1 ? 'bg-gray-900' : 'bg-gray-200'}`} />
 
                   {/* Step 3: Settings */}
                   <button
@@ -1279,7 +1275,7 @@ function CreateTableExerciseContent() {
                     className={`flex items-center gap-2 ${!(description.trim() && selectedCategory) && detailsStep < 2 ? 'cursor-not-allowed opacity-50' : ''}`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                      detailsStep >= 2 ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'
+                      detailsStep >= 2 ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500'
                     }`}>
                       {detailsStep > 2 ? <CheckCircle2 className="w-4 h-4" /> : '3'}
                     </div>
@@ -1288,7 +1284,7 @@ function CreateTableExerciseContent() {
                     </span>
                   </button>
 
-                  <div className={`w-6 h-0.5 ${detailsStep > 2 ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+                  <div className={`w-6 h-0.5 ${detailsStep > 2 ? 'bg-gray-900' : 'bg-gray-200'}`} />
 
                   {/* Step 4: Publish */}
                   <button
@@ -1300,7 +1296,7 @@ function CreateTableExerciseContent() {
                     className={`flex items-center gap-2 ${detailsStep < 2 ? 'cursor-not-allowed opacity-50' : ''}`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                      detailsStep >= 3 ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'
+                      detailsStep >= 3 ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500'
                     }`}>
                       4
                     </div>
@@ -1349,7 +1345,7 @@ function CreateTableExerciseContent() {
                           onClick={() => setSelectedCategory(category)}
                           className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                             selectedCategory === category
-                              ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-200/50'
+                              ? 'bg-gray-900 text-white shadow-md'
                               : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
                           }`}
                         >
@@ -1406,7 +1402,7 @@ function CreateTableExerciseContent() {
                         disabled={!description.trim() || !selectedCategory}
                         className={`rounded-xl px-8 ${
                           description.trim() && selectedCategory
-                            ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-200/50'
+                            ? 'bg-gray-900 hover:bg-gray-800 shadow-lg'
                             : 'bg-gray-300 cursor-not-allowed'
                         }`}
                       >
@@ -1445,20 +1441,20 @@ function CreateTableExerciseContent() {
                         onClick={() => setRowMode('unlimited')}
                         className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
                           rowMode === 'unlimited'
-                            ? 'border-emerald-400 bg-emerald-50'
+                            ? 'border-gray-400 bg-gray-50'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                            rowMode === 'unlimited' ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300'
+                            rowMode === 'unlimited' ? 'border-gray-900 bg-gray-900' : 'border-gray-300'
                           }`}>
                             {rowMode === 'unlimited' && (
                               <div className="w-2 h-2 rounded-full bg-white" />
                             )}
                           </div>
                           <div>
-                            <span className={`font-medium ${rowMode === 'unlimited' ? 'text-emerald-900' : 'text-gray-700'}`}>
+                            <span className={`font-medium ${rowMode === 'unlimited' ? 'text-gray-900' : 'text-gray-700'}`}>
                               {locale === 'fr' ? 'Illimité' : 'Unlimited'}
                             </span>
                             <p className="text-xs text-gray-500 mt-0.5">
@@ -1478,20 +1474,20 @@ function CreateTableExerciseContent() {
                         onClick={() => setRowMode('limited')}
                         className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
                           rowMode === 'limited'
-                            ? 'border-emerald-400 bg-emerald-50'
+                            ? 'border-gray-400 bg-gray-50'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                            rowMode === 'limited' ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300'
+                            rowMode === 'limited' ? 'border-gray-900 bg-gray-900' : 'border-gray-300'
                           }`}>
                             {rowMode === 'limited' && (
                               <div className="w-2 h-2 rounded-full bg-white" />
                             )}
                           </div>
                           <div>
-                            <span className={`font-medium ${rowMode === 'limited' ? 'text-emerald-900' : 'text-gray-700'}`}>
+                            <span className={`font-medium ${rowMode === 'limited' ? 'text-gray-900' : 'text-gray-700'}`}>
                               {locale === 'fr' ? 'Limité' : 'Limited'}
                             </span>
                             <p className="text-xs text-gray-500 mt-0.5">
@@ -1521,7 +1517,7 @@ function CreateTableExerciseContent() {
                               max={maxRows}
                               value={minRows}
                               onChange={(e) => setMinRows(Math.max(1, parseInt(e.target.value) || 1))}
-                              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent text-center"
+                              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent text-center"
                             />
                           </div>
                           <div>
@@ -1534,7 +1530,7 @@ function CreateTableExerciseContent() {
                               max={100}
                               value={maxRows}
                               onChange={(e) => setMaxRows(Math.max(minRows, parseInt(e.target.value) || minRows))}
-                              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent text-center"
+                              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent text-center"
                             />
                           </div>
                         </motion.div>
@@ -1547,7 +1543,7 @@ function CreateTableExerciseContent() {
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                       <Button
                         onClick={() => setDetailsStep(3)}
-                        className="rounded-xl px-8 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-200/50"
+                        className="rounded-xl px-8 bg-gray-900 hover:bg-gray-800 shadow-lg"
                       >
                         {locale === 'fr' ? 'Continuer' : 'Continue'}
                         <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
@@ -1615,17 +1611,17 @@ function CreateTableExerciseContent() {
                           onClick={() => setSaveAs('published')}
                           className={`p-4 rounded-xl border-2 text-left transition-all ${
                             saveAs === 'published'
-                              ? 'border-emerald-400 bg-emerald-50'
+                              ? 'border-gray-400 bg-gray-50'
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
                           <div className="flex items-center gap-3 mb-2">
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                              saveAs === 'published' ? 'bg-emerald-200' : 'bg-gray-100'
+                              saveAs === 'published' ? 'bg-gray-200' : 'bg-gray-100'
                             }`}>
-                              <CheckCircle2 className={`w-4 h-4 ${saveAs === 'published' ? 'text-emerald-700' : 'text-gray-500'}`} />
+                              <CheckCircle2 className={`w-4 h-4 ${saveAs === 'published' ? 'text-gray-800' : 'text-gray-500'}`} />
                             </div>
-                            <span className={`font-medium ${saveAs === 'published' ? 'text-emerald-900' : 'text-gray-700'}`}>
+                            <span className={`font-medium ${saveAs === 'published' ? 'text-gray-900' : 'text-gray-700'}`}>
                               {locale === 'fr' ? 'Publier' : 'Publish'}
                             </span>
                           </div>
@@ -1653,17 +1649,17 @@ function CreateTableExerciseContent() {
                             onClick={() => setVisibility('private')}
                             className={`p-4 rounded-xl border-2 text-left transition-all ${
                               visibility === 'private' || visibility === 'link_only'
-                                ? 'border-emerald-400 bg-emerald-50'
+                                ? 'border-gray-400 bg-gray-50'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
                             <div className="flex items-center gap-3 mb-2">
                               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                visibility === 'private' || visibility === 'link_only' ? 'bg-emerald-200' : 'bg-gray-100'
+                                visibility === 'private' || visibility === 'link_only' ? 'bg-gray-200' : 'bg-gray-100'
                               }`}>
-                                <Lock className={`w-4 h-4 ${visibility === 'private' || visibility === 'link_only' ? 'text-emerald-700' : 'text-gray-500'}`} />
+                                <Lock className={`w-4 h-4 ${visibility === 'private' || visibility === 'link_only' ? 'text-gray-800' : 'text-gray-500'}`} />
                               </div>
-                              <span className={`font-medium ${visibility === 'private' || visibility === 'link_only' ? 'text-emerald-900' : 'text-gray-700'}`}>
+                              <span className={`font-medium ${visibility === 'private' || visibility === 'link_only' ? 'text-gray-900' : 'text-gray-700'}`}>
                                 {locale === 'fr' ? 'Privé' : 'Private'}
                               </span>
                             </div>
@@ -1704,14 +1700,14 @@ function CreateTableExerciseContent() {
                               onClick={() => setVisibility(visibility === 'link_only' ? 'private' : 'link_only')}
                               className={`w-full p-4 rounded-xl border-2 text-left transition-all flex items-center justify-between ${
                                 visibility === 'link_only'
-                                  ? 'border-teal-400 bg-teal-50'
+                                  ? 'border-gray-400 bg-gray-50'
                                   : 'border-gray-200 hover:border-gray-300'
                               }`}
                             >
                               <div className="flex items-center gap-3">
-                                <ExternalLink className={`w-4 h-4 ${visibility === 'link_only' ? 'text-teal-600' : 'text-gray-400'}`} />
+                                <ExternalLink className={`w-4 h-4 ${visibility === 'link_only' ? 'text-gray-700' : 'text-gray-400'}`} />
                                 <div>
-                                  <p className={`text-sm font-medium ${visibility === 'link_only' ? 'text-teal-900' : 'text-gray-700'}`}>
+                                  <p className={`text-sm font-medium ${visibility === 'link_only' ? 'text-gray-900' : 'text-gray-700'}`}>
                                     {locale === 'fr' ? 'Partager via lien externe' : 'Share via external link'}
                                   </p>
                                   <p className="text-xs text-gray-500">
@@ -1719,7 +1715,7 @@ function CreateTableExerciseContent() {
                                   </p>
                                 </div>
                               </div>
-                              <div className={`w-11 h-6 rounded-full transition-colors ${visibility === 'link_only' ? 'bg-teal-500' : 'bg-gray-300'}`}>
+                              <div className={`w-11 h-6 rounded-full transition-colors ${visibility === 'link_only' ? 'bg-gray-500' : 'bg-gray-300'}`}>
                                 <div className={`w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform mt-0.5 ${visibility === 'link_only' ? 'translate-x-5 ml-0.5' : 'translate-x-0.5'}`} />
                               </div>
                             </button>
@@ -1750,7 +1746,7 @@ function CreateTableExerciseContent() {
                       <Button
                         onClick={handleSave}
                         disabled={!isValid || saving}
-                        className="rounded-xl px-8 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-200/50"
+                        className="rounded-xl px-8 bg-gray-900 hover:bg-gray-800 shadow-lg"
                       >
                         {saving ? (
                           <>
@@ -1805,18 +1801,18 @@ function CreateTableExerciseContent() {
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{title || 'Untitled'}</h3>
                 {description && <p className="text-gray-600 mb-4">{description}</p>}
                 {instructions && (
-                  <div className="bg-emerald-50 rounded-xl p-4 mb-4">
-                    <p className="text-sm text-emerald-800">{instructions}</p>
+                  <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                    <p className="text-sm text-gray-800">{instructions}</p>
                   </div>
                 )}
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="bg-emerald-100">
+                      <tr className="bg-gray-100">
                         {columns.map((col) => (
                           <th
                             key={col.id}
-                            className="px-4 py-3 text-left font-semibold text-emerald-900 border border-emerald-200"
+                            className="px-4 py-3 text-left font-semibold text-gray-900 border border-gray-200"
                           >
                             {col.header}
                           </th>
@@ -1824,11 +1820,11 @@ function CreateTableExerciseContent() {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr className="bg-emerald-50/50">
+                      <tr className="bg-gray-50/50">
                         {columns.map((col) => (
                           <td
                             key={col.id}
-                            className="px-4 py-2 text-sm text-emerald-700 italic border border-emerald-100"
+                            className="px-4 py-2 text-sm text-gray-800 italic border border-gray-200"
                           >
                             {col.description || '-'}
                           </td>
@@ -1844,7 +1840,7 @@ function CreateTableExerciseContent() {
                               <input
                                 type="text"
                                 placeholder={locale === 'fr' ? 'Tapez ici...' : 'Type here...'}
-                                className="w-full px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                className="w-full px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
                                 disabled
                               />
                             </td>
@@ -1889,7 +1885,7 @@ function CreateTableExerciseContent() {
             </Button>
             <Button
               onClick={() => setShowTemplateWarningDialog(false)}
-              className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-600"
+              className="flex-1 sm:flex-none bg-gray-900 hover:bg-gray-800"
             >
               {locale === 'fr' ? 'Modifier' : 'Modify'}
             </Button>

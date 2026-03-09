@@ -54,6 +54,18 @@ interface SimpleMember {
   avatar_url?: string | null
 }
 
+interface SharedMemberInfo {
+  member_id: string
+  shared_at: string
+  viewed_at: string | null
+  member: {
+    id: string
+    first_name: string
+    last_name: string
+    avatar_url: string | null
+  }
+}
+
 // Include 'assessment' as legacy type for backwards compatibility
 const typeIcons: Record<ResourceType | 'assessment', React.ElementType> = {
   worksheet: FileText,
@@ -208,6 +220,7 @@ export default function ResourceDetailPage() {
   const [isOwner, setIsOwner] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [submissions, setSubmissions] = useState<ResourceSubmission[]>([])
+  const [sharedMembers, setSharedMembers] = useState<SharedMemberInfo[]>([])
   const [loadingSubmissions, setLoadingSubmissions] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState<ResourceSubmission | null>(null)
   const [reviewNotes, setReviewNotes] = useState('')
@@ -343,8 +356,25 @@ export default function ResourceDetailPage() {
   const fetchSubmissions = async (resourceId: string) => {
     setLoadingSubmissions(true)
     try {
-      const data = await getResourceSubmissions(resourceId)
-      setSubmissions(data)
+      // Fetch submissions (responses) and shared members in parallel
+      const [submissionsData, sharedData] = await Promise.all([
+        getResourceSubmissions(resourceId),
+        (async () => {
+          const { data } = await supabase
+            .from('member_shared_resources')
+            .select(`
+              member_id,
+              shared_at,
+              viewed_at,
+              member:members(id, first_name, last_name, avatar_url)
+            `)
+            .eq('resource_id', resourceId)
+            .order('shared_at', { ascending: false })
+          return (data || []) as unknown as SharedMemberInfo[]
+        })()
+      ])
+      setSubmissions(submissionsData)
+      setSharedMembers(sharedData)
     } catch (error) {
       console.error('Error fetching submissions:', error)
     } finally {
@@ -361,6 +391,16 @@ export default function ResourceDetailPage() {
         status: 'reviewed',
         practitioner_notes: reviewNotes
       })
+
+      // Also mark the shared resource as completed so member sees "Completed" status
+      if (selectedSubmission.member?.id && resource) {
+        await supabase
+          .from('member_shared_resources')
+          .update({ completed_at: new Date().toISOString() })
+          .eq('member_id', selectedSubmission.member.id)
+          .eq('resource_id', resource.id)
+      }
+
       toast.success(locale === 'fr' ? 'Notes enregistrées' : 'Notes saved')
       // Refresh submissions
       fetchSubmissions(params.id as string)
@@ -2435,8 +2475,8 @@ export default function ResourceDetailPage() {
           </div>
         </div>
 
-        {/* Submissions Section - Only show for owner */}
-        {isOwner && (resource.type === 'worksheet' || (resource.type as string) === 'assessment') && (
+        {/* Submissions & Shared Section - Only show for owner */}
+        {isOwner && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -2448,127 +2488,190 @@ export default function ResourceDetailPage() {
               <div className="p-6 border-b border-gray-100">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-lavender-100 flex items-center justify-center">
-                      <Users className="w-5 h-5 text-lavender-600" />
+                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-gray-600" />
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900">
-                        {locale === 'fr' ? 'Réponses des patients' : 'Member Submissions'}
+                        {resource.type === 'psychoeducation'
+                          ? (locale === 'fr' ? 'Partagé avec' : 'Shared With')
+                          : (locale === 'fr' ? 'Réponses des patients' : 'Member Submissions')}
                       </h2>
                       <p className="text-sm text-gray-500">
-                        {submissions.length} {locale === 'fr' ? (submissions.length === 1 ? 'réponse' : 'réponses') : 'submission(s)'}
+                        {resource.type === 'psychoeducation'
+                          ? `${sharedMembers.length} ${locale === 'fr' ? 'membre(s)' : 'member(s)'} · ${sharedMembers.filter(s => s.viewed_at).length} ${locale === 'fr' ? 'lu(s)' : 'read'}`
+                          : `${sharedMembers.length} ${locale === 'fr' ? 'partagé(s)' : 'shared'} · ${submissions.length} ${locale === 'fr' ? 'réponse(s)' : 'response(s)'}`}
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Submissions List */}
+              {/* Members List */}
               <div className="divide-y divide-gray-100">
                 {loadingSubmissions ? (
                   <div className="p-8 text-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-lavender-500 mx-auto mb-2" />
+                    <Loader2 className="w-6 h-6 animate-spin text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-500">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</p>
                   </div>
-                ) : submissions.length === 0 ? (
+                ) : sharedMembers.length === 0 ? (
                   <div className="p-8 text-center">
                     <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                      <FileText className="w-6 h-6 text-gray-400" />
+                      <Send className="w-6 h-6 text-gray-400" />
                     </div>
                     <p className="text-gray-500">
-                      {locale === 'fr' ? 'Aucune réponse pour le moment' : 'No submissions yet'}
+                      {locale === 'fr' ? 'Pas encore partagé' : 'Not shared yet'}
                     </p>
                     <p className="text-sm text-gray-400 mt-1">
                       {locale === 'fr'
-                        ? 'Les réponses des patients apparaîtront ici'
-                        : 'Member submissions will appear here'}
+                        ? 'Partagez cette ressource avec vos patients pour voir leurs réponses'
+                        : 'Share this resource with your members to see their responses'}
                     </p>
+                    <Button
+                      onClick={() => setShowShareModal(true)}
+                      className="mt-4 bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
+                      size="sm"
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      {locale === 'fr' ? 'Partager' : 'Share'}
+                    </Button>
                   </div>
                 ) : (
-                  submissions.map((submission) => (
-                    <div
-                      key={submission.id}
-                      className="p-4 hover:bg-gray-50/50 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        {/* Member Info */}
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-lavender-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
-                            {submission.member?.first_name?.charAt(0) || 'M'}{submission.member?.last_name?.charAt(0) || ''}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {submission.member?.first_name} {submission.member?.last_name}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              }) : '-'}
-                            </p>
-                          </div>
-                        </div>
+                  (() => {
+                    // Build a map of member_id -> latest submission
+                    const submissionByMember = new Map<string, ResourceSubmission>()
+                    submissions.forEach(sub => {
+                      if (sub.member?.id) {
+                        const existing = submissionByMember.get(sub.member.id)
+                        // Prefer submitted/reviewed over draft
+                        if (!existing || (sub.status !== 'draft' && existing.status === 'draft')) {
+                          submissionByMember.set(sub.member.id, sub)
+                        }
+                      }
+                    })
 
-                        {/* Score & Status */}
-                        <div className="flex items-center gap-3">
-                          {/* Score for scored worksheets/assessments */}
-                          {hasScoring && submission.scores?.total !== undefined && (
-                            <div className="text-right">
-                              <p className="text-lg font-bold text-emerald-600">
-                                {submission.scores.total}/{submission.scores.maxScore}
-                              </p>
-                              {submission.scores.percentage !== undefined && (
-                                <p className="text-xs text-gray-500">{submission.scores.percentage}%</p>
+                    return sharedMembers.map((shared) => {
+                      const submission = submissionByMember.get(shared.member_id)
+                      const isPsychoeducation = resource.type === 'psychoeducation'
+
+                      // Determine status
+                      let statusBadge: React.ReactNode
+                      if (isPsychoeducation) {
+                        statusBadge = shared.viewed_at ? (
+                          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border">
+                            <Eye className="w-3 h-3 mr-1" />
+                            {locale === 'fr' ? 'Lu' : 'Read'}
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-gray-100 text-gray-500 border-gray-200 border">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {locale === 'fr' ? 'Non lu' : 'Unread'}
+                          </Badge>
+                        )
+                      } else if (submission) {
+                        statusBadge = submission.status === 'reviewed' ? (
+                          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            {locale === 'fr' ? 'Révisé' : 'Reviewed'}
+                          </Badge>
+                        ) : submission.status === 'draft' ? (
+                          <Badge className="bg-blue-50 text-blue-700 border-blue-200 border">
+                            <Edit className="w-3 h-3 mr-1" />
+                            {locale === 'fr' ? 'Brouillon' : 'Draft'}
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-amber-50 text-amber-700 border-amber-200 border">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            {locale === 'fr' ? 'Soumis' : 'Submitted'}
+                          </Badge>
+                        )
+                      } else {
+                        statusBadge = (
+                          <Badge className="bg-gray-100 text-gray-500 border-gray-200 border">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {locale === 'fr' ? 'En attente' : 'Pending'}
+                          </Badge>
+                        )
+                      }
+
+                      const dateStr = isPsychoeducation && shared.viewed_at
+                        ? new Date(shared.viewed_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })
+                        : submission?.submitted_at
+                        ? new Date(submission.submitted_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : new Date(shared.shared_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })
+
+                      return (
+                        <div
+                          key={shared.member_id}
+                          className="p-4 hover:bg-gray-50/50 transition-colors"
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            {/* Member Info */}
+                            <div className="flex items-center gap-3 min-w-0">
+                              {shared.member?.avatar_url ? (
+                                <img src={shared.member.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                                  {shared.member?.first_name?.charAt(0) || 'M'}{shared.member?.last_name?.charAt(0) || ''}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="font-medium text-gray-900 truncate">
+                                  {shared.member?.first_name} {shared.member?.last_name}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {isPsychoeducation
+                                    ? (shared.viewed_at
+                                      ? `${locale === 'fr' ? 'Lu le' : 'Read'} ${dateStr}`
+                                      : `${locale === 'fr' ? 'Partagé le' : 'Shared'} ${dateStr}`)
+                                    : (submission
+                                      ? `${submission.status === 'draft' ? (locale === 'fr' ? 'Brouillon' : 'Draft') : (locale === 'fr' ? 'Soumis le' : 'Submitted')} ${dateStr}`
+                                      : `${locale === 'fr' ? 'Partagé le' : 'Shared'} ${dateStr}`)}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Status & Actions */}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {/* Score for scored worksheets */}
+                              {hasScoring && submission?.scores?.total !== undefined && (
+                                <div className="text-right mr-1">
+                                  <p className="text-sm font-bold text-emerald-600">
+                                    {submission.scores.total}/{submission.scores.maxScore}
+                                  </p>
+                                </div>
+                              )}
+
+                              {statusBadge}
+
+                              {/* View button for submissions */}
+                              {!isPsychoeducation && submission && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedSubmission(submission)
+                                    setReviewNotes(submission.practitioner_notes || '')
+                                  }}
+                                  className="rounded-lg"
+                                >
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  {locale === 'fr' ? 'Voir' : 'View'}
+                                </Button>
                               )}
                             </div>
+                          </div>
+
+                          {/* Reviewer Notes Preview */}
+                          {submission?.practitioner_notes && (
+                            <div className="mt-3 ml-13 pl-3 border-l-2 border-gray-200">
+                              <p className="text-sm text-gray-600 line-clamp-2">{submission.practitioner_notes}</p>
+                            </div>
                           )}
-
-                          {/* Status Badge */}
-                          <Badge className={
-                            submission.status === 'reviewed'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 border'
-                              : 'bg-amber-50 text-amber-700 border-amber-200 border'
-                          }>
-                            {submission.status === 'reviewed' ? (
-                              <>
-                                <CheckCircle2 className="w-3 h-3 mr-1" />
-                                {locale === 'fr' ? 'Révisé' : 'Reviewed'}
-                              </>
-                            ) : (
-                              <>
-                                <Clock className="w-3 h-3 mr-1" />
-                                {locale === 'fr' ? 'En attente' : 'Pending'}
-                              </>
-                            )}
-                          </Badge>
-
-                          {/* View Button */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedSubmission(submission)
-                              setReviewNotes(submission.practitioner_notes || '')
-                            }}
-                            className="rounded-lg"
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            {locale === 'fr' ? 'Voir' : 'View'}
-                          </Button>
                         </div>
-                      </div>
-
-                      {/* Reviewer Notes Preview */}
-                      {submission.practitioner_notes && (
-                        <div className="mt-3 ml-13 pl-3 border-l-2 border-lavender-200">
-                          <p className="text-sm text-gray-600 line-clamp-2">{submission.practitioner_notes}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))
+                      )
+                    })
+                  })()
                 )}
               </div>
             </div>
@@ -2654,7 +2757,7 @@ export default function ResourceDetailPage() {
                       const blocks = (resource?.blocks || []) as ResourceBlock[]
                       const questionBlocks = blocks.filter(b =>
                         ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert',
-                         'numeric', 'slider', 'matrix_rating', 'mood', 'date_picker', 'time_input', 'list_input'].includes(b.type)
+                         'numeric', 'slider', 'matrix_rating', 'mood', 'date_picker', 'time_input', 'list_input', 'table_exercise'].includes(b.type)
                       )
                       const responses = (selectedSubmission.responses || {}) as Record<string, unknown>
 
@@ -2669,6 +2772,43 @@ export default function ResourceDetailPage() {
                       return questionBlocks.map((block, index) => {
                         const response = responses[block.id]
                         const hasResponse = response !== undefined && response !== null && response !== ''
+                        const isTable = block.type === 'table_exercise'
+
+                        if (isTable && hasResponse) {
+                          const columns = ('columns' in block && Array.isArray(block.columns)) ? block.columns as { id: string; header: string }[] : []
+                          const rows = Array.isArray(response) ? response as Record<string, string>[] : []
+                          return (
+                            <div key={block.id} className="p-4 rounded-xl bg-gray-50">
+                              <p className="text-sm font-medium text-gray-700 mb-2">
+                                {typeof block.content === 'string' ? block.content : `Table ${index + 1}`}
+                              </p>
+                              {rows.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-sm border-collapse">
+                                    <thead>
+                                      <tr>
+                                        {columns.map(col => (
+                                          <th key={col.id} className="text-left px-3 py-2 text-xs font-medium text-gray-500 border-b border-gray-200 bg-gray-100/50">{col.header}</th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {rows.map((row, ri) => (
+                                        <tr key={ri}>
+                                          {columns.map(col => (
+                                            <td key={col.id} className="px-3 py-2 text-gray-900 border-b border-gray-100">{row[col.id] || '-'}</td>
+                                          ))}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              ) : (
+                                <p className="text-sm text-gray-500 italic">{locale === 'fr' ? 'Aucune entrée' : 'No entries'}</p>
+                              )}
+                            </div>
+                          )
+                        }
 
                         return (
                           <div

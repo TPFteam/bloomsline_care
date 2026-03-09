@@ -1580,7 +1580,7 @@ function CreateWorksheetContent() {
                 placeholder={block.placeholder}
                 rows={4}
                 disabled={testSubmitted}
-                className={`w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent resize-y transition-all ${testSubmitted ? 'bg-gray-50' : ''}`}
+                className={`w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-y transition-all ${testSubmitted ? 'bg-gray-50' : ''}`}
               />
             ) : (
               <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-400 italic">
@@ -1600,7 +1600,7 @@ function CreateWorksheetContent() {
                   key={index}
                   className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
                     isTestMode && (testResponses[block.id] || []).includes(index)
-                      ? 'border-lavender-300 bg-lavender-50'
+                      ? 'border-gray-300 bg-gray-50'
                       : 'border-gray-200 hover:border-gray-300 bg-white'
                   } ${testSubmitted && isTestMode ? 'cursor-not-allowed opacity-80' : ''}`}
                 >
@@ -1609,7 +1609,7 @@ function CreateWorksheetContent() {
                     checked={isTestMode ? (testResponses[block.id] || []).includes(index) : false}
                     onChange={() => isTestMode && !testSubmitted && toggleTestChecklistItem(block.id, index)}
                     disabled={!isTestMode || testSubmitted}
-                    className="w-5 h-5 rounded border-gray-300 text-lavender-600 focus:ring-lavender-500"
+                    className="w-5 h-5 rounded border-gray-300 text-gray-700 focus:ring-gray-400"
                   />
                   <span className="text-gray-700">{item}</span>
                 </label>
@@ -1635,9 +1635,9 @@ function CreateWorksheetContent() {
                       disabled={!isTestMode || testSubmitted}
                       className={`w-10 h-10 rounded-xl font-medium transition-all ${
                         isSelected
-                          ? 'bg-gradient-to-br from-lavender-500 to-lavender-600 text-white shadow-lg shadow-lavender-200/50'
+                          ? 'bg-gray-900 text-white shadow-lg'
                           : isTestMode
-                            ? 'bg-white border border-gray-200 text-gray-700 hover:border-lavender-300 hover:bg-lavender-50'
+                            ? 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                             : 'bg-gray-100 text-gray-400'
                       } ${testSubmitted && isTestMode ? 'cursor-not-allowed' : ''}`}
                     >
@@ -1705,7 +1705,7 @@ function CreateWorksheetContent() {
                 href={block.mediaFile.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
               >
                 {locale === 'fr' ? 'Télécharger' : 'Download'}
               </a>
@@ -1727,12 +1727,12 @@ function CreateWorksheetContent() {
                     disabled={!isTestMode || testSubmitted}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
                       isSelected
-                        ? 'border-lavender-300 bg-lavender-50'
+                        ? 'border-gray-300 bg-gray-50'
                         : 'border-gray-200 hover:border-gray-300 bg-white'
                     } ${testSubmitted && isTestMode ? 'cursor-not-allowed opacity-80' : ''}`}
                   >
                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      isSelected ? 'border-lavender-500 bg-lavender-500' : 'border-gray-300'
+                      isSelected ? 'border-gray-900 bg-gray-900' : 'border-gray-300'
                     }`}>
                       {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
                     </div>
@@ -1959,7 +1959,7 @@ function CreateWorksheetContent() {
                 value={testResponses[block.id] || ''}
                 onChange={(e) => updateTestResponse(block.id, e.target.value)}
                 disabled={testSubmitted}
-                className={`w-full sm:w-auto px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent ${testSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                className={`w-full sm:w-auto px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent ${testSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
               />
             ) : (
               <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 w-fit">
@@ -1980,7 +1980,7 @@ function CreateWorksheetContent() {
                 value={testResponses[block.id] || ''}
                 onChange={(e) => updateTestResponse(block.id, e.target.value)}
                 disabled={testSubmitted}
-                className={`w-full sm:w-auto px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent ${testSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                className={`w-full sm:w-auto px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent ${testSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
               />
             ) : (
               <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 w-fit">
@@ -2012,7 +2012,7 @@ function CreateWorksheetContent() {
                       }}
                       placeholder={block.listItemPlaceholder || (locale === 'fr' ? 'Entrez un élément...' : 'Enter an item...')}
                       disabled={testSubmitted}
-                      className={`flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent ${testSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                      className={`flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent ${testSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                     />
                     {!testSubmitted && (testResponses[block.id] || ['']).length > (block.listMinItems || 1) && (
                       <button
@@ -2034,7 +2034,7 @@ function CreateWorksheetContent() {
                       const newList = [...(testResponses[block.id] || ['']), '']
                       updateTestResponse(block.id, newList)
                     }}
-                    className="flex items-center gap-2 text-sm text-lavender-600 hover:text-lavender-700 font-medium mt-2"
+                    className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-800 font-medium mt-2"
                   >
                     <Plus className="w-4 h-4" />
                     {locale === 'fr' ? 'Ajouter un élément' : 'Add item'}
@@ -2210,7 +2210,7 @@ function CreateWorksheetContent() {
             </button>
           </div>
 
-          <div className={`${isExpanded ? 'text-blue-500' : 'text-gray-400'}`}>
+          <div className={`${isExpanded ? 'text-gray-900' : 'text-gray-400'}`}>
             {isExpanded ? (
               <ChevronUp className="w-4 h-4" />
             ) : (
@@ -2241,7 +2241,7 @@ function CreateWorksheetContent() {
                       value={block.content}
                       onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                       placeholder={locale === 'fr' ? 'Entrez le titre...' : 'Enter heading...'}
-                      className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                      className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                     />
                   </div>
                 )}
@@ -2267,7 +2267,7 @@ function CreateWorksheetContent() {
                       }}
                       placeholder={locale === 'fr' ? 'Écrivez les instructions pour le client...' : 'Write instructions for the client...'}
                       rows={2}
-                      className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
+                      className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
                     />
                   </div>
                 )}
@@ -2292,7 +2292,7 @@ function CreateWorksheetContent() {
                         }}
                         placeholder={locale === 'fr' ? 'Ex: Décrivez vos émotions...' : 'e.g., Describe your emotions...'}
                         rows={2}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
                       />
                     </div>
                     <div>
@@ -2304,7 +2304,7 @@ function CreateWorksheetContent() {
                         value={block.placeholder || ''}
                         onChange={(e) => updateBlock(block.id, { placeholder: e.target.value })}
                         placeholder={locale === 'fr' ? 'Texte d\'aide...' : 'Helper text...'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                   </>
@@ -2322,7 +2322,7 @@ function CreateWorksheetContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Mes objectifs pour cette semaine' : 'e.g., My goals for this week'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -2338,7 +2338,7 @@ function CreateWorksheetContent() {
                               value={item}
                               onChange={(e) => updateChecklistItem(block.id, index, e.target.value)}
                               placeholder={`${locale === 'fr' ? 'Élément' : 'Item'} ${index + 1}`}
-                              className="flex-1 px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                              className="flex-1 px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                             />
                             {(block.items?.length || 0) > 1 && (
                               <button
@@ -2353,7 +2353,7 @@ function CreateWorksheetContent() {
                       </div>
                       <button
                         onClick={() => addChecklistItem(block.id)}
-                        className="mt-2 flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
+                        className="mt-2 flex items-center gap-2 text-sm text-blue-600 hover:text-gray-800"
                       >
                         <Plus className="w-4 h-4" />
                         {locale === 'fr' ? 'Ajouter un élément' : 'Add item'}
@@ -2374,7 +2374,7 @@ function CreateWorksheetContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Comment évaluez-vous votre humeur?' : 'e.g., How would you rate your mood?'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -2385,7 +2385,7 @@ function CreateWorksheetContent() {
                         <select
                           value={block.scaleMin || 0}
                           onChange={(e) => updateBlock(block.id, { scaleMin: parseInt(e.target.value) })}
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         >
                           {[0, 1].map(n => (
                             <option key={n} value={n}>{n}</option>
@@ -2399,7 +2399,7 @@ function CreateWorksheetContent() {
                         <select
                           value={block.scaleMax || 10}
                           onChange={(e) => updateBlock(block.id, { scaleMax: parseInt(e.target.value) })}
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         >
                           {[5, 7, 10].map(n => (
                             <option key={n} value={n}>{n}</option>
@@ -2417,7 +2417,7 @@ function CreateWorksheetContent() {
                           value={block.scaleMinLabel || ''}
                           onChange={(e) => updateBlock(block.id, { scaleMinLabel: e.target.value })}
                           placeholder={locale === 'fr' ? 'Ex: Pas du tout' : 'e.g., Not at all'}
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -2429,7 +2429,7 @@ function CreateWorksheetContent() {
                           value={block.scaleMaxLabel || ''}
                           onChange={(e) => updateBlock(block.id, { scaleMaxLabel: e.target.value })}
                           placeholder={locale === 'fr' ? 'Ex: Énormément' : 'e.g., Extremely'}
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         />
                       </div>
                     </div>
@@ -2481,7 +2481,7 @@ function CreateWorksheetContent() {
                         </div>
                       </div>
                     ) : (
-                      <label className="block border-2 border-dashed border-blue-200 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all">
+                      <label className="block border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-gray-400 hover:bg-blue-50/50 transition-all">
                         <input
                           type="file"
                           accept="image/*"
@@ -2511,7 +2511,7 @@ function CreateWorksheetContent() {
                         value={block.mediaAlt || ''}
                         onChange={(e) => updateBlock(block.id, { mediaAlt: e.target.value })}
                         placeholder={locale === 'fr' ? 'Décrivez l\'image...' : 'Describe the image...'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
 
@@ -2525,7 +2525,7 @@ function CreateWorksheetContent() {
                         value={block.mediaCaption || ''}
                         onChange={(e) => updateBlock(block.id, { mediaCaption: e.target.value })}
                         placeholder={locale === 'fr' ? 'Légende affichée sous l\'image' : 'Caption shown below the image'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                   </>
@@ -2550,7 +2550,7 @@ function CreateWorksheetContent() {
                             onClick={() => updateBlock(block.id, { videoType: option.type as 'youtube' | 'vimeo' | 'upload', videoUrl: '', mediaFile: undefined })}
                             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                               block.videoType === option.type
-                                ? 'bg-blue-500 text-white shadow-md'
+                                ? 'bg-gray-900 text-white shadow-md'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                           >
@@ -2574,7 +2574,7 @@ function CreateWorksheetContent() {
                             placeholder={block.videoType === 'youtube'
                               ? 'https://www.youtube.com/watch?v=...'
                               : 'https://vimeo.com/...'}
-                            className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                            className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                           />
                         </div>
 
@@ -2635,7 +2635,7 @@ function CreateWorksheetContent() {
                             </div>
                           </div>
                         ) : (
-                          <label className="block border-2 border-dashed border-blue-200 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all">
+                          <label className="block border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-gray-400 hover:bg-blue-50/50 transition-all">
                             <input
                               type="file"
                               accept="video/*"
@@ -2667,7 +2667,7 @@ function CreateWorksheetContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Décrivez la vidéo...' : 'Describe the video...'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                   </>
@@ -2731,7 +2731,7 @@ function CreateWorksheetContent() {
                         </div>
                       </div>
                     ) : (
-                      <label className="block border-2 border-dashed border-blue-200 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all">
+                      <label className="block border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-gray-400 hover:bg-blue-50/50 transition-all">
                         <input
                           type="file"
                           accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mp3,.wav,.ogg"
@@ -2761,7 +2761,7 @@ function CreateWorksheetContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Guide de relaxation (PDF)' : 'e.g., Relaxation Guide (PDF)'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
 
@@ -2783,7 +2783,7 @@ function CreateWorksheetContent() {
                         }}
                         placeholder={locale === 'fr' ? 'Expliquez ce que contient ce fichier...' : 'Explain what this file contains...'}
                         rows={2}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
                       />
                     </div>
                   </>
@@ -2810,7 +2810,7 @@ function CreateWorksheetContent() {
                         }}
                         placeholder={locale === 'fr' ? 'Ex: Enregistrez une vidéo où vous décrivez votre journée...' : 'e.g., Record a video describing your day...'}
                         rows={2}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
                       />
                     </div>
 
@@ -2845,7 +2845,7 @@ function CreateWorksheetContent() {
                           onChange={(e) => updateBlock(block.id, { responseMaxDuration: parseInt(e.target.value) * 60 })}
                           min={1}
                           max={30}
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         />
                       </div>
                       <div className="flex items-center">
@@ -2873,7 +2873,7 @@ function CreateWorksheetContent() {
                         value={block.responseHint || ''}
                         onChange={(e) => updateBlock(block.id, { responseHint: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Trouvez un endroit calme et bien éclairé' : 'e.g., Find a quiet, well-lit place'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                   </>
@@ -2900,7 +2900,7 @@ function CreateWorksheetContent() {
                         }}
                         placeholder={locale === 'fr' ? 'Ex: Enregistrez vos pensées sur cette semaine...' : 'e.g., Record your thoughts about this week...'}
                         rows={2}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
                       />
                     </div>
 
@@ -2935,7 +2935,7 @@ function CreateWorksheetContent() {
                           onChange={(e) => updateBlock(block.id, { responseMaxDuration: parseInt(e.target.value) * 60 })}
                           min={1}
                           max={30}
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         />
                       </div>
                       <div className="flex items-center">
@@ -2963,7 +2963,7 @@ function CreateWorksheetContent() {
                         value={block.responseHint || ''}
                         onChange={(e) => updateBlock(block.id, { responseHint: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Parlez naturellement, pas besoin d\'être parfait' : 'e.g., Speak naturally, no need to be perfect'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                   </>
@@ -2990,7 +2990,7 @@ function CreateWorksheetContent() {
                         }}
                         placeholder={locale === 'fr' ? 'Ex: Téléchargez une photo de votre espace de détente...' : 'e.g., Upload a photo of your relaxation space...'}
                         rows={2}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
                       />
                     </div>
 
@@ -3038,7 +3038,7 @@ function CreateWorksheetContent() {
                         value={block.responseHint || ''}
                         onChange={(e) => updateBlock(block.id, { responseHint: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Vous pouvez télécharger plusieurs fichiers' : 'e.g., You can upload multiple files'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                   </>
@@ -3078,12 +3078,12 @@ function CreateWorksheetContent() {
                         }}
                         placeholder={locale === 'fr' ? 'Ex: "Vous êtes plus fort que vous ne le pensez"' : 'e.g., "You are stronger than you think"'}
                         rows={3}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[80px]"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none overflow-hidden min-h-[80px]"
                       />
                     </div>
                     {/* Preview */}
-                    <div className="p-4 bg-gradient-to-r from-lavender-50 to-blue-50 rounded-xl border-l-4 border-lavender-400">
-                      <Quote className="w-5 h-5 text-lavender-400 mb-2" />
+                    <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border-l-4 border-gray-400">
+                      <Quote className="w-5 h-5 text-gray-400 mb-2" />
                       <p className="text-gray-700 italic">
                         {block.content || (locale === 'fr' ? 'Votre citation ici...' : 'Your quote here...')}
                       </p>
@@ -3111,11 +3111,11 @@ function CreateWorksheetContent() {
                         }}
                         placeholder={locale === 'fr' ? 'Ex: N\'oubliez pas de respirer profondément...' : 'e.g., Remember to breathe deeply...'}
                         rows={3}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none overflow-hidden min-h-[80px]"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none overflow-hidden min-h-[80px]"
                       />
                     </div>
                     {/* Preview */}
-                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-200 flex gap-3">
+                    <div className="p-4 bg-blue-50 rounded-xl border border-gray-200 flex gap-3">
                       <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                       <p className="text-gray-700 text-sm">
                         {block.content || (locale === 'fr' ? 'Votre conseil ici...' : 'Your tip here...')}
@@ -3136,7 +3136,7 @@ function CreateWorksheetContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Comment vous sentez-vous aujourd\'hui?' : 'e.g., How are you feeling today?'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
 
@@ -3160,7 +3160,7 @@ function CreateWorksheetContent() {
                                 updateBlock(block.id, { choices: newChoices })
                               }}
                               placeholder={locale === 'fr' ? `Option ${index + 1}` : `Option ${index + 1}`}
-                              className="flex-1 px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                              className="flex-1 px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                             />
                             {(block.choices || []).length > 2 && (
                               <button
@@ -3181,7 +3181,7 @@ function CreateWorksheetContent() {
                               const newChoices = [...(block.choices || []), '']
                               updateBlock(block.id, { choices: newChoices })
                             }}
-                            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 px-4 py-2"
+                            className="flex items-center gap-2 text-sm text-blue-600 hover:text-gray-800 px-4 py-2"
                           >
                             <Plus className="w-4 h-4" />
                             {locale === 'fr' ? 'Ajouter une option' : 'Add option'}
@@ -3217,7 +3217,7 @@ function CreateWorksheetContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Avez-vous bien dormi cette nuit?' : 'e.g., Did you sleep well last night?'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                     {/* Preview */}
@@ -3249,7 +3249,7 @@ function CreateWorksheetContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Comment vous sentez-vous en ce moment?' : 'e.g., How are you feeling right now?'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                     {/* Mood Preview */}
@@ -3292,7 +3292,7 @@ function CreateWorksheetContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Quand avez-vous commencé à ressentir cela?' : 'e.g., When did you start feeling this way?'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                     {/* Preview */}
@@ -3320,7 +3320,7 @@ function CreateWorksheetContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: À quelle heure vous êtes-vous couché?' : 'e.g., What time did you go to bed?'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                     {/* Preview */}
@@ -3348,7 +3348,7 @@ function CreateWorksheetContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Listez 3 choses pour lesquelles vous êtes reconnaissant' : 'e.g., List 3 things you are grateful for'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -3360,7 +3360,7 @@ function CreateWorksheetContent() {
                         value={block.listItemPlaceholder || ''}
                         onChange={(e) => updateBlock(block.id, { listItemPlaceholder: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Entrez un élément...' : 'e.g., Enter an item...'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -3379,7 +3379,7 @@ function CreateWorksheetContent() {
                               updateBlock(block.id, { listMinItems: 1 })
                             }
                           }}
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -3397,7 +3397,7 @@ function CreateWorksheetContent() {
                               updateBlock(block.id, { listMaxItems: 10 })
                             }
                           }}
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         />
                       </div>
                     </div>
@@ -3484,7 +3484,7 @@ function CreateWorksheetContent() {
                             ? (locale === 'fr' ? 'Ex: Évaluez votre niveau de stress' : 'e.g., Rate your stress level')
                             : (locale === 'fr' ? 'Ex: Je me sens anxieux(se) la plupart du temps' : 'e.g., I feel anxious most of the time')
                         }
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
 
@@ -3657,7 +3657,7 @@ function CreateWorksheetContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Combien d\'heures avez-vous dormi?' : 'e.g., How many hours did you sleep?'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
 
@@ -3670,7 +3670,7 @@ function CreateWorksheetContent() {
                           type="number"
                           value={block.minValue ?? 0}
                           onChange={(e) => updateBlock(block.id, { minValue: parseInt(e.target.value) || 0 })}
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -3681,13 +3681,13 @@ function CreateWorksheetContent() {
                           type="number"
                           value={block.maxValue ?? 10}
                           onChange={(e) => updateBlock(block.id, { maxValue: parseInt(e.target.value) || 10 })}
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         />
                       </div>
                     </div>
 
                     {/* Preview */}
-                    <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200/50">
+                    <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-gray-200/50">
                       <p className="text-xs font-medium text-blue-600 mb-3 flex items-center gap-1.5">
                         <Calculator className="w-3.5 h-3.5" />
                         {locale === 'fr' ? 'Aperçu pour le membre' : 'Member will see'}
@@ -3730,7 +3730,7 @@ function CreateWorksheetContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Quel est votre niveau de stress?' : 'e.g., What is your stress level?'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
 
@@ -3743,7 +3743,7 @@ function CreateWorksheetContent() {
                           type="number"
                           value={block.sliderMin ?? 0}
                           onChange={(e) => updateBlock(block.id, { sliderMin: parseInt(e.target.value) || 0 })}
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -3754,7 +3754,7 @@ function CreateWorksheetContent() {
                           type="number"
                           value={block.sliderMax ?? 100}
                           onChange={(e) => updateBlock(block.id, { sliderMax: parseInt(e.target.value) || 100 })}
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -3766,7 +3766,7 @@ function CreateWorksheetContent() {
                           value={block.sliderUnit ?? '%'}
                           onChange={(e) => updateBlock(block.id, { sliderUnit: e.target.value })}
                           placeholder="%"
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         />
                       </div>
                     </div>
@@ -3948,7 +3948,7 @@ function CreateWorksheetContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Comment évaluez-vous votre relation avec...' : 'e.g., How would you rate your relationship with...'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
 
@@ -3970,7 +3970,7 @@ function CreateWorksheetContent() {
                                 updateBlock(block.id, { matrixItems: newItems })
                               }}
                               placeholder={locale === 'fr' ? `Élément ${index + 1}` : `Item ${index + 1}`}
-                              className="flex-1 px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                              className="flex-1 px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                             />
                             {(block.matrixItems?.length || 0) > 1 && (
                               <button
@@ -3991,7 +3991,7 @@ function CreateWorksheetContent() {
                           const newItems = [...(block.matrixItems || []), '']
                           updateBlock(block.id, { matrixItems: newItems })
                         }}
-                        className="mt-2 flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
+                        className="mt-2 flex items-center gap-2 text-sm text-blue-600 hover:text-gray-800"
                       >
                         <Plus className="w-4 h-4" />
                         {locale === 'fr' ? 'Ajouter un élément' : 'Add item'}
@@ -4007,7 +4007,7 @@ function CreateWorksheetContent() {
                         <select
                           value={block.matrixScaleMax || 5}
                           onChange={(e) => updateBlock(block.id, { matrixScaleMax: parseInt(e.target.value) })}
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         >
                           {[3, 4, 5, 6, 7, 8, 9, 10].map(n => (
                             <option key={n} value={n}>1 - {n}</option>
@@ -4032,7 +4032,7 @@ function CreateWorksheetContent() {
                             }
                           })}
                           placeholder={locale === 'fr' ? 'Pas du tout' : 'Not at all'}
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -4049,7 +4049,7 @@ function CreateWorksheetContent() {
                             }
                           })}
                           placeholder={locale === 'fr' ? 'Complètement' : 'Completely'}
-                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                         />
                       </div>
                     </div>
@@ -4126,7 +4126,7 @@ function CreateWorksheetContent() {
     return (
       <div className="min-h-screen gradient-mesh relative flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-600">
             {locale === 'fr' ? 'Chargement...' : 'Loading...'}
           </p>
@@ -4137,12 +4137,7 @@ function CreateWorksheetContent() {
 
   return (
     <div className="min-h-screen gradient-mesh relative">
-      {/* Decorative Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200/30 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-lavender-200/30 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-mint-200/20 rounded-full blur-3xl" />
-      </div>
+      {/* Background */}
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <AnimatePresence mode="wait">
@@ -4172,7 +4167,7 @@ function CreateWorksheetContent() {
                   animate={{ opacity: 1, scale: 1 }}
                   className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-100/80 mb-6"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-200/50">
+                  <div className="w-12 h-12 rounded-xl bg-gray-900 flex items-center justify-center shadow-lg ">
                     <FileText className="w-6 h-6 text-white" />
                   </div>
                 </motion.div>
@@ -4200,15 +4195,15 @@ function CreateWorksheetContent() {
                       onClick={() => handleSelectTemplate(template.id)}
                       className={`bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-5 cursor-pointer transition-all duration-300 border-2 shadow-lg shadow-gray-200/40 hover:shadow-xl ${
                         template.id === 'blank'
-                          ? 'border-dashed border-lavender-300 hover:border-lavender-500 bg-lavender-50/50'
-                          : 'border-white/60 hover:border-blue-200'
+                          ? 'border-dashed border-gray-300 hover:border-gray-500 bg-gray-50/50'
+                          : 'border-white/60 hover:border-gray-200'
                       }`}
                     >
                       <div className={`w-10 h-10 rounded-xl mb-4 flex items-center justify-center ${
-                        template.id === 'blank' ? 'bg-lavender-100' : 'bg-blue-100'
+                        template.id === 'blank' ? 'bg-gray-100' : 'bg-blue-100'
                       }`}>
                         {template.id === 'blank' ? (
-                          <Plus className="w-5 h-5 text-lavender-600" />
+                          <Plus className="w-5 h-5 text-gray-700" />
                         ) : (
                           <FileText className="w-5 h-5 text-blue-600" />
                         )}
@@ -4315,7 +4310,7 @@ function CreateWorksheetContent() {
                       onClick={() => { setViewMode('edit'); resetTestMode() }}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                         viewMode === 'edit'
-                          ? 'bg-blue-500 text-white shadow-md'
+                          ? 'bg-gray-900 text-white shadow-md'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
@@ -4325,7 +4320,7 @@ function CreateWorksheetContent() {
                       onClick={() => { setViewMode('preview'); resetTestMode() }}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
                         viewMode === 'preview'
-                          ? 'bg-blue-500 text-white shadow-md'
+                          ? 'bg-gray-900 text-white shadow-md'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
@@ -4336,7 +4331,7 @@ function CreateWorksheetContent() {
                       onClick={() => { setViewMode('test'); resetTestMode() }}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
                         viewMode === 'test'
-                          ? 'bg-gradient-to-r from-lavender-500 to-lavender-600 text-white shadow-md'
+                          ? 'bg-gray-900 text-white shadow-md'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
@@ -4349,7 +4344,7 @@ function CreateWorksheetContent() {
                       size="sm"
                       onClick={handleContinueToDetails}
                       disabled={!canProceedToDetails}
-                      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-200/50 rounded-xl"
+                      className="bg-gray-900 hover:bg-gray-800 shadow-lg rounded-xl"
                     >
                       {locale === 'fr' ? 'Continuer' : 'Continue'}
                     </Button>
@@ -4362,7 +4357,7 @@ function CreateWorksheetContent() {
                 <div className="flex items-center justify-center gap-3">
                   {/* Step 1: Build */}
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-blue-500 text-white">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-900 text-white">
                       1
                     </div>
                     <span className="text-sm font-medium text-gray-900 hidden sm:inline">
@@ -4448,7 +4443,7 @@ function CreateWorksheetContent() {
                       >
                         <button
                           onClick={() => setShowBlockPicker(!showBlockPicker)}
-                          className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50 transition-all flex items-center justify-center gap-2"
+                          className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-gray-400 hover:text-blue-600 hover:bg-blue-50/50 transition-all flex items-center justify-center gap-2"
                         >
                           <Plus className="w-5 h-5" />
                           {locale === 'fr' ? 'Ajouter une étape' : 'Add a block'}
@@ -4523,7 +4518,7 @@ function CreateWorksheetContent() {
                                           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors group"
                                         >
                                           <Icon className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-600" />
-                                          <span className="text-xs text-blue-600 group-hover:text-blue-700">{lt(bt.label, locale)}</span>
+                                          <span className="text-xs text-blue-600 group-hover:text-gray-800">{lt(bt.label, locale)}</span>
                                         </button>
                                       )
                                     })}
@@ -4536,7 +4531,7 @@ function CreateWorksheetContent() {
                                           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors group"
                                         >
                                           <Icon className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-600" />
-                                          <span className="text-xs text-blue-600 group-hover:text-blue-700">{lt(bt.label, locale)}</span>
+                                          <span className="text-xs text-blue-600 group-hover:text-gray-800">{lt(bt.label, locale)}</span>
                                         </button>
                                       )
                                     })}
@@ -4661,7 +4656,7 @@ function CreateWorksheetContent() {
                       className="bg-white rounded-[1.5rem] shadow-lg border border-gray-200 overflow-hidden"
                     >
                       {/* Test Mode Header */}
-                      <div className={`px-6 py-4 border-b ${testSubmitted ? 'bg-emerald-50 border-emerald-100' : 'bg-lavender-50 border-lavender-100'}`}>
+                      <div className={`px-6 py-4 border-b ${testSubmitted ? 'bg-emerald-50 border-emerald-100' : 'bg-gray-50 border-gray-100'}`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {testSubmitted ? (
@@ -4673,8 +4668,8 @@ function CreateWorksheetContent() {
                               </>
                             ) : (
                               <>
-                                <UserCheck className="w-5 h-5 text-lavender-600" />
-                                <span className="font-medium text-lavender-800">
+                                <UserCheck className="w-5 h-5 text-gray-700" />
+                                <span className="font-medium text-gray-800">
                                   {locale === 'fr' ? 'Mode test - Remplissez comme un membre' : 'Try it Out - Fill in as a member would'}
                                 </span>
                               </>
@@ -4709,7 +4704,7 @@ function CreateWorksheetContent() {
                               >
                                 <Button
                                   onClick={handleTestSubmit}
-                                  className="w-full bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white shadow-lg shadow-lavender-200/50 rounded-xl py-6 text-lg"
+                                  className="w-full bg-gray-900 hover:bg-gray-800 text-white shadow-lg rounded-xl py-6 text-lg"
                                 >
                                   <Send className="w-5 h-5 mr-2" />
                                   {locale === 'fr' ? 'Soumettre' : 'Submit Worksheet'}
@@ -4904,7 +4899,7 @@ function CreateWorksheetContent() {
               {/* Title Card */}
               <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-5 mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-200/50">
+                  <div className="w-12 h-12 rounded-xl bg-gray-900 flex items-center justify-center shadow-lg ">
                     <FileText className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -4924,7 +4919,7 @@ function CreateWorksheetContent() {
                     onClick={() => setStep('build')}
                     className="flex items-center gap-2"
                   >
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-blue-500 text-white">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-900 text-white">
                       <CheckCircle2 className="w-4 h-4" />
                     </div>
                     <span className="text-sm font-medium text-gray-900 hidden sm:inline">
@@ -4932,7 +4927,7 @@ function CreateWorksheetContent() {
                     </span>
                   </button>
 
-                  <div className="w-6 h-0.5 bg-blue-500" />
+                  <div className="w-6 h-0.5 bg-gray-900" />
 
                   {/* Step 2: Details */}
                   <button
@@ -4940,7 +4935,7 @@ function CreateWorksheetContent() {
                     className="flex items-center gap-2"
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                      detailsStep >= 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
+                      detailsStep >= 1 ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500'
                     }`}>
                       {detailsStep > 1 ? <CheckCircle2 className="w-4 h-4" /> : '2'}
                     </div>
@@ -4962,7 +4957,7 @@ function CreateWorksheetContent() {
                     className={`flex items-center gap-2 ${!(description.trim() && selectedCategory) && detailsStep < 2 ? 'cursor-not-allowed opacity-50' : ''}`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                      detailsStep >= 2 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
+                      detailsStep >= 2 ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500'
                     }`}>
                       {detailsStep > 2 ? <CheckCircle2 className="w-4 h-4" /> : '3'}
                     </div>
@@ -4984,7 +4979,7 @@ function CreateWorksheetContent() {
                     className={`flex items-center gap-2 ${detailsStep < 2 ? 'cursor-not-allowed opacity-50' : ''}`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                      detailsStep >= 3 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
+                      detailsStep >= 3 ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500'
                     }`}>
                       4
                     </div>
@@ -5034,7 +5029,7 @@ function CreateWorksheetContent() {
                         onClick={() => setSelectedCategory(category)}
                         className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                           selectedCategory === category
-                            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md shadow-blue-200/50'
+                            ? 'bg-gray-900 text-white shadow-md'
                             : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
                         }`}
                       >
@@ -5069,7 +5064,7 @@ function CreateWorksheetContent() {
                       onClick={() => setResourceLanguage('fr')}
                       className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
                         resourceLanguage === 'fr'
-                          ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-sm'
+                          ? 'bg-blue-50 text-blue-600 border border-gray-200 shadow-sm'
                           : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
                       }`}
                     >
@@ -5097,7 +5092,7 @@ function CreateWorksheetContent() {
                       disabled={!description.trim() || !selectedCategory}
                       className={`rounded-xl px-8 ${
                         description.trim() && selectedCategory
-                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-200/50'
+                          ? 'bg-gray-900 hover:bg-gray-800 shadow-lg'
                           : 'bg-gray-300 cursor-not-allowed'
                       }`}
                     >
@@ -5280,7 +5275,7 @@ function CreateWorksheetContent() {
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                       <Button
                         onClick={() => setDetailsStep(3)}
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-200/50 rounded-xl px-8"
+                        className="bg-gray-900 hover:bg-gray-800 shadow-lg rounded-xl px-8"
                       >
                         {locale === 'fr' ? 'Continuer' : 'Continue'}
                         <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
@@ -5387,17 +5382,17 @@ function CreateWorksheetContent() {
                             onClick={() => setVisibility('private')}
                             className={`p-4 rounded-xl border-2 text-left transition-all ${
                               visibility === 'private' || visibility === 'link_only'
-                                ? 'border-lavender-400 bg-lavender-50'
+                                ? 'border-gray-400 bg-gray-50'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
                             <div className="flex items-center gap-3 mb-2">
                               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                visibility === 'private' || visibility === 'link_only' ? 'bg-lavender-200' : 'bg-gray-100'
+                                visibility === 'private' || visibility === 'link_only' ? 'bg-gray-200' : 'bg-gray-100'
                               }`}>
-                                <Lock className={`w-4 h-4 ${visibility === 'private' || visibility === 'link_only' ? 'text-lavender-700' : 'text-gray-500'}`} />
+                                <Lock className={`w-4 h-4 ${visibility === 'private' || visibility === 'link_only' ? 'text-gray-800' : 'text-gray-500'}`} />
                               </div>
-                              <span className={`font-medium ${visibility === 'private' || visibility === 'link_only' ? 'text-lavender-900' : 'text-gray-700'}`}>
+                              <span className={`font-medium ${visibility === 'private' || visibility === 'link_only' ? 'text-gray-900' : 'text-gray-700'}`}>
                                 {locale === 'fr' ? 'Privé' : 'Private'}
                               </span>
                             </div>
@@ -5464,7 +5459,7 @@ function CreateWorksheetContent() {
                           <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200"
+                            className="mt-4 p-3 bg-blue-50 rounded-xl border border-gray-200"
                           >
                             <p className="text-xs text-blue-700">
                               <Globe className="w-3.5 h-3.5 inline mr-1.5" />
@@ -5564,7 +5559,7 @@ function CreateWorksheetContent() {
             </Button>
             <Button
               onClick={() => setShowTemplateWarningDialog(false)}
-              className="flex-1 sm:flex-none bg-blue-500 hover:bg-blue-600"
+              className="flex-1 sm:flex-none bg-blue-500 hover:bg-gray-800"
             >
               {locale === 'fr' ? 'Modifier' : 'Modify'}
             </Button>

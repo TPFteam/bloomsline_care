@@ -379,7 +379,7 @@ export default function CollectionDetailPage() {
                           {resource.title}
                         </h3>
                         <p className="text-sm text-gray-500 line-clamp-2 mb-4">
-                          {resource.description || (locale === 'fr' ? 'Aucune description' : 'No description')}
+                          {resource.description?.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim() || (locale === 'fr' ? 'Aucune description' : 'No description')}
                         </p>
 
                         {/* Actions */}

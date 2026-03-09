@@ -20,6 +20,8 @@ import {
   Table2,
   CheckCircle,
   Loader2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -27,7 +29,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { SharedResourceWithStory, Member } from '@/types/member'
-import type { Resource, ResourceResponse } from '@/types/resource'
+import type { Resource, ResourceResponse, ResourceBlock } from '@/types/resource'
 
 interface SharedTabProps {
   memberId: string
@@ -98,6 +100,9 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
 
   // Submissions state
   const [submissions, setSubmissions] = useState<SubmissionWithResource[]>([])
+
+  // Expanded response viewer
+  const [expandedResponseId, setExpandedResponseId] = useState<string | null>(null)
 
   // Resource completion filter
   const [resourceFilter, setResourceFilter] = useState<'all' | 'completed' | 'not_completed'>('all')
@@ -202,7 +207,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
           resource:resources(*)
         `)
         .eq('member_id', member.id)
-        .in('status', ['submitted', 'reviewed'])
+        .in('status', ['submitted', 'reviewed', 'draft'])
         .order('submitted_at', { ascending: false })
 
       if (error) {
@@ -216,6 +221,40 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
       setSubmissions((data || []) as SubmissionWithResource[])
     } catch (error) {
       console.error('Error fetching submissions:', error)
+    }
+  }
+
+  const renderResponseValue = (block: ResourceBlock, value: unknown): string => {
+    if (value === undefined || value === null) return '-'
+    switch (block.type) {
+      case 'prompt': return String(value)
+      case 'multiple_choice': {
+        const options: (string | { label?: string })[] = ('options' in block && Array.isArray(block.options)) ? block.options :
+          ('choices' in block && Array.isArray(block.choices)) ? block.choices : []
+        const index = Number(value)
+        const option = options[index]
+        return typeof option === 'string' ? option : option?.label || `Option ${index + 1}`
+      }
+      case 'yes_no': return value === 'yes' ? (locale === 'fr' ? 'Oui' : 'Yes') : (locale === 'fr' ? 'Non' : 'No')
+      case 'checklist': {
+        const items: (string | { text: string })[] = ('items' in block && Array.isArray(block.items)) ? block.items : []
+        const indices = Array.isArray(value) ? value : []
+        return indices.map((i: number) => { const item = items[i]; return typeof item === 'string' ? item : item?.text || String(i) }).join(', ') || '-'
+      }
+      case 'scale': case 'likert': case 'numeric': case 'slider': case 'mood': return String(value)
+      case 'matrix_rating': {
+        const matrixItems = ('matrixItems' in block && Array.isArray(block.matrixItems)) ? block.matrixItems : []
+        const ratings = value as Record<string, number>
+        return Object.entries(ratings).map(([idx, rating]) => `${matrixItems[Number(idx)] || idx}: ${rating}`).join(', ')
+      }
+      case 'table_exercise': {
+        const rows = Array.isArray(value) ? value : []
+        return `${rows.length} ${locale === 'fr' ? 'entrées' : 'entries'}`
+      }
+      case 'date_picker': return value ? new Date(String(value)).toLocaleDateString() : '-'
+      case 'time_input': return String(value)
+      case 'list_input': return Array.isArray(value) ? value.filter(Boolean).join(', ') : '-'
+      default: return JSON.stringify(value)
     }
   }
 
@@ -516,7 +555,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                               <div className="min-w-0">
                                 <h4 className="font-semibold text-gray-900 truncate">{resource.resource.title}</h4>
                                 {resource.resource.description && (
-                                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">{resource.resource.description}</p>
+                                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">{resource.resource.description.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()}</p>
                                 )}
                               </div>
                               <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${config.bg} ${config.text} flex-shrink-0`}>
@@ -594,6 +633,93 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                           </Button>
                         </div>
                       </div>
+
+                      {/* View Responses - for interactive resource types */}
+                      {(() => {
+                        const submission = submissions.find(s => s.resource_id === resource.resource_id)
+                        const isInteractive = ['worksheet', 'exercise', 'assessment', 'table'].includes(resource.resource.type)
+                        if (!isInteractive || !submission) return null
+
+                        const isExpanded = expandedResponseId === resource.id
+                        const blocks = (submission.resource?.blocks || []) as ResourceBlock[]
+                        const questionBlocks = blocks.filter(b =>
+                          ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert',
+                           'numeric', 'slider', 'matrix_rating', 'mood', 'date_picker', 'time_input', 'list_input', 'table_exercise'].includes(b.type)
+                        )
+                        const responses = (submission.responses || {}) as Record<string, unknown>
+
+                        return (
+                          <>
+                            <button
+                              onClick={() => setExpandedResponseId(isExpanded ? null : resource.id)}
+                              className="mt-3 flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              {locale === 'fr' ? 'Voir les réponses' : 'View Responses'}
+                              {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                            </button>
+                            <AnimatePresence>
+                              {isExpanded && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+                                    {questionBlocks.length > 0 ? questionBlocks.map((block, idx) => {
+                                      const response = responses[block.id]
+                                      const hasResponse = response !== undefined && response !== null && response !== ''
+
+                                      // Table exercise: render rows
+                                      if (block.type === 'table_exercise' && Array.isArray(response) && response.length > 0) {
+                                        const columns = ('columns' in block && Array.isArray(block.columns)) ? block.columns : []
+                                        return (
+                                          <div key={block.id} className="rounded-xl bg-gray-50 p-3">
+                                            <p className="text-xs font-medium text-gray-500 mb-2">{typeof block.content === 'string' ? block.content : `Q${idx + 1}`}</p>
+                                            <div className="overflow-x-auto">
+                                              <table className="w-full text-xs">
+                                                <thead>
+                                                  <tr>
+                                                    {columns.map((col: { id: string; header: string }) => (
+                                                      <th key={col.id} className="text-left px-2 py-1.5 text-gray-500 font-medium border-b border-gray-200">{col.header}</th>
+                                                    ))}
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                  {(response as Record<string, string>[]).map((row, ri) => (
+                                                    <tr key={ri}>
+                                                      {columns.map((col: { id: string; header: string }) => (
+                                                        <td key={col.id} className="px-2 py-1.5 text-gray-900 border-b border-gray-100">{row[col.id] || '-'}</td>
+                                                      ))}
+                                                    </tr>
+                                                  ))}
+                                                </tbody>
+                                              </table>
+                                            </div>
+                                          </div>
+                                        )
+                                      }
+
+                                      return (
+                                        <div key={block.id} className="rounded-xl bg-gray-50 px-3 py-2.5">
+                                          <p className="text-xs text-gray-500">{typeof block.content === 'string' ? block.content : `Q${idx + 1}`}</p>
+                                          <p className={`text-sm mt-0.5 ${hasResponse ? 'text-gray-900' : 'text-gray-400 italic'}`}>
+                                            {hasResponse ? renderResponseValue(block, response) : (locale === 'fr' ? 'Non répondu' : 'Not answered')}
+                                          </p>
+                                        </div>
+                                      )
+                                    }) : (
+                                      <p className="text-xs text-gray-400 text-center py-2">{locale === 'fr' ? 'Aucune question' : 'No questions'}</p>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </>
+                        )
+                      })()}
                     </motion.div>
                   )
                 })}

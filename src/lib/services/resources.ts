@@ -676,7 +676,7 @@ export async function getResourceSubmissions(resourceId: string): Promise<Resour
     `)
     .eq('resource_id', resourceId)
     .eq('practitioner_id', user.id) // Only show submissions from this practitioner's members
-    .in('status', ['submitted', 'reviewed'])
+    .in('status', ['submitted', 'reviewed', 'draft'])
     .order('submitted_at', { ascending: false })
 
   if (error) {

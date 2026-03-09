@@ -157,6 +157,7 @@ export async function PATCH(
           scheduled_at: booking.start_time,
           duration_minutes: durationMinutes,
           status: 'scheduled',
+          member_confirmed: true,
           notes: booking.notes || null,
         };
 

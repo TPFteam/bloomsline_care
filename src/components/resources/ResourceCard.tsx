@@ -413,7 +413,7 @@ export function ResourceCard({
 
       {/* Description */}
       <p className="text-sm text-gray-500 mb-4 line-clamp-2">
-        {resource.description || (locale === 'fr' ? 'Aucune description' : locale === 'es' ? 'Sin descripción' : 'No description')}
+        {resource.description?.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim() || (locale === 'fr' ? 'Aucune description' : locale === 'es' ? 'Sin descripción' : 'No description')}
       </p>
 
       {/* Footer: Badges */}

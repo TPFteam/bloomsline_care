@@ -1402,7 +1402,7 @@ function CreatePsychoeducationContent() {
             <ul className="space-y-2">
               {block.points?.map((point, index) => (
                 <li key={index} className="flex items-start gap-3">
-                  <span className="w-2 h-2 rounded-full bg-purple-500 mt-2 flex-shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-gray-500 mt-2 flex-shrink-0" />
                   <span className="text-gray-700">{point}</span>
                 </li>
               ))}
@@ -1416,18 +1416,18 @@ function CreatePsychoeducationContent() {
             block.calloutType === 'info' ? 'bg-blue-50 border-blue-500' :
             block.calloutType === 'warning' ? 'bg-amber-50 border-amber-500' :
             block.calloutType === 'tip' ? 'bg-green-50 border-green-500' :
-            'bg-purple-50 border-purple-500'
+            'bg-gray-50 border-gray-400'
           }`}>
             <div className="flex items-start gap-3">
               {block.calloutType === 'tip' && <Lightbulb className="w-5 h-5 text-green-600 mt-0.5" />}
               {block.calloutType === 'info' && <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />}
               {block.calloutType === 'warning' && <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />}
-              {block.calloutType === 'example' && <BookMarked className="w-5 h-5 text-purple-600 mt-0.5" />}
+              {block.calloutType === 'example' && <BookMarked className="w-5 h-5 text-gray-700 mt-0.5" />}
               <p className={`${
                 block.calloutType === 'info' ? 'text-blue-800' :
                 block.calloutType === 'warning' ? 'text-amber-800' :
                 block.calloutType === 'tip' ? 'text-green-800' :
-                'text-purple-800'
+                'text-gray-800'
               }`}>{block.content}</p>
             </div>
           </div>
@@ -1435,7 +1435,7 @@ function CreatePsychoeducationContent() {
 
         {/* Quote Block */}
         {block.type === 'quote' && (
-          <blockquote className="border-l-4 border-purple-300 pl-4 py-2 italic">
+          <blockquote className="border-l-4 border-gray-300 pl-4 py-2 italic">
             <p className="text-gray-700 text-lg">&ldquo;{block.content}&rdquo;</p>
             {block.attribution && (
               <footer className="text-gray-500 mt-2">— {block.attribution}</footer>
@@ -1469,10 +1469,10 @@ function CreatePsychoeducationContent() {
         {block.type === 'audio' && (
           <div className="space-y-2">
             {block.mediaFile?.url ? (
-              <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl">
+              <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
-                    <Mic className="w-6 h-6 text-purple-600" />
+                  <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
+                    <Mic className="w-6 h-6 text-gray-700" />
                   </div>
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">{block.content || block.mediaFile.name}</p>
@@ -1522,10 +1522,10 @@ function CreatePsychoeducationContent() {
       paragraph: { text: 'text-slate-600', accent: 'bg-slate-400' },
       key_points: { text: 'text-blue-600', accent: 'bg-blue-400' },
       callout: { text: 'text-amber-600', accent: 'bg-amber-400' },
-      quote: { text: 'text-purple-600', accent: 'bg-purple-400' },
+      quote: { text: 'text-gray-700', accent: 'bg-gray-400' },
       image: { text: 'text-emerald-600', accent: 'bg-emerald-400' },
       audio: { text: 'text-orange-600', accent: 'bg-orange-400' },
-      video: { text: 'text-purple-600', accent: 'bg-purple-400' },
+      video: { text: 'text-gray-700', accent: 'bg-gray-400' },
       link: { text: 'text-cyan-600', accent: 'bg-cyan-400' },
     }
     return colors[type] || { text: 'text-gray-600', accent: 'bg-gray-400' }
@@ -1611,7 +1611,7 @@ function CreatePsychoeducationContent() {
                       value={block.content}
                       onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                       placeholder={locale === 'fr' ? 'Entrez le titre...' : 'Enter heading...'}
-                      className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                      className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                     />
                   </div>
                 )}
@@ -1637,7 +1637,7 @@ function CreatePsychoeducationContent() {
                         e.target.style.height = e.target.scrollHeight + 'px'
                       }}
                       placeholder={locale === 'fr' ? 'Écrivez votre contenu éducatif...' : 'Write your educational content...'}
-                      className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-y min-h-[120px] overflow-hidden"
+                      className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-y min-h-[120px] overflow-hidden"
                     />
                   </div>
                 )}
@@ -1654,7 +1654,7 @@ function CreatePsychoeducationContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Points clés à retenir' : 'e.g., Key takeaways'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -1664,13 +1664,13 @@ function CreatePsychoeducationContent() {
                       <div className="space-y-2">
                         {block.points?.map((point, index) => (
                           <div key={index} className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-purple-500 flex-shrink-0" />
+                            <span className="w-2 h-2 rounded-full bg-gray-500 flex-shrink-0" />
                             <input
                               type="text"
                               value={point}
                               onChange={(e) => updateKeyPoint(block.id, index, e.target.value)}
                               placeholder={`${locale === 'fr' ? 'Point' : 'Point'} ${index + 1}`}
-                              className="flex-1 px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                              className="flex-1 px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                             />
                             {(block.points?.length || 0) > 1 && (
                               <button
@@ -1685,7 +1685,7 @@ function CreatePsychoeducationContent() {
                       </div>
                       <button
                         onClick={() => addKeyPoint(block.id)}
-                        className="mt-2 flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700"
+                        className="mt-2 flex items-center gap-2 text-sm text-gray-700 hover:text-gray-800"
                       >
                         <Plus className="w-4 h-4" />
                         {locale === 'fr' ? 'Ajouter un point' : 'Add point'}
@@ -1714,7 +1714,7 @@ function CreatePsychoeducationContent() {
                                   ? value.color === 'blue' ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-400' :
                                     value.color === 'amber' ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-400' :
                                     value.color === 'green' ? 'bg-green-100 text-green-700 ring-2 ring-green-400' :
-                                    'bg-purple-100 text-purple-700 ring-2 ring-purple-400'
+                                    'bg-gray-100 text-gray-800 ring-2 ring-gray-400'
                                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                               }`}
                             >
@@ -1743,7 +1743,7 @@ function CreatePsychoeducationContent() {
                           e.target.style.height = e.target.scrollHeight + 'px'
                         }}
                         placeholder={locale === 'fr' ? 'Contenu de l\'encadré...' : 'Callout content...'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-y min-h-[80px] overflow-hidden"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-y min-h-[80px] overflow-hidden"
                       />
                     </div>
                   </>
@@ -1770,7 +1770,7 @@ function CreatePsychoeducationContent() {
                           e.target.style.height = e.target.scrollHeight + 'px'
                         }}
                         placeholder={locale === 'fr' ? 'Entrez la citation...' : 'Enter the quote...'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl italic focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-y min-h-[80px] overflow-hidden"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl italic focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-y min-h-[80px] overflow-hidden"
                       />
                     </div>
                     <div>
@@ -1782,7 +1782,7 @@ function CreatePsychoeducationContent() {
                         value={block.attribution || ''}
                         onChange={(e) => updateBlock(block.id, { attribution: e.target.value })}
                         placeholder={locale === 'fr' ? 'Ex: Carl Rogers' : 'e.g., Carl Rogers'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                   </>
@@ -1804,7 +1804,7 @@ function CreatePsychoeducationContent() {
                           {block.mediaFile.isUploading && (
                             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                               <div className="flex items-center gap-2 bg-white/90 px-4 py-2 rounded-lg">
-                                <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+                                <Loader2 className="w-5 h-5 animate-spin text-gray-700" />
                                 <span className="text-sm font-medium">
                                   {locale === 'fr' ? 'Téléchargement...' : 'Uploading...'}
                                 </span>
@@ -1843,12 +1843,12 @@ function CreatePsychoeducationContent() {
                           }}
                           className="hidden"
                         />
-                        <div className="p-8 border-2 border-dashed border-purple-200 rounded-xl bg-purple-50/50 text-center hover:bg-purple-100/50 transition-colors">
-                          <Upload className="w-10 h-10 text-purple-400 mx-auto mb-3" />
-                          <p className="text-sm text-purple-600 font-medium">
+                        <div className="p-8 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50 text-center hover:bg-gray-100/50 transition-colors">
+                          <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                          <p className="text-sm text-gray-700 font-medium">
                             {locale === 'fr' ? 'Cliquez pour télécharger une image' : 'Click to upload an image'}
                           </p>
-                          <p className="text-xs text-purple-400 mt-1">PNG, JPG, GIF (max 50MB)</p>
+                          <p className="text-xs text-gray-400 mt-1">PNG, JPG, GIF (max 50MB)</p>
                         </div>
                       </label>
                     )}
@@ -1861,7 +1861,7 @@ function CreatePsychoeducationContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Décrivez l\'image...' : 'Describe the image...'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -1873,7 +1873,7 @@ function CreatePsychoeducationContent() {
                         value={block.caption || ''}
                         onChange={(e) => updateBlock(block.id, { caption: e.target.value })}
                         placeholder={locale === 'fr' ? 'Légende affichée sous l\'image' : 'Caption shown below the image'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                   </>
@@ -1885,14 +1885,14 @@ function CreatePsychoeducationContent() {
                     {/* Audio Upload/Preview */}
                     {block.mediaFile ? (
                       <div className="space-y-3">
-                        <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl">
+                        <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
-                              <div className={`w-12 h-12 rounded-xl ${block.mediaFile.isUploading ? 'bg-purple-50' : 'bg-purple-100'} flex items-center justify-center`}>
+                              <div className={`w-12 h-12 rounded-xl ${block.mediaFile.isUploading ? 'bg-gray-50' : 'bg-gray-100'} flex items-center justify-center`}>
                                 {block.mediaFile.isUploading ? (
-                                  <Loader2 className="w-6 h-6 text-purple-600 animate-spin" />
+                                  <Loader2 className="w-6 h-6 text-gray-700 animate-spin" />
                                 ) : (
-                                  <Mic className="w-6 h-6 text-purple-600" />
+                                  <Mic className="w-6 h-6 text-gray-700" />
                                 )}
                               </div>
                               <div>
@@ -1905,7 +1905,7 @@ function CreatePsychoeducationContent() {
                                 <p className="text-sm text-gray-500">
                                   {formatFileSize(block.mediaFile.size)}
                                   {block.mediaFile.isUploading && (
-                                    <span className="ml-2 text-purple-600">
+                                    <span className="ml-2 text-gray-700">
                                       {locale === 'fr' ? 'Téléchargement...' : 'Uploading...'}
                                     </span>
                                   )}
@@ -1972,12 +1972,12 @@ function CreatePsychoeducationContent() {
                             }}
                             className="hidden"
                           />
-                          <div className="p-6 border-2 border-dashed border-purple-200 rounded-xl bg-purple-50/50 text-center hover:bg-purple-100/50 transition-colors h-full flex flex-col items-center justify-center">
-                            <Upload className="w-8 h-8 text-purple-400 mb-2" />
-                            <p className="text-sm text-purple-600 font-medium">
+                          <div className="p-6 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50 text-center hover:bg-gray-100/50 transition-colors h-full flex flex-col items-center justify-center">
+                            <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                            <p className="text-sm text-gray-700 font-medium">
                               {locale === 'fr' ? 'Télécharger' : 'Upload'}
                             </p>
-                            <p className="text-xs text-purple-400 mt-1">MP3, WAV, OGG</p>
+                            <p className="text-xs text-gray-400 mt-1">MP3, WAV, OGG</p>
                           </div>
                         </label>
 
@@ -2007,7 +2007,7 @@ function CreatePsychoeducationContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Titre de l\'audio...' : 'Audio title...'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -2019,7 +2019,7 @@ function CreatePsychoeducationContent() {
                         value={block.caption || ''}
                         onChange={(e) => updateBlock(block.id, { caption: e.target.value })}
                         placeholder={locale === 'fr' ? 'Description de l\'audio' : 'Audio description'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                   </>
@@ -2040,7 +2040,7 @@ function CreatePsychoeducationContent() {
                           {block.mediaFile.isUploading && (
                             <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                               <div className="flex items-center gap-2 bg-white/90 px-4 py-2 rounded-lg">
-                                <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+                                <Loader2 className="w-5 h-5 animate-spin text-gray-700" />
                                 <span className="text-sm font-medium">
                                   {locale === 'fr' ? 'Téléchargement...' : 'Uploading...'}
                                 </span>
@@ -2112,12 +2112,12 @@ function CreatePsychoeducationContent() {
                             }}
                             className="hidden"
                           />
-                          <div className="p-6 border-2 border-dashed border-purple-200 rounded-xl bg-purple-50/50 text-center hover:bg-purple-100/50 transition-colors h-full flex flex-col items-center justify-center">
-                            <Upload className="w-8 h-8 text-purple-400 mb-2" />
-                            <p className="text-sm text-purple-600 font-medium">
+                          <div className="p-6 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50 text-center hover:bg-gray-100/50 transition-colors h-full flex flex-col items-center justify-center">
+                            <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                            <p className="text-sm text-gray-700 font-medium">
                               {locale === 'fr' ? 'Télécharger' : 'Upload'}
                             </p>
-                            <p className="text-xs text-purple-400 mt-1">MP4, WebM</p>
+                            <p className="text-xs text-gray-400 mt-1">MP4, WebM</p>
                           </div>
                         </label>
 
@@ -2147,7 +2147,7 @@ function CreatePsychoeducationContent() {
                         value={block.content}
                         onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                         placeholder={locale === 'fr' ? 'Titre de la vidéo...' : 'Video title...'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -2159,7 +2159,7 @@ function CreatePsychoeducationContent() {
                         value={block.caption || ''}
                         onChange={(e) => updateBlock(block.id, { caption: e.target.value })}
                         placeholder={locale === 'fr' ? 'Description de la vidéo' : 'Video description'}
-                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                       />
                     </div>
                   </>
@@ -2318,7 +2318,7 @@ function CreatePsychoeducationContent() {
     return (
       <div className="min-h-screen gradient-mesh relative flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-600">
             {locale === 'fr' ? 'Chargement...' : 'Loading...'}
           </p>
@@ -2329,12 +2329,7 @@ function CreatePsychoeducationContent() {
 
   return (
     <div className="min-h-screen gradient-mesh relative">
-      {/* Decorative Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-200/30 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-violet-200/30 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-indigo-200/20 rounded-full blur-3xl" />
-      </div>
+      {/* Background */}
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <AnimatePresence mode="wait">
@@ -2359,9 +2354,9 @@ function CreatePsychoeducationContent() {
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-violet-100/80 mb-6"
+                  className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-100 mb-6"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center shadow-lg shadow-violet-200/50">
+                  <div className="w-12 h-12 rounded-xl bg-gray-900 flex items-center justify-center shadow-lg">
                     <BookOpen className="w-6 h-6 text-white" />
                   </div>
                 </motion.div>
@@ -2389,17 +2384,17 @@ function CreatePsychoeducationContent() {
                       onClick={() => handleSelectTemplate(template.id)}
                       className={`bg-white/90 backdrop-blur-xl rounded-[1.25rem] p-5 cursor-pointer transition-all duration-300 border-2 shadow-lg shadow-gray-200/40 hover:shadow-xl ${
                         template.id === 'blank'
-                          ? 'border-dashed border-violet-300 hover:border-violet-500 bg-violet-50/50'
-                          : 'border-white/60 hover:border-violet-200'
+                          ? 'border-dashed border-gray-300 hover:border-gray-500 bg-gray-50/50'
+                          : 'border-white/60 hover:border-gray-300'
                       }`}
                     >
                       <div className={`w-10 h-10 rounded-xl mb-4 flex items-center justify-center ${
-                        template.id === 'blank' ? 'bg-violet-100' : 'bg-violet-100'
+                        template.id === 'blank' ? 'bg-gray-100' : 'bg-gray-100'
                       }`}>
                         {template.id === 'blank' ? (
-                          <Plus className="w-5 h-5 text-violet-600" />
+                          <Plus className="w-5 h-5 text-gray-600" />
                         ) : (
-                          <BookOpen className="w-5 h-5 text-violet-600" />
+                          <BookOpen className="w-5 h-5 text-gray-600" />
                         )}
                       </div>
                       <h3 className="font-semibold text-gray-900 mb-1">
@@ -2409,7 +2404,7 @@ function CreatePsychoeducationContent() {
                         {lt(template.description, locale)}
                       </p>
                       {template.id !== 'blank' && (
-                        <p className="text-xs text-violet-600 mt-2">
+                        <p className="text-xs text-gray-600 mt-2">
                           {template.blocks.length} {locale === 'fr' ? 'sections' : 'sections'}
                         </p>
                       )}
@@ -2511,7 +2506,7 @@ function CreatePsychoeducationContent() {
                       onClick={() => { setViewMode('edit'); resetPreview() }}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                         viewMode === 'edit'
-                          ? 'bg-purple-500 text-white shadow-md'
+                          ? 'bg-gray-900 text-white shadow-md'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
@@ -2521,7 +2516,7 @@ function CreatePsychoeducationContent() {
                       onClick={() => setViewMode('preview')}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
                         viewMode === 'preview'
-                          ? 'bg-purple-500 text-white shadow-md'
+                          ? 'bg-gray-900 text-white shadow-md'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
@@ -2534,7 +2529,7 @@ function CreatePsychoeducationContent() {
                       size="sm"
                       onClick={handleContinueToDetails}
                       disabled={!canProceedToDetails}
-                      className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-lg shadow-purple-200/50 rounded-xl"
+                      className="bg-gray-900 hover:bg-gray-800 shadow-lg rounded-xl"
                     >
                       {locale === 'fr' ? 'Continuer' : 'Continue'}
                     </Button>
@@ -2547,7 +2542,7 @@ function CreatePsychoeducationContent() {
                 <div className="flex items-center justify-center gap-3">
                   {/* Step 1: Build */}
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-purple-500 text-white">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-900 text-white">
                       1
                     </div>
                     <span className="text-sm font-medium text-gray-900 hidden sm:inline">
@@ -2633,7 +2628,7 @@ function CreatePsychoeducationContent() {
                       >
                         <button
                           onClick={() => setShowBlockPicker(!showBlockPicker)}
-                          className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50/50 transition-all flex items-center justify-center gap-2"
+                          className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-gray-400 hover:text-gray-700 hover:bg-gray-50/50 transition-all flex items-center justify-center gap-2"
                         >
                           <Plus className="w-5 h-5" />
                           {locale === 'fr' ? 'Ajouter un bloc' : 'Add a block'}
@@ -2655,10 +2650,10 @@ function CreatePsychoeducationContent() {
                                     <button
                                       key={bt.type}
                                       onClick={() => addBlock(bt.type)}
-                                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-purple-50 transition-colors text-left"
+                                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
                                     >
-                                      <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                                        <Icon className="w-4 h-4 text-purple-600" />
+                                      <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                                        <Icon className="w-4 h-4 text-gray-700" />
                                       </div>
                                       <div>
                                         <p className="text-sm font-medium text-gray-900">{lt(bt.label, locale)}</p>
@@ -2685,7 +2680,7 @@ function CreatePsychoeducationContent() {
                       {/* Preview Header */}
                       <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-100">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-200/50">
+                          <div className="w-12 h-12 rounded-xl bg-gray-900 flex items-center justify-center shadow-lg">
                             <BookOpen className="w-6 h-6 text-white" />
                           </div>
                           <div>
@@ -2695,7 +2690,7 @@ function CreatePsychoeducationContent() {
                         </div>
                         <button
                           onClick={() => setViewMode('edit')}
-                          className="flex items-center gap-2 px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                          className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                         >
                           <RotateCcw className="w-4 h-4" />
                           {locale === 'fr' ? 'Retour à l\'édition' : 'Back to Edit'}
@@ -2703,7 +2698,7 @@ function CreatePsychoeducationContent() {
                       </div>
 
                       {/* Preview Content */}
-                      <div className="prose prose-purple max-w-none">
+                      <div className="prose prose-gray max-w-none">
                         {blocks.length === 0 ? (
                           <div className="text-center py-12 text-gray-400">
                             <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -2723,11 +2718,11 @@ function CreatePsychoeducationContent() {
                   <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="bg-gradient-to-br from-purple-50 via-violet-50/50 to-indigo-50/30 rounded-[1.5rem] border-2 border-purple-200/60 p-5 shadow-lg shadow-purple-100/30"
+                    className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] border-2 border-gray-200/60 p-5 shadow-lg shadow-gray-200/40"
                   >
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-xl bg-purple-100/80 flex items-center justify-center">
-                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-400 to-violet-500 flex items-center justify-center shadow-md">
+                      <div className="w-10 h-10 rounded-xl bg-gray-100/80 flex items-center justify-center">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center shadow-md">
                           <Brain className="w-4 h-4 text-white" />
                         </div>
                       </div>
@@ -2737,15 +2732,15 @@ function CreatePsychoeducationContent() {
                     </div>
                     <ul className="space-y-2 text-sm text-gray-700">
                       <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 flex-shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 flex-shrink-0" />
                         {locale === 'fr' ? 'Utilisez un langage simple et clair' : 'Use simple, clear language'}
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 flex-shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 flex-shrink-0" />
                         {locale === 'fr' ? 'Incluez des exemples concrets' : 'Include concrete examples'}
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 flex-shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 flex-shrink-0" />
                         {locale === 'fr' ? 'Aérez le contenu avec des listes' : 'Break up content with lists'}
                       </li>
                     </ul>
@@ -2766,7 +2761,7 @@ function CreatePsychoeducationContent() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-3xl font-bold text-purple-600">{estimateReadingTime()}</p>
+                        <p className="text-3xl font-bold text-gray-700">{estimateReadingTime()}</p>
                         <p className="text-sm text-gray-500">
                           {locale === 'fr' ? 'min lecture' : 'min read'}
                         </p>
@@ -2821,7 +2816,7 @@ function CreatePsychoeducationContent() {
               {/* Title Card */}
               <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-5 mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-200/50">
+                  <div className="w-12 h-12 rounded-xl bg-gray-900 flex items-center justify-center shadow-lg">
                     <BookOpen className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -2841,7 +2836,7 @@ function CreatePsychoeducationContent() {
                     onClick={() => setStep('build')}
                     className="flex items-center gap-2"
                   >
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-purple-500 text-white">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-900 text-white">
                       <CheckCircle2 className="w-4 h-4" />
                     </div>
                     <span className="text-sm font-medium text-gray-900 hidden sm:inline">
@@ -2849,7 +2844,7 @@ function CreatePsychoeducationContent() {
                     </span>
                   </button>
 
-                  <div className="w-6 h-0.5 bg-purple-500" />
+                  <div className="w-6 h-0.5 bg-gray-900" />
 
                   {/* Step 2: Details */}
                   <button
@@ -2857,7 +2852,7 @@ function CreatePsychoeducationContent() {
                     className="flex items-center gap-2"
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                      detailsStep >= 1 ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-500'
+                      detailsStep >= 1 ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500'
                     }`}>
                       {detailsStep > 1 ? <CheckCircle2 className="w-4 h-4" /> : '2'}
                     </div>
@@ -2866,7 +2861,7 @@ function CreatePsychoeducationContent() {
                     </span>
                   </button>
 
-                  <div className={`w-6 h-0.5 ${detailsStep > 1 ? 'bg-purple-500' : 'bg-gray-200'}`} />
+                  <div className={`w-6 h-0.5 ${detailsStep > 1 ? 'bg-gray-500' : 'bg-gray-200'}`} />
 
                   {/* Step 3: Settings */}
                   <button
@@ -2878,7 +2873,7 @@ function CreatePsychoeducationContent() {
                     className={`flex items-center gap-2 ${!(description.trim() && selectedCategory) && detailsStep < 2 ? 'cursor-not-allowed opacity-50' : ''}`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                      detailsStep >= 2 ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-500'
+                      detailsStep >= 2 ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500'
                     }`}>
                       {detailsStep > 2 ? <CheckCircle2 className="w-4 h-4" /> : '3'}
                     </div>
@@ -2887,7 +2882,7 @@ function CreatePsychoeducationContent() {
                     </span>
                   </button>
 
-                  <div className={`w-6 h-0.5 ${detailsStep > 2 ? 'bg-purple-500' : 'bg-gray-200'}`} />
+                  <div className={`w-6 h-0.5 ${detailsStep > 2 ? 'bg-gray-500' : 'bg-gray-200'}`} />
 
                   {/* Step 4: Publish */}
                   <button
@@ -2899,7 +2894,7 @@ function CreatePsychoeducationContent() {
                     className={`flex items-center gap-2 ${detailsStep < 2 ? 'cursor-not-allowed opacity-50' : ''}`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                      detailsStep >= 3 ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-500'
+                      detailsStep >= 3 ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500'
                     }`}>
                       4
                     </div>
@@ -2948,7 +2943,7 @@ function CreatePsychoeducationContent() {
                           onClick={() => setSelectedCategory(category)}
                           className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                             selectedCategory === category
-                              ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md shadow-purple-200/50'
+                              ? 'bg-gray-900 text-white shadow-md'
                               : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
                           }`}
                         >
@@ -3005,7 +3000,7 @@ function CreatePsychoeducationContent() {
                         disabled={!description.trim() || !selectedCategory}
                         className={`rounded-xl px-8 ${
                           description.trim() && selectedCategory
-                            ? 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-lg shadow-purple-200/50'
+                            ? 'bg-gray-900 hover:bg-gray-800 shadow-lg'
                             : 'bg-gray-300 cursor-not-allowed'
                         }`}
                       >
@@ -3032,7 +3027,7 @@ function CreatePsychoeducationContent() {
                     className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-6"
                   >
                     <div className="flex items-center gap-3 mb-4">
-                      <Target className="w-5 h-5 text-purple-600" />
+                      <Target className="w-5 h-5 text-gray-700" />
                       <h2 className="text-lg font-semibold text-gray-900">
                         {locale === 'fr' ? 'Objectifs d\'apprentissage' : 'Learning Objectives'}
                       </h2>
@@ -3043,7 +3038,7 @@ function CreatePsychoeducationContent() {
                     <div className="space-y-2">
                       {learningObjectives.map((objective, index) => (
                         <div key={index} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-medium flex-shrink-0">
+                          <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center text-xs font-medium flex-shrink-0">
                             {index + 1}
                           </span>
                           <input
@@ -3051,7 +3046,7 @@ function CreatePsychoeducationContent() {
                             value={objective}
                             onChange={(e) => updateLearningObjective(index, e.target.value)}
                             placeholder={locale === 'fr' ? 'Ex: Comprendre les symptômes de l\'anxiété' : 'e.g., Understand anxiety symptoms'}
-                            className="flex-1 px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                            className="flex-1 px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                           />
                           {learningObjectives.length > 1 && (
                             <button
@@ -3066,7 +3061,7 @@ function CreatePsychoeducationContent() {
                     </div>
                     <button
                       onClick={addLearningObjective}
-                      className="mt-3 flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700"
+                      className="mt-3 flex items-center gap-2 text-sm text-gray-700 hover:text-gray-800"
                     >
                       <Plus className="w-4 h-4" />
                       {locale === 'fr' ? 'Ajouter un objectif' : 'Add objective'}
@@ -3078,7 +3073,7 @@ function CreatePsychoeducationContent() {
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                       <Button
                         onClick={() => setDetailsStep(3)}
-                        className="rounded-xl px-8 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-lg shadow-purple-200/50"
+                        className="rounded-xl px-8 bg-gray-900 hover:bg-gray-800 shadow-lg"
                       >
                         {locale === 'fr' ? 'Continuer' : 'Continue'}
                         <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
@@ -3146,17 +3141,17 @@ function CreatePsychoeducationContent() {
                           onClick={() => setSaveAs('published')}
                           className={`p-4 rounded-xl border-2 text-left transition-all ${
                             saveAs === 'published'
-                              ? 'border-purple-400 bg-purple-50'
+                              ? 'border-gray-400 bg-gray-50'
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
                           <div className="flex items-center gap-3 mb-2">
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                              saveAs === 'published' ? 'bg-purple-200' : 'bg-gray-100'
+                              saveAs === 'published' ? 'bg-gray-200' : 'bg-gray-100'
                             }`}>
-                              <CheckCircle2 className={`w-4 h-4 ${saveAs === 'published' ? 'text-purple-700' : 'text-gray-500'}`} />
+                              <CheckCircle2 className={`w-4 h-4 ${saveAs === 'published' ? 'text-gray-800' : 'text-gray-500'}`} />
                             </div>
-                            <span className={`font-medium ${saveAs === 'published' ? 'text-purple-900' : 'text-gray-700'}`}>
+                            <span className={`font-medium ${saveAs === 'published' ? 'text-gray-900' : 'text-gray-700'}`}>
                               {locale === 'fr' ? 'Publier' : 'Publish'}
                             </span>
                           </div>
@@ -3184,17 +3179,17 @@ function CreatePsychoeducationContent() {
                             onClick={() => setVisibility('private')}
                             className={`p-4 rounded-xl border-2 text-left transition-all ${
                               visibility === 'private' || visibility === 'link_only'
-                                ? 'border-purple-400 bg-purple-50'
+                                ? 'border-gray-400 bg-gray-50'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
                             <div className="flex items-center gap-3 mb-2">
                               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                visibility === 'private' || visibility === 'link_only' ? 'bg-purple-200' : 'bg-gray-100'
+                                visibility === 'private' || visibility === 'link_only' ? 'bg-gray-200' : 'bg-gray-100'
                               }`}>
-                                <Lock className={`w-4 h-4 ${visibility === 'private' || visibility === 'link_only' ? 'text-purple-700' : 'text-gray-500'}`} />
+                                <Lock className={`w-4 h-4 ${visibility === 'private' || visibility === 'link_only' ? 'text-gray-800' : 'text-gray-500'}`} />
                               </div>
-                              <span className={`font-medium ${visibility === 'private' || visibility === 'link_only' ? 'text-purple-900' : 'text-gray-700'}`}>
+                              <span className={`font-medium ${visibility === 'private' || visibility === 'link_only' ? 'text-gray-900' : 'text-gray-700'}`}>
                                 {locale === 'fr' ? 'Privé' : 'Private'}
                               </span>
                             </div>
@@ -3281,7 +3276,7 @@ function CreatePsychoeducationContent() {
                       <Button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="rounded-xl px-8 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-lg shadow-purple-200/50"
+                        className="rounded-xl px-8 bg-gray-900 hover:bg-gray-800 shadow-lg"
                       >
                         {isSaving ? (
                           <>
@@ -3408,7 +3403,7 @@ function CreatePsychoeducationContent() {
             </Button>
             <Button
               onClick={() => setShowTemplateWarningDialog(false)}
-              className="flex-1 sm:flex-none bg-purple-500 hover:bg-purple-600"
+              className="flex-1 sm:flex-none bg-gray-500 hover:bg-gray-800"
             >
               {locale === 'fr' ? 'Modifier' : 'Modify'}
             </Button>
@@ -3445,7 +3440,7 @@ function CreatePsychoeducationContent() {
 
 export default function CreatePsychoeducationPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-rose-50/30 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500"></div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>}>
       <CreatePsychoeducationContent />
     </Suspense>
   )

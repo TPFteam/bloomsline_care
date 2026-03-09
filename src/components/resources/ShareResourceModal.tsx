@@ -243,7 +243,7 @@ export function ShareResourceModal({
                   </h3>
                   {resource.description && (
                     <p className="text-xs text-gray-500 truncate mt-0.5">
-                      {resource.description}
+                      {resource.description?.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()}
                     </p>
                   )}
                 </div>

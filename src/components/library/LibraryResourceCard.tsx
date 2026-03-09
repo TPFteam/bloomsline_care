@@ -143,7 +143,7 @@ export function LibraryResourceCard({
 
         {/* Description */}
         <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-          {resource.description}
+          {resource.description?.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()}
         </p>
 
         {/* Tags */}
