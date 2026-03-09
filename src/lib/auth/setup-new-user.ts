@@ -146,14 +146,20 @@ export async function setupNewUser(
   }
 
   if (signupSource === 'practitioner_invite' && memberEntry) {
-    // Link existing member record to this user
+    // Link existing member record to this user, fill in name if missing
+    const nameParts = (userMetadata.full_name || '').split(' ')
+    const updateData: Record<string, any> = {
+      user_id: userId,
+      status: 'active',
+      updated_at: new Date().toISOString(),
+    }
+    if (!memberEntry.first_name && nameParts[0]) {
+      updateData.first_name = nameParts[0]
+      updateData.last_name = nameParts.slice(1).join(' ') || ''
+    }
     await adminClient
       .from('members')
-      .update({
-        user_id: userId,
-        status: 'active',
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', memberEntry.id)
 
     userType = 'member'
