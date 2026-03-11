@@ -35,5 +35,14 @@ export async function POST(request: NextRequest) {
     avatar_url: user.user_metadata?.avatar_url,
   })
 
+  // Delete ineligible users to prevent ghost accounts
+  if (!result.ok && result.should_delete_user) {
+    try {
+      await adminClient.auth.admin.deleteUser(user.id)
+    } catch {
+      // Silently handle deletion errors
+    }
+  }
+
   return NextResponse.json(result)
 }
