@@ -61,7 +61,7 @@ function HeroSection({ locale, l, content, onCtaClick }: { locale: string; l: (o
       </div>
       <div className="bg-blue-50/70 rounded-xl px-3.5 py-2.5 flex items-center gap-2 flex-wrap">
         <span className="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{fr ? 'Hypothèse' : 'Hypothesis'}</span>
-        <span className="text-sm text-neutral-600">{fr ? 'Hypervigilance liée à l&apos;insécurité' : 'Hypervigilance linked to insecurity'}</span>
+        <span className="text-sm text-neutral-600">{fr ? 'Hypervigilance liée à l\u2019insécurité' : 'Hypervigilance linked to insecurity'}</span>
       </div>
     </div>,
 
