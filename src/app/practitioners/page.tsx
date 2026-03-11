@@ -21,7 +21,6 @@ import { Footer } from '@/components/landing/footer'
 import { TabProvider } from '@/lib/landing/tab-context'
 import { EarlyAccessModalProvider } from '@/lib/landing/early-access-modal-context'
 import { PractitionerSignupModalProvider, usePractitionerSignupModal } from '@/lib/landing/practitioner-signup-modal-context'
-import { useLanguage } from '@/lib/i18n/context'
 import { GlimpseSection } from '@/components/landing/glimpse-section'
 
 const DEMO_BOOKING_URL = 'https://calendar.app.google/DwruLrgYZ6TEegL58'
@@ -234,12 +233,13 @@ function HeroSection({ locale, l, content, onCtaClick }: { locale: string; l: (o
 /* ─── Page Content ─── */
 
 function PractitionerContent() {
-  const { locale } = useLanguage()
   const { openModal } = usePractitionerSignupModal()
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [testimonialExpanded, setTestimonialExpanded] = useState(true)
 
-  const fr = locale === 'fr'
+  // Force French for practitioners page
+  const locale = 'fr'
+  const fr = true
 
   const handleOpenModal = () => {
     openModal()
