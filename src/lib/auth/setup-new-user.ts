@@ -71,19 +71,23 @@ export async function setupNewUser(
 
   // --- User is authorized ---
 
-  // Update signup source on users table
-  const updateData: Record<string, unknown> = {
+  // Ensure user record exists and update signup source
+  const upsertData: Record<string, unknown> = {
+    id: userId,
+    email: userEmail,
+    full_name: userMetadata.full_name || null,
+    avatar_url: userMetadata.avatar_url || null,
     signup_source: signupSource,
     invited_by_practitioner_id: invitedByPractitionerId,
+    has_consented: false,
   }
   if (signupSource === 'practitioner_invite') {
-    updateData.user_type = 'member'
+    upsertData.user_type = 'member'
   }
 
   await adminClient
     .from('users')
-    .update(updateData)
-    .eq('id', userId)
+    .upsert(upsertData, { onConflict: 'id' })
 
   let userType: string = 'unknown'
   let action: 'mobile_app' | 'dashboard' | 'onboarding' = 'onboarding'
