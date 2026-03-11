@@ -62,39 +62,39 @@ const tableTemplates = [
     name: { en: 'Emotion Tracker', fr: 'Suivi des émotions' },
     description: { en: 'Monitor emotions and coping strategies', fr: 'Surveiller les émotions et stratégies d\'adaptation' },
     columns: [
-      { id: '1', header: 'Time', description: 'What time was it?' },
-      { id: '2', header: 'Emotion', description: 'What emotion did you feel?' },
-      { id: '3', header: 'Intensity (1-10)', description: 'How strong was it?' },
-      { id: '4', header: 'Trigger', description: 'What triggered this feeling?' },
-      { id: '5', header: 'Coping Strategy', description: 'What helped?' },
+      { id: '1', header: { en: 'Time', fr: 'Heure' }, description: { en: 'What time was it?', fr: 'Quelle heure était-il ?' } },
+      { id: '2', header: { en: 'Emotion', fr: 'Émotion' }, description: { en: 'What emotion did you feel?', fr: 'Quelle émotion avez-vous ressentie ?' } },
+      { id: '3', header: { en: 'Intensity (1-10)', fr: 'Intensité (1-10)' }, description: { en: 'How strong was it?', fr: 'Quelle était son intensité ?' } },
+      { id: '4', header: { en: 'Trigger', fr: 'Déclencheur' }, description: { en: 'What triggered this feeling?', fr: 'Qu\'est-ce qui a déclenché ce sentiment ?' } },
+      { id: '5', header: { en: 'Coping Strategy', fr: 'Stratégie d\'adaptation' }, description: { en: 'What helped?', fr: 'Qu\'est-ce qui a aidé ?' } },
     ],
-    instructions: 'Track your emotions throughout the day to identify patterns and effective coping strategies.',
+    instructions: { en: 'Track your emotions throughout the day to identify patterns and effective coping strategies.', fr: 'Suivez vos émotions tout au long de la journée pour identifier les schémas et les stratégies d\'adaptation efficaces.' },
   },
   {
     id: 'gratitude-log',
     name: { en: 'Gratitude Log', fr: 'Journal de gratitude' },
     description: { en: 'Daily gratitude tracking table', fr: 'Tableau de suivi de gratitude quotidien' },
     columns: [
-      { id: '1', header: 'Date', description: 'Today\'s date' },
-      { id: '2', header: 'I\'m grateful for...', description: 'Something you appreciate' },
-      { id: '3', header: 'Why it matters', description: 'Why is this meaningful?' },
+      { id: '1', header: { en: 'Date', fr: 'Date' }, description: { en: 'Today\'s date', fr: 'La date du jour' } },
+      { id: '2', header: { en: 'I\'m grateful for...', fr: 'Je suis reconnaissant(e) pour...' }, description: { en: 'Something you appreciate', fr: 'Quelque chose que vous appréciez' } },
+      { id: '3', header: { en: 'Why it matters', fr: 'Pourquoi c\'est important' }, description: { en: 'Why is this meaningful?', fr: 'Pourquoi est-ce significatif ?' } },
     ],
-    instructions: 'Each day, add at least one thing you\'re grateful for. Reflect on why it matters to you.',
+    instructions: { en: 'Each day, add at least one thing you\'re grateful for. Reflect on why it matters to you.', fr: 'Chaque jour, ajoutez au moins une chose pour laquelle vous êtes reconnaissant(e). Réfléchissez à pourquoi c\'est important pour vous.' },
   },
   {
     id: 'cognitive-restructuring',
     name: { en: 'Cognitive Restructuring Chart', fr: 'Tableau de restructuration cognitive' },
     description: { en: 'Challenge and reframe negative thoughts', fr: 'Remettre en question et reformuler les pensées négatives' },
     columns: [
-      { id: '1', header: 'Situation', description: 'What happened? Where were you?' },
-      { id: '2', header: 'Automatic Thought', description: 'What went through your mind?' },
-      { id: '3', header: 'Emotion (0-100%)', description: 'How did you feel? Rate intensity' },
-      { id: '4', header: 'Evidence For', description: 'Facts that support the thought' },
-      { id: '5', header: 'Evidence Against', description: 'Facts that contradict it' },
-      { id: '6', header: 'Balanced Thought', description: 'A more realistic perspective' },
-      { id: '7', header: 'New Emotion (0-100%)', description: 'How do you feel now?' },
+      { id: '1', header: { en: 'Situation', fr: 'Situation' }, description: { en: 'What happened? Where were you?', fr: 'Que s\'est-il passé ? Où étiez-vous ?' } },
+      { id: '2', header: { en: 'Automatic Thought', fr: 'Pensée automatique' }, description: { en: 'What went through your mind?', fr: 'Qu\'est-ce qui vous est passé par l\'esprit ?' } },
+      { id: '3', header: { en: 'Emotion (0-100%)', fr: 'Émotion (0-100%)' }, description: { en: 'How did you feel? Rate intensity', fr: 'Comment vous êtes-vous senti(e) ? Évaluez l\'intensité' } },
+      { id: '4', header: { en: 'Evidence For', fr: 'Preuves pour' }, description: { en: 'Facts that support the thought', fr: 'Faits qui soutiennent la pensée' } },
+      { id: '5', header: { en: 'Evidence Against', fr: 'Preuves contre' }, description: { en: 'Facts that contradict it', fr: 'Faits qui la contredisent' } },
+      { id: '6', header: { en: 'Balanced Thought', fr: 'Pensée équilibrée' }, description: { en: 'A more realistic perspective', fr: 'Une perspective plus réaliste' } },
+      { id: '7', header: { en: 'New Emotion (0-100%)', fr: 'Nouvelle émotion (0-100%)' }, description: { en: 'How do you feel now?', fr: 'Comment vous sentez-vous maintenant ?' } },
     ],
-    instructions: 'Use this chart to identify negative automatic thoughts and develop more balanced perspectives. Start by describing the situation, then work through each column to challenge unhelpful thinking patterns.',
+    instructions: { en: 'Use this chart to identify negative automatic thoughts and develop more balanced perspectives. Start by describing the situation, then work through each column to challenge unhelpful thinking patterns.', fr: 'Utilisez ce tableau pour identifier les pensées automatiques négatives et développer des perspectives plus équilibrées. Commencez par décrire la situation, puis parcourez chaque colonne pour remettre en question les schémas de pensée négatifs.' },
   },
   {
     id: 'blank',
@@ -121,6 +121,12 @@ function LoadingFallback() {
       </div>
     </div>
   )
+}
+
+// Extract localized string — handles both plain strings and { en, fr } objects
+function extractL(val: string | Record<string, string>, lang: string): string {
+  if (typeof val === 'string') return val
+  return val[lang] ?? val['en'] ?? ''
 }
 
 // Main page wrapper with Suspense
@@ -222,7 +228,10 @@ function CreateTableExerciseContent() {
                 description: col.description || '',
               })))
             }
-            if (tableBlock && 'instructions' in tableBlock && typeof tableBlock.instructions === 'string') {
+            // Prefer resource-level instructions, fall back to block-level
+            if (data.instructions && typeof data.instructions === 'string') {
+              setInstructions(data.instructions)
+            } else if (tableBlock && 'instructions' in tableBlock && typeof tableBlock.instructions === 'string') {
               setInstructions(tableBlock.instructions)
             }
           }
@@ -266,14 +275,19 @@ function CreateTableExerciseContent() {
           selectedTemplateIdRef.current = null
           originalTemplateContentRef.current = null
         } else {
-          const columnsWithIds = template.columns.map(c => ({ ...c, id: generateId() }))
+          const lang = resourceLanguage || locale
+          const columnsWithIds = template.columns.map(c => ({
+            id: generateId(),
+            header: extractL(c.header, lang),
+            description: extractL(c.description, lang),
+          }))
           setColumns(columnsWithIds)
-          setTitle(lt(template.name, locale))
-          setInstructions(template.instructions || '')
+          setTitle(extractL(template.name, lang))
+          setInstructions(extractL(template.instructions, lang) || '')
           selectedTemplateIdRef.current = templateParam
           originalTemplateContentRef.current = {
             columns: columnsWithIds.map(c => ({ ...c })),
-            instructions: template.instructions || ''
+            instructions: extractL(template.instructions, lang) || ''
           }
         }
       }
@@ -360,13 +374,15 @@ function CreateTableExerciseContent() {
     const template = tableTemplates.find(t => t.id === templateId)
     if (template) {
       // Assign unique IDs to columns
+      const lang = resourceLanguage || locale
       const columnsWithIds = template.columns.map(col => ({
-        ...col,
         id: generateId(),
+        header: extractL(col.header, lang),
+        description: extractL(col.description, lang),
       }))
       setColumns(columnsWithIds)
-      setInstructions(template.instructions)
-      setTitle(lt(template.name, locale)) // Set title from template
+      setInstructions(extractL(template.instructions, lang))
+      setTitle(extractL(template.name, lang)) // Set title from template
       setStep('build')
 
       // Track template for modification check (skip for blank template)
@@ -375,7 +391,7 @@ function CreateTableExerciseContent() {
         // Deep copy to ensure we're comparing against the original values
         originalTemplateContentRef.current = {
           columns: columnsWithIds.map(c => ({ ...c })),
-          instructions: template.instructions
+          instructions: extractL(template.instructions, lang)
         }
       } else {
         selectedTemplateIdRef.current = null
@@ -452,6 +468,7 @@ function CreateTableExerciseContent() {
       const resourceData = {
         title: title,
         description: description || null,
+        instructions: instructions || null,
         category: selectedCategory,
         status: saveAs,
         visibility: visibility,
@@ -538,6 +555,7 @@ function CreateTableExerciseContent() {
       const resourceData = {
         title: title,
         description: description || null,
+        instructions: instructions || null,
         category: selectedCategory,
         status: 'draft' as const,
         visibility: 'private' as const,

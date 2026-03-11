@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Mail, ArrowRight } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -30,6 +30,11 @@ function SignInContent() {
   const [showDialog, setShowDialog] = useState(false)
   const [dialogMessage, setDialogMessage] = useState('')
 
+  // Magic link state
+  const [magicEmail, setMagicEmail] = useState('')
+  const [magicLoading, setMagicLoading] = useState(false)
+  const [magicSent, setMagicSent] = useState(false)
+
   useEffect(() => {
     const error = searchParams.get('error')
     const info = searchParams.get('info')
@@ -44,6 +49,52 @@ function SignInContent() {
       setShowDialog(true)
     }
   }, [searchParams])
+
+  const handleMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!magicEmail.trim() || magicLoading) return
+
+    setMagicLoading(true)
+    try {
+      // 1. Check eligibility / account existence on server
+      const res = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: magicEmail.trim(), flow: 'signin' }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        if (data.error === 'no_account') {
+          router.push(`/sign-up?info=${encodeURIComponent(data.message)}`)
+        } else {
+          toast.error(data.message || data.error)
+        }
+        setMagicLoading(false)
+        return
+      }
+
+      // 2. Send OTP from browser client (PKCE flow)
+      const { error } = await supabase.auth.signInWithOtp({
+        email: magicEmail.trim(),
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?flow=signin`,
+          shouldCreateUser: false,
+        },
+      })
+
+      if (error) {
+        toast.error(error.message)
+        setMagicLoading(false)
+        return
+      }
+
+      setMagicSent(true)
+    } catch {
+      toast.error('Something went wrong')
+    }
+    setMagicLoading(false)
+  }
 
   const handleGoogleSignIn = async () => {
     try {
@@ -199,6 +250,58 @@ function SignInContent() {
                 </>
               )}
             </button>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 my-4">
+              <div className="flex-1 h-px bg-neutral-200" />
+              <span className="text-xs text-neutral-400">{locale === 'fr' ? 'ou' : locale === 'es' ? 'o' : 'or'}</span>
+              <div className="flex-1 h-px bg-neutral-200" />
+            </div>
+
+            {/* Magic Link */}
+            {magicSent ? (
+              <div className="text-center py-3">
+                <Mail className="w-8 h-8 text-teal-500 mx-auto mb-3" />
+                <p className="text-sm font-medium text-neutral-900 mb-1">
+                  {locale === 'fr' ? 'Vérifiez votre boîte mail' : locale === 'es' ? 'Revisa tu correo' : 'Check your email'}
+                </p>
+                <p className="text-xs text-neutral-500">
+                  {locale === 'fr'
+                    ? `Lien de connexion envoyé à ${magicEmail}`
+                    : locale === 'es'
+                      ? `Enlace enviado a ${magicEmail}`
+                      : `Sign-in link sent to ${magicEmail}`}
+                </p>
+                <button
+                  onClick={() => { setMagicSent(false); setMagicEmail('') }}
+                  className="text-xs text-teal-600 hover:text-teal-700 mt-3"
+                >
+                  {locale === 'fr' ? 'Utiliser un autre email' : locale === 'es' ? 'Usar otro correo' : 'Use a different email'}
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleMagicLink} className="flex gap-2">
+                <input
+                  type="email"
+                  value={magicEmail}
+                  onChange={(e) => setMagicEmail(e.target.value)}
+                  placeholder={locale === 'fr' ? 'Votre email' : locale === 'es' ? 'Tu correo' : 'Your email'}
+                  className="flex-1 px-4 py-3 rounded-full border border-neutral-200 text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 placeholder:text-neutral-400"
+                  disabled={magicLoading}
+                />
+                <button
+                  type="submit"
+                  disabled={!magicEmail.trim() || magicLoading}
+                  className="px-4 py-3 bg-teal-600 text-white rounded-full hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {magicLoading ? (
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <ArrowRight className="w-5 h-5" />
+                  )}
+                </button>
+              </form>
+            )}
 
             {/* Sign up link */}
             <p className="text-center text-neutral-500 mt-6 text-sm">

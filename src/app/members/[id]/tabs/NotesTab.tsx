@@ -403,6 +403,56 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     toast.success(locale === 'fr' ? 'Type renommé' : 'Type renamed')
   }
 
+  // Wrappers for RichTextEditor tag management
+  const handleEditorRenameType = (oldName: string, newName: string) => {
+    renameCustomType(oldName, newName)
+    const val = newName.trim().toLowerCase().replace(/\s+/g, '_')
+    if (val && val !== oldName) {
+      const noteTypeLabels = (t.members as any)?.noteTypes as Record<string, string> | undefined
+      const label = noteTypeLabels?.[val] || val.replace(/_/g, ' ')
+      setSnEditorNoteTypes(prev => prev.map(nt => nt.type === oldName ? { type: val, label } : nt))
+    }
+  }
+
+  const handleEditorDeleteType = async (typeName: string, reassignTo: string) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    // 1. Reassign notes whose note_type matches
+    await supabase.from('progress_notes')
+      .update({ note_type: reassignTo })
+      .eq('practitioner_id', user.id)
+      .eq('note_type', typeName)
+
+    // 2. For notes with inline <mark data-tag="typeName"> in content,
+    //    unwrap the mark tags (keep text, remove the mark wrapper)
+    const notesWithInlineTag = allNotes.filter(n =>
+      n.content.includes(`data-tag="${typeName}"`)
+    )
+    for (const note of notesWithInlineTag) {
+      const updated = note.content.replace(
+        new RegExp(`<mark[^>]*data-tag="${typeName}"[^>]*>(.*?)</mark>`, 'gis'),
+        '$1'
+      )
+      if (updated !== note.content) {
+        await supabase.from('progress_notes')
+          .update({ content: updated })
+          .eq('id', note.id)
+      }
+    }
+
+    deleteNoteType(typeName)
+    setSnEditorNoteTypes(prev => prev.filter(nt => nt.type !== typeName))
+    fetchAllNotes()
+    onNotesUpdate()
+  }
+
+  const getTagNoteCount = (typeName: string): number => {
+    return allNotes.filter(n =>
+      n.note_type === typeName || n.content.includes(`data-tag="${typeName}"`)
+    ).length
+  }
+
   // Close custom type menu on outside click + clamp to viewport
   useEffect(() => {
     if (!customTypeMenu) return
@@ -1344,7 +1394,31 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     {note.title && (
                       <p className="text-xs font-medium text-gray-800 truncate">{note.title}</p>
                     )}
-                    <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mt-0.5">{stripHtml(note.content)}</p>
+                    {(() => {
+                      // Try plain text extraction first
+                      const plain = stripHtml(note.content).trim()
+                      if (plain) return <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mt-0.5">{plain}</p>
+                      // Fallback: extract text from tagged fragments (content is inside <mark> tags)
+                      const fragments = extractTaggedFragments(note.content, allNoteTypes)
+                      if (fragments.length > 0) {
+                        return (
+                          <div className="space-y-0.5 mt-0.5">
+                            {fragments.slice(0, 2).map((frag, i) => {
+                              const colors = getNoteColor(frag.tag)
+                              return (
+                                <div key={i} className="flex items-start gap-1.5">
+                                  <span className={`inline-flex items-center px-1 py-0 rounded text-[9px] font-semibold flex-shrink-0 mt-0.5 ${colors.bg} ${colors.text}`}>
+                                    {frag.label}
+                                  </span>
+                                  <span className="text-xs text-gray-500 line-clamp-1">{frag.text}</span>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )
+                      }
+                      return null
+                    })()}
                   </button>
                 ))}
               </div>
@@ -1758,6 +1832,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                                   noteTypes={snEditorNoteTypes}
                                   lockedTypes={FIXED_NOTE_TYPES as unknown as string[]}
                                   onAddType={handleEditorAddType}
+                                  onRenameType={handleEditorRenameType}
+                                  onDeleteType={handleEditorDeleteType}
+                                  getTagNoteCount={getTagNoteCount}
                                   maxTypes={10}
                                   memberName={member?.first_name}
                                   autoFocus
@@ -1985,6 +2062,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 noteTypes={snEditorNoteTypes}
                 lockedTypes={FIXED_NOTE_TYPES as unknown as string[]}
                 onAddType={handleEditorAddType}
+                onRenameType={handleEditorRenameType}
+                onDeleteType={handleEditorDeleteType}
+                getTagNoteCount={getTagNoteCount}
                 maxTypes={10}
                 memberName={member?.first_name}
                 compact
@@ -2286,6 +2366,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     noteTypes={snEditorNoteTypes}
                     lockedTypes={FIXED_NOTE_TYPES as unknown as string[]}
                     onAddType={handleEditorAddType}
+                    onRenameType={handleEditorRenameType}
+                    onDeleteType={handleEditorDeleteType}
+                    getTagNoteCount={getTagNoteCount}
                     maxTypes={10}
                     memberName={member?.first_name}
                     autoFocus
@@ -2447,6 +2530,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       noteTypes={snEditorNoteTypes}
                       lockedTypes={FIXED_NOTE_TYPES as unknown as string[]}
                       onAddType={handleEditorAddType}
+                      onRenameType={handleEditorRenameType}
+                      onDeleteType={handleEditorDeleteType}
+                      getTagNoteCount={getTagNoteCount}
                       maxTypes={10}
                       memberName={member?.first_name}
                       onAutoSave={handleAutoSaveSessionNote}

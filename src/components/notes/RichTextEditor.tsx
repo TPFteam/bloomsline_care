@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Bold, Italic, ChevronDown, List, ListOrdered, Minus, ScanLine, Loader2, Type, Target, Tag, Quote, X, Eye, EyeOff, Undo2, Redo2, Lock, Plus } from 'lucide-react'
+import { Bold, Italic, ChevronDown, List, ListOrdered, Minus, ScanLine, Loader2, Type, Target, Tag, Quote, X, Eye, EyeOff, Undo2, Redo2, Lock, Plus, Pencil, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 
@@ -157,6 +157,12 @@ interface RichTextEditorProps {
   lockedTypes?: string[]
   /** Called when user adds a custom type from the tag sidebar */
   onAddType?: (typeName: string) => void
+  /** Called when user renames a custom type */
+  onRenameType?: (oldName: string, newName: string) => void
+  /** Called when user deletes a custom type. reassignTo = target tag for existing notes (e.g. 'general') */
+  onDeleteType?: (typeName: string, reassignTo: string) => void
+  /** Returns how many notes use a given tag type */
+  getTagNoteCount?: (typeName: string) => number
   /** Max number of tags allowed (default 10) */
   maxTypes?: number
   memberName?: string
@@ -171,7 +177,7 @@ interface RichTextEditorProps {
   activeTagType?: string
 }
 
-export function RichTextEditor({ value, onChange, placeholder, memberId, locale, autoFocus, milestones, noteTypes, memberName, onAutoSave, autoSaveDelay = 2000, toolbarActions, compact, onSubmit, lockedTypes, onAddType, maxTypes = 10, onTagInsert, activeTagType }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, placeholder, memberId, locale, autoFocus, milestones, noteTypes, memberName, onAutoSave, autoSaveDelay = 2000, toolbarActions, compact, onSubmit, lockedTypes, onAddType, onRenameType, onDeleteType, getTagNoteCount, maxTypes = 10, onTagInsert, activeTagType }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [extracting, setExtracting] = useState(false)
@@ -188,6 +194,13 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
   const initialized = useRef(false)
   const fr = locale === 'fr'
   const es = locale === 'es'
+
+  // Tag management state
+  const [tagEditMode, setTagEditMode] = useState(false)
+  const [renamingTag, setRenamingTag] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const [confirmDeleteTag, setConfirmDeleteTag] = useState<string | null>(null)
+  const [deleteReassignTo, setDeleteReassignTo] = useState('general')
 
   // P2 — Inline trigger state
   const [inlineTrigger, setInlineTrigger] = useState<{
@@ -825,6 +838,52 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     handleInput()
   }, [handleInput])
 
+  // Paste handler — keep pasted text inside active <mark> tag
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const editor = editorRef.current
+    if (!editor) return
+
+    // If there's an active tag/goal/verbatim annotation, force plain-text paste
+    // inside the mark element to prevent the browser from breaking out of it
+    if (activeTag || activeVerbatim) {
+      e.preventDefault()
+      const text = e.clipboardData.getData('text/plain')
+      if (!text) return
+
+      const sel = window.getSelection()
+      if (!sel || !sel.rangeCount) return
+
+      // Check if cursor is inside a mark element
+      let node: Node | null = sel.anchorNode
+      let insideMark = false
+      while (node && node !== editor) {
+        if (node instanceof HTMLElement && node.tagName === 'MARK') {
+          insideMark = true
+          break
+        }
+        node = node.parentNode
+      }
+
+      if (insideMark) {
+        // Insert as plain text within the mark
+        const range = sel.getRangeAt(0)
+        range.deleteContents()
+        const textNode = document.createTextNode(text)
+        range.insertNode(textNode)
+        range.setStartAfter(textNode)
+        range.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(range)
+      } else {
+        // Cursor not in a mark — insert plain text normally
+        document.execCommand('insertText', false, text)
+      }
+
+      handleInput()
+    }
+    // If no active annotation, let the browser handle paste normally
+  }, [activeTag, activeVerbatim, handleInput])
+
   // Break out of <mark> on Enter — let browser handle Enter, then unwrap
   // the mark that gets carried into the new line (skip if in active annotation mode)
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -1044,6 +1103,9 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       setPopoverMode('choices')
       setMarkTooltip(null)
       setSideMenu(null)
+      setTagEditMode(false)
+      setRenamingTag(null)
+      setConfirmDeleteTag(null)
       setInlineTrigger(null)
     }
     document.addEventListener('mousedown', handler)
@@ -1770,12 +1832,139 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
           {/* Tag dropdown — portaled to body */}
           {sideMenu === 'tags' && !activeTag && noteTypes?.length && sideMenuPos && createPortal(
             <div data-side-menu className="fixed z-[100] bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[180px] max-h-[360px] overflow-y-auto" style={{ top: sideMenuPos.top, left: sideMenuPos.left }}>
-              <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                {fr ? 'Étiquettes' : 'Tags'}
+              <div className="px-3 py-1.5 flex items-center justify-between">
+                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  {fr ? 'Étiquettes' : 'Tags'}
+                </span>
+                {(onRenameType || onDeleteType) && (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => { setTagEditMode(prev => !prev); setRenamingTag(null); setConfirmDeleteTag(null) }}
+                    className={`p-1 rounded transition-colors ${tagEditMode ? 'text-violet-600 bg-violet-50' : 'text-gray-400 hover:text-violet-600 hover:bg-gray-100'}`}
+                    title={fr ? 'Modifier les étiquettes' : 'Edit tags'}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
               {noteTypes.map((nt) => {
                 const colors = getTagColor(nt.type, allTagTypes)
                 const isLocked = lockedTypes?.includes(nt.type)
+                const isRenaming = renamingTag === nt.type
+                const isConfirmingDelete = confirmDeleteTag === nt.type
+
+                // Edit mode: show rename/delete controls
+                if (tagEditMode && !isLocked) {
+                  return (
+                    <div key={nt.type} className="w-full px-3 py-1.5 flex items-center gap-2 group">
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.border }} />
+                      {isRenaming ? (
+                        <form
+                          className="flex-1 flex items-center gap-1"
+                          onSubmit={(e) => {
+                            e.preventDefault()
+                            if (onRenameType) onRenameType(nt.type, renameValue)
+                            setRenamingTag(null)
+                          }}
+                        >
+                          <input
+                            autoFocus
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onBlur={() => {
+                              if (onRenameType && renameValue.trim()) onRenameType(nt.type, renameValue)
+                              setRenamingTag(null)
+                            }}
+                            onKeyDown={(e) => { if (e.key === 'Escape') setRenamingTag(null) }}
+                            className="flex-1 text-xs px-1.5 py-0.5 border border-violet-300 rounded focus:outline-none focus:ring-1 focus:ring-violet-300 min-w-0"
+                            onMouseDown={(e) => e.stopPropagation()}
+                          />
+                        </form>
+                      ) : isConfirmingDelete ? (
+                        <div className="flex-1 min-w-0">
+                          {(() => {
+                            const count = getTagNoteCount?.(nt.type) ?? 0
+                            const otherTags = noteTypes?.filter(t => t.type !== nt.type) || []
+                            return (
+                              <div className="space-y-1.5">
+                                <p className="text-[10px] text-gray-600 leading-tight">
+                                  {count > 0
+                                    ? (fr
+                                        ? `${count} note${count > 1 ? 's' : ''} utilise${count > 1 ? 'nt' : ''} ce tag. Réassigner à :`
+                                        : `${count} note${count > 1 ? 's' : ''} use this tag. Reassign to:`)
+                                    : (fr ? 'Aucune note n\'utilise ce tag.' : 'No notes use this tag.')
+                                  }
+                                </p>
+                                {count > 0 && (
+                                  <select
+                                    value={deleteReassignTo}
+                                    onChange={(e) => setDeleteReassignTo(e.target.value)}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    className="w-full text-[10px] px-1.5 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:border-violet-300"
+                                  >
+                                    <option value="general">{fr ? 'Général (pas de tag)' : 'General (no tag)'}</option>
+                                    {otherTags.map(t => (
+                                      <option key={t.type} value={t.type}>{t.label}</option>
+                                    ))}
+                                  </select>
+                                )}
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => { if (onDeleteType) onDeleteType(nt.type, deleteReassignTo); setConfirmDeleteTag(null); setDeleteReassignTo('general') }}
+                                    className="px-2 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                                  >
+                                    {fr ? 'Supprimer' : 'Delete'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => { setConfirmDeleteTag(null); setDeleteReassignTo('general') }}
+                                    className="px-2 py-0.5 rounded text-[10px] text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                                  >
+                                    {fr ? 'Annuler' : 'Cancel'}
+                                  </button>
+                                </div>
+                              </div>
+                            )
+                          })()}
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-xs text-gray-700 truncate flex-1">{nt.label}</span>
+                          <div className="flex items-center gap-0.5">
+                            {onRenameType && (
+                              <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => { setRenamingTag(nt.type); setRenameValue(nt.label); setConfirmDeleteTag(null) }}
+                                className="p-0.5 rounded text-gray-300 hover:text-violet-500 hover:bg-violet-50 transition-colors"
+                                title={fr ? 'Renommer' : 'Rename'}
+                              >
+                                <Pencil className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                            {onDeleteType && (
+                              <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => { setConfirmDeleteTag(nt.type); setRenamingTag(null) }}
+                                className="p-0.5 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                title={fr ? 'Supprimer' : 'Delete'}
+                              >
+                                <Trash2 className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )
+                }
+
+                // Normal mode or locked tag
                 return (
                   <button
                     key={nt.type}
@@ -1827,6 +2016,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
               ref={editorRef}
               contentEditable
               onInput={handleInput}
+              onPaste={handlePaste}
               onMouseUp={handleMouseUp}
               onKeyDown={handleKeyDown}
               onClick={handleEditorClick}

@@ -2832,9 +2832,11 @@ export default function ResourceDetailPage() {
 
                 {/* Review Notes Section */}
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                     <MessageSquare className="w-4 h-4" />
-                    {locale === 'fr' ? 'Notes du praticien' : 'Practitioner Notes'}
+                    {locale === 'fr'
+                      ? `Un mot pour ${selectedSubmission?.member?.first_name || 'votre patient'} ?`
+                      : `Anything you'd like to say to ${selectedSubmission?.member?.first_name || 'your client'}?`}
                   </h4>
                   <textarea
                     value={reviewNotes}
