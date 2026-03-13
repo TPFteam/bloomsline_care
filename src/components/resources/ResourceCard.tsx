@@ -84,6 +84,29 @@ const statusLabels: Record<string, { en: string; fr: string; es: string }> = {
   archived: { en: 'Archived', fr: 'Archivé', es: 'Archivado' },
 }
 
+const categoryLabels: Record<string, { en: string; fr: string; es: string }> = {
+  anxiety: { en: 'Anxiety', fr: 'Anxiété', es: 'Ansiedad' },
+  depression: { en: 'Depression', fr: 'Dépression', es: 'Depresión' },
+  stress: { en: 'Stress Management', fr: 'Gestion du stress', es: 'Manejo del estrés' },
+  relationships: { en: 'Relationships', fr: 'Relations', es: 'Relaciones' },
+  self_esteem: { en: 'Self-Esteem', fr: 'Estime de soi', es: 'Autoestima' },
+  mindfulness: { en: 'Mindfulness', fr: 'Pleine conscience', es: 'Atención plena' },
+  coping_skills: { en: 'Coping Skills', fr: "Stratégies d'adaptation", es: 'Habilidades de afrontamiento' },
+  communication: { en: 'Communication', fr: 'Communication', es: 'Comunicación' },
+  grief: { en: 'Grief & Loss', fr: 'Deuil & perte', es: 'Duelo y pérdida' },
+  trauma: { en: 'Trauma', fr: 'Traumatisme', es: 'Trauma' },
+  children: { en: 'Children', fr: 'Enfants', es: 'Niños' },
+  teens: { en: 'Teens', fr: 'Adolescents', es: 'Adolescentes' },
+  adults: { en: 'Adults', fr: 'Adultes', es: 'Adultos' },
+  couples: { en: 'Couples', fr: 'Couples', es: 'Parejas' },
+  family: { en: 'Family', fr: 'Famille', es: 'Familia' },
+  general: { en: 'General', fr: 'Général', es: 'General' },
+}
+
+function getCategoryLabel(category: string, locale: 'en' | 'fr' | 'es'): string {
+  return categoryLabels[category]?.[locale] || category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
 interface SimpleMember {
   id: string
   first_name: string
@@ -192,7 +215,7 @@ export function ResourceCard({
             {resource.category && (
               <>
                 <span className="text-gray-300">·</span>
-                <span className="text-xs text-gray-400">{resource.category}</span>
+                <span className="text-xs text-gray-400">{getCategoryLabel(resource.category, locale)}</span>
               </>
             )}
           </div>
@@ -324,7 +347,7 @@ export function ResourceCard({
               {typeLabels[resource.type]?.[locale]}
             </span>
             {resource.category && (
-              <p className="text-xs text-gray-400 mt-0.5">{resource.category}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{getCategoryLabel(resource.category, locale)}</p>
             )}
           </div>
         </div>
@@ -553,7 +576,7 @@ export function ResourceCardList({
           {resource.category && (
             <>
               <span className="text-gray-300">·</span>
-              <span className="text-xs text-gray-400">{resource.category}</span>
+              <span className="text-xs text-gray-400">{getCategoryLabel(resource.category, locale)}</span>
             </>
           )}
         </div>
