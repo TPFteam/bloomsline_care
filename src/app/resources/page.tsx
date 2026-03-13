@@ -37,7 +37,7 @@ import type { Collection, CollectionColor, CollectionIcon, collectionColorConfig
 import type { User } from '@/types/user'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/browser-client'
-import { notifyResourceShared } from '@/lib/notifications'
+import { notifyResourceShared, sendResourceSharedEmail } from '@/lib/notifications'
 import { ResourceCard } from '@/components/resources/ResourceCard'
 import { ShareResourceModal } from '@/components/resources/ShareResourceModal'
 
@@ -506,7 +506,7 @@ export default function MyResourcesPage() {
         try {
           const { data: memberResult } = await supabase
             .from('members')
-            .select('user_id')
+            .select('user_id, email')
             .eq('id', memberId)
             .single()
 
@@ -518,6 +518,26 @@ export default function MyResourcesPage() {
               resourceTitle: resourceData.title,
               resourceType: resourceData.type,
               practitionerName: practitionerData?.full_name || 'Your practitioner',
+            })
+          } else if (memberResult?.email && resourceData) {
+            const { data: tokenData } = await supabase
+              .from('resource_share_tokens')
+              .insert({
+                resource_id: resourceId,
+                member_id: memberId,
+                practitioner_id: user.id,
+                member_email: memberResult.email,
+              })
+              .select('token')
+              .single()
+
+            await sendResourceSharedEmail({
+              memberEmail: memberResult.email,
+              resourceTitle: resourceData.title,
+              resourceType: resourceData.type,
+              practitionerName: practitionerData?.full_name || 'Your practitioner',
+              resourceId,
+              shareToken: tokenData?.token,
             })
           }
         } catch (notifyError) {

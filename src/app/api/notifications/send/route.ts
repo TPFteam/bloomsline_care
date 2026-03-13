@@ -18,6 +18,7 @@ interface SendNotificationBody {
   entityType?: EntityType
   entityId?: string
   locale?: 'en' | 'fr'
+  recipientEmail?: string // Fallback email for members without an account
 }
 
 /**
@@ -54,6 +55,7 @@ export async function POST(request: NextRequest) {
       entityType,
       entityId,
       locale = 'en',
+      recipientEmail: fallbackEmail,
     } = body
 
     // Validate required fields
@@ -138,8 +140,15 @@ export async function POST(request: NextRequest) {
     // Fire-and-forget: send email via Postmark
     ;(async () => {
       try {
-        const { data: { user: recipientUser } } = await supabaseAdmin.auth.admin.getUserById(userId)
-        const recipientEmail = recipientUser?.email
+        let recipientEmail = fallbackEmail
+        try {
+          const { data: { user: recipientUser } } = await supabaseAdmin.auth.admin.getUserById(userId)
+          if (recipientUser?.email) {
+            recipientEmail = recipientUser.email
+          }
+        } catch {
+          // userId may not exist in auth.users (e.g. member without account)
+        }
         if (!recipientEmail) {
           console.warn('No email found for user', userId)
           return

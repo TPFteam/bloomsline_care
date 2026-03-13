@@ -43,7 +43,7 @@ import { removeResourceFromAllCollections, isResourceSaved } from '@/lib/service
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { Resource, ResourceType, ResourceBlock } from '@/types/resource'
-import { notifyResourceShared } from '@/lib/notifications'
+import { notifyResourceShared, sendResourceSharedEmail } from '@/lib/notifications'
 import { ShareResourceModal } from '@/components/resources/ShareResourceModal'
 
 interface SimpleMember {
@@ -466,18 +466,42 @@ export default function ResourceDetailPage() {
         try {
           const { data: memberResult } = await supabase
             .from('members')
-            .select('user_id')
+            .select('user_id, email')
             .eq('id', memberId)
             .single()
+
+          const resTitle = typeof resource.title === 'string' ? resource.title : ''
+          const practName = practitionerData?.full_name || 'Your practitioner'
 
           if (memberResult?.user_id) {
             await notifyResourceShared(supabase, {
               memberId,
               memberUserId: memberResult.user_id,
               resourceId,
-              resourceTitle: typeof resource.title === 'string' ? resource.title : '',
+              resourceTitle: resTitle,
               resourceType: resource.type,
-              practitionerName: practitionerData?.full_name || 'Your practitioner',
+              practitionerName: practName,
+            })
+          } else if (memberResult?.email) {
+            // Create a share token for preview link
+            const { data: tokenData } = await supabase
+              .from('resource_share_tokens')
+              .insert({
+                resource_id: resourceId,
+                member_id: memberId,
+                practitioner_id: user.id,
+                member_email: memberResult.email,
+              })
+              .select('token')
+              .single()
+
+            await sendResourceSharedEmail({
+              memberEmail: memberResult.email,
+              resourceTitle: resTitle,
+              resourceType: resource.type,
+              practitionerName: practName,
+              resourceId,
+              shareToken: tokenData?.token,
             })
           }
         } catch (notifyError) {

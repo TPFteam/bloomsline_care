@@ -12,6 +12,7 @@ export { getNotificationContent, templates } from './templates'
 export {
   createNotificationService,
   notifyResourceShared,
+  sendResourceSharedEmail,
   notifyResourceSubmitted,
   notifySessionScheduled,
   notifyBookingRequest,

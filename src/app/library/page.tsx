@@ -23,7 +23,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { getCollections, addResourceToCollection, createCollection, getSavedResources, removeResourceFromAllCollections } from '@/lib/services/collections'
-import { notifyResourceShared } from '@/lib/notifications'
+import { notifyResourceShared, sendResourceSharedEmail } from '@/lib/notifications'
 import type { Collection } from '@/types/collection'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
@@ -386,7 +386,7 @@ export default function LibraryPage() {
         try {
           const { data: memberResult } = await supabase
             .from('members')
-            .select('user_id')
+            .select('user_id, email')
             .eq('id', memberId)
             .single()
 
@@ -398,6 +398,26 @@ export default function LibraryPage() {
               resourceTitle: resourceData.title,
               resourceType: resourceData.type,
               practitionerName: practitionerData?.full_name || 'Your practitioner',
+            })
+          } else if (memberResult?.email && resourceData) {
+            const { data: tokenData } = await supabase
+              .from('resource_share_tokens')
+              .insert({
+                resource_id: resourceId,
+                member_id: memberId,
+                practitioner_id: user.id,
+                member_email: memberResult.email,
+              })
+              .select('token')
+              .single()
+
+            await sendResourceSharedEmail({
+              memberEmail: memberResult.email,
+              resourceTitle: resourceData.title,
+              resourceType: resourceData.type,
+              practitionerName: practitionerData?.full_name || 'Your practitioner',
+              resourceId,
+              shareToken: tokenData?.token,
             })
           }
         } catch (notifyError) {

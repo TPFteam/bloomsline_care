@@ -276,6 +276,7 @@ async function sendNotificationViaAPI(params: {
   metadata: Record<string, unknown>
   entityType?: EntityType
   entityId?: string
+  recipientEmail?: string
 }): Promise<void> {
   try {
     const response = await fetch('/api/notifications/send', {
@@ -306,6 +307,7 @@ export async function notifyResourceShared(
     resourceType: string
     practitionerName: string
     message?: string
+    memberEmail?: string
   }
 ): Promise<void> {
   await sendNotificationViaAPI({
@@ -321,7 +323,45 @@ export async function notifyResourceShared(
       practitionerName: params.practitionerName,
       message: params.message,
     },
+    recipientEmail: params.memberEmail,
   })
+}
+
+/**
+ * Send resource shared email directly (for members without an account)
+ * Includes a preview link with share token
+ */
+export async function sendResourceSharedEmail(params: {
+  memberEmail: string
+  resourceTitle: string
+  resourceType: string
+  practitionerName: string
+  resourceId: string
+  shareToken?: string
+}): Promise<void> {
+  try {
+    const response = await fetch('/api/notifications/email-only', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'resource_shared',
+        email: params.memberEmail,
+        metadata: {
+          resourceTitle: params.resourceTitle,
+          resourceType: params.resourceType,
+          practitionerName: params.practitionerName,
+          resourceId: params.resourceId,
+        },
+        shareToken: params.shareToken,
+      }),
+    })
+
+    if (!response.ok) {
+      console.error('Failed to send direct email:', await response.json())
+    }
+  } catch (error) {
+    console.error('Error sending direct email:', error)
+  }
 }
 
 /**
