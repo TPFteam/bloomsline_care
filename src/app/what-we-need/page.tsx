@@ -229,6 +229,12 @@ const translations = {
             why: 'Healthcare platforms operate in a regulatory maze: GDPR, patient data laws, professional practice regulations, terms of service for handling clinical notes, liability questions around AI-generated briefs. We don\'t need a full-time lawyer on day one — but we need a specialized consultant or agency who knows French healthtech regulation. They review our data processing agreements, draft practitioner contracts, ensure Bloom AI recommendations carry the right disclaimers, and tell us what certifications we actually need vs. what can wait. Start with a retainer or project-based engagement. Upgrade to in-house counsel when the regulatory surface area grows with scale.',
             when: 'Now — consultant/agency engagement',
           },
+          {
+            role: 'Accountant / Bookkeeper',
+            type: 'Freelance or firm',
+            why: 'Once revenue starts flowing, we need someone managing invoicing, expense tracking, VAT compliance, financial reporting, and preparing books for investors. A startup handling payments (Stripe), multi-country transactions, and SaaS revenue recognition needs clean books from day one — not a retroactive cleanup before a raise. They handle monthly reconciliation, tax filings, cash flow forecasting, and produce the financial statements investors expect. Start with a freelance accountant or firm on a monthly retainer. Upgrade to a fractional CFO when fundraising requires financial modeling and investor-ready reporting.',
+            when: 'Post-raise — when revenue and transactions require structured bookkeeping',
+          },
         ],
       },
       partners: {
@@ -250,6 +256,54 @@ const translations = {
           'Patricia said "patient data on a platform? Absolutely not." How many feel this way? Is this 10% or 50%?',
           'Are we building for practitioners who want to modernize? Or trying to convince ones who are happy with paper notebooks?',
         ],
+      },
+      cofounderTransparency: {
+        title: 'If You\'re Considering Joining Us',
+        subtitle: 'Full transparency — here\'s what you\'re walking into. No polish, no investor pitch voice. Just what\'s true.',
+        intro: 'We\'re not industry insiders. Neither of us came from mental health, clinical psychology, or healthtech. We got here because we suffered — personally, and through people close to us — and we couldn\'t find tools that felt human. Aditya built Doctalink before this (a doctor-patient platform), and through that experience we learned what practitioners actually deal with day to day. We didn\'t study this market in a slide deck. We stumbled into it, talked to real people, built something, showed it, and iterated based on what they told us. That\'s our edge and our limitation: we understand the pain deeply, but we don\'t have decades of clinical expertise or a network of 500 therapists. We\'re learning as we go — fast, but honestly.',
+        greens: {
+          title: 'What\'s Working',
+          items: [
+            { point: 'The product exists and works', detail: 'Not a pitch deck — a live platform with sessions, notes, milestones, AI briefs, member app, and Bloom companion. Practitioners have used it and validated the experience. We built this in months, not years.' },
+            { point: 'We found real pain through real experience', detail: 'We didn\'t read a market report. Aditya built Doctalink (a doctor-patient platform) and saw firsthand how fragmented practitioner workflows are. We both went through personal mental health journeys that showed us what the patient side feels like. The product was born from lived pain, not market analysis.' },
+            { point: 'The AI layer is real and differentiated', detail: 'Bloom generates pre-session briefs, surfaces relevant notes, and tracks patterns across sessions. No competitor does this. It came from asking "what would a practitioner want 5 minutes before a session?" — not from chasing AI hype.' },
+            { point: 'We can survive on almost nothing', detail: 'Two founders, no office, no employees. Monthly burn is API costs + hosting. We\'re not going to run out of money next month. We have time to get this right — that\'s rare at this stage.' },
+            { point: 'Practitioners trust the UX immediately', detail: 'Yoann said "I could figure it out on my own without you explaining." In a market where most tools feel clinical and dated, the fact that therapists find our product intuitive within minutes is a real signal.' },
+            { point: 'The full loop already exists', detail: 'Practitioner platform + member mobile app + Bloom AI. The practitioner creates → shares → member engages → practitioner sees engagement. This took a massive amount of building. It\'s done. No other tool in this space connects both sides like this.' },
+          ],
+        },
+        greys: {
+          title: 'What We Don\'t Know Yet',
+          items: [
+            { point: 'We\'re not industry experts', detail: 'We don\'t have clinical backgrounds, psychology degrees, or 10 years in healthtech. Everything we know about this market, we learned by building, talking to practitioners, and making mistakes. That means there are blind spots — regulatory nuances, clinical workflows, professional culture — that we\'re still discovering. We need people who know what we don\'t.' },
+            { point: 'Will they actually pay?', detail: 'Every practitioner we demoed said "interesting" or "I\'d try it." Nobody has paid. We genuinely don\'t know if the gap is product, price, trust, or timing. This is the single biggest unknown.' },
+            { point: 'What\'s the wedge feature?', detail: 'Sandra lit up about note retrieval. Kevin got excited about resource sharing. Yoann cared about the UX. We built everything they asked for — but we still don\'t know which ONE thing makes someone switch from their Google Drive folder.' },
+            { point: 'Can we onboard without hand-holding?', detail: 'Right now, every practitioner gets personal calls, custom setup, follow-ups. It works beautifully but takes 3-4 weeks per person. We have no evidence that self-serve onboarding works for therapists — a population that is generally not tech-forward.' },
+            { point: 'How deep is the privacy resistance?', detail: 'Patricia flat-out refused to put patient data on any platform. Others hesitated. Is this 10% of the market or 50%? We don\'t have enough data. If it\'s 50%, our whole go-to-market strategy needs to change.' },
+            { point: 'Do we understand the buying psychology?', detail: 'Solo practitioners think differently than cabinet owners. French therapists have different regulatory pressures than US ones. We\'re learning their decision-making process in real time — we don\'t have a proven playbook yet.' },
+          ],
+        },
+        reds: {
+          title: 'The Real Risks',
+          items: [
+            { point: 'Zero revenue — as of today', detail: 'Nobody is paying. Not one euro. We have interest, demos, "I\'d try it" — but no revenue. If we can\'t convert in the next 90 days, something fundamental needs to change.' },
+            { point: 'Two people doing everything', detail: 'Aditya builds the entire product alone — frontend, backend, AI, design, infra. Sarah runs all of sales, partnerships, and customer success. There is zero redundancy. If either person burns out, gets sick, or needs a break — everything stops. This is not sustainable.' },
+            { point: 'No clinical expertise on the team', detail: 'We don\'t have a therapist, psychologist, or clinical advisor on the founding team. We validate features through demos and conversations, but we\'re making product decisions about clinical workflows without a clinical person in the room. This is a gap that could lead to building the wrong things.' },
+            { point: 'Healthtech regulation we\'re still learning', detail: 'GDPR, HDS certification, patient data laws, professional practice regulations. We\'re not certified. We\'re learning the requirements as we go. A compliance mistake or data incident at this stage could be existential — not just for the product, but for practitioner trust.' },
+            { point: 'Competitors with more resources', detail: 'Doctolib, Quenza, SimplePractice — they have funding, teams, and existing user bases. We\'re ahead on AI + UX today, but that window isn\'t permanent. If a funded competitor decides to build what we\'ve built, they can move fast.' },
+            { point: 'The market might not be ready', detail: 'Many practitioners are happy with paper notebooks and Google Drive. They don\'t know they have a problem — or they do and they\'ve accepted it. Selling to people who aren\'t looking for a solution is fundamentally harder. We might be too early.' },
+          ],
+        },
+        whyJoin: {
+          title: 'Why Join Now — Despite All of This',
+          items: [
+            'You\'re not joining a slide deck — you\'re joining a working product with real practitioner feedback. The foundation is built. What\'s needed now is the team to turn it into a business.',
+            'You join before revenue. That means founding-level equity, founding-level influence, and the chance to shape something from the ground up — not optimize someone else\'s decisions.',
+            'Mental health care is broken and everyone knows it. The market is growing, underserved, and desperate for tools that feel human. The tailwinds are structural, not hype.',
+            'We know what we don\'t know — and we\'re not pretending otherwise. This page exists because we believe the right co-founder wants honesty, not a sales pitch. If something here scares you, good. It should. If something here excites you despite the risks, that\'s the signal.',
+            'The hardest part — building a product that practitioners actually like using — is done. The next phase is market fit, revenue, and growth. Your impact will be visible in months, not years.',
+          ],
+        },
       },
     },
   },
@@ -476,6 +530,12 @@ const translations = {
             why: 'Les plateformes de santé évoluent dans un labyrinthe réglementaire : RGPD, lois sur les données patients, réglementations sur l\'exercice professionnel, CGU pour le traitement des notes cliniques, questions de responsabilité autour des briefs générés par l\'IA. On n\'a pas besoin d\'un juriste à temps plein dès le premier jour — mais on a besoin d\'un consultant ou cabinet spécialisé qui connaît la réglementation healthtech française. Ils relisent nos accords de traitement des données, rédigent les contrats praticiens, s\'assurent que les recommandations de Bloom AI portent les bons avertissements, et nous disent quelles certifications sont vraiment nécessaires vs. ce qui peut attendre. Commencer avec un forfait ou engagement par projet. Passer à un juriste interne quand la surface réglementaire grandit avec le scale.',
             when: 'Maintenant — engagement consultant/cabinet',
           },
+          {
+            role: 'Comptable / Teneur de livres',
+            type: 'Freelance ou cabinet',
+            why: 'Dès que le revenu commence à rentrer, on a besoin de quelqu\'un qui gère la facturation, le suivi des dépenses, la conformité TVA, le reporting financier et la préparation des comptes pour les investisseurs. Une startup qui gère des paiements (Stripe), des transactions multi-pays et de la reconnaissance de revenus SaaS a besoin de comptes propres dès le premier jour — pas d\'un nettoyage rétroactif avant une levée. Cette personne fait le rapprochement mensuel, les déclarations fiscales, les prévisions de trésorerie et produit les états financiers attendus par les investisseurs. Commencer avec un comptable freelance ou un cabinet au forfait mensuel. Passer à un DAF à temps partiel quand la levée de fonds nécessite de la modélisation financière et un reporting prêt pour les investisseurs.',
+            when: 'Post-levée — quand le revenu et les transactions nécessitent une comptabilité structurée',
+          },
         ],
       },
       partners: {
@@ -497,6 +557,54 @@ const translations = {
           'Patricia a dit "les données patients sur une plateforme ? Absolument pas." Combien pensent comme ça ? 10% ou 50% ?',
           'Est-ce qu\'on construit pour des praticiens qui veulent se moderniser ? Ou essaie-t-on de convaincre ceux qui sont contents avec leurs carnets papier ?',
         ],
+      },
+      cofounderTransparency: {
+        title: 'Si Vous Envisagez de Nous Rejoindre',
+        subtitle: 'Transparence totale — voici ce dans quoi vous vous engagez. Pas de vernis, pas de voix d\'investisseur. Juste ce qui est vrai.',
+        intro: 'On n\'est pas des experts de l\'industrie. Aucun de nous deux ne vient de la santé mentale, de la psychologie clinique ou du healthtech. On est arrivés là parce qu\'on a souffert — personnellement, et à travers des proches — et on n\'a pas trouvé d\'outils qui paraissaient humains. Aditya a construit Doctalink avant ça (une plateforme médecin-patient), et à travers cette expérience on a appris ce que les praticiens vivent au quotidien. On n\'a pas étudié ce marché dans un slide deck. On est tombés dedans, on a parlé à de vraies personnes, on a construit quelque chose, on l\'a montré, et on a itéré en fonction de ce qu\'ils nous ont dit. C\'est notre force et notre limite : on comprend la douleur en profondeur, mais on n\'a pas des décennies d\'expertise clinique ni un réseau de 500 thérapeutes. On apprend en avançant — vite, mais honnêtement.',
+        greens: {
+          title: 'Ce Qui Fonctionne',
+          items: [
+            { point: 'Le produit existe et fonctionne', detail: 'Pas un pitch deck — une plateforme live avec séances, notes, jalons, briefs IA, app membre et compagnon Bloom. Des praticiens l\'ont utilisée et validé l\'expérience. On a construit ça en mois, pas en années.' },
+            { point: 'On a trouvé la vraie douleur par l\'expérience', detail: 'On n\'a pas lu un rapport de marché. Aditya a construit Doctalink (une plateforme médecin-patient) et a vu de première main à quel point les workflows des praticiens sont fragmentés. On a tous les deux traversé des parcours personnels de santé mentale qui nous ont montré ce que ressent le côté patient. Le produit est né d\'une douleur vécue, pas d\'une analyse de marché.' },
+            { point: 'La couche IA est réelle et différenciante', detail: 'Bloom génère des briefs pré-séance, fait remonter les notes pertinentes et suit les patterns entre les séances. Aucun concurrent ne fait ça. C\'est né de la question "que voudrait un praticien 5 minutes avant une séance ?" — pas d\'une course au hype IA.' },
+            { point: 'On peut survivre avec presque rien', detail: 'Deux fondateurs, pas de bureau, pas d\'employés. Le burn mensuel c\'est les coûts API + hébergement. On ne va pas manquer d\'argent le mois prochain. On a le temps de bien faire — c\'est rare à ce stade.' },
+            { point: 'Les praticiens font confiance à l\'UX immédiatement', detail: 'Yoann a dit "je pourrais m\'en sortir tout seul sans qu\'on m\'explique." Dans un marché où la plupart des outils sont cliniques et datés, le fait que des thérapeutes trouvent notre produit intuitif en quelques minutes est un vrai signal.' },
+            { point: 'La boucle complète existe déjà', detail: 'Plateforme praticien + app mobile membre + Bloom IA. Le praticien crée → partage → le membre s\'engage → le praticien voit l\'engagement. Ça a demandé un effort massif de construction. C\'est fait. Aucun autre outil dans cet espace ne connecte les deux côtés comme ça.' },
+          ],
+        },
+        greys: {
+          title: 'Ce Qu\'on Ne Sait Pas Encore',
+          items: [
+            { point: 'On n\'est pas des experts de l\'industrie', detail: 'On n\'a pas de background clinique, de diplôme en psychologie, ni 10 ans en healthtech. Tout ce qu\'on sait de ce marché, on l\'a appris en construisant, en parlant aux praticiens, et en faisant des erreurs. Ça veut dire qu\'il y a des angles morts — nuances réglementaires, workflows cliniques, culture professionnelle — qu\'on découvre encore. On a besoin de gens qui savent ce qu\'on ne sait pas.' },
+            { point: 'Est-ce qu\'ils paieront vraiment ?', detail: 'Chaque praticien à qui on a fait une démo a dit "intéressant" ou "je testerais." Personne n\'a payé. On ne sait sincèrement pas si l\'écart est le produit, le prix, la confiance, ou le timing. C\'est la plus grande inconnue.' },
+            { point: 'Quelle est la feature d\'entrée ?', detail: 'Sandra s\'est illuminée pour la recherche de notes. Kevin s\'est enthousiasmé pour le partage de ressources. Yoann tenait à l\'UX. On a construit tout ce qu\'ils ont demandé — mais on ne sait toujours pas quelle SEULE chose fait que quelqu\'un quitte son dossier Google Drive.' },
+            { point: 'Peut-on onboarder sans accompagnement ?', detail: 'Actuellement, chaque praticien reçoit des appels personnels, un setup sur-mesure, des relances. Ça marche magnifiquement mais prend 3-4 semaines par personne. On n\'a aucune preuve que l\'onboarding self-serve fonctionne pour des thérapeutes — une population qui n\'est généralement pas tech-forward.' },
+            { point: 'Quelle est la profondeur de la résistance vie privée ?', detail: 'Patricia a refusé catégoriquement de mettre des données patient sur une plateforme. D\'autres ont hésité. C\'est 10% du marché ou 50% ? On n\'a pas assez de données. Si c\'est 50%, toute notre stratégie go-to-market doit changer.' },
+            { point: 'Comprend-on la psychologie d\'achat ?', detail: 'Les praticiens solo pensent différemment des propriétaires de cabinet. Les thérapeutes français ont des pressions réglementaires différentes des américains. On apprend leur processus de décision en temps réel — on n\'a pas encore de playbook éprouvé.' },
+          ],
+        },
+        reds: {
+          title: 'Les Vrais Risques',
+          items: [
+            { point: 'Zéro revenu — à ce jour', detail: 'Personne ne paie. Pas un euro. On a de l\'intérêt, des démos, des "je testerais" — mais pas de revenu. Si on ne peut pas convertir dans les 90 prochains jours, quelque chose de fondamental doit changer.' },
+            { point: 'Deux personnes qui font tout', detail: 'Aditya construit tout le produit seul — frontend, backend, IA, design, infra. Sarah gère toute la vente, les partenariats et le customer success. Zéro redondance. Si l\'un des deux s\'épuise, tombe malade, ou a besoin d\'une pause — tout s\'arrête. Ce n\'est pas durable.' },
+            { point: 'Aucune expertise clinique dans l\'équipe', detail: 'On n\'a pas de thérapeute, psychologue, ou conseiller clinique dans l\'équipe fondatrice. On valide les features par les démos et les conversations, mais on prend des décisions produit sur des workflows cliniques sans personne du milieu dans la pièce. C\'est un manque qui pourrait nous faire construire les mauvaises choses.' },
+            { point: 'Réglementation healthtech qu\'on apprend encore', detail: 'RGPD, certification HDS, lois sur les données patients, réglementations sur l\'exercice professionnel. On n\'est pas certifiés. On apprend les exigences au fur et à mesure. Une erreur de conformité ou un incident de données à ce stade pourrait être existentiel — pas juste pour le produit, mais pour la confiance des praticiens.' },
+            { point: 'Des concurrents avec plus de moyens', detail: 'Doctolib, Quenza, SimplePractice — ils ont du financement, des équipes et des bases d\'utilisateurs existantes. On est en avance sur l\'IA + UX aujourd\'hui, mais cette fenêtre n\'est pas permanente. Si un concurrent financé décide de construire ce qu\'on a construit, ils peuvent aller vite.' },
+            { point: 'Le marché n\'est peut-être pas prêt', detail: 'Beaucoup de praticiens sont contents avec leurs carnets papier et Google Drive. Ils ne savent pas qu\'ils ont un problème — ou ils le savent et l\'ont accepté. Vendre à des gens qui ne cherchent pas de solution est fondamentalement plus dur. On est peut-être trop tôt.' },
+          ],
+        },
+        whyJoin: {
+          title: 'Pourquoi Nous Rejoindre Maintenant — Malgré Tout Ça',
+          items: [
+            'Vous ne rejoignez pas un slide deck — vous rejoignez un produit fonctionnel avec de vrais retours de praticiens. Les fondations sont construites. Ce qu\'il faut maintenant c\'est l\'équipe pour en faire un business.',
+            'Vous rejoignez avant le revenu. Ça veut dire de l\'equity de fondateur, de l\'influence de fondateur, et la chance de façonner quelque chose depuis le début — pas d\'optimiser les décisions de quelqu\'un d\'autre.',
+            'Le soin en santé mentale est cassé et tout le monde le sait. Le marché est en croissance, sous-desservi, et en manque d\'outils qui paraissent humains. Les vents porteurs sont structurels, pas du hype.',
+            'On sait ce qu\'on ne sait pas — et on ne prétend pas le contraire. Cette page existe parce qu\'on croit que le bon co-fondateur veut de l\'honnêteté, pas un pitch de vente. Si quelque chose ici vous fait peur, tant mieux. Ça devrait. Si quelque chose ici vous excite malgré les risques, c\'est ça le signal.',
+            'La partie la plus dure — construire un produit que les praticiens aiment vraiment utiliser — est faite. La prochaine phase c\'est le market fit, le revenu et la croissance. Votre impact sera visible en mois, pas en années.',
+          ],
+        },
       },
     },
   },
@@ -806,7 +914,7 @@ export default function WhatWeNeedPage() {
                     <p className="text-xs font-bold text-teal-800">Aditya</p>
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {['Product', 'AI / ML', 'UX / Design', 'Infrastructure', 'Frontend', 'Backend'].map(tag => (
+                    {['Product', 'AI / ML', 'UX / Design', 'Infrastructure', 'Frontend', 'Backend', 'Security & Compliance', 'Finance'].map(tag => (
                       <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-teal-100 text-teal-700 font-medium">{tag}</span>
                     ))}
                   </div>
@@ -821,6 +929,19 @@ export default function WhatWeNeedPage() {
                       <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-teal-100 text-teal-700 font-medium">{tag}</span>
                     ))}
                   </div>
+                </div>
+              </div>
+              {/* Shared responsibilities */}
+              <div className="mt-2 rounded-lg border border-dashed border-teal-300 bg-teal-50/50 p-2.5 flex items-center gap-2">
+                <div className="flex -space-x-1.5 flex-shrink-0">
+                  <div className="w-5 h-5 rounded-full bg-teal-500 text-white flex items-center justify-center text-[8px] font-bold ring-2 ring-white">A</div>
+                  <div className="w-5 h-5 rounded-full bg-teal-500 text-white flex items-center justify-center text-[8px] font-bold ring-2 ring-white">S</div>
+                </div>
+                <p className="text-[9px] font-medium text-teal-600">{locale === 'fr' ? 'Partagé' : 'Shared'}</p>
+                <div className="flex flex-wrap gap-1">
+                  {[locale === 'fr' ? 'Pertinence clinique' : 'Clinical Relevance', locale === 'fr' ? 'Présence digitale' : 'Digital Presence', locale === 'fr' ? 'Juridique & Réglementaire' : 'Legal & Regulatory'].map(tag => (
+                    <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-teal-100 text-teal-700 font-medium">{tag}</span>
+                  ))}
                 </div>
               </div>
             </div>
@@ -848,6 +969,10 @@ export default function WhatWeNeedPage() {
                       <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">{tag}</span>
                     ))}
                   </div>
+                  <div className="mt-2 pt-1.5 border-t border-red-200 flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded-full bg-teal-500 text-white flex items-center justify-center text-[7px] font-bold">A</div>
+                    <p className="text-[8px] text-red-500">{locale === 'fr' ? 'Reprend : Infrastructure, Backend, Frontend' : 'Takes over: Infrastructure, Backend, Frontend'}</p>
+                  </div>
                 </div>
                 <div className="rounded-lg border-2 border-red-300 bg-red-50 p-3">
                   <div className="flex items-center justify-between mb-1.5">
@@ -858,6 +983,10 @@ export default function WhatWeNeedPage() {
                     {['GDPR', 'HDS', 'Encryption', 'SOC 2', 'Pen Testing', 'Audits'].map(tag => (
                       <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">{tag}</span>
                     ))}
+                  </div>
+                  <div className="mt-2 pt-1.5 border-t border-red-200 flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded-full bg-teal-500 text-white flex items-center justify-center text-[7px] font-bold">A</div>
+                    <p className="text-[8px] text-red-500">{locale === 'fr' ? 'Reprend : Security & Compliance' : 'Takes over: Security & Compliance'}</p>
                   </div>
                 </div>
                 <div className="rounded-lg border-2 border-violet-300 bg-violet-50 p-3">
@@ -870,6 +999,13 @@ export default function WhatWeNeedPage() {
                       <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 font-medium">{tag}</span>
                     ))}
                   </div>
+                  <div className="mt-2 pt-1.5 border-t border-violet-200 flex items-center gap-1.5">
+                    <div className="flex -space-x-1">
+                      <div className="w-4 h-4 rounded-full bg-teal-500 text-white flex items-center justify-center text-[7px] font-bold ring-1 ring-white">A</div>
+                      <div className="w-4 h-4 rounded-full bg-teal-500 text-white flex items-center justify-center text-[7px] font-bold ring-1 ring-white">S</div>
+                    </div>
+                    <p className="text-[8px] text-violet-500">{locale === 'fr' ? 'Reprend : Pertinence clinique' : 'Takes over: Clinical Relevance'}</p>
+                  </div>
                 </div>
                 <div className="rounded-lg border-2 border-red-300 bg-red-50 p-3">
                   <div className="flex items-center justify-between mb-1.5">
@@ -880,6 +1016,13 @@ export default function WhatWeNeedPage() {
                     {[locale === 'fr' ? 'Budgétisation' : 'Budgeting', locale === 'fr' ? 'Modèle de revenus' : 'Revenue Model', locale === 'fr' ? 'Trésorerie' : 'Cash Flow', locale === 'fr' ? 'Levée de fonds' : 'Fundraising', 'KPIs'].map(tag => (
                       <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">{tag}</span>
                     ))}
+                  </div>
+                  <div className="mt-2 pt-1.5 border-t border-red-200 flex items-center gap-1.5">
+                    <div className="flex -space-x-1">
+                      <div className="w-4 h-4 rounded-full bg-teal-500 text-white flex items-center justify-center text-[7px] font-bold ring-1 ring-white">A</div>
+                      <div className="w-4 h-4 rounded-full bg-teal-500 text-white flex items-center justify-center text-[7px] font-bold ring-1 ring-white">S</div>
+                    </div>
+                    <p className="text-[8px] text-red-500">{locale === 'fr' ? 'Nouveau domaine (partagé A+S)' : 'New domain (shared A+S)'}</p>
                   </div>
                 </div>
               </div>
@@ -906,6 +1049,10 @@ export default function WhatWeNeedPage() {
                       <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">{tag}</span>
                     ))}
                   </div>
+                  <div className="mt-2 pt-1.5 border-t border-amber-200 flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded-full bg-teal-500 text-white flex items-center justify-center text-[7px] font-bold">S</div>
+                    <p className="text-[8px] text-amber-600">{locale === 'fr' ? 'Reprend : Onboarding, Customer Success' : 'Takes over: Onboarding, Customer Success'}</p>
+                  </div>
                 </div>
                 <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-3">
                   <div className="flex items-center justify-between mb-1.5">
@@ -917,6 +1064,10 @@ export default function WhatWeNeedPage() {
                       <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">{tag}</span>
                     ))}
                   </div>
+                  <div className="mt-2 pt-1.5 border-t border-amber-200 flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded-full bg-teal-500 text-white flex items-center justify-center text-[7px] font-bold">S</div>
+                    <p className="text-[8px] text-amber-600">{locale === 'fr' ? 'Reprend : partie Content' : 'Takes over: part of Content'}</p>
+                  </div>
                 </div>
                 <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-3">
                   <div className="flex items-center justify-between mb-1.5">
@@ -927,6 +1078,13 @@ export default function WhatWeNeedPage() {
                     {[locale === 'fr' ? 'Blog' : 'Blog', locale === 'fr' ? 'Réseaux sociaux' : 'Social Media', 'SEO', 'Newsletter', locale === 'fr' ? 'Contenu' : 'Content'].map(tag => (
                       <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">{tag}</span>
                     ))}
+                  </div>
+                  <div className="mt-2 pt-1.5 border-t border-amber-200 flex items-center gap-1.5">
+                    <div className="flex -space-x-1">
+                      <div className="w-4 h-4 rounded-full bg-teal-500 text-white flex items-center justify-center text-[7px] font-bold ring-1 ring-white">A</div>
+                      <div className="w-4 h-4 rounded-full bg-teal-500 text-white flex items-center justify-center text-[7px] font-bold ring-1 ring-white">S</div>
+                    </div>
+                    <p className="text-[8px] text-amber-600">{locale === 'fr' ? 'Reprend : Présence digitale' : 'Takes over: Digital Presence'}</p>
                   </div>
                 </div>
               </div>
@@ -955,16 +1113,27 @@ export default function WhatWeNeedPage() {
                       <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">{tag}</span>
                     ))}
                   </div>
+                  <div className="mt-2 pt-1.5 border-t border-blue-200 flex items-center gap-1.5">
+                    <div className="flex -space-x-1">
+                      <div className="w-4 h-4 rounded-full bg-teal-500 text-white flex items-center justify-center text-[7px] font-bold ring-1 ring-white">A</div>
+                      <div className="w-4 h-4 rounded-full bg-teal-500 text-white flex items-center justify-center text-[7px] font-bold ring-1 ring-white">S</div>
+                    </div>
+                    <p className="text-[8px] text-blue-500">{locale === 'fr' ? 'Partagé actuellement (A+S)' : 'Currently shared (A+S)'}</p>
+                  </div>
                 </div>
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
                   <div className="flex items-center justify-between mb-1.5">
                     <p className="text-xs font-bold text-blue-800">{locale === 'fr' ? 'Comptabilité' : 'Accountant / Bookkeeper'}</p>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-600 text-white">{locale === 'fr' ? 'Maintenant' : 'Now'}</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500 text-white">{locale === 'fr' ? 'Post-levée' : 'Post-raise'}</span>
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {[locale === 'fr' ? 'Facturation' : 'Invoicing', locale === 'fr' ? 'Fiscalité' : 'Tax Filing', locale === 'fr' ? 'Reporting' : 'Financial Reporting', locale === 'fr' ? 'Paie' : 'Payroll'].map(tag => (
                       <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">{tag}</span>
                     ))}
+                  </div>
+                  <div className="mt-2 pt-1.5 border-t border-blue-200 flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded-full bg-teal-500 text-white flex items-center justify-center text-[7px] font-bold">A</div>
+                    <p className="text-[8px] text-blue-500">{locale === 'fr' ? 'Reprend : Finance' : 'Takes over: Finance'}</p>
                   </div>
                 </div>
               </div>
@@ -1027,6 +1196,89 @@ export default function WhatWeNeedPage() {
                 </li>
               ))}
             </ul>
+          </div>
+        </section>
+
+        {/* Co-Founder Transparency Section */}
+        <section className="mt-10 pt-8 border-t-2 border-neutral-200">
+          <div className="flex items-center gap-2 mb-1">
+            <Handshake className="w-5 h-5 text-neutral-800" />
+            <h2 className="text-xl font-bold text-neutral-900">{s.cofounderTransparency.title}</h2>
+          </div>
+          <p className="text-sm text-neutral-400 mb-4">{s.cofounderTransparency.subtitle}</p>
+
+          <p className="text-sm text-neutral-600 leading-relaxed mb-8 max-w-3xl">{s.cofounderTransparency.intro}</p>
+
+          {/* Greens - What's Working */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-3 h-3 rounded-full bg-emerald-500" />
+              <h3 className="text-base font-semibold text-emerald-800">{s.cofounderTransparency.greens.title}</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {s.cofounderTransparency.greens.items.map((item, i) => (
+                <div key={i} className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+                  <div className="flex items-start gap-2 mb-1.5">
+                    <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">✓</div>
+                    <p className="text-sm font-semibold text-emerald-900">{item.point}</p>
+                  </div>
+                  <p className="text-xs text-emerald-700/80 leading-relaxed ml-7">{item.detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Greys - What We Don't Know */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-3 h-3 rounded-full bg-neutral-400" />
+              <h3 className="text-base font-semibold text-neutral-700">{s.cofounderTransparency.greys.title}</h3>
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              {s.cofounderTransparency.greys.items.map((item, i) => (
+                <div key={i} className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-neutral-300 text-neutral-600 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">?</div>
+                  <div>
+                    <p className="text-sm font-semibold text-neutral-800">{item.point}</p>
+                    <p className="text-xs text-neutral-500 mt-0.5 leading-relaxed">{item.detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Reds - Real Risks */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+              <h3 className="text-base font-semibold text-red-800">{s.cofounderTransparency.reds.title}</h3>
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              {s.cofounderTransparency.reds.items.map((item, i) => (
+                <div key={i} className="rounded-xl border border-red-200 bg-red-50/50 p-4 flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">!</div>
+                  <div>
+                    <p className="text-sm font-semibold text-red-900">{item.point}</p>
+                    <p className="text-xs text-red-700/80 mt-0.5 leading-relaxed">{item.detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Why Join Now */}
+          <div className="rounded-2xl bg-gradient-to-br from-neutral-900 to-neutral-800 p-6 text-white">
+            <h3 className="text-base font-bold mb-4">{s.cofounderTransparency.whyJoin.title}</h3>
+            <div className="space-y-3">
+              {s.cofounderTransparency.whyJoin.items.map((item, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                    {i + 1}
+                  </div>
+                  <p className="text-sm text-neutral-200 leading-relaxed">{item}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
