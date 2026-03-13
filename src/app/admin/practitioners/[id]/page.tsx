@@ -23,6 +23,9 @@ import {
   Users,
   Camera,
   BookOpen,
+  Link2,
+  Unlink,
+  Search,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -121,6 +124,16 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
   const [authUser, setAuthUser] = useState<UserType | null>(null)
   const [form, setForm] = useState<Partial<PublicPractitioner>>(EMPTY_FORM)
 
+  // Account linking state
+  const [linkedUserId, setLinkedUserId] = useState<string | null>(null)
+  const [linkedAt, setLinkedAt] = useState<string | null>(null)
+  const [linkedUserName, setLinkedUserName] = useState<string | null>(null)
+  const [linkedUserEmail, setLinkedUserEmail] = useState<string | null>(null)
+  const [practitionerAccounts, setPractitionerAccounts] = useState<{ id: string; full_name: string; email: string; avatar_url: string | null; is_linked: boolean }[]>([])
+  const [showLinkModal, setShowLinkModal] = useState(false)
+  const [linkSearch, setLinkSearch] = useState('')
+  const [linking, setLinking] = useState(false)
+
   useEffect(() => {
     init()
   }, [])
@@ -142,12 +155,81 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
         if (!res.ok) throw new Error('Not found')
         const { practitioner } = await res.json()
         setForm(practitioner)
+
+        // Load linked user info
+        if (practitioner.user_id) {
+          setLinkedUserId(practitioner.user_id)
+          setLinkedAt(practitioner.linked_at)
+          const { data: linkedUser } = await supabase
+            .from('users')
+            .select('full_name, email')
+            .eq('id', practitioner.user_id)
+            .single()
+          if (linkedUser) {
+            setLinkedUserName(linkedUser.full_name)
+            setLinkedUserEmail(linkedUser.email)
+          }
+        }
       } catch {
         toast.error('Practitioner not found')
         router.push('/admin/practitioners')
       } finally {
         setLoading(false)
       }
+    }
+  }
+
+  const fetchPractitionerAccounts = async () => {
+    const res = await fetch('/api/admin/practitioners/accounts')
+    if (res.ok) {
+      const { practitioners } = await res.json()
+      setPractitionerAccounts(practitioners)
+    }
+  }
+
+  const handleLinkAccount = async (targetUserId: string) => {
+    setLinking(true)
+    try {
+      const res = await fetch(`/api/admin/practitioners/${resolvedParams.id}/link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: targetUserId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      // Update local state
+      const account = practitionerAccounts.find(a => a.id === targetUserId)
+      setLinkedUserId(targetUserId)
+      setLinkedAt(new Date().toISOString())
+      setLinkedUserName(account?.full_name || null)
+      setLinkedUserEmail(account?.email || null)
+      setShowLinkModal(false)
+      toast.success(locale === 'fr' ? 'Compte lié avec succès' : 'Account linked successfully')
+    } catch (error: unknown) {
+      toast.error((error as Error).message || 'Failed to link account')
+    } finally {
+      setLinking(false)
+    }
+  }
+
+  const handleUnlinkAccount = async () => {
+    setLinking(true)
+    try {
+      const res = await fetch(`/api/admin/practitioners/${resolvedParams.id}/link`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) throw new Error('Failed to unlink')
+
+      setLinkedUserId(null)
+      setLinkedAt(null)
+      setLinkedUserName(null)
+      setLinkedUserEmail(null)
+      toast.success(locale === 'fr' ? 'Compte délié' : 'Account unlinked')
+    } catch {
+      toast.error('Failed to unlink account')
+    } finally {
+      setLinking(false)
     }
   }
 
@@ -1274,6 +1356,132 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
               {/* Settings Tab */}
               {activeTab === 'settings' && (
                 <div className="space-y-6">
+                  {/* Link Account Card */}
+                  {!isNew && (
+                    <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
+                      <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                        <Link2 className="w-5 h-5 inline mr-2" />
+                        {locale === 'fr' ? 'Compte lié' : 'Linked Account'}
+                      </h2>
+                      <p className="text-sm text-gray-500 mb-6">
+                        {locale === 'fr'
+                          ? 'Associer ce profil public au compte d\'un praticien inscrit. Les données du profil seront copiées dans son compte.'
+                          : 'Link this public profile to a signed-up practitioner account. Profile data will be copied to their account.'}
+                      </p>
+
+                      {linkedUserId ? (
+                        <div className="flex items-center justify-between p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                              <User className="w-5 h-5 text-emerald-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{linkedUserName || 'Unknown'}</p>
+                              <p className="text-sm text-gray-500">{linkedUserEmail}</p>
+                              {linkedAt && (
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                  {locale === 'fr' ? 'Lié le' : 'Linked on'} {new Date(linkedAt).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            onClick={handleUnlinkAccount}
+                            disabled={linking}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <Unlink className="w-4 h-4" />
+                            {locale === 'fr' ? 'Délier' : 'Unlink'}
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => { fetchPractitionerAccounts(); setShowLinkModal(true) }}
+                            className="flex items-center gap-2 px-5 py-3 rounded-xl border-2 border-dashed border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-900 transition-all w-full justify-center"
+                          >
+                            <Link2 className="w-4 h-4" />
+                            {locale === 'fr' ? 'Lier un compte praticien' : 'Link Practitioner Account'}
+                          </button>
+
+                          {/* Link Modal */}
+                          {showLinkModal && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowLinkModal(false)}>
+                              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                                <div className="p-6 border-b border-gray-100">
+                                  <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-semibold text-gray-900">
+                                      {locale === 'fr' ? 'Sélectionner un praticien' : 'Select Practitioner'}
+                                    </h3>
+                                    <button onClick={() => setShowLinkModal(false)} className="p-1 rounded-lg hover:bg-gray-100">
+                                      <X className="w-5 h-5 text-gray-400" />
+                                    </button>
+                                  </div>
+                                  <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                      type="text"
+                                      placeholder={locale === 'fr' ? 'Rechercher par nom...' : 'Search by name...'}
+                                      value={linkSearch}
+                                      onChange={e => setLinkSearch(e.target.value)}
+                                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 outline-none text-sm"
+                                      autoFocus
+                                    />
+                                  </div>
+                                </div>
+                                <div className="p-4 overflow-y-auto flex-1">
+                                  {practitionerAccounts.length === 0 ? (
+                                    <div className="flex items-center justify-center py-8">
+                                      <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-1">
+                                      {practitionerAccounts
+                                        .filter(a => {
+                                          if (!linkSearch) return true
+                                          const q = linkSearch.toLowerCase()
+                                          return a.full_name?.toLowerCase().includes(q) || a.email?.toLowerCase().includes(q)
+                                        })
+                                        .map(account => (
+                                          <button
+                                            key={account.id}
+                                            onClick={() => !account.is_linked && handleLinkAccount(account.id)}
+                                            disabled={account.is_linked || linking}
+                                            className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
+                                              account.is_linked
+                                                ? 'opacity-50 cursor-not-allowed bg-gray-50'
+                                                : 'hover:bg-gray-50 cursor-pointer'
+                                            }`}
+                                          >
+                                            {account.avatar_url ? (
+                                              <img src={account.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover" />
+                                            ) : (
+                                              <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+                                                <User className="w-4 h-4 text-gray-400" />
+                                              </div>
+                                            )}
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-sm font-medium text-gray-900 truncate">{account.full_name}</p>
+                                              <p className="text-xs text-gray-500 truncate">{account.email}</p>
+                                            </div>
+                                            {account.is_linked && (
+                                              <span className="text-xs text-gray-400 px-2 py-1 bg-gray-100 rounded-lg flex-shrink-0">
+                                                {locale === 'fr' ? 'Déjà lié' : 'Already linked'}
+                                              </span>
+                                            )}
+                                          </button>
+                                        ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
                     <h2 className="text-xl font-semibold text-gray-900 mb-6">{t.profile.settings.title}</h2>
 

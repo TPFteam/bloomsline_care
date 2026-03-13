@@ -65,6 +65,10 @@ export interface PublicPractitioner {
   slug: string
   is_published: boolean
 
+  // Account linking
+  user_id: string | null
+  linked_at: string | null
+
   // Meta
   created_by: string | null
   created_at: string
