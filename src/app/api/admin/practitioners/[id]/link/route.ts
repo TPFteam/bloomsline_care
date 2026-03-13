@@ -96,7 +96,7 @@ export async function POST(
       contact_email: publicProfile.contact_email,
       contact_phone: publicProfile.contact_phone,
       slug: publicProfile.slug,
-      is_public: publicProfile.is_published,
+      is_public: true,
     }
 
     if (existingProfile) {
@@ -130,12 +130,13 @@ export async function POST(
         .eq('id', user_id)
     }
 
-    // 6. Mark the public practitioner as linked
+    // 6. Mark the public practitioner as linked and unpublish (practitioner_profiles takes over)
     const { data: updated, error: linkError } = await adminClient
       .from('public_practitioners')
       .update({
         user_id,
         linked_at: new Date().toISOString(),
+        is_published: false,
       })
       .eq('id', id)
       .select()

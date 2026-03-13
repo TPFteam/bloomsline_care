@@ -205,7 +205,8 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
       setLinkedUserName(account?.full_name || null)
       setLinkedUserEmail(account?.email || null)
       setShowLinkModal(false)
-      toast.success(locale === 'fr' ? 'Compte lié avec succès' : 'Account linked successfully')
+      setForm(prev => ({ ...prev, is_published: false }))
+      toast.success(locale === 'fr' ? 'Compte lié — URL publique désactivée, le profil praticien prend le relais' : 'Account linked — public URL disabled, practitioner profile takes over')
     } catch (error: unknown) {
       toast.error((error as Error).message || 'Failed to link account')
     } finally {
