@@ -643,96 +643,51 @@ function MilestoneDetailModal({
           </div>
         </div>
 
-        {/* Session Notes */}
-        {(() => {
-          const linkedSessionNotes = sessionNotes.filter(n => n.session_id)
-          const observationNotes = sessionNotes.filter(n => !n.session_id)
-          return (
-            <>
-              <div className="px-6 py-4 border-b border-gray-100">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" />
-                  {locale === 'fr' ? 'Notes de séance' : locale === 'es' ? 'Notas de sesión' : 'Session notes'}
-                  {linkedSessionNotes.length > 0 && <span className="text-gray-400">({linkedSessionNotes.length})</span>}
-                </p>
-                {linkedSessionNotes.length > 0 ? (
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {linkedSessionNotes.map((note) => {
-                      const noteTypeLabel = note.note_type ? noteTypes.find(nt => nt.type === note.note_type)?.label : null
-                      return (
-                        <div key={note.id} className="p-3 rounded-lg border bg-blue-50 border-blue-100">
-                          <p className="text-xs text-gray-700">{stripHtml(note.content).slice(0, 200)}{stripHtml(note.content).length > 200 ? '...' : ''}</p>
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <span className="text-[10px] flex items-center gap-1 text-blue-600">
-                              <Clock className="w-2.5 h-2.5" />
-                              {note.session_date ? new Date(note.session_date).toLocaleDateString() : new Date(note.created_at).toLocaleDateString()}
-                            </span>
-                            {note.session_type && (
-                              <span className="text-[10px] text-blue-500">{note.session_type}</span>
-                            )}
-                            {noteTypeLabel && (
-                              <span className="text-[10px] text-gray-400">{noteTypeLabel}</span>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-xs text-gray-400 italic py-1">
-                    {locale === 'fr' ? 'Aucune note de séance' : locale === 'es' ? 'Sin notas de sesión' : 'No session notes yet'}
-                  </p>
-                )}
-              </div>
-
-              {/* Observation Notes */}
-              <div className="px-6 py-4 border-b border-gray-100">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5" />
-                  {locale === 'fr' ? 'Notes d\'observation' : locale === 'es' ? 'Notas de observación' : 'Observation notes'}
-                  {observationNotes.length > 0 && <span className="text-gray-400">({observationNotes.length})</span>}
-                </p>
-                {observationNotes.length > 0 ? (
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {observationNotes.map((note) => {
-                      const noteTypeLabel = note.note_type ? noteTypes.find(nt => nt.type === note.note_type)?.label : null
-                      return (
-                        <div key={note.id} className="p-3 rounded-lg border bg-amber-50 border-amber-100">
-                          <p className="text-xs text-gray-700">{stripHtml(note.content).slice(0, 200)}{stripHtml(note.content).length > 200 ? '...' : ''}</p>
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <span className="text-[10px] flex items-center gap-1 text-amber-600">
-                              <Clock className="w-2.5 h-2.5" />
-                              {new Date(note.created_at).toLocaleDateString()}
-                            </span>
-                            {noteTypeLabel && (
-                              <span className="text-[10px] text-gray-400">{noteTypeLabel}</span>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-xs text-gray-400 italic py-1">
-                    {locale === 'fr' ? 'Aucune note d\'observation' : locale === 'es' ? 'Sin observaciones' : 'No observation notes yet'}
-                  </p>
-                )}
-              </div>
-            </>
-          )
-        })()}
-
-        {/* Tagged Excerpts from notes */}
+        {/* Notes */}
         <div className="px-6 py-4 border-b border-gray-100">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-            <Target className="w-3.5 h-3.5" />
-            {locale === 'fr' ? 'Évoqué dans les notes' : 'Mentioned in notes'}
-            {taggedExcerpts.length > 0 && <span className="text-gray-400">({taggedExcerpts.length})</span>}
+            <FileText className="w-3.5 h-3.5" />
+            {locale === 'fr' ? 'Notes' : 'Notes'}
+            {(sessionNotes.length + taggedExcerpts.length) > 0 && <span className="text-gray-400">({sessionNotes.length + taggedExcerpts.length})</span>}
           </p>
-          {taggedExcerpts.length > 0 ? (
-            <div className="space-y-2.5 max-h-60 overflow-y-auto">
+
+          {sessionNotes.length === 0 && taggedExcerpts.length === 0 ? (
+            <p className="text-xs text-gray-400 italic py-1">
+              {locale === 'fr' ? 'Aucune note liée' : locale === 'es' ? 'Sin notas vinculadas' : 'No linked notes yet'}
+            </p>
+          ) : (
+            <div className="space-y-2.5 max-h-72 overflow-y-auto">
+              {/* Directly linked notes (session + observation) */}
+              {sessionNotes.map((note) => {
+                const noteTypeLabel = note.note_type ? noteTypes.find(nt => nt.type === note.note_type)?.label : null
+                const isSession = !!note.session_id
+                return (
+                  <div key={note.id} className={`p-3 rounded-lg border ${isSession ? 'bg-blue-50 border-blue-100' : 'bg-amber-50 border-amber-100'}`}>
+                    <p className="text-xs text-gray-700">{stripHtml(note.content).slice(0, 200)}{stripHtml(note.content).length > 200 ? '...' : ''}</p>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className={`text-[10px] flex items-center gap-1 ${isSession ? 'text-blue-600' : 'text-amber-600'}`}>
+                        {isSession ? <Calendar className="w-2.5 h-2.5" /> : <FileText className="w-2.5 h-2.5" />}
+                        {note.session_date ? new Date(note.session_date).toLocaleDateString() : new Date(note.created_at).toLocaleDateString()}
+                      </span>
+                      {note.session_type && (
+                        <span className={`text-[10px] ${isSession ? 'text-blue-500' : 'text-amber-500'}`}>{note.session_type}</span>
+                      )}
+                      {noteTypeLabel && (
+                        <span className="text-[10px] text-gray-400">{noteTypeLabel}</span>
+                      )}
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${isSession ? 'bg-blue-100 text-blue-600' : 'bg-amber-100 text-amber-600'}`}>
+                        {isSession
+                          ? (locale === 'fr' ? 'Séance' : 'Session')
+                          : (locale === 'fr' ? 'Observation' : 'Observation')}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+
+              {/* Tagged excerpts */}
               {taggedExcerpts.map((excerpt, i) => (
-                <div key={i} className="rounded-lg bg-gray-50 border border-gray-100 overflow-hidden">
+                <div key={`excerpt-${i}`} className="rounded-lg bg-gray-50 border border-gray-100 overflow-hidden">
                   {excerpt.html ? (
                     <div
                       className="rte-read show-labels text-[11px] leading-relaxed text-gray-600 p-3 excerpt-compact"
@@ -757,10 +712,6 @@ function MilestoneDetailModal({
                 </div>
               ))}
             </div>
-          ) : (
-            <p className="text-xs text-gray-400 italic py-1">
-              {locale === 'fr' ? 'Aucune mention en séance' : locale === 'es' ? 'Sin menciones en sesión' : 'No tagged excerpts yet'}
-            </p>
           )}
         </div>
 
