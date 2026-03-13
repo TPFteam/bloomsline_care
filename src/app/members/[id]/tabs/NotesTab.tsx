@@ -2725,7 +2725,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                             if (fragments.length > 0) {
                               return (
                                 <div className="space-y-1">
-                                  {fragments.slice(0, 3).map((frag, i) => {
+                                  {fragments.map((frag, i) => {
                                     const colors = getNoteColor(frag.tag)
                                     return (
                                       <div key={i} className="flex items-start gap-1.5">
@@ -2736,9 +2736,6 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                                       </div>
                                     )
                                   })}
-                                  {fragments.length > 3 && (
-                                    <span className="text-[10px] text-gray-400">+{fragments.length - 3} {locale === 'fr' ? 'de plus' : 'more'}</span>
-                                  )}
                                 </div>
                               )
                             }
