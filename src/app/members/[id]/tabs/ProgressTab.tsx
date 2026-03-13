@@ -61,6 +61,7 @@ interface TaggedExcerpt {
   html?: string
   sessionDate?: string
   sessionType?: string
+  isSession?: boolean
 }
 
 // Helper: parse HTML content and extract goal-related excerpts from both
@@ -643,20 +644,53 @@ function MilestoneDetailModal({
           </div>
         </div>
 
-        {/* Session Notes - only show if there are session notes */}
+        {/* Session Notes & Observation Notes - split into two sections */}
         {(() => {
           const linkedSessionNotes = sessionNotes.filter(n => n.session_id)
           const observationNotes = sessionNotes.filter(n => !n.session_id)
+          const sessionExcerpts = taggedExcerpts.filter(e => e.isSession)
+          const observationExcerpts = taggedExcerpts.filter(e => !e.isSession)
+
+          const renderExcerpt = (excerpt: TaggedExcerpt, i: number) => (
+            <div key={`excerpt-${i}`} className="rounded-lg bg-gray-50 border border-gray-100 overflow-hidden">
+              {excerpt.html ? (
+                <div
+                  className="rte-read show-labels text-[11px] leading-relaxed text-gray-600 p-3 excerpt-compact"
+                  dangerouslySetInnerHTML={{ __html: recolorExcerptHtml(excerpt.html, noteTypes.map(nt => nt.type)) }}
+                />
+              ) : (
+                <p className="text-[11px] text-gray-600 italic p-3">&ldquo;{excerpt.text.slice(0, 200)}{excerpt.text.length > 200 ? '...' : ''}&rdquo;</p>
+              )}
+              {(excerpt.sessionDate || excerpt.sessionType) && (
+                <div className="flex items-center gap-2 px-3 py-1.5 border-t border-gray-100">
+                  {excerpt.sessionDate && (
+                    <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                      <Clock className="w-2.5 h-2.5" />
+                      {new Date(excerpt.sessionDate).toLocaleDateString()}
+                    </span>
+                  )}
+                  {excerpt.sessionType && (
+                    <span className="text-[10px] text-gray-400">{excerpt.sessionType}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+
+          const hasSession = linkedSessionNotes.length > 0 || sessionExcerpts.length > 0
+          const hasObservation = observationNotes.length > 0 || observationExcerpts.length > 0
+
           return (
             <>
-              {linkedSessionNotes.length > 0 && (
+              {/* Session Notes */}
+              {hasSession && (
                 <div className="px-6 py-4 border-b border-gray-100">
                   <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5" />
                     {locale === 'fr' ? 'Notes de séance' : locale === 'es' ? 'Notas de sesión' : 'Session notes'}
-                    <span className="text-gray-400">({linkedSessionNotes.length})</span>
+                    <span className="text-gray-400">({linkedSessionNotes.length + sessionExcerpts.length})</span>
                   </p>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                  <div className="space-y-2.5 max-h-60 overflow-y-auto">
                     {linkedSessionNotes.map((note) => {
                       const noteTypeLabel = note.note_type ? noteTypes.find(nt => nt.type === note.note_type)?.label : null
                       return (
@@ -673,19 +707,20 @@ function MilestoneDetailModal({
                         </div>
                       )
                     })}
+                    {sessionExcerpts.map(renderExcerpt)}
                   </div>
                 </div>
               )}
 
-              {/* Observation Notes - only show if there are observation notes */}
-              {observationNotes.length > 0 && (
+              {/* Observation Notes */}
+              {hasObservation && (
                 <div className="px-6 py-4 border-b border-gray-100">
                   <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5" />
                     {locale === 'fr' ? 'Notes d\'observation' : locale === 'es' ? 'Notas de observación' : 'Observation notes'}
-                    <span className="text-gray-400">({observationNotes.length})</span>
+                    <span className="text-gray-400">({observationNotes.length + observationExcerpts.length})</span>
                   </p>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                  <div className="space-y-2.5 max-h-60 overflow-y-auto">
                     {observationNotes.map((note) => {
                       const noteTypeLabel = note.note_type ? noteTypes.find(nt => nt.type === note.note_type)?.label : null
                       return (
@@ -701,44 +736,7 @@ function MilestoneDetailModal({
                         </div>
                       )
                     })}
-                  </div>
-                </div>
-              )}
-
-              {/* Tagged Excerpts - only show if there are excerpts */}
-              {taggedExcerpts.length > 0 && (
-                <div className="px-6 py-4 border-b border-gray-100">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <Target className="w-3.5 h-3.5" />
-                    {locale === 'fr' ? 'Évoqué dans les notes' : 'Mentioned in notes'}
-                    <span className="text-gray-400">({taggedExcerpts.length})</span>
-                  </p>
-                  <div className="space-y-2.5 max-h-60 overflow-y-auto">
-                    {taggedExcerpts.map((excerpt, i) => (
-                      <div key={`excerpt-${i}`} className="rounded-lg bg-gray-50 border border-gray-100 overflow-hidden">
-                        {excerpt.html ? (
-                          <div
-                            className="rte-read show-labels text-[11px] leading-relaxed text-gray-600 p-3 excerpt-compact"
-                            dangerouslySetInnerHTML={{ __html: recolorExcerptHtml(excerpt.html, noteTypes.map(nt => nt.type)) }}
-                          />
-                        ) : (
-                          <p className="text-[11px] text-gray-600 italic p-3">&ldquo;{excerpt.text.slice(0, 200)}{excerpt.text.length > 200 ? '...' : ''}&rdquo;</p>
-                        )}
-                        {(excerpt.sessionDate || excerpt.sessionType) && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 border-t border-gray-100">
-                            {excerpt.sessionDate && (
-                              <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                                <Clock className="w-2.5 h-2.5" />
-                                {new Date(excerpt.sessionDate).toLocaleDateString()}
-                              </span>
-                            )}
-                            {excerpt.sessionType && (
-                              <span className="text-[10px] text-gray-400">{excerpt.sessionType}</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    {observationExcerpts.map(renderExcerpt)}
                   </div>
                 </div>
               )}
@@ -1049,6 +1047,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
                 html,
                 sessionDate: sessionData?.scheduled_at,
                 sessionType: sessionData?.session_type,
+                isSession: !!note.session_id,
               })
             }
           })
