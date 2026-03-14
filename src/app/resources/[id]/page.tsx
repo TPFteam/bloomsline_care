@@ -473,6 +473,8 @@ export default function ResourceDetailPage() {
           const resTitle = typeof resource.title === 'string' ? resource.title : ''
           const practName = practitionerData?.full_name || 'Your practitioner'
 
+          console.log('[share] Member lookup:', { memberId, user_id: memberResult?.user_id, email: memberResult?.email })
+
           if (memberResult?.user_id) {
             await notifyResourceShared(supabase, {
               memberId,
@@ -485,7 +487,7 @@ export default function ResourceDetailPage() {
             })
           } else if (memberResult?.email) {
             // Create a share token for preview link
-            const { data: tokenData } = await supabase
+            const { data: tokenData, error: tokenError } = await supabase
               .from('resource_share_tokens')
               .insert({
                 resource_id: resourceId,
@@ -496,6 +498,10 @@ export default function ResourceDetailPage() {
               .select('token')
               .single()
 
+            if (tokenError) {
+              console.error('[share] Token creation failed:', tokenError)
+            }
+
             await sendResourceSharedEmail({
               memberEmail: memberResult.email,
               resourceTitle: resTitle,
@@ -504,9 +510,11 @@ export default function ResourceDetailPage() {
               resourceId,
               shareToken: tokenData?.token,
             })
+          } else {
+            console.warn('[share] Member has no user_id and no email — cannot notify:', memberId)
           }
         } catch (notifyError) {
-          console.error('Error sending notification:', notifyError)
+          console.error('[share] Error sending notification:', notifyError)
         }
       }
 

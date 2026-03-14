@@ -25,7 +25,7 @@ const templates: Record<NotificationType, NotificationTemplate> = {
         : locale === 'es'
           ? `Tu profesional, ${m.practitionerName}, compartió "${m.resourceTitle}" contigo`
           : `Your practitioner, ${m.practitionerName}, shared "${m.resourceTitle}" with you`,
-    actionUrl: (m) => `/fill/shared/${m.resourceId}`,
+    actionUrl: (m) => `/resources/${m.resourceId}`,
     emailSubject: (m, locale) =>
       locale === 'fr'
         ? `Votre praticien, ${m.practitionerName}, a partagé une ressource avec vous`
