@@ -20,6 +20,7 @@ import {
   ChevronDown,
   FileText,
   Loader2,
+  Search,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -334,13 +335,7 @@ const MilestoneCard = memo(function MilestoneCard({
                 {sessionNoteCount}
               </span>
             )}
-            {observationNoteCount > 0 && (
-              <span className="flex items-center gap-1 text-[10px] text-amber-500" title={locale === 'fr' ? 'Observations' : 'Observations'}>
-                <FileText className="w-3 h-3" />
-                {observationNoteCount}
-              </span>
-            )}
-            {excerptCount > 0 && sessionNoteCount === 0 && observationNoteCount === 0 && (
+            {excerptCount > 0 && sessionNoteCount === 0 && (
               <span className="flex items-center gap-1 text-[10px] text-gray-400" title={locale === 'fr' ? 'Mentions dans les notes' : 'Mentions in notes'}>
                 <MessageSquare className="w-3 h-3" />
                 {excerptCount}
@@ -450,10 +445,61 @@ function MilestoneDetailModal({
     setSavingComment(false)
   }
 
+  const [showTagDropdown, setShowTagDropdown] = useState(false)
+  const [tagQuery, setTagQuery] = useState('')
+  const [commentSearch, setCommentSearch] = useState('')
+  const [commentTagFilter, setCommentTagFilter] = useState('')
+
+  const filteredComments = comments.filter(c => {
+    if (commentTagFilter && c.tag !== commentTagFilter) return false
+    if (commentSearch && !c.content.toLowerCase().includes(commentSearch.toLowerCase())) return false
+    return true
+  })
+
+  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value
+    setNewComment(val)
+    // Detect @ trigger
+    const cursor = e.target.selectionStart
+    const before = val.slice(0, cursor)
+    const atIdx = before.lastIndexOf('@')
+    if (atIdx >= 0 && (atIdx === 0 || /\s/.test(before[atIdx - 1]))) {
+      const query = before.slice(atIdx + 1)
+      if (!/\s/.test(query)) {
+        setTagQuery(query.toLowerCase())
+        setShowTagDropdown(true)
+        return
+      }
+    }
+    setShowTagDropdown(false)
+  }
+
+  const insertTag = (nt: { type: string; label: string }) => {
+    // Remove the @query from the text
+    const cursor = newComment.lastIndexOf('@')
+    if (cursor >= 0) {
+      setNewComment(newComment.slice(0, cursor).trimEnd() + ' ')
+    }
+    setNewCommentTag(nt.type)
+    setShowTagDropdown(false)
+  }
+
+  const filteredTags = noteTypes.filter(nt =>
+    nt.label.toLowerCase().includes(tagQuery) || nt.type.toLowerCase().includes(tagQuery)
+  )
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showTagDropdown && e.key === 'Escape') {
+      setShowTagDropdown(false)
+      return
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      handleAddComment()
+      if (showTagDropdown && filteredTags.length > 0) {
+        insertTag(filteredTags[0])
+      } else {
+        handleAddComment()
+      }
     }
   }
 
@@ -644,105 +690,201 @@ function MilestoneDetailModal({
           </div>
         </div>
 
-        {/* Session Notes & Observation Notes - split into two sections */}
-        {(() => {
-          const linkedSessionNotes = sessionNotes.filter(n => n.session_id)
-          const observationNotes = sessionNotes.filter(n => !n.session_id)
-          const sessionExcerpts = taggedExcerpts.filter(e => e.isSession)
-          const observationExcerpts = taggedExcerpts.filter(e => !e.isSession)
+        {/* Comments */}
+        <div className="px-6 py-4 border-b border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <MessageSquare className="w-3.5 h-3.5" />
+            {locale === 'fr' ? 'Commentaires' : locale === 'es' ? 'Comentarios' : 'Comments'}
+            <span className="text-gray-400">({comments.length})</span>
+          </p>
 
-          const renderExcerpt = (excerpt: TaggedExcerpt, i: number) => (
-            <div key={`excerpt-${i}`} className="rounded-lg bg-gray-50 border border-gray-100 overflow-hidden">
-              {excerpt.html ? (
-                <div
-                  className="rte-read show-labels text-[11px] leading-relaxed text-gray-600 p-3 excerpt-compact"
-                  dangerouslySetInnerHTML={{ __html: recolorExcerptHtml(excerpt.html, noteTypes.map(nt => nt.type)) }}
-                />
-              ) : (
-                <p className="text-[11px] text-gray-600 italic p-3">&ldquo;{excerpt.text.slice(0, 200)}{excerpt.text.length > 200 ? '...' : ''}&rdquo;</p>
-              )}
-              {(excerpt.sessionDate || excerpt.sessionType) && (
-                <div className="flex items-center gap-2 px-3 py-1.5 border-t border-gray-100">
-                  {excerpt.sessionDate && (
-                    <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                      <Clock className="w-2.5 h-2.5" />
-                      {new Date(excerpt.sessionDate).toLocaleDateString()}
-                    </span>
-                  )}
-                  {excerpt.sessionType && (
-                    <span className="text-[10px] text-gray-400">{excerpt.sessionType}</span>
-                  )}
+          {/* Search & filter */}
+          {comments.length > 1 && (
+            <div className="space-y-2 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-300" />
+                  <input
+                    type="text"
+                    value={commentSearch}
+                    onChange={(e) => setCommentSearch(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Rechercher...' : 'Search...'}
+                    className="w-full text-[11px] text-gray-600 bg-gray-50 border border-gray-200 rounded-lg pl-7 pr-3 py-1.5 focus:outline-none focus:border-gray-400"
+                  />
                 </div>
-              )}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {noteTypes.filter(nt => comments.some(c => c.tag === nt.type)).map((nt) => {
+                  const colors = getTagColor(nt.type)
+                  const isActive = commentTagFilter === nt.type
+                  return (
+                    <button
+                      key={nt.type}
+                      type="button"
+                      onClick={() => setCommentTagFilter(isActive ? '' : nt.type)}
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
+                        isActive
+                          ? `${colors.bg} ${colors.text} ring-1 ring-current`
+                          : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                      }`}
+                    >
+                      {nt.label} ({comments.filter(c => c.tag === nt.type).length})
+                    </button>
+                  )
+                })}
+                {commentTagFilter && (
+                  <button
+                    type="button"
+                    onClick={() => setCommentTagFilter('')}
+                    className="px-2 py-0.5 rounded-full text-[10px] font-medium text-red-400 hover:text-red-600 transition-colors"
+                  >
+                    {locale === 'fr' ? 'Effacer' : 'Clear'}
+                  </button>
+                )}
+              </div>
             </div>
-          )
+          )}
 
-          const hasSession = linkedSessionNotes.length > 0 || sessionExcerpts.length > 0
-          const hasObservation = observationNotes.length > 0 || observationExcerpts.length > 0
-
-          return (
-            <>
-              {/* Session Notes */}
-              {hasSession && (
-                <div className="px-6 py-4 border-b border-gray-100">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {locale === 'fr' ? 'Notes de séance' : locale === 'es' ? 'Notas de sesión' : 'Session notes'}
-                    <span className="text-gray-400">({linkedSessionNotes.length + sessionExcerpts.length})</span>
-                  </p>
-                  <div className="space-y-2.5 max-h-60 overflow-y-auto">
-                    {linkedSessionNotes.map((note) => {
-                      const noteTypeLabel = note.note_type ? noteTypes.find(nt => nt.type === note.note_type)?.label : null
-                      return (
-                        <div key={note.id} className="p-3 rounded-lg border bg-blue-50 border-blue-100">
-                          <p className="text-xs text-gray-700">{stripHtml(note.content).slice(0, 200)}{stripHtml(note.content).length > 200 ? '...' : ''}</p>
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <span className="text-[10px] flex items-center gap-1 text-blue-600">
-                              <Clock className="w-2.5 h-2.5" />
-                              {note.session_date ? new Date(note.session_date).toLocaleDateString() : new Date(note.created_at).toLocaleDateString()}
-                            </span>
-                            {note.session_type && <span className="text-[10px] text-blue-500">{note.session_type}</span>}
-                            {noteTypeLabel && <span className="text-[10px] text-gray-400">{noteTypeLabel}</span>}
-                          </div>
+          {/* Existing comments */}
+          {comments.length > 0 && (
+            <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
+              {filteredComments.map((comment) => (
+                <div key={comment.id} className="group relative p-3 rounded-lg border border-gray-100 bg-gray-50/50">
+                  {editingCommentId === comment.id ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editCommentContent}
+                        onChange={(e) => setEditCommentContent(e.target.value)}
+                        className="w-full text-xs text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-gray-400 resize-none"
+                        rows={2}
+                        autoFocus
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleSaveEdit}
+                          disabled={savingComment}
+                          className="px-2.5 py-1 text-[10px] font-medium bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors"
+                        >
+                          {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                        </button>
+                        <button
+                          onClick={() => setEditingCommentId(null)}
+                          className="px-2.5 py-1 text-[10px] text-gray-500 hover:text-gray-700"
+                        >
+                          {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {comment.tag && (
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium mb-1.5 ${getTagColor(comment.tag).bg} ${getTagColor(comment.tag).text}`}>
+                          @ {getTagLabel(comment.tag)}
+                        </span>
+                      )}
+                      <p className="text-xs text-gray-700 leading-relaxed">{comment.content}</p>
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(comment.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}
+                          {' · '}
+                          {new Date(comment.created_at).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => { setEditingCommentId(comment.id); setEditCommentContent(comment.content); setEditCommentTag(comment.tag || '') }}
+                            className="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                          {deletingCommentId === comment.id ? (
+                            <button
+                              onClick={() => { onDeleteComment(comment.id); setDeletingCommentId(null) }}
+                              className="px-1.5 py-0.5 text-[10px] text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
+                            >
+                              {locale === 'fr' ? 'Confirmer' : 'Confirm'}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setDeletingCommentId(comment.id)}
+                              className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* New comment input */}
+          <div className="space-y-2">
+            {/* Tag selector */}
+            <div className="flex flex-wrap gap-1">
+              {noteTypes.map((nt) => {
+                const colors = getTagColor(nt.type)
+                const isActive = newCommentTag === nt.type
+                return (
+                  <button
+                    key={nt.type}
+                    type="button"
+                    onClick={() => setNewCommentTag(isActive ? '' : nt.type)}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
+                      isActive
+                        ? `${colors.bg} ${colors.text} ring-1 ring-current`
+                        : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                    }`}
+                  >
+                    @ {nt.label}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="flex gap-2 relative">
+              <div className="flex-1 relative">
+                <textarea
+                  value={newComment}
+                  onChange={handleCommentChange}
+                  onKeyDown={handleKeyDown}
+                  onBlur={() => setTimeout(() => setShowTagDropdown(false), 150)}
+                  placeholder={locale === 'fr' ? 'Ajouter un commentaire... (@ pour tag)' : 'Add a comment... (@ to tag)'}
+                  rows={1}
+                  className="w-full text-xs text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-gray-400 resize-none"
+                />
+                {/* @ tag dropdown */}
+                {showTagDropdown && filteredTags.length > 0 && (
+                  <div className="absolute bottom-full left-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px] z-50">
+                    {filteredTags.map((nt) => {
+                      const colors = getTagColor(nt.type)
+                      return (
+                        <button
+                          key={nt.type}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => insertTag(nt)}
+                          className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                        >
+                          <span className={`w-2 h-2 rounded-full ${colors.bg} ring-1 ring-current ${colors.text}`} />
+                          {nt.label}
+                        </button>
                       )
                     })}
-                    {sessionExcerpts.map(renderExcerpt)}
                   </div>
-                </div>
-              )}
-
-              {/* Observation Notes */}
-              {hasObservation && (
-                <div className="px-6 py-4 border-b border-gray-100">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5" />
-                    {locale === 'fr' ? 'Notes d\'observation' : locale === 'es' ? 'Notas de observación' : 'Observation notes'}
-                    <span className="text-gray-400">({observationNotes.length + observationExcerpts.length})</span>
-                  </p>
-                  <div className="space-y-2.5 max-h-60 overflow-y-auto">
-                    {observationNotes.map((note) => {
-                      const noteTypeLabel = note.note_type ? noteTypes.find(nt => nt.type === note.note_type)?.label : null
-                      return (
-                        <div key={note.id} className="p-3 rounded-lg border bg-amber-50 border-amber-100">
-                          <p className="text-xs text-gray-700">{stripHtml(note.content).slice(0, 200)}{stripHtml(note.content).length > 200 ? '...' : ''}</p>
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <span className="text-[10px] flex items-center gap-1 text-amber-600">
-                              <Clock className="w-2.5 h-2.5" />
-                              {new Date(note.created_at).toLocaleDateString()}
-                            </span>
-                            {noteTypeLabel && <span className="text-[10px] text-gray-400">{noteTypeLabel}</span>}
-                          </div>
-                        </div>
-                      )
-                    })}
-                    {observationExcerpts.map(renderExcerpt)}
-                  </div>
-                </div>
-              )}
-            </>
-          )
-        })()}
+                )}
+              </div>
+              <button
+                onClick={handleAddComment}
+                disabled={!newComment.trim() || savingComment}
+                className="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors self-end"
+              >
+                {savingComment ? '...' : locale === 'fr' ? 'Envoyer' : 'Send'}
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* History Timeline */}
         <div className="px-6 py-4 border-b border-gray-100">

@@ -243,7 +243,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
 
   // Tagging state
   const [popoverPos, setPopoverPos] = useState<{ top: number; left: number; flipped?: boolean } | null>(null)
-  const [popoverMode, setPopoverMode] = useState<PopoverMode>('choices')
+  const [popoverMode, setPopoverMode] = useState<PopoverMode>('tags')
   const [markTooltip, setMarkTooltip] = useState<{ top: number; left: number; markEl: HTMLElement; kind: 'goal' | 'tag' | 'verbatim' } | null>(null)
   const [hoverTooltip, setHoverTooltip] = useState<{ top: number; left: number; label: string; kind: 'goal' | 'tag' | 'verbatim' } | null>(null)
   const savedRange = useRef<Range | null>(null)
@@ -482,29 +482,6 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
           const pos = spaceBelow < dropdownHeight
             ? { top: rect.top - dropdownHeight - 4, left: rect.left }
             : { top: rect.bottom + 4, left: rect.left }
-
-          if (triggerChar === '#') {
-            // Check if cursor is inside a goal section (no nesting)
-            let insideSection = false
-            let walkNode: Node | null = anchor
-            while (walkNode && walkNode !== editorRef.current) {
-              if (walkNode instanceof HTMLElement && walkNode.hasAttribute('data-goal-section')) {
-                insideSection = true
-                break
-              }
-              walkNode = walkNode.parentNode
-            }
-            if (insideSection) {
-              setInlineTrigger({ type: 'end-goal', query, position: pos })
-              setInlineHighlight(0)
-              return
-            }
-            if (hasGoals) {
-              setInlineTrigger({ type: 'goal', query, position: pos })
-              setInlineHighlight(0)
-              return
-            }
-          }
 
           if (triggerChar === '@') {
             if (activeTag) {
@@ -1456,17 +1433,6 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     if (popoverMode === 'choices') {
       return (
         <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg shadow-lg p-1">
-          {hasGoals && !activeGoal && (
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setPopoverMode('goals')}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
-            >
-              <Target className="w-3.5 h-3.5 text-emerald-600" />
-              {fr ? 'Objectif' : 'Goal'}
-            </button>
-          )}
           {hasTags && (
             <button
               type="button"
@@ -1687,32 +1653,9 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       {/* Editable area with side rail */}
       <div className="flex-1 flex flex-col">
         <div className="relative flex flex-1 gap-0">
-          {/* Side rail — tag & goal toggle (hidden in compact mode) */}
+          {/* Side rail — tag toggle (hidden in compact mode) */}
           {!compact && hasAnnotations && (
             <div ref={sideMenuRef} data-side-menu className="sticky top-0 z-50 flex flex-col pt-2 bg-white self-start">
-              {hasGoals && (
-                activeGoal ? (
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={endGoalAnnotation}
-                    className="p-1.5 transition-colors text-emerald-600 bg-emerald-100 animate-pulse"
-                    title={fr ? `Fin: ${activeGoal.title}` : `End: ${activeGoal.title}`}
-                  >
-                    <Target className="w-3.5 h-3.5" />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => openSideMenu('goals')}
-                    className={`p-1.5 transition-colors ${sideMenu === 'goals' ? 'text-emerald-600 bg-emerald-50' : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50/50'}`}
-                    title={fr ? 'Objectifs' : 'Goals'}
-                  >
-                    <Target className="w-3.5 h-3.5" />
-                  </button>
-                )
-              )}
               {hasTags && (
                 activeTag ? (
                   <button
