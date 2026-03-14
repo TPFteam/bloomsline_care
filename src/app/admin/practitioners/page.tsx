@@ -16,6 +16,8 @@ import {
   FileText,
   ArrowRight,
   X,
+  Send,
+  Mail,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -44,7 +46,7 @@ interface PractitionerAccount {
   email: string
 }
 
-type TabType = 'practitioners' | 'resources'
+type TabType = 'practitioners' | 'resources' | 'invite'
 
 export default function AdminPractitionersPage() {
   const { locale } = useLanguage()
@@ -69,6 +71,95 @@ export default function AdminPractitionersPage() {
   const [transferring, setTransferring] = useState(false)
   const [confirmTarget, setConfirmTarget] = useState<PractitionerAccount | null>(null)
 
+  // Invite tab state
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteName, setInviteName] = useState('')
+  const [inviteMessage, setInviteMessage] = useState('')
+  const [inviteLang, setInviteLang] = useState<'fr' | 'en'>('fr')
+  const [inviting, setInviting] = useState(false)
+  const [invitedList, setInvitedList] = useState<{ id: string; email: string; name: string; status: string; created_at: string }[]>([])
+  const [invitedLoading, setInvitedLoading] = useState(false)
+
+  const statusOptions = ['pending', 'invited', 'activated', 'rejected', 'waitlisted']
+  const statusColors: Record<string, { bg: string; text: string }> = {
+    pending: { bg: 'bg-amber-50', text: 'text-amber-600' },
+    invited: { bg: 'bg-blue-50', text: 'text-blue-600' },
+    activated: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
+    rejected: { bg: 'bg-red-50', text: 'text-red-600' },
+    waitlisted: { bg: 'bg-gray-100', text: 'text-gray-500' },
+  }
+
+  const [confirmStatusChange, setConfirmStatusChange] = useState<{ id: string; name: string; from: string; to: string } | null>(null)
+
+  const handleStatusSelect = (id: string, name: string, currentStatus: string, newStatus: string) => {
+    if (newStatus === currentStatus) return
+    setConfirmStatusChange({ id, name, from: currentStatus, to: newStatus })
+  }
+
+  const confirmStatus = async () => {
+    if (!confirmStatusChange) return
+    try {
+      const res = await fetch('/api/admin/invites', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: confirmStatusChange.id, status: confirmStatusChange.to }),
+      })
+      if (res.ok) {
+        setInvitedList(prev => prev.map(inv => inv.id === confirmStatusChange.id ? { ...inv, status: confirmStatusChange.to } : inv))
+        toast.success(locale === 'fr' ? 'Statut mis à jour' : 'Status updated')
+      } else {
+        toast.error('Failed to update status')
+      }
+    } catch {
+      toast.error('Failed to update status')
+    }
+    setConfirmStatusChange(null)
+  }
+
+  const fetchInvited = async () => {
+    setInvitedLoading(true)
+    try {
+      const res = await fetch('/api/admin/invites')
+      if (res.ok) {
+        const data = await res.json()
+        setInvitedList(data.invites || [])
+      }
+    } catch {
+      // ignore
+    }
+    setInvitedLoading(false)
+  }
+
+  const handleInvite = async () => {
+    if (!inviteEmail.trim() || !inviteName.trim()) return
+    setInviting(true)
+    try {
+      const res = await fetch('/api/admin/invites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: inviteEmail.trim().toLowerCase(),
+          name: inviteName.trim(),
+          message: inviteMessage.trim() || undefined,
+          preferredLanguage: inviteLang,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to send invite')
+      } else {
+        toast.success(locale === 'fr' ? 'Invitation envoyée !' : 'Invite sent!')
+        setInviteEmail('')
+        setInviteName('')
+        setInviteMessage('')
+        fetchInvited()
+      }
+    } catch {
+      toast.error('Failed to send invite')
+    }
+    setInviting(false)
+  }
+
   useEffect(() => {
     fetchData()
   }, [])
@@ -76,6 +167,9 @@ export default function AdminPractitionersPage() {
   useEffect(() => {
     if (activeTab === 'resources' && resources.length === 0) {
       fetchResources()
+    }
+    if (activeTab === 'invite' && invitedList.length === 0) {
+      fetchInvited()
     }
   }, [activeTab])
 
@@ -283,6 +377,17 @@ export default function AdminPractitionersPage() {
             >
               <FileText className="w-4 h-4 inline mr-2" />
               {locale === 'fr' ? 'Ressources' : 'Resources'}
+            </button>
+            <button
+              onClick={() => setActiveTab('invite')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'invite'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Mail className="w-4 h-4 inline mr-2" />
+              {locale === 'fr' ? 'Inviter' : 'Invite'}
             </button>
           </div>
 
@@ -523,6 +628,151 @@ export default function AdminPractitionersPage() {
               )}
             </>
           )}
+
+          {/* ─── Invite Tab ─── */}
+          {activeTab === 'invite' && (
+            <div className="max-w-2xl">
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {locale === 'fr' ? 'Inviter un praticien' : 'Invite a Practitioner'}
+                </h1>
+                <p className="text-sm text-gray-500 mt-1">
+                  {locale === 'fr'
+                    ? 'Envoyez une invitation pour rejoindre Bloomsline Care. Ils seront ajoutés à la liste d\'attente.'
+                    : 'Send an invitation to join Bloomsline Care. They\'ll be added to the waitlist.'}
+                </p>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4 mb-8">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {locale === 'fr' ? 'Nom complet' : 'Full name'} <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={inviteName}
+                    onChange={(e) => setInviteName(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Dr. Marie Dupont' : 'Dr. Jane Smith'}
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-gray-400 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {locale === 'fr' ? 'Adresse email' : 'Email address'} <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="practitioner@example.com"
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-gray-400 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {locale === 'fr' ? 'Message personnel (optionnel)' : 'Personal message (optional)'}
+                  </label>
+                  <textarea
+                    value={inviteMessage}
+                    onChange={(e) => setInviteMessage(e.target.value)}
+                    placeholder={locale === 'fr'
+                      ? 'Bonjour, je vous invite à découvrir Bloomsline Care...'
+                      : 'Hi, I\'d like to invite you to try Bloomsline Care...'}
+                    rows={3}
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-gray-400 transition-colors resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {locale === 'fr' ? 'Langue préférée' : 'Preferred language'}
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setInviteLang('fr')}
+                      className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                        inviteLang === 'fr'
+                          ? 'bg-gray-900 text-white border-gray-900'
+                          : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      Français
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInviteLang('en')}
+                      className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                        inviteLang === 'en'
+                          ? 'bg-gray-900 text-white border-gray-900'
+                          : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      English
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={handleInvite}
+                  disabled={inviting || !inviteEmail.trim() || !inviteName.trim()}
+                  className="w-full px-4 py-2.5 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {inviting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      {locale === 'fr' ? 'Envoyer l\'invitation' : 'Send Invitation'}
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div>
+                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                  {locale === 'fr' ? 'Invitations envoyées' : 'Sent Invitations'}
+                </h2>
+                {invitedLoading ? (
+                  <div className="flex items-center gap-2 py-4 text-gray-400">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">{locale === 'fr' ? 'Chargement...' : 'Loading...'}</span>
+                  </div>
+                ) : invitedList.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-4">
+                    {locale === 'fr' ? 'Aucune invitation envoyée' : 'No invitations sent yet'}
+                  </p>
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+                    {invitedList.map((inv) => {
+                      const sc = statusColors[inv.status] || statusColors.pending
+                      return (
+                        <div key={inv.id} className="px-4 py-3 flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                            {inv.name?.[0]?.toUpperCase() || '?'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{inv.name}</p>
+                            <p className="text-xs text-gray-400 truncate">{inv.email}</p>
+                          </div>
+                          <select
+                            value={inv.status || 'pending'}
+                            onChange={(e) => handleStatusSelect(inv.id, inv.name, inv.status, e.target.value)}
+                            className={`text-[11px] font-medium px-2 py-1 rounded-lg border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-gray-300 ${sc.bg} ${sc.text}`}
+                          >
+                            {statusOptions.map(s => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
+                          <span className="text-[10px] text-gray-400 flex-shrink-0">
+                            {new Date(inv.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
@@ -631,6 +881,46 @@ export default function AdminPractitionersPage() {
           </div>
         </div>
       )}
+
+      {/* Status Change Confirmation */}
+      {confirmStatusChange && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-base font-semibold text-gray-900 mb-2">
+              {locale === 'fr' ? 'Confirmer le changement' : 'Confirm Change'}
+            </h3>
+            <p className="text-sm text-gray-600 mb-1">
+              {locale === 'fr'
+                ? `Changer le statut de "${confirmStatusChange.name}" ?`
+                : `Change status for "${confirmStatusChange.name}"?`}
+            </p>
+            <div className="flex items-center gap-2 mb-5">
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-lg ${(statusColors[confirmStatusChange.from] || statusColors.pending).bg} ${(statusColors[confirmStatusChange.from] || statusColors.pending).text}`}>
+                {confirmStatusChange.from}
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-lg ${(statusColors[confirmStatusChange.to] || statusColors.pending).bg} ${(statusColors[confirmStatusChange.to] || statusColors.pending).text}`}>
+                {confirmStatusChange.to}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmStatusChange(null)}
+                className="flex-1 px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={confirmStatus}
+                className="flex-1 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors"
+              >
+                {locale === 'fr' ? 'Confirmer' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
