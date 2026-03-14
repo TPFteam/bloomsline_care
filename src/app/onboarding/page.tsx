@@ -18,6 +18,7 @@ export default function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [userName, setUserName] = useState<string>('there')
   const [hasConsented, setHasConsented] = useState(false)
+  const [showConsentOnly, setShowConsentOnly] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -31,21 +32,30 @@ export default function OnboardingPage() {
       // Check if user already has a profile — redirect based on user_type
       const { data: profile } = await supabase
         .from('users')
-        .select('user_type')
+        .select('user_type, has_consented')
         .eq('id', user.id)
         .single()
 
-      if (profile?.user_type) {
+      if (profile?.user_type && profile.user_type !== 'unknown') {
         if (profile.user_type === 'member') {
           window.location.href = 'https://app.bloomsline.com'
-        } else {
+        } else if (profile.has_consented) {
           router.push('/dashboard')
+        } else {
+          // Has type but no consent — show consent modal then redirect
+          setSelectedType(profile.user_type as UserType)
+          const name = user.user_metadata?.full_name?.split(' ')[0] || 'there'
+          setUserName(name)
+          setShowConsentOnly(true)
         }
         return
       }
 
+      // No user type set — auto-select practitioner (web app is for practitioners)
+      setSelectedType('mentor')
       const name = user.user_metadata?.full_name?.split(' ')[0] || 'there'
       setUserName(name)
+      setShowConsentOnly(true)
     }
     getUser()
   }, [router, supabase.auth])
@@ -112,6 +122,43 @@ export default function OnboardingPage() {
       selected: 'border-lavender-500 bg-lavender-50',
     },
   ]
+
+  // Consent-only mode: skip role selection, just accept terms and go
+  if (showConsentOnly) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-teal-50/30 flex items-center justify-center px-4">
+        <ConsentModal isOpen={!hasConsented} onAccept={() => setHasConsented(true)} locale={locale} />
+        {hasConsented && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center max-w-md"
+          >
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 mx-auto mb-6 flex items-center justify-center">
+              <Heart className="w-7 h-7 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              {locale === 'fr' ? `Bienvenue, ${userName} !` : `Welcome, ${userName}!`}
+            </h1>
+            <p className="text-sm text-gray-500 mb-8">
+              {locale === 'fr'
+                ? 'Tout est prêt. Commencez à gérer votre pratique.'
+                : 'Everything is set up. Start managing your practice.'}
+            </p>
+            <Button
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="w-full py-3 rounded-xl bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors"
+            >
+              {isLoading
+                ? (locale === 'fr' ? 'Chargement...' : 'Loading...')
+                : (locale === 'fr' ? 'Accéder au tableau de bord' : 'Go to Dashboard')}
+            </Button>
+          </motion.div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-lavender-100 via-white to-teal-50 relative overflow-hidden">
