@@ -33,6 +33,7 @@ import {
   Route,
   LayoutGrid,
   Compass,
+  BookOpen,
 } from 'lucide-react'
 
 type Lang = 'en' | 'fr'
@@ -81,6 +82,16 @@ function getPAGES(t: T): PageItem[] {
       icon: LayoutGrid,
       color: 'bg-teal-50 text-teal-600',
       borderColor: 'border-teal-200 hover:border-teal-300',
+      tag: t('New', 'Nouveau'),
+    },
+    {
+      id: 'story',
+      label: t('The Bloomsline Story', 'L\'Histoire Bloomsline'),
+      description: t('Everything a potential joiner needs to know — origin, product, business, gaps, and why now', 'Tout ce qu\'un potentiel co-fondateur doit savoir — origine, produit, business, manques, et pourquoi maintenant'),
+      href: '/story',
+      icon: BookOpen,
+      color: 'bg-violet-50 text-violet-600',
+      borderColor: 'border-violet-200 hover:border-violet-300',
       tag: t('New', 'Nouveau'),
     },
     {

@@ -124,95 +124,98 @@ interface RunwayInfo {
 // Base: Pro-heavy mix matching unit-economics analysis
 // Aggressive: Cabinet-heavy with premium conversion upside
 
-// Scenario presets — all include livable founder salaries so founders can work full-time.
-// Conservative = scrape by (€2K each). Base = focused (€2.5K each). Aggressive = comfortable (€3K each).
+// Scenario presets — investor-grade assumptions.
+// CAC includes founder time cost (calls, demos, follow-ups) not just ad spend.
+// Team costs include livable founder salaries — this is non-negotiable for full-time commitment.
+// Growth rates calibrated to organic B2B SaaS benchmarks for solo-practitioner market.
+// Churn starts high (new product, unproven PMF) and improves as product matures.
 const SCENARIOS: Record<string, Assumptions> = {
   conservative: {
-    startingPractitioners: 10,
-    initialGrowthPct: 20,
-    endGrowthPct: 5,
-    churnPct: 5,
-    essentielPct: 55,
-    proPct: 35,
-    membersPerPractitioner: 10,
-    memberPremiumPct: 3,
-    variableCostPerPract: 4.25,
-    cac: 60,
-    teamCost: 8000,    // 2 founders (€4K) + dev part-time (€2K) + sales (€1.5K) + expert (€500)
-    teamCostStepUp: 2000,
-    teamStepUpInterval: 6,
-    cacGrowthPctPerQuarter: 10,
-    infraCost: 100,
-    marketingCost: 800,
-    otherCost: 500,
-    startingCash: 300000,
-    dilutionPct: 17,
-    useOfFunds: { product: 40, gtm: 25, team: 25, ops: 10 },
-  },
-  base: {
-    startingPractitioners: 10,
-    initialGrowthPct: 30,
-    endGrowthPct: 7,
-    churnPct: 4,
-    essentielPct: 20,
-    proPct: 70,
-    membersPerPractitioner: 12,
-    memberPremiumPct: 5,
-    variableCostPerPract: 4.25,
-    cac: 50,
-    teamCost: 10500,   // 2 founders (€5K) + dev (€2.5K) + sales (€2K) + expert (€1K)
-    teamCostStepUp: 2500,
-    teamStepUpInterval: 6,
-    cacGrowthPctPerQuarter: 7,
-    infraCost: 200,
-    marketingCost: 1200,
-    otherCost: 700,
-    startingCash: 400000,
-    dilutionPct: 15,
-    useOfFunds: { product: 40, gtm: 30, team: 20, ops: 10 },
-  },
-  aggressive: {
-    startingPractitioners: 10,
-    initialGrowthPct: 35,
-    endGrowthPct: 7,
-    churnPct: 3,
-    essentielPct: 10,
-    proPct: 55,
-    membersPerPractitioner: 15,
-    memberPremiumPct: 8,
-    variableCostPerPract: 4.25,
-    cac: 50,
-    teamCost: 14500,   // 2 founders (€6K) + dev full-time (€3.5K) + sales (€2.5K) + expert (€1K) + marketer (€1.5K)
-    teamCostStepUp: 3000,
-    teamStepUpInterval: 6,
-    cacGrowthPctPerQuarter: 5,
-    infraCost: 300,
-    marketingCost: 2000,
-    otherCost: 1000,
-    startingCash: 500000,
-    dilutionPct: 13,
-    useOfFunds: { product: 35, gtm: 30, team: 25, ops: 10 },
-  },
-  stress: {
-    startingPractitioners: 10,
-    initialGrowthPct: 15,
-    endGrowthPct: 3,
+    startingPractitioners: 5,
+    initialGrowthPct: 12,
+    endGrowthPct: 4,
     churnPct: 7,
-    essentielPct: 55,
-    proPct: 35,
+    essentielPct: 60,
+    proPct: 30,
     membersPerPractitioner: 8,
     memberPremiumPct: 2,
     variableCostPerPract: 4.25,
-    cac: 70,
-    teamCost: 8000,
+    cac: 180,           // Founder time (3h/conversion × €30/h) + content + events
+    teamCost: 8500,     // 2 founders (€2K each) + dev part-time (€2.5K) + sales (€1.5K) + tools (€500)
     teamCostStepUp: 2000,
     teamStepUpInterval: 6,
     cacGrowthPctPerQuarter: 12,
-    infraCost: 100,
-    marketingCost: 800,
-    otherCost: 500,
-    startingCash: 350000,
-    dilutionPct: 17,
+    infraCost: 150,
+    marketingCost: 1000,
+    otherCost: 600,
+    startingCash: 400000,   // €400K — tight but survivable with low burn
+    dilutionPct: 18,
+    useOfFunds: { product: 40, gtm: 25, team: 25, ops: 10 },
+  },
+  base: {
+    startingPractitioners: 8,
+    initialGrowthPct: 18,
+    endGrowthPct: 6,
+    churnPct: 5,
+    essentielPct: 40,
+    proPct: 50,
+    membersPerPractitioner: 10,
+    memberPremiumPct: 4,
+    variableCostPerPract: 4.25,
+    cac: 140,            // Blended: organic (€80) + founder time (€120) + events (€200) → weighted avg
+    teamCost: 11000,     // 2 founders (€2.5K each) + dev (€3K) + sales (€2K) + expert (€1K)
+    teamCostStepUp: 2500,
+    teamStepUpInterval: 6,
+    cacGrowthPctPerQuarter: 8,
+    infraCost: 250,
+    marketingCost: 1500,
+    otherCost: 800,
+    startingCash: 500000,   // €500K — 28-30 months runway, enough for Series A window
+    dilutionPct: 16,
+    useOfFunds: { product: 35, gtm: 30, team: 25, ops: 10 },
+  },
+  aggressive: {
+    startingPractitioners: 10,
+    initialGrowthPct: 25,
+    endGrowthPct: 7,
+    churnPct: 4,
+    essentielPct: 20,
+    proPct: 55,
+    membersPerPractitioner: 12,
+    memberPremiumPct: 6,
+    variableCostPerPract: 4.25,
+    cac: 100,            // Referral program kicks in, lower blended CAC
+    teamCost: 15000,     // 2 founders (€3K each) + dev full-time (€4K) + sales (€2.5K) + expert (€1K) + marketer (€1.5K)
+    teamCostStepUp: 3000,
+    teamStepUpInterval: 6,
+    cacGrowthPctPerQuarter: 6,
+    infraCost: 350,
+    marketingCost: 2500,
+    otherCost: 1000,
+    startingCash: 650000,   // €650K — bigger team needs more fuel for 28-30 months
+    dilutionPct: 14,
+    useOfFunds: { product: 35, gtm: 30, team: 25, ops: 10 },
+  },
+  stress: {
+    startingPractitioners: 5,
+    initialGrowthPct: 8,
+    endGrowthPct: 2,
+    churnPct: 9,
+    essentielPct: 65,
+    proPct: 25,
+    membersPerPractitioner: 6,
+    memberPremiumPct: 1,
+    variableCostPerPract: 4.25,
+    cac: 220,            // Organic stalls, need paid channels + higher founder time per conversion
+    teamCost: 8500,
+    teamCostStepUp: 1500,
+    teamStepUpInterval: 6,
+    cacGrowthPctPerQuarter: 15,
+    infraCost: 150,
+    marketingCost: 1000,
+    otherCost: 600,
+    startingCash: 400000,   // €400K — survival mode, minimal spend
+    dilutionPct: 18,
     useOfFunds: { product: 40, gtm: 25, team: 25, ops: 10 },
   },
 }
@@ -708,11 +711,11 @@ export default function FinancialModelPage() {
       ? "Combien de chaque euro nous conservons après avoir payé le service. Si nous facturons 29 € et que ça nous coûte 4,25 € à livrer, nous gardons 85%. C'est excellent — la plupart des sociétés de logiciel gardent 70-75%. Les meilleures gardent 85-90%, ce qui est notre cas. Calculé automatiquement à partir du ARPU et du coût variable ci-dessus."
       : "How much of each euro we keep after paying for the service. If we charge €29 and it costs us €4.25 to deliver, we keep 85%. That's really good — most software companies keep 70-75%. The best keep 85-90%, which is where we are. Calculated automatically from ARPU and variable cost above.",
     infoCAC: fr
-      ? "Combien nous dépensons pour acquérir un nouveau thérapeute payant. Nous ne faisons pas de publicité — les thérapeutes ne font pas confiance aux pubs. Au lieu de cela : messages LinkedIn (35-50 € par inscription), parrainages (29 € — nous offrons un mois gratuit), articles de blog et SEO (15-25 €), et stands en conférence (60-100 €). Moyenne pondérée : environ 50 €. Cela augmentera à 60-80 € en grandissant, ce qui reste très bas pour du logiciel."
-      : "How much we spend to get one new paying therapist. We don't run ads — therapists don't trust ads. Instead: LinkedIn messages (€35-50 per signup), referrals from existing users (€29 — we give a free month), blog articles and SEO (€15-25), and conference booths (€60-100). Blended average: ~€50. This will rise to €60-80 as we grow, which is still very low for software.",
+      ? "Combien nous dépensons pour acquérir un nouveau thérapeute payant — y compris le temps fondateur. Nous ne faisons pas de publicité — les thérapeutes ne font pas confiance aux pubs. Au lieu de cela : messages LinkedIn (80-120 € par inscription en comptant le temps), parrainages (29 € — nous offrons un mois gratuit), articles de blog et SEO (40-60 €), et stands en conférence (150-200 €). Moyenne pondérée : ~140 €. Cela augmentera vers 160-200 € en grandissant à mesure que les canaux organiques saturent. Reste en dessous de la médiane SaaS B2B (200-500 €)."
+      : "How much we spend to get one new paying therapist — including founder time. We don't run ads — therapists don't trust ads. Instead: LinkedIn outreach (€80-120 per signup including founder hours), referrals (€29 — we give a free month), SEO & content (€40-60), and conferences (€150-200). Blended average: ~€140. This will rise to €160-200 as organic channels saturate. Still below typical B2B SaaS CAC (€200-500).",
     infoTeam: fr
-      ? "Ce que nous payons l'équipe chaque mois. Prudent (8K €) : 2 fondateurs × 2K € + dev temps partiel 2K € + commercial 1,5K € + conseiller 500 €. Base (10,5K €) : 2 fondateurs × 2,5K € + dev 2,5K € + commercial 2K € + conseiller 1K €. Ambitieux (14,5K €) : 2 fondateurs × 3K € + dev temps plein 3,5K € + commercial 2,5K € + conseiller 1K € + marketeur 1,5K €. Le commercial se concentre sur la prospection LinkedIn, les démos en conférence et la conversion des thérapeutes en essai. Tous les salaires sont en dessous du marché — les fondateurs misent sur l'equity."
-      : "What we pay the team each month. Conservative (€8K): 2 founders × €2K + part-time dev €2K + sales €1.5K + advisor €500. Base (€10.5K): 2 founders × €2.5K + dev €2.5K + sales €2K + advisor €1K. Aggressive (€14.5K): 2 founders × €3K + full-time dev €3.5K + sales €2.5K + advisor €1K + marketer €1.5K. The sales hire focuses on LinkedIn outreach, conference demos, and converting trial therapists into paying users. All salaries below market — founders are betting on equity.",
+      ? "Ce que nous payons l'équipe chaque mois. Prudent (8,5K €) : 2 fondateurs × 2K € + dev temps partiel 2,5K € + commercial 1,5K € + outils 500 €. Base (11K €) : 2 fondateurs × 2,5K € + dev 3K € + commercial 2K € + conseiller 1K €. Ambitieux (15K €) : 2 fondateurs × 3K € + dev temps plein 4K € + commercial 2,5K € + conseiller 1K € + marketeur 1,5K €. Augmente de 1,5-3K € tous les 6 mois pour accompagner la croissance. Tous les salaires en dessous du marché — les fondateurs misent sur l'equity."
+      : "What we pay the team each month. Conservative (€8.5K): 2 founders × €2K + part-time dev €2.5K + sales €1.5K + tools €500. Base (€11K): 2 founders × €2.5K + dev €3K + sales €2K + advisor €1K. Aggressive (€15K): 2 founders × €3K + full-time dev €4K + sales €2.5K + advisor €1K + marketer €1.5K. Steps up €1.5-3K every 6 months as growth demands. All salaries below market — founders are betting on equity.",
     infoInfra: fr
       ? "Factures mensuelles pour les outils que nous payons quel que soit le nombre d'utilisateurs — base de données (25 €), outils de monitoring (20 €), nom de domaine, service d'email. Ça reste identique que nous ayons 10 ou 1 000 utilisateurs. Les coûts qui évoluent avec les utilisateurs (IA et stockage) sont déjà comptés dans le « coût variable » ci-dessus."
       : "Monthly bills for tools we pay no matter how many users we have — database (€25), monitoring tools (€20), domain name, email service. This stays the same whether we have 10 or 1,000 users. The costs that grow with users (like AI and storage) are already counted in the 'variable cost' above.",
@@ -723,16 +726,16 @@ export default function FinancialModelPage() {
       ? "Tout le reste — frais d'avocat, comptable, assurance et administration. Cela augmente quand nous obtenons la certification hébergement de données de santé (HDS), requise pour héberger des données patients en France. Cela ajoute environ 200-400 €/mois mais est indispensable pour travailler avec les thérapeutes."
       : "Everything else — lawyer fees, accountant, insurance, and admin. This goes up when we get our health data certification (HDS), which is required to host patient data in France. That adds about €200-400/mo but is essential for working with therapists.",
     infoStartingCash: fr
-      ? "Combien d'argent nous levons auprès des investisseurs. Prudent : 300K €. Base : 400K €. Ambitieux : 500K €. Normal pour un pré-seed en Europe. C'est notre carburant — ça détermine combien de mois nous pouvons fonctionner avant d'être rentables ou de lever à nouveau. Chaque scénario nous donne 33-38 mois de trésorerie, suffisant pour atteindre la rentabilité."
-      : "How much money we raise from investors. Conservative: €300K. Base: €400K. Aggressive: €500K. All normal for a pre-seed in Europe. This is our fuel — it decides how many months we can run before we need to be profitable or raise again. Each scenario gives us 33-38 months of runway, enough to reach profitability before running out.",
+      ? "Combien d'argent nous levons auprès des investisseurs. Prudent : 400K €. Base : 500K €. Ambitieux : 650K €. Normal pour un pré-seed en Europe (250K-750K €). C'est notre carburant — ça détermine combien de mois nous pouvons fonctionner avant d'être rentables ou de lever à nouveau. Chaque scénario vise 28-30 mois de trésorerie, suffisant pour la fenêtre Série A."
+      : "How much money we raise from investors. Conservative: €400K. Base: €500K. Aggressive: €650K. All within normal EU pre-seed range (€250K-€750K). This is our fuel — it decides how many months we can run before we need to be profitable or raise again. Each scenario targets 28-30 months of runway, enough for the Series A window.",
     equityOffered: fr ? 'Equity proposée' : 'Equity offered',
     infoEquity: fr
-      ? "Quel % de la société les investisseurs obtiennent pour leur argent. Le standard pré-seed en UE est 10-20%. Prudent : 17% pour 300K €. Base : 15% pour 400K €. Ambitieux : 13% pour 500K €. Moins de dilution = les fondateurs gardent plus de parts mais implique une valorisation plus élevée à justifier. La valorisation pré-money se met à jour automatiquement ci-dessous."
-      : "What % of the company investors get for their money. EU pre-seed standard is 10-20%. Conservative: 17% for €300K. Base: 15% for €400K. Aggressive: 13% for €500K. Lower dilution = founders keep more ownership but means a higher valuation you need to justify. The pre-money valuation updates automatically below.",
+      ? "Quel % de la société les investisseurs obtiennent pour leur argent. Le standard pré-seed en UE est 10-20%. Prudent : 18% pour 400K €. Base : 16% pour 500K €. Ambitieux : 14% pour 650K €. Moins de dilution = les fondateurs gardent plus de parts mais implique une valorisation plus élevée à justifier. La valorisation pré-money se met à jour automatiquement ci-dessous."
+      : "What % of the company investors get for their money. EU pre-seed standard is 10-20%. Conservative: 18% for €400K. Base: 16% for €500K. Aggressive: 14% for €650K. Lower dilution = founders keep more ownership but means a higher valuation you need to justify. The pre-money valuation updates automatically below.",
     preMoneyVal: fr ? 'Valorisation pré-money' : 'Pre-money valuation',
     infoPreMoney: fr
-      ? "Ce que vaut la société avant l'investissement. Calculé comme : Levée ÷ Dilution% × (100% - Dilution%). Pour une startup pré-revenu, 1,5M-3M € est normal en Europe. Nos solides unit economics (85% de marge, 72x LTV/CAC) justifient d'être dans la fourchette haute."
-      : "What the company is worth before the investment goes in. Calculated as: Raise ÷ Dilution% × (100% - Dilution%). For a pre-revenue startup, €1.5M-€3M is normal in Europe. Our strong unit economics (85% margin, 72x LTV/CAC) justify being at the higher end of that range.",
+      ? "Ce que vaut la société avant l'investissement. Calculé comme : Levée ÷ Dilution% × (100% - Dilution%). Pour une startup pré-revenu, 1,5M-3M € est normal en Europe. Le produit fonctionnel, les marges brutes élevées (~83%) et la boucle complète praticien-membre justifient cette fourchette."
+      : "What the company is worth before the investment goes in. Calculated as: Raise ÷ Dilution% × (100% - Dilution%). For a pre-revenue startup, €1.5M-€3M is normal in Europe. A working product, high gross margins (~83%), and the complete practitioner-member loop justify this range.",
     // Burn & Runway section
     monthlyBurnRunway: fr ? 'Burn mensuel & Trésorerie' : 'Monthly Burn & Runway',
     burnSubtitle: fr ? "Combien de temps l'argent dure au rythme actuel" : 'How long the money lasts at current spend',
@@ -782,8 +785,8 @@ export default function FinancialModelPage() {
     postMoney: fr ? 'Post-money' : 'Post-money',
     whyThisValuation: fr ? 'Pourquoi cette valorisation ?' : 'Why this valuation?',
     valuationJustification: fr
-      ? "Soyons directs : nous sommes pré-revenu, donc cette valorisation repose sur le potentiel, pas sur la preuve. Ce qui la justifie : (1) Les unit economics modélisés sont dans le top décile SaaS — {ltvCac}x LTV/CAC et {payback} mois de retour sur CAC — même s'ils restent à prouver avec de vrais clients. (2) Le marché SaaS santé mentale en UE croît de 25%+/an sans plateforme dominante. (3) Notre architecture B2B2C crée un avantage d'acquisition structurel que les concurrents pure-play B2C n'ont pas. La pré-money de {preMoney} est dans la fourchette standard pré-seed UE (1,5M-3M €). Si cela vous semble trop élevé pour du pré-revenu, nous sommes ouverts à une décote avec des milestones de performance."
-      : "Let's be direct: we're pre-revenue, so this valuation is based on potential, not proof. What justifies it: (1) Modeled unit economics are top-decile SaaS — {ltvCac}x LTV/CAC and {payback}-month payback — though they remain unproven with real customers. (2) The EU mental health SaaS market is growing 25%+/year with no dominant platform. (3) Our B2B2C architecture creates a structural acquisition advantage that pure-play B2C competitors don't have. Pre-money of {preMoney} is within standard EU pre-seed range (€1.5M-€3M). If that feels high for pre-revenue, we're open to a milestone-based discount.",
+      ? "Soyons directs : nous sommes pré-revenu, donc cette valorisation repose sur le potentiel, pas sur la preuve. Ce qui la justifie : (1) Un produit fonctionnel complet — pas un prototype — avec la boucle praticien-membre déjà construite. (2) Des marges brutes modélisées à ~83%, dans le haut de la fourchette SaaS, avec un LTV/CAC de {ltvCac}x et un retour sur CAC de {payback} mois — à confirmer avec de vrais clients. (3) Le marché SaaS santé mentale en UE croît de 25%+/an sans plateforme dominante. La pré-money de {preMoney} est dans la fourchette standard pré-seed UE (1,5M-3M €). Si cela vous semble élevé pour du pré-revenu, nous sommes ouverts à une décote avec des milestones."
+      : "Let's be direct: we're pre-revenue, so this valuation is based on potential, not proof. What justifies it: (1) A complete working product — not a prototype — with the full practitioner-member loop already built. (2) Modeled gross margins of ~83%, top-quartile for SaaS, with {ltvCac}x LTV/CAC and {payback}-month payback — though unproven with real customers. (3) The EU mental health SaaS market is growing 25%+/year with no dominant platform. Pre-money of {preMoney} is within standard EU pre-seed range (€1.5M-€3M). If that feels high for pre-revenue, we're open to a milestone-based discount.",
     ownershipAfterRound: fr ? 'Répartition du capital après le tour' : 'Ownership after round',
     founders: fr ? 'Fondateurs' : 'Founders',
     investors: fr ? 'Investisseurs' : 'Investors',
@@ -2052,7 +2055,7 @@ export default function FinancialModelPage() {
                     </p>
                     <p className="text-[10px] text-gray-400">€{ue.variableCost.toFixed(2)} {t.variableCost}</p>
                     <p className="text-[9px] text-gray-400 mt-2 pt-2 border-t border-gray-100 leading-relaxed">
-                      {fr ? `Sur chaque €1 de revenu, on garde ${ue.grossMarginPct} centimes après les coûts de service (IA, infra, support). La médiane SaaS est 70-75% — on est dans le top décile à ${ue.grossMarginPct}%.` : `Of every €1 in revenue, we keep ${ue.grossMarginPct} cents after serving costs (AI, infra, support). SaaS median is 70-75% — we're in the top decile at ${ue.grossMarginPct}%.`}
+                      {fr ? `Sur chaque €1 de revenu, on garde ${ue.grossMarginPct} centimes après les coûts de service (IA, infra, support). La médiane SaaS est 70-75% — on est dans le haut de la fourchette à ${ue.grossMarginPct}%.` : `Of every €1 in revenue, we keep ${ue.grossMarginPct} cents after serving costs (AI, infra, support). SaaS median is 70-75% — we're in the upper quartile at ${ue.grossMarginPct}%.`}
                     </p>
                   </div>
                 </div>

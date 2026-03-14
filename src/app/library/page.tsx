@@ -398,6 +398,7 @@ export default function LibraryPage() {
               resourceTitle: resourceData.title,
               resourceType: resourceData.type,
               practitionerName: practitionerData?.full_name || 'Your practitioner',
+              memberEmail: memberResult.email || undefined,
             })
           } else if (memberResult?.email && resourceData) {
             const { data: tokenData } = await supabase

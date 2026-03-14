@@ -137,23 +137,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create notification' }, { status: 500 })
     }
 
-    // Fire-and-forget: send email via Postmark
-    ;(async () => {
+    // Send email (awaited, not fire-and-forget)
+    let emailSent = false
+    let emailError: string | null = null
+    try {
+      let recipientEmail = fallbackEmail
       try {
-        let recipientEmail = fallbackEmail
-        try {
-          const { data: { user: recipientUser } } = await supabaseAdmin.auth.admin.getUserById(userId)
-          if (recipientUser?.email) {
-            recipientEmail = recipientUser.email
-          }
-        } catch {
-          // userId may not exist in auth.users (e.g. member without account)
+        const { data: { user: recipientUser } } = await supabaseAdmin.auth.admin.getUserById(userId)
+        if (recipientUser?.email) {
+          recipientEmail = recipientUser.email
         }
-        if (!recipientEmail) {
-          console.warn('No email found for user', userId)
-          return
-        }
+      } catch {
+        // userId may not exist in auth.users (e.g. member without account)
+        console.warn(`[notifications/send] auth.users lookup failed for userId=${userId}, using fallbackEmail=${fallbackEmail || 'none'}`)
+      }
 
+      if (!recipientEmail) {
+        console.warn(`[notifications/send] No email found for userId=${userId}, fallbackEmail=${fallbackEmail || 'none'} — skipping email`)
+        emailError = 'no_email_found'
+      } else {
         const emailContent = getEmailContent(type, metadata, recipientLocale)
         const htmlBody = generateEmailHtml({
           subject: content.emailSubject,
@@ -162,18 +164,26 @@ export async function POST(request: NextRequest) {
           actionText: emailContent.actionText,
         })
 
-        await sendEmail({
+        const result = await sendEmail({
           to: recipientEmail,
           subject: content.emailSubject,
           htmlBody,
           tag: type,
         })
-      } catch (emailError) {
-        console.error('Error sending notification email:', emailError)
+        emailSent = result.success
+        if (!result.success) {
+          emailError = result.error || 'send_failed'
+          console.error(`[notifications/send] Email send failed to=${recipientEmail}:`, result.error)
+        } else {
+          console.log(`[notifications/send] Email sent to=${recipientEmail} type=${type}`)
+        }
       }
-    })()
+    } catch (err) {
+      emailError = String(err)
+      console.error('[notifications/send] Error in email sending:', err)
+    }
 
-    return NextResponse.json({ notification })
+    return NextResponse.json({ notification, emailSent, emailError })
   } catch (error) {
     console.error('Error in send notification:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

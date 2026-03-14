@@ -481,6 +481,7 @@ export default function ResourceDetailPage() {
               resourceTitle: resTitle,
               resourceType: resource.type,
               practitionerName: practName,
+              memberEmail: memberResult.email || undefined,
             })
           } else if (memberResult?.email) {
             // Create a share token for preview link
