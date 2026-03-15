@@ -284,7 +284,7 @@ function ArchitectureDiagram({ t }: { t: T }) {
       <div className="flex justify-center">
         <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl px-6 py-4 w-full max-w-xl">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider text-center mb-3">{t('External Services', 'Services externes')}</p>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
             <div className="text-center">
               <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mx-auto mb-1">
                 <Calendar className="w-4 h-4 text-blue-600" />
@@ -312,6 +312,20 @@ function ArchitectureDiagram({ t }: { t: T }) {
               </div>
               <p className="text-[10px] font-semibold text-gray-700">HubSpot</p>
               <p className="text-[9px] text-gray-400">{t('CRM & tickets', 'CRM et tickets')}</p>
+            </div>
+            <div className="text-center">
+              <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center mx-auto mb-1">
+                <Zap className="w-4 h-4 text-emerald-600" />
+              </div>
+              <p className="text-[10px] font-semibold text-gray-700">Upstash</p>
+              <p className="text-[9px] text-gray-400">{t('Rate limiting', 'Limitation de debit')}</p>
+            </div>
+            <div className="text-center">
+              <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center mx-auto mb-1">
+                <Shield className="w-4 h-4 text-gray-600" />
+              </div>
+              <p className="text-[10px] font-semibold text-gray-700">GitHub</p>
+              <p className="text-[9px] text-gray-400">{t('CI/CD', 'CI/CD')}</p>
             </div>
           </div>
         </div>
