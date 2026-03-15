@@ -12,7 +12,7 @@ import { Heart, Users } from 'lucide-react'
 import { ConsentModal } from '@/components/consent-modal'
 
 export default function OnboardingPage() {
-  const { t, locale } = useLanguage()
+  const { t, locale, setLocale } = useLanguage()
   const router = useRouter()
   const [selectedType, setSelectedType] = useState<UserType | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -32,9 +32,24 @@ export default function OnboardingPage() {
       // Check if user already has a profile — redirect based on user_type
       const { data: profile } = await supabase
         .from('users')
-        .select('user_type, has_consented')
+        .select('user_type, has_consented, full_name')
         .eq('id', user.id)
         .single()
+
+      // Resolve name + language from waitlist
+      let resolvedName = profile?.full_name || user.user_metadata?.full_name || ''
+      if (user.email) {
+        const { data: waitlist } = await supabase
+          .from('early_access_waitlist')
+          .select('name, preferred_language')
+          .eq('email', user.email)
+          .single()
+        if (!resolvedName && waitlist?.name) resolvedName = waitlist.name
+        if (waitlist?.preferred_language) {
+          setLocale(waitlist.preferred_language as 'en' | 'fr', false)
+        }
+      }
+      const firstName = resolvedName?.split(' ')[0] || ''
 
       if (profile?.user_type && profile.user_type !== 'unknown') {
         if (profile.user_type === 'member') {
@@ -42,10 +57,8 @@ export default function OnboardingPage() {
         } else if (profile.has_consented) {
           router.push('/dashboard')
         } else {
-          // Has type but no consent — show consent modal then redirect
           setSelectedType(profile.user_type as UserType)
-          const name = user.user_metadata?.full_name?.split(' ')[0] || 'there'
-          setUserName(name)
+          setUserName(firstName)
           setShowConsentOnly(true)
         }
         return
@@ -53,8 +66,7 @@ export default function OnboardingPage() {
 
       // No user type set — auto-select practitioner (web app is for practitioners)
       setSelectedType('mentor')
-      const name = user.user_metadata?.full_name?.split(' ')[0] || 'there'
-      setUserName(name)
+      setUserName(firstName)
       setShowConsentOnly(true)
     }
     getUser()
@@ -138,7 +150,9 @@ export default function OnboardingPage() {
               <Heart className="w-7 h-7 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              {locale === 'fr' ? `Bienvenue, ${userName} !` : `Welcome, ${userName}!`}
+              {userName
+                ? (locale === 'fr' ? `Bienvenue, ${userName} !` : `Welcome, ${userName}!`)
+                : (locale === 'fr' ? 'Bienvenue !' : 'Welcome!')}
             </h1>
             <p className="text-sm text-gray-500 mb-8">
               {locale === 'fr'

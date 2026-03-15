@@ -295,7 +295,7 @@ export default function AnalyticsPage() {
         await Promise.all([
           supabase
             .from('members')
-            .select('id, first_name, last_name, status, last_session_at, created_at')
+            .select('id, first_name, last_name, status, last_session_at, created_at, is_demo')
             .eq('practitioner_id', user.id),
           supabase
             .from('sessions')
@@ -327,15 +327,17 @@ export default function AnalyticsPage() {
             .eq('practitioner_id', user.id),
         ])
 
-      const members = (membersRes.data || []) as MemberRow[]
-      const sessions = (sessionsRes.data || []) as SessionRow[]
+      const allMembers = (membersRes.data || []) as (MemberRow & { is_demo?: boolean })[]
+      const demoMemberIds = new Set(allMembers.filter(m => m.is_demo).map(m => m.id))
+      const members = allMembers.filter(m => !m.is_demo)
+      const sessions = ((sessionsRes.data || []) as SessionRow[]).filter(s => !demoMemberIds.has(s.member_id))
 
-      const upcoming = (upcomingRes.data || []) as Array<{
+      const upcoming = ((upcomingRes.data || []) as Array<{
         id: string
         member_id: string
         scheduled_at: string
         session_type: string
-      }>
+      }>).filter(s => !demoMemberIds.has(s.member_id))
       const enrichedUpcoming: UpcomingSession[] = upcoming.map((s) => {
         const m = members.find((mem) => mem.id === s.member_id)
         return {
@@ -347,11 +349,11 @@ export default function AnalyticsPage() {
       setData({
         members,
         sessions,
-        milestones: (milestonesRes.data || []) as MilestoneRow[],
+        milestones: ((milestonesRes.data || []) as MilestoneRow[]).filter(m => !demoMemberIds.has(m.member_id)),
         notes: (notesRes.data || []) as NoteRow[],
         sharedResources: sharedRes.data?.length || 0,
         upcomingSessions: enrichedUpcoming,
-        resources: (resourcesRes.data || []) as ResourceRow[],
+        resources: ((resourcesRes.data || []) as ResourceRow[]).filter(r => !demoMemberIds.has(r.member_id)),
       })
     } catch (error) {
       console.error('Error fetching analytics:', error)
