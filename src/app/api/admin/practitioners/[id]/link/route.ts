@@ -208,11 +208,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Failed to unlink account' }, { status: 500 })
     }
 
-    // Delete the practitioner_profiles record that was created during linking
+    // Reset the practitioner_profiles fields that were copied from the public profile
     if (current?.user_id) {
       await adminClient
         .from('practitioner_profiles')
-        .delete()
+        .update({ is_public: false })
         .eq('user_id', current.user_id)
     }
 
