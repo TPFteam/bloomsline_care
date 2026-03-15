@@ -123,7 +123,7 @@ export async function setupNewUser(
         } catch (err) {
           console.error('Failed to create demo members:', err)
         }
-        action = 'dashboard'
+        action = 'onboarding'
       }
 
       if (waitlistUserType === 'member') {

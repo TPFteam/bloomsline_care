@@ -128,25 +128,58 @@ export async function bulkUpdateAvailability(
 ): Promise<boolean> {
   const supabase = createClient();
 
-  // Delete existing schedules
-  await supabase
+  // Delete all existing schedules for this user, then insert fresh
+  const { error: deleteError } = await supabase
     .from('availability_schedules')
     .delete()
     .eq('user_id', userId);
 
+  if (deleteError) {
+    console.error('Error deleting existing availability:', deleteError);
+    // If delete failed, try upsert as fallback
+    if (schedules.length > 0) {
+      const { error } = await supabase
+        .from('availability_schedules')
+        .upsert(
+          schedules.map((s) => ({
+            ...s,
+            user_id: userId,
+          })),
+          { onConflict: 'user_id,day_of_week,start_time,end_time' }
+        );
+      if (error) {
+        console.error('Error upserting availability:', error);
+        return false;
+      }
+    }
+    return true;
+  }
+
   // Insert new schedules
   if (schedules.length > 0) {
+    // Deduplicate slots (same day + start + end = keep last one)
+    const uniqueMap = new Map<string, typeof schedules[0]>();
+    for (const s of schedules) {
+      const key = `${s.day_of_week}|${s.start_time}|${s.end_time}`;
+      uniqueMap.set(key, s);
+    }
+    const dedupedSchedules = Array.from(uniqueMap.values());
+
+    const insertData = dedupedSchedules.map((s) => ({
+      user_id: userId,
+      day_of_week: s.day_of_week,
+      start_time: s.start_time,
+      end_time: s.end_time,
+      is_active: s.is_active,
+      timezone: s.timezone,
+    }))
+
     const { error } = await supabase
       .from('availability_schedules')
-      .insert(
-        schedules.map((s) => ({
-          ...s,
-          user_id: userId,
-        }))
-      );
+      .insert(insertData);
 
     if (error) {
-      console.error('Error bulk updating availability:', error);
+      console.error('Error inserting availability:', error);
       return false;
     }
   }

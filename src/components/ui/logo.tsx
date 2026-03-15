@@ -27,10 +27,8 @@ const textSizeMap = {
 export function Logo({ size = 'sm', className, showText = false, variant = 'light' }: LogoProps) {
   const logoIcon = (
     <div className={cn(sizeMap[size], 'relative flex-shrink-0 flex items-center justify-center')}>
-      <motion.div
+      <div
         className="w-3/5 h-3/5 bg-gradient-to-br from-[#4A9A86] to-[#5AB39C] rounded-full"
-        animate={{ scale: [1, 1.1, 1] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       />
     </div>
   )

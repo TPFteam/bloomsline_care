@@ -151,6 +151,8 @@ export default function BookingsPage() {
   const [appointmentFilter, setAppointmentFilter] = useState<AppointmentFilter>('upcoming')
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [showSavedModal, setShowSavedModal] = useState(false)
+  const [showSettingsSavedModal, setShowSettingsSavedModal] = useState(false)
 
   // User state
   const [user, setUser] = useState<UserType | null>(null)
@@ -496,7 +498,7 @@ export default function BookingsPage() {
     )
 
     if (success) {
-      setMessage({ type: 'success', text: 'Availability saved!' })
+      setShowSavedModal(true)
     } else {
       setMessage({ type: 'error', text: 'Failed to save availability' })
     }
@@ -533,7 +535,7 @@ export default function BookingsPage() {
       console.log('[bookings/handleSave] Result:', saved)
       if (saved) {
         setBookingSettings(saved)
-        toast.success('Booking settings saved!')
+        setShowSettingsSavedModal(true)
       } else {
         toast.error('Failed to save booking settings.')
       }
@@ -1449,6 +1451,52 @@ export default function BookingsPage() {
           </div>
         </div>
       </main>
+
+      {/* Settings Saved Confirmation Modal */}
+      {showSettingsSavedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowSettingsSavedModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-8 text-center" onClick={e => e.stopPropagation()}>
+            <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              {locale === 'fr' ? 'Paramètres enregistrés' : 'Settings Saved'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              {locale === 'fr' ? 'Vos types de séance ont été mis à jour.' : 'Your session types have been updated.'}
+            </p>
+            <button
+              onClick={() => setShowSettingsSavedModal(false)}
+              className="w-full px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors"
+            >
+              {locale === 'fr' ? 'Compris' : 'Got it'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Availability Saved Confirmation Modal */}
+      {showSavedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowSavedModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-8 text-center" onClick={e => e.stopPropagation()}>
+            <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              {locale === 'fr' ? 'Disponibilités enregistrées' : 'Availability Saved'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              {locale === 'fr' ? 'Vos horaires ont été mis à jour avec succès.' : 'Your schedule has been updated successfully.'}
+            </p>
+            <button
+              onClick={() => setShowSavedModal(false)}
+              className="w-full px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors"
+            >
+              {locale === 'fr' ? 'Compris' : 'Got it'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
