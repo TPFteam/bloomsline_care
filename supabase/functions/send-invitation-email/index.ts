@@ -16,6 +16,7 @@ interface WebhookPayload {
     email: string
     user_type: 'member' | 'practitioner' | 'both'
     status: string
+    preferred_language?: string
   }
   old_record: {
     id: string
@@ -23,15 +24,22 @@ interface WebhookPayload {
   }
 }
 
-function generateEmailHtml(name: string, userType: string, signupUrl: string) {
+function generateEmailHtml(name: string, userType: string, signupUrl: string, lang: string) {
   const firstName = name.split(' ')[0]
   const accentColor = '#4A9A86'
+  const isFr = lang === 'fr'
 
-  const roleDescription = userType === 'member'
-    ? 'a space to nurture your wellbeing'
-    : userType === 'practitioner'
-    ? 'tools to better support the people you care for'
-    : 'both personal wellbeing tools and practitioner features'
+  const roleDescription = isFr
+    ? (userType === 'member'
+      ? 'un espace pour prendre soin de votre bien-être'
+      : userType === 'practitioner'
+      ? 'des outils pour mieux accompagner les personnes dont vous prenez soin'
+      : 'des outils de bien-être personnel et des fonctionnalités pour praticiens')
+    : (userType === 'member'
+      ? 'a space to nurture your wellbeing'
+      : userType === 'practitioner'
+      ? 'tools to better support the people you care for'
+      : 'both personal wellbeing tools and practitioner features')
 
   return `<!DOCTYPE html>
 <html>
@@ -50,48 +58,49 @@ function generateEmailHtml(name: string, userType: string, signupUrl: string) {
         <!-- Content -->
         <div style="color: #333; line-height: 1.6;">
           <h2 style="margin: 0 0 24px 0; font-size: 20px; color: #333; text-align: center;">
-            Your early access is ready
+            ${isFr ? 'Bienvenue sur Bloomsline' : 'Welcome to Bloomsline'}
           </h2>
 
           <p style="margin: 0 0 16px 0; color: #333; font-weight: 500;">
-            Hi ${firstName},
+            ${isFr ? `Bonjour ${firstName},` : `Hi ${firstName},`}
           </p>
 
           <p style="margin: 0 0 24px 0; color: #555;">
-            Your spot on Bloomsline is confirmed. You signed up for ${roleDescription}, and your account is ready to set up.
+            ${isFr
+              ? 'Merci — et bienvenue sur Bloomsline. Votre compte est prêt à être configuré.'
+              : 'Thank you — and welcome to Bloomsline. Your account is ready to set up.'}
           </p>
-
-          <!-- Next steps -->
-          <div style="background-color: #f8f8f8; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-            <p style="margin: 0 0 12px 0; font-weight: 600; color: #333;">
-              To get started:
-            </p>
-            <ul style="margin: 0; padding-left: 20px; color: #555;">
-              <li style="margin-bottom: 8px;">Click the button below to create your account</li>
-              <li style="margin-bottom: 0;">Start exploring Bloomsline</li>
-            </ul>
-          </div>
 
           <!-- CTA -->
-          <p style="margin: 0 0 16px 0; color: #555; text-align: center;">
-            Click below to create your account.
-          </p>
-
           <div style="text-align: center; margin-bottom: 24px;">
             <a href="${signupUrl}" style="display: inline-block; background-color: ${accentColor}; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 16px;">
-              Create Your Account
+              ${isFr ? 'Créer mon compte' : 'Create My Account'}
             </a>
           </div>
 
-          <p style="margin: 0; color: #888; font-size: 14px; text-align: center;">
-            If you have any questions, reach out to us at hi@bloomsline.com.
+          <p style="margin: 0; color: #555; font-size: 14px; text-align: center;">
+            ${isFr
+              ? 'Nous avons construit Bloomsline pour des personnes comme vous. On est contents que vous soyez là.'
+              : 'We built Bloomsline for people like you. We\'re glad you\'re here.'}
+          </p>
+
+          <p style="margin: 16px 0 0; color: #555; font-size: 14px;">
+            ${isFr ? 'Avec soin,' : 'With care,'}
+            <br>
+            ${isFr ? 'L\'équipe Bloomsline' : 'The Bloomsline team'}
+          </p>
+
+          <p style="margin: 24px 0 0; color: #888; font-size: 13px; text-align: center;">
+            ${isFr
+              ? 'Une question ? Contactez-nous à <a href="mailto:hi@bloomsline.com" style="color: #4A9A86; text-decoration: none;">hi@bloomsline.com</a>'
+              : 'Any questions? Reach out to us at <a href="mailto:hi@bloomsline.com" style="color: #4A9A86; text-decoration: none;">hi@bloomsline.com</a>'}
           </p>
         </div>
 
         <!-- Footer -->
         <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #888; font-size: 12px;">
           <p style="margin: 0;">Bloomsline Care</p>
-          <p style="margin: 8px 0 0 0;">Supporting your journey to wellness</p>
+          <p style="margin: 8px 0 0 0;">${isFr ? 'Le soin continue entre les séances' : 'Where care continues between sessions'}</p>
         </div>
       </div>
     </div>
@@ -99,28 +108,53 @@ function generateEmailHtml(name: string, userType: string, signupUrl: string) {
 </html>`
 }
 
-function generateTextBody(name: string, userType: string, signupUrl: string) {
+function generateTextBody(name: string, userType: string, signupUrl: string, lang: string) {
   const firstName = name.split(' ')[0]
-  const roleDescription = userType === 'member'
-    ? 'a space to nurture your wellbeing'
-    : userType === 'practitioner'
-    ? 'tools to better support the people you care for'
-    : 'both personal wellbeing tools and practitioner features'
+  const isFr = lang === 'fr'
+
+  const roleDescription = isFr
+    ? (userType === 'member'
+      ? 'un espace pour prendre soin de votre bien-être'
+      : userType === 'practitioner'
+      ? 'des outils pour mieux accompagner les personnes dont vous prenez soin'
+      : 'des outils de bien-être personnel et des fonctionnalités pour praticiens')
+    : (userType === 'member'
+      ? 'a space to nurture your wellbeing'
+      : userType === 'practitioner'
+      ? 'tools to better support the people you care for'
+      : 'both personal wellbeing tools and practitioner features')
+
+  if (isFr) {
+    return `Bonjour ${firstName},
+
+Merci — et bienvenue sur Bloomsline. Votre compte est prêt à être configuré.
+
+Créer votre compte : ${signupUrl}
+
+Nous avons construit Bloomsline pour des personnes comme vous. On est contents que vous soyez là.
+
+Une question ? Contactez-nous à hi@bloomsline.com
+
+Avec soin,
+L'équipe Bloomsline
+
+Bloomsline Care — Le soin continue entre les séances`
+  }
 
   return `Hi ${firstName},
 
-Your early access to Bloomsline is ready. You signed up for ${roleDescription}, and your account is ready to set up.
-
-To get started:
-- Click the link below to create your account
-- Start exploring Bloomsline
+Thank you — and welcome to Bloomsline. Your account is ready to set up.
 
 Create your account: ${signupUrl}
 
-If you have any questions, reach out to us at hi@bloomsline.com.
+We built Bloomsline for people like you. We're glad you're here.
 
-Bloomsline Care
-Supporting your journey to wellness`
+Any questions? Reach out to us at hi@bloomsline.com
+
+With care,
+The Bloomsline team
+
+Bloomsline Care — Where care continues between sessions`
 }
 
 serve(async (req) => {
@@ -159,22 +193,26 @@ serve(async (req) => {
       )
     }
 
-    const { name, email, user_type } = payload.record
+    const { name, email, user_type, preferred_language } = payload.record
+    const lang = preferred_language || 'en'
     const firstName = name.split(' ')[0]
+    const isFr = lang === 'fr'
     const signupUrl = user_type === 'member'
       ? 'https://app.bloomsline.com/sign-up'
       : `${APP_URL}/sign-up`
 
-    console.log(`Sending invitation email to ${email}`)
+    console.log(`Sending invitation email to ${email} (lang: ${lang})`)
 
     const client = new ServerClient(POSTMARK_API_TOKEN)
 
     const response = await client.sendEmail({
       From: `${FROM_NAME} <${FROM_EMAIL}>`,
       To: email,
-      Subject: `${firstName}, your Bloomsline account is ready`,
-      HtmlBody: generateEmailHtml(name, user_type || 'member', signupUrl),
-      TextBody: generateTextBody(name, user_type || 'member', signupUrl),
+      Subject: isFr
+        ? `${firstName}, votre espace sur Bloomsline est prêt`
+        : `${firstName}, your space on Bloomsline is ready`,
+      HtmlBody: generateEmailHtml(name, user_type || 'member', signupUrl, lang),
+      TextBody: generateTextBody(name, user_type || 'member', signupUrl, lang),
       Tag: 'early-access-invited',
       MessageStream: 'outbound',
     })
