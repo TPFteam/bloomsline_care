@@ -16,13 +16,13 @@
   --teal-600: #0d9488;
 
   /* Secondary: Lavender - fosters awareness, insight, relaxation */
-  --lavender-50: #faf5ff;
-  --lavender-100: #f3e8ff;
-  --lavender-200: #e9d5ff;
-  --lavender-300: #d8b4fe;
-  --lavender-400: #c084fc;
-  --lavender-500: #a855f7;
-  --lavender-600: #9333ea;
+  --lavender-50: #f5f2fb;
+  --lavender-100: #ece6f7;
+  --lavender-200: #d9cdef;
+  --lavender-300: #c4b1e8;
+  --lavender-400: #b69de4;
+  --lavender-500: #A88AE1;
+  --lavender-600: #8B6BC5;
 
   /* Legacy colors kept for compatibility - to be removed */
   --mint-50: #f0fdfa;
@@ -513,7 +513,7 @@
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #a855f7 0%, #6366f1 50%, #14b8a6 100%);
+  background: linear-gradient(135deg, #A88AE1 0%, #8B6BC5 50%, #14b8a6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

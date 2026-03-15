@@ -2079,7 +2079,7 @@ export default function FinancialModelPage() {
                       <Tooltip content={<ExpenseTooltip locale={locale} />} cursor={false} />
                       <Bar dataKey="variableCosts" stackId="a" fill="#f43f5e" name="COGS" />
                       <Bar dataKey="teamExp" stackId="a" fill="#3b82f6" name="Team" />
-                      <Bar dataKey="infraExp" stackId="a" fill="#8b5cf6" name="Infra" />
+                      <Bar dataKey="infraExp" stackId="a" fill="#A88AE1" name="Infra" />
                       <Bar dataKey="marketingExp" stackId="a" fill="#f59e0b" name="Marketing" />
                       <Bar dataKey="otherExp" stackId="a" fill="#9ca3af" name="Other" />
                       <Bar dataKey="acquisitionExp" stackId="a" fill="#f97316" radius={[4, 4, 0, 0]} name="Acquisition" />

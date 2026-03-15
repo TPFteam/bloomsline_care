@@ -33,7 +33,7 @@ function W({ bg, weight = 450 }: { bg: Bg; weight?: number }) {
 
 // Colors
 const T = '#3D9B85' // teal
-const L = '#8B5CF6' // lavender
+const L = '#A88AE1' // lavender
 
 export default function LogoPage() {
   return (

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Logo } from '@/components/ui/logo'
 
 const T = '#4A9A86'
-const L = '#8B5CF6'
+const L = '#A88AE1'
 
 const translations = {
   en: {
@@ -78,7 +78,7 @@ const translations = {
         title: 'Palette',
         colors: [
           { name: 'Teal', hex: '#4A9A86', meaning: 'Calm, trust, growth' },
-          { name: 'Lavender', hex: '#8B5CF6', meaning: 'Awareness, insight, creativity' },
+          { name: 'Lavender', hex: '#A88AE1', meaning: 'Awareness, insight, creativity' },
           { name: 'Neutral', hex: '#1A1A1A', meaning: 'Clarity, professionalism' },
           { name: 'White', hex: '#FFFFFF', meaning: 'Breathing space, openness' },
         ],
@@ -189,7 +189,7 @@ const translations = {
         title: 'Palette',
         colors: [
           { name: 'Teal', hex: '#4A9A86', meaning: 'Calme, confiance, croissance' },
-          { name: 'Lavande', hex: '#8B5CF6', meaning: 'Conscience, intuition, creativite' },
+          { name: 'Lavande', hex: '#A88AE1', meaning: 'Conscience, intuition, creativite' },
           { name: 'Neutre', hex: '#1A1A1A', meaning: 'Clarte, professionnalisme' },
           { name: 'Blanc', hex: '#FFFFFF', meaning: 'Espace, ouverture' },
         ],

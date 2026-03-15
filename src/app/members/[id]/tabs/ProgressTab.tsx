@@ -115,7 +115,7 @@ const TAG_COLOR_PALETTE: { bg: string; border: string }[] = [
   { bg: '#fef2f2', border: '#ef4444' },  // red
   { bg: '#eff6ff', border: '#3b82f6' },  // blue
   { bg: '#fff7ed', border: '#f97316' },  // orange
-  { bg: '#f5f3ff', border: '#8b5cf6' },  // violet
+  { bg: '#f5f3ff', border: '#A88AE1' },  // violet
   { bg: '#fef9c3', border: '#ca8a04' },  // gold
   { bg: '#fdf2f8', border: '#ec4899' },  // pink
   { bg: '#ecfdf5', border: '#10b981' },  // emerald

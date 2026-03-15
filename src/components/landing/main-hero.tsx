@@ -815,7 +815,7 @@ export function MainHero({ isPractitionerPage = false }: MainHeroProps) {
                                   {/* Moment nodes - centered on the line */}
                                   {[
                                     { left: 8, top: 65, color: 'bg-[#4A9A86]/80', icon: Sun, delay: 0.3 },
-                                    { left: 80, top: 30, color: 'bg-[#a78bfa]', icon: Heart, delay: 0.6 },
+                                    { left: 80, top: 30, color: 'bg-[#A88AE1]', icon: Heart, delay: 0.6 },
                                     { left: 160, top: 45, color: 'bg-[#4A9A86]', icon: Sparkles, delay: 0.9 },
                                     { left: 260, top: 5, color: 'bg-[#4A9A86]', icon: Sun, delay: 1.2 },
                                   ].map((node, i) => (
