@@ -2205,17 +2205,6 @@ function MemberCard({
         </div>
       </div>
 
-      {/* Share Resource Button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          router.push(`/resources?share=${member.id}`)
-        }}
-        className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors"
-      >
-        <Share2 className="w-4 h-4" />
-        {locale === 'fr' ? 'Partager une ressource' : 'Share resource'}
-      </button>
     </motion.div>
   )
 }
