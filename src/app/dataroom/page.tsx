@@ -34,6 +34,7 @@ import {
   LayoutGrid,
   Compass,
   BookOpen,
+  Palette,
 } from 'lucide-react'
 
 type Lang = 'en' | 'fr'
@@ -80,6 +81,16 @@ function getPAGES(t: T): PageItem[] {
       description: t('9-block canvas — who we serve, how we win, where the money flows', 'Canvas 9 blocs — qui nous servons, comment nous gagnons, o\u00f9 va l\'argent'),
       href: '/business-canvas',
       icon: LayoutGrid,
+      color: 'bg-teal-50 text-teal-600',
+      borderColor: 'border-teal-200 hover:border-teal-300',
+      tag: t('New', 'Nouveau'),
+    },
+    {
+      id: 'brand',
+      label: t('Brand Foundation', 'Fondation de la Marque'),
+      description: t('Mission, values, personality, tone of voice, visual identity, and strategic pillars', 'Mission, valeurs, personnalite, ton de voix, identite visuelle et piliers strategiques'),
+      href: '/brand',
+      icon: Palette,
       color: 'bg-teal-50 text-teal-600',
       borderColor: 'border-teal-200 hover:border-teal-300',
       tag: t('New', 'Nouveau'),
