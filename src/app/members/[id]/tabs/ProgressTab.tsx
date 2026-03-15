@@ -307,38 +307,13 @@ const MilestoneCard = memo(function MilestoneCard({
           </div>
         </div>
 
-        {/* Latest note preview */}
-        {(latestNote || latestExcerpt) && (() => {
-          const noteText = latestNote ? stripHtml(latestNote.content) : latestExcerpt ? latestExcerpt.text : ''
-          const noteDate = latestNote?.created_at || latestExcerpt?.sessionDate
-          if (!noteText) return null
-          return (
-            <div className="mt-2 pt-2 border-t border-gray-50">
-              <p className="text-[11px] text-gray-500 line-clamp-2 leading-relaxed">
-                {noteText.slice(0, 120)}{noteText.length > 120 ? '…' : ''}
-              </p>
-              {noteDate && (
-                <span className="text-[10px] text-gray-400 mt-1 block">
-                  {new Date(noteDate).toLocaleDateString(locale === 'fr' ? 'fr-FR' : undefined, { month: 'short', day: 'numeric' })}
-                </span>
-              )}
-            </div>
-          )
-        })()}
-
         {/* Bottom indicator row */}
-        {(sessionNoteCount > 0 || observationNoteCount > 0 || excerptCount > 0 || (columnId === 'independent' && milestone.achieved_at)) && (
+        {(commentCount > 0 || (columnId === 'independent' && milestone.achieved_at)) && (
           <div className="flex items-center gap-3 mt-1.5 pt-1.5 border-t border-gray-50">
-            {sessionNoteCount > 0 && (
-              <span className="flex items-center gap-1 text-[10px] text-blue-500" title={locale === 'fr' ? 'Notes de séance' : 'Session notes'}>
-                <Calendar className="w-3 h-3" />
-                {sessionNoteCount}
-              </span>
-            )}
-            {excerptCount > 0 && sessionNoteCount === 0 && (
-              <span className="flex items-center gap-1 text-[10px] text-gray-400" title={locale === 'fr' ? 'Mentions dans les notes' : 'Mentions in notes'}>
+            {commentCount > 0 && (
+              <span className="flex items-center gap-1 text-[10px] text-teal-500" title={locale === 'fr' ? 'Commentaires' : 'Comments'}>
                 <MessageSquare className="w-3 h-3" />
-                {excerptCount}
+                {commentCount}
               </span>
             )}
             {columnId === 'independent' && milestone.achieved_at && (

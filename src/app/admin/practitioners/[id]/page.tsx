@@ -133,6 +133,7 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
   const [showLinkModal, setShowLinkModal] = useState(false)
   const [linkSearch, setLinkSearch] = useState('')
   const [linking, setLinking] = useState(false)
+  const [confirmLinkTarget, setConfirmLinkTarget] = useState<{ id: string; name: string; email: string } | null>(null)
 
   useEffect(() => {
     init()
@@ -1446,7 +1447,7 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
                                         .map(account => (
                                           <button
                                             key={account.id}
-                                            onClick={() => !account.is_linked && handleLinkAccount(account.id)}
+                                            onClick={() => !account.is_linked && setConfirmLinkTarget({ id: account.id, name: account.full_name || '', email: account.email || '' })}
                                             disabled={account.is_linked || linking}
                                             className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
                                               account.is_linked
@@ -1474,6 +1475,46 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
                                         ))}
                                     </div>
                                   )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Link Confirmation */}
+                          {confirmLinkTarget && (
+                            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setConfirmLinkTarget(null)}>
+                              <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
+                                <h3 className="text-base font-semibold text-gray-900 mb-2">
+                                  {locale === 'fr' ? 'Confirmer le lien' : 'Confirm Link'}
+                                </h3>
+                                <p className="text-sm text-gray-600 mb-1">
+                                  {locale === 'fr'
+                                    ? `Lier ce profil public à "${confirmLinkTarget.name}" ?`
+                                    : `Link this public profile to "${confirmLinkTarget.name}"?`}
+                                </p>
+                                <p className="text-xs text-gray-400 mb-4">{confirmLinkTarget.email}</p>
+                                <p className="text-xs text-amber-600 bg-amber-50 rounded-lg p-3 mb-5">
+                                  {locale === 'fr'
+                                    ? 'Les données du profil public seront copiées vers leur compte. L\'URL publique sera désactivée.'
+                                    : 'Public profile data will be copied to their account. The public URL will be disabled.'}
+                                </p>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => setConfirmLinkTarget(null)}
+                                    className="flex-1 px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                  >
+                                    {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      handleLinkAccount(confirmLinkTarget.id)
+                                      setConfirmLinkTarget(null)
+                                    }}
+                                    disabled={linking}
+                                    className="flex-1 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
+                                  >
+                                    {linking ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : (locale === 'fr' ? 'Confirmer' : 'Confirm')}
+                                  </button>
                                 </div>
                               </div>
                             </div>
