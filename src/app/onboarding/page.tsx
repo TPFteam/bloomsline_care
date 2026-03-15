@@ -81,31 +81,36 @@ export default function OnboardingPage() {
     setIsLoading(true)
 
     try {
-      // Create user profile with selected type
-      const response = await fetch('/api/user/create-profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ user_type: selectedType, has_consented: hasConsented }),
-      })
+      if (showConsentOnly) {
+        // Profile already exists — just update consent and redirect
+        const { error } = await supabase
+          .from('users')
+          .update({ has_consented: true })
+          .eq('id', (await supabase.auth.getUser()).data.user?.id)
 
-      const result = await response.json()
+        if (error) throw new Error(error.message)
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to create profile')
-      }
-
-      // Success! Redirect based on user type
-      toast.success('Welcome to Bloomsline! 🎉')
-      if (selectedType === 'member') {
-        window.location.href = 'https://app.bloomsline.com'
-      } else {
         router.push('/dashboard?welcome=true')
+      } else {
+        // Create user profile with selected type
+        const response = await fetch('/api/user/create-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_type: selectedType, has_consented: hasConsented }),
+        })
+
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.error || 'Failed to create profile')
+
+        if (selectedType === 'member') {
+          window.location.href = 'https://app.bloomsline.com'
+        } else {
+          router.push('/dashboard?welcome=true')
+        }
       }
     } catch (error) {
-      console.error('Error creating profile:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to create profile')
+      console.error('Error:', error)
+      toast.error(error instanceof Error ? error.message : 'Something went wrong')
       setIsLoading(false)
     }
   }
