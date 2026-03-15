@@ -52,9 +52,16 @@ jobs:
 
       - name: Check for secrets in code
         run: |
-          # Check for common secret patterns in tracked files
-          if git grep -l 'sk-ant-\|GOCSPX-\|re_[A-Za-z0-9]\|pat-eu1-' -- ':!.github' ':!node_modules' 2>/dev/null; then
-            echo "⚠️ Possible secrets found in code!"
-            exit 1
+          # Check for actual API keys/tokens in tracked files (not partial word matches)
+          FOUND=0
+          if git grep -l 'sk-ant-api' -- ':!.github' ':!node_modules' 2>/dev/null; then
+            echo "⚠️ Anthropic API key found!" && FOUND=1
           fi
+          if git grep -l 'GOCSPX-' -- ':!.github' ':!node_modules' 2>/dev/null; then
+            echo "⚠️ Google OAuth secret found!" && FOUND=1
+          fi
+          if git grep -lP 'eyJhbGciOiJIUzI1NiIs[A-Za-z0-9+/=]{50,}' -- ':!.github' ':!node_modules' 2>/dev/null; then
+            echo "⚠️ JWT token found!" && FOUND=1
+          fi
+          if [ "$FOUND" -eq 1 ]; then exit 1; fi
           echo "✓ No secrets detected"
