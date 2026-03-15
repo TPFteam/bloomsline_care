@@ -62,7 +62,7 @@ function getStackLayers(t: T) {
         { name: 'Row Level Security', detail: t('Database-level access control per user', 'Controle d\'acces au niveau de la base par utilisateur') },
         { name: t('Next.js API Routes', 'Routes API Next.js'), detail: t('24+ REST endpoints with middleware', '24+ points d\'acces REST avec middleware') },
         { name: 'Zustand + TanStack Query', detail: t('Client state & server cache management', 'Gestion de l\'etat client et du cache serveur') },
-        { name: t('Rate Limiting', 'Limitation de debit'), detail: t('Custom per-route throttling (public, auth, AI)', 'Limitation personnalisee par route (public, auth, IA)') },
+        { name: t('Rate Limiting', 'Limitation de debit'), detail: t('Upstash Redis distributed throttling (public, auth, AI)', 'Limitation distribuee Upstash Redis par route (public, auth, IA)') },
       ],
     },
     {
@@ -89,6 +89,7 @@ function getStackLayers(t: T) {
         { name: 'PostHog', detail: t('Product analytics & session recording (EU-hosted)', 'Analytique produit et enregistrement de sessions (heberge en UE)') },
         { name: 'HubSpot', detail: t('CRM, feedback tickets & file uploads', 'CRM, tickets de retour et telechargement de fichiers') },
         { name: 'Google OAuth', detail: t('Social login for practitioners', 'Connexion sociale pour les praticiens') },
+        { name: 'Upstash Redis', detail: t('Distributed rate limiting across serverless instances (EU region)', 'Limitation de debit distribuee entre instances serverless (region UE)') },
         { name: 'Expo (React Native)', detail: t('Cross-platform member mobile app', 'Application mobile multiplateforme pour les membres') },
       ],
     },
@@ -99,8 +100,10 @@ function getSecurityFeatures(t: T) {
   return [
     { icon: Lock, label: t('AES-256-GCM encryption', 'Chiffrement AES-256-GCM'), detail: t('OAuth tokens & sensitive data encrypted at rest', 'Tokens OAuth et donnees sensibles chiffrees au repos') },
     { icon: Shield, label: 'Row Level Security', detail: t('Postgres RLS on every table \u2014 data isolation per user', 'RLS Postgres sur chaque table \u2014 isolation des donnees par utilisateur') },
-    { icon: Zap, label: t('Rate limiting', 'Limitation de debit'), detail: t('Per-route throttling \u2014 public, auth, AI, summary tiers', 'Limitation par route \u2014 niveaux public, auth, IA, resume') },
+    { icon: Zap, label: t('Distributed rate limiting', 'Limitation de debit distribuee'), detail: t('Upstash Redis \u2014 per-route throttling across serverless instances (public, auth, AI tiers)', 'Upstash Redis \u2014 limitation par route entre instances serverless (niveaux public, auth, IA)') },
     { icon: Globe, label: t('GDPR-ready', 'Conforme au RGPD'), detail: t('EU-hosted analytics (PostHog EU), cookie consent, data control', 'Analytique hebergee en UE (PostHog EU), consentement cookies, controle des donnees') },
+    { icon: Shield, label: t('CI/CD security pipeline', 'Pipeline de securite CI/CD'), detail: t('GitHub Actions \u2014 automated build checks, dependency audits, secret detection on every push', 'GitHub Actions \u2014 verifications de build automatisees, audits de dependances, detection de secrets a chaque push') },
+    { icon: Lock, label: t('Security headers', 'En-tetes de securite'), detail: t('HSTS, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy', 'HSTS, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy') },
   ]
 }
 
@@ -181,6 +184,22 @@ function getExternalServices(t: T) {
       color: 'bg-orange-500',
       lightBg: 'bg-orange-50',
       textColor: 'text-orange-700',
+    },
+    {
+      name: 'Upstash Redis',
+      purpose: t('Rate Limiting', 'Limitation de debit'),
+      detail: t('Distributed rate limiting via serverless Redis (EU region). Sliding window algorithm with per-route tiers (auth, AI, public). Works across all Vercel instances.', 'Limitation de debit distribuee via Redis serverless (region UE). Algorithme a fenetre glissante avec niveaux par route (auth, IA, public). Fonctionne entre toutes les instances Vercel.'),
+      color: 'bg-emerald-500',
+      lightBg: 'bg-emerald-50',
+      textColor: 'text-emerald-700',
+    },
+    {
+      name: 'GitHub Actions',
+      purpose: t('CI/CD Pipeline', 'Pipeline CI/CD'),
+      detail: t('Automated on every push \u2014 build verification, TypeScript type checking, dependency security audits, secret detection in code. Runs build + security jobs in parallel.', 'Automatise a chaque push \u2014 verification du build, verification des types TypeScript, audits de securite des dependances, detection de secrets dans le code. Execute les jobs build + securite en parallele.'),
+      color: 'bg-gray-800',
+      lightBg: 'bg-gray-50',
+      textColor: 'text-gray-700',
     },
   ]
 }
