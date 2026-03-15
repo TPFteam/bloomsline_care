@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { createClient as createServerClient } from '@/lib/supabase/server-client'
+import { createClient as createServerClient, createAdminClient } from '@/lib/supabase/server-client'
 import { getNotificationContent } from '@/lib/notifications/templates'
 import { generateEmailHtml, getEmailContent } from '@/lib/notifications/email'
 import { sendEmail } from '@/lib/email'
 import type { NotificationType, UserType, EntityType } from '@/lib/notifications/types'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 interface SendNotificationBody {
   userId: string
@@ -66,7 +62,7 @@ export async function POST(request: NextRequest) {
     // SECURITY: Validate the caller has permission to send notifications
     // Users can only send notifications triggered by their own actions
     // (e.g., practitioner sharing a resource creates notification for member)
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+    const supabaseAdmin = createAdminClient()
 
     // Check if caller is a practitioner with a relationship to the target user
     if (userId !== user.id) {

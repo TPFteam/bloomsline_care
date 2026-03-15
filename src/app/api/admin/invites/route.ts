@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { createClient as createServerClient } from '@/lib/supabase/server-client'
+import { createClient as createServerClient, createAdminClient } from '@/lib/supabase/server-client'
 import { ADMIN_USER_IDS } from '@/lib/admin'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 /**
  * GET /api/admin/invites
@@ -19,7 +15,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+    const supabaseAdmin = createAdminClient()
     const { data, error } = await supabaseAdmin
       .from('early_access_waitlist')
       .select('id, name, email, created_at, reason, status')
@@ -58,7 +54,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and name are required' }, { status: 400 })
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+    const supabaseAdmin = createAdminClient()
 
     // Insert into early_access_waitlist as 'pending'
     // Admin will manually change status to 'invited' when ready, which triggers the Edge Function email
@@ -107,7 +103,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid id or status' }, { status: 400 })
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+    const supabaseAdmin = createAdminClient()
     const { error } = await supabaseAdmin
       .from('early_access_waitlist')
       .update({

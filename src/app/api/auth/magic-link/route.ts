@@ -22,9 +22,13 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
-    // Check if user already has an account
-    const { data: existingUsers } = await adminClient.auth.admin.listUsers()
-    const existingUser = existingUsers?.users?.find(u => u.email === cleanEmail)
+    // Check if user already has an account (targeted query via users table)
+    const { data: existingProfile } = await adminClient
+      .from('users')
+      .select('id, email')
+      .eq('email', cleanEmail)
+      .maybeSingle()
+    const existingUser = existingProfile ? { id: existingProfile.id, email: existingProfile.email } : null
 
     if (flow === 'signin') {
       if (!existingUser) {

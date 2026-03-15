@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { createClient as createServerClient } from '@/lib/supabase/server-client'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+import { createClient as createServerClient, createAdminClient } from '@/lib/supabase/server-client'
 
 /**
  * POST /api/profile/sync-public
@@ -19,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const fields = await request.json()
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey)
+    const adminClient = createAdminClient()
 
     // Only update if this user has a linked public_practitioners record
     const { data: linked } = await adminClient

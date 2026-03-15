@@ -25,9 +25,13 @@ interface WebhookPayload {
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify webhook secret
+    // Verify webhook secret (required)
     const authHeader = request.headers.get('authorization')
-    if (WEBHOOK_SECRET && authHeader !== `Bearer ${WEBHOOK_SECRET}`) {
+    if (!WEBHOOK_SECRET) {
+      console.error('SUPABASE_WEBHOOK_SECRET not configured')
+      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
+    }
+    if (authHeader !== `Bearer ${WEBHOOK_SECRET}`) {
       console.error('Invalid webhook secret')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

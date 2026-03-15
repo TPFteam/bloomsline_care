@@ -138,5 +138,14 @@ export function sanitizeUrl(url: string | undefined | null): string {
  */
 export function stripHtml(input: string | undefined | null): string {
   if (!input) return ''
-  return input.replace(/<[^>]*>/g, '')
+  // Multi-pass strip to handle nested/malformed tags
+  let result = input
+  // Remove script/style tags and their content first
+  result = result.replace(/<script[\s\S]*?<\/script>/gi, '')
+  result = result.replace(/<style[\s\S]*?<\/style>/gi, '')
+  // Remove all HTML tags
+  result = result.replace(/<[^>]*>/g, '')
+  // Decode common HTML entities
+  result = result.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&nbsp;/g, ' ')
+  return result
 }

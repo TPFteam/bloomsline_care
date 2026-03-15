@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server-client'
 import { detectAndStorePatterns, getUserInsights } from '@/lib/bloom/patterns'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 /**
  * GET /api/bloom/patterns
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Use service role to fetch insights
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createAdminClient()
     const insights = await getUserInsights(supabase, user.id)
 
     return NextResponse.json({ insights })
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Use service role for pattern detection (needs write access)
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createAdminClient()
 
     // Get member_id
     const { data: member } = await supabase

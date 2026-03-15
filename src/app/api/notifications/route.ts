@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server-client'
 import { createNotificationService } from '@/lib/notifications/service'
 import { sanitizeLimit, sanitizeOffset } from '@/lib/security/validation'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 /**
  * GET /api/notifications
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const unreadOnly = searchParams.get('unread') === 'true'
 
     // Use service role for fetching
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createAdminClient()
     const notificationService = createNotificationService(supabase)
 
     const [notifications, unreadCount] = await Promise.all([

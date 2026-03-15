@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server-client'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 /**
  * DELETE /api/notifications/[id]
@@ -44,7 +44,7 @@ export async function DELETE(
     }
 
     // Use service role for deleting
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createAdminClient()
 
     const { error } = await supabase
       .from('notifications')

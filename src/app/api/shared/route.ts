@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+import { createAdminClient } from '@/lib/supabase/server-client'
 
 /**
  * GET /api/shared?token=<token>
@@ -17,7 +14,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token is required' }, { status: 400 })
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createAdminClient()
 
     // Look up the share token
     const { data: shareToken, error: tokenError } = await supabase

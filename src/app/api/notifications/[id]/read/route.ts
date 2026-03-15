@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server-client'
 import { createNotificationService } from '@/lib/notifications/service'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 /**
  * POST /api/notifications/[id]/read
@@ -45,7 +45,7 @@ export async function POST(
     }
 
     // Use service role for updating
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createAdminClient()
     const notificationService = createNotificationService(supabase)
 
     await notificationService.markAsRead(id, user.id)

@@ -54,21 +54,37 @@ function isPublicRoute(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // CORS for Expo mobile app API routes
+  // CORS for API routes (mobile app + web)
   if (pathname.startsWith('/api/')) {
+    const origin = request.headers.get('origin') || ''
+    const allowedOrigins = [
+      'https://www.bloomsline.com',
+      'https://app.bloomsline.com',
+      'https://app.bloomsline.care',
+      'https://bloomsline.com',
+      'http://localhost:3000',
+      'http://localhost:8081', // Expo dev
+    ]
+    // Allow mobile apps (no origin header) and allowed origins
+    const corsOrigin = !origin || allowedOrigins.includes(origin) ? origin || '*' : ''
+
     if (request.method === 'OPTIONS') {
       return new NextResponse(null, {
         headers: {
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': corsOrigin,
           'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Credentials': 'true',
         },
       })
     }
     const response = NextResponse.next()
-    response.headers.set('Access-Control-Allow-Origin', '*')
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS')
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    if (corsOrigin) {
+      response.headers.set('Access-Control-Allow-Origin', corsOrigin)
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS')
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+      response.headers.set('Access-Control-Allow-Credentials', 'true')
+    }
     return response
   }
 
@@ -182,10 +198,10 @@ export async function middleware(request: NextRequest) {
       }
     }
   } catch (error) {
-    // On error, allow request to continue (fail open for better UX)
-    // Individual pages can handle auth state
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Middleware error')
+    console.error('Middleware error:', error)
+    // Fail closed for protected routes — redirect to sign-in
+    if (isProtectedRoute(pathname)) {
+      return NextResponse.redirect(new URL('/sign-in', request.url))
     }
   }
 
