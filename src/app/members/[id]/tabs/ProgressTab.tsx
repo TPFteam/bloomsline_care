@@ -647,12 +647,6 @@ function MilestoneDetailModal({
                 </div>
               )}
               <div className="flex items-center gap-2 mt-3">
-                <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${categoryColor.bg} ${categoryColor.text}`}>
-                  {milestone.category.replace(/_/g, ' ')}
-                </span>
-                <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700">
-                  {locale === 'fr' ? statusLabels[milestone.status].fr : statusLabels[milestone.status].en}
-                </span>
               </div>
             </div>
             <button
@@ -698,52 +692,6 @@ function MilestoneDetailModal({
             <span className="text-gray-400">({comments.length})</span>
           </p>
 
-          {/* Search & filter */}
-          {comments.length > 1 && (
-            <div className="space-y-2 mb-3">
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-300" />
-                  <input
-                    type="text"
-                    value={commentSearch}
-                    onChange={(e) => setCommentSearch(e.target.value)}
-                    placeholder={locale === 'fr' ? 'Rechercher...' : 'Search...'}
-                    className="w-full text-[11px] text-gray-600 bg-gray-50 border border-gray-200 rounded-lg pl-7 pr-3 py-1.5 focus:outline-none focus:border-gray-400"
-                  />
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {noteTypes.filter(nt => comments.some(c => c.tag === nt.type)).map((nt) => {
-                  const colors = getTagColor(nt.type)
-                  const isActive = commentTagFilter === nt.type
-                  return (
-                    <button
-                      key={nt.type}
-                      type="button"
-                      onClick={() => setCommentTagFilter(isActive ? '' : nt.type)}
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
-                        isActive
-                          ? `${colors.bg} ${colors.text} ring-1 ring-current`
-                          : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'
-                      }`}
-                    >
-                      {nt.label} ({comments.filter(c => c.tag === nt.type).length})
-                    </button>
-                  )
-                })}
-                {commentTagFilter && (
-                  <button
-                    type="button"
-                    onClick={() => setCommentTagFilter('')}
-                    className="px-2 py-0.5 rounded-full text-[10px] font-medium text-red-400 hover:text-red-600 transition-colors"
-                  >
-                    {locale === 'fr' ? 'Effacer' : 'Clear'}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Existing comments */}
           {comments.length > 0 && (

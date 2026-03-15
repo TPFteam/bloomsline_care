@@ -68,6 +68,12 @@ export async function POST(
       .maybeSingle()
 
     // 4. Copy public profile data into practitioner_profiles (upsert)
+    // Ensure enum/type compatibility between public_practitioners and practitioner_profiles
+    const validStatuses = ['accepting', 'waitlist', 'not_accepting']
+    const clientStatus = validStatuses.includes(publicProfile.client_acceptance_status)
+      ? publicProfile.client_acceptance_status
+      : 'accepting'
+
     const profileData = {
       user_id,
       headline: publicProfile.headline,
@@ -85,10 +91,10 @@ export async function POST(
       practice_location: publicProfile.practice_location,
       offers_telehealth: publicProfile.offers_telehealth,
       offers_in_person: publicProfile.offers_in_person,
-      client_acceptance_status: publicProfile.client_acceptance_status,
+      client_acceptance_status: clientStatus,
       show_fees: publicProfile.show_fees,
-      session_fee_min: publicProfile.session_fee_min,
-      session_fee_max: publicProfile.session_fee_max,
+      session_fee_min: publicProfile.session_fee_min ? Math.round(Number(publicProfile.session_fee_min)) : null,
+      session_fee_max: publicProfile.session_fee_max ? Math.round(Number(publicProfile.session_fee_max)) : null,
       fee_currency: publicProfile.fee_currency,
       insurance_accepted: publicProfile.insurance_accepted,
       offers_sliding_scale: publicProfile.offers_sliding_scale,
@@ -100,25 +106,36 @@ export async function POST(
     }
 
     if (existingProfile) {
-      // Update existing profile
+      // Update existing profile — keep existing slug to avoid conflicts
+      const { slug: _slug, ...updateData } = profileData
       const { error: updateError } = await adminClient
         .from('practitioner_profiles')
-        .update(profileData)
+        .update(updateData)
         .eq('user_id', user_id)
 
       if (updateError) {
         console.error('Error updating practitioner_profiles:', updateError)
-        return NextResponse.json({ error: 'Failed to update practitioner profile' }, { status: 500 })
+        return NextResponse.json({ error: `Failed to update practitioner profile: ${updateError.message}` }, { status: 500 })
       }
     } else {
-      // Insert new profile
+      // Insert new profile — check if slug is taken, append suffix if needed
+      const { data: slugExists } = await adminClient
+        .from('practitioner_profiles')
+        .select('id')
+        .eq('slug', profileData.slug)
+        .maybeSingle()
+
+      if (slugExists) {
+        profileData.slug = `${profileData.slug}-${Date.now().toString(36).slice(-4)}`
+      }
+
       const { error: insertError } = await adminClient
         .from('practitioner_profiles')
         .insert(profileData)
 
       if (insertError) {
         console.error('Error creating practitioner_profiles:', insertError)
-        return NextResponse.json({ error: 'Failed to create practitioner profile' }, { status: 500 })
+        return NextResponse.json({ error: `Failed to create practitioner profile: ${insertError.message}` }, { status: 500 })
       }
     }
 
@@ -172,15 +189,31 @@ export async function DELETE(
 
     const adminClient = createAdminClient()
 
+    // Get the current linked user_id before unlinking
+    const { data: current } = await adminClient
+      .from('public_practitioners')
+      .select('user_id')
+      .eq('id', id)
+      .single()
+
+    // Clear link on public_practitioners
     const { data, error } = await adminClient
       .from('public_practitioners')
-      .update({ user_id: null, linked_at: null })
+      .update({ user_id: null, linked_at: null, is_published: false })
       .eq('id', id)
       .select()
       .single()
 
     if (error) {
       return NextResponse.json({ error: 'Failed to unlink account' }, { status: 500 })
+    }
+
+    // Delete the practitioner_profiles record that was created during linking
+    if (current?.user_id) {
+      await adminClient
+        .from('practitioner_profiles')
+        .delete()
+        .eq('user_id', current.user_id)
     }
 
     return NextResponse.json({ success: true, practitioner: data })
