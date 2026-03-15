@@ -655,6 +655,11 @@ export default function MyResourcesPage() {
                   <span>{locale === 'fr' ? 'Mes ressources' : 'My Resources'}</span>
                 </div>
               </Link>
+              <Link href="/shared-resources">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors text-sm">
+                  <span>{locale === 'fr' ? 'Partagés' : 'Shared'}</span>
+                </div>
+              </Link>
             </div>
 
             <div className="text-sm text-gray-500">

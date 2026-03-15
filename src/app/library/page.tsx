@@ -589,6 +589,13 @@ export default function LibraryPage() {
                   <span>{locale === 'fr' ? 'Mes ressources' : 'My Resources'}</span>
                 </div>
               </Link>
+
+              {/* Shared Tab */}
+              <Link href="/shared-resources">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors text-sm">
+                  <span>{locale === 'fr' ? 'Partagés' : 'Shared'}</span>
+                </div>
+              </Link>
             </div>
 
             {/* Stats */}
