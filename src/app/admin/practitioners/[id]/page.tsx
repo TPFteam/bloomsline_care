@@ -80,6 +80,8 @@ const EMPTY_FORM: Partial<PublicPractitioner> = {
   avatar_url: '',
   headline: '',
   bio: '',
+  city: '',
+  country: '',
   credentials: [],
   education: [],
   licenses: [],
@@ -303,6 +305,8 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
           avatar_url: form.avatar_url || null,
           headline: form.headline || null,
           bio: form.bio || null,
+          city: form.city || null,
+          country: form.country || null,
           credentials: form.credentials || [],
           education: form.education || [],
           licenses: form.licenses || [],
@@ -590,6 +594,11 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
                   {form.headline && (
                     <p className="text-gray-500 text-sm">{form.headline}</p>
                   )}
+                  {(form.city || form.country) && (
+                    <p className="text-gray-400 text-xs mt-1">
+                      {[form.city, form.country].filter(Boolean).join(', ')}
+                    </p>
+                  )}
                   <div className="flex items-center justify-center md:justify-start gap-2 mt-3 flex-wrap">
                     {form.is_published ? (
                       <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700">
@@ -743,6 +752,34 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none resize-none"
                       />
                       <p className="text-xs text-gray-500 mt-1">{t.profile.about.bio.help}</p>
+                    </div>
+
+                    {/* City & Country */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {locale === 'fr' ? 'Ville' : 'City'}
+                        </label>
+                        <input
+                          type="text"
+                          value={form.city || ''}
+                          onChange={(e) => setForm(prev => ({ ...prev, city: e.target.value }))}
+                          placeholder={locale === 'fr' ? 'Lyon' : 'Paris'}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {locale === 'fr' ? 'Pays' : 'Country'}
+                        </label>
+                        <input
+                          type="text"
+                          value={form.country || ''}
+                          onChange={(e) => setForm(prev => ({ ...prev, country: e.target.value }))}
+                          placeholder={locale === 'fr' ? 'France' : 'France'}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

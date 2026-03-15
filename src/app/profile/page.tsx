@@ -88,6 +88,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Partial<PractitionerProfile>>({
     headline: '',
     bio: '',
+    city: '',
+    country: '',
     credentials: [],
     education: [],
     licenses: [],
@@ -224,6 +226,8 @@ export default function ProfilePage() {
         user_id: user.id,
         headline: profile.headline || null,
         bio: profile.bio || null,
+        city: profile.city || null,
+        country: profile.country || null,
         intro_video_url: profile.intro_video_url || null,
         credentials: profile.credentials || [],
         education: profile.education || [],
@@ -267,6 +271,24 @@ export default function ProfilePage() {
         }
         throw error
       }
+
+      // Sync key fields to public_practitioners if linked (via API — RLS blocks direct update)
+      await fetch('/api/profile/sync-public', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          headline: profileData.headline,
+          bio: profileData.bio,
+          city: profileData.city,
+          country: profileData.country,
+          credentials: profileData.credentials,
+          specialties: profileData.specialties,
+          approaches: profileData.approaches,
+          languages: profileData.languages,
+          contact_email: profileData.contact_email,
+          contact_phone: profileData.contact_phone,
+        }),
+      }).catch(() => {}) // Don't fail if sync fails
 
       toast.success(t.profile.success.saved)
     } catch (error) {
@@ -593,6 +615,11 @@ export default function ProfilePage() {
                   {profile.headline && (
                     <p className="text-gray-500 text-sm">{profile.headline}</p>
                   )}
+                  {(profile.city || profile.country) && (
+                    <p className="text-gray-400 text-xs mt-1">
+                      {[profile.city, profile.country].filter(Boolean).join(', ')}
+                    </p>
+                  )}
                   <div className="flex items-center justify-center md:justify-start gap-2 mt-3 flex-wrap">
                     {profile.is_public ? (
                       <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700">
@@ -716,6 +743,34 @@ export default function ProfilePage() {
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none resize-none"
                     />
                     <p className="text-xs text-gray-500 mt-1">{t.profile.about.bio.help}</p>
+                  </div>
+
+                  {/* City & Country */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {locale === 'fr' ? 'Ville' : 'City'}
+                      </label>
+                      <input
+                        type="text"
+                        value={profile.city || ''}
+                        onChange={(e) => setProfile(prev => ({ ...prev, city: e.target.value }))}
+                        placeholder={locale === 'fr' ? 'Lyon' : 'Paris'}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {locale === 'fr' ? 'Pays' : 'Country'}
+                      </label>
+                      <input
+                        type="text"
+                        value={profile.country || ''}
+                        onChange={(e) => setProfile(prev => ({ ...prev, country: e.target.value }))}
+                        placeholder={locale === 'fr' ? 'France' : 'France'}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

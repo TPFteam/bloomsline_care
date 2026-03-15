@@ -76,6 +76,8 @@ export async function POST(
 
     const profileData = {
       user_id,
+      city: publicProfile.city,
+      country: publicProfile.country,
       headline: publicProfile.headline,
       bio: publicProfile.bio,
       credentials: publicProfile.credentials,

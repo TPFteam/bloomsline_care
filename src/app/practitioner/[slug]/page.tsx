@@ -366,6 +366,11 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 {profile.headline && (
                   <p className="text-gray-500 mt-1 text-base">{profile.headline}</p>
                 )}
+                {(profile.city || profile.country) && (
+                  <p className="text-gray-400 mt-1 text-sm">
+                    {[profile.city, profile.country].filter(Boolean).join(', ')}
+                  </p>
+                )}
               </div>
             </div>
 

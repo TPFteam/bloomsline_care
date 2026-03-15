@@ -19,6 +19,10 @@ export interface PublicPractitioner {
   full_name: string
   avatar_url: string | null
 
+  // Location
+  city: string | null
+  country: string | null
+
   // Professional
   headline: string | null
   bio: string | null

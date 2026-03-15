@@ -143,6 +143,10 @@ export interface PractitionerProfile {
   id: string
   user_id: string
 
+  // Location
+  city: string | null
+  country: string | null
+
   // Professional Identity
   headline: string | null // "Helping families navigate trauma with compassion"
   bio: string | null // Client-centered bio

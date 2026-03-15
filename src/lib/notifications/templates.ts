@@ -21,17 +21,17 @@ const templates: Record<NotificationType, NotificationTemplate> = {
       locale === 'fr' ? 'Nouvelle ressource partagée' : locale === 'es' ? 'Nuevo recurso compartido' : 'New resource shared',
     body: (m, locale) =>
       locale === 'fr'
-        ? `Votre praticien, ${m.practitionerName}, a partagé "${m.resourceTitle}" avec vous`
+        ? `${m.practitionerName} a partagé une ressource avec vous : "${m.resourceTitle}"\n\nPrenez un moment quand vous êtes prêt(e) — elle est là pour vous.`
         : locale === 'es'
-          ? `Tu profesional, ${m.practitionerName}, compartió "${m.resourceTitle}" contigo`
-          : `Your practitioner, ${m.practitionerName}, shared "${m.resourceTitle}" with you`,
+          ? `${m.practitionerName} compartió un recurso contigo: "${m.resourceTitle}"\n\nTómate un momento cuando estés listo(a) — está ahí para ti.`
+          : `${m.practitionerName} shared a resource with you: "${m.resourceTitle}"\n\nTake a moment when you're ready — it's there for you.`,
     actionUrl: (m) => `/resources/${m.resourceId}`,
     emailSubject: (m, locale) =>
       locale === 'fr'
-        ? `Votre praticien, ${m.practitionerName}, a partagé une ressource avec vous`
+        ? `Votre praticien(ne), ${m.practitionerName}, a partagé "${m.resourceTitle}" avec vous`
         : locale === 'es'
-          ? `Tu profesional, ${m.practitionerName}, compartió un recurso contigo`
-          : `Your practitioner, ${m.practitionerName}, shared a resource with you`,
+          ? `Tu profesional, ${m.practitionerName}, compartió "${m.resourceTitle}" contigo`
+          : `Your practitioner, ${m.practitionerName}, shared "${m.resourceTitle}" with you`,
   },
 
   resource_assigned: {

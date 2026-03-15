@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
+
+export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import {
   Mail,
@@ -100,6 +102,29 @@ const translations = {
 
 async function getPractitioner(slug: string): Promise<PublicPractitioner | null> {
   const supabase = createAdminClient()
+
+  // Try practitioner_profiles first (self-signup practitioners — most up to date)
+  const { data: profile, error: profileError } = await supabase
+    .from('practitioner_profiles')
+    .select('*, users(id, full_name, avatar_url)')
+    .eq('slug', slug)
+    .eq('is_public', true)
+    .single()
+
+  console.log('[p/slug] practitioner_profiles query:', { slug, profileError: profileError?.message, hasProfile: !!profile })
+
+  if (!profileError && profile) {
+    const user = profile.users as any
+    console.log('[p/slug] MATCH from practitioner_profiles, city:', profile.city, 'country:', profile.country)
+    return {
+      ...profile,
+      full_name: user?.full_name || '',
+      avatar_url: user?.avatar_url || null,
+      is_published: true,
+    } as PublicPractitioner
+  }
+
+  // Fallback: check public_practitioners (admin-created profiles)
   const { data, error } = await supabase
     .from('public_practitioners')
     .select('*')
@@ -257,6 +282,11 @@ export default async function PublicPractitionerPage(
                   </h1>
                   {p.headline && (
                     <p className="text-gray-500 mt-1 text-base">{p.headline}</p>
+                  )}
+                  {(p.city || p.country) && (
+                    <p className="text-gray-400 mt-1 text-sm">
+                      {[p.city, p.country].filter(Boolean).join(', ')}
+                    </p>
                   )}
                 </div>
               </div>

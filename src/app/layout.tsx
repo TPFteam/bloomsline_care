@@ -56,7 +56,43 @@ export default function RootLayout({
               </QueryProvider>
               <FeedbackWrapper />
               <CookieConsent />
-              <Toaster position="top-center" richColors />
+              <Toaster
+                position="bottom-right"
+                duration={3000}
+                closeButton
+                toastOptions={{
+                  style: {
+                    background: '#1a1a1a',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '14px',
+                    fontSize: '14px',
+                    padding: '16px 20px',
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+                    minWidth: '320px',
+                  },
+                  classNames: {
+                    success: '!bg-[#4A9A86] !text-white',
+                    error: '!bg-[#ef4444] !text-white',
+                    info: '!bg-[#3b82f6] !text-white',
+                    warning: '!bg-[#f59e0b] !text-white',
+                  },
+                  actionButtonStyle: {
+                    background: 'rgba(255,255,255,0.2)',
+                    color: '#fff',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    padding: '6px 14px',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                  },
+                  cancelButtonStyle: {
+                    background: 'transparent',
+                    color: 'rgba(255,255,255,0.7)',
+                    fontSize: '13px',
+                  },
+                }}
+              />
             </LanguageProvider>
           </ThemeProvider>
         </PostHogProvider>

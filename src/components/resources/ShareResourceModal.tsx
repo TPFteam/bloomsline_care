@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X,
@@ -15,8 +15,10 @@ import {
   Users,
   MessageSquare,
   UserPlus,
+  Bell,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import type { Resource } from '@/types/resource'
 
 interface SimpleMember {
@@ -43,6 +45,7 @@ interface ShareResourceModalProps {
   onShare: (resourceId: string, memberIds: string[], message?: string) => Promise<void>
   onAddMember?: () => void
   groups?: ShareGroup[]
+  alreadySharedMemberIds?: string[]
 }
 
 const resourceTypeIcons: Record<string, React.ElementType> = {
@@ -98,11 +101,97 @@ export function ShareResourceModal({
   onShare,
   onAddMember,
   groups,
+  alreadySharedMemberIds = [],
 }: ShareResourceModalProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set())
   const [message, setMessage] = useState('')
   const [isSharing, setIsSharing] = useState(false)
+  const [fetchedSharedIds, setFetchedSharedIds] = useState<string[]>([])
+
+  // Auto-fetch which members already have this resource shared
+  useEffect(() => {
+    if (!isOpen || !resource?.id) return
+    const { createClient } = require('@/lib/supabase/browser-client')
+    const supabase = createClient()
+    ;(async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from('member_shared_resources')
+        .select('member_id')
+        .eq('resource_id', resource.id)
+        .eq('practitioner_id', user.id)
+      setFetchedSharedIds(data?.map((d: { member_id: string }) => d.member_id) || [])
+    })()
+  }, [isOpen, resource?.id])
+
+  const sharedIds = alreadySharedMemberIds.length > 0 ? alreadySharedMemberIds : fetchedSharedIds
+  const [sendingReminder, setSendingReminder] = useState<string | null>(null)
+
+  const handleSendReminder = async (e: React.MouseEvent, member: SimpleMember) => {
+    e.stopPropagation()
+    setSendingReminder(member.id)
+    try {
+      const { createClient } = require('@/lib/supabase/browser-client')
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Get practitioner name
+      const { data: practitioner } = await supabase
+        .from('users')
+        .select('full_name')
+        .eq('id', user.id)
+        .single()
+
+      const practName = practitioner?.full_name || 'Your practitioner'
+
+      if (member.email) {
+        // Send reminder via notification API
+        const { notifyResourceShared, sendResourceSharedEmail } = require('@/lib/notifications')
+
+        if (members.find(m => m.id === member.id)) {
+          // Check if member has a user_id (account)
+          const { data: memberData } = await supabase
+            .from('members')
+            .select('user_id, email')
+            .eq('id', member.id)
+            .single()
+
+          if (memberData?.user_id) {
+            await notifyResourceShared(supabase, {
+              memberId: member.id,
+              memberUserId: memberData.user_id,
+              resourceId: resource.id,
+              resourceTitle: resource.title,
+              resourceType: resource.type,
+              practitionerName: practName,
+              memberEmail: memberData.email || undefined,
+            })
+          } else if (memberData?.email) {
+            await sendResourceSharedEmail({
+              memberEmail: memberData.email,
+              resourceTitle: resource.title,
+              resourceType: resource.type,
+              practitionerName: practName,
+              resourceId: resource.id,
+            })
+          }
+        }
+
+        toast.success(locale === 'fr' ? 'Rappel envoyé' : 'Reminder sent')
+        handleClose()
+        return
+      } else {
+        toast.error(locale === 'fr' ? 'Pas d\'email pour ce membre' : 'No email for this member')
+      }
+    } catch (err) {
+      console.error('Error sending reminder:', err)
+      toast.error(locale === 'fr' ? 'Échec de l\'envoi' : 'Failed to send')
+    }
+    setSendingReminder(null)
+  }
 
   const TypeIcon = resourceTypeIcons[resource.type] || FileText
   const styles = resourceTypeStyles[resource.type] || resourceTypeStyles.worksheet
@@ -341,12 +430,12 @@ export function ShareResourceModal({
                   {filteredMembers.map((member) => {
                     const isSelected = selectedMembers.has(member.id)
                     const isDisabled = !isSelected && selectedMembers.size >= MAX_SELECTIONS
+                    const isAlreadyShared = sharedIds.includes(member.id)
                     return (
-                      <button
+                      <div
                         key={member.id}
-                        onClick={() => toggleMember(member.id)}
-                        disabled={isDisabled}
-                        className={`w-full flex items-center gap-3 px-5 py-3 transition-colors ${
+                        onClick={() => !isDisabled && toggleMember(member.id)}
+                        className={`w-full flex items-center gap-3 px-5 py-3 transition-colors cursor-pointer ${
                           isSelected ? 'bg-blue-50' : isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'
                         }`}
                       >
@@ -370,16 +459,37 @@ export function ShareResourceModal({
 
                         {/* Info */}
                         <div className="flex-1 text-left min-w-0">
-                          <p className={`font-medium text-sm truncate ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
-                            {member.first_name} {member.last_name}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className={`font-medium text-sm truncate ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                              {member.first_name} {member.last_name}
+                            </p>
+                            {isAlreadyShared && (
+                              <>
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-teal-50 text-teal-600 flex-shrink-0">
+                                  {locale === 'fr' ? 'Déjà partagé' : locale === 'es' ? 'Ya compartido' : 'Shared'}
+                                </span>
+                                <button
+                                  onClick={(e) => handleSendReminder(e, member)}
+                                  disabled={sendingReminder === member.id}
+                                  className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors flex-shrink-0 flex items-center gap-1"
+                                >
+                                  {sendingReminder === member.id ? (
+                                    <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                  ) : (
+                                    <Bell className="w-2.5 h-2.5" />
+                                  )}
+                                  {locale === 'fr' ? 'Rappel' : locale === 'es' ? 'Recordar' : 'Remind'}
+                                </button>
+                              </>
+                            )}
+                          </div>
                           {member.email && (
                             <p className="text-xs text-gray-500 truncate">
                               {member.email}
                             </p>
                           )}
                         </div>
-                      </button>
+                      </div>
                     )
                   })}
                 </>

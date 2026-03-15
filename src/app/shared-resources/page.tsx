@@ -13,10 +13,13 @@ import {
   Clock,
   XCircle,
   FileText,
+  Bell,
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
+import { toast } from 'sonner'
+import { notifyResourceShared, sendResourceSharedEmail } from '@/lib/notifications'
 import type { User } from '@/types/user'
 
 interface SharedRecord {
@@ -143,6 +146,51 @@ export default function SharedResourcesPage() {
     })
     return counts
   }, [records])
+
+  const [sendingReminder, setSendingReminder] = useState<string | null>(null)
+
+  const handleRemind = async (e: React.MouseEvent, record: SharedRecord) => {
+    e.stopPropagation()
+    setSendingReminder(record.id)
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
+
+      const practName = user?.full_name || 'Your practitioner'
+
+      // Check if member has account
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('user_id, email')
+        .eq('id', record.member_id)
+        .single()
+
+      if (memberData?.user_id) {
+        await notifyResourceShared(supabase, {
+          memberId: record.member_id,
+          memberUserId: memberData.user_id,
+          resourceId: record.resource_id,
+          resourceTitle: record.resource_title,
+          resourceType: record.resource_type,
+          practitionerName: practName,
+          memberEmail: memberData.email || undefined,
+        })
+      } else if (memberData?.email) {
+        await sendResourceSharedEmail({
+          memberEmail: memberData.email,
+          resourceTitle: record.resource_title,
+          resourceType: record.resource_type,
+          practitionerName: practName,
+          resourceId: record.resource_id,
+        })
+      }
+
+      toast.success(locale === 'fr' ? 'Rappel envoyé' : 'Reminder sent')
+    } catch {
+      toast.error(locale === 'fr' ? 'Échec de l\'envoi' : 'Failed to send')
+    }
+    setSendingReminder(null)
+  }
 
   const getStatusBadge = (status: string | null) => {
     if (!status) return { label: locale === 'fr' ? 'En attente' : 'Pending', bg: 'bg-amber-50', text: 'text-amber-600', icon: Clock }
@@ -342,6 +390,20 @@ export default function SharedResourcesPage() {
                                 <BadgeIcon className="w-3 h-3" />
                                 {badge.label}
                               </span>
+                              {!record.response_status && (
+                                <button
+                                  onClick={(e) => handleRemind(e, record)}
+                                  disabled={sendingReminder === record.id}
+                                  className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors flex items-center gap-1"
+                                >
+                                  {sendingReminder === record.id ? (
+                                    <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                  ) : (
+                                    <Bell className="w-2.5 h-2.5" />
+                                  )}
+                                  {locale === 'fr' ? 'Rappel' : 'Remind'}
+                                </button>
+                              )}
                             </div>
                           )
                         })}

@@ -131,7 +131,7 @@ export function generateEmailHtml(params: {
       <!-- Header -->
       <tr>
         <td class="header">
-          <h1>🌸 Bloomsline Care</h1>
+          <h1>Bloomsline Care</h1>
         </td>
       </tr>
 
@@ -140,15 +140,8 @@ export function generateEmailHtml(params: {
         <td class="content">
           <table cellpadding="0" cellspacing="0" width="100%">
             <tr>
-              <td style="padding-bottom: 16px;">
-                <h2 style="margin: 0; color: #111827; font-size: 20px; font-weight: 600;">
-                  ${subject}
-                </h2>
-              </td>
-            </tr>
-            <tr>
-              <td style="color: #374151; font-size: 15px; line-height: 1.6;">
-                ${body}
+              <td style="color: #374151; font-size: 15px; line-height: 1.7;">
+                ${body.replace(/\n/g, '<br>')}
               </td>
             </tr>
             ${buttonHtml}
