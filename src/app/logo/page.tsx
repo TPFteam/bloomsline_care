@@ -4,362 +4,221 @@ import { useState } from 'react'
 
 type Bg = 'light' | 'dark'
 
-function Card({ title, children }: { title: string; children: (bg: Bg) => React.ReactNode }) {
+function Card({ title, subtitle, children }: { title: string; subtitle: string; children: (bg: Bg) => React.ReactNode }) {
   const [bg, setBg] = useState<Bg>('light')
   return (
     <div className="rounded-2xl border border-neutral-100 overflow-hidden hover:shadow-lg transition-shadow">
       <div
-        className={`relative p-12 flex items-center justify-center min-h-[240px] transition-colors cursor-pointer ${bg === 'dark' ? 'bg-[#0f0f0f]' : 'bg-white'}`}
+        className={`relative p-14 flex flex-col items-center justify-center min-h-[260px] transition-colors cursor-pointer ${bg === 'dark' ? 'bg-[#0f0f0f]' : 'bg-white'}`}
         onClick={() => setBg(bg === 'light' ? 'dark' : 'light')}
       >
         {children(bg)}
-        <span className="absolute bottom-3 right-3 text-[9px] text-neutral-300">{bg === 'light' ? 'click for dark' : 'click for light'}</span>
+        <span className="absolute bottom-3 right-3 text-[9px] text-neutral-300">{bg === 'light' ? 'dark' : 'light'}</span>
       </div>
-      <div className="px-4 py-2.5 bg-[#FAFAFA] border-t border-neutral-100">
-        <span className="text-[11px] font-medium text-neutral-500">{title}</span>
+      <div className="px-5 py-4 bg-[#FAFAFA] border-t border-neutral-100">
+        <p className="text-sm font-semibold text-neutral-800 mb-0.5">{title}</p>
+        <p className="text-[11px] text-neutral-400 leading-relaxed">{subtitle}</p>
       </div>
     </div>
   )
 }
 
-// Wordmark
-function W({ bg, weight = 450 }: { bg: Bg; weight?: number }) {
-  return (
-    <span className={`text-[20px] tracking-[0.03em] ${bg === 'dark' ? 'text-white' : 'text-[#111]'}`} style={{ fontWeight: weight }}>
-      bloomsline
-    </span>
-  )
-}
-
-// Colors
-const T = '#3D9B85' // teal
-const L = '#A88AE1' // lavender
+const T = '#4A9A86'
+const L = '#A88AE1'
 
 export default function LogoPage() {
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
       <div className="max-w-6xl mx-auto px-8 py-20">
-        <h1 className="text-lg font-semibold text-neutral-800 mb-1">Logo</h1>
-        <p className="text-xs text-neutral-400 mb-16">Click any card to toggle background.</p>
+        <h1 className="text-xl font-semibold text-neutral-800 mb-1">Bloomsline — Logo Exploration</h1>
+        <p className="text-xs text-neutral-400 mb-16">Applying the 5 patterns: controlled imperfection, warm signature color, lowercase spacing, one element, metaphor not literal.</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* ════ SECTION 1: WORDMARK-ONLY ════ */}
+        <h2 className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.15em] mb-6">Wordmark Only — Typography IS the Logo</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
 
-          {/* ── 1. Gradient circle ── */}
-          <Card title="Gradient">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-full" style={{ background: `linear-gradient(135deg, ${T}, ${L})` }} />
-              <W bg={bg} />
+          {/* W1: The Breathing Wordmark */}
+          <Card title="The Breathing Wordmark" subtitle="Ultra-wide tracking. The space between letters IS the product — the space between sessions.">{(bg) => (
+            <span className={`text-[22px] ${bg === 'dark' ? 'text-white' : 'text-[#111]'}`} style={{ fontWeight: 350, letterSpacing: '0.18em' }}>
+              bloomsline
+            </span>
+          )}</Card>
+
+          {/* W2: The Soft Split */}
+          <Card title="The Soft Split" subtitle="'blooms' in medium, 'line' in light. The bloom is grounded. The line is gentle. Two weights, one word.">{(bg) => (
+            <div className="flex items-baseline">
+              <span className={`text-[22px] ${bg === 'dark' ? 'text-white' : 'text-[#111]'}`} style={{ fontWeight: 460, letterSpacing: '0.03em' }}>blooms</span>
+              <span className={`text-[22px] ${bg === 'dark' ? 'text-white/50' : 'text-[#111]/40'}`} style={{ fontWeight: 280, letterSpacing: '0.03em' }}>line</span>
             </div>
           )}</Card>
 
-          {/* ── 2. Soft overlap ── */}
-          <Card title="Overlap">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <div className="relative w-11 h-9 flex items-center">
-                <div className="absolute left-0 w-8 h-8 rounded-full" style={{ background: T, opacity: 0.85 }} />
-                <div className="absolute left-3.5 w-8 h-8 rounded-full" style={{ background: L, opacity: 0.55 }} />
-              </div>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 3. Rounded square mark ── */}
-          <Card title="App Mark">{(bg) => (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-[12px] flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${T}, ${L})` }}>
-                <span className="text-white text-[18px] font-semibold leading-none">b</span>
-              </div>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 4. Ring ── */}
-          <Card title="Ring">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <div className="relative">
-                <div className="w-10 h-10 rounded-full" style={{ border: `2.5px solid ${T}` }} />
-                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full" style={{ background: L }} />
-              </div>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 5. Two dots ── */}
-          <Card title="Duo">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 h-5 rounded-full" style={{ background: T }} />
-                <div className="w-5 h-5 rounded-full" style={{ background: L, opacity: 0.65 }} />
-              </div>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 6. Sprout ── */}
-          <Card title="Sprout">{(bg) => (
-            <div className="flex items-center gap-3">
-              <svg width="26" height="30" viewBox="0 0 26 30" fill="none">
-                <path d="M13 28V15" stroke={T} strokeWidth="2.5" strokeLinecap="round" />
-                <path d="M13 15C13 9 7 5 3 3C5 9 9 13 13 15Z" fill={T} />
-                <path d="M13 19C13 13 19 9 23 7C21 13 17 17 13 19Z" fill={L} opacity="0.55" />
-              </svg>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 7. Halves ── */}
-          <Card title="Halves">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <div className="flex items-center gap-[2px]">
-                <div className="w-[14px] h-[28px] rounded-l-full" style={{ background: T }} />
-                <div className="w-[14px] h-[28px] rounded-r-full" style={{ background: L, opacity: 0.65 }} />
-              </div>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 8. Cradle ── */}
-          <Card title="Cradle">{(bg) => (
-            <div className="flex items-center gap-3">
-              <svg width="28" height="26" viewBox="0 0 28 26" fill="none">
-                <path d="M4 18C4 10 8 4 14 4" stroke={T} strokeWidth="2.5" strokeLinecap="round" />
-                <path d="M24 18C24 10 20 4 14 4" stroke={L} strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
-                <circle cx="14" cy="15" r="3" fill={T} />
-              </svg>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 9. Heart outline ── */}
-          <Card title="Heart">{(bg) => (
-            <div className="flex items-center gap-3">
-              <svg width="26" height="24" viewBox="0 0 26 24" fill="none">
-                <path d="M13 22L2.5 12C0.5 10 0.5 6 2.5 4C4.5 2 8.5 2 10.5 4L13 6.5L15.5 4C17.5 2 21.5 2 23.5 4C25.5 6 25.5 10 23.5 12L13 22Z" stroke={T} strokeWidth="2" strokeLinejoin="round" fill="none" />
-              </svg>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 10. Bars ── */}
-          <Card title="Bars">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <div className="flex gap-[3px] items-end h-7">
-                <div className="w-[4px] rounded-full" style={{ height: 10, background: L, opacity: 0.45 }} />
-                <div className="w-[4px] rounded-full" style={{ height: 16, background: T, opacity: 0.7 }} />
-                <div className="w-[4px] rounded-full" style={{ height: 28, background: T }} />
-                <div className="w-[4px] rounded-full" style={{ height: 20, background: T, opacity: 0.8 }} />
-                <div className="w-[4px] rounded-full" style={{ height: 12, background: L, opacity: 0.5 }} />
-              </div>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 11. Typographic "oo" ── */}
-          <Card title="Type">{(bg) => (
-            <span className={`text-[22px] font-[420] tracking-[0.03em] ${bg === 'dark' ? 'text-white' : 'text-[#111]'}`}>
+          {/* W3: The Teal OO */}
+          <Card title="The Teal OO" subtitle="The two O's in teal — two people, two sides of care, two eyes looking at each other. Stripe's slashed letters energy.">{(bg) => (
+            <span className={`text-[22px] ${bg === 'dark' ? 'text-white' : 'text-[#111]'}`} style={{ fontWeight: 420, letterSpacing: '0.04em' }}>
               bl<span style={{ color: T }}>oo</span>msline
             </span>
           )}</Card>
 
-          {/* ── 12. Monogram outline ── */}
-          <Card title="Monogram">{(bg) => (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center relative" style={{ border: `2.5px solid ${T}` }}>
-                <span className="text-[18px] font-semibold leading-none" style={{ color: T }}>b</span>
-                <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full" style={{ background: L }} />
-              </div>
-              <W bg={bg} />
+          {/* W4: The Dot */}
+          <Card title="The Dot" subtitle="A small teal dot after the name. Like a period — a moment of pause. Like Headspace's imperfect circle, but quieter.">{(bg) => (
+            <div className="flex items-center gap-2">
+              <span className={`text-[22px] ${bg === 'dark' ? 'text-white' : 'text-[#111]'}`} style={{ fontWeight: 400, letterSpacing: '0.04em' }}>
+                bloomsline
+              </span>
+              <div className="w-2 h-2 rounded-full" style={{ background: T }} />
             </div>
           )}</Card>
 
-          {/* ── 13. Horizon ── */}
-          <Card title="Horizon">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <svg width="30" height="20" viewBox="0 0 30 20" fill="none">
-                <circle cx="15" cy="14" r="8" fill={T} />
-                <rect x="0" y="14" width="30" height="6" fill={bg === 'dark' ? '#0f0f0f' : 'white'} />
-                <line x1="1" y1="14" x2="29" y2="14" stroke={bg === 'dark' ? '#333' : '#e0e0e0'} strokeWidth="1.5" />
-              </svg>
-              <W bg={bg} />
-            </div>
+          {/* W5: The Line Through */}
+          <Card title="The Underscore" subtitle="A subtle teal line under 'line'. The continuous line of care — literally underscoring what matters.">{(bg) => (
+            <span className={`text-[22px] ${bg === 'dark' ? 'text-white' : 'text-[#111]'}`} style={{ fontWeight: 400, letterSpacing: '0.04em' }}>
+              blooms<span className="relative"><span className="relative z-10">line</span><span className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full" style={{ background: T, opacity: 0.6 }} /></span>
+            </span>
           )}</Card>
 
-          {/* ── 14. Line bloom ── */}
-          <Card title="Growth">{(bg) => (
-            <div className="flex items-center gap-3">
-              <svg width="30" height="22" viewBox="0 0 30 22" fill="none">
-                <path d="M2 18C6 15 10 7 15 5C20 3 24 9 28 5" stroke={T} strokeWidth="2" strokeLinecap="round" />
-                <circle cx="15" cy="5" r="4" fill={L} opacity="0.5" />
-                <circle cx="15" cy="5" r="2" fill={T} />
-              </svg>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 15. Stacked circles ── */}
-          <Card title="Stack">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <div className="relative w-10 h-10">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full" style={{ background: T, opacity: 0.35 }} />
-                <div className="absolute bottom-0 left-0 w-6 h-6 rounded-full" style={{ background: T, opacity: 0.6 }} />
-                <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full" style={{ background: L, opacity: 0.45 }} />
-              </div>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 16. Pill ── */}
-          <Card title="Pill">{(bg) => (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-5 rounded-full" style={{ background: `linear-gradient(90deg, ${T}, ${L})` }} />
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 17. Abstract B leaf ── */}
-          <Card title="B-Leaf">{(bg) => (
-            <div className="flex items-center gap-3">
-              <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-                <rect width="30" height="30" rx="8" fill={T} />
-                <path d="M10 7V23" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                <path d="M10 7C10 7 20 7 20 12.5C20 18 10 15 10 15" fill="white" opacity="0.85" />
-                <path d="M10 15C10 15 20 13 20 19C20 24 10 23 10 23" fill="white" opacity="0.6" />
-              </svg>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 18. Dot in square ── */}
-          <Card title="Focus">{(bg) => (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ border: `2px solid ${bg === 'dark' ? '#333' : '#e0e0e0'}` }}>
-                <div className="w-4 h-4 rounded-full" style={{ background: `linear-gradient(135deg, ${T}, ${L})` }} />
-              </div>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ═══ LINE-BASED / INTERTWINED ═══ */}
-
-          {/* ── 19. Intertwined loops — two organic loops crossing ── */}
-          <Card title="Intertwine">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <svg width="36" height="32" viewBox="0 0 36 32" fill="none">
-                <path d="M12 6C6 6 2 10 2 16C2 22 6 26 12 26C18 26 22 22 22 16" stroke={T} strokeWidth="2.5" strokeLinecap="round" />
-                <path d="M24 26C30 26 34 22 34 16C34 10 30 6 24 6C18 6 14 10 14 16" stroke={L} strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
-              </svg>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 20. Knot — two teardrop paths crossing through each other ── */}
-          <Card title="Knot">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-                <path d="M17 4C10 4 4 10 4 17C4 24 10 30 17 30C20 30 23 28 25 25" stroke={T} strokeWidth="2.5" strokeLinecap="round" />
-                <path d="M17 30C24 30 30 24 30 17C30 10 24 4 17 4C14 4 11 6 9 9" stroke={L} strokeWidth="2.5" strokeLinecap="round" opacity="0.65" />
-              </svg>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 21. Orbit — two ellipses crossing at angles like an atom ── */}
-          <Card title="Orbit">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-                <ellipse cx="18" cy="18" rx="14" ry="8" stroke={T} strokeWidth="2.5" transform="rotate(-30 18 18)" />
-                <ellipse cx="18" cy="18" rx="14" ry="8" stroke={L} strokeWidth="2.5" transform="rotate(30 18 18)" opacity="0.6" />
-                <circle cx="18" cy="18" r="2.5" fill={T} />
-              </svg>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 22. Flow — two flowing S-curves intertwining ── */}
-          <Card title="Flow">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <svg width="34" height="30" viewBox="0 0 34 30" fill="none">
-                <path d="M4 26C4 18 12 18 17 15C22 12 30 12 30 4" stroke={T} strokeWidth="2.5" strokeLinecap="round" />
-                <path d="M4 4C4 12 12 12 17 15C22 18 30 18 30 26" stroke={L} strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
-                <circle cx="17" cy="15" r="2.5" fill={T} />
-              </svg>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 23. Petals — three rounded triangle paths forming a trefoil ── */}
-          <Card title="Trefoil">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-                <path d="M17 6C13 6 10 10 10 14C10 18 13 20 17 20C21 20 24 18 24 14C24 10 21 6 17 6Z" stroke={T} strokeWidth="2.5" strokeLinecap="round" />
-                <path d="M8 22C6 18 6 14 9 11C12 8 16 9 19 12C22 15 22 19 19 22C16 25 12 25 8 22Z" stroke={T} strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
-                <path d="M26 22C28 18 28 14 25 11C22 8 18 9 15 12C12 15 12 19 15 22C18 25 22 25 26 22Z" stroke={L} strokeWidth="2.5" strokeLinecap="round" opacity="0.5" />
-              </svg>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 24. Weave — two rounded paths weaving over/under ── */}
-          <Card title="Weave">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <svg width="36" height="30" viewBox="0 0 36 30" fill="none">
-                {/* Back strand */}
-                <path d="M4 8C10 8 10 15 18 15" stroke={L} strokeWidth="2.5" strokeLinecap="round" opacity="0.5" />
-                <path d="M18 15C26 15 26 22 32 22" stroke={L} strokeWidth="2.5" strokeLinecap="round" opacity="0.5" />
-                {/* Front strand */}
-                <path d="M4 22C10 22 10 15 18 15" stroke={T} strokeWidth="2.5" strokeLinecap="round" />
-                <path d="M18 15C26 15 26 8 32 8" stroke={T} strokeWidth="2.5" strokeLinecap="round" />
-                <circle cx="18" cy="15" r="2.5" fill={T} />
-              </svg>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 25. Embrace — two arms wrapping into each other ── */}
-          <Card title="Embrace">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                <path d="M6 24C6 14 12 8 16 8C20 8 22 12 22 16" stroke={T} strokeWidth="2.5" strokeLinecap="round" />
-                <path d="M26 8C26 18 20 24 16 24C12 24 10 20 10 16" stroke={L} strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
-              </svg>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 26. Infinity — clean infinity with gradient halves ── */}
-          <Card title="Infinity">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <svg width="38" height="22" viewBox="0 0 38 22" fill="none">
-                <path d="M19 11C19 6 15 3 11 3C6 3 3 7 3 11C3 15 6 19 11 19C15 19 19 16 19 11Z" stroke={T} strokeWidth="2.5" strokeLinecap="round" />
-                <path d="M19 11C19 16 23 19 27 19C32 19 35 15 35 11C35 7 32 3 27 3C23 3 19 6 19 11Z" stroke={L} strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
-              </svg>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 27. Spiral bloom — logarithmic spiral opening outward ── */}
-          <Card title="Spiral">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                <path d="M16 16C16 14 18 12 20 12C23 12 25 14 25 17C25 21 22 24 18 24C13 24 9 20 9 15C9 9 14 5 20 5C27 5 32 10 32 17" stroke={T} strokeWidth="2.5" strokeLinecap="round" fill="none" />
-                <circle cx="16" cy="16" r="2" fill={L} opacity="0.7" />
-              </svg>
-              <W bg={bg} />
-            </div>
-          )}</Card>
-
-          {/* ── 28. Connected — two loops linked like chain ── */}
-          <Card title="Linked">{(bg) => (
-            <div className="flex items-center gap-3.5">
-              <svg width="38" height="24" viewBox="0 0 38 24" fill="none">
-                <rect x="3" y="5" width="16" height="14" rx="7" stroke={T} strokeWidth="2.5" fill="none" />
-                <rect x="19" y="5" width="16" height="14" rx="7" stroke={L} strokeWidth="2.5" fill="none" opacity="0.6" />
-              </svg>
-              <W bg={bg} />
+          {/* W6: The Fade */}
+          <Card title="The Fade" subtitle="Letters gradually fade from dark to teal. The transition from struggle to growth. The bloom happening in real time.">{(bg) => (
+            <div className="flex items-baseline">
+              <span className={`text-[22px] ${bg === 'dark' ? 'text-white' : 'text-[#111]'}`} style={{ fontWeight: 400, letterSpacing: '0.04em' }}>bloo</span>
+              <span className="text-[22px]" style={{ fontWeight: 400, letterSpacing: '0.04em', color: bg === 'dark' ? '#7DBFAD' : '#3D8B78' }}>ms</span>
+              <span className="text-[22px]" style={{ fontWeight: 400, letterSpacing: '0.04em', color: T }}>line</span>
             </div>
           )}</Card>
 
         </div>
+
+        {/* ════ SECTION 2: MARK + WORDMARK ════ */}
+        <h2 className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.15em] mb-6">Small Mark + Wordmark — One Subtle Symbol</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
+
+          {/* M1: The Imperfect Dot */}
+          <Card title="The Imperfect Dot" subtitle="A slightly organic, not-quite-round teal shape. Like Headspace but quieter. Perfection is unrealistic — and that's ok.">{(bg) => (
+            <div className="flex items-center gap-3">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2C6.5 2 2 6.2 2 12C2 17.5 6.2 22 12 22C17.8 22 22 17.8 22 12C22 6 17.5 2 12 2Z" fill={T} opacity="0.85" />
+              </svg>
+              <span className={`text-[20px] ${bg === 'dark' ? 'text-white' : 'text-[#111]'}`} style={{ fontWeight: 400, letterSpacing: '0.04em' }}>
+                bloomsline
+              </span>
+            </div>
+          )}</Card>
+
+          {/* M2: The Continuous Mark */}
+          <Card title="The Continuous Mark" subtitle="One stroke that never lifts. An abstract 'b' that loops back into itself. Continuity of care in one gesture.">{(bg) => (
+            <div className="flex items-center gap-3.5">
+              <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                <path d="M8 22V6C8 6 8 4 13 4C18 4 18 8 18 10C18 12 18 14 13 14C8 14 8 14 8 14" stroke={T} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                <path d="M8 14C8 14 8 14 13 14C18 14 18 18 18 19C18 21 18 22 13 22C8 22 8 22 8 22" stroke={T} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.6" />
+              </svg>
+              <span className={`text-[20px] ${bg === 'dark' ? 'text-white' : 'text-[#111]'}`} style={{ fontWeight: 420, letterSpacing: '0.04em' }}>
+                bloomsline
+              </span>
+            </div>
+          )}</Card>
+
+          {/* M3: The Seed Dot */}
+          <Card title="The Seed Dot" subtitle="A tiny teal teardrop — a seed, a drop, a moment. Small things compound. Not a logo that demands attention, one that earns it.">{(bg) => (
+            <div className="flex items-center gap-3">
+              <svg width="16" height="22" viewBox="0 0 16 22" fill="none">
+                <path d="M8 2C8 2 2 8 2 13C2 17 4.5 20 8 20C11.5 20 14 17 14 13C14 8 8 2 8 2Z" fill={T} opacity="0.8" />
+              </svg>
+              <span className={`text-[20px] ${bg === 'dark' ? 'text-white' : 'text-[#111]'}`} style={{ fontWeight: 400, letterSpacing: '0.04em' }}>
+                bloomsline
+              </span>
+            </div>
+          )}</Card>
+
+          {/* M4: The Two Arcs */}
+          <Card title="The Two Arcs" subtitle="Two minimal strokes that almost touch. The space between them is the product. Teal and lavender — practitioner and member.">{(bg) => (
+            <div className="flex items-center gap-3.5">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                <path d="M4 18C4 10 7 4 11 4" stroke={T} strokeWidth="2.5" strokeLinecap="round" />
+                <path d="M18 18C18 10 15 4 11 4" stroke={L} strokeWidth="2.5" strokeLinecap="round" opacity="0.5" />
+              </svg>
+              <span className={`text-[20px] ${bg === 'dark' ? 'text-white' : 'text-[#111]'}`} style={{ fontWeight: 400, letterSpacing: '0.04em' }}>
+                bloomsline
+              </span>
+            </div>
+          )}</Card>
+
+          {/* M5: The Rising Line */}
+          <Card title="The Rising Line" subtitle="A single line that gently rises. Not a graph, not a chart — just a quiet upward trajectory. Growth without performance anxiety.">{(bg) => (
+            <div className="flex items-center gap-3">
+              <svg width="28" height="16" viewBox="0 0 28 16" fill="none">
+                <path d="M2 14C6 12 10 8 14 6C18 4 22 3 26 2" stroke={T} strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              <span className={`text-[20px] ${bg === 'dark' ? 'text-white' : 'text-[#111]'}`} style={{ fontWeight: 400, letterSpacing: '0.04em' }}>
+                bloomsline
+              </span>
+            </div>
+          )}</Card>
+
+          {/* M6: The Open Circle */}
+          <Card title="The Open Circle" subtitle="A circle that doesn't close. Not complete, not broken — in progress. An invitation, not a boundary.">{(bg) => (
+            <div className="flex items-center gap-3">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                <path d="M18 7C16 3.5 13 2 10 2C5 2 2 6 2 11C2 16 5 20 10 20C14 20 17 17 18 13" stroke={T} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+              </svg>
+              <span className={`text-[20px] ${bg === 'dark' ? 'text-white' : 'text-[#111]'}`} style={{ fontWeight: 400, letterSpacing: '0.04em' }}>
+                bloomsline
+              </span>
+            </div>
+          )}</Card>
+
+        </div>
+
+        {/* ════ SECTION 3: WORDMARK WEIGHTS ════ */}
+        <h2 className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.15em] mb-6">Typography Weight Study</h2>
+        <div className="grid grid-cols-1 gap-3 mb-20">
+          {[
+            { weight: 300, tracking: '0.06em', label: 'Light + Wide — airy, luxury, Aesop energy' },
+            { weight: 380, tracking: '0.04em', label: 'Book + Medium — balanced, Stripe energy' },
+            { weight: 420, tracking: '0.03em', label: 'Regular + Tight — confident, Notion energy' },
+            { weight: 500, tracking: '0.02em', label: 'Medium + Compact — grounded, strong' },
+          ].map((s, i) => (
+            <div key={i} className="flex items-center justify-between bg-white rounded-xl border border-neutral-200 px-8 py-5">
+              <span className="text-[24px] text-[#111]" style={{ fontWeight: s.weight, letterSpacing: s.tracking }}>
+                bloomsline
+              </span>
+              <span className="text-[10px] text-neutral-400">{s.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* ════ SECTION 4: APP ICONS ════ */}
+        <h2 className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.15em] mb-6">App Icon Candidates</h2>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-4 mb-20">
+          {[
+            // Imperfect dot
+            <svg key="1" width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.5 2 2 6.2 2 12C2 17.5 6.2 22 12 22C17.8 22 22 17.8 22 12C22 6 17.5 2 12 2Z" fill={T} /></svg>,
+            // Continuous b
+            <svg key="2" width="24" height="28" viewBox="0 0 26 26" fill="none"><path d="M8 22V6C8 6 8 4 13 4C18 4 18 8 18 10C18 12 18 14 13 14C8 14 8 14 8 14" stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none" /><path d="M8 14C8 14 8 14 13 14C18 14 18 18 18 19C18 21 18 22 13 22C8 22 8 22 8 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.6" /></svg>,
+            // Seed
+            <svg key="3" width="20" height="28" viewBox="0 0 16 22" fill="none"><path d="M8 2C8 2 2 8 2 13C2 17 4.5 20 8 20C11.5 20 14 17 14 13C14 8 8 2 8 2Z" fill={T} /></svg>,
+            // Two arcs
+            <svg key="4" width="24" height="24" viewBox="0 0 22 22" fill="none"><path d="M4 18C4 10 7 4 11 4" stroke={T} strokeWidth="2.5" strokeLinecap="round" /><path d="M18 18C18 10 15 4 11 4" stroke={L} strokeWidth="2.5" strokeLinecap="round" opacity="0.5" /></svg>,
+            // Open circle
+            <svg key="5" width="24" height="24" viewBox="0 0 22 22" fill="none"><path d="M18 7C16 3.5 13 2 10 2C5 2 2 6 2 11C2 16 5 20 10 20C14 20 17 17 18 13" stroke={T} strokeWidth="2.5" strokeLinecap="round" fill="none" /></svg>,
+            // Just the OO
+            <svg key="6" width="28" height="24" viewBox="0 0 28 20" fill="none"><circle cx="8" cy="10" r="6" stroke={T} strokeWidth="2" fill="none" /><circle cx="20" cy="10" r="6" stroke={T} strokeWidth="2" fill="none" opacity="0.5" /></svg>,
+          ].map((icon, i) => (
+            <div key={i} className={`aspect-square rounded-2xl flex items-center justify-center ${i === 1 ? 'bg-[#111]' : 'bg-white border border-neutral-200'}`}>
+              {icon}
+            </div>
+          ))}
+        </div>
+
+        {/* ════ RECOMMENDATION ════ */}
+        <div className="rounded-2xl bg-white border border-neutral-200 p-8">
+          <h3 className="text-sm font-semibold text-neutral-900 mb-4">Analysis</h3>
+          <div className="space-y-3 text-xs text-neutral-600 leading-relaxed">
+            <p><strong>Strongest wordmark-only:</strong> &quot;The Teal OO&quot; — the two colored letters become the brand signature. Like Stripe&apos;s slashed letters, it&apos;s a typographic detail that&apos;s uniquely yours. Two O&apos;s = two sides of care.</p>
+            <p><strong>Strongest mark + wordmark:</strong> &quot;The Open Circle&quot; — a circle that doesn&apos;t close. It says &quot;we&apos;re not about completion, we&apos;re about the journey.&quot; Uniquely therapeutic. No other brand uses an intentionally incomplete circle as their mark.</p>
+            <p><strong>Best weight:</strong> 380 with 0.04em tracking — the sweet spot between luxury lightness and confident readability.</p>
+            <p><strong>For app icon:</strong> The Seed Dot (teardrop) — instantly recognizable at 32px, organic, unique silhouette in an app drawer full of circles and squares.</p>
+          </div>
+        </div>
+
       </div>
     </div>
   )

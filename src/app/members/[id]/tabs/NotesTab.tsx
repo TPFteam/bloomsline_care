@@ -302,10 +302,19 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     ;(async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+      // Only fetch comments for milestones belonging to THIS member
+      const { data: memberMilestones } = await supabase
+        .from('milestones')
+        .select('id')
+        .eq('member_id', memberId)
+      const milestoneIds = memberMilestones?.map(m => m.id) || []
+      if (milestoneIds.length === 0) { setMilestoneComments([]); return }
+
       const { data } = await supabase
         .from('milestone_comments')
         .select('*, milestones(title)')
         .eq('practitioner_id', user.id)
+        .in('milestone_id', milestoneIds)
         .order('created_at', { ascending: false })
       if (data) {
         // Convert comments to ProgressNote-like shape for Browse filtering
