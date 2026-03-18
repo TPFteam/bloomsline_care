@@ -33,44 +33,11 @@ const GOAL_BG = '#dbeafe'
 // Old goal greens to replace with navy
 const OLD_GOAL_COLORS = ['#059669','#047857','#065f46','#6d28d9','#2563eb','#d1fae5','#a7f3d0','#6ee7b7','#ede9fe']
 
-// Same palette as RichTextEditor — must stay in sync
-const TAG_COLOR_PALETTE: { bg: string; border: string }[] = [
-  { bg: '#fef2f2', border: '#ef4444' },  // red
-  { bg: '#eff6ff', border: '#3b82f6' },  // blue
-  { bg: '#fff7ed', border: '#f97316' },  // orange
-  { bg: '#f5f3ff', border: '#A88AE1' },  // violet
-  { bg: '#fef9c3', border: '#ca8a04' },  // gold
-  { bg: '#fdf2f8', border: '#ec4899' },  // pink
-  { bg: '#ecfdf5', border: '#10b981' },  // emerald
-  { bg: '#eef2ff', border: '#6366f1' },  // indigo
-  { bg: '#ecfeff', border: '#06b6d4' },  // cyan
-  { bg: '#faf5ff', border: '#a21caf' },  // fuchsia
-]
 
-/** Inject --tag-color and --tag-bg into mark inline styles + rewrite tag colors to current palette */
+/** Inject --tag-color and --tag-bg into mark inline styles (preserve editor colors) */
 function injectTagColors(html: string): string {
-  // Collect all tag types in document order for palette assignment
-  const tagTypes: string[] = []
-  html.replace(/data-tag="([^"]*)"/gi, (_m, type) => { if (!tagTypes.includes(type)) tagTypes.push(type); return '' })
-
-  // 1. Inject CSS vars into marks + recolor to palette
+  // Inject CSS vars from existing inline styles — do NOT reassign palette colors
   let result = html.replace(/<mark\b([^>]*)\bstyle="([^"]*)"([^>]*)>/gi, (full, before: string, style: string, after: string) => {
-    // Rewrite tag colors to current palette
-    const tagMatch = (before + after).match(/data-tag="([^"]*)"/)
-    if (tagMatch && tagTypes.length) {
-      const tagType = tagMatch[1]
-      const idx = tagTypes.indexOf(tagType)
-      const colors = idx >= 0 ? TAG_COLOR_PALETTE[idx % TAG_COLOR_PALETTE.length] : TAG_COLOR_PALETTE[TAG_COLOR_PALETTE.length - 1]
-      let s = style
-      s = s.replace(/background-color:\s*#[0-9a-fA-F]{3,8}/, `background-color:${colors.bg}`)
-      s = s.replace(/border-bottom:\s*2px\s+solid\s+#[0-9a-fA-F]{3,8}/, `border-bottom:2px solid ${colors.border}`)
-      s = s.replace(/--tag-color:\s*#[0-9a-fA-F]{3,8}/, `--tag-color:${colors.border}`)
-      s = s.replace(/--tag-bg:\s*#[0-9a-fA-F]{3,8}/, `--tag-bg:${colors.bg}`)
-      if (!s.includes('--tag-color')) s += `;--tag-color:${colors.border}`
-      if (!s.includes('--tag-bg')) s += `;--tag-bg:${colors.bg}`
-      return `<mark${before}style="${s}"${after}>`
-    }
-
     let extras = ''
     if (!style.includes('--tag-color')) {
       const borderMatch = style.match(/border-(?:bottom|left):[^;]*solid\s+(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))/)
@@ -121,68 +88,40 @@ export function MarkdownRenderer({ content, className, onContentChange, onEdit, 
     return /data-goal-id|data-tag=|data-verbatim|data-goal-section/.test(content)
   }, [content])
 
-  // Preprocess HTML: inject CSS custom properties for tag colors
+  // Preprocess HTML: inject CSS custom properties for tag colors + strip empty marks
   const processedHtml = useMemo(() => {
     if (!content) return ''
     if (!isHtml(content)) return `<p>${content}</p>`
-    return injectTagColors(sanitize(content))
+    let html = injectTagColors(sanitize(content))
+    // Use DOMParser for robust cleanup of hoisted labels and empty marks
+    if (typeof DOMParser !== 'undefined') {
+      const doc = new DOMParser().parseFromString(html, 'text/html')
+      // Strip hoisted labels that leaked into saved HTML
+      doc.querySelectorAll('[data-hoisted-label]').forEach(n => n.remove())
+      // Remove empty marks (marks with no meaningful text — just zero-width spaces, nbsp, whitespace)
+      doc.querySelectorAll('mark[data-tag], mark[data-goal-id], mark[data-verbatim]').forEach(mark => {
+        const text = mark.textContent?.replace(/\u200B/g, '').replace(/\u00A0/g, '').trim()
+        if (!text) mark.parentNode?.removeChild(mark)
+      })
+      html = doc.body.innerHTML
+    }
+    return html
   }, [content])
 
-  // Hoist mid-sentence tag labels to the start of their block
+  // Clean stale DOM artifacts (empty marks, leaked hoisted labels) after render
   useEffect(() => {
     const el = containerRef.current
-    if (!el || !showLabels || !hasAnnotations) return
-
-    // Clean up previous hoisted labels
+    if (!el) return
+    // Remove hoisted label spans that leaked into saved HTML
     el.querySelectorAll('[data-hoisted-label]').forEach(n => n.remove())
-    el.querySelectorAll('.label-hoisted').forEach(n => n.classList.remove('label-hoisted'))
-
-    const blockTags = new Set(['p', 'div', 'li', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
-    const marks = el.querySelectorAll('mark[data-tag], mark[data-goal-id], mark[data-verbatim]')
-
-    marks.forEach(mark => {
-      const markEl = mark as HTMLElement
-      let block: HTMLElement | null = markEl.parentElement
-      while (block && block !== el) {
-        if (blockTags.has(block.tagName.toLowerCase())) break
-        block = block.parentElement
-      }
-      if (!block || block === el) block = el
-
-      // Check if mark is already the first meaningful node
-      let isFirst = true
-      let node: ChildNode | null = block.firstChild
-      while (node && node !== mark) {
-        if (node.nodeType === 1 || (node.nodeType === 3 && node.textContent?.trim())) {
-          isFirst = false
-          break
-        }
-        node = node.nextSibling
-      }
-      if (isFirst) return // ::before handles it
-
-      const style = markEl.getAttribute('style') || ''
-      const colorMatch = style.match(/--tag-color:\s*([^;]+)/)
-      const bgMatch = style.match(/--tag-bg:\s*([^;]+)/)
-      const color = colorMatch?.[1]?.trim() || '#6b7280'
-      const bg = bgMatch?.[1]?.trim() || '#f3f4f6'
-      const tagLabel = markEl.dataset.tagLabel || markEl.dataset.goalTitle || markEl.dataset.verbatim || ''
-
-      const label = document.createElement('span')
-      label.setAttribute('data-hoisted-label', '')
-      label.setAttribute('style', `font-weight:700;color:${color};`)
-      label.textContent = tagLabel + ': '
-
-      markEl.classList.add('label-hoisted')
-      block.insertBefore(label, block.firstChild)
+    // Remove empty marks (catches cases regex missed — e.g. browser-wrapped spans inside marks)
+    el.querySelectorAll('mark[data-tag], mark[data-goal-id], mark[data-verbatim]').forEach(mark => {
+      const text = mark.textContent?.replace(/\u200B/g, '').replace(/\u00A0/g, '').trim()
+      if (!text) mark.parentNode?.removeChild(mark)
     })
+  }, [content])
 
-    return () => {
-      if (!el) return
-      el.querySelectorAll('[data-hoisted-label]').forEach(n => n.remove())
-      el.querySelectorAll('.label-hoisted').forEach(n => n.classList.remove('label-hoisted'))
-    }
-  }, [content, showLabels, hasAnnotations])
+  // No label hoisting needed — ::before handles labels inline for all marks
 
   // Dismiss tooltip on click outside
   useEffect(() => {
@@ -273,9 +212,6 @@ export function MarkdownRenderer({ content, className, onContentChange, onEdit, 
             }
             .rte-read.show-labels mark[data-verbatim]::before {
               content: attr(data-verbatim) ": ";
-            }
-            .rte-read.show-labels mark.label-hoisted::before {
-              display: none !important;
             }
           `}</style>
         )}

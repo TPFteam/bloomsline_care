@@ -49,50 +49,19 @@ const GOAL_BG = '#dbeafe'
 const OLD_GOAL_COLORS = ['#059669','#047857','#065f46','#6d28d9','#2563eb','#d1fae5','#a7f3d0','#6ee7b7','#ede9fe']
 
 /** Hoist mid-sentence tag labels to start of their parent block */
-function hoistEditorLabels(el: HTMLElement) {
-  // Clean previous
+// No label hoisting needed — ::before CSS handles labels inline for all marks
+
+/** Get clean innerHTML for saving — strips hoisted labels and empty marks */
+function getCleanHtml(el: HTMLElement): string {
+  // Remove hoisted labels (display-only, not content)
   el.querySelectorAll('[data-hoisted-label]').forEach(n => n.remove())
   el.querySelectorAll('.label-hoisted').forEach(n => n.classList.remove('label-hoisted'))
-
-  const blockTags = new Set(['p', 'div', 'li', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
-  const marks = el.querySelectorAll('mark[data-tag], mark[data-goal-id]')
-
-  marks.forEach(mark => {
-    const markEl = mark as HTMLElement
-    let block: HTMLElement | null = markEl.parentElement
-    while (block && block !== el) {
-      if (blockTags.has(block.tagName.toLowerCase())) break
-      block = block.parentElement
-    }
-    if (!block || block === el) block = el
-
-    let isFirst = true
-    let node: ChildNode | null = block.firstChild
-    while (node && node !== mark) {
-      if (node.nodeType === 1 || (node.nodeType === 3 && node.textContent?.trim())) {
-        isFirst = false
-        break
-      }
-      node = node.nextSibling
-    }
-    if (isFirst) return
-
-    const style = markEl.getAttribute('style') || ''
-    const colorMatch = style.match(/--tag-color:\s*([^;]+)/)
-    const bgMatch = style.match(/--tag-bg:\s*([^;]+)/)
-    const color = colorMatch?.[1]?.trim() || '#6b7280'
-    const bg = bgMatch?.[1]?.trim() || '#f3f4f6'
-    const tagLabel = markEl.dataset.tagLabel || markEl.dataset.goalTitle || markEl.dataset.verbatim || ''
-
-    const label = document.createElement('span')
-    label.setAttribute('data-hoisted-label', '')
-    label.contentEditable = 'false'
-    label.setAttribute('style', `font-weight:700;color:${color};background:${bg};padding:2px 4px;border-radius:3px;margin-right:2px;user-select:none;`)
-    label.textContent = tagLabel + ': '
-
-    markEl.classList.add('label-hoisted')
-    block.insertBefore(label, block.firstChild)
+  // Remove empty marks
+  el.querySelectorAll('mark[data-tag], mark[data-goal-id], mark[data-verbatim]').forEach(mark => {
+    const text = mark.textContent?.replace(/\u200B/g, '').replace(/\u00A0/g, '').trim()
+    if (!text) mark.parentNode?.removeChild(mark)
   })
+  return el.innerHTML
 }
 
 /** Inject --tag-color and --tag-bg + recolor old goal greens to navy + rewrite tag colors to palette */
@@ -264,12 +233,20 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     if (editorRef.current && !initialized.current) {
       editorRef.current.innerHTML = value ? injectTagColors(value, allTagTypes) : ''
       initialized.current = true
-      baselineHtml.current = editorRef.current.innerHTML
-      setIsEmpty(!value)
-      // Hoist mid-sentence tag labels to start of their block
-      if (showLabels && value) {
-        hoistEditorLabels(editorRef.current)
+      // Strip hoisted labels that leaked into saved HTML
+      editorRef.current.querySelectorAll('[data-hoisted-label]').forEach(n => n.remove())
+      // Remove empty marks (marks with no text content — just zero-width spaces)
+      editorRef.current.querySelectorAll('mark[data-tag], mark[data-goal-id], mark[data-verbatim]').forEach(mark => {
+        const text = mark.textContent?.replace(/\u200B/g, '').replace(/\u00A0/g, '').trim()
+        if (!text) mark.parentNode?.removeChild(mark)
+      })
+      // Sync cleaned HTML to parent so saving without edits writes clean content
+      const cleanedInit = editorRef.current.innerHTML
+      if (value && cleanedInit !== value) {
+        onChange(cleanedInit)
       }
+      baselineHtml.current = cleanedInit
+      setIsEmpty(!value)
       if (autoFocus) {
         requestAnimationFrame(() => editorRef.current?.focus())
       }
@@ -328,7 +305,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
             sel.addRange(r)
           }
         }
-        onChange(editor.innerHTML)
+        onChange(getCleanHtml(editor))
       }
       return
     }
@@ -346,8 +323,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         mark.setAttribute('style',
           `background-color:${colors.bg};border-bottom:2px solid ${colors.border};padding:1px 2px;border-radius:2px;cursor:pointer;--tag-color:${colors.border};--tag-bg:${colors.bg};`
         )
-        if (showLabels) hoistEditorLabels(editor)
-        onChange(editor.innerHTML)
+        onChange(getCleanHtml(editor))
       }
       setActiveTag(newNoteType)
       return
@@ -392,14 +368,14 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         sel!.addRange(newRange)
         setActiveTag(newNoteType)
         setIsEmpty(false)
-        onChange(editor.innerHTML)
+        onChange(getCleanHtml(editor))
       }
     }
   }, [activeTagType])
 
   const handleInput = useCallback(() => {
     if (!editorRef.current) return
-    const html = editorRef.current.innerHTML
+    const html = getCleanHtml(editorRef.current)
     const text = editorRef.current.textContent || ''
     setIsEmpty(!text.trim() && html !== '<hr>')
     onChange(html)
@@ -869,7 +845,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       e.preventDefault()
       // Flush current content to parent state before submitting (Firefox may not have fired onInput yet)
       if (editorRef.current) {
-        onChange(editorRef.current.innerHTML)
+        onChange(getCleanHtml(editorRef.current))
       }
       // Use setTimeout to let React process the state update before submit reads it
       setTimeout(() => onSubmit(), 0)
@@ -1213,6 +1189,20 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     handleInput()
   }, [handleInput])
 
+  // Clean up empty marks (marks with no text content)
+  const cleanEmptyMarks = useCallback(() => {
+    const editor = editorRef.current
+    if (!editor) return
+    const marks = editor.querySelectorAll('mark[data-tag], mark[data-goal-id], mark[data-verbatim]')
+    marks.forEach(mark => {
+      const text = mark.textContent?.trim()
+      if (!text) {
+        mark.parentNode?.removeChild(mark)
+      }
+    })
+    handleInput()
+  }, [handleInput])
+
   // Side menu handlers
   const openSideMenu = useCallback((menu: 'tags' | 'goals') => {
     setSideMenu(prev => {
@@ -1298,7 +1288,22 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     // Check for mark click (goal/tag/verbatim tooltips)
     const markEl = target.closest('mark[data-goal-id], mark[data-tag], mark[data-verbatim]') as HTMLElement | null
     if (markEl) {
+      e.preventDefault()
       e.stopPropagation()
+      // Move cursor into the mark so user sees focus there
+      const sel = window.getSelection()
+      if (sel) {
+        const range = document.createRange()
+        if (markEl.firstChild) {
+          range.selectNodeContents(markEl)
+          range.collapse(false)
+        } else {
+          range.setStart(markEl, 0)
+          range.collapse(true)
+        }
+        sel.removeAllRanges()
+        sel.addRange(range)
+      }
       const rect = markEl.getBoundingClientRect()
       setMarkTooltip({
         top: rect.bottom + 4,
@@ -1538,9 +1543,6 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         }
         .rte-editor.show-labels mark[data-tag]::before {
           content: attr(data-tag-label) ": ";
-        }
-        .rte-editor.show-labels mark.label-hoisted::before {
-          display: none !important;
         }
       `}</style>
 
