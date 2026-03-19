@@ -1434,7 +1434,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
   // Selected note (browse)
   const selectedNote = (activeCategory === 'browse' || activeCategory === 'observations') && selectedItemId
-    ? allNotes.find(n => n.id === selectedItemId) || null
+    ? allNotes.find(n => n.id === selectedItemId) || milestoneComments.find(n => n.id === selectedItemId) || null
     : null
 
   // Selected session
@@ -2014,8 +2014,8 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     return (
                       <button
                         key={note.id}
-                        onClick={() => { setSelectedItemId(note.id); setEditingNoteId(null); setDeletingNoteId(null); setBrowseHighlightTag(firstTag?.type) }}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50/50 transition-colors"
+                        onClick={() => { if (!note.milestone_id) { setSelectedItemId(note.id); setEditingNoteId(null); setDeletingNoteId(null); setBrowseHighlightTag(firstTag?.type) } }}
+                        className={`w-full text-left px-4 py-3 transition-colors ${note.milestone_id ? 'cursor-default' : 'hover:bg-gray-50/50 cursor-pointer'}`}
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0 w-16 pt-0.5">
