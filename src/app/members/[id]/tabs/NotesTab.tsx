@@ -284,6 +284,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [filterConjunction, setFilterConjunction] = useState<'and' | 'or'>('and')
   const [filterDropdownOpen, setFilterDropdownOpen] = useState<number | null>(null)
   const [filterDropdownPending, setFilterDropdownPending] = useState<string[]>([])
+  const [showSessions, setShowSessions] = useState(true)
+  const [showGoals, setShowGoals] = useState(true)
+  const [showTagged, setShowTagged] = useState(true)
 
   // Delete confirmation
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null)
@@ -1122,6 +1125,14 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     if (noteFilter === 'goal' && !note.milestone_id) return false
     if (noteFilter === 'goal' && filterMilestoneId && note.milestone_id !== filterMilestoneId) return false
 
+    // Quick category toggles
+    const isSessionNote = !!note.session_id || note.note_type === 'session_summary'
+    const isGoalNote = !!note.milestone_id || !!note.title
+    const isTaggedNote = !isSessionNote && !isGoalNote
+    if (!showSessions && isSessionNote) return false
+    if (!showGoals && isGoalNote) return false
+    if (!showTagged && isTaggedNote) return false
+
     // Sentence-style filter rows with AND/OR conjunction
     const activeFilterRows = browseFilterRows.filter(row =>
       row.values.length > 0 || ['is_empty', 'is_not_empty'].includes(row.operator)
@@ -1834,6 +1845,19 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 >
                   <Plus className="w-3 h-3" />
                   {locale === 'fr' ? 'Filtre' : 'Filter'}
+                </button>
+                {/* Quick category toggles */}
+                <button
+                  onClick={() => setShowSessions(p => !p)}
+                  className={`text-[11px] px-2 py-1 rounded-lg border transition-colors flex-shrink-0 ${showSessions ? 'bg-gray-900 text-white border-gray-900' : 'text-gray-400 border-gray-200 hover:bg-gray-50'}`}
+                >
+                  Sessions
+                </button>
+                <button
+                  onClick={() => setShowGoals(p => !p)}
+                  className={`text-[11px] px-2 py-1 rounded-lg border transition-colors flex-shrink-0 ${showGoals ? 'bg-gray-900 text-white border-gray-900' : 'text-gray-400 border-gray-200 hover:bg-gray-50'}`}
+                >
+                  {locale === 'fr' ? 'Axes' : 'Goals'}
                 </button>
                 <div className="relative flex-1">
                   <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
