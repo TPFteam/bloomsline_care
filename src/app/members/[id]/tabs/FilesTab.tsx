@@ -30,6 +30,7 @@ import {
   FolderPlus,
   Loader2,
 } from 'lucide-react'
+import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -554,9 +555,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wider">Email</p>
-                  <a href={`mailto:${member.email}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
-                    {member.email}
-                  </a>
+                  <MaskedContact value={member.email} type="email" className="text-sm font-medium text-gray-900" />
                 </div>
               </div>
               <button
@@ -580,9 +579,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wider">{locale === 'fr' ? 'Téléphone' : 'Phone'}</p>
-                  <a href={`tel:${member.phone}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
-                    {member.phone}
-                  </a>
+                  <MaskedContact value={member.phone} type="phone" className="text-sm font-medium text-gray-900" />
                 </div>
               </div>
               <button
@@ -1319,9 +1316,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 uppercase tracking-wider">{locale === 'fr' ? 'Téléphone' : 'Phone'}</p>
-                        <a href={`tel:${member.emergency_contact.phone}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
-                          {member.emergency_contact.phone}
-                        </a>
+                        <MaskedContact value={member.emergency_contact.phone} type="phone" className="text-sm font-medium text-gray-900" />
                       </div>
                     </div>
                     <button
@@ -1345,9 +1340,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 uppercase tracking-wider">Email</p>
-                        <a href={`mailto:${member.emergency_contact.email}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
-                          {member.emergency_contact.email}
-                        </a>
+                        <MaskedContact value={member.emergency_contact.email} type="email" className="text-sm font-medium text-gray-900" />
                       </div>
                     </div>
                     <button

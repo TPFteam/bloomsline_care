@@ -28,6 +28,8 @@ import {
   Phone,
   User,
   Clock,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -39,6 +41,7 @@ import type { PromptKey } from '@/lib/assist/prompts'
 import { MarkdownRenderer } from '@/components/notes/MarkdownRenderer'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
+import { getUserPreferences, updateUserPreferences } from '@/lib/services/preferences'
 
 interface NotesTabProps {
   memberId: string
@@ -162,6 +165,19 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   // Floating notes
   const { floatingNote, openFloat, dockNote } = useFloatingNotes()
 
+  // Zoom
+  const [notesZoom, setNotesZoom] = useState(100)
+  useEffect(() => {
+    getUserPreferences().then(prefs => setNotesZoom(prefs.notes_zoom))
+  }, [])
+  const handleZoomChange = useCallback((delta: number) => {
+    setNotesZoom(prev => {
+      const next = Math.min(200, Math.max(80, prev + delta))
+      updateUserPreferences({ notes_zoom: next })
+      return next
+    })
+  }, [])
+
   // Category & selection
   const [activeCategory, setActiveCategory] = useState<ActiveCategory>('sessions')
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
@@ -263,6 +279,11 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [searchQuery, setSearchQuery] = useState('')
   const [browseSessionFilters, setBrowseSessionFilters] = useState<string[]>([])
   const [browseMilestoneFilters, setBrowseMilestoneFilters] = useState<string[]>([])
+  // Airtable-style filter conditions (value is array for multi-select)
+  const [browseFilterRows, setBrowseFilterRows] = useState<{ field: string; operator: string; values: string[] }[]>([])
+  const [filterConjunction, setFilterConjunction] = useState<'and' | 'or'>('and')
+  const [filterDropdownOpen, setFilterDropdownOpen] = useState<number | null>(null)
+  const [filterDropdownPending, setFilterDropdownPending] = useState<string[]>([])
 
   // Delete confirmation
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null)
@@ -1094,26 +1115,42 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
   // Filter notes
   const filteredNotes = browseNotes.filter(note => {
+    // Legacy category filters
     if (noteFilter === 'session' && !note.session_id) return false
     if (noteFilter === 'session' && filterSessionId && note.session_id !== filterSessionId) return false
     if (noteFilter === 'general' && note.session_id) return false
     if (noteFilter === 'goal' && !note.milestone_id) return false
     if (noteFilter === 'goal' && filterMilestoneId && note.milestone_id !== filterMilestoneId) return false
-    if (typeFilters.size > 0) {
-      const wantsNoTag = typeFilters.has('__no_tag__')
-      const tagFilters = [...typeFilters].filter(t => t !== '__no_tag__')
-      const hasInlineTag = allNoteTypes.some(t => note.content.includes(`data-tag="${t}"`))
-      const hasExplicitType = note.note_type !== 'general' && allNoteTypes.includes(note.note_type)
-      const hasAnyTag = hasInlineTag || hasExplicitType
-      const matchesNoTag = wantsNoTag && !hasAnyTag
-      const matchesTagFilter = tagFilters.length > 0 && (
-        tagFilters.some(tag => note.note_type === tag) ||
-        tagFilters.some(tag => note.content.includes(`data-tag="${tag}"`))
-      )
-      if (!matchesNoTag && !matchesTagFilter) return false
+
+    // Sentence-style filter rows with AND/OR conjunction
+    const activeFilterRows = browseFilterRows.filter(row =>
+      row.values.length > 0 || ['is_empty', 'is_not_empty'].includes(row.operator)
+    )
+    if (activeFilterRows.length > 0) {
+      const rowResults = activeFilterRows.map(row => {
+        if (row.field === 'tag') {
+          const matchesAny = row.values.some(v => note.note_type === v || note.content.includes(`data-tag="${v}"`))
+          return row.operator === 'is' ? matchesAny : !matchesAny
+        } else if (row.field === 'goal') {
+          if (row.operator === 'is') return row.values.includes(note.milestone_id || '')
+          if (row.operator === 'is_not') return !row.values.includes(note.milestone_id || '')
+          if (row.operator === 'is_empty') return !note.milestone_id
+          if (row.operator === 'is_not_empty') return !!note.milestone_id
+        } else if (row.field === 'session') {
+          if (row.operator === 'is') return row.values.includes(note.session_id || '')
+          if (row.operator === 'is_not') return !row.values.includes(note.session_id || '')
+          if (row.operator === 'is_empty') return !note.session_id
+          if (row.operator === 'is_not_empty') return !!note.session_id
+        }
+        return true
+      })
+      const passes = filterConjunction === 'and'
+        ? rowResults.every(Boolean)
+        : rowResults.some(Boolean)
+      if (!passes) return false
     }
-    if (browseSessionFilters.length > 0 && !(note.session_id && browseSessionFilters.includes(note.session_id))) return false
-    if (browseMilestoneFilters.length > 0 && !(note.milestone_id && browseMilestoneFilters.includes(note.milestone_id))) return false
+
+    // Text search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       const plainContent = note.content.replace(/<[^>]*>/g, '').toLowerCase()
@@ -1356,36 +1393,59 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const SelectedSessionIcon = selectedSession ? (snFormatIcon[selectedSession.session_format] || User) : User
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex" style={{ height: 'calc(100vh - 280px)', minHeight: '500px' }}>
-      {/* ================================ */}
-      {/* LEFT PANEL                       */}
-      {/* ================================ */}
-      <div className="w-80 border-r border-gray-100 flex flex-col flex-shrink-0">
-        {/* Category tabs */}
-        <div className="flex border-b border-gray-100 bg-white">
-          {([
-            { key: 'sessions' as const, icon: FileText, label: 'Observations' },
-            { key: 'browse' as const, icon: Search, label: locale === 'fr' ? 'Parcourir' : 'Browse' },
-          ]).map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => {
-                setActiveCategory(tab.key)
-                setSelectedItemId(null)
-                setEditingNoteId(null)
-                setDeletingNoteId(null)
-              }}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 text-xs font-medium transition-all border-b-2 ${
-                activeCategory === tab.key
-                  ? 'border-gray-900 text-gray-900'
-                  : 'border-transparent text-gray-400 hover:text-gray-600'
-              }`}
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 280px)', minHeight: '500px' }}>
+      {/* Category tabs + zoom — always full width at top */}
+      <div className="flex items-center border-b border-gray-100 bg-white flex-shrink-0">
+        {([
+          { key: 'sessions' as const, icon: FileText, label: 'Observations' },
+          { key: 'browse' as const, icon: Search, label: locale === 'fr' ? 'Parcourir' : 'Browse' },
+        ]).map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => {
+              setActiveCategory(tab.key)
+              setSelectedItemId(null)
+              setEditingNoteId(null)
+              setDeletingNoteId(null)
+            }}
+            className={`flex items-center justify-center gap-1.5 px-6 py-2.5 text-xs font-medium transition-all border-b-2 ${
+              activeCategory === tab.key
+                ? 'border-gray-900 text-gray-900'
+                : 'border-transparent text-gray-400 hover:text-gray-600'
+            }`}
             >
               <tab.icon className="w-3.5 h-3.5" />
               {tab.label}
             </button>
           ))}
+        {/* Zoom controls */}
+        <div className="flex items-center gap-0.5 ml-auto pr-3">
+          <button
+            onClick={() => handleZoomChange(-10)}
+            disabled={notesZoom <= 80}
+            className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            title={locale === 'fr' ? 'Réduire' : 'Zoom out'}
+          >
+            <ZoomOut className="w-3.5 h-3.5" />
+          </button>
+          <span className="text-[10px] text-gray-400 tabular-nums w-8 text-center">{notesZoom}%</span>
+          <button
+            onClick={() => handleZoomChange(10)}
+            disabled={notesZoom >= 200}
+            className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            title={locale === 'fr' ? 'Agrandir' : 'Zoom in'}
+          >
+            <ZoomIn className="w-3.5 h-3.5" />
+          </button>
         </div>
+      </div>
+
+      {/* Main content area */}
+      <div className="flex flex-1 overflow-hidden" style={{ zoom: notesZoom / 100 }}>
+      {/* ================================ */}
+      {/* LEFT PANEL                       */}
+      {/* ================================ */}
+      <div className={`${activeCategory === 'browse' ? 'w-0 overflow-hidden border-0' : 'w-80 border-r border-gray-100'} flex flex-col flex-shrink-0 transition-all`}>
 
         {/* Items list */}
         <div className="flex-1 overflow-y-auto">
@@ -1559,197 +1619,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
             )
           )}
 
-          {/* BROWSE — left panel: search + tag pills + goal pills + session list */}
-          {activeCategory === 'browse' && (
-            <div className="p-3 space-y-3 flex flex-col overflow-hidden h-full">
-              <div className="relative flex-shrink-0">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder={locale === 'fr' ? 'Rechercher...' : 'Search...'}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 bg-gray-50"
-                />
-              </div>
-
-              <div className="flex-shrink-0">
-                <label className="block text-[10px] font-medium text-gray-500 mb-1.5 uppercase tracking-wider">
-                  {locale === 'fr' ? 'Types' : 'Tags'}
-                </label>
-                <div className="flex flex-wrap gap-1">
-                  <button
-                    onClick={() => setTypeFilters(new Set())}
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
-                      typeFilters.size === 0
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                    }`}
-                  >
-                    {locale === 'fr' ? 'Tous' : 'All'}
-                  </button>
-                  {allNoteTypes.map(type => (
-                    <button
-                      key={type}
-                      onClick={() => {
-                        setTypeFilters(prev => {
-                          const next = new Set(prev)
-                          if (next.has(type)) next.delete(type)
-                          else next.add(type)
-                          return next
-                        })
-                      }}
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
-                        typeFilters.has(type)
-                          ? `${getNoteColor(type).bg} ${getNoteColor(type).text} ring-1 ring-current ring-opacity-30`
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                      }`}
-                    >
-                      {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => {
-                      setTypeFilters(prev => {
-                        const next = new Set(prev)
-                        if (next.has('__no_tag__')) next.delete('__no_tag__')
-                        else next.add('__no_tag__')
-                        return next
-                      })
-                    }}
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
-                      typeFilters.has('__no_tag__')
-                        ? 'bg-gray-700 text-white ring-1 ring-gray-500 ring-opacity-30'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                    }`}
-                  >
-                    {locale === 'fr' ? 'Sans tag' : locale === 'es' ? 'Sin tag' : 'No tag'}
-                  </button>
-                </div>
-              </div>
-
-              {milestones.length > 0 && (
-                <div className="flex-shrink-0">
-                  <label className="block text-[10px] font-medium text-gray-500 mb-1.5 uppercase tracking-wider">
-                    {locale === 'fr' ? 'Axes de travail' : 'Goals'}
-                  </label>
-                  <div className="flex flex-wrap gap-1">
-                    <button
-                      onClick={() => setBrowseMilestoneFilters([])}
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
-                        browseMilestoneFilters.length === 0
-                          ? 'bg-gray-900 text-white'
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                      }`}
-                    >
-                      {locale === 'fr' ? 'Tous' : 'All'}
-                    </button>
-                    {milestones.map(m => (
-                      <button
-                        key={m.id}
-                        onClick={() => setBrowseMilestoneFilters(prev =>
-                          prev.includes(m.id) ? prev.filter(g => g !== m.id) : [...prev, m.id]
-                        )}
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all flex items-center gap-0.5 ${
-                          browseMilestoneFilters.includes(m.id)
-                            ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300'
-                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                        }`}
-                      >
-                        <Target className="w-2.5 h-2.5" />
-                        {m.title}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-
-              {sessions.length > 0 && (
-                <div className="flex-1 flex flex-col min-h-0">
-                  <label className="block text-[10px] font-medium text-gray-500 mb-1.5 uppercase tracking-wider flex-shrink-0">
-                    {locale === 'fr' ? 'Séances' : 'Sessions'}
-                  </label>
-                  <div className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100 flex-1 overflow-y-auto">
-                    <button
-                      onClick={() => setBrowseSessionFilters([])}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-left transition-colors ${
-                        browseSessionFilters.length === 0 ? 'bg-gray-100' : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className={`text-xs font-medium ${browseSessionFilters.length === 0 ? 'text-gray-900' : 'text-gray-500'}`}>
-                        {locale === 'fr' ? 'Toutes' : 'All'}
-                      </span>
-                      {browseSessionFilters.length === 0 && (
-                        <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0 ml-auto">
-                          <Check className="w-2.5 h-2.5 text-white" />
-                        </div>
-                      )}
-                    </button>
-                    {sessions.map(s => {
-                      const selected = browseSessionFilters.includes(s.id)
-                      const FormatIcon = snFormatIcon[s.session_format] || User
-                      return (
-                        <button
-                          key={s.id}
-                          onClick={() => setBrowseSessionFilters(prev =>
-                            prev.includes(s.id) ? prev.filter(id => id !== s.id) : [...prev, s.id]
-                          )}
-                          className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-left transition-colors ${
-                            selected ? 'bg-gray-50' : 'hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className="w-5 h-5 rounded-full bg-gray-900 flex items-center justify-center flex-shrink-0">
-                            <FormatIcon className="w-3 h-3 text-white" />
-                          </div>
-                          <span className="text-xs text-gray-700 flex-1 truncate">
-                            {new Date(s.scheduled_at).toLocaleDateString(
-                              locale === 'fr' ? 'fr-FR' : 'en-US',
-                              { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }
-                            )}
-                          </span>
-                          {s.status === 'no_show' && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-red-50 text-red-600 flex-shrink-0">
-                              {locale === 'fr' ? 'Absent' : 'No show'}
-                            </span>
-                          )}
-                          {s.status === 'cancelled' && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-gray-100 text-gray-500 flex-shrink-0">
-                              {locale === 'fr' ? 'Annulée' : 'Cancelled'}
-                            </span>
-                          )}
-                          {selected && (
-                            <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                              <Check className="w-2.5 h-2.5 text-white" />
-                            </div>
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between pt-1 flex-shrink-0">
-                <span className="text-[10px] text-gray-400">
-                  {filteredNotes.length} / {browseNotes.length} notes
-                </span>
-                {(searchQuery || typeFilters.size > 0 || browseMilestoneFilters.length > 0 || browseSessionFilters.length > 0) && (
-                  <button
-                    onClick={() => {
-                      setSearchQuery('')
-                      setTypeFilters(new Set())
-                      setBrowseMilestoneFilters([])
-                      setBrowseSessionFilters([])
-                    }}
-                    className="text-[10px] text-gray-400 hover:text-gray-600 underline"
-                  >
-                    {locale === 'fr' ? 'Effacer' : 'Clear'}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+          {/* Browse mode hides left panel items list — filters move to right panel */}
         </div>
       </div>
 
@@ -1951,99 +1821,328 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
           </div>
         )}
 
-        {/* ---- BROWSE: FILTERED NOTES LIST (nothing selected) ---- */}
+        {/* ---- BROWSE: FILTERS + NOTES LIST (nothing selected) ---- */}
         {activeCategory === 'browse' && !selectedItemId && (
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Filter bar */}
+            <div className="border-b border-gray-100 px-4 py-2 flex-shrink-0 space-y-1.5">
+              {/* Search + add filter + count — single row */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setBrowseFilterRows(prev => [...prev, { field: 'tag', operator: 'is', values: [] }])}
+                  className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 px-2 py-1 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0"
+                >
+                  <Plus className="w-3 h-3" />
+                  {locale === 'fr' ? 'Filtre' : 'Filter'}
+                </button>
+                <div className="relative flex-1">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Rechercher...' : 'Search...'}
+                    className="w-full pl-7 pr-3 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-300 bg-gray-50"
+                  />
+                </div>
+                {(searchQuery || browseFilterRows.length > 0) && (
+                  <button
+                    onClick={() => { setSearchQuery(''); setBrowseFilterRows([]); setFilterConjunction('and') }}
+                    className="text-[10px] text-gray-400 hover:text-gray-600 underline flex-shrink-0"
+                  >
+                    {locale === 'fr' ? 'Effacer' : 'Clear'}
+                  </button>
+                )}
+                <span className="text-[10px] text-gray-400 flex-shrink-0">
+                  {filteredNotes.length} / {browseNotes.length}
+                </span>
+              </div>
+              {/* Filter rows */}
+              {browseFilterRows.map((row, idx) => {
+                const fieldLabels: Record<string, string> = locale === 'fr'
+                  ? { tag: 'Tag', goal: 'Axe', session: 'Séance' }
+                  : { tag: 'Tag', goal: 'Goal', session: 'Session' }
+                const opLabels: Record<string, string> = locale === 'fr'
+                  ? { is: 'est', is_not: "n'est pas", is_empty: 'est vide', is_not_empty: "n'est pas vide" }
+                  : { is: 'is', is_not: 'is not', is_empty: 'is empty', is_not_empty: 'is not empty' }
+                const operators = row.field === 'tag'
+                  ? ['is', 'is_not']
+                  : ['is', 'is_not', 'is_empty', 'is_not_empty']
+                const needsValue = !['is_empty', 'is_not_empty'].includes(row.operator)
+                const valueOptions: { id: string; label: string }[] = row.field === 'tag'
+                  ? allNoteTypes.map(type => ({ id: type, label: t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type }))
+                  : row.field === 'goal'
+                    ? milestones.map(m => ({ id: m.id, label: m.title }))
+                    : sessions.map(s => ({
+                        id: s.id,
+                        label: new Date(s.scheduled_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })
+                      }))
+
+                return (
+                  <div key={idx} className="flex items-center gap-1.5">
+                    {/* Conjunction */}
+                    <div className="w-12 flex-shrink-0 text-right">
+                      {idx === 0 ? (
+                        <span className="text-[11px] text-gray-400 font-medium pr-1">
+                          {locale === 'fr' ? 'Où' : 'Where'}
+                        </span>
+                      ) : (
+                        <select
+                          value={filterConjunction}
+                          onChange={e => setFilterConjunction(e.target.value as 'and' | 'or')}
+                          className="text-[11px] text-gray-500 bg-transparent border-b border-gray-300 px-1 py-0.5 focus:outline-none focus:border-gray-500 w-full appearance-none cursor-pointer"
+                        >
+                          <option value="and">{locale === 'fr' ? 'et' : 'and'}</option>
+                          <option value="or">{locale === 'fr' ? 'ou' : 'or'}</option>
+                        </select>
+                      )}
+                    </div>
+                    {/* Field */}
+                    <select
+                      value={row.field}
+                      onChange={e => {
+                        const next = [...browseFilterRows]
+                        next[idx] = { field: e.target.value, operator: 'is', values: [] }
+                        setBrowseFilterRows(next)
+                      }}
+                      className="text-[11px] font-medium text-gray-700 bg-transparent border-b border-gray-300 px-1 py-0.5 focus:outline-none focus:border-gray-500 appearance-none cursor-pointer"
+                    >
+                      {Object.entries(fieldLabels).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
+                    {/* Operator */}
+                    <select
+                      value={row.operator}
+                      onChange={e => {
+                        const next = [...browseFilterRows]
+                        next[idx] = { ...next[idx], operator: e.target.value, values: ['is_empty', 'is_not_empty'].includes(e.target.value) ? [] : next[idx].values }
+                        setBrowseFilterRows(next)
+                      }}
+                      className="text-[11px] text-gray-600 bg-transparent border-b border-gray-300 px-1 py-0.5 focus:outline-none focus:border-gray-500 appearance-none cursor-pointer"
+                    >
+                      {operators.map(op => (
+                        <option key={op} value={op}>{opLabels[op]}</option>
+                      ))}
+                    </select>
+                    {/* Values */}
+                    {needsValue && (
+                      <div className="relative flex items-center gap-1 flex-wrap flex-1 min-w-0 border-b border-gray-300 px-1 py-0.5">
+                        {row.values.map(val => {
+                          const opt = valueOptions.find(o => o.id === val)
+                          return (
+                            <span key={val} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-gray-100 text-[10px] font-medium text-gray-700">
+                              {opt?.label || val}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  const next = [...browseFilterRows]
+                                  next[idx] = { ...next[idx], values: next[idx].values.filter(v => v !== val) }
+                                  setBrowseFilterRows(next)
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            </span>
+                          )
+                        })}
+                        <button
+                          onClick={() => {
+                            if (filterDropdownOpen === idx) {
+                              setFilterDropdownOpen(null)
+                            } else {
+                              setFilterDropdownPending([...row.values])
+                              setFilterDropdownOpen(idx)
+                            }
+                          }}
+                          className="text-[11px] text-gray-400 hover:text-gray-600 px-1 py-0.5"
+                        >
+                          {row.values.length ? '+' : (locale === 'fr' ? 'Choisir...' : 'Select...')}
+                        </button>
+                        {filterDropdownOpen === idx && (
+                          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px] max-h-[240px] flex flex-col">
+                            <div className="overflow-y-auto flex-1 py-1">
+                              {valueOptions.map(opt => {
+                                const optColors = row.field === 'tag' ? getNoteColor(opt.id) : null
+                                return (
+                                <label key={opt.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-[11px]">
+                                  <input
+                                    type="checkbox"
+                                    checked={filterDropdownPending.includes(opt.id)}
+                                    onChange={() => setFilterDropdownPending(prev =>
+                                      prev.includes(opt.id) ? prev.filter(v => v !== opt.id) : [...prev, opt.id]
+                                    )}
+                                    className="rounded border-gray-300 text-gray-900 focus:ring-gray-300 w-3.5 h-3.5"
+                                  />
+                                  {optColors ? (
+                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${optColors.bg} ${optColors.text}`}>{opt.label}</span>
+                                  ) : (
+                                    <span className="text-gray-700">{opt.label}</span>
+                                  )}
+                                </label>
+                                )
+                              })}
+                            </div>
+                            <div className="border-t border-gray-100 px-2 py-1.5 flex justify-end gap-1.5">
+                              <button onClick={() => setFilterDropdownOpen(null)} className="text-[10px] text-gray-400 hover:text-gray-600 px-2 py-1">
+                                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const next = [...browseFilterRows]
+                                  next[idx] = { ...next[idx], values: filterDropdownPending }
+                                  setBrowseFilterRows(next)
+                                  setFilterDropdownOpen(null)
+                                }}
+                                className="text-[10px] font-medium text-white bg-gray-900 rounded px-3 py-1 hover:bg-gray-800"
+                              >
+                                {locale === 'fr' ? 'Appliquer' : 'Apply'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {/* Delete row */}
+                    <button onClick={() => setBrowseFilterRows(prev => prev.filter((_, i) => i !== idx))} className="p-1 text-gray-300 hover:text-gray-500 flex-shrink-0">
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+            {/* Results table */}
+            <div className="flex-1 overflow-y-auto">
             {filteredNotes.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center px-8">
                 <FileText className="w-10 h-10 text-gray-200 mb-2" />
                 <p className="text-gray-400 text-sm">
                   {allNotes.length === 0
-                    ? (locale === 'fr' ? 'Aucune note pour le moment' : locale === 'es' ? 'Aún no hay notas' : 'No notes yet')
-                    : (locale === 'fr' ? 'Aucune note ne correspond aux filtres' : locale === 'es' ? 'Ninguna nota coincide con los filtros' : 'No notes match your filters')
+                    ? (locale === 'fr' ? 'Aucune note pour le moment' : 'No notes yet')
+                    : (locale === 'fr' ? 'Aucune note ne correspond aux filtres' : 'No notes match your filters')
                   }
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100">
-                {filteredNotes.map(note => (
-                  <button
-                    key={note.id}
-                    onClick={() => {
-                      setSelectedItemId(note.id)
-                      setEditingNoteId(null)
-                      setDeletingNoteId(null)
-                    }}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-50/50 transition-colors group"
-                  >
-                    <div className="flex items-start gap-3">
-                      {/* Date column */}
-                      <div className="flex-shrink-0 w-16 pt-0.5">
-                        <p className="text-[11px] text-gray-400 tabular-nums leading-tight">
-                          {new Date(note.created_at).toLocaleDateString(
-                            locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US',
-                            { day: 'numeric', month: 'short' }
-                          )}
-                        </p>
-                        <p className="text-[10px] text-gray-300 tabular-nums">
-                          {formatNoteTime(note.created_at)}
-                        </p>
-                      </div>
+              <table className="w-full text-left">
+                <thead className="sticky top-0 bg-gray-50 z-10">
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-2 text-[10px] font-medium text-gray-500 uppercase tracking-wider w-20">Date</th>
+                    <th className="px-3 py-2 text-[10px] font-medium text-gray-500 uppercase tracking-wider w-28">{locale === 'fr' ? 'Type' : 'Type'}</th>
+                    <th className="px-3 py-2 text-[10px] font-medium text-gray-500 uppercase tracking-wider w-32">Tag</th>
+                    <th className="px-3 py-2 text-[10px] font-medium text-gray-500 uppercase tracking-wider">{locale === 'fr' ? 'Contenu' : 'Content'}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filteredNotes.map(note => {
+                    // Tag: note_type badge (skip session_summary — already in Type column) OR first inline tag
+                    const noteTypeLabel = note.note_type !== 'general' && note.note_type !== 'session_summary' && !note.content.includes(`data-tag="${note.note_type}"`)
+                      ? (t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes] || note.note_type)
+                      : null
+                    const typeColors = noteTypeLabel ? getNoteColor(note.note_type) : null
+                    // Show filtered tag if a tag filter is active, otherwise first tag
+                    const activeTagFilter = browseFilterRows.find(r => r.field === 'tag' && r.operator === 'is' && r.values.length > 0)
+                    let firstTag: { type: string; label: string } | null = null
+                    if (activeTagFilter) {
+                      // Find the matching filtered tag in this note's content
+                      for (const v of activeTagFilter.values) {
+                        const m = note.content.match(new RegExp(`<mark[^>]*data-tag="${v}"[^>]*?data-tag-label="([^"]*)"`, 'i'))
+                        if (m) { firstTag = { type: v, label: m[1] }; break }
+                      }
+                    }
+                    if (!firstTag) {
+                      const tagMatch = note.content.match(/<mark[^>]*data-tag="([^"]*)"[^>]*?data-tag-label="([^"]*)"/)
+                      firstTag = tagMatch ? { type: tagMatch[1], label: tagMatch[2] } : null
+                    }
+                    const tagColors = firstTag ? getNoteColor(firstTag.type) : null
+                    // Type: "Session" if session_id, or goal title if milestone
+                    const isSession = !!note.session_id
+                    const isOrphanedSession = note.note_type === 'session_summary' && !note.session_id
+                    const goalTitle = note.title || ((note as any).milestones?.title)
 
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                          {note.note_type !== 'general' && !note.content.includes(`data-tag="${note.note_type}"`) && (
-                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getNoteColor(note.note_type).bg} ${getNoteColor(note.note_type).text}`}>
-                              {t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes] || note.note_type}
+                    return (
+                      <tr
+                        key={note.id}
+                        onClick={() => {
+                          setSelectedItemId(note.id)
+                          setEditingNoteId(null)
+                          setDeletingNoteId(null)
+                        }}
+                        className={`hover:bg-gray-50/80 cursor-pointer transition-colors ${isOrphanedSession ? 'bg-red-50/30' : ''}`}
+                      >
+                        {/* Date */}
+                        <td className="px-4 py-2.5 align-top">
+                          <p className="text-[11px] text-gray-500 tabular-nums whitespace-nowrap">
+                            {new Date(note.created_at).toLocaleDateString(
+                              locale === 'fr' ? 'fr-FR' : 'en-US',
+                              { day: 'numeric', month: 'short' }
+                            )}
+                          </p>
+                        </td>
+                        {/* Type — Session, Deleted session, or Goal name */}
+                        <td className="px-3 py-2.5 align-top">
+                          <div className="flex flex-col gap-0.5">
+                            {isOrphanedSession && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium w-fit bg-red-50 text-red-500">
+                                  {locale === 'fr' ? 'Séance supprimée' : 'Deleted session'}
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (confirm(locale === 'fr' ? 'Supprimer cette note ?' : 'Delete this note?')) {
+                                      supabase.from('progress_notes').delete().eq('id', note.id).then(() => {
+                                        setAllNotes(prev => prev.filter(n => n.id !== note.id))
+                                        toast.success(locale === 'fr' ? 'Note supprimée' : 'Note deleted')
+                                      })
+                                    }
+                                  }}
+                                  className="p-0.5 text-red-300 hover:text-red-500 transition-colors"
+                                  title={locale === 'fr' ? 'Supprimer' : 'Delete'}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+                            {isSession && (
+                              <>
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium w-fit bg-blue-50 text-blue-700">
+                                  Session
+                                </span>
+                                <span className="text-[10px] text-blue-600 truncate">
+                                  {getSessionLabelShort(note.session_id!)}
+                                </span>
+                              </>
+                            )}
+                            {!isSession && !isOrphanedSession && goalTitle && (
+                              <span className="text-[11px] font-medium text-gray-700 truncate">{goalTitle}</span>
+                            )}
+                          </div>
+                        </td>
+                        {/* Tag — note type or first inline tag */}
+                        <td className="px-3 py-2.5 align-top">
+                          {noteTypeLabel && typeColors ? (
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${typeColors.bg} ${typeColors.text}`}>
+                              {noteTypeLabel}
                             </span>
-                          )}
-                          {note.milestone_id && (note as any).milestones?.title && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600">
-                              <Target className="w-2.5 h-2.5" />
-                              {(note as any).milestones.title}
+                          ) : firstTag && tagColors ? (
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${tagColors.bg} ${tagColors.text}`}>
+                              {firstTag.label}
                             </span>
-                          )}
-                          {note.session_id && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-600">
-                              <LinkIcon className="w-2.5 h-2.5" />
-                              {getSessionLabelShort(note.session_id)}
-                            </span>
-                          )}
-                        </div>
-                        {note.title && (
-                          <p className="text-sm font-medium text-gray-900 mb-0.5 truncate">{note.title}</p>
-                        )}
-                        {(() => {
-                          const activeTags = [...typeFilters].filter(tf => tf !== '__no_tag__')
-                          if (activeTags.length > 0) {
-                            const fragments = extractTaggedFragments(note.content, activeTags)
-                            if (fragments.length > 0) {
-                              return (
-                                <div className="space-y-1">
-                                  {fragments.map((frag, i) => {
-                                    const colors = getNoteColor(frag.tag)
-                                    return (
-                                      <div key={i} className="flex items-start gap-1.5">
-                                        <span className={`inline-flex items-center px-1 py-0 rounded text-[9px] font-semibold flex-shrink-0 mt-0.5 ${colors.bg} ${colors.text}`}>
-                                          {frag.label}
-                                        </span>
-                                        <span className="text-xs text-gray-600 line-clamp-1">{frag.text}</span>
-                                      </div>
-                                    )
-                                  })}
-                                </div>
-                              )
-                            }
-                          }
-                          return <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{stripHtml(note.content)}</p>
-                        })()}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                          ) : null}
+                        </td>
+                        {/* Content */}
+                        <td className="px-3 py-2.5 align-top">
+                          <p className="text-xs text-gray-600 line-clamp-3">{stripHtml(note.content)}</p>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             )}
+          </div>
           </div>
         )}
 
@@ -2075,6 +2174,29 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     <span className="italic">({locale === 'fr' ? 'modifiée' : locale === 'es' ? 'editada' : 'edited'})</span>
                   )}
                 </div>
+
+                {/* Orphaned session warning */}
+                {selectedNote.note_type === 'session_summary' && !selectedNote.session_id && (
+                  <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-red-50 rounded-lg border border-red-100">
+                    <span className="text-xs text-red-600">
+                      {locale === 'fr' ? 'La séance liée a été supprimée.' : 'The linked session was deleted.'}
+                    </span>
+                    <button
+                      onClick={() => {
+                        if (confirm(locale === 'fr' ? 'Supprimer cette note ?' : 'Delete this note?')) {
+                          supabase.from('progress_notes').delete().eq('id', selectedNote.id).then(() => {
+                            setAllNotes(prev => prev.filter(n => n.id !== selectedNote.id))
+                            setSelectedItemId(null)
+                            toast.success(locale === 'fr' ? 'Note supprimée' : 'Note deleted')
+                          })
+                        }
+                      }}
+                      className="text-xs text-red-500 hover:text-red-700 underline ml-auto flex-shrink-0"
+                    >
+                      {locale === 'fr' ? 'Supprimer la note' : 'Delete note'}
+                    </button>
+                  </div>
+                )}
 
                 {/* Linked session / goal */}
                 <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -2142,6 +2264,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
           </div>
         )}
 
+      </div>
       </div>
     </div>
   )

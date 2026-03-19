@@ -26,6 +26,7 @@ import {
   Download,
   UserPlus,
 } from 'lucide-react'
+import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
@@ -1426,7 +1427,7 @@ export default function MembersPage() {
                           {getMemberFullName(member)}
                         </p>
                         {member.email && (
-                          <p className="text-xs text-gray-500 truncate">{member.email}</p>
+                          <MaskedContact value={member.email} type="email" className="text-xs text-gray-500" />
                         )}
                       </div>
                     </button>

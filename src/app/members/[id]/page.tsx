@@ -19,6 +19,7 @@ import {
   Loader2,
   Copy,
 } from 'lucide-react'
+import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
@@ -336,23 +337,18 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                   <div className="flex flex-wrap justify-center md:justify-start gap-2">
                     {member.email && (
                       <div className="group h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center text-gray-600 hover:text-gray-900 transition-all duration-200 overflow-hidden">
-                        <a
-                          href={`mailto:${member.email}`}
-                          className="w-8 h-8 flex items-center justify-center flex-shrink-0"
-                        >
+                        <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
                           <Mail className="w-4 h-4" />
-                        </a>
-                        <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap text-sm transition-all duration-200 flex items-center">
-                          <a href={`mailto:${member.email}`} className="hover:underline">
-                            {member.email}
-                          </a>
+                        </div>
+                        <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap text-sm transition-all duration-200 flex items-center gap-1.5 pr-0 group-hover:pr-2">
+                          <MaskedContact value={member.email} type="email" />
                           <button
                             onClick={(e) => {
                               e.preventDefault()
                               navigator.clipboard.writeText(member.email!)
                               toast.success('Email copied')
                             }}
-                            className="ml-2 mr-2 p-1 rounded hover:bg-gray-300 transition-colors"
+                            className="p-1 rounded hover:bg-gray-300 transition-colors flex-shrink-0"
                           >
                             <Copy className="w-3 h-3" />
                           </button>
@@ -361,23 +357,18 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                     )}
                     {member.phone && (
                       <div className="group h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center text-gray-600 hover:text-gray-900 transition-all duration-200 overflow-hidden">
-                        <a
-                          href={`tel:${member.phone}`}
-                          className="w-8 h-8 flex items-center justify-center flex-shrink-0"
-                        >
+                        <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
                           <Phone className="w-4 h-4" />
-                        </a>
-                        <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap text-sm transition-all duration-200 flex items-center">
-                          <a href={`tel:${member.phone}`} className="hover:underline">
-                            {member.phone}
-                          </a>
+                        </div>
+                        <span className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap text-sm transition-all duration-200 flex items-center gap-1.5 pr-0 group-hover:pr-2">
+                          <MaskedContact value={member.phone} type="phone" />
                           <button
                             onClick={(e) => {
                               e.preventDefault()
                               navigator.clipboard.writeText(member.phone!)
                               toast.success('Phone copied')
                             }}
-                            className="ml-2 mr-2 p-1 rounded hover:bg-gray-300 transition-colors"
+                            className="p-1 rounded hover:bg-gray-300 transition-colors flex-shrink-0"
                           >
                             <Copy className="w-3 h-3" />
                           </button>

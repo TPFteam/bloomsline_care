@@ -21,6 +21,7 @@ export interface UserPreferences {
   moments_view: 'grid' | 'list'
   overview_card_layout?: CardLayoutItem[]
   show_all_features: boolean
+  notes_zoom: number
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -28,6 +29,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   moments_view: 'grid',
   overview_card_layout: DEFAULT_CARD_LAYOUT,
   show_all_features: false,
+  notes_zoom: 100,
 }
 
 export async function getUserPreferences(): Promise<UserPreferences> {
@@ -38,7 +40,7 @@ export async function getUserPreferences(): Promise<UserPreferences> {
 
   const { data, error } = await supabase
     .from('user_preferences')
-    .select('moments_theme, moments_view, overview_card_layout, show_all_features')
+    .select('moments_theme, moments_view, overview_card_layout, show_all_features, notes_zoom')
     .eq('user_id', user.id)
     .single()
 
@@ -52,6 +54,7 @@ export async function getUserPreferences(): Promise<UserPreferences> {
     moments_view: data.moments_view || 'grid',
     overview_card_layout: data.overview_card_layout || DEFAULT_CARD_LAYOUT,
     show_all_features: data.show_all_features ?? false,
+    notes_zoom: data.notes_zoom ?? 100,
   }
 }
 
