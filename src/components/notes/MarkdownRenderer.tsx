@@ -13,6 +13,8 @@ interface MarkdownRendererProps {
   onEdit?: () => void
   /** If provided, shows a delete button in the side rail. */
   onDelete?: () => void
+  /** If provided, highlights the mark with this data-tag value */
+  highlightTag?: string
 }
 
 const RICH_TEXT_STYLES = 'text-sm text-gray-700 [line-height:1.8] [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-gray-900 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-gray-900 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-gray-900 [&_hr]:border-gray-200 [&_hr]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_b]:font-semibold [&_strong]:font-semibold [&_i]:italic [&_em]:italic'
@@ -77,7 +79,7 @@ function injectTagColors(html: string): string {
 }
 
 
-export function MarkdownRenderer({ content, className, onContentChange, onEdit, onDelete }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, className, onContentChange, onEdit, onDelete, highlightTag }: MarkdownRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [tooltip, setTooltip] = useState<{ top: number; left: number; title: string; kind: 'goal' | 'tag' | 'verbatim'; markEl: HTMLElement } | null>(null)
   const [showLabels, setShowLabels] = useState(true)
@@ -121,7 +123,19 @@ export function MarkdownRenderer({ content, className, onContentChange, onEdit, 
     })
   }, [content])
 
-  // No label hoisting needed — ::before handles labels inline for all marks
+  // Highlight a specific tag and scroll to it
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || !highlightTag) return
+    // Remove previous highlights
+    el.querySelectorAll('.tag-highlight-pulse').forEach(n => n.classList.remove('tag-highlight-pulse'))
+    // Find and highlight the matching mark
+    const mark = el.querySelector(`mark[data-tag="${highlightTag}"]`) as HTMLElement | null
+    if (mark) {
+      mark.classList.add('tag-highlight-pulse')
+      mark.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [content, highlightTag])
 
   // Dismiss tooltip on click outside
   useEffect(() => {
@@ -212,6 +226,15 @@ export function MarkdownRenderer({ content, className, onContentChange, onEdit, 
             }
             .rte-read.show-labels mark[data-verbatim]::before {
               content: attr(data-verbatim) ": ";
+            }
+            .tag-highlight-pulse {
+              animation: tagPulse 2s ease-in-out;
+              border-radius: 4px;
+            }
+            @keyframes tagPulse {
+              0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+              30% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.3); background-color: rgba(59, 130, 246, 0.1) !important; }
+              100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
             }
           `}</style>
         )}
