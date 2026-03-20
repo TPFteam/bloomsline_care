@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense, useCallback } from 'react'
+import { useEffect, useState, useRef, Suspense, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
@@ -103,6 +103,7 @@ const templatesData: Record<ResourceType, Template[]> = {
 
 function DashboardContent() {
   const [user, setUser] = useState<User | null>(null)
+  const welcomeShown = useRef(false)
   const [loading, setLoading] = useState(true)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
@@ -457,8 +458,12 @@ function DashboardContent() {
         .limit(3)
       if (sessionsData) setUpcomingSessions(sessionsData)
 
-      if (searchParams.get('welcome') === 'true') {
+      if (searchParams.get('welcome') === 'true' && !welcomeShown.current) {
+        welcomeShown.current = true
         toast.success(`Welcome to Bloomsline, ${authUser.user_metadata?.full_name || 'there'}!`)
+        const url = new URL(window.location.href)
+        url.searchParams.delete('welcome')
+        window.history.replaceState({}, '', url.pathname)
       }
 
       await fetchRecentActivity(authUser.id, locale)

@@ -51,79 +51,70 @@ export async function GET(request: NextRequest) {
     }
 
     let redirectUrl = `${requestUrl.origin}/dashboard`
+    const userId = data.user?.id
+    const userEmail = data.user?.email
+    const adminClient = createAdminClient()
 
-    // Existing user — check type and redirect
-    if (!isNewUser && data.user?.id) {
-      try {
-        const { data: userProfile } = await supabase
-          .from('users')
-          .select('user_type')
-          .eq('id', data.user.id)
-          .single()
-
-        if (userProfile?.user_type === 'member') {
-          redirectUrl = mobileAppUrl(data.session)
-        }
-      } catch (e) {
-        console.error('Error checking user type:', e)
-      }
+    // Always check if users record exists (don't rely on isNewUser timing)
+    let userProfile: { user_type: string; has_consented: boolean } | null = null
+    if (userId) {
+      const { data: profile } = await adminClient
+        .from('users')
+        .select('user_type, has_consented')
+        .eq('id', userId)
+        .single()
+      userProfile = profile
     }
 
-    if (flow === 'signup' && !isNewUser) {
-      // User came from sign-up but already has an account
-      const userName = data.user?.user_metadata?.full_name?.split(' ')[0] || 'there'
-      const message = `Hey ${userName}! Looks like you already have an account with us. Welcome back!`
-      redirectUrl = `${requestUrl.origin}/sign-in?info=${encodeURIComponent(message)}`
-    } else if (flow === 'signin' && isNewUser) {
+    const hasUsersRecord = !!userProfile
+    const needsSetup = !hasUsersRecord || !userProfile?.user_type || userProfile.user_type === 'unknown'
+
+    if (flow === 'signin' && !hasUsersRecord && isNewUser) {
       // User came from sign-in but doesn't have an account — delete and redirect
-      const userId = data.user?.id
       if (userId) {
-        try {
-          const adminClient = createAdminClient()
-          await adminClient.auth.admin.deleteUser(userId)
-        } catch {
-          // Silently handle deletion errors
-        }
+        try { await adminClient.auth.admin.deleteUser(userId) } catch {}
       }
       const userName = data.user?.user_metadata?.full_name?.split(' ')[0] || 'there'
       const message = `Hi ${userName}! We don't have an account for you yet. Would you like to create one?`
       redirectUrl = `${requestUrl.origin}/sign-up?info=${encodeURIComponent(message)}`
-    } else if (isNewUser) {
-      // New user signup — use shared setup logic
-      const userEmail = data.user?.email
-      const userId = data.user?.id
+    } else if (needsSetup && userId && userEmail) {
+      // No users record or incomplete setup — run setup (works for new AND stuck users)
+      const result = await setupNewUser(adminClient, userId, userEmail, {
+        full_name: data.user?.user_metadata?.full_name,
+        avatar_url: data.user?.user_metadata?.avatar_url,
+      })
 
-      if (userEmail && userId) {
-        const adminClient = createAdminClient()
-        const result = await setupNewUser(adminClient, userId, userEmail, {
-          full_name: data.user?.user_metadata?.full_name,
-          avatar_url: data.user?.user_metadata?.avatar_url,
-        })
-
-        if (!result.ok) {
-          // Not eligible — delete account and redirect
-          try {
-            await adminClient.auth.admin.deleteUser(userId)
-          } catch {
-            // Silently handle deletion errors
-          }
-          redirectUrl = `${requestUrl.origin}/early-access?info=${encodeURIComponent(result.message)}`
-        } else {
-          // Route based on action
-          switch (result.action) {
-            case 'mobile_app':
-              redirectUrl = mobileAppUrl(data.session)
-              break
-            case 'dashboard':
-              redirectUrl = `${requestUrl.origin}/dashboard`
-              break
-            case 'onboarding':
-              redirectUrl = `${requestUrl.origin}/onboarding`
-              break
-          }
-        }
+      if (!result.ok) {
+        try { await adminClient.auth.admin.deleteUser(userId) } catch {}
+        redirectUrl = `${requestUrl.origin}/early-access?info=${encodeURIComponent(result.message)}`
       } else {
-        redirectUrl = `${requestUrl.origin}/early-access`
+        switch (result.action) {
+          case 'mobile_app':
+            redirectUrl = mobileAppUrl(data.session)
+            break
+          case 'dashboard':
+            redirectUrl = `${requestUrl.origin}/dashboard`
+            break
+          case 'onboarding':
+            redirectUrl = `${requestUrl.origin}/onboarding`
+            break
+          case 'already_setup':
+            if (userProfile?.has_consented) {
+              redirectUrl = userProfile.user_type === 'member'
+                ? mobileAppUrl(data.session)
+                : `${requestUrl.origin}/dashboard`
+            } else {
+              redirectUrl = `${requestUrl.origin}/onboarding`
+            }
+            break
+        }
+      }
+    } else if (hasUsersRecord) {
+      // Existing user with record — route based on type
+      if (userProfile!.user_type === 'member') {
+        redirectUrl = mobileAppUrl(data.session)
+      } else if (!userProfile!.has_consented) {
+        redirectUrl = `${requestUrl.origin}/onboarding`
       }
     }
 
