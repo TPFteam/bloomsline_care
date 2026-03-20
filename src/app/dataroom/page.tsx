@@ -56,6 +56,16 @@ interface PageItem {
 function getPAGES(t: T): PageItem[] {
   return [
     {
+      id: 'positioning',
+      label: t('Positioning', 'Positionnement'),
+      description: t('What we sell, why it matters, and how we say it', 'Ce que nous vendons, pourquoi c\'est important, et comment nous le disons'),
+      href: '/positioning',
+      icon: Target,
+      color: 'bg-teal-50 text-teal-600',
+      borderColor: 'border-teal-200 hover:border-teal-300',
+      tag: t('New', 'Nouveau'),
+    },
+    {
       id: 'pitch-new',
       label: t('Pitch Deck', 'Pitch Deck'),
       description: t('Investor pitch — updated narrative, product, vision, and ask', 'Pitch investisseur — récit, produit, vision et demande actualisés'),
