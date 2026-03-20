@@ -458,7 +458,7 @@ const en = {
       title: 'The 4-Layer Framework',
       intro: 'Each layer has one job. If it fails, the layer below never gets a chance.',
       steps: [
-        { num: 'Layer 1', name: 'Hook', job: 'Stops the scroll. Names the gap they live with daily.', example: 'Notes are what you write. Context is what your client needs you to remember.', color: 'border-red-200 bg-red-50/50' },
+        { num: 'Layer 1', name: 'Hook', job: 'Stops the scroll. Paints a scene they recognize.', example: 'They had a hard week. You\'ll know before they sit down.', color: 'border-red-200 bg-red-50/50' },
         { num: 'Layer 2', name: 'Promise', job: 'Shows the future. The feeling of having this solved.', example: 'Every session starts like you never stopped listening.', color: 'border-teal-200 bg-teal-50/50' },
         { num: 'Layer 3', name: 'Clarity', job: 'Explains what it is. Product, not poetry.', example: 'Your notes, your clients\' moments, and Bloom prepares your next session.', color: 'border-gray-200 bg-gray-50' },
         { num: 'Layer 4', name: 'Proof', job: 'Shows how. Removes the "sounds too good" doubt.', example: 'Bloomsline remembers for you. Before, during, and after.', color: 'border-gray-200 bg-gray-50' },
@@ -479,10 +479,10 @@ const en = {
 
   oneLine: {
     label: 'The Position',
-    hook: 'Notes are what you write. Context is what your client needs you to remember.',
+    hook: 'They had a hard week. You\'ll know before they sit down.',
     statement: 'Every session starts like you never stopped listening.',
-    supporting: 'Your notes, your clients\' moments, and Bloom prepares your next session. All in one place.',
-    proof: 'Before every session, you dig through old notes to remember. After, you write everything down before you forget. Bloomsline remembers for you. Before, during, and after.',
+    supporting: 'Your clients share between sessions. Bloom connects it to your practice. Your next session is already prepared.',
+    proof: 'Between sessions, they reflect. Before the next one, you already know. Bloomsline remembers for you. Before, during, and after.',
   },
 
   problem: {
@@ -508,7 +508,7 @@ const en = {
       title: 'The Business Pain',
       side: 'The client\'s side of the gap',
       layers: [
-        { depth: 'Surface', text: '"Clients ghost after 3-4 sessions."', source: '20-57% drop out after session 1. 65%+ leave before session 10. (Swift & Greenberg meta-analysis; PMC 2022)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
+        { depth: 'Surface', text: '"20-57% drop out after the first session. 65% leave before session 10."', source: 'Swift & Greenberg meta-analysis; PMC 2022', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
         { depth: 'Deeper', text: '"They don\'t feel connected enough between appointments to come back."', source: 'Alliance strength predicts retention. Ruptures predict premature termination. (PMC 2011)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC3198542/' },
         { depth: 'Deeper', text: '"Therapy ends at the door. Life doesn\'t."', source: 'Between-session engagement strengthens alliance, reduces dropouts. (TheraPlatform)', sourceUrl: 'https://www.theraplatform.com/blog/764/client-engagement-in-therapy-strategies-to-strengthen-the-therapeutic-relationship-beyond-sessions' },
         { depth: 'Root', text: '"The gap between sessions is where clients are lost."', source: 'No-show rates: 2-30% outpatient, up to 50% behavioral health. Avg session: $100-250. (PMC 2022)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9004215/' },
@@ -660,7 +660,7 @@ const en = {
         context: 'Landing page hero',
         audience: 'Practitioners browsing',
         goal: 'Goal: stop the scroll, make them read the next line',
-        open: 'Notes are what you write. Context is what your client needs you to remember.',
+        open: 'They had a hard week. You\'ll know before they sit down.',
         follow: 'Bloomsline connects your sessions, your notes, and your clients\' reflections. So every session starts like you never stopped listening.',
         never: 'Never lead with features ("AI-powered pre-session briefs") or jargon ("clinical continuity platform").',
       },
@@ -676,7 +676,7 @@ const en = {
         context: 'Investor meeting',
         audience: 'Pre-seed / seed investors',
         goal: 'Goal: make them understand the gap, not the product',
-        open: 'Therapists spend as much time on admin as they do with clients. 65% of clients leave before session 10. Both problems come from the same place: nothing connects one session to the next.',
+        open: '20-57% of clients drop out after the first session. 65% leave before session 10. Both problems come from the same place: nothing connects one session to the next.',
         follow: 'Bloomsline fills that gap. The therapist remembers, the client feels held, and the practice grows through retention, not marketing.',
         never: 'Never lead with the tech stack. Never say "we\'re like SimplePractice but with AI." Never claim PMF before you have it.',
       },
@@ -741,7 +741,7 @@ const fr = {
       title: 'Le Framework en 4 Niveaux',
       intro: 'Chaque niveau a un seul job. S\'il échoue, le niveau suivant n\'a jamais sa chance.',
       steps: [
-        { num: 'Niveau 1', name: 'Accroche', job: 'Arrête le scroll. Nomme le manque qu\'ils vivent au quotidien.', example: 'Les notes, c\'est ce que vous écrivez. Le contexte, c\'est ce dont votre client a besoin que vous vous souveniez.', color: 'border-red-200 bg-red-50/50' },
+        { num: 'Niveau 1', name: 'Accroche', job: 'Arrête le scroll. Peint une scène qu\'ils reconnaissent.', example: 'Il a eu une semaine difficile. Vous le saurez avant qu\'il s\'assoie.', color: 'border-red-200 bg-red-50/50' },
         { num: 'Niveau 2', name: 'Promesse', job: 'Montre le futur. Le sentiment d\'avoir résolu ce problème.', example: 'Chaque séance commence comme si vous n\'aviez jamais cessé d\'écouter.', color: 'border-teal-200 bg-teal-50/50' },
         { num: 'Niveau 3', name: 'Clarté', job: 'Explique ce que c\'est. Le produit, pas de la poésie.', example: 'Vos notes, les moments de vos clients, et une IA qui prépare votre prochaine séance.', color: 'border-gray-200 bg-gray-50' },
         { num: 'Niveau 4', name: 'Preuve', job: 'Montre comment. Supprime le doute "trop beau pour être vrai".', example: 'Bloomsline se souvient pour vous. Avant, pendant et après.', color: 'border-gray-200 bg-gray-50' },
@@ -762,10 +762,10 @@ const fr = {
 
   oneLine: {
     label: 'La Position',
-    hook: 'Les notes, c\'est ce que vous écrivez. Le contexte, c\'est ce dont votre client a besoin que vous vous souveniez.',
+    hook: 'Il a eu une semaine difficile. Vous le saurez avant qu\'il s\'assoie.',
     statement: 'Chaque séance commence comme si vous n\'aviez jamais cessé d\'écouter.',
-    supporting: 'Vos notes, les moments de vos clients, et une IA qui prépare votre prochaine séance. Au même endroit.',
-    proof: 'Avant chaque séance, vous fouillez vos anciennes notes pour vous souvenir. Après, vous écrivez tout avant d\'oublier. Bloomsline se souvient pour vous. Avant, pendant et après.',
+    supporting: 'Vos clients partagent entre les séances. Bloom connecte tout à votre pratique. Votre prochaine séance est déjà préparée.',
+    proof: 'Entre les séances, ils réfléchissent. Avant la suivante, vous savez déjà. Bloomsline se souvient pour vous. Avant, pendant et après.',
   },
 
   problem: {
@@ -791,7 +791,7 @@ const fr = {
       title: 'La Douleur Business',
       side: 'Le côté client du fossé',
       layers: [
-        { depth: 'Surface', text: '« Des clients disparaissent après 3-4 séances. »', source: '20-57% abandonnent après la 1re séance. 65%+ partent avant la 10e. (Swift & Greenberg; PMC 2022)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
+        { depth: 'Surface', text: '« 20-57% abandonnent après la 1re séance. 65% partent avant la 10e. »', source: 'Swift & Greenberg meta-analysis; PMC 2022', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
         { depth: 'Plus profond', text: '« Ils ne se sentent pas assez connectés entre les rendez-vous pour revenir. »', source: 'La force de l\'alliance prédit la rétention. Les ruptures prédisent l\'abandon. (PMC 2011)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC3198542/' },
         { depth: 'Plus profond', text: '« La thérapie s\'arrête à la porte. La vie, non. »', source: 'L\'engagement inter-séance renforce l\'alliance et réduit les abandons. (TheraPlatform)', sourceUrl: 'https://www.theraplatform.com/blog/764/client-engagement-in-therapy-strategies-to-strengthen-the-therapeutic-relationship-beyond-sessions' },
         { depth: 'Racine', text: '« L\'espace entre les séances est là où les clients se perdent. »', source: 'Taux d\'absence : 2-30% ambulatoire, jusqu\'à 50% santé mentale. Séance moy. : 100-250$. (PMC 2022)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9004215/' },
@@ -943,7 +943,7 @@ const fr = {
         context: 'Page d\'accueil',
         audience: 'Praticiens en navigation',
         goal: 'Objectif : arrêter le scroll, les faire lire la suite',
-        open: 'Les notes, c\'est ce que vous écrivez. Le contexte, c\'est ce dont votre client a besoin que vous vous souveniez.',
+        open: 'Il a eu une semaine difficile. Vous le saurez avant qu\'il s\'assoie.',
         follow: 'Bloomsline connecte vos séances, vos notes et les réflexions de vos clients. Pour que chaque séance commence comme si vous n\'aviez jamais cessé d\'écouter.',
         never: 'Ne jamais ouvrir avec des fonctionnalités ("résumés pré-séance par IA") ou du jargon ("plateforme de continuité clinique").',
       },
@@ -959,7 +959,7 @@ const fr = {
         context: 'Réunion investisseur',
         audience: 'Investisseurs pré-seed / seed',
         goal: 'Objectif : faire comprendre le fossé, pas le produit',
-        open: 'Les thérapeutes passent autant de temps en admin qu\'avec leurs clients. 65% des clients partent avant la 10e séance. Les deux problèmes viennent du même endroit : rien ne connecte une séance à la suivante.',
+        open: '20-57% des clients abandonnent après la première séance. 65% partent avant la 10e. Le problème vient du même endroit : rien ne connecte une séance à la suivante.',
         follow: 'Bloomsline comble ce fossé. Le thérapeute se souvient, le client se sent accompagné, et le cabinet grandit par la rétention, pas par le marketing.',
         never: 'Ne jamais commencer par la stack technique. Ne jamais dire "on est comme SimplePractice mais avec de l\'IA." Ne jamais prétendre avoir le PMF avant de l\'avoir.',
       },
