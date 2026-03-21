@@ -563,3 +563,12 @@
   width: 16px !important;
   height: 16px !important;
 }
+
+/* Empty tag marks should still be clickable */
+mark[data-tag]:empty,
+mark[data-goal-id]:empty,
+mark[data-verbatim]:empty {
+  min-width: 60px;
+  display: inline-block;
+  cursor: pointer;
+}

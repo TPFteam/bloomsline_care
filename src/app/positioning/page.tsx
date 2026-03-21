@@ -44,6 +44,17 @@ export default function PositioningPage() {
         {/* THE FINISHED POSITION (always visible)       */}
         {/* ============================================ */}
 
+        {/* Positioning summary */}
+        <section className="bg-gray-900 rounded-2xl p-8 md:p-12 text-center">
+          <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest mb-3">In one line</p>
+          <p className="text-2xl md:text-3xl font-bold text-white mb-3">{t.oneLine.whatItIs}</p>
+          <p className="text-sm text-gray-500 mb-8">{t.oneLine.clarifier}</p>
+          <div className="max-w-2xl mx-auto space-y-4">
+            <p className="text-lg text-gray-400 italic">{t.oneLine.feeling}</p>
+            <p className="text-lg text-gray-400 italic">{t.oneLine.thought}</p>
+          </div>
+        </section>
+
         {/* The Position (4 layers) */}
         <section className="bg-white rounded-2xl border border-gray-200 p-8 md:p-12">
           <div className="max-w-2xl mx-auto space-y-10">
@@ -133,17 +144,28 @@ export default function PositioningPage() {
                 </div>
               </div>
               {/* Trace to root */}
-              <div className="space-y-2 mb-4">
-                {t.problem.identity.layers.map((l: { depth: string; text: string; source?: string; sourceUrl?: string }, i: number) => (
-                  <div key={i} className="flex items-start gap-2" style={{ paddingLeft: i * 12 }}>
-                    <span className="text-[10px] text-gray-300 mt-1">↓</span>
-                    <div>
-                      <span className="text-[9px] text-gray-400 uppercase">{l.depth}</span>
-                      <p className="text-sm text-gray-600">{l.text}</p>
-                      {l.source && <p className="text-[10px] text-gray-400 mt-0.5">{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 underline">{l.source}</a> : l.source}</p>}
+              <div className="space-y-4 mb-4">
+                {(['Surface', 'Deeper', 'Root'] as const).map((depth) => {
+                  const items = t.problem.identity.layers.filter((l: { depth: string }) => l.depth === depth);
+                  if (items.length === 0) return null;
+                  const indent = depth === 'Surface' ? 0 : depth === 'Deeper' ? 16 : 32;
+                  return (
+                    <div key={depth} style={{ paddingLeft: indent }}>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        {depth !== 'Surface' && <span className="text-[10px] text-gray-300">↓</span>}
+                        <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">{depth}</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {items.map((l: { depth: string; text: string; source?: string; sourceUrl?: string }, i: number) => (
+                          <div key={i}>
+                            <p className="text-sm text-gray-600">{l.text}</p>
+                            {l.source && <p className="text-[10px] text-gray-400 mt-0.5">{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 underline">{l.source}</a> : l.source}</p>}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <blockquote className="text-sm italic text-gray-600 border-l-2 border-red-200 pl-3">
                 {t.problem.identity.quote}
@@ -161,17 +183,28 @@ export default function PositioningPage() {
                 </div>
               </div>
               {/* Trace to root */}
-              <div className="space-y-2 mb-4">
-                {t.problem.business.layers.map((l: { depth: string; text: string; source?: string; sourceUrl?: string }, i: number) => (
-                  <div key={i} className="flex items-start gap-2" style={{ paddingLeft: i * 12 }}>
-                    <span className="text-[10px] text-gray-300 mt-1">↓</span>
-                    <div>
-                      <span className="text-[9px] text-gray-400 uppercase">{l.depth}</span>
-                      <p className="text-sm text-gray-600">{l.text}</p>
-                      {l.source && <p className="text-[10px] text-gray-400 mt-0.5">{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 underline">{l.source}</a> : l.source}</p>}
+              <div className="space-y-4 mb-4">
+                {(['Surface', 'Deeper', 'Root'] as const).map((depth) => {
+                  const items = t.problem.business.layers.filter((l: { depth: string }) => l.depth === depth);
+                  if (items.length === 0) return null;
+                  const indent = depth === 'Surface' ? 0 : depth === 'Deeper' ? 16 : 32;
+                  return (
+                    <div key={depth} style={{ paddingLeft: indent }}>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        {depth !== 'Surface' && <span className="text-[10px] text-gray-300">↓</span>}
+                        <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">{depth}</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {items.map((l: { depth: string; text: string; source?: string; sourceUrl?: string }, i: number) => (
+                          <div key={i}>
+                            <p className="text-sm text-gray-600">{l.text}</p>
+                            {l.source && <p className="text-[10px] text-gray-400 mt-0.5">{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 underline">{l.source}</a> : l.source}</p>}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <blockquote className="text-sm italic text-gray-600 border-l-2 border-amber-200 pl-3">
                 {t.problem.business.quote}
@@ -560,6 +593,10 @@ const en = {
 
   oneLine: {
     label: 'The Position',
+    whatItIs: 'Bloomsline keeps practitioners and their patients connected between sessions, so therapy doesn\'t stop when the session ends.',
+    clarifier: 'Not messaging. Not breaking boundaries. Patients reflect on their own. Practitioners arrive prepared.',
+    feeling: '"It feels like a quiet extension of my care. Like I\'m not doing this alone anymore."',
+    thought: 'You walk in knowing. They walk out feeling it.',
     hook: 'You see 6 patients today. Can you remember what each one told you last time?',
     statement: 'Every session starts like you never stopped listening.',
     supporting: 'Bloomsline connects your sessions, structures your notes, and prepares your next appointment. When patients share between sessions, you see that too.',
@@ -578,20 +615,25 @@ const en = {
       title: 'The Identity Pain',
       side: 'The therapist\'s side of the gap',
       layers: [
-        { depth: 'Surface', text: '"I forgot what my client told me last session."', source: 'Clinicians spend 35% of time on documentation, ~16 min per encounter. (AHRQ Technical Brief, PMC 2024)', sourceUrl: 'https://www.thenationalcouncil.org/news/help-wanted/' },
+        { depth: 'Surface', text: '"I forgot what my patient told me last session."', source: 'Clinicians spend 35% of time on documentation, ~16 min per encounter. (AHRQ Technical Brief, PMC 2024)', sourceUrl: 'https://www.thenationalcouncil.org/news/help-wanted/' },
+        { depth: 'Surface', text: '"I can\'t organize my notes well enough to prepare."', source: '', sourceUrl: '' },
+        { depth: 'Surface', text: '"I\'m not feeling well, but I can\'t cancel — my patients need me."', source: '', sourceUrl: '' },
         { depth: 'Deeper', text: '"I can\'t hold 30 patients\' stories in my head."', source: '93% of behavioral health workers report burnout. 62% rate it 8-10 out of 10. (National Council for Mental Wellbeing, 2023)', sourceUrl: 'https://www.thenationalcouncil.org/news/help-wanted/' },
+        { depth: 'Deeper', text: '"I\'m spending more time on paperwork than on my patients."', source: '', sourceUrl: '' },
         { depth: 'Deeper', text: '"I\'m becoming the kind of therapist I never wanted to be."', source: 'Burnout linked to 23% reduction in treatment effectiveness. 28% vs 37% patient improvement. (PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11024738/' },
-        { depth: 'Root', text: '"I became a therapist to truly see people. When I forget, I stop seeing them."', source: '"It works like a second brain." Sandra, psychologist (Bloomsline interview)', sourceUrl: '' },
+        { depth: 'Root', text: '"My tools handle billing and scheduling — but nothing helps me carry context from one session to the next."', source: '"It works like a second brain." Sandra, psychologist (Bloomsline interview)', sourceUrl: '' },
       ],
       quote: '',
     },
     business: {
       title: 'The Business Pain',
-      side: 'The client\'s side of the gap',
+      side: 'The patient\'s side of the gap',
       layers: [
+        { depth: 'Surface', text: '"My therapist didn\'t remember what I said last time."', source: '', sourceUrl: '' },
+        { depth: 'Surface', text: '"I don\'t feel like anything happens between sessions."', source: '', sourceUrl: '' },
         { depth: 'Surface', text: '"Half of patients drop out by session 3. Most never make it past session 6."', source: '~50% dropout by session 3, ~35% after first session. (Garfield 1994; Barrett et al., PMC 2009; confirmed in 2024 meta-analyses)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/' },
         { depth: 'Deeper', text: '"They don\'t feel connected enough between appointments to come back."', source: '56% of psychologists have no openings. Avg waitlist: 3+ months. (APA Survey, 2023; NPR)', sourceUrl: 'https://www.npr.org/sections/health-shots/2023/12/06/1217487323/psychologists-waitlist-demand-mental-health-care' },
-        { depth: 'Deeper', text: '"Therapy ends at the door. Life doesn\'t."', source: 'Administrative frictions reduce mental health workforce capacity and patient access. (PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11203202/' },
+        { depth: 'Deeper', text: '"What happens between sessions — a bad week, a breakthrough — never makes it back to the therapist."', source: 'Administrative frictions reduce mental health workforce capacity and patient access. (PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11203202/' },
         { depth: 'Root', text: '"The gap between sessions is where patients are lost."', source: 'U.S. projected short ~31,000 mental health practitioners by 2025. (HRSA Behavioral Health Workforce Brief, 2025)', sourceUrl: 'https://bhw.hrsa.gov/sites/default/files/bureau-health-workforce/data-research/Behavioral-Health-Workforce-Brief-2025.pdf' },
       ],
       quote: '',
@@ -854,6 +896,10 @@ const fr = {
 
   oneLine: {
     label: 'La Position',
+    whatItIs: 'Bloomsline garde praticiens et patients connectés entre les séances, pour que la thérapie ne s\'arrête pas quand la séance se termine.',
+    clarifier: 'Pas de messagerie. Pas de rupture du cadre. Les patients réfléchissent à leur rythme. Les praticiens arrivent préparés.',
+    feeling: '« C\'est comme une extension silencieuse de mon soin. Comme si je ne faisais plus ça tout seul. »',
+    thought: 'Vous arrivez préparé. Ils repartent compris.',
     hook: 'Vous voyez 6 patients aujourd\'hui. Vous vous souvenez de ce que chacun vous a dit la dernière fois ?',
     statement: 'Chaque séance commence comme si vous n\'aviez jamais cessé d\'écouter.',
     supporting: 'Bloomsline connecte vos séances, structure vos notes et prépare votre prochain rendez-vous. Quand vos patients partagent entre les séances, vous le voyez aussi.',
