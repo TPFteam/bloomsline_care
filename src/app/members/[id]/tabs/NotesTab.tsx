@@ -2007,70 +2007,66 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {obsFilteredNotes.map(note => {
-                    // Show filtered tag if active, otherwise first tag
+                  {(() => {
                     const activeTypes = [...typeFilters].filter(tf => tf !== '__no_tag__')
-                    let firstTag: { type: string; label: string } | null = null
-                    if (activeTypes.length > 0) {
-                      for (const v of activeTypes) {
-                        const m = note.content.match(new RegExp(`<mark[^>]*data-tag="${v}"[^>]*?data-tag-label="([^"]*)"`, 'i'))
-                        if (m) { firstTag = { type: v, label: m[1] }; break }
+                    // When filtering by tag, explode each note into one row per matching tag
+                    const rows: { note: typeof obsFilteredNotes[0]; tag: { type: string; label: string } | null; tagContent: string }[] = []
+                    for (const note of obsFilteredNotes) {
+                      if (activeTypes.length > 0) {
+                        for (const v of activeTypes) {
+                          const tagRegex = new RegExp(`<mark[^>]*data-tag="${v}"[^>]*?data-tag-label="([^"]*)"[^>]*>(.*?)</mark>`, 'gis')
+                          let m
+                          while ((m = tagRegex.exec(note.content)) !== null) {
+                            const text = stripHtml(m[2]).trim()
+                            if (text) rows.push({ note, tag: { type: v, label: m[1] }, tagContent: text })
+                          }
+                        }
+                      } else {
+                        const tagMatch = note.content.match(/<mark[^>]*data-tag="([^"]*)"[^>]*?data-tag-label="([^"]*)"/)
+                        rows.push({ note, tag: tagMatch ? { type: tagMatch[1], label: tagMatch[2] } : null, tagContent: stripHtml(note.content) })
                       }
                     }
-                    if (!firstTag) {
-                      const tagMatch = note.content.match(/<mark[^>]*data-tag="([^"]*)"[^>]*?data-tag-label="([^"]*)"/)
-                      firstTag = tagMatch ? { type: tagMatch[1], label: tagMatch[2] } : null
-                    }
-                    const tagColors = firstTag ? getNoteColor(firstTag.type) : null
-                    return (
-                      <button
-                        key={note.id}
-                        onClick={() => { if (!note.milestone_id) { setSelectedItemId(note.id); setEditingNoteId(null); setDeletingNoteId(null); setBrowseHighlightTag(firstTag?.type) } }}
-                        className={`w-full text-left px-4 py-3 transition-colors ${note.milestone_id ? 'cursor-default' : 'hover:bg-gray-50/50 cursor-pointer'}`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0 w-16 pt-0.5">
-                            <p className="text-[11px] text-gray-400 tabular-nums leading-tight">
-                              {new Date(note.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}
-                            </p>
-                            <p className="text-[10px] text-gray-300 tabular-nums">{formatNoteTime(note.created_at)}</p>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              {note.note_type !== 'general' && note.note_type !== 'session_summary' && !note.content.includes(`data-tag="${note.note_type}"`) && (
-                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${getNoteColor(note.note_type).bg} ${getNoteColor(note.note_type).text}`}>
-                                  {t.members.noteTypes[note.note_type as keyof typeof t.members.noteTypes] || note.note_type}
-                                </span>
-                              )}
-                              {note.session_id && (
-                                <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-600 flex-shrink-0">
-                                  <LinkIcon className="w-2.5 h-2.5" />{getSessionLabelShort(note.session_id)}
-                                </span>
-                              )}
-                              {(note.title || (note as any).milestones?.title) && (
-                                <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 flex-shrink-0">
-                                  <Target className="w-2.5 h-2.5" />{note.title || (note as any).milestones?.title}
-                                </span>
-                              )}
+                    return rows.map((row, idx) => {
+                      const { note, tag, tagContent } = row
+                      const tagColors = tag ? getNoteColor(tag.type) : null
+                      return (
+                        <button
+                          key={`${note.id}-${idx}`}
+                          onClick={() => { if (!note.milestone_id) { setSelectedItemId(note.id); setEditingNoteId(null); setDeletingNoteId(null); setBrowseHighlightTag(tag?.type) } }}
+                          className={`w-full text-left px-4 py-3 transition-colors ${note.milestone_id ? 'cursor-default' : 'hover:bg-gray-50/50 cursor-pointer'}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-16 pt-0.5">
+                              <p className="text-[11px] text-gray-400 tabular-nums leading-tight">
+                                {new Date(note.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}
+                              </p>
+                              <p className="text-[10px] text-gray-300 tabular-nums">{formatNoteTime(note.created_at)}</p>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              {firstTag && tagColors && (
-                                <span className={`inline-flex items-center px-1 py-0 rounded text-[9px] font-semibold flex-shrink-0 ${tagColors.bg} ${tagColors.text}`}>{firstTag.label}</span>
-                              )}
-                              <p className="text-xs text-gray-500 line-clamp-1 leading-relaxed min-w-0">{(() => {
-                                // Show matching tag's content when filtering, otherwise full note
-                                if (firstTag && activeTypes.length > 0) {
-                                  const tagContentMatch = note.content.match(new RegExp(`<mark[^>]*data-tag="${firstTag.type}"[^>]*>(.*?)</mark>`, 'is'))
-                                  if (tagContentMatch) return stripHtml(tagContentMatch[1])
-                                }
-                                return stripHtml(note.content)
-                              })()}</p>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                {note.session_id && (
+                                  <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-600 flex-shrink-0">
+                                    <LinkIcon className="w-2.5 h-2.5" />{getSessionLabelShort(note.session_id)}
+                                  </span>
+                                )}
+                                {(note.title || (note as any).milestones?.title) && (
+                                  <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 flex-shrink-0">
+                                    <Target className="w-2.5 h-2.5" />{note.title || (note as any).milestones?.title}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                {tag && tagColors && (
+                                  <span className={`inline-flex items-center px-1 py-0 rounded text-[9px] font-semibold flex-shrink-0 ${tagColors.bg} ${tagColors.text}`}>{tag.label}</span>
+                                )}
+                                <p className="text-xs text-gray-500 line-clamp-1 leading-relaxed min-w-0">{tagContent}</p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </button>
-                    )
-                  })}
+                        </button>
+                      )
+                    })
+                  })()}
                 </div>
               )}
             </div>
