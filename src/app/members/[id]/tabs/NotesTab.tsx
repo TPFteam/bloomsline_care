@@ -2008,8 +2008,19 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
               ) : (
                 <div className="divide-y divide-gray-100">
                   {obsFilteredNotes.map(note => {
-                    const tagMatch = note.content.match(/<mark[^>]*data-tag="([^"]*)"[^>]*?data-tag-label="([^"]*)"/)
-                    const firstTag = tagMatch ? { type: tagMatch[1], label: tagMatch[2] } : null
+                    // Show filtered tag if active, otherwise first tag
+                    const activeTypes = [...typeFilters].filter(tf => tf !== '__no_tag__')
+                    let firstTag: { type: string; label: string } | null = null
+                    if (activeTypes.length > 0) {
+                      for (const v of activeTypes) {
+                        const m = note.content.match(new RegExp(`<mark[^>]*data-tag="${v}"[^>]*?data-tag-label="([^"]*)"`, 'i'))
+                        if (m) { firstTag = { type: v, label: m[1] }; break }
+                      }
+                    }
+                    if (!firstTag) {
+                      const tagMatch = note.content.match(/<mark[^>]*data-tag="([^"]*)"[^>]*?data-tag-label="([^"]*)"/)
+                      firstTag = tagMatch ? { type: tagMatch[1], label: tagMatch[2] } : null
+                    }
                     const tagColors = firstTag ? getNoteColor(firstTag.type) : null
                     return (
                       <button
@@ -2046,7 +2057,14 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                               {firstTag && tagColors && (
                                 <span className={`inline-flex items-center px-1 py-0 rounded text-[9px] font-semibold flex-shrink-0 ${tagColors.bg} ${tagColors.text}`}>{firstTag.label}</span>
                               )}
-                              <p className="text-xs text-gray-500 line-clamp-1 leading-relaxed min-w-0">{stripHtml(note.content)}</p>
+                              <p className="text-xs text-gray-500 line-clamp-1 leading-relaxed min-w-0">{(() => {
+                                // Show matching tag's content when filtering, otherwise full note
+                                if (firstTag && activeTypes.length > 0) {
+                                  const tagContentMatch = note.content.match(new RegExp(`<mark[^>]*data-tag="${firstTag.type}"[^>]*>(.*?)</mark>`, 'is'))
+                                  if (tagContentMatch) return stripHtml(tagContentMatch[1])
+                                }
+                                return stripHtml(note.content)
+                              })()}</p>
                             </div>
                           </div>
                         </div>

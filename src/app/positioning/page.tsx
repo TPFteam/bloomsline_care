@@ -458,7 +458,7 @@ const en = {
       title: 'The 4-Layer Framework',
       intro: 'Each layer has one job. If it fails, the layer below never gets a chance.',
       steps: [
-        { num: 'Layer 1', name: 'Hook', job: 'Stops the scroll. Paints a scene they recognize.', example: 'They had a hard week. You\'ll know before they sit down.', color: 'border-red-200 bg-red-50/50' },
+        { num: 'Layer 1', name: 'Hook', job: 'Stops the scroll. Paints a scene they recognize.', example: 'You see 6 clients today. Can you remember what each one told you last time?', color: 'border-red-200 bg-red-50/50' },
         { num: 'Layer 2', name: 'Promise', job: 'Shows the future. The feeling of having this solved.', example: 'Every session starts like you never stopped listening.', color: 'border-teal-200 bg-teal-50/50' },
         { num: 'Layer 3', name: 'Clarity', job: 'Explains what it is. Product, not poetry.', example: 'Your notes, your clients\' moments, and Bloom prepares your next session.', color: 'border-gray-200 bg-gray-50' },
         { num: 'Layer 4', name: 'Proof', job: 'Shows how. Removes the "sounds too good" doubt.', example: 'Bloomsline remembers for you. Before, during, and after.', color: 'border-gray-200 bg-gray-50' },
@@ -479,10 +479,10 @@ const en = {
 
   oneLine: {
     label: 'The Position',
-    hook: 'They had a hard week. You\'ll know before they sit down.',
+    hook: 'You see 6 clients today. Can you remember what each one told you last time?',
     statement: 'Every session starts like you never stopped listening.',
-    supporting: 'Your clients share between sessions. Bloom connects it to your practice. Your next session is already prepared.',
-    proof: 'Between sessions, they reflect. Before the next one, you already know. Bloomsline remembers for you. Before, during, and after.',
+    supporting: 'Bloomsline connects your sessions, structures your notes, and prepares your next appointment. When clients share between sessions, you see that too.',
+    proof: 'Works from day one with just your notes. Gets stronger when clients engage between sessions.',
   },
 
   problem: {
@@ -527,7 +527,7 @@ const en = {
       { value: '1:1', label: 'ratio of clinical to admin hours', source: 'Tamara Suttle', sourceUrl: 'https://tamarasuttle.com/ask-tamara-how-to-manage-the-administrative-and-clinical-juggling-act/' },
       { value: '85%', label: 'say admin causes burnout', source: 'PIMSY EHR', sourceUrl: 'https://pimsyehr.com/administrative-friction-and-clinician-burnout/' },
       { value: '10-15min', label: 'per session on notes alone', source: 'AC Health', sourceUrl: 'https://ac-health.com/how-much-time-therapists-providers-waste-admin-research-blog/' },
-      { value: '86%', label: 'get no mental health treatment', source: 'WHO 2025', sourceUrl: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
+      { value: '20-57%', label: 'drop out after the first session', source: 'Swift & Greenberg; PMC 2022', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
     ],
   },
 
@@ -536,12 +536,12 @@ const en = {
     product: {
       label: 'What we build (the product)',
       items: [
-        'Pre-session briefs, ready when you are',
-        'Tagged clinical notes with instant search',
-        'Member app with moment capture',
-        'Resource sharing with open tracking',
+        'Pre-session briefs prepared automatically',
+        'Clinical context that connects across sessions',
+        'Member reflections captured between appointments',
+        'Resources shared with engagement tracking',
         'Bloom, always there between sessions',
-        'Session management and scheduling',
+        'Calendar integration (Google Calendar)',
       ],
     },
     feeling: {
@@ -583,14 +583,14 @@ const en = {
 
   mechanism: {
     title: 'The Mechanism: How Presence Becomes Growth',
-    intro: 'This isn\'t aspirational. It\'s the actual causal chain.',
+    intro: 'This is our thesis. Research supports each link. Our product hasn\'t proven the full chain yet.',
     steps: [
-      { action: 'The member shares a reflection between sessions (psychoeducation worksheet, reflections, resources)', result: 'Practitioner sees it before the next session, no prep needed' },
-      { action: 'Practitioner walks in knowing what happened', result: 'No catch-up. Session starts from minute 1.' },
-      { action: 'Client feels truly heard and remembered', result: 'They don\'t cancel. They rebook. They tell a friend.' },
-      { action: 'One saved no-show = €60-100', result: 'One referral = €0 CAC. Bloomsline pays for itself in one saved client.' },
+      { action: 'Practitioner uses Bloomsline to structure sessions and connect context across visits', result: 'Preparation drops from 10-15 minutes to seconds. (Proven: product works)' },
+      { action: 'Over time, members share reflections between sessions', result: 'Practitioner sees context before the next session. (Requires member adoption)' },
+      { action: 'Client feels truly heard and remembered', result: 'Research shows alliance predicts retention. (Proven by research, not our product yet)' },
+      { action: 'Fewer no-shows, longer retention, organic referrals', result: 'Practice grows through care quality, not marketing. (Our thesis, unproven)' },
     ],
-    conclusion: 'One client saved from ghosting pays for 6 months of Bloomsline. The ROI isn\'t theoretical. It\'s one relationship.',
+    conclusion: 'One client saved from ghosting pays for 6 months of Bloomsline. This is our model, not proven data. The test: can one practitioner point to one client they kept because of Bloomsline?',
   },
 
   reframe: {
@@ -609,7 +609,7 @@ const en = {
 
   competitive: {
     title: 'Where We Sit',
-    intro: 'We\'re not competing with practice management or wellness apps. We\'re in a different category.',
+    intro: 'We sit between practice management and wellness apps. Nobody searches for "clinical companion" yet. That\'s the risk and the opportunity.',
     competitors: [
       { category: 'Practice Management', name: 'SimplePractice / Doctolib', sells: 'Efficiency. Billing. Scheduling. Forms. Admin streamlining.', position: 'Sells: "Run your practice faster"', highlight: false },
       { category: 'Wellness Apps', name: 'Headspace / Calm', sells: 'Self-help. Meditation. Journaling. No practitioner involvement.', position: 'Sells: "Feel better on your own"', highlight: false },
@@ -619,7 +619,7 @@ const en = {
 
   whyNow: {
     title: 'Why Now',
-    intro: 'This window didn\'t exist 3 years ago. Five things changed at the same time.',
+    intro: 'This window didn\'t exist 3 years ago. Four things changed at the same time.',
     signals: [
       { label: 'B2C therapy collapsed', detail: 'BetterHelp revenue down 9% to $950M in 2025, paying users declining every quarter. Woebot shut down June 2025. Talkspace pivoted to B2B with 25% revenue growth and first profitable year. The market learned: you can\'t cut out the therapist.', year: '2024-2025', source: 'Teladoc Q4 2025 Results; STAT News; Talkspace Q4 2024', sourceUrl: 'https://ir.teladochealth.com/news-and-events/investor-news/press-release-details/2026/Teladoc-Health-Reports-Fourth-Quarter-and-Full-Year-2025-Results/default.aspx' },
       { label: 'AI became clinically acceptable', detail: '49% of people with mental health issues already use AI tools (Sentio 2025). Practitioners went from "AI will replace us" to "show me how it helps."', year: '2025', source: 'Sentio AI Survey 2025', sourceUrl: 'https://sentio.org/ai-research/ai-survey' },
@@ -652,16 +652,16 @@ const en = {
   },
 
   usage: {
-    title: 'How to Say It',
-    intro: 'Same positioning, different words depending on who you\'re talking to and what you need them to do next.',
+    title: 'How to Say It (Internal Playbook)',
+    intro: 'This section is for the team. Same positioning, different words depending on who you\'re talking to and what you need them to do next.',
     labels: { open: 'Open with', then: 'Then say', never: 'Never say' },
     contexts: [
       {
         context: 'Landing page hero',
         audience: 'Practitioners browsing',
         goal: 'Goal: stop the scroll, make them read the next line',
-        open: 'They had a hard week. You\'ll know before they sit down.',
-        follow: 'Bloomsline connects your sessions, your notes, and your clients\' reflections. So every session starts like you never stopped listening.',
+        open: 'You see 6 clients today. Can you remember what each one told you last time?',
+        follow: 'Bloomsline connects your sessions, structures your context, and prepares your next appointment. Every session starts like you never stopped listening.',
         never: 'Never lead with features ("AI-powered pre-session briefs") or jargon ("clinical continuity platform").',
       },
       {
@@ -708,12 +708,12 @@ const en = {
   },
 
   sentence: {
-    primaryLabel: 'Primary. Landing page, social, outreach',
+    primaryLabel: 'For practitioners. Emotional, identity-based.',
     primary: 'When you remember your clients, your clients remember you.',
-    primaryUse: 'Use where emotion leads: landing page hero, social bio, cold email opening, about page.',
-    secondaryLabel: 'Secondary. Pitch, pricing, investors',
-    secondary: 'Be the therapist they remember, and the one they recommend.',
-    secondaryUse: 'Use where business case leads: pitch deck closing, pricing page, investor meetings, partnership proposals.',
+    primaryUse: 'Landing page, social bio, outreach. Speaks to the therapist\'s identity: remembering is caring.',
+    secondaryLabel: 'For investors and partners. Outcome-based.',
+    secondary: 'Therapist presence drives client retention. Retention drives practice growth.',
+    secondaryUse: 'Pitch deck, pricing page, investor meetings. Speaks to the business mechanism: presence → retention → revenue.',
   },
 }
 
@@ -741,7 +741,7 @@ const fr = {
       title: 'Le Framework en 4 Niveaux',
       intro: 'Chaque niveau a un seul job. S\'il échoue, le niveau suivant n\'a jamais sa chance.',
       steps: [
-        { num: 'Niveau 1', name: 'Accroche', job: 'Arrête le scroll. Peint une scène qu\'ils reconnaissent.', example: 'Il a eu une semaine difficile. Vous le saurez avant qu\'il s\'assoie.', color: 'border-red-200 bg-red-50/50' },
+        { num: 'Niveau 1', name: 'Accroche', job: 'Arrête le scroll. Peint une scène qu\'ils reconnaissent.', example: 'Vous voyez 6 clients aujourd\'hui. Vous vous souvenez de ce que chacun vous a dit la dernière fois ?', color: 'border-red-200 bg-red-50/50' },
         { num: 'Niveau 2', name: 'Promesse', job: 'Montre le futur. Le sentiment d\'avoir résolu ce problème.', example: 'Chaque séance commence comme si vous n\'aviez jamais cessé d\'écouter.', color: 'border-teal-200 bg-teal-50/50' },
         { num: 'Niveau 3', name: 'Clarté', job: 'Explique ce que c\'est. Le produit, pas de la poésie.', example: 'Vos notes, les moments de vos clients, et une IA qui prépare votre prochaine séance.', color: 'border-gray-200 bg-gray-50' },
         { num: 'Niveau 4', name: 'Preuve', job: 'Montre comment. Supprime le doute "trop beau pour être vrai".', example: 'Bloomsline se souvient pour vous. Avant, pendant et après.', color: 'border-gray-200 bg-gray-50' },
@@ -762,10 +762,10 @@ const fr = {
 
   oneLine: {
     label: 'La Position',
-    hook: 'Il a eu une semaine difficile. Vous le saurez avant qu\'il s\'assoie.',
+    hook: 'Vous voyez 6 clients aujourd\'hui. Vous vous souvenez de ce que chacun vous a dit la dernière fois ?',
     statement: 'Chaque séance commence comme si vous n\'aviez jamais cessé d\'écouter.',
-    supporting: 'Vos clients partagent entre les séances. Bloom connecte tout à votre pratique. Votre prochaine séance est déjà préparée.',
-    proof: 'Entre les séances, ils réfléchissent. Avant la suivante, vous savez déjà. Bloomsline se souvient pour vous. Avant, pendant et après.',
+    supporting: 'Bloomsline connecte vos séances, structure vos notes et prépare votre prochain rendez-vous. Quand vos clients partagent entre les séances, vous le voyez aussi.',
+    proof: 'Fonctionne dès le premier jour avec vos notes seules. Devient plus puissant quand les clients s\'engagent entre les séances.',
   },
 
   problem: {
@@ -810,7 +810,7 @@ const fr = {
       { value: '1:1', label: 'ratio heures cliniques vs admin', source: 'Tamara Suttle', sourceUrl: 'https://tamarasuttle.com/ask-tamara-how-to-manage-the-administrative-and-clinical-juggling-act/' },
       { value: '85%', label: 'disent que l\'admin cause le burnout', source: 'PIMSY EHR', sourceUrl: 'https://pimsyehr.com/administrative-friction-and-clinician-burnout/' },
       { value: '10-15min', label: 'par séance pour les notes seules', source: 'AC Health', sourceUrl: 'https://ac-health.com/how-much-time-therapists-providers-waste-admin-research-blog/' },
-      { value: '86%', label: 'n\'ont aucun traitement en santé mentale', source: 'OMS 2025', sourceUrl: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
+      { value: '20-57%', label: 'abandonnent après la première séance', source: 'Swift & Greenberg; PMC 2022', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
     ],
   },
 
@@ -902,7 +902,7 @@ const fr = {
 
   whyNow: {
     title: 'Pourquoi Maintenant',
-    intro: 'Cette fenêtre n\'existait pas il y a 3 ans. Cinq choses ont changé en même temps.',
+    intro: 'Cette fenêtre n\'existait pas il y a 3 ans. Quatre choses ont changé en même temps.',
     signals: [
       { label: 'Le B2C thérapie s\'est effondré', detail: 'BetterHelp : revenus en baisse de 9% à 950M$ en 2025, utilisateurs payants en déclin chaque trimestre. Woebot fermé en juin 2025. Talkspace pivoté B2B : +25% de revenus, première année rentable. Le marché a appris : on ne peut pas couper le thérapeute.', year: '2024-2025', source: 'Teladoc Q4 2025; STAT News; Talkspace Q4 2024', sourceUrl: 'https://ir.teladochealth.com/news-and-events/investor-news/press-release-details/2026/Teladoc-Health-Reports-Fourth-Quarter-and-Full-Year-2025-Results/default.aspx' },
       { label: 'L\'IA est devenue cliniquement acceptable', detail: '49% des personnes avec des problèmes de santé mentale utilisent déjà des outils IA (Sentio 2025). Les praticiens sont passés de "l\'IA va nous remplacer" à "montrez-moi comment ça aide."', year: '2025', source: 'Sentio AI Survey 2025', sourceUrl: 'https://sentio.org/ai-research/ai-survey' },
@@ -943,7 +943,7 @@ const fr = {
         context: 'Page d\'accueil',
         audience: 'Praticiens en navigation',
         goal: 'Objectif : arrêter le scroll, les faire lire la suite',
-        open: 'Il a eu une semaine difficile. Vous le saurez avant qu\'il s\'assoie.',
+        open: 'Vous voyez 6 clients aujourd\'hui. Vous vous souvenez de ce que chacun vous a dit la dernière fois ?',
         follow: 'Bloomsline connecte vos séances, vos notes et les réflexions de vos clients. Pour que chaque séance commence comme si vous n\'aviez jamais cessé d\'écouter.',
         never: 'Ne jamais ouvrir avec des fonctionnalités ("résumés pré-séance par IA") ou du jargon ("plateforme de continuité clinique").',
       },
@@ -991,11 +991,11 @@ const fr = {
   },
 
   sentence: {
-    primaryLabel: 'Principal. Page d\'accueil, réseaux sociaux, prospection',
+    primaryLabel: 'Pour les praticiens. Émotionnel, identitaire.',
     primary: 'Quand vous vous souvenez de vos clients, vos clients se souviennent de vous.',
-    primaryUse: 'Utilisez là où l\'émotion mène : hero de la page d\'accueil, bio social, email de prospection, page à propos.',
-    secondaryLabel: 'Secondaire. Pitch, prix, investisseurs',
-    secondary: 'Soyez le thérapeute dont ils se souviennent, et celui qu\'ils recommandent.',
-    secondaryUse: 'Utilisez là où le business case mène : slide de clôture du pitch, page de prix, réunions investisseurs, propositions de partenariat.',
+    primaryUse: 'Page d\'accueil, bio social, prospection. Parle à l\'identité du thérapeute : se souvenir, c\'est prendre soin.',
+    secondaryLabel: 'Pour investisseurs et partenaires. Axé résultats.',
+    secondary: 'La présence du thérapeute favorise la rétention client. La rétention favorise la croissance du cabinet.',
+    secondaryUse: 'Pitch deck, page de prix, réunions investisseurs. Parle au mécanisme business : présence → rétention → revenus.',
   },
 }

@@ -53,15 +53,15 @@ const OLD_GOAL_COLORS = ['#059669','#047857','#065f46','#6d28d9','#2563eb','#d1f
 
 /** Get clean innerHTML for saving — strips hoisted labels and empty marks */
 function getCleanHtml(el: HTMLElement): string {
-  // Remove hoisted labels (display-only, not content)
-  el.querySelectorAll('[data-hoisted-label]').forEach(n => n.remove())
-  el.querySelectorAll('.label-hoisted').forEach(n => n.classList.remove('label-hoisted'))
-  // Remove empty marks
-  el.querySelectorAll('mark[data-tag], mark[data-goal-id], mark[data-verbatim]').forEach(mark => {
+  // Clone so we never modify the live DOM (preserves cursor position)
+  const clone = el.cloneNode(true) as HTMLElement
+  clone.querySelectorAll('[data-hoisted-label]').forEach(n => n.remove())
+  clone.querySelectorAll('.label-hoisted').forEach(n => n.classList.remove('label-hoisted'))
+  clone.querySelectorAll('mark[data-tag], mark[data-goal-id], mark[data-verbatim]').forEach(mark => {
     const text = mark.textContent?.replace(/\u200B/g, '').replace(/\u00A0/g, '').trim()
     if (!text) mark.parentNode?.removeChild(mark)
   })
-  return el.innerHTML
+  return clone.innerHTML
 }
 
 /** Inject --tag-color and --tag-bg + recolor old goal greens to navy + rewrite tag colors to palette */
@@ -417,8 +417,8 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
           if (!activeGoal || activeGoal.id !== id) {
             setActiveGoal({ id, title, status })
           }
-        } else if (activeGoal) {
-          setActiveGoal(null)
+        } else {
+          if (activeGoal) setActiveGoal(null)
         }
       }
     }
@@ -426,12 +426,12 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     // P2 — Detect inline triggers (# or @)
     const sel = window.getSelection()
     if (!sel || !sel.rangeCount || !sel.isCollapsed) {
-      setInlineTrigger(null)
+      if (inlineTrigger) setInlineTrigger(null)
       return
     }
     const anchor = sel.anchorNode
     if (!anchor || anchor.nodeType !== Node.TEXT_NODE) {
-      setInlineTrigger(null)
+      if (inlineTrigger) setInlineTrigger(null)
       return
     }
     const textContent = anchor.textContent || ''
@@ -1288,22 +1288,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     // Check for mark click (goal/tag/verbatim tooltips)
     const markEl = target.closest('mark[data-goal-id], mark[data-tag], mark[data-verbatim]') as HTMLElement | null
     if (markEl) {
-      e.preventDefault()
-      e.stopPropagation()
-      // Move cursor into the mark so user sees focus there
-      const sel = window.getSelection()
-      if (sel) {
-        const range = document.createRange()
-        if (markEl.firstChild) {
-          range.selectNodeContents(markEl)
-          range.collapse(false)
-        } else {
-          range.setStart(markEl, 0)
-          range.collapse(true)
-        }
-        sel.removeAllRanges()
-        sel.addRange(range)
-      }
+      // Don't prevent default — let browser place cursor where user clicked
       const rect = markEl.getBoundingClientRect()
       setMarkTooltip({
         top: rect.bottom + 4,
