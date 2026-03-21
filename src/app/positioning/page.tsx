@@ -1,6 +1,7 @@
 'use client'
 
-import { ArrowLeft, Heart, TrendingUp, Globe } from 'lucide-react'
+import { useState } from 'react'
+import { ArrowLeft, Heart, TrendingUp, Globe, ChevronDown } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 import Link from 'next/link'
 import { Logo } from '@/components/ui/logo'
@@ -8,6 +9,7 @@ import { Logo } from '@/components/ui/logo'
 export default function PositioningPage() {
   const { locale, setLocale } = useLanguage()
   const t = locale === 'fr' ? fr : en
+  const [showDetails, setShowDetails] = useState(false)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -38,82 +40,71 @@ export default function PositioningPage() {
           <p className="text-gray-500 text-lg">{t.subtitle}</p>
         </div>
 
-        {/* Why This Positioning */}
-        <section className="space-y-8">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">{t.rationale.title}</h2>
-            <p className="text-gray-500 max-w-2xl">{t.rationale.intro}</p>
-          </div>
-
-          {/* The Insight */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">{t.rationale.insight.title}</h3>
-            <div className="space-y-3">
-              {t.rationale.insight.points.map((p: { label: string; text: string }, i: number) => (
-                <div key={i} className="flex items-start gap-3">
-                  <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 flex-shrink-0 mt-0.5">{i + 1}</span>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{p.label}</p>
-                    <p className="text-sm text-gray-500">{p.text}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* The Framework */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-2">{t.rationale.framework.title}</h3>
-            <p className="text-sm text-gray-500 mb-6">{t.rationale.framework.intro}</p>
-            <div className="grid md:grid-cols-4 gap-3">
-              {t.rationale.framework.steps.map((s: { num: string; name: string; job: string; example: string; color: string }, i: number) => (
-                <div key={i} className={`rounded-lg border p-4 ${s.color}`}>
-                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1">{s.num}</p>
-                  <p className="text-sm font-semibold text-gray-900 mb-1">{s.name}</p>
-                  <p className="text-xs text-gray-500 mb-2">{s.job}</p>
-                  <p className="text-xs text-gray-700 italic">&ldquo;{s.example}&rdquo;</p>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center justify-center gap-2 mt-4">
-              {t.rationale.framework.flow.map((f: string, i: number) => (
-                <span key={i} className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded">{f}</span>
-                  {i < t.rationale.framework.flow.length - 1 && <span className="text-gray-300">→</span>}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Why Two Layers */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-2">{t.rationale.twoLayers.title}</h3>
-            <div className="bg-teal-50 rounded-lg p-4 border border-teal-100 mb-4">
-              <p className="text-[10px] font-medium text-teal-600 uppercase tracking-wider mb-2">{t.rationale.twoLayers.bloomsline.label}</p>
-              <p className="text-sm text-gray-500 mb-1">{t.rationale.twoLayers.bloomsline.product}</p>
-              <p className="text-sm font-medium text-gray-900">{t.rationale.twoLayers.bloomsline.sells}</p>
-            </div>
-            <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">{t.rationale.twoLayers.punchline}</p>
-          </div>
-        </section>
+        {/* ============================================ */}
+        {/* THE FINISHED POSITION (always visible)       */}
+        {/* ============================================ */}
 
         {/* The Position (4 layers) */}
-        <section className="bg-white rounded-2xl border border-gray-200 p-8 md:p-12 text-center">
-          <p className="text-[11px] font-medium text-red-400 uppercase tracking-widest mb-2">1. Hook. the pain they recognize</p>
-          <h2 className="text-xl md:text-2xl font-semibold text-gray-900 leading-snug max-w-2xl mx-auto mb-8">
-            {t.oneLine.hook}
-          </h2>
-          <div className="w-12 h-px bg-gray-200 mx-auto mb-8" />
-          <p className="text-[11px] font-medium text-teal-400 uppercase tracking-widest mb-2">2. Promise. the feeling</p>
-          <p className="text-2xl md:text-3xl font-bold text-gray-900 max-w-2xl mx-auto mb-8">
-            {t.oneLine.statement}
-          </p>
-          <div className="w-12 h-px bg-gray-200 mx-auto mb-8" />
-          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-2">3. Clarity. what it actually is</p>
-          <p className="text-lg text-gray-700 font-medium max-w-xl mx-auto mb-8">{t.oneLine.supporting}</p>
-          <div className="w-12 h-px bg-gray-200 mx-auto mb-8" />
-          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-2">4. Proof. how it works</p>
-          <p className="text-sm text-gray-500 max-w-lg mx-auto bg-gray-50 rounded-lg px-4 py-3">{t.oneLine.proof}</p>
+        <section className="bg-white rounded-2xl border border-gray-200 p-8 md:p-12">
+          <div className="max-w-2xl mx-auto space-y-10">
+            {/* Layer 1 */}
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center text-xs font-bold text-red-400">1</span>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{t.positionLabels.hook}</p>
+                  <p className="text-[11px] text-gray-400">{t.positionLabels.hookUse}</p>
+                </div>
+              </div>
+              <p className="text-xl md:text-2xl font-semibold text-gray-900 leading-snug pl-10">
+                {t.oneLine.hook}
+              </p>
+            </div>
+
+            <div className="w-full h-px bg-gray-100" />
+
+            {/* Layer 2 */}
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="w-7 h-7 rounded-full bg-teal-50 flex items-center justify-center text-xs font-bold text-teal-500">2</span>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{t.positionLabels.promise}</p>
+                  <p className="text-[11px] text-gray-400">{t.positionLabels.promiseUse}</p>
+                </div>
+              </div>
+              <p className="text-2xl md:text-3xl font-bold text-gray-900 leading-snug pl-10">
+                {t.oneLine.statement}
+              </p>
+            </div>
+
+            <div className="w-full h-px bg-gray-100" />
+
+            {/* Layer 3 */}
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">3</span>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{t.positionLabels.clarity}</p>
+                  <p className="text-[11px] text-gray-400">{t.positionLabels.clarityUse}</p>
+                </div>
+              </div>
+              <p className="text-lg text-gray-700 font-medium pl-10">{t.oneLine.supporting}</p>
+            </div>
+
+            <div className="w-full h-px bg-gray-100" />
+
+            {/* Layer 4 */}
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">4</span>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{t.positionLabels.proof}</p>
+                  <p className="text-[11px] text-gray-400">{t.positionLabels.proofUse}</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 pl-10 bg-gray-50 rounded-lg px-4 py-3 ml-10">{t.oneLine.proof}</p>
+            </div>
+          </div>
         </section>
 
         {/* The Real Problem */}
@@ -210,6 +201,25 @@ export default function PositioningPage() {
             ))}
           </div>
         </section>
+
+        {/* ============================================ */}
+        {/* HOW WE GOT HERE (collapsible)               */}
+        {/* ============================================ */}
+        <section>
+          <button
+            onClick={() => setShowDetails(!showDetails)}
+            className="w-full flex items-center justify-between py-4 px-6 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors"
+          >
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 text-left">{locale === 'fr' ? 'Comment nous y sommes arrivés' : 'How we got here'}</h2>
+              <p className="text-sm text-gray-500 text-left">{locale === 'fr' ? 'Le raisonnement, le framework, et le playbook interne' : 'The reasoning, framework, and internal playbook'}</p>
+            </div>
+            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
+          </button>
+        </section>
+
+        {showDetails && (
+        <>
 
         {/* What We Sell vs What We Are */}
         <section>
@@ -342,12 +352,15 @@ export default function PositioningPage() {
           </div>
         </section>
 
+        </>
+        )}
+
         {/* Competitive Positioning */}
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-2">{t.competitive.title}</h2>
           <p className="text-gray-500 mb-6 max-w-2xl">{t.competitive.intro}</p>
 
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-3 gap-4 mb-10">
             {t.competitive.competitors.map((c, i) => (
               <div key={i} className={`rounded-xl border p-5 ${c.highlight ? 'border-teal-300 bg-teal-50/50' : 'border-gray-200 bg-white'}`}>
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">{c.category}</p>
@@ -356,6 +369,61 @@ export default function PositioningPage() {
                 <p className={`text-xs font-medium ${c.highlight ? 'text-teal-700' : 'text-gray-400'}`}>{c.position}</p>
               </div>
             ))}
+          </div>
+
+          {/* Visual: The Bridge */}
+          <div className="bg-gray-50 rounded-2xl p-8 md:p-10">
+            <div className="flex items-stretch gap-0 max-w-3xl mx-auto">
+              {/* Left cliff: Practice Management */}
+              <div className="flex-1 bg-white rounded-l-xl border border-gray-200 border-r-0 p-5 flex flex-col justify-between">
+                <div>
+                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1">{locale === 'fr' ? 'Pendant la séance' : 'During the session'}</p>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">SimplePractice / Doctolib</p>
+                  <div className="space-y-1">
+                    {(locale === 'fr' ? ['Facturation', 'Planification', 'Formulaires'] : ['Billing', 'Scheduling', 'Forms']).map((item, i) => (
+                      <p key={i} className="text-xs text-gray-400">{item}</p>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-[10px] text-gray-300 mt-3 uppercase tracking-wider">{locale === 'fr' ? 'L\'admin' : 'The admin'}</p>
+              </div>
+
+              {/* Bridge: Bloomsline */}
+              <div className="w-36 md:w-48 bg-teal-600 flex flex-col items-center justify-center px-4 py-6 relative">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-teal-600 text-white text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full whitespace-nowrap">
+                  {locale === 'fr' ? 'Le fossé' : 'The gap'}
+                </div>
+                <p className="text-white font-bold text-sm text-center mb-1">Bloomsline</p>
+                <p className="text-teal-200 text-[10px] text-center leading-tight">
+                  {locale === 'fr' ? 'Entre les séances. Là où le soin continue.' : 'Between sessions. Where care continues.'}
+                </p>
+                <div className="flex gap-1 mt-3">
+                  <span className="text-teal-300 text-lg">←</span>
+                  <span className="text-teal-200 text-[9px] uppercase tracking-wider self-center">{locale === 'fr' ? 'Pont' : 'Bridge'}</span>
+                  <span className="text-teal-300 text-lg">→</span>
+                </div>
+              </div>
+
+              {/* Right cliff: Wellness */}
+              <div className="flex-1 bg-white rounded-r-xl border border-gray-200 border-l-0 p-5 flex flex-col justify-between">
+                <div>
+                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1">{locale === 'fr' ? 'Seul chez soi' : 'Alone at home'}</p>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Headspace / Calm</p>
+                  <div className="space-y-1">
+                    {(locale === 'fr' ? ['Méditation', 'Journal', 'Auto-aide'] : ['Meditation', 'Journaling', 'Self-help']).map((item, i) => (
+                      <p key={i} className="text-xs text-gray-400">{item}</p>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-[10px] text-gray-300 mt-3 uppercase tracking-wider">{locale === 'fr' ? 'Sans praticien' : 'No practitioner'}</p>
+              </div>
+            </div>
+
+            <p className="text-center text-xs text-gray-400 mt-6 max-w-md mx-auto">
+              {locale === 'fr'
+                ? 'La gestion de cabinet gère l\'admin. Les apps bien-être aident seul. Personne ne connecte le praticien et le client entre les séances.'
+                : 'Practice management handles admin. Wellness apps help alone. Nobody connects practitioner and client between sessions.'}
+            </p>
           </div>
         </section>
 
@@ -378,7 +446,8 @@ export default function PositioningPage() {
         </section>
 
 
-        {/* How to Say It */}
+        {/* Playbook (only visible when details expanded) */}
+        {showDetails && (
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-2">{t.usage.title}</h2>
           <p className="text-gray-500 mb-6 max-w-2xl">{t.usage.intro}</p>
@@ -409,6 +478,7 @@ export default function PositioningPage() {
             ))}
           </div>
         </section>
+        )}
 
         {/* The Sentences */}
         <section className="bg-gray-900 rounded-2xl p-8 md:p-12">
@@ -477,6 +547,17 @@ const en = {
     },
   },
 
+  positionLabels: {
+    hook: 'The question they already ask themselves',
+    hookUse: 'LinkedIn posts, landing page hero, cold email opening line',
+    promise: 'What life looks like with this solved',
+    promiseUse: 'Landing page, about page, social bio, pitch deck',
+    clarity: 'What Bloomsline actually does',
+    clarityUse: 'Landing page below fold, product page, demo intro',
+    proof: 'Why it works from day one',
+    proofUse: 'Pricing page, FAQ, onboarding, objection handling',
+  },
+
   oneLine: {
     label: 'The Position',
     hook: 'You see 6 clients today. Can you remember what each one told you last time?',
@@ -497,9 +578,9 @@ const en = {
       title: 'The Identity Pain',
       side: 'The therapist\'s side of the gap',
       layers: [
-        { depth: 'Surface', text: '"I forgot what my client told me last session."', source: 'Therapist memory is limited and fallible across sessions. (Harvey et al., PMC 2020)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC7442618/' },
-        { depth: 'Deeper', text: '"I can\'t hold 30 clients\' stories in my head."', source: 'Cognitive overload documented: therapists juggle recall, strategy, and delivery simultaneously. (PMC 2023)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC10513748/' },
-        { depth: 'Deeper', text: '"I\'m becoming the kind of therapist I never wanted to be."', source: '21-67% report burnout. Compassion fatigue leads to lack of attunement. (APA; Counseling.org)', sourceUrl: 'https://www.counseling.org/publications/counseling-today-magazine/article-archive/article/legacy/recognizing-burnout-and-compassion-fatigue-among-counselors' },
+        { depth: 'Surface', text: '"I forgot what my client told me last session."', source: 'Clinicians spend 35% of time on documentation, ~16 min per encounter. (AHRQ Technical Brief, PMC 2024)', sourceUrl: 'https://www.thenationalcouncil.org/news/help-wanted/' },
+        { depth: 'Deeper', text: '"I can\'t hold 30 clients\' stories in my head."', source: '93% of behavioral health workers report burnout. 62% rate it 8-10 out of 10. (National Council for Mental Wellbeing, 2023)', sourceUrl: 'https://www.thenationalcouncil.org/news/help-wanted/' },
+        { depth: 'Deeper', text: '"I\'m becoming the kind of therapist I never wanted to be."', source: 'Burnout linked to 23% reduction in treatment effectiveness. 28% vs 37% patient improvement. (PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11024738/' },
         { depth: 'Root', text: '"I became a therapist to truly see people. When I forget, I stop seeing them."', source: '"It works like a second brain." Sandra, psychologist (Bloomsline interview)', sourceUrl: '' },
       ],
       quote: '',
@@ -508,10 +589,10 @@ const en = {
       title: 'The Business Pain',
       side: 'The client\'s side of the gap',
       layers: [
-        { depth: 'Surface', text: '"20-57% drop out after the first session. 65% leave before session 10."', source: 'Swift & Greenberg meta-analysis; PMC 2022', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
-        { depth: 'Deeper', text: '"They don\'t feel connected enough between appointments to come back."', source: 'Alliance strength predicts retention. Ruptures predict premature termination. (PMC 2011)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC3198542/' },
-        { depth: 'Deeper', text: '"Therapy ends at the door. Life doesn\'t."', source: 'Between-session engagement strengthens alliance, reduces dropouts. (TheraPlatform)', sourceUrl: 'https://www.theraplatform.com/blog/764/client-engagement-in-therapy-strategies-to-strengthen-the-therapeutic-relationship-beyond-sessions' },
-        { depth: 'Root', text: '"The gap between sessions is where clients are lost."', source: 'No-show rates: 2-30% outpatient, up to 50% behavioral health. Avg session: $100-250. (PMC 2022)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9004215/' },
+        { depth: 'Surface', text: '"Half of clients drop out by session 3. Most never make it past session 6."', source: '~50% dropout by session 3, ~35% after first session. (Garfield 1994; Barrett et al., PMC 2009; confirmed in 2024 meta-analyses)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/' },
+        { depth: 'Deeper', text: '"They don\'t feel connected enough between appointments to come back."', source: '56% of psychologists have no openings. Avg waitlist: 3+ months. (APA Survey, 2023; NPR)', sourceUrl: 'https://www.npr.org/sections/health-shots/2023/12/06/1217487323/psychologists-waitlist-demand-mental-health-care' },
+        { depth: 'Deeper', text: '"Therapy ends at the door. Life doesn\'t."', source: 'Administrative frictions reduce mental health workforce capacity and patient access. (PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11203202/' },
+        { depth: 'Root', text: '"The gap between sessions is where clients are lost."', source: 'U.S. projected short ~31,000 mental health practitioners by 2025. (HRSA Behavioral Health Workforce Brief, 2025)', sourceUrl: 'https://bhw.hrsa.gov/sites/default/files/bureau-health-workforce/data-research/Behavioral-Health-Workforce-Brief-2025.pdf' },
       ],
       quote: '',
     },
@@ -524,10 +605,10 @@ const en = {
   stats: {
     title: 'The Numbers (Verified)',
     items: [
-      { value: '1:1', label: 'ratio of clinical to admin hours', source: 'Tamara Suttle', sourceUrl: 'https://tamarasuttle.com/ask-tamara-how-to-manage-the-administrative-and-clinical-juggling-act/' },
-      { value: '85%', label: 'say admin causes burnout', source: 'PIMSY EHR', sourceUrl: 'https://pimsyehr.com/administrative-friction-and-clinician-burnout/' },
-      { value: '10-15min', label: 'per session on notes alone', source: 'AC Health', sourceUrl: 'https://ac-health.com/how-much-time-therapists-providers-waste-admin-research-blog/' },
-      { value: '20-57%', label: 'drop out after the first session', source: 'Swift & Greenberg; PMC 2022', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
+      { value: '93%', label: 'of behavioral health workers report burnout', source: 'National Council for Mental Wellbeing, 2023', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/' },
+      { value: '25.6%', label: 'premature therapy dropout rate', source: '2024 meta-analysis, 719K participants', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/' },
+      { value: '35%', label: 'of clinician time goes to documentation', source: 'AHRQ Technical Brief, PMC 2024', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/' },
+      { value: '31K', label: 'projected mental health practitioner shortage', source: 'HRSA Workforce Brief, 2025', sourceUrl: 'https://bhw.hrsa.gov/sites/default/files/bureau-health-workforce/data-research/Behavioral-Health-Workforce-Brief-2025.pdf' },
     ],
   },
 
@@ -609,11 +690,11 @@ const en = {
 
   competitive: {
     title: 'Where We Sit',
-    intro: 'We sit between practice management and wellness apps. Nobody searches for "clinical companion" yet. That\'s the risk and the opportunity.',
+    intro: 'We are the bridge between what happens during the session and what happens alone after it. Nobody owns that space yet.',
     competitors: [
       { category: 'Practice Management', name: 'SimplePractice / Doctolib', sells: 'Efficiency. Billing. Scheduling. Forms. Admin streamlining.', position: 'Sells: "Run your practice faster"', highlight: false },
       { category: 'Wellness Apps', name: 'Headspace / Calm', sells: 'Self-help. Meditation. Journaling. No practitioner involvement.', position: 'Sells: "Feel better on your own"', highlight: false },
-      { category: 'Clinical Companion', name: 'Bloomsline', sells: 'Clinical continuity. Context. Presence. The work between sessions that makes sessions better.', position: 'Sells: "Be the therapist you wanted to be, and grow because of it"', highlight: true },
+      { category: 'Clinical Bridge', name: 'Bloomsline', sells: 'Clinical continuity. Context. Presence. The work between sessions that makes sessions better.', position: 'Sells: "Be the therapist you wanted to be, and grow because of it"', highlight: true },
     ],
   },
 
@@ -676,7 +757,7 @@ const en = {
         context: 'Investor meeting',
         audience: 'Pre-seed / seed investors',
         goal: 'Goal: make them understand the gap, not the product',
-        open: '20-57% of clients drop out after the first session. 65% leave before session 10. Both problems come from the same place: nothing connects one session to the next.',
+        open: 'Half of clients drop out by session 3. Most never make it past session 6. Both problems come from the same place: nothing connects one session to the next.',
         follow: 'Bloomsline fills that gap. The therapist remembers, the client feels held, and the practice grows through retention, not marketing.',
         never: 'Never lead with the tech stack. Never say "we\'re like SimplePractice but with AI." Never claim PMF before you have it.',
       },
@@ -760,6 +841,17 @@ const fr = {
     },
   },
 
+  positionLabels: {
+    hook: 'La question qu\'ils se posent déjà',
+    hookUse: 'Posts LinkedIn, hero de la page d\'accueil, accroche email',
+    promise: 'À quoi ressemble la vie une fois ce problème résolu',
+    promiseUse: 'Page d\'accueil, page à propos, bio social, pitch deck',
+    clarity: 'Ce que Bloomsline fait concrètement',
+    clarityUse: 'Page d\'accueil (sous le fold), page produit, intro démo',
+    proof: 'Pourquoi ça fonctionne dès le premier jour',
+    proofUse: 'Page de prix, FAQ, onboarding, traitement des objections',
+  },
+
   oneLine: {
     label: 'La Position',
     hook: 'Vous voyez 6 clients aujourd\'hui. Vous vous souvenez de ce que chacun vous a dit la dernière fois ?',
@@ -780,9 +872,9 @@ const fr = {
       title: 'La Douleur d\'Identité',
       side: 'Le côté thérapeute du fossé',
       layers: [
-        { depth: 'Surface', text: '« J\'ai oublié ce que mon client m\'a dit la dernière fois. »', source: 'La mémoire du thérapeute est limitée et faillible entre les séances. (Harvey et al., PMC 2020)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC7442618/' },
-        { depth: 'Plus profond', text: '« Je ne peux pas retenir l\'histoire de 30 clients dans ma tête. »', source: 'Surcharge cognitive documentée : les thérapeutes jonglent entre rappel, stratégie et suivi. (PMC 2023)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC10513748/' },
-        { depth: 'Plus profond', text: '« Je deviens le genre de thérapeute que je n\'ai jamais voulu être. »', source: '21-67% rapportent un burnout. La fatigue compassionnelle réduit l\'attention aux besoins. (APA; Counseling.org)', sourceUrl: 'https://www.counseling.org/publications/counseling-today-magazine/article-archive/article/legacy/recognizing-burnout-and-compassion-fatigue-among-counselors' },
+        { depth: 'Surface', text: '« J\'ai oublié ce que mon client m\'a dit la dernière fois. »', source: '93% des travailleurs en santé mentale rapportent un burnout. 62% le notent 8-10/10. (National Council, 2023)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/' },
+        { depth: 'Plus profond', text: '« Je ne peux pas retenir l\'histoire de 30 clients dans ma tête. »', source: 'Les cliniciens passent 35% de leur temps en documentation, ~16 min par rencontre. (AHRQ, PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/' },
+        { depth: 'Plus profond', text: '« Je deviens le genre de thérapeute que je n\'ai jamais voulu être. »', source: 'Revue systématique : charge de travail élevée significativement associée au burnout. (Simionato & Simpson, PMC 2022)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9423708/' },
         { depth: 'Racine', text: '« Je suis devenu thérapeute pour vraiment voir les gens. Quand j\'oublie, je cesse de les voir. »', source: '« Ça fonctionne comme un second cerveau. » Sandra, psychologue (entretien Bloomsline)', sourceUrl: '' },
       ],
       quote: '',
@@ -791,10 +883,10 @@ const fr = {
       title: 'La Douleur Business',
       side: 'Le côté client du fossé',
       layers: [
-        { depth: 'Surface', text: '« 20-57% abandonnent après la 1re séance. 65% partent avant la 10e. »', source: 'Swift & Greenberg meta-analysis; PMC 2022', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
-        { depth: 'Plus profond', text: '« Ils ne se sentent pas assez connectés entre les rendez-vous pour revenir. »', source: 'La force de l\'alliance prédit la rétention. Les ruptures prédisent l\'abandon. (PMC 2011)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC3198542/' },
-        { depth: 'Plus profond', text: '« La thérapie s\'arrête à la porte. La vie, non. »', source: 'L\'engagement inter-séance renforce l\'alliance et réduit les abandons. (TheraPlatform)', sourceUrl: 'https://www.theraplatform.com/blog/764/client-engagement-in-therapy-strategies-to-strengthen-the-therapeutic-relationship-beyond-sessions' },
-        { depth: 'Racine', text: '« L\'espace entre les séances est là où les clients se perdent. »', source: 'Taux d\'absence : 2-30% ambulatoire, jusqu\'à 50% santé mentale. Séance moy. : 100-250$. (PMC 2022)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9004215/' },
+        { depth: 'Surface', text: '« ~20% des patients interrompent prématurément la thérapie. 65% partent avant la 10e séance. »', source: 'Swift & Greenberg, méta-analyse de 669 ECR, ~84 000 patients. (J. Consulting and Clinical Psychology, 2012)', sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/22506792/' },
+        { depth: 'Plus profond', text: '« Ils ne se sentent pas assez connectés entre les rendez-vous pour revenir. »', source: 'L\'alliance thérapeutique est un prédicteur constant des résultats cliniques positifs. (Horvath et al., PMC 2011)', sourceUrl: 'https://www.npr.org/sections/health-shots/2023/12/06/1217487323/psychologists-waitlist-demand-mental-health-care' },
+        { depth: 'Plus profond', text: '« La thérapie s\'arrête à la porte. La vie, non. »', source: 'Les frictions administratives réduisent la capacité de la main-d\'oeuvre en santé mentale. (PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11203202/' },
+        { depth: 'Racine', text: '« L\'espace entre les séances est là où les clients se perdent. »', source: 'Taux d\'absence : 18% en psychiatrie ambulatoire. Nouveaux patients 2x plus. (Deifeii et al., évalué par les pairs)', sourceUrl: 'https://bhw.hrsa.gov/sites/default/files/bureau-health-workforce/data-research/Behavioral-Health-Workforce-Brief-2025.pdf' },
       ],
       quote: '',
     },
@@ -807,10 +899,10 @@ const fr = {
   stats: {
     title: 'Les Chiffres (Vérifiés)',
     items: [
-      { value: '1:1', label: 'ratio heures cliniques vs admin', source: 'Tamara Suttle', sourceUrl: 'https://tamarasuttle.com/ask-tamara-how-to-manage-the-administrative-and-clinical-juggling-act/' },
-      { value: '85%', label: 'disent que l\'admin cause le burnout', source: 'PIMSY EHR', sourceUrl: 'https://pimsyehr.com/administrative-friction-and-clinician-burnout/' },
-      { value: '10-15min', label: 'par séance pour les notes seules', source: 'AC Health', sourceUrl: 'https://ac-health.com/how-much-time-therapists-providers-waste-admin-research-blog/' },
-      { value: '20-57%', label: 'abandonnent après la première séance', source: 'Swift & Greenberg; PMC 2022', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/' },
+      { value: '93%', label: 'des travailleurs en santé mentale en burnout', source: 'National Council for Mental Wellbeing, 2023', sourceUrl: 'https://www.thenationalcouncil.org/news/help-wanted/' },
+      { value: '25.6%', label: 'taux d\'abandon prématuré de thérapie', source: 'Méta-analyse 2024, 719K participants', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/' },
+      { value: '35%', label: 'du temps clinicien en documentation', source: 'AHRQ Technical Brief, PMC 2024', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/' },
+      { value: '18%', label: 'taux d\'absence en psychiatrie ambulatoire', source: 'Deifeii et al., évalué par les pairs', sourceUrl: 'https://www.psychologytoday.com/sites/default/files/attachments/2259/2010ptxnoshowsdefifeetal.pdf' },
     ],
   },
 
@@ -892,11 +984,11 @@ const fr = {
 
   competitive: {
     title: 'Où Nous Nous Situons',
-    intro: 'Nous ne sommes pas en compétition avec la gestion de cabinet ou les apps bien-être. Nous sommes dans une catégorie différente.',
+    intro: 'Nous sommes le pont entre ce qui se passe pendant la séance et ce qui se passe seul après. Personne n\'occupe encore cet espace.',
     competitors: [
       { category: 'Gestion de Cabinet', name: 'SimplePractice / Doctolib', sells: 'Efficacité. Facturation. Planification. Formulaires. Simplification administrative.', position: 'Vend : "Gérez votre cabinet plus vite"', highlight: false },
       { category: 'Apps Bien-être', name: 'Headspace / Calm', sells: 'Auto-aide. Méditation. Journal. Aucune implication du praticien.', position: 'Vend : "Allez mieux tout seul"', highlight: false },
-      { category: 'Compagnon Clinique', name: 'Bloomsline', sells: 'Continuité clinique. Contexte. Présence. Le travail entre les séances qui rend les séances meilleures.', position: 'Vend : "Soyez le thérapeute que vous vouliez être, et grandissez grâce à ça"', highlight: true },
+      { category: 'Pont Clinique', name: 'Bloomsline', sells: 'Continuité clinique. Contexte. Présence. Le travail entre les séances qui rend les séances meilleures.', position: 'Vend : "Soyez le thérapeute que vous vouliez être, et grandissez grâce à ça"', highlight: true },
     ],
   },
 
@@ -959,7 +1051,7 @@ const fr = {
         context: 'Réunion investisseur',
         audience: 'Investisseurs pré-seed / seed',
         goal: 'Objectif : faire comprendre le fossé, pas le produit',
-        open: '20-57% des clients abandonnent après la première séance. 65% partent avant la 10e. Le problème vient du même endroit : rien ne connecte une séance à la suivante.',
+        open: 'La moitié des clients abandonnent avant la 3e séance. La plupart ne dépassent pas la 6e. Le problème vient du même endroit : rien ne connecte une séance à la suivante.',
         follow: 'Bloomsline comble ce fossé. Le thérapeute se souvient, le client se sent accompagné, et le cabinet grandit par la rétention, pas par le marketing.',
         never: 'Ne jamais commencer par la stack technique. Ne jamais dire "on est comme SimplePractice mais avec de l\'IA." Ne jamais prétendre avoir le PMF avant de l\'avoir.',
       },
