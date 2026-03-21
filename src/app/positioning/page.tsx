@@ -48,10 +48,17 @@ export default function PositioningPage() {
         <section className="bg-gray-900 rounded-2xl p-8 md:p-12 text-center">
           <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest mb-3">In one line</p>
           <p className="text-2xl md:text-3xl font-bold text-white mb-3">{t.oneLine.whatItIs}</p>
+          <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest mb-2 mt-8">The boundary</p>
           <p className="text-sm text-gray-500 mb-8">{t.oneLine.clarifier}</p>
-          <div className="max-w-2xl mx-auto space-y-4">
-            <p className="text-lg text-gray-400 italic">{t.oneLine.feeling}</p>
-            <p className="text-lg text-gray-400 italic">{t.oneLine.thought}</p>
+          <div className="max-w-2xl mx-auto space-y-6">
+            <div>
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest mb-2">The feeling we want them to have</p>
+              <p className="text-lg text-gray-400 italic">{t.oneLine.feeling}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest mb-2">The thought they walk away with</p>
+              <p className="text-lg text-gray-400 italic">{t.oneLine.thought}</p>
+            </div>
           </div>
         </section>
 
@@ -596,7 +603,7 @@ const en = {
     whatItIs: 'Bloomsline keeps practitioners and their patients connected between sessions, so therapy doesn\'t stop when the session ends.',
     clarifier: 'Not messaging. Not breaking boundaries. Patients reflect on their own. Practitioners arrive prepared.',
     feeling: '"It feels like a quiet extension of my care. Like I\'m not doing this alone anymore."',
-    thought: 'You walk in knowing. They walk out feeling it.',
+    thought: 'You show up prepared. They leave feeling heard.',
     hook: 'You see 6 patients today. Can you remember what each one told you last time?',
     statement: 'Every session starts like you never stopped listening.',
     supporting: 'Bloomsline connects your sessions, structures your notes, and prepares your next appointment. When patients share between sessions, you see that too.',
@@ -899,7 +906,7 @@ const fr = {
     whatItIs: 'Bloomsline garde praticiens et patients connectés entre les séances, pour que la thérapie ne s\'arrête pas quand la séance se termine.',
     clarifier: 'Pas de messagerie. Pas de rupture du cadre. Les patients réfléchissent à leur rythme. Les praticiens arrivent préparés.',
     feeling: '« C\'est comme une extension silencieuse de mon soin. Comme si je ne faisais plus ça tout seul. »',
-    thought: 'Vous arrivez préparé. Ils repartent compris.',
+    thought: 'Vous arrivez préparé. Ils repartent écoutés.',
     hook: 'Vous voyez 6 patients aujourd\'hui. Vous vous souvenez de ce que chacun vous a dit la dernière fois ?',
     statement: 'Chaque séance commence comme si vous n\'aviez jamais cessé d\'écouter.',
     supporting: 'Bloomsline connecte vos séances, structure vos notes et prépare votre prochain rendez-vous. Quand vos patients partagent entre les séances, vous le voyez aussi.',
