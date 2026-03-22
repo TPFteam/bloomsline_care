@@ -32,6 +32,7 @@ import {
   Link2,
   Send,
   Calendar,
+  RotateCcw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -58,6 +59,7 @@ interface SharedMemberInfo {
   member_id: string
   shared_at: string
   viewed_at: string | null
+  completed_at: string | null
   member: {
     id: string
     first_name: string
@@ -366,6 +368,7 @@ export default function ResourceDetailPage() {
               member_id,
               shared_at,
               viewed_at,
+              completed_at,
               member:members(id, first_name, last_name, avatar_url)
             `)
             .eq('resource_id', resourceId)
@@ -2602,12 +2605,14 @@ export default function ResourceDetailPage() {
                           </Badge>
                         )
                       } else if (submission) {
-                        statusBadge = submission.status === 'reviewed' ? (
+                        // If member completed the resource but response is still draft, treat as submitted
+                        const effectiveStatus = (submission.status === 'draft' && shared.completed_at) ? 'submitted' : submission.status
+                        statusBadge = effectiveStatus === 'reviewed' ? (
                           <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border">
                             <CheckCircle2 className="w-3 h-3 mr-1" />
                             {locale === 'fr' ? 'Révisé' : 'Reviewed'}
                           </Badge>
-                        ) : submission.status === 'draft' ? (
+                        ) : effectiveStatus === 'draft' ? (
                           <Badge className="bg-blue-50 text-blue-700 border-blue-200 border">
                             <Edit className="w-3 h-3 mr-1" />
                             {locale === 'fr' ? 'Brouillon' : 'Draft'}
@@ -2683,7 +2688,9 @@ export default function ResourceDetailPage() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
-                                    setSelectedSubmission(submission)
+                                    // Use effective status (completed_at means submitted even if response is still draft)
+                                    const effectiveStatus = (submission.status === 'draft' && shared.completed_at) ? 'submitted' : submission.status
+                                    setSelectedSubmission({ ...submission, status: effectiveStatus as 'draft' | 'submitted' | 'reviewed' })
                                     setReviewNotes(submission.practitioner_notes || '')
                                   }}
                                   className="rounded-lg"
@@ -2881,26 +2888,65 @@ export default function ResourceDetailPage() {
               </div>
 
               {/* Modal Footer */}
-              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100">
-                <Button
-                  variant="ghost"
-                  onClick={() => setSelectedSubmission(null)}
-                  className="rounded-xl"
-                >
-                  {locale === 'fr' ? 'Fermer' : 'Close'}
-                </Button>
-                <Button
-                  onClick={handleSaveReviewNotes}
-                  disabled={savingNotes}
-                  className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50"
-                >
-                  {savingNotes ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="w-4 h-4 mr-2" />
-                  )}
-                  {locale === 'fr' ? 'Marquer comme révisé' : 'Mark as Reviewed'}
-                </Button>
+              <div className="flex items-center justify-between p-6 border-t border-gray-100">
+                <div>
+                  {(selectedSubmission.status === 'submitted' || selectedSubmission.status === 'reviewed') && <Button
+                    variant="ghost"
+                    onClick={async () => {
+                      if (!selectedSubmission) return
+                      const confirmed = window.confirm(
+                        locale === 'fr'
+                          ? 'Rouvrir cette ressource ? Le patient pourra la remplir à nouveau.'
+                          : 'Reopen this resource? The patient will be able to fill it in again.'
+                      )
+                      if (!confirmed) return
+                      setSavingNotes(true)
+                      try {
+                        await updateSubmission(selectedSubmission.id, { status: 'draft' })
+                        // Also clear completed_at on shared resource so member can fill again
+                        if (selectedSubmission.member?.id && resource) {
+                          await supabase
+                            .from('member_shared_resources')
+                            .update({ completed_at: null })
+                            .eq('member_id', selectedSubmission.member.id)
+                            .eq('resource_id', resource.id)
+                        }
+                        toast.success(locale === 'fr' ? 'Ressource rouverte pour le patient' : 'Resource reopened for patient')
+                        fetchSubmissions(params.id as string)
+                        setSelectedSubmission(null)
+                      } catch {
+                        toast.error(locale === 'fr' ? 'Échec de la réouverture' : 'Failed to reopen')
+                      }
+                      setSavingNotes(false)
+                    }}
+                    disabled={savingNotes}
+                    className="rounded-xl text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    {locale === 'fr' ? 'Rouvrir pour le patient' : 'Reopen for patient'}
+                  </Button>}
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setSelectedSubmission(null)}
+                    className="rounded-xl"
+                  >
+                    {locale === 'fr' ? 'Fermer' : 'Close'}
+                  </Button>
+                  <Button
+                    onClick={handleSaveReviewNotes}
+                    disabled={savingNotes}
+                    className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl shadow-lg shadow-lavender-300/50"
+                  >
+                    {savingNotes ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                    )}
+                    {locale === 'fr' ? 'Marquer comme révisé' : 'Mark as Reviewed'}
+                  </Button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
