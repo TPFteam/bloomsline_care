@@ -881,7 +881,7 @@ const en = {
     primary: 'When you remember your patients, your patients remember you.',
     primaryUse: 'Landing page, social bio, outreach. Speaks to the therapist\'s identity: remembering is caring.',
     secondaryLabel: 'For investors and partners. Outcome-based.',
-    secondary: 'Therapist presence drives client retention. Retention drives practice growth.',
+    secondary: 'Practitioner presence drives patient retention. Retention drives practice growth.',
     secondaryUse: 'Pitch deck, pricing page, investor meetings. Speaks to the business mechanism: presence → retention → revenue.',
   },
 }
