@@ -201,7 +201,7 @@ export default function PositioningPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-2">{(t as any).dayInLife.title}</h2>
             <p className="text-gray-500 mb-8 max-w-2xl">{(t as any).dayInLife.intro}</p>
 
-            <div className="space-y-6">
+            <div className="space-y-8">
               {(t as any).dayInLife.steps.map((step: any, i: number) => (
                 <div key={i} className="flex items-start gap-4">
                   <div className="text-sm font-mono font-bold text-teal-600 w-16 flex-shrink-0 pt-0.5">
@@ -210,6 +210,20 @@ export default function PositioningPage() {
                   <div className="flex-1">
                     <p className="text-sm text-gray-900 font-semibold">{step.action}</p>
                     <p className="text-sm text-gray-500 mt-1">{step.detail}</p>
+                    {step.insight && (
+                      <div className="mt-3 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100">
+                        <p className="text-xs text-gray-600 font-medium">{step.insight}</p>
+                        {step.sources && (
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
+                            {step.sources.map((s: any, si: number) => (
+                              <a key={si} href={s.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-400 hover:text-gray-600 underline">
+                                {s.name}
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -226,8 +240,8 @@ export default function PositioningPage() {
           <h2 className="text-xl font-bold text-gray-900 mb-2">{t.mechanism.title}</h2>
           <p className="text-gray-500 mb-8 max-w-2xl">{t.mechanism.intro}</p>
 
-          <div className="space-y-4">
-            {t.mechanism.steps.map((step, i) => (
+          <div className="space-y-6">
+            {t.mechanism.steps.map((step: any, i: number) => (
               <div key={i} className="flex items-start gap-4">
                 <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-sm font-bold text-gray-500">
                   {i + 1}
@@ -235,6 +249,15 @@ export default function PositioningPage() {
                 <div className="flex-1 pt-1">
                   <p className="text-sm text-gray-900 font-medium">{step.action}</p>
                   <p className="text-sm text-gray-500">{step.result}</p>
+                  {step.sources && step.sources.length > 0 && (
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                      {step.sources.map((s: any, si: number) => (
+                        <a key={si} href={s.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-400 hover:text-gray-600 underline">
+                          {s.name}
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -744,22 +767,50 @@ const en = {
     title: 'A Day with Bloomsline',
     intro: 'What changes for a practitioner.',
     steps: [
-      { time: '7:45 AM', action: 'Marie opens Bloomsline before her first session.', detail: 'Bloom has prepared a brief: "Léa mentioned anxiety about her job interview (last session, March 5). She completed the breathing exercise you shared and journaled about feeling more ready but still nervous."' },
-      { time: '8:00 AM', action: 'Marie walks into her session already knowing.', detail: 'No flipping through notes. No awkward "remind me where we left off." Léa feels heard from the first sentence.' },
-      { time: '12:30 PM', action: 'Between sessions, Marie tags her notes.', detail: 'Everything is organized by patient, by theme, by date. No more scattered Google Docs or paper notebooks.' },
-      { time: '6:00 PM', action: 'Marie goes home.', detail: 'Her notes are done. Tomorrow\'s sessions are already prepared. She doesn\'t carry 30 patients\' stories in her head.' },
+      { time: '7:45 AM', action: 'Marie opens Bloomsline before her first session.', detail: 'Bloom has prepared a brief: "Léa mentioned anxiety about her job interview (last session, March 5). She completed the breathing exercise you shared and journaled about feeling more ready but still nervous."', insight: 'Clinicians spend 10-15 min between each session on prep and notes. For every 1 hour of patient time, nearly 2 hours go to EHR and desk work.', sources: [
+        { name: 'Sinsky et al., Annals of Internal Medicine, 2016', url: 'https://www.acpjournals.org/doi/10.7326/M16-0961' },
+        { name: 'AHRQ Technical Brief, PMC 2024', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/' },
+        { name: 'PMC: Time on Patient Care vs Documentation, 2018', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC5801881/' },
+      ] },
+      { time: '8:00 AM', action: 'Marie walks into her session already knowing.', detail: 'No flipping through notes. No awkward "remind me where we left off." Léa feels heard from the first sentence.', insight: 'Therapeutic alliance is the strongest predictor of patient retention. ~50% of patients drop out by session 3.', sources: [
+        { name: 'Flückiger et al., Psychotherapy Meta-Analysis, 2018', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC5726532/' },
+        { name: 'Barrett et al., Dropout Meta-Analysis, PMC 2009', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/' },
+        { name: 'APA Practitioner Pulse Survey, 2024', url: 'https://www.apa.org/pubs/reports/practitioner/2024' },
+      ] },
+      { time: '12:30 PM', action: 'Between sessions, Marie tags her notes.', detail: 'Everything is organized by patient, by theme, by date. No more scattered Google Docs or paper notebooks.', insight: '35% of clinician time goes to documentation. 82% cite admin work as a burnout driver. 68% say it takes away from patient care.', sources: [
+        { name: 'National Council for Mental Wellbeing, 2023', url: 'https://www.thenationalcouncil.org/news/help-wanted/' },
+        { name: 'PMC: Administrative Frictions in Mental Health, 2024', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11203202/' },
+        { name: 'PMC: Clinical Documentation Burden Review, 2021', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC8068426/' },
+      ] },
+      { time: '6:00 PM', action: 'Marie goes home.', detail: 'Her notes are done. Tomorrow\'s sessions are already prepared. She doesn\'t carry 30 patients\' stories in her head.', insight: '93% of behavioral health workers report burnout. 40% can\'t finish admin within working hours. Clinicians average 3+ hours/week of after-hours documentation.', sources: [
+        { name: 'AHRQ Technical Brief, PMC 2024', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/' },
+        { name: 'National Council for Mental Wellbeing, 2023', url: 'https://www.thenationalcouncil.org/news/help-wanted/' },
+        { name: 'Eleos Health: Documentation Burden & Burnout, 2024', url: 'https://eleos.health/blog-posts/drowning-under-a-pile-of-paperwork-behavioral-health-clinician-burnout/' },
+      ] },
     ],
-    punchline: 'Before Bloomsline: 15 minutes of scrambling before each session. After: everything is already there.',
+    punchline: 'Less prep time. Better sessions. Organized notes. No burnout pile-up. The practice runs smoother. The practitioner feels it.',
   },
 
   mechanism: {
     title: 'The Business Case',
     intro: 'Concrete numbers, not theory.',
     steps: [
-      { action: 'A solo practitioner in France sees ~20 patients/week at ~€60/session.', result: 'That\'s ~€4,800/month in revenue.' },
-      { action: 'One no-show per week costs €240/month. One dropout costs €240-480/month permanently.', result: 'Patient retention is the #1 business lever.' },
-      { action: 'Bloomsline Pro costs €29/month.', result: 'If it prevents even one no-show per month, it pays for itself 2x over.' },
-      { action: 'Research shows therapeutic alliance (feeling heard) is the strongest predictor of retention.', result: 'Bloomsline doesn\'t replace the therapist. It makes the therapist more present.' },
+      { action: 'A solo practitioner in France sees ~20 patients/week at ~€60/session.', result: 'That\'s ~€4,800/month in revenue.', sources: [
+        { name: 'Therapy Cost in France, My Expat Mind, 2025', url: 'https://myexpatmind.com/how-much-does-therapy-cost-in-france-in-2025/' },
+        { name: 'Psychologist Fees France, Psychologist-France.fr', url: 'https://psychologist-france.fr/general-information-psychologist-psychotherapist-counsellor/fees-and-reimbursement-of-consultations-at-psychologist-france/' },
+        { name: 'Average Caseload for Private Practice, Mentalyc', url: 'https://www.mentalyc.com/blog/average-caseload-for-private-practice-therapist' },
+      ] },
+      { action: 'One no-show per week costs €240/month. One dropout costs €240-480/month permanently.', result: 'Patient retention is the #1 business lever.', sources: [
+        { name: '~50% dropout by session 3, Barrett et al., PMC 2009', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/' },
+        { name: '25.6% premature dropout, 2024 meta-analysis, 719K participants', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/' },
+        { name: 'No-show rates in mental health, PMC 2023', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC10261376/' },
+      ] },
+      { action: 'Bloomsline Pro costs €29/month.', result: 'If it prevents even one no-show per month, it pays for itself 2x over.', sources: [] },
+      { action: 'Research shows therapeutic alliance (feeling heard) is the strongest predictor of retention.', result: 'Bloomsline doesn\'t replace the therapist. It makes the therapist more present.', sources: [
+        { name: 'Flückiger et al., Alliance-Outcome Meta-Analysis, 2018', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC5726532/' },
+        { name: 'Horvath & Symonds, Alliance in Therapy, 1991', url: 'https://pubmed.ncbi.nlm.nih.gov/2023421/' },
+        { name: 'APA: Evidence-Based Therapy Relationships, 2018', url: 'https://www.apa.org/pubs/journals/features/amp-amp0000884.pdf' },
+      ] },
     ],
     conclusion: 'The ROI conversation: €29/month vs. €60-480/month in lost revenue. This isn\'t a cost. It\'s an investment that pays back in the first prevented no-show.',
   },
