@@ -179,22 +179,6 @@ export default function PositioningPage() {
           </div>
         </section>
 
-        {/* Verified Stats */}
-        <section className="bg-gray-900 rounded-2xl p-8 md:p-12">
-          <h2 className="text-xl font-bold text-white mb-8">{t.stats.title}</h2>
-          <div className="grid md:grid-cols-4 gap-6">
-            {t.stats.items.map((stat, i) => (
-              <div key={i} className="text-center">
-                <p className="text-3xl font-bold text-white mb-1">{stat.value}</p>
-                <p className="text-sm text-gray-400 mb-2">{stat.label}</p>
-                <a href={stat.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-500 hover:text-gray-300 underline">
-                  {stat.source}
-                </a>
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* Day in Life */}
         {'dayInLife' in t && (
           <section className="bg-white rounded-2xl border border-gray-200 p-8 md:p-12">
@@ -653,8 +637,8 @@ const en = {
   oneLine: {
     label: 'The Position',
     whatItIs: 'Bloomsline is where practitioners organize their practice and stay meaningfully connected with patients between sessions.',
-    clarifier: 'Not messaging. Not breaking boundaries. Patients reflect on their own. Practitioners arrive prepared.',
-    feeling: '"It feels like a quiet extension of my care. Like I\'m not doing this alone anymore."',
+    clarifier: 'Therapeutic boundaries stay intact. Patients reflect at their own pace through the app. Practitioners see the context before the next session.',
+    feeling: '"Everything is in one place. I finally feel organized. And my patients feel like I never stopped listening."',
     thought: 'You show up prepared. They leave feeling heard.',
     hook: 'You see 6 patients today. Can you remember what each one told you last time?',
     statement: 'Every session starts like you never stopped listening.',
@@ -674,13 +658,9 @@ const en = {
       title: 'The Identity Pain',
       side: 'The therapist\'s side of the gap',
       layers: [
-        { depth: 'Surface', text: '"I forgot what my patient told me last session."', source: 'Clinicians spend 35% of time on documentation, ~16 min per encounter. (AHRQ Technical Brief, PMC 2024)', sourceUrl: 'https://www.thenationalcouncil.org/news/help-wanted/' },
-        { depth: 'Surface', text: '"I can\'t organize my notes well enough to prepare."', source: '', sourceUrl: '' },
-        { depth: 'Surface', text: '"I\'m not feeling well, but I can\'t cancel — my patients need me."', source: '', sourceUrl: '' },
-        { depth: 'Deeper', text: '"I can\'t hold 30 patients\' stories in my head."', source: '93% of behavioral health workers report burnout. 62% rate it 8-10 out of 10. (National Council for Mental Wellbeing, 2023)', sourceUrl: 'https://www.thenationalcouncil.org/news/help-wanted/' },
-        { depth: 'Deeper', text: '"I\'m spending more time on paperwork than on my patients."', source: '', sourceUrl: '' },
-        { depth: 'Deeper', text: '"I\'m becoming the kind of therapist I never wanted to be."', source: 'Burnout linked to 23% reduction in treatment effectiveness. 28% vs 37% patient improvement. (PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11024738/' },
-        { depth: 'Root', text: '"My tools handle billing and scheduling — but nothing helps me carry context from one session to the next."', source: '"It works like a second brain." Sandra, psychologist (Bloomsline interview)', sourceUrl: '' },
+        { depth: 'Surface', text: '"I forgot what my patient told me last session."', source: 'Clinicians spend 35% of time on documentation. (AHRQ Technical Brief, PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/' },
+        { depth: 'Deeper', text: '"I\'m spending more time on paperwork than on my patients."', source: '93% of behavioral health workers report burnout. (National Council for Mental Wellbeing, 2023)', sourceUrl: 'https://www.thenationalcouncil.org/news/help-wanted/' },
+        { depth: 'Root', text: '"My tools handle billing and scheduling — but nothing helps me carry context from one session to the next."', source: '', sourceUrl: '' },
       ],
       quote: '',
     },
@@ -688,12 +668,9 @@ const en = {
       title: 'The Business Pain',
       side: 'The patient\'s side of the gap',
       layers: [
-        { depth: 'Surface', text: '"My therapist didn\'t remember what I said last time."', source: '', sourceUrl: '' },
-        { depth: 'Surface', text: '"I don\'t feel like anything happens between sessions."', source: '', sourceUrl: '' },
-        { depth: 'Surface', text: '"Half of patients drop out by session 3. Most never make it past session 6."', source: '~50% dropout by session 3, ~35% after first session. (Garfield 1994; Barrett et al., PMC 2009; confirmed in 2024 meta-analyses)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/' },
-        { depth: 'Deeper', text: '"They don\'t feel connected enough between appointments to come back."', source: '56% of psychologists have no openings. Avg waitlist: 3+ months. (APA Survey, 2023; NPR)', sourceUrl: 'https://www.npr.org/sections/health-shots/2023/12/06/1217487323/psychologists-waitlist-demand-mental-health-care' },
-        { depth: 'Deeper', text: '"What happens between sessions — a bad week, a breakthrough — never makes it back to the therapist."', source: 'Administrative frictions reduce mental health workforce capacity and patient access. (PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11203202/' },
-        { depth: 'Root', text: '"The gap between sessions is where patients are lost."', source: 'U.S. projected short ~31,000 mental health practitioners by 2025. (HRSA Behavioral Health Workforce Brief, 2025)', sourceUrl: 'https://bhw.hrsa.gov/sites/default/files/bureau-health-workforce/data-research/Behavioral-Health-Workforce-Brief-2025.pdf' },
+        { depth: 'Surface', text: '"Half of patients drop out by session 3. They don\'t feel connected enough to come back."', source: '~50% dropout by session 3. (Barrett et al., PMC 2009; 2024 meta-analyses)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/' },
+        { depth: 'Deeper', text: '"What happens between sessions — a bad week, a breakthrough — never makes it back to the practitioner."', source: 'Administrative frictions reduce workforce capacity and patient access. (PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11203202/' },
+        { depth: 'Root', text: '"The gap between sessions is where patients are lost."', source: '', sourceUrl: '' },
       ],
       quote: '',
     },
@@ -994,8 +971,8 @@ const fr = {
   oneLine: {
     label: 'La Position',
     whatItIs: 'Bloomsline est là où les praticiens organisent leur soin et restent connectés de manière significative avec leurs patients entre les séances.',
-    clarifier: 'Pas de messagerie. Pas de rupture du cadre. Les patients réfléchissent à leur rythme. Les praticiens arrivent préparés.',
-    feeling: '« C\'est comme une extension silencieuse de mon soin. Comme si je ne faisais plus ça tout seul. »',
+    clarifier: 'Le cadre thérapeutique est respecté. Les patients réfléchissent à leur rythme via l\'application. Les praticiens voient le contexte avant la prochaine séance.',
+    feeling: '« Tout est au même endroit. Je me sens enfin organisé. Et mes patients ont l\'impression que je n\'ai jamais cessé d\'écouter. »',
     thought: 'Vous arrivez préparé. Ils repartent écoutés.',
     hook: 'Vous voyez 6 patients aujourd\'hui. Vous vous souvenez de ce que chacun vous a dit la dernière fois ?',
     statement: 'Chaque séance commence comme si vous n\'aviez jamais cessé d\'écouter.',
