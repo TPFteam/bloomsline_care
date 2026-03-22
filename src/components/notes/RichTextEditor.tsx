@@ -994,15 +994,15 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
 
     // Check if caret is inside a mark
     let node: Node | null = sel.anchorNode
-    let inMark = false
+    let originalMark: HTMLElement | null = null
     while (node && node !== editor) {
       if (node instanceof HTMLElement && node.tagName === 'MARK') {
-        inMark = true
+        originalMark = node
         break
       }
       node = node.parentNode
     }
-    if (!inMark) return
+    if (!originalMark) return
 
     // Let the browser handle Enter natively, then clean up the duplicated mark
     requestAnimationFrame(() => {
@@ -1020,7 +1020,9 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         cur = cur.parentNode
       }
 
-      if (newMark) {
+      // Only unwrap if this is a DIFFERENT mark (the copy on the new line),
+      // not the original mark — otherwise we'd destroy the original tag
+      if (newMark && newMark !== originalMark) {
         // Unwrap: move children out, place caret, remove empty mark
         const parent = newMark.parentNode
         if (!parent) return
@@ -1040,6 +1042,41 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         range.collapse(true)
         sel2.removeAllRanges()
         sel2.addRange(range)
+      } else if (newMark && newMark === originalMark) {
+        // Browser didn't split the mark — it inserted a <br> inside it.
+        // Split manually: move everything after the <br> out of the mark.
+        const brs = originalMark.querySelectorAll('br')
+        const lastBr = brs[brs.length - 1]
+        if (lastBr) {
+          const parent = originalMark.parentNode
+          if (!parent) return
+          // Collect nodes after the <br>
+          const nodesAfter: Node[] = []
+          let sibling = lastBr.nextSibling
+          while (sibling) {
+            nodesAfter.push(sibling)
+            sibling = sibling.nextSibling
+          }
+          // Remove <br> and move trailing nodes out after the mark
+          originalMark.removeChild(lastBr)
+          const afterMark = originalMark.nextSibling
+          for (const n of nodesAfter) {
+            parent.insertBefore(n, afterMark)
+          }
+          // Insert a <br> before the extracted content for the line break
+          parent.insertBefore(document.createElement('br'), nodesAfter[0] || afterMark)
+
+          // Place caret at start of extracted content
+          const range = document.createRange()
+          if (nodesAfter.length > 0) {
+            range.setStart(nodesAfter[0], 0)
+          } else {
+            range.setStartAfter(originalMark)
+          }
+          range.collapse(true)
+          sel2.removeAllRanges()
+          sel2.addRange(range)
+        }
       }
 
       handleInput()
