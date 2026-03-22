@@ -47,7 +47,23 @@ export default function PositioningPage() {
         {/* Positioning summary */}
         <section className="bg-gray-900 rounded-2xl p-8 md:p-12 text-center">
           <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest mb-3">In one line</p>
-          <p className="text-2xl md:text-3xl font-bold text-white mb-3">{t.oneLine.whatItIs}</p>
+          <p className="text-2xl md:text-3xl font-bold text-white mb-3">
+            {locale === 'fr' ? 'Bloomsline est là où les praticiens ' : 'Bloomsline is where practitioners '}
+            <span className="relative group cursor-help text-teal-400">
+              {locale === 'fr' ? 'organisent leur soin' : 'organize their practice'}
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-white text-gray-700 text-xs font-normal rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                {locale === 'fr' ? 'Notes, patients, séances — tout au même endroit' : 'Notes, patients, sessions — everything in one place'}
+              </span>
+            </span>
+            {locale === 'fr' ? ' et restent ' : ' and stay '}
+            <span className="relative group cursor-help text-teal-400">
+              {locale === 'fr' ? 'connectés de manière significative' : 'meaningfully connected'}
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-white text-gray-700 text-xs font-normal rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                {locale === 'fr' ? 'Pas de messagerie — les patients réfléchissent, les praticiens arrivent préparés' : 'Not messaging — patients reflect on their own, practitioners arrive prepared'}
+              </span>
+            </span>
+            {locale === 'fr' ? ' avec leurs patients entre les séances.' : ' with patients between sessions.'}
+          </p>
           <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest mb-2 mt-8">The boundary</p>
           <p className="text-sm text-gray-500 mb-8">{t.oneLine.clarifier}</p>
           <div className="max-w-2xl mx-auto space-y-6">
@@ -56,71 +72,8 @@ export default function PositioningPage() {
               <p className="text-lg text-gray-400 italic">{t.oneLine.feeling}</p>
             </div>
             <div>
-              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest mb-2">The thought they walk away with</p>
-              <p className="text-lg text-gray-400 italic">{t.oneLine.thought}</p>
-            </div>
-          </div>
-        </section>
-
-        {/* The Position (4 layers) */}
-        <section className="bg-white rounded-2xl border border-gray-200 p-8 md:p-12">
-          <div className="max-w-2xl mx-auto space-y-10">
-            {/* Layer 1 */}
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <span className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center text-xs font-bold text-red-400">1</span>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{t.positionLabels.hook}</p>
-                  <p className="text-[11px] text-gray-400">{t.positionLabels.hookUse}</p>
-                </div>
-              </div>
-              <p className="text-xl md:text-2xl font-semibold text-gray-900 leading-snug pl-10">
-                {t.oneLine.hook}
-              </p>
-            </div>
-
-            <div className="w-full h-px bg-gray-100" />
-
-            {/* Layer 2 */}
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <span className="w-7 h-7 rounded-full bg-teal-50 flex items-center justify-center text-xs font-bold text-teal-500">2</span>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{t.positionLabels.promise}</p>
-                  <p className="text-[11px] text-gray-400">{t.positionLabels.promiseUse}</p>
-                </div>
-              </div>
-              <p className="text-2xl md:text-3xl font-bold text-gray-900 leading-snug pl-10">
-                {t.oneLine.statement}
-              </p>
-            </div>
-
-            <div className="w-full h-px bg-gray-100" />
-
-            {/* Layer 3 */}
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <span className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">3</span>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{t.positionLabels.clarity}</p>
-                  <p className="text-[11px] text-gray-400">{t.positionLabels.clarityUse}</p>
-                </div>
-              </div>
-              <p className="text-lg text-gray-700 font-medium pl-10">{t.oneLine.supporting}</p>
-            </div>
-
-            <div className="w-full h-px bg-gray-100" />
-
-            {/* Layer 4 */}
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <span className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">4</span>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{t.positionLabels.proof}</p>
-                  <p className="text-[11px] text-gray-400">{t.positionLabels.proofUse}</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-500 pl-10 bg-gray-50 rounded-lg px-4 py-3 ml-10">{t.oneLine.proof}</p>
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest mb-2">{locale === 'fr' ? 'Le résultat' : 'The result'}</p>
+              <p className="text-lg text-gray-400 italic">{locale === 'fr' ? 'Les praticiens arrivent prêts. Les patients se sentent écoutés.' : 'Practitioners walk in ready. Patients feel heard.'}</p>
             </div>
           </div>
         </section>
@@ -242,26 +195,59 @@ export default function PositioningPage() {
           </div>
         </section>
 
-        {/* ============================================ */}
-        {/* HOW WE GOT HERE (collapsible)               */}
-        {/* ============================================ */}
-        <section>
-          <button
-            onClick={() => setShowDetails(!showDetails)}
-            className="w-full flex items-center justify-between py-4 px-6 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors"
-          >
-            <div>
-              <h2 className="text-lg font-bold text-gray-900 text-left">{locale === 'fr' ? 'Comment nous y sommes arrivés' : 'How we got here'}</h2>
-              <p className="text-sm text-gray-500 text-left">{locale === 'fr' ? 'Le raisonnement, le framework, et le playbook interne' : 'The reasoning, framework, and internal playbook'}</p>
+        {/* Day in Life */}
+        {'dayInLife' in t && (
+          <section className="bg-white rounded-2xl border border-gray-200 p-8 md:p-12">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">{(t as any).dayInLife.title}</h2>
+            <p className="text-gray-500 mb-8 max-w-2xl">{(t as any).dayInLife.intro}</p>
+
+            <div className="space-y-6">
+              {(t as any).dayInLife.steps.map((step: any, i: number) => (
+                <div key={i} className="flex items-start gap-4">
+                  <div className="text-sm font-mono font-bold text-teal-600 w-16 flex-shrink-0 pt-0.5">
+                    {step.time}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-900 font-semibold">{step.action}</p>
+                    <p className="text-sm text-gray-500 mt-1">{step.detail}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
-          </button>
+
+            <div className="mt-8 p-4 bg-gray-900 rounded-lg">
+              <p className="text-sm font-semibold text-white">{(t as any).dayInLife.punchline}</p>
+            </div>
+          </section>
+        )}
+
+        {/* The Business Case */}
+        <section className="bg-white rounded-2xl border border-gray-200 p-8 md:p-12">
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{t.mechanism.title}</h2>
+          <p className="text-gray-500 mb-8 max-w-2xl">{t.mechanism.intro}</p>
+
+          <div className="space-y-4">
+            {t.mechanism.steps.map((step, i) => (
+              <div key={i} className="flex items-start gap-4">
+                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-sm font-bold text-gray-500">
+                  {i + 1}
+                </div>
+                <div className="flex-1 pt-1">
+                  <p className="text-sm text-gray-900 font-medium">{step.action}</p>
+                  <p className="text-sm text-gray-500">{step.result}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8 p-4 bg-teal-50 rounded-lg border border-teal-100">
+            <p className="text-sm font-semibold text-teal-900">{t.mechanism.conclusion}</p>
+          </div>
         </section>
 
-        {showDetails && (
-        <>
+        {/* --- Sections below moved up, old Day in Life + Business Case removed --- */}
 
-        {/* What We Sell vs What We Are */}
+        {/* What We Sell vs What We Are - MOVED TO SUPPORTING MATERIAL */}
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-8">{t.whatWeSell.title}</h2>
           <div className="grid md:grid-cols-2 gap-8">
@@ -347,53 +333,6 @@ export default function PositioningPage() {
           </div>
         </section>
 
-        {/* The Mechanism */}
-        <section className="bg-white rounded-2xl border border-gray-200 p-8 md:p-12">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">{t.mechanism.title}</h2>
-          <p className="text-gray-500 mb-8 max-w-2xl">{t.mechanism.intro}</p>
-
-          <div className="space-y-4">
-            {t.mechanism.steps.map((step, i) => (
-              <div key={i} className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-sm font-bold text-gray-500">
-                  {i + 1}
-                </div>
-                <div className="flex-1 pt-1">
-                  <p className="text-sm text-gray-900 font-medium">{step.action}</p>
-                  <p className="text-sm text-gray-500">{step.result}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-8 p-4 bg-teal-50 rounded-lg border border-teal-100">
-            <p className="text-sm font-semibold text-teal-900">{t.mechanism.conclusion}</p>
-          </div>
-        </section>
-
-        {/* Feature Reframing */}
-        <section>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">{t.reframe.title}</h2>
-          <p className="text-gray-500 mb-6 max-w-2xl">{t.reframe.intro}</p>
-
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="grid grid-cols-3 gap-0 bg-gray-50 border-b border-gray-200 px-6 py-3">
-              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest">{t.reframe.headers[0]}</p>
-              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest">{t.reframe.headers[1]}</p>
-              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest">{t.reframe.headers[2]}</p>
-            </div>
-            {t.reframe.rows.map((row, i) => (
-              <div key={i} className={`grid grid-cols-3 gap-0 px-6 py-3 ${i < t.reframe.rows.length - 1 ? 'border-b border-gray-100' : ''}`}>
-                <p className="text-sm text-gray-700">{row.feature}</p>
-                <p className="text-sm text-gray-400 line-through">{row.old}</p>
-                <p className="text-sm text-gray-900 font-medium">{row.new_}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        </>
-        )}
 
         {/* Competitive Positioning */}
         <section>
@@ -486,8 +425,26 @@ export default function PositioningPage() {
         </section>
 
 
-        {/* Playbook (only visible when details expanded) */}
+        {/* ============================================ */}
+        {/* SUPPORTING MATERIAL (collapsible)            */}
+        {/* ============================================ */}
+        <section>
+          <button
+            onClick={() => setShowDetails(!showDetails)}
+            className="w-full flex items-center justify-between py-4 px-6 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors"
+          >
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 text-left">{locale === 'fr' ? 'Matériel complémentaire' : 'Supporting Material'}</h2>
+              <p className="text-sm text-gray-500 text-left">{locale === 'fr' ? 'Framework, playbook interne, et détails supplémentaires' : 'Framework, internal playbook, and more details'}</p>
+            </div>
+            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
+          </button>
+        </section>
+
         {showDetails && (
+        <>
+
+        {/* Playbook */}
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-2">{t.usage.title}</h2>
           <p className="text-gray-500 mb-6 max-w-2xl">{t.usage.intro}</p>
@@ -518,6 +475,78 @@ export default function PositioningPage() {
             ))}
           </div>
         </section>
+
+        {/* The Position (4 layers) */}
+        <section className="bg-white rounded-2xl border border-gray-200 p-8 md:p-12">
+          <h2 className="text-xl font-bold text-gray-900 mb-8">The 4-Layer Messaging Framework</h2>
+          <div className="max-w-2xl mx-auto space-y-10">
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center text-xs font-bold text-red-400">1</span>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{t.positionLabels.hook}</p>
+                  <p className="text-[11px] text-gray-400">{t.positionLabels.hookUse}</p>
+                </div>
+              </div>
+              <p className="text-xl md:text-2xl font-semibold text-gray-900 leading-snug pl-10">{t.oneLine.hook}</p>
+            </div>
+            <div className="w-full h-px bg-gray-100" />
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="w-7 h-7 rounded-full bg-teal-50 flex items-center justify-center text-xs font-bold text-teal-500">2</span>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{t.positionLabels.promise}</p>
+                  <p className="text-[11px] text-gray-400">{t.positionLabels.promiseUse}</p>
+                </div>
+              </div>
+              <p className="text-2xl md:text-3xl font-bold text-gray-900 leading-snug pl-10">{t.oneLine.statement}</p>
+            </div>
+            <div className="w-full h-px bg-gray-100" />
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">3</span>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{t.positionLabels.clarity}</p>
+                  <p className="text-[11px] text-gray-400">{t.positionLabels.clarityUse}</p>
+                </div>
+              </div>
+              <p className="text-lg text-gray-700 font-medium pl-10">{t.oneLine.supporting}</p>
+            </div>
+            <div className="w-full h-px bg-gray-100" />
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">4</span>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{t.positionLabels.proof}</p>
+                  <p className="text-[11px] text-gray-400">{t.positionLabels.proofUse}</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 pl-10 bg-gray-50 rounded-lg px-4 py-3 ml-10">{t.oneLine.proof}</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Feature Reframing */}
+        <section>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{t.reframe.title}</h2>
+          <p className="text-gray-500 mb-6 max-w-2xl">{t.reframe.intro}</p>
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="grid grid-cols-3 gap-0 bg-gray-50 border-b border-gray-200 px-6 py-3">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest">{t.reframe.headers[0]}</p>
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest">{t.reframe.headers[1]}</p>
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest">{t.reframe.headers[2]}</p>
+            </div>
+            {t.reframe.rows.map((row, i) => (
+              <div key={i} className={`grid grid-cols-3 gap-0 px-6 py-3 ${i < t.reframe.rows.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                <p className="text-sm text-gray-700">{row.feature}</p>
+                <p className="text-sm text-gray-400 line-through">{row.old}</p>
+                <p className="text-sm text-gray-900 font-medium">{row.new_}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        </>
         )}
 
         {/* The Sentences */}
@@ -600,7 +629,7 @@ const en = {
 
   oneLine: {
     label: 'The Position',
-    whatItIs: 'Bloomsline keeps practitioners and their patients connected between sessions, so therapy doesn\'t stop when the session ends.',
+    whatItIs: 'Bloomsline is where practitioners organize their practice and stay meaningfully connected with patients between sessions.',
     clarifier: 'Not messaging. Not breaking boundaries. Patients reflect on their own. Practitioners arrive prepared.',
     feeling: '"It feels like a quiet extension of my care. Like I\'m not doing this alone anymore."',
     thought: 'You show up prepared. They leave feeling heard.',
@@ -662,27 +691,27 @@ const en = {
   },
 
   whatWeSell: {
-    title: 'What We Sell vs. What We Build',
+    title: 'What We Build vs. What They Get',
     product: {
-      label: 'What we build (the product)',
+      label: 'What we build',
       items: [
-        'Pre-session briefs prepared automatically',
-        'Clinical context that connects across sessions',
-        'Member reflections captured between appointments',
-        'Resources shared with engagement tracking',
-        'Bloom, always there between sessions',
-        'Calendar integration (Google Calendar)',
+        'All patients, notes, and sessions in one place',
+        'AI-powered pre-session briefs (Bloom)',
+        'Patient app for reflections between sessions',
+        'Shared resources with completion tracking',
+        'Progress tracking and outcome visibility',
+        'Google Calendar integration',
       ],
     },
     feeling: {
-      label: 'What we sell (the feeling)',
+      label: 'What practitioners feel',
       items: [
-        'Walking into every session already knowing',
+        'Finally organized. Everything in one place.',
+        'Walking into every session already prepared',
         'Never asking "what did we talk about last time?"',
-        'Patients who feel heard between appointments',
-        'A practice that grows because you\'re great. not because you\'re marketing',
-        'Going home without a pile of notes to write',
-        'Being the therapist you became one to be',
+        'Patients who feel heard, even between sessions',
+        'Going home without a pile of notes to catch up on',
+        'Growing through care quality, not marketing',
       ],
     },
   },
@@ -711,16 +740,28 @@ const en = {
     },
   },
 
-  mechanism: {
-    title: 'The Mechanism: How Presence Becomes Growth',
-    intro: 'This is our thesis. Research supports each link. Our product hasn\'t proven the full chain yet.',
+  dayInLife: {
+    title: 'A Day with Bloomsline',
+    intro: 'What changes for a practitioner.',
     steps: [
-      { action: 'Practitioner uses Bloomsline to structure sessions and connect context across visits', result: 'Preparation drops from 10-15 minutes to seconds. (Proven: product works)' },
-      { action: 'Over time, members share reflections between sessions', result: 'Practitioner sees context before the next session. (Requires member adoption)' },
-      { action: 'Client feels truly heard and remembered', result: 'Research shows alliance predicts retention. (Proven by research, not our product yet)' },
-      { action: 'Fewer no-shows, longer retention, organic referrals', result: 'Practice grows through care quality, not marketing. (Our thesis, unproven)' },
+      { time: '7:45 AM', action: 'Marie opens Bloomsline before her first session.', detail: 'Bloom has prepared a brief: "Léa mentioned anxiety about her job interview (last session, March 5). She completed the breathing exercise you shared and journaled about feeling more ready but still nervous."' },
+      { time: '8:00 AM', action: 'Marie walks into her session already knowing.', detail: 'No flipping through notes. No awkward "remind me where we left off." Léa feels heard from the first sentence.' },
+      { time: '12:30 PM', action: 'Between sessions, Marie tags her notes.', detail: 'Everything is organized by patient, by theme, by date. No more scattered Google Docs or paper notebooks.' },
+      { time: '6:00 PM', action: 'Marie goes home.', detail: 'Her notes are done. Tomorrow\'s sessions are already prepared. She doesn\'t carry 30 patients\' stories in her head.' },
     ],
-    conclusion: 'One client saved from ghosting pays for 6 months of Bloomsline. This is our model, not proven data. The test: can one practitioner point to one client they kept because of Bloomsline?',
+    punchline: 'Before Bloomsline: 15 minutes of scrambling before each session. After: everything is already there.',
+  },
+
+  mechanism: {
+    title: 'The Business Case',
+    intro: 'Concrete numbers, not theory.',
+    steps: [
+      { action: 'A solo practitioner in France sees ~20 patients/week at ~€60/session.', result: 'That\'s ~€4,800/month in revenue.' },
+      { action: 'One no-show per week costs €240/month. One dropout costs €240-480/month permanently.', result: 'Patient retention is the #1 business lever.' },
+      { action: 'Bloomsline Pro costs €29/month.', result: 'If it prevents even one no-show per month, it pays for itself 2x over.' },
+      { action: 'Research shows therapeutic alliance (feeling heard) is the strongest predictor of retention.', result: 'Bloomsline doesn\'t replace the therapist. It makes the therapist more present.' },
+    ],
+    conclusion: 'The ROI conversation: €29/month vs. €60-480/month in lost revenue. This isn\'t a cost. It\'s an investment that pays back in the first prevented no-show.',
   },
 
   reframe: {
@@ -738,12 +779,12 @@ const en = {
   },
 
   competitive: {
-    title: 'Where We Sit',
-    intro: 'We are the bridge between what happens during the session and what happens alone after it. Nobody owns that space yet.',
+    title: 'The Real Competition',
+    intro: '80% of practitioners use Google Drive or paper notebooks. Our competition isn\'t another tool. It\'s doing nothing.',
     competitors: [
-      { category: 'Practice Management', name: 'SimplePractice / Doctolib', sells: 'Efficiency. Billing. Scheduling. Forms. Admin streamlining.', position: 'Sells: "Run your practice faster"', highlight: false },
-      { category: 'Wellness Apps', name: 'Headspace / Calm', sells: 'Self-help. Meditation. Journaling. No practitioner involvement.', position: 'Sells: "Feel better on your own"', highlight: false },
-      { category: 'Clinical Bridge', name: 'Bloomsline', sells: 'Clinical continuity. Context. Presence. The work between sessions that makes sessions better.', position: 'Sells: "Be the therapist you wanted to be, and grow because of it"', highlight: true },
+      { category: 'Doing Nothing', name: 'Google Drive / Paper / Memory', sells: 'Free. Familiar. "Good enough." Notes scattered across docs, notebooks, and memory. No preparation, no connection between sessions.', position: 'The default: "I\'ll just remember"', highlight: false },
+      { category: 'Practice Management', name: 'Doctolib / SimplePractice', sells: 'Booking, billing, scheduling, forms. Runs the business but doesn\'t help with care. Doctolib: €139/mo for scheduling only. SimplePractice: US-only.', position: 'Sells: "Run your practice faster"', highlight: false },
+      { category: 'Clinical Care', name: 'Bloomsline', sells: 'Everything in one place: notes, patient engagement, session preparation, Bloom AI briefs. The clinical layer that connects sessions. €29/mo.', position: 'Sells: "See everything. Forget nothing. Be present."', highlight: true },
     ],
   },
 
@@ -760,24 +801,22 @@ const en = {
 
   whyUs: {
     title: 'Why Us',
-    intro: 'We\'re not clinicians. We\'re not healthtech veterans. Here\'s why that\'s actually the point.',
+    intro: 'We\'re not clinicians. We\'re builders who experienced broken care firsthand.',
     points: [
-      { label: 'We built the product before the pitch.', text: 'Live MVP: Next.js 16, Expo mobile app, 24+ API endpoints, 3 languages, Google Calendar integration, Bloom pre-session briefs. This isn\'t a Figma file. Practitioners have used it.' },
-      { label: 'We came from the patient side.', text: 'We started this because we experienced broken care firsthand. That gives us empathy for the member experience that most practice management tools completely ignore.' },
-      { label: 'We already failed the first version.', text: 'Started as Doctalink. It didn\'t work. We scrapped it, talked to practitioners, rebuilt from zero. The positioning on this page comes from those failures, not from a strategy book.' },
-      { label: 'We need a clinician, and we know it.', text: 'We\'re actively recruiting a clinical advisor as a founding team member (equity, not a free account). We don\'t pretend to know clinical practice. We know how to build tools that serve it.' },
-      { label: 'The burn is sustainable.', text: '2 founders, no office, ~€2/user variable cost. At €500K raise, that\'s 28-30 months of runway. Enough time to find PMF without panic.' },
+      { label: 'Product first, pitch second.', text: 'Live MVP in production: web app, mobile app, 24+ API endpoints, 3 languages, Google Calendar integration, AI-powered session briefs. Practitioners are using it today.' },
+      { label: 'We came from the patient side.', text: 'We started this because we experienced broken care firsthand. That gives us empathy for the patient experience that practice management tools completely ignore.' },
+      { label: 'We already failed and rebuilt.', text: 'Started as Doctalink. It didn\'t work. We scrapped it, talked to 15+ practitioners, rebuilt from zero. Every decision on this page comes from real conversations, not a strategy book.' },
+      { label: 'Sustainable burn.', text: '2 founders, no office, ~€2/user variable cost, 85% gross margin. At €500K raise, that\'s 28-30 months of runway to find product-market fit without pressure.' },
     ],
   },
 
   risks: {
-    title: 'What Could Kill This Positioning',
-    intro: 'If we\'re being honest with investors, we need to name the risks to this position specifically.',
+    title: 'Honest Risks',
+    intro: 'What could go wrong.',
     items: [
-      { risk: 'This positioning is untested.', counter: 'Zero practitioners have converted because of these specific messages. We have the interviews. We have the product. We don\'t yet have proof that this positioning converts to revenue.' },
-      { risk: '"Doing nothing" might win.', counter: '80%+ of practitioners use paper or Google Drive. If inertia is stronger than the pain we\'re describing, the position doesn\'t matter. The test: can 5 practitioners switch in 90 days?' },
-      { risk: 'The retention-through-presence thesis is unproven.', counter: 'We claim that being more present leads to client retention which leads to practice growth. Research supports the link between alliance and outcomes. But we haven\'t proven OUR product creates that chain.' },
-      { risk: 'SimplePractice could add session briefs tomorrow.', counter: 'They could. But they\'d be adding it to a billing/scheduling platform. Our entire product is built around clinical context. It\'s architectural, not a feature toggle.' },
+      { risk: 'Inertia is the biggest competitor.', counter: '80%+ use Google Drive or paper. If "good enough" wins, no positioning matters. The test: can 5 practitioners switch in 90 days?' },
+      { risk: 'The retention thesis is research-backed but unproven for us.', counter: 'Research links therapeutic alliance to retention. We believe our product strengthens that alliance. But we haven\'t proven the full chain yet.' },
+      { risk: 'We have 2 active users, not 200.', counter: 'We\'re pre-PMF. The product works. The question is whether the positioning converts at scale.' },
     ],
   },
 
@@ -903,7 +942,7 @@ const fr = {
 
   oneLine: {
     label: 'La Position',
-    whatItIs: 'Bloomsline garde praticiens et patients connectés entre les séances, pour que la thérapie ne s\'arrête pas quand la séance se termine.',
+    whatItIs: 'Bloomsline est là où les praticiens organisent leur soin et restent connectés de manière significative avec leurs patients entre les séances.',
     clarifier: 'Pas de messagerie. Pas de rupture du cadre. Les patients réfléchissent à leur rythme. Les praticiens arrivent préparés.',
     feeling: '« C\'est comme une extension silencieuse de mon soin. Comme si je ne faisais plus ça tout seul. »',
     thought: 'Vous arrivez préparé. Ils repartent écoutés.',
