@@ -1177,11 +1177,6 @@ export default function ResourceDetailPage() {
                     if (blockType === 'heading') {
                       return (
                         <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs font-medium text-gray-400">{infoNumber}</span>
-                            <span className="text-xs text-gray-300 uppercase tracking-wide">{lt(infoTypeLabels.heading, locale)}</span>
-                            <div className="h-px flex-1 bg-gray-100" />
-                          </div>
                           <h3 className="text-xl font-semibold text-gray-900">{blockContent}</h3>
                         </div>
                       )
@@ -1190,37 +1185,18 @@ export default function ResourceDetailPage() {
                     if (blockType === 'paragraph') {
                       return (
                         <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs font-medium text-gray-400">{infoNumber}</span>
-                            <span className="text-xs text-gray-300 uppercase tracking-wide">{lt(infoTypeLabels.paragraph, locale)}</span>
-                            <div className="h-px flex-1 bg-gray-100" />
-                          </div>
                           <p className="text-gray-700 leading-relaxed">{blockContent}</p>
                         </div>
                       )
                     }
 
                     if (blockType === 'divider') {
-                      return (
-                        <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs font-medium text-gray-400">{infoNumber}</span>
-                            <span className="text-xs text-gray-300 uppercase tracking-wide">{lt(infoTypeLabels.divider, locale)}</span>
-                            <div className="h-px flex-1 bg-gray-100" />
-                          </div>
-                          <hr className="border-gray-200" />
-                        </div>
-                      )
+                      return <hr key={blockId} className="border-gray-200" />
                     }
 
                     if (blockType === 'quote') {
                       return (
                         <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs font-medium text-gray-400">{infoNumber}</span>
-                            <span className="text-xs text-gray-300 uppercase tracking-wide">{lt(infoTypeLabels.quote, locale)}</span>
-                            <div className="h-px flex-1 bg-gray-100" />
-                          </div>
                           <blockquote className="border-l-4 border-lavender-300 pl-4 py-2 italic text-gray-700 bg-lavender-50/30 rounded-r-lg">
                             {blockContent}
                             {(block as any).quoteAuthor && (
@@ -1240,30 +1216,16 @@ export default function ResourceDetailPage() {
                       }
                       const style = (block as any).style || 'default'
                       return (
-                        <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs font-medium text-gray-400">{infoNumber}</span>
-                            <span className="text-xs text-gray-300 uppercase tracking-wide">{lt(infoTypeLabels.tip, locale)}</span>
-                            <div className="h-px flex-1 bg-gray-100" />
-                          </div>
-                          <div className={`p-4 rounded-xl border ${tipStyles[style as keyof typeof tipStyles] || tipStyles.default}`}>
-                            <p className="text-sm">{blockContent}</p>
-                          </div>
+                        <div key={blockId} className={`p-4 rounded-xl border ${tipStyles[style as keyof typeof tipStyles] || tipStyles.default}`}>
+                          <p className="text-sm">{blockContent}</p>
                         </div>
                       )
                     }
 
                     if (blockType === 'affirmation') {
                       return (
-                        <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs font-medium text-gray-400">{infoNumber}</span>
-                            <span className="text-xs text-gray-300 uppercase tracking-wide">{lt(infoTypeLabels.affirmation, locale)}</span>
-                            <div className="h-px flex-1 bg-gray-100" />
-                          </div>
-                          <div className="p-5 bg-gradient-to-br from-lavender-50 to-purple-50 rounded-xl border border-lavender-100 text-center">
-                            <p className="text-lavender-700 font-medium text-lg">{blockContent}</p>
-                          </div>
+                        <div key={blockId} className="p-5 bg-gradient-to-br from-lavender-50 to-purple-50 rounded-xl border border-lavender-100 text-center">
+                          <p className="text-lavender-700 font-medium text-lg">{blockContent}</p>
                         </div>
                       )
                     }
@@ -1271,11 +1233,6 @@ export default function ResourceDetailPage() {
                     if (blockType === 'image') {
                       return (
                         <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs font-medium text-gray-400">{infoNumber}</span>
-                            <span className="text-xs text-gray-300 uppercase tracking-wide">{lt(infoTypeLabels.image, locale)}</span>
-                            <div className="h-px flex-1 bg-gray-100" />
-                          </div>
                           <div className="flex flex-col items-start">
                             {(block as any).mediaFile?.url ? (
                               <div className="group relative">
@@ -1312,14 +1269,6 @@ export default function ResourceDetailPage() {
                         key={blockId}
                         className="p-5 bg-white rounded-xl border border-gray-100 shadow-sm"
                       >
-                        {/* Question number indicator - inline */}
-                        <div className="flex items-center gap-2.5 mb-4">
-                          <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
-                            {questionNumber}
-                          </div>
-                          <span className="text-[10px] text-gray-400 font-medium tracking-wide uppercase">{typeLabel}</span>
-                          <div className="h-px flex-1 bg-gray-100" />
-                        </div>
 
                         {blockType === 'prompt' && (
                           <>
@@ -1646,11 +1595,6 @@ export default function ResourceDetailPage() {
                       if (blockType === 'heading') {
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
-                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
-                              <div className="h-px flex-1 bg-gray-100" />
-                            </div>
                             <h3 className="text-xl font-semibold text-gray-900">{blockContent}</h3>
                           </div>
                         )
@@ -1660,11 +1604,6 @@ export default function ResourceDetailPage() {
                       if (blockType === 'paragraph') {
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
-                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
-                              <div className="h-px flex-1 bg-gray-100" />
-                            </div>
                             <p className="text-gray-700 leading-relaxed">{blockContent}</p>
                           </div>
                         )
@@ -1675,11 +1614,6 @@ export default function ResourceDetailPage() {
                         const points = (block as any).points || []
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
-                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
-                              <div className="h-px flex-1 bg-gray-100" />
-                            </div>
                             <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
                               {blockContent && <p className="text-emerald-800 font-medium mb-3">{blockContent}</p>}
                               <ul className="space-y-2">
@@ -1707,11 +1641,6 @@ export default function ResourceDetailPage() {
                         const style = calloutStyles[calloutType as keyof typeof calloutStyles] || calloutStyles.info
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
-                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
-                              <div className="h-px flex-1 bg-gray-100" />
-                            </div>
                             <div className={`p-4 rounded-xl border ${style.bg} ${style.border}`}>
                               <div className="flex items-start gap-3">
                                 <span className="text-lg">{style.icon}</span>
@@ -1726,11 +1655,6 @@ export default function ResourceDetailPage() {
                       if (blockType === 'quote') {
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
-                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
-                              <div className="h-px flex-1 bg-gray-100" />
-                            </div>
                             <blockquote className="border-l-4 border-amber-300 pl-4 py-2 italic text-gray-700 bg-amber-50/30 rounded-r-lg">
                               "{blockContent}"
                               {(block as any).attribution && (
@@ -1745,11 +1669,6 @@ export default function ResourceDetailPage() {
                       if (blockType === 'image') {
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
-                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
-                              <div className="h-px flex-1 bg-gray-100" />
-                            </div>
                             {(block as any).mediaFile?.url ? (
                               <div
                                 className="group relative w-48 h-32 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-amber-400 transition-all"
