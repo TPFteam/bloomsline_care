@@ -78,6 +78,40 @@ export default function PositioningPage() {
           </div>
         </section>
 
+        {/* What Practitioners Say */}
+        <section>
+          <h2 className="text-xl font-bold text-gray-900 mb-6">{locale === 'fr' ? 'Retours de démos produit' : 'From Product Demos'}</h2>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <p className="text-sm text-gray-700 italic mb-4">{locale === 'fr'
+                ? '"Ça fonctionne comme un second cerveau — ça me permet de connecter et retrouver des choses normalement enfouies dans mes notes."'
+                : '"It works like a second brain — it lets me connect and find things that are normally buried in my notes."'}</p>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Sandra</p>
+                <p className="text-xs text-gray-400">{locale === 'fr' ? 'Psychologue' : 'Psychologist'}</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <p className="text-sm text-gray-700 italic mb-4">{locale === 'fr'
+                ? '"Les ressources partagées entre les séances — c\'est une clé indirecte. Ça met le patient dans un processus. Ça déclenche la décision de revenir."'
+                : '"The resources you share between sessions — that\'s an indirect key. It puts the patient into a process. It triggers the decision to come back."'}</p>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Kevin</p>
+                <p className="text-xs text-gray-400">{locale === 'fr' ? 'Praticien' : 'Practitioner'}</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <p className="text-sm text-gray-700 italic mb-4">{locale === 'fr'
+                ? '"C\'est bien conçu. J\'ai pu comprendre tout seul sans explication. C\'est bon signe."'
+                : '"It\'s well designed. I could figure it out on my own without you explaining. That\'s a good sign."'}</p>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Yoann</p>
+                <p className="text-xs text-gray-400">{locale === 'fr' ? 'Praticien' : 'Practitioner'}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* The Real Problem */}
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-2">{t.problem.title}</h2>
