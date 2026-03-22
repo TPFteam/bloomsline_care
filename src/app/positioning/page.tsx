@@ -73,7 +73,7 @@ export default function PositioningPage() {
             </div>
             <div>
               <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest mb-2">{locale === 'fr' ? 'Le résultat' : 'The result'}</p>
-              <p className="text-lg text-gray-400 italic">{locale === 'fr' ? 'Les praticiens arrivent prêts. Les patients se sentent écoutés.' : 'Practitioners walk in ready. Patients feel heard.'}</p>
+              <p className="text-lg text-gray-400 italic">{locale === 'fr' ? 'Les praticiens arrivent prêts. Les patients restent accompagnés entre les séances.' : 'Practitioners walk in ready. Patients stay supported between sessions.'}</p>
             </div>
           </div>
         </section>
