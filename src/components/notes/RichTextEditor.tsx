@@ -1159,12 +1159,18 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       sel.addRange(range)
     }
 
-    try {
-      range.surroundContents(markEl)
-    } catch {
-      const fragment = range.extractContents()
-      markEl.appendChild(fragment)
-      range.insertNode(markEl)
+    // Extract the selected content and put it inside the mark
+    const fragment = range.extractContents()
+    markEl.appendChild(fragment)
+    range.insertNode(markEl)
+
+    // Place cursor at end of the mark
+    if (sel) {
+      const newRange = document.createRange()
+      newRange.selectNodeContents(markEl)
+      newRange.collapse(false)
+      sel.removeAllRanges()
+      sel.addRange(newRange)
     }
 
     setPopoverPos(null)
