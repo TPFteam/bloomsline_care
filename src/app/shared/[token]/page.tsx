@@ -130,8 +130,7 @@ export default function SharedResourcePreview({
           </div>
           <button
             onClick={() => {
-              const signUpUrl = `/sign-up?email=${encodeURIComponent(memberEmail)}`
-              router.push(signUpUrl)
+              window.location.href = `https://app.bloomsline.com`
             }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors"
           >
@@ -230,8 +229,7 @@ export default function SharedResourcePreview({
           </p>
           <button
             onClick={() => {
-              const signUpUrl = `/sign-up?email=${encodeURIComponent(memberEmail)}`
-              router.push(signUpUrl)
+              window.location.href = `https://app.bloomsline.com`
             }}
             className="inline-flex items-center gap-2 px-6 py-3 bg-white text-gray-900 font-semibold rounded-xl hover:bg-gray-50 transition-colors"
           >
