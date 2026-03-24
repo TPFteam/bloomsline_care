@@ -7,6 +7,10 @@ export type ContentBlockType =
   | 'list'
   | 'media'
   | 'divider'
+  | 'quote'
+  | 'callout'
+  | 'video'
+  | 'link'
 
 export interface ContentBlock {
   id: string

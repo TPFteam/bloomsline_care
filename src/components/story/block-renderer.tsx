@@ -370,6 +370,62 @@ export function BlockRenderer({ blocks }: BlockRendererProps) {
           </figure>
         )
 
+      case 'quote':
+        return (
+          <blockquote className="border-l-4 border-teal-400 pl-4 py-2 my-4">
+            <p className="text-gray-700 italic text-lg leading-relaxed">
+              {block.content?.text || ''}
+            </p>
+            {block.content?.author && (
+              <footer className="text-sm text-gray-500 mt-2 not-italic">
+                — {block.content.author}
+              </footer>
+            )}
+          </blockquote>
+        )
+
+      case 'callout':
+        return (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 my-4">
+            <p className="text-blue-800 text-sm leading-relaxed">
+              {block.content?.text || ''}
+            </p>
+          </div>
+        )
+
+      case 'video':
+        return block.content?.url ? (
+          <a
+            href={block.content.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 bg-gray-100 rounded-xl p-4 my-4 hover:bg-gray-200 transition-colors"
+          >
+            <span className="text-2xl">▶</span>
+            <span className="text-sm text-gray-700 truncate">{block.content.url}</span>
+          </a>
+        ) : null
+
+      case 'link':
+        return block.content?.url ? (
+          <a
+            href={block.content.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 bg-gray-100 rounded-xl p-4 my-4 hover:bg-gray-200 transition-colors"
+          >
+            <span className="text-teal-600 text-lg">🔗</span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-gray-900 truncate">
+                {block.content.title || block.content.url}
+              </p>
+              {block.content.title && (
+                <p className="text-xs text-gray-500 truncate">{block.content.url}</p>
+              )}
+            </div>
+          </a>
+        ) : null
+
       case 'divider':
         return (
           <hr className="my-8 border-t-2 border-gray-200" />
