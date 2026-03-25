@@ -24,7 +24,7 @@ function AnimatedOverview({ locale = 'en' }: { locale?: string }) {
     },
     fr: {
       title: 'Dynamiques observées ce trimestre',
-      insight: 'Marc a peut-être besoin d\'une attention particulière.',
+      insight: 'Marc nécessite une vigilance spécifique.',
     },
   }
   const t = texts[locale as keyof typeof texts] || texts.en
