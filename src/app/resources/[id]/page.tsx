@@ -2716,7 +2716,8 @@ export default function ResourceDetailPage() {
                       const blocks = (resource?.blocks || []) as ResourceBlock[]
                       const questionBlocks = blocks.filter(b =>
                         ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert',
-                         'numeric', 'slider', 'matrix_rating', 'mood', 'date_picker', 'time_input', 'list_input', 'table_exercise'].includes(b.type)
+                         'numeric', 'slider', 'matrix_rating', 'mood', 'date_picker', 'time_input', 'list_input', 'table_exercise',
+                         'video_response', 'audio_response', 'file_response'].includes(b.type)
                       )
                       const responses = (selectedSubmission.responses || {}) as Record<string, unknown>
 
