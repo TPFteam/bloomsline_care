@@ -24,30 +24,19 @@ export type TherapeuticApproach =
   | 'other'
 
 export type Specialty =
-  | 'anxiety'
-  | 'depression'
-  | 'trauma_ptsd'
-  | 'grief_loss'
+  | 'stress_anxiety'
+  | 'confidence_esteem'
+  | 'emotional_regulation'
   | 'relationships'
-  | 'family'
-  | 'couples'
-  | 'stress'
-  | 'self_esteem'
+  | 'work_career'
+  | 'burnout'
+  | 'decision_making'
   | 'life_transitions'
-  | 'career'
-  | 'addiction'
-  | 'eating_disorders'
-  | 'ocd'
-  | 'adhd'
-  | 'autism'
-  | 'bipolar'
-  | 'personality_disorders'
-  | 'anger_management'
+  | 'nutrition'
+  | 'grief_loss'
+  | 'trauma'
   | 'parenting'
-  | 'lgbtq'
-  | 'cultural_identity'
-  | 'spirituality'
-  | 'chronic_illness'
+  | 'addiction'
   | 'sleep'
   | 'other'
 
@@ -273,30 +262,19 @@ export interface UpdatePractitionerProfileInput {
 
 export function getSpecialtyLabel(specialty: Specialty, locale: string = 'en'): string {
   const labels: Record<Specialty, Record<string, string>> = {
-    anxiety: { en: 'Anxiety', fr: 'Anxiété' },
-    depression: { en: 'Depression', fr: 'Dépression' },
-    trauma_ptsd: { en: 'Trauma & PTSD', fr: 'Traumatisme & TSPT' },
-    grief_loss: { en: 'Grief & Loss', fr: 'Deuil & Perte' },
+    stress_anxiety: { en: 'Stress / Anxiety', fr: 'Stress / Anxiété' },
+    confidence_esteem: { en: 'Confidence / Self-esteem', fr: 'Confiance / Estime' },
+    emotional_regulation: { en: 'Emotional Regulation', fr: 'Gestion des émotions' },
     relationships: { en: 'Relationships', fr: 'Relations' },
-    family: { en: 'Family Issues', fr: 'Problèmes familiaux' },
-    couples: { en: 'Couples Therapy', fr: 'Thérapie de couple' },
-    stress: { en: 'Stress Management', fr: 'Gestion du stress' },
-    self_esteem: { en: 'Self-Esteem', fr: 'Estime de soi' },
-    life_transitions: { en: 'Life Transitions', fr: 'Transitions de vie' },
-    career: { en: 'Career Counseling', fr: 'Orientation professionnelle' },
-    addiction: { en: 'Addiction', fr: 'Dépendance' },
-    eating_disorders: { en: 'Eating Disorders', fr: 'Troubles alimentaires' },
-    ocd: { en: 'OCD', fr: 'TOC' },
-    adhd: { en: 'ADHD', fr: 'TDAH' },
-    autism: { en: 'Autism Spectrum', fr: 'Spectre autistique' },
-    bipolar: { en: 'Bipolar Disorder', fr: 'Trouble bipolaire' },
-    personality_disorders: { en: 'Personality Disorders', fr: 'Troubles de la personnalité' },
-    anger_management: { en: 'Anger Management', fr: 'Gestion de la colère' },
+    work_career: { en: 'Work / Career', fr: 'Travail / Carrière' },
+    burnout: { en: 'Burnout', fr: 'Burn-out' },
+    decision_making: { en: 'Decision-making', fr: 'Prise de décision' },
+    life_transitions: { en: 'Life Transitions', fr: 'Transition de vie' },
+    nutrition: { en: 'Nutrition', fr: 'Nutrition' },
+    grief_loss: { en: 'Grief / Loss', fr: 'Deuil / Perte' },
+    trauma: { en: 'Trauma', fr: 'Trauma' },
     parenting: { en: 'Parenting', fr: 'Parentalité' },
-    lgbtq: { en: 'LGBTQ+', fr: 'LGBTQ+' },
-    cultural_identity: { en: 'Cultural Identity', fr: 'Identité culturelle' },
-    spirituality: { en: 'Spirituality', fr: 'Spiritualité' },
-    chronic_illness: { en: 'Chronic Illness', fr: 'Maladie chronique' },
+    addiction: { en: 'Addiction', fr: 'Addiction' },
     sleep: { en: 'Sleep Issues', fr: 'Troubles du sommeil' },
     other: { en: 'Other', fr: 'Autre' },
   }

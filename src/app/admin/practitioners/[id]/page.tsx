@@ -59,11 +59,9 @@ const PUBLICATION_TYPES: { value: PublicationType; label: string }[] = [
 ]
 
 const SPECIALTIES: Specialty[] = [
-  'anxiety', 'depression', 'trauma_ptsd', 'grief_loss', 'relationships',
-  'family', 'couples', 'stress', 'self_esteem', 'life_transitions',
-  'career', 'addiction', 'eating_disorders', 'ocd', 'adhd',
-  'autism', 'bipolar', 'personality_disorders', 'anger_management',
-  'parenting', 'lgbtq', 'cultural_identity', 'spirituality', 'chronic_illness', 'sleep'
+  'stress_anxiety', 'confidence_esteem', 'emotional_regulation', 'relationships',
+  'work_career', 'burnout', 'decision_making', 'life_transitions',
+  'nutrition', 'grief_loss', 'trauma', 'parenting', 'addiction', 'sleep'
 ]
 
 const APPROACHES: TherapeuticApproach[] = [
