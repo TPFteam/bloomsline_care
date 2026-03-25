@@ -2778,14 +2778,20 @@ export default function ResourceDetailPage() {
                             <p className="text-sm font-medium text-gray-700 mb-1">
                               Q{index + 1}: {typeof block.content === 'string' ? block.content : ''}
                             </p>
-                            {block.type === 'video_response' && hasResponse && typeof response === 'string' && response.startsWith('http') ? (
-                              <video
-                                src={response}
-                                controls
-                                className="w-full max-h-64 rounded-lg bg-black mt-2"
-                                preload="metadata"
-                              />
-                            ) : block.type === 'audio_response' && hasResponse && typeof response === 'string' && response.startsWith('http') ? (
+                            {block.type === 'video_response' && hasResponse && typeof response === 'string' ? (
+                              response.startsWith('http') || response.startsWith('blob:') ? (
+                                <video
+                                  src={response}
+                                  controls
+                                  className="w-full max-h-64 rounded-lg bg-black mt-2"
+                                  preload="metadata"
+                                />
+                              ) : (
+                                <p className="text-sm text-amber-600 italic mt-1">
+                                  {locale === 'fr' ? 'Vidéo enregistrée (téléchargement en cours)' : 'Video recorded (upload pending)'}
+                                </p>
+                              )
+                            ) : block.type === 'audio_response' && hasResponse && typeof response === 'string' && (response.startsWith('http') || response.startsWith('blob:')) ? (
                               <audio src={response} controls className="w-full mt-2" preload="metadata" />
                             ) : (
                               <p className={`text-sm ${hasResponse ? 'text-gray-900' : 'text-red-500 italic'}`}>
