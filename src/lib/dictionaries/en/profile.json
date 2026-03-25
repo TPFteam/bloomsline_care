@@ -94,7 +94,7 @@
       "help": "Select the issues you specialize in treating"
     },
     "approaches": {
-      "label": "Therapeutic Approaches",
+      "label": "Approaches",
       "help": "Select the modalities you use in your practice"
     },
     "ageGroups": {
