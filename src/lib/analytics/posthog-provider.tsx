@@ -17,7 +17,8 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
 
     if (posthogKey && typeof window !== 'undefined') {
       posthog.init(posthogKey, {
-        api_host: posthogHost,
+        api_host: '/ingest',
+        ui_host: 'https://eu.posthog.com',
         person_profiles: 'identified_only',
         capture_pageview: true,
         capture_pageleave: true,
