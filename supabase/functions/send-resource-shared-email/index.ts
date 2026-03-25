@@ -13,6 +13,7 @@ function getTemplate(params: {
   practitionerName: string
   resourceTitle: string
   resourceType: string
+  resourceId: string
   previewUrl?: string
   hasAccount: boolean
   lang: 'en' | 'fr'
@@ -57,7 +58,7 @@ function getTemplate(params: {
   }
 
   const ctaUrl = hasAccount
-    ? 'https://app.bloomsline.com'
+    ? `https://app.bloomsline.com/practitioner?openResourceId=${params.resourceId}`
     : (previewUrl || 'https://app.bloomsline.com')
 
   return {
@@ -258,6 +259,7 @@ serve(async (req) => {
       practitionerName,
       resourceTitle: typeof resource.title === 'string' ? resource.title : 'Resource',
       resourceType: resource.type || 'psychoeducation',
+      resourceId: resource_id,
       previewUrl,
       hasAccount,
       lang,
