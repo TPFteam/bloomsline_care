@@ -1135,17 +1135,54 @@ export default function ProfilePage() {
                     </div>
                     {profile.show_languages !== false && (
                       <>
-                        <input
-                          type="text"
-                          value={profile.languages?.join(', ') || ''}
-                          onChange={(e) => setProfile(prev => ({
-                            ...prev,
-                            languages: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                          }))}
-                          placeholder={t.profile.practice.languages.placeholder}
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">{t.profile.practice.languages.help}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { key: 'Français', en: 'French', fr: 'Français' },
+                            { key: 'English', en: 'English', fr: 'Anglais' },
+                            { key: 'Español', en: 'Spanish', fr: 'Espagnol' },
+                            { key: 'Deutsch', en: 'German', fr: 'Allemand' },
+                            { key: 'Italiano', en: 'Italian', fr: 'Italien' },
+                            { key: 'Português', en: 'Portuguese', fr: 'Portugais' },
+                            { key: 'Nederlands', en: 'Dutch', fr: 'Néerlandais' },
+                            { key: 'العربية', en: 'Arabic', fr: 'Arabe' },
+                            { key: 'Türkçe', en: 'Turkish', fr: 'Turc' },
+                            { key: 'Русский', en: 'Russian', fr: 'Russe' },
+                            { key: 'Polski', en: 'Polish', fr: 'Polonais' },
+                            { key: 'Română', en: 'Romanian', fr: 'Roumain' },
+                            { key: '中文', en: 'Chinese', fr: 'Chinois' },
+                            { key: '日本語', en: 'Japanese', fr: 'Japonais' },
+                            { key: '한국어', en: 'Korean', fr: 'Coréen' },
+                            { key: 'हिन्दी', en: 'Hindi', fr: 'Hindi' },
+                            { key: 'Ελληνικά', en: 'Greek', fr: 'Grec' },
+                            { key: 'Svenska', en: 'Swedish', fr: 'Suédois' },
+                            { key: 'Dansk', en: 'Danish', fr: 'Danois' },
+                            { key: 'Suomi', en: 'Finnish', fr: 'Finnois' },
+                          ].map((lang) => {
+                            const isSelected = profile.languages?.includes(lang.key)
+                            return (
+                              <button
+                                key={lang.key}
+                                type="button"
+                                onClick={() => {
+                                  setProfile(prev => ({
+                                    ...prev,
+                                    languages: isSelected
+                                      ? (prev.languages || []).filter(l => l !== lang.key)
+                                      : [...(prev.languages || []), lang.key]
+                                  }))
+                                }}
+                                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                                  isSelected
+                                    ? 'bg-gray-900 text-white border-gray-900'
+                                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                                }`}
+                              >
+                                {locale === 'fr' ? lang.fr : lang.en}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">{t.profile.practice.languages.help}</p>
                       </>
                     )}
                   </div>
