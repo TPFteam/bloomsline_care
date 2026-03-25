@@ -64,11 +64,13 @@ const SPECIALTIES: Specialty[] = [
   'nutrition', 'grief_loss', 'trauma', 'parenting', 'addiction', 'sleep'
 ]
 
-const APPROACHES: TherapeuticApproach[] = [
+const THERAPEUTIC_APPROACHES: TherapeuticApproach[] = [
   'cbt', 'psychodynamic', 'psychoanalysis', 'integrative', 'acceptance_commitment',
   'emdr', 'systemic', 'humanistic', 'dbt', 'solution_focused',
+]
+const COACHING_APPROACHES: TherapeuticApproach[] = [
   'professional_coaching', 'life_coaching', 'nlp', 'emotional_intelligence',
-  'mindfulness', 'goal_oriented', 'narrative'
+  'mindfulness', 'goal_oriented', 'narrative',
 ]
 
 const AGE_GROUPS: AgeGroup[] = ['children', 'adolescents', 'young_adults', 'adults', 'seniors']
@@ -967,13 +969,42 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
                       </div>
                     </div>
 
-                    {/* Therapeutic Approaches */}
+                    {/* Approaches */}
                     <div className="mb-8">
                       <label className="block text-sm font-medium text-gray-700 mb-3">
                         {t.profile.practice.approaches.label}
                       </label>
+
+                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                        {locale === 'fr' ? 'Approches thérapeutiques' : 'Therapeutic approaches'}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {THERAPEUTIC_APPROACHES.map((approach) => {
+                          const isSelected = form.approaches?.includes(approach)
+                          return (
+                            <button
+                              key={approach}
+                              onClick={() => setForm(prev => ({
+                                ...prev,
+                                approaches: toggleArrayItem(prev.approaches || [], approach)
+                              }))}
+                              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                                isSelected
+                                  ? 'bg-mint-100 text-mint-700 border-2 border-mint-400'
+                                  : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                              }`}
+                            >
+                              {t.profile.approaches[approach as keyof typeof t.profile.approaches] || approach}
+                            </button>
+                          )
+                        })}
+                      </div>
+
+                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                        {locale === 'fr' ? 'Approches coaching' : 'Coaching approaches'}
+                      </p>
                       <div className="flex flex-wrap gap-2">
-                        {APPROACHES.map((approach) => {
+                        {COACHING_APPROACHES.map((approach) => {
                           const isSelected = form.approaches?.includes(approach)
                           return (
                             <button
@@ -1143,17 +1174,54 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
                       </div>
                       {form.show_languages !== false && (
                         <>
-                          <input
-                            type="text"
-                            value={form.languages?.join(', ') || ''}
-                            onChange={(e) => setForm(prev => ({
-                              ...prev,
-                              languages: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                            }))}
-                            placeholder={t.profile.practice.languages.placeholder}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">{t.profile.practice.languages.help}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              { key: 'Français', en: 'French', fr: 'Français' },
+                              { key: 'English', en: 'English', fr: 'Anglais' },
+                              { key: 'Español', en: 'Spanish', fr: 'Espagnol' },
+                              { key: 'Deutsch', en: 'German', fr: 'Allemand' },
+                              { key: 'Italiano', en: 'Italian', fr: 'Italien' },
+                              { key: 'Português', en: 'Portuguese', fr: 'Portugais' },
+                              { key: 'Nederlands', en: 'Dutch', fr: 'Néerlandais' },
+                              { key: 'العربية', en: 'Arabic', fr: 'Arabe' },
+                              { key: 'Türkçe', en: 'Turkish', fr: 'Turc' },
+                              { key: 'Русский', en: 'Russian', fr: 'Russe' },
+                              { key: 'Polski', en: 'Polish', fr: 'Polonais' },
+                              { key: 'Română', en: 'Romanian', fr: 'Roumain' },
+                              { key: '中文', en: 'Chinese', fr: 'Chinois' },
+                              { key: '日本語', en: 'Japanese', fr: 'Japonais' },
+                              { key: '한국어', en: 'Korean', fr: 'Coréen' },
+                              { key: 'हिन्दी', en: 'Hindi', fr: 'Hindi' },
+                              { key: 'Ελληνικά', en: 'Greek', fr: 'Grec' },
+                              { key: 'Svenska', en: 'Swedish', fr: 'Suédois' },
+                              { key: 'Dansk', en: 'Danish', fr: 'Danois' },
+                              { key: 'Suomi', en: 'Finnish', fr: 'Finnois' },
+                            ].map((lang) => {
+                              const isSelected = form.languages?.includes(lang.key)
+                              return (
+                                <button
+                                  key={lang.key}
+                                  type="button"
+                                  onClick={() => {
+                                    setForm(prev => ({
+                                      ...prev,
+                                      languages: isSelected
+                                        ? (prev.languages || []).filter(l => l !== lang.key)
+                                        : [...(prev.languages || []), lang.key]
+                                    }))
+                                  }}
+                                  className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                                    isSelected
+                                      ? 'bg-gray-900 text-white border-gray-900'
+                                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                                  }`}
+                                >
+                                  {locale === 'fr' ? lang.fr : lang.en}
+                                </button>
+                              )
+                            })}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">{t.profile.practice.languages.help}</p>
                         </>
                       )}
                     </div>
