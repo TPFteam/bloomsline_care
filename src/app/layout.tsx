@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/lib/theme/context";
 import { FeedbackWrapper } from "@/components/feedback-wrapper";
 import { CookieConsent } from "@/components/cookie-consent";
 import { PostHogProvider } from "@/lib/analytics/posthog-provider";
+import { PostHogIdentify } from "@/lib/analytics/posthog-identify";
 import { FloatingNotesProvider } from "@/lib/floating-notes/context";
 import { FloatingNotesPanel } from "@/components/notes/FloatingNotesPanel";
 
@@ -46,6 +47,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <PostHogProvider>
+          <PostHogIdentify />
           <ThemeProvider>
             <LanguageProvider>
               <QueryProvider>
