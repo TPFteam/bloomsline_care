@@ -2777,11 +2777,22 @@ export default function ResourceDetailPage() {
                             <p className="text-sm font-medium text-gray-700 mb-1">
                               Q{index + 1}: {typeof block.content === 'string' ? block.content : ''}
                             </p>
-                            <p className={`text-sm ${hasResponse ? 'text-gray-900' : 'text-red-500 italic'}`}>
-                              {hasResponse
-                                ? renderResponseValue(block, response, locale)
-                                : (locale === 'fr' ? 'Non répondu' : 'Not answered')}
-                            </p>
+                            {block.type === 'video_response' && hasResponse && typeof response === 'string' && response.startsWith('http') ? (
+                              <video
+                                src={response}
+                                controls
+                                className="w-full max-h-64 rounded-lg bg-black mt-2"
+                                preload="metadata"
+                              />
+                            ) : block.type === 'audio_response' && hasResponse && typeof response === 'string' && response.startsWith('http') ? (
+                              <audio src={response} controls className="w-full mt-2" preload="metadata" />
+                            ) : (
+                              <p className={`text-sm ${hasResponse ? 'text-gray-900' : 'text-red-500 italic'}`}>
+                                {hasResponse
+                                  ? renderResponseValue(block, response, locale)
+                                  : (locale === 'fr' ? 'Non répondu' : 'Not answered')}
+                              </p>
+                            )}
                           </div>
                         )
                       })
