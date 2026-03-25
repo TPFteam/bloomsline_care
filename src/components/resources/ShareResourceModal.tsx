@@ -148,37 +148,17 @@ export function ShareResourceModal({
       const practName = practitioner?.full_name || 'Your practitioner'
 
       if (member.email) {
-        // Send reminder via notification API
-        const { notifyResourceShared, sendResourceSharedEmail } = require('@/lib/notifications')
-
-        if (members.find(m => m.id === member.id)) {
-          // Check if member has a user_id (account)
-          const { data: memberData } = await supabase
-            .from('members')
-            .select('user_id, email')
-            .eq('id', member.id)
-            .single()
-
-          if (memberData?.user_id) {
-            await notifyResourceShared(supabase, {
-              memberId: member.id,
-              memberUserId: memberData.user_id,
-              resourceId: resource.id,
-              resourceTitle: resource.title,
-              resourceType: resource.type,
-              practitionerName: practName,
-              memberEmail: memberData.email || undefined,
-            })
-          } else if (memberData?.email) {
-            await sendResourceSharedEmail({
-              memberEmail: memberData.email,
-              resourceTitle: resource.title,
-              resourceType: resource.type,
-              practitionerName: practName,
-              resourceId: resource.id,
-            })
-          }
-        }
+        // Call the edge function directly for consistent email design
+        await supabase.functions.invoke('send-resource-shared-email', {
+          body: {
+            type: 'INSERT',
+            record: {
+              member_id: member.id,
+              resource_id: resource.id,
+              practitioner_id: user.id,
+            },
+          },
+        })
 
         toast.success(locale === 'fr' ? 'Rappel envoyé' : 'Reminder sent')
         handleClose()
