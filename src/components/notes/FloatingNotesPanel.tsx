@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { GripVertical, Minus, X, Maximize2, Save, Loader2, FileText } from 'lucide-react'
+import { analytics } from '@/lib/analytics/events'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -154,6 +155,7 @@ export function FloatingNotesPanel() {
       }
 
       toast.success(fr ? 'Note enregistrée' : 'Note saved')
+      analytics.sessionNoteSaved()
       closeFloat()
     } catch (error) {
       console.error('Error saving floating note:', error)

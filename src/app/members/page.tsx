@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { analytics } from '@/lib/analytics/events'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users,
@@ -515,6 +516,7 @@ export default function MembersPage() {
       setNewMember({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] })
       setShowAddModal(false)
       toast.success(t.members.success.memberCreated)
+      analytics.memberAdded({ total_count: updatedMembers.length })
       fetchMembers() // refresh group counts
     } catch (error) {
       console.error('Error creating member:', error)

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { analytics } from '@/lib/analytics/events'
 import { motion } from 'framer-motion'
 import {
   Clock,
@@ -405,6 +406,7 @@ export default function ResourceDetailPage() {
       }
 
       toast.success(locale === 'fr' ? 'Notes enregistrées' : 'Notes saved')
+      analytics.submissionReviewed({ resource_id: resource?.id })
       // Refresh submissions
       fetchSubmissions(params.id as string)
       setSelectedSubmission(null)
@@ -522,6 +524,7 @@ export default function ResourceDetailPage() {
       }
 
       if (successCount > 0) {
+        analytics.resourceShared({ type: resource.type, member_count: successCount, resource_id: resourceId })
         toast.success(
           locale === 'fr'
             ? `Ressource partagée avec ${successCount} patient${successCount > 1 ? 's' : ''}`

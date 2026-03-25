@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { analytics } from '@/lib/analytics/events'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   User,
@@ -292,6 +293,7 @@ export default function ProfilePage() {
       }).catch(() => {}) // Don't fail if sync fails
 
       toast.success(t.profile.success.saved)
+      analytics.profileUpdated({ section: 'practice' })
     } catch (error) {
       console.error('Error saving profile:', error)
       toast.error(t.profile.errors.saveFailed)

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { analytics } from '@/lib/analytics/events'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video, Settings } from 'lucide-react'
 import { CalendarPicker } from '@/components/ui/calendar-picker'
@@ -286,6 +287,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         }
 
         toast.success(`Session scheduled with ${selectedMember.first_name} ${selectedMember.last_name}`)
+        analytics.sessionScheduled({ format: manualSessionFormat, duration: manualDuration })
       } else {
         // Calendar mode: create session + booking + calendar sync
 
