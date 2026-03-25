@@ -975,7 +975,7 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
                         {t.profile.practice.approaches.label}
                       </label>
 
-                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                      <p className="text-xs font-medium text-gray-400 mb-2">
                         {locale === 'fr' ? 'Approches thérapeutiques' : 'Therapeutic approaches'}
                       </p>
                       <div className="flex flex-wrap gap-2 mb-4">
@@ -1000,7 +1000,7 @@ export default function AdminEditPractitionerPage({ params }: { params: Promise<
                         })}
                       </div>
 
-                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                      <p className="text-xs font-medium text-gray-400 mb-2">
                         {locale === 'fr' ? 'Approches coaching' : 'Coaching approaches'}
                       </p>
                       <div className="flex flex-wrap gap-2">
