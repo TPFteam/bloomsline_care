@@ -65,9 +65,10 @@ const SPECIALTIES: Specialty[] = [
 ]
 
 const APPROACHES: TherapeuticApproach[] = [
-  'cbt', 'dbt', 'emdr', 'psychodynamic', 'humanistic', 'solution_focused',
-  'narrative', 'mindfulness', 'art_therapy', 'play_therapy', 'family_systems',
-  'gestalt', 'acceptance_commitment', 'motivational_interviewing', 'trauma_informed', 'somatic'
+  'cbt', 'psychodynamic', 'psychoanalysis', 'integrative', 'acceptance_commitment',
+  'emdr', 'systemic', 'humanistic', 'dbt', 'solution_focused',
+  'professional_coaching', 'life_coaching', 'nlp', 'emotional_intelligence',
+  'mindfulness', 'goal_oriented', 'narrative'
 ]
 
 const AGE_GROUPS: AgeGroup[] = ['children', 'adolescents', 'young_adults', 'adults', 'seniors']

@@ -60,10 +60,13 @@ const SPECIALTIES: Specialty[] = [
 ]
 
 // All approaches options
-const APPROACHES: TherapeuticApproach[] = [
-  'cbt', 'dbt', 'emdr', 'psychodynamic', 'humanistic', 'solution_focused',
-  'narrative', 'mindfulness', 'art_therapy', 'play_therapy', 'family_systems',
-  'gestalt', 'acceptance_commitment', 'motivational_interviewing', 'trauma_informed', 'somatic'
+const THERAPEUTIC_APPROACHES: TherapeuticApproach[] = [
+  'cbt', 'psychodynamic', 'psychoanalysis', 'integrative', 'acceptance_commitment',
+  'emdr', 'systemic', 'humanistic', 'dbt', 'solution_focused',
+]
+const COACHING_APPROACHES: TherapeuticApproach[] = [
+  'professional_coaching', 'life_coaching', 'nlp', 'emotional_intelligence',
+  'mindfulness', 'goal_oriented', 'narrative',
 ]
 
 // Age groups
@@ -957,13 +960,44 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* Therapeutic Approaches */}
+                  {/* Approaches */}
                   <div className="mb-8">
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                       {t.profile.practice.approaches.label}
                     </label>
+
+                    {/* Therapeutic */}
+                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                      {locale === 'fr' ? 'Approches thérapeutiques' : 'Therapeutic approaches'}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {THERAPEUTIC_APPROACHES.map((approach) => {
+                        const isSelected = profile.approaches?.includes(approach)
+                        return (
+                          <button
+                            key={approach}
+                            onClick={() => setProfile(prev => ({
+                              ...prev,
+                              approaches: toggleArrayItem(prev.approaches || [], approach)
+                            }))}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                              isSelected
+                                ? 'bg-mint-100 text-mint-700 border-2 border-mint-400'
+                                : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                            }`}
+                          >
+                            {t.profile.approaches[approach as keyof typeof t.profile.approaches] || approach}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {/* Coaching */}
+                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                      {locale === 'fr' ? 'Approches coaching' : 'Coaching approaches'}
+                    </p>
                     <div className="flex flex-wrap gap-2">
-                      {APPROACHES.map((approach) => {
+                      {COACHING_APPROACHES.map((approach) => {
                         const isSelected = profile.approaches?.includes(approach)
                         return (
                           <button

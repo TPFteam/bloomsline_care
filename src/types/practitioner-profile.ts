@@ -5,22 +5,25 @@
 // ============================================
 
 export type TherapeuticApproach =
-  | 'cbt' // Cognitive Behavioral Therapy
-  | 'dbt' // Dialectical Behavior Therapy
-  | 'emdr' // Eye Movement Desensitization and Reprocessing
+  // Therapeutic
+  | 'cbt'
   | 'psychodynamic'
+  | 'psychoanalysis'
+  | 'integrative'
+  | 'acceptance_commitment'
+  | 'emdr'
+  | 'systemic'
   | 'humanistic'
+  | 'dbt'
   | 'solution_focused'
-  | 'narrative'
+  // Coaching
+  | 'professional_coaching'
+  | 'life_coaching'
+  | 'nlp'
+  | 'emotional_intelligence'
   | 'mindfulness'
-  | 'art_therapy'
-  | 'play_therapy'
-  | 'family_systems'
-  | 'gestalt'
-  | 'acceptance_commitment' // ACT
-  | 'motivational_interviewing'
-  | 'trauma_informed'
-  | 'somatic'
+  | 'goal_oriented'
+  | 'narrative'
   | 'other'
 
 export type Specialty =
@@ -283,22 +286,25 @@ export function getSpecialtyLabel(specialty: Specialty, locale: string = 'en'): 
 
 export function getApproachLabel(approach: TherapeuticApproach, locale: string = 'en'): string {
   const labels: Record<TherapeuticApproach, Record<string, string>> = {
-    cbt: { en: 'Cognitive Behavioral (CBT)', fr: 'Thérapie cognitivo-comportementale (TCC)' },
-    dbt: { en: 'Dialectical Behavior (DBT)', fr: 'Thérapie comportementale dialectique' },
+    // Therapeutic
+    cbt: { en: 'Cognitive Behavioral (CBT)', fr: 'Cognitivo-comportementale (TCC)' },
+    psychodynamic: { en: 'Psychodynamic / Analytical', fr: 'Psychodynamique / Analytique' },
+    psychoanalysis: { en: 'Psychoanalysis', fr: 'Psychanalyse' },
+    integrative: { en: 'Integrative', fr: 'Intégrative' },
+    acceptance_commitment: { en: 'ACT', fr: 'ACT (Acceptation et engagement)' },
     emdr: { en: 'EMDR', fr: 'EMDR' },
-    psychodynamic: { en: 'Psychodynamic', fr: 'Psychodynamique' },
+    systemic: { en: 'Systemic', fr: 'Systémique' },
     humanistic: { en: 'Humanistic', fr: 'Humaniste' },
-    solution_focused: { en: 'Solution-Focused', fr: 'Axée sur les solutions' },
-    narrative: { en: 'Narrative Therapy', fr: 'Thérapie narrative' },
-    mindfulness: { en: 'Mindfulness-Based', fr: 'Basée sur la pleine conscience' },
-    art_therapy: { en: 'Art Therapy', fr: 'Art-thérapie' },
-    play_therapy: { en: 'Play Therapy', fr: 'Thérapie par le jeu' },
-    family_systems: { en: 'Family Systems', fr: 'Systèmes familiaux' },
-    gestalt: { en: 'Gestalt', fr: 'Gestalt' },
-    acceptance_commitment: { en: 'Acceptance & Commitment (ACT)', fr: 'Acceptation et engagement (ACT)' },
-    motivational_interviewing: { en: 'Motivational Interviewing', fr: 'Entretien motivationnel' },
-    trauma_informed: { en: 'Trauma-Informed', fr: 'Sensible au traumatisme' },
-    somatic: { en: 'Somatic', fr: 'Somatique' },
+    dbt: { en: 'Dialectical Behavior (DBT)', fr: 'Thérapie comportementale dialectique (TCD)' },
+    solution_focused: { en: 'Solution-Focused / Brief', fr: 'Thérapie brève / Orientée solutions' },
+    // Coaching
+    professional_coaching: { en: 'Professional Coaching', fr: 'Coaching professionnel' },
+    life_coaching: { en: 'Life Coaching', fr: 'Coaching de vie' },
+    nlp: { en: 'NLP', fr: 'PNL' },
+    emotional_intelligence: { en: 'Emotional Intelligence', fr: 'Intelligence émotionnelle' },
+    mindfulness: { en: 'Mindfulness', fr: 'Mindfulness' },
+    goal_oriented: { en: 'Goal-Oriented Coaching', fr: 'Coaching orienté objectifs' },
+    narrative: { en: 'Narrative', fr: 'Approche narrative' },
     other: { en: 'Other', fr: 'Autre' },
   }
   return labels[approach]?.[locale] || approach
