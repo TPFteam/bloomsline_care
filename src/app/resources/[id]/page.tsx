@@ -34,6 +34,9 @@ import {
   Send,
   Calendar,
   RotateCcw,
+  Video,
+  Mic2,
+  Paperclip,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -1507,7 +1510,7 @@ export default function ResourceDetailPage() {
                             <p className="text-gray-800 font-medium mb-3">{blockContent || (locale === 'fr' ? 'Enregistrement audio' : 'Audio Recording')}</p>
                             <div className="p-6 bg-gray-50 border border-dashed border-gray-200 rounded-xl text-center">
                               <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-rose-100 flex items-center justify-center">
-                                <span className="text-2xl">🎤</span>
+                                <Mic2 className="w-6 h-6 text-rose-500" />
                               </div>
                               <p className="text-sm text-gray-500">{locale === 'fr' ? 'Cliquez pour enregistrer' : 'Click to record'}</p>
                             </div>
@@ -1519,7 +1522,7 @@ export default function ResourceDetailPage() {
                             <p className="text-gray-800 font-medium mb-3">{blockContent || (locale === 'fr' ? 'Téléverser un fichier' : 'File Upload')}</p>
                             <div className="p-6 bg-gray-50 border border-dashed border-gray-200 rounded-xl text-center">
                               <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-blue-100 flex items-center justify-center">
-                                <span className="text-2xl">📎</span>
+                                <Paperclip className="w-6 h-6 text-blue-500" />
                               </div>
                               <p className="text-sm text-gray-500">{locale === 'fr' ? 'Glissez un fichier ou cliquez pour parcourir' : 'Drag a file or click to browse'}</p>
                             </div>
@@ -1531,7 +1534,7 @@ export default function ResourceDetailPage() {
                             <p className="text-gray-800 font-medium mb-3">{blockContent || (locale === 'fr' ? 'Enregistrement vidéo' : 'Video Recording')}</p>
                             <div className="p-6 bg-gray-50 border border-dashed border-gray-200 rounded-xl text-center">
                               <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-purple-100 flex items-center justify-center">
-                                <span className="text-2xl">🎥</span>
+                                <Video className="w-6 h-6 text-purple-500" />
                               </div>
                               <p className="text-sm text-gray-500">{locale === 'fr' ? 'Cliquez pour enregistrer' : 'Click to record'}</p>
                             </div>
