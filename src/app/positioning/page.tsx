@@ -50,9 +50,9 @@ export default function PositioningPage() {
           <p className="text-2xl md:text-3xl font-bold text-white mb-3">
             {locale === 'fr' ? 'Bloomsline est là où les praticiens ' : 'Bloomsline is where practitioners '}
             <span className="relative group cursor-help text-teal-400">
-              {locale === 'fr' ? 'organisent leur soin' : 'organize their practice'}
+              {locale === 'fr' ? 'structurent leur pratique' : 'structure their practice'}
               <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-white text-gray-700 text-xs font-normal rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                {locale === 'fr' ? 'Notes, patients, séances — tout au même endroit' : 'Notes, patients, sessions — everything in one place'}
+                {locale === 'fr' ? 'Un système pour les notes, les patients et les séances — pas du bricolage' : 'A system for notes, patients, and sessions — not scattered files'}
               </span>
             </span>
             {locale === 'fr' ? ' et restent ' : ' and stay '}
@@ -73,7 +73,7 @@ export default function PositioningPage() {
             </div>
             <div>
               <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest mb-2">{locale === 'fr' ? 'Le résultat' : 'The result'}</p>
-              <p className="text-lg text-gray-400 italic">{locale === 'fr' ? 'Les praticiens arrivent prêts. Les patients restent accompagnés entre les séances.' : 'Practitioners walk in ready. Patients stay supported between sessions.'}</p>
+              <p className="text-lg text-gray-400 italic">{locale === 'fr' ? 'Les praticiens arrivent prêts. Les patients se sentent vus, même quand personne ne regarde.' : 'Practitioners walk in ready. Patients feel seen, even when no one is watching.'}</p>
             </div>
           </div>
         </section>
@@ -670,9 +670,9 @@ const en = {
 
   oneLine: {
     label: 'The Position',
-    whatItIs: 'Bloomsline is where practitioners organize their practice and stay meaningfully connected with patients between sessions.',
+    whatItIs: 'Bloomsline is where practitioners structure their practice and stay meaningfully connected with patients between sessions.',
     clarifier: 'Therapeutic boundaries stay intact. Patients reflect at their own pace through the app. Practitioners see the context before the next session.',
-    feeling: '"Everything is in one place. I finally feel organized. And my patients feel like I never stopped listening."',
+    feeling: '"I can breathe, and I\'m not alone in this."',
     thought: 'You show up prepared. They leave feeling heard.',
     hook: 'You see 6 patients today. Can you remember what each one told you last time?',
     statement: 'Every session starts like you never stopped listening.',
@@ -1006,7 +1006,7 @@ const fr = {
     label: 'La Position',
     whatItIs: 'Bloomsline est là où les praticiens organisent leur soin et restent connectés de manière significative avec leurs patients entre les séances.',
     clarifier: 'Le cadre thérapeutique est respecté. Les patients réfléchissent à leur rythme via l\'application. Les praticiens voient le contexte avant la prochaine séance.',
-    feeling: '« Tout est au même endroit. Je me sens enfin organisé. Et mes patients ont l\'impression que je n\'ai jamais cessé d\'écouter. »',
+    feeling: '« Je respire, et je ne suis plus seul(e) dans tout ça. »',
     thought: 'Vous arrivez préparé. Ils repartent écoutés.',
     hook: 'Vous voyez 6 patients aujourd\'hui. Vous vous souvenez de ce que chacun vous a dit la dernière fois ?',
     statement: 'Chaque séance commence comme si vous n\'aviez jamais cessé d\'écouter.',

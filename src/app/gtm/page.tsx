@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, Globe, Target, MapPin, ArrowRight, BarChart2, Calendar, Users, CheckCircle, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Globe, Target, MapPin, BarChart2, Calendar, CheckCircle, AlertCircle } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 import Link from 'next/link'
 import { Logo } from '@/components/ui/logo'
@@ -35,6 +35,11 @@ export default function GTMPage() {
         <div className="max-w-2xl">
           <h1 className="text-3xl font-bold text-gray-900 mb-3">Go-To-Market: The Next 30 Days</h1>
           <p className="text-gray-500 text-lg">From 2 users to 10 paying practitioners. Everything else comes after.</p>
+          <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-100">
+            <p className="text-sm text-amber-800">
+              <span className="font-semibold">Key insight:</span> 13 practitioners saw the product and liked it. Nobody said no — we just never asked. That&apos;s our fastest path to 10.
+            </p>
+          </div>
         </div>
 
         {/* ============================================ */}
@@ -137,7 +142,23 @@ export default function GTMPage() {
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <span className="w-7 h-7 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">1</span>
+                  <span className="w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold">1</span>
+                  <h3 className="font-semibold text-gray-900">The 13 Demo Contacts</h3>
+                </div>
+                <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded font-medium">Warm leads</span>
+              </div>
+              <p className="text-sm text-gray-500 mb-3">13 practitioners who saw the product and liked it but were never asked to commit. They already know us. They already saw the demo. This is the fastest path to 5 more users.</p>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs font-semibold text-gray-700 mb-1">Action</p>
+                <p className="text-sm text-gray-600">Message each one personally: &quot;We&apos;ve been building since we last talked. The product is live. Would you be open to trying it for 60 days, free?&quot;</p>
+              </div>
+            </div>
+
+            {/* Channel 2 */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <span className="w-7 h-7 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">2</span>
                   <h3 className="font-semibold text-gray-900">Ose ton Lib&apos; Community</h3>
                 </div>
                 <span className="text-xs text-teal-600 bg-teal-50 px-2 py-1 rounded font-medium">Segment A</span>
@@ -150,11 +171,11 @@ export default function GTMPage() {
               <a href="https://www.osetonlib.com/" target="_blank" rel="noopener noreferrer" className="text-xs text-teal-600 hover:text-teal-800 underline mt-2 inline-block">osetonlib.com</a>
             </div>
 
-            {/* Channel 2 */}
+            {/* Channel 3 */}
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <span className="w-7 h-7 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">2</span>
+                  <span className="w-7 h-7 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">3</span>
                   <h3 className="font-semibold text-gray-900">AFTCC Directory + Congress</h3>
                 </div>
                 <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded font-medium">Segment B</span>
@@ -167,11 +188,11 @@ export default function GTMPage() {
               <a href="https://www.aftcc.org/annuaire" target="_blank" rel="noopener noreferrer" className="text-xs text-teal-600 hover:text-teal-800 underline mt-2 inline-block">aftcc.org/annuaire</a>
             </div>
 
-            {/* Channel 3 */}
+            {/* Channel 4 */}
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <span className="w-7 h-7 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">3</span>
+                  <span className="w-7 h-7 rounded-full bg-gray-300 text-white flex items-center justify-center text-xs font-bold">4</span>
                   <h3 className="font-semibold text-gray-900">Instagram + LinkedIn Content</h3>
                 </div>
                 <span className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded font-medium">Both segments</span>
@@ -182,77 +203,11 @@ export default function GTMPage() {
                 <p className="text-sm text-gray-600">Post 3x/week. Content about practice-building, not product features. Engage on @osetonlib, @encoreunepsy, @catherine_la_psy posts. Build presence before pitching.</p>
               </div>
             </div>
-
-            {/* Channel 4 */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <span className="w-7 h-7 rounded-full bg-gray-300 text-white flex items-center justify-center text-xs font-bold">4</span>
-                  <h3 className="font-semibold text-gray-900">The 13 Demo Contacts</h3>
-                </div>
-                <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded font-medium">Warm leads</span>
-              </div>
-              <p className="text-sm text-gray-500 mb-3">13 practitioners who saw the product and liked it but were never asked to pay. They already know you. They already saw the demo.</p>
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs font-semibold text-gray-700 mb-1">Action</p>
-                <p className="text-sm text-gray-600">Message each one personally: &quot;We&apos;ve been building since we last talked. The product is live. Would you be open to trying it for 60 days, free?&quot; This is the fastest path to 5 more users.</p>
-              </div>
-            </div>
           </div>
         </section>
 
         {/* ============================================ */}
-        {/* 3. THE SHIFT */}
-        {/* ============================================ */}
-        <section>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
-              <ArrowRight className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">3. The shift we need to make</h2>
-              <p className="text-sm text-gray-500">From research mode to sales mode</p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                  <span className="text-lg">🔍</span>
-                </div>
-                <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Where we were</p>
-                <p className="text-sm font-semibold text-gray-900 mb-1">&quot;What do you think?&quot;</p>
-                <p className="text-xs text-gray-500">Validating the idea. Understanding the pain. Not asking for commitment.</p>
-              </div>
-              <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-3">
-                  <span className="text-lg">🤝</span>
-                </div>
-                <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Where we are</p>
-                <p className="text-sm font-semibold text-gray-900 mb-1">&quot;Would you use this?&quot;</p>
-                <p className="text-xs text-gray-500">Product is live. 2 practitioners using it. Time to ask for real commitment.</p>
-              </div>
-              <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-3">
-                  <span className="text-lg">💳</span>
-                </div>
-                <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Where we need to be</p>
-                <p className="text-sm font-semibold text-gray-900 mb-1">&quot;Here&apos;s how to start.&quot;</p>
-                <p className="text-xs text-gray-500">Not pitching. Not selling. Just making it easy to say yes.</p>
-              </div>
-            </div>
-
-            <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-100">
-              <p className="text-sm text-amber-800">
-                <span className="font-semibold">The key insight:</span> Nobody said no. We just never asked. The 13 demo contacts liked the product — they were never given the chance to use it. That&apos;s our fastest path to 10 users.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ============================================ */}
-        {/* 4. THE 30-DAY PLAN */}
+        {/* 3. THE 30-DAY PLAN */}
         {/* ============================================ */}
         <section>
           <div className="flex items-center gap-3 mb-6">
@@ -260,7 +215,7 @@ export default function GTMPage() {
               <Calendar className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">4. The 30-day plan</h2>
+              <h2 className="text-xl font-bold text-gray-900">3. The 30-day plan</h2>
               <p className="text-sm text-gray-500">From 2 to 10 paying practitioners</p>
             </div>
           </div>
@@ -389,7 +344,7 @@ export default function GTMPage() {
         </section>
 
         {/* ============================================ */}
-        {/* 5. THE OFFER */}
+        {/* 4. THE OFFER */}
         {/* ============================================ */}
         <section>
           <div className="flex items-center gap-3 mb-6">
@@ -397,7 +352,7 @@ export default function GTMPage() {
               <CheckCircle className="w-5 h-5 text-teal-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">5. The offer that converts</h2>
+              <h2 className="text-xl font-bold text-gray-900">4. The offer that converts</h2>
               <p className="text-sm text-gray-500">What we say to turn &quot;interesting&quot; into &quot;yes&quot;</p>
             </div>
           </div>
@@ -463,13 +418,13 @@ export default function GTMPage() {
 
           <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-100">
             <p className="text-sm text-amber-800">
-              <span className="font-semibold">Why this works:</span> The first 10 get enough time to truly integrate Bloomsline into their practice. 6 months means they go through full patient cycles. By the time they&apos;re asked to pay, it&apos;s already indispensable.
+              <span className="font-semibold">Why 6 months:</span> Long enough to go through full patient cycles. By the time they&apos;re asked to pay, they&apos;ll have 6 months of patient data — while everyone else is still on paper notebooks. That advantage compounds, and the tool becomes indispensable.
             </p>
           </div>
         </section>
 
         {/* ============================================ */}
-        {/* 6. THE ONE METRIC */}
+        {/* 5. THE ONE METRIC */}
         {/* ============================================ */}
         <section>
           <div className="flex items-center gap-3 mb-6">
@@ -520,7 +475,6 @@ export default function GTMPage() {
         <section className="bg-gray-900 rounded-2xl p-8 md:p-12">
           <p className="text-xl font-bold text-white mb-4">The bottom line</p>
           <p className="text-gray-400 leading-relaxed">
-            The product is built. The positioning is clear. The only thing between 2 users and 10 is asking people to use it.
             Start with the 13 who already saw the demo. Then enter the communities where your target practitioners already hang out.
             Then cold outreach to CBT practitioners via AFTCC. Check one number every Friday: how many practitioners logged in this week.
             Everything else is noise until you have 10 active users.
