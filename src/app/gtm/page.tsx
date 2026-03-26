@@ -389,7 +389,87 @@ export default function GTMPage() {
         </section>
 
         {/* ============================================ */}
-        {/* 5. THE ONE METRIC */}
+        {/* 5. THE OFFER */}
+        {/* ============================================ */}
+        <section>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-teal-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">5. The offer that converts</h2>
+              <p className="text-sm text-gray-500">What we say to turn &quot;interesting&quot; into &quot;yes&quot;</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded">FIRST 10 PRACTITIONERS</span>
+              <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded font-medium">Limited</span>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-gray-800 font-medium">6 months completely free</p>
+                  <p className="text-xs text-gray-500">No credit card. No commitment. Full Pro features from day one.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-gray-800 font-medium">We set it up for you</p>
+                  <p className="text-xs text-gray-500">15-minute call. We import your first patients, configure your profile, show you the basics.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-gray-800 font-medium">Founding member status</p>
+                  <p className="text-xs text-gray-500">Shape the product. Direct access to the founders. Your feedback builds the roadmap.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-gray-800 font-medium">Lock in the price forever</p>
+                  <p className="text-xs text-gray-500">Early adopters keep the founding price — even when pricing goes up.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded">EVERYONE ELSE</span>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-gray-800 font-medium">60-day free trial</p>
+                  <p className="text-xs text-gray-500">Full access. No credit card required. Convert when you&apos;re ready.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-gray-800 font-medium">White-glove onboarding</p>
+                  <p className="text-xs text-gray-500">Same personal setup call. We help you get started.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-100">
+            <p className="text-sm text-amber-800">
+              <span className="font-semibold">Why this works:</span> The first 10 get enough time to truly integrate Bloomsline into their practice. 6 months means they go through full patient cycles. By the time they&apos;re asked to pay, it&apos;s already indispensable.
+            </p>
+          </div>
+        </section>
+
+        {/* ============================================ */}
+        {/* 6. THE ONE METRIC */}
         {/* ============================================ */}
         <section>
           <div className="flex items-center gap-3 mb-6">
