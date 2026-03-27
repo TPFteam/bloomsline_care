@@ -124,8 +124,8 @@ export default function PositioningPage() {
             <p className="text-sm text-gray-400">{t.problem.root.detail}</p>
           </div>
 
-          {/* Two branches */}
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
+          {/* Two sides */}
+          <div className="grid md:grid-cols-2 gap-6">
             {/* Identity pain */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
@@ -133,38 +133,25 @@ export default function PositioningPage() {
                   <Heart className="w-5 h-5 text-red-500" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{t.problem.identity.title}</h3>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t.problem.identity.side}</p>
+                  <h3 className="font-semibold text-gray-900">{t.problem.practitioner.title}</h3>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t.problem.practitioner.subtitle}</p>
                 </div>
               </div>
-              {/* Trace to root */}
-              <div className="space-y-4 mb-4">
-                {(['Surface', 'Deeper', 'Root'] as const).map((depth) => {
-                  const items = t.problem.identity.layers.filter((l: { depth: string }) => l.depth === depth);
-                  if (items.length === 0) return null;
-                  const indent = depth === 'Surface' ? 0 : depth === 'Deeper' ? 16 : 32;
-                  return (
-                    <div key={depth} style={{ paddingLeft: indent }}>
-                      <div className="flex items-center gap-2 mb-1.5">
-                        {depth !== 'Surface' && <span className="text-[10px] text-gray-300">↓</span>}
-                        <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">{depth}</span>
-                      </div>
-                      <div className="space-y-1.5">
-                        {items.map((l: { depth: string; text: string; source?: string; sourceUrl?: string }, i: number) => (
-                          <div key={i}>
-                            <p className="text-sm text-gray-600">{l.text}</p>
-                            {l.source && <p className="text-[10px] text-gray-400 mt-0.5">{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 underline">{l.source}</a> : l.source}</p>}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <blockquote className="text-sm italic text-gray-600 border-l-2 border-red-200 pl-3">
-                {t.problem.identity.quote}
+              <blockquote className="text-sm font-medium text-gray-800 italic border-l-2 border-red-200 pl-3 mb-4">
+                {t.problem.practitioner.pain}
               </blockquote>
+              <div className="space-y-3">
+                {t.problem.practitioner.layers.map((l: { text: string; source: string; sourceUrl: string }, i: number) => (
+                  <div key={i}>
+                    <p className="text-sm text-gray-600">{l.text}</p>
+                    {l.source && <p className="text-[10px] text-gray-400 mt-0.5">
+                      {l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 underline">{l.source}</a> : l.source}
+                    </p>}
+                  </div>
+                ))}
+              </div>
             </div>
+
             {/* Business pain */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
@@ -172,44 +159,24 @@ export default function PositioningPage() {
                   <TrendingUp className="w-5 h-5 text-amber-500" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{t.problem.business.title}</h3>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t.problem.business.side}</p>
+                  <h3 className="font-semibold text-gray-900">{t.problem.patient.title}</h3>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t.problem.patient.subtitle}</p>
                 </div>
               </div>
-              {/* Trace to root */}
-              <div className="space-y-4 mb-4">
-                {(['Surface', 'Deeper', 'Root'] as const).map((depth) => {
-                  const items = t.problem.business.layers.filter((l: { depth: string }) => l.depth === depth);
-                  if (items.length === 0) return null;
-                  const indent = depth === 'Surface' ? 0 : depth === 'Deeper' ? 16 : 32;
-                  return (
-                    <div key={depth} style={{ paddingLeft: indent }}>
-                      <div className="flex items-center gap-2 mb-1.5">
-                        {depth !== 'Surface' && <span className="text-[10px] text-gray-300">↓</span>}
-                        <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">{depth}</span>
-                      </div>
-                      <div className="space-y-1.5">
-                        {items.map((l: { depth: string; text: string; source?: string; sourceUrl?: string }, i: number) => (
-                          <div key={i}>
-                            <p className="text-sm text-gray-600">{l.text}</p>
-                            {l.source && <p className="text-[10px] text-gray-400 mt-0.5">{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 underline">{l.source}</a> : l.source}</p>}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <blockquote className="text-sm italic text-gray-600 border-l-2 border-amber-200 pl-3">
-                {t.problem.business.quote}
+              <blockquote className="text-sm font-medium text-gray-800 italic border-l-2 border-amber-200 pl-3 mb-4">
+                {t.problem.patient.pain}
               </blockquote>
+              <div className="space-y-3">
+                {t.problem.patient.layers.map((l: { text: string; source: string; sourceUrl: string }, i: number) => (
+                  <div key={i}>
+                    <p className="text-sm text-gray-600">{l.text}</p>
+                    {l.source && <p className="text-[10px] text-gray-400 mt-0.5">
+                      {l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 underline">{l.source}</a> : l.source}
+                    </p>}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-
-          {/* Connection */}
-          <div className="bg-teal-50 rounded-xl border border-teal-100 p-6 text-center">
-            <p className="text-sm font-semibold text-teal-900 mb-1">{t.problem.connection.title}</p>
-            <p className="text-sm text-teal-700">{t.problem.connection.detail}</p>
           </div>
         </section>
 
@@ -688,29 +655,25 @@ const en = {
       statement: 'Nothing connects one session to the next.',
       detail: 'Therapy is designed as episodes. Life is continuous. The gap between sessions is where both the therapist and the client lose each other.',
     },
-    identity: {
+    practitioner: {
       title: 'The Identity Pain',
-      side: 'The therapist\'s side of the gap',
+      subtitle: 'What the practitioner feels',
+      pain: '"I became a therapist to truly see people. But I see 6 patients a day, and by Friday I can\'t remember what Monday\'s patient told me."',
       layers: [
-        { depth: 'Surface', text: '"I forgot what my patient told me last session."', source: 'Clinicians spend 35% of time on documentation. (AHRQ Technical Brief, PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/' },
-        { depth: 'Deeper', text: '"I\'m spending more time on paperwork than on my patients."', source: '93% of behavioral health workers report burnout. (National Council for Mental Wellbeing, 2023)', sourceUrl: 'https://www.thenationalcouncil.org/news/help-wanted/' },
-        { depth: 'Root', text: '"My tools handle billing and scheduling — but nothing helps me carry context from one session to the next."', source: '', sourceUrl: '' },
+        { text: 'They spend 35% of their time on documentation instead of listening.', source: 'AHRQ Technical Brief, PMC 2024', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/' },
+        { text: '93% of behavioral health workers report burnout — not from patients, from the system around them.', source: 'National Council for Mental Wellbeing, 2023', sourceUrl: 'https://www.thenationalcouncil.org/news/help-wanted/' },
+        { text: 'There\'s no tool that carries the relationship between sessions. The practitioner relies on memory. The patient is on their own. And every week, a little more is lost.', source: '', sourceUrl: '' },
       ],
-      quote: '',
     },
-    business: {
+    patient: {
       title: 'The Business Pain',
-      side: 'The patient\'s side of the gap',
+      subtitle: 'What the patient experiences',
+      pain: '"I had a terrible week. But by the time I sit down, I can\'t explain what happened. And my therapist doesn\'t know either."',
       layers: [
-        { depth: 'Surface', text: '"Half of patients drop out by session 3. They don\'t feel connected enough to come back."', source: '~50% dropout by session 3. (Barrett et al., PMC 2009; 2024 meta-analyses)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/' },
-        { depth: 'Deeper', text: '"What happens between sessions — a bad week, a breakthrough — never makes it back to the practitioner."', source: 'Administrative frictions reduce workforce capacity and patient access. (PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11203202/' },
-        { depth: 'Root', text: '"The gap between sessions is where patients are lost."', source: '', sourceUrl: '' },
+        { text: '~50% of patients drop out by session 3. They don\'t feel connected enough to come back.', source: 'Barrett et al., PMC 2009; 2024 meta-analyses', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/' },
+        { text: 'What happens between sessions — a bad week, a breakthrough, a relapse — never makes it back to the practitioner.', source: 'Administrative frictions reduce workforce capacity and patient access. (PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11203202/' },
+        { text: 'The gap between sessions is where patients are lost. The safe space they built in the room fades. They can\'t see their own progress. And slowly, it starts to feel like nothing is happening — so they stop coming.', source: '', sourceUrl: '' },
       ],
-      quote: '',
-    },
-    connection: {
-      title: 'Same gap. Two symptoms. One solution.',
-      detail: 'The therapist forgets because nothing connects sessions. The client leaves because nothing connects sessions. Bloomsline fills the gap. The therapist remembers (identity healed). The client feels held (business healed).',
     },
   },
 
@@ -1022,31 +985,25 @@ const fr = {
       statement: 'Rien ne connecte une séance à la suivante.',
       detail: 'La thérapie est conçue en épisodes. La vie est continue. L\'espace entre les séances est là où le thérapeute et le client se perdent mutuellement.',
     },
-    identity: {
+    practitioner: {
       title: 'La Douleur d\'Identité',
-      side: 'Le côté thérapeute du fossé',
+      subtitle: 'Ce que le praticien ressent',
+      pain: '« Je suis devenu thérapeute pour vraiment voir les gens. Mais je vois 6 patients par jour, et le vendredi je ne me souviens plus de ce que le patient du lundi m\'a dit. »',
       layers: [
-        { depth: 'Surface', text: '« J\'ai oublié ce que mon client m\'a dit la dernière fois. »', source: '93% des travailleurs en santé mentale rapportent un burnout. 62% le notent 8-10/10. (National Council, 2023)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/' },
-        { depth: 'Plus profond', text: '« Je ne peux pas retenir l\'histoire de 30 patients dans ma tête. »', source: 'Les cliniciens passent 35% de leur temps en documentation, ~16 min par rencontre. (AHRQ, PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/' },
-        { depth: 'Plus profond', text: '« Je deviens le genre de thérapeute que je n\'ai jamais voulu être. »', source: 'Revue systématique : charge de travail élevée significativement associée au burnout. (Simionato & Simpson, PMC 2022)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9423708/' },
-        { depth: 'Racine', text: '« Je suis devenu thérapeute pour vraiment voir les gens. Quand j\'oublie, je cesse de les voir. »', source: '« Ça fonctionne comme un second cerveau. » Sandra, psychologue (entretien Bloomsline)', sourceUrl: '' },
+        { text: 'Ils passent 35% de leur temps en documentation au lieu d\'écouter.', source: 'AHRQ Technical Brief, PMC 2024', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/' },
+        { text: '93% des travailleurs en santé mentale rapportent un burnout — pas à cause des patients, à cause du système autour.', source: 'National Council for Mental Wellbeing, 2023', sourceUrl: 'https://www.thenationalcouncil.org/news/help-wanted/' },
+        { text: 'Aucun outil ne porte la relation entre les séances. Le praticien compte sur sa mémoire. Le patient est seul. Et chaque semaine, un peu plus se perd.', source: '', sourceUrl: '' },
       ],
-      quote: '',
     },
-    business: {
+    patient: {
       title: 'La Douleur Business',
-      side: 'Le côté client du fossé',
+      subtitle: 'Ce que le patient vit',
+      pain: '« J\'ai eu une semaine terrible. Mais au moment de m\'asseoir, je n\'arrive plus à expliquer ce qui s\'est passé. Et mon thérapeute ne le sait pas non plus. »',
       layers: [
-        { depth: 'Surface', text: '« ~20% des patients interrompent prématurément la thérapie. 65% partent avant la 10e séance. »', source: 'Swift & Greenberg, méta-analyse de 669 ECR, ~84 000 patients. (J. Consulting and Clinical Psychology, 2012)', sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/22506792/' },
-        { depth: 'Plus profond', text: '« Ils ne se sentent pas assez connectés entre les rendez-vous pour revenir. »', source: 'L\'alliance thérapeutique est un prédicteur constant des résultats cliniques positifs. (Horvath et al., PMC 2011)', sourceUrl: 'https://www.npr.org/sections/health-shots/2023/12/06/1217487323/psychologists-waitlist-demand-mental-health-care' },
-        { depth: 'Plus profond', text: '« La thérapie s\'arrête à la porte. La vie, non. »', source: 'Les frictions administratives réduisent la capacité de la main-d\'oeuvre en santé mentale. (PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11203202/' },
-        { depth: 'Racine', text: '« L\'espace entre les séances est là où les patients se perdent. »', source: 'Taux d\'absence : 18% en psychiatrie ambulatoire. Nouveaux patients 2x plus. (Deifeii et al., évalué par les pairs)', sourceUrl: 'https://bhw.hrsa.gov/sites/default/files/bureau-health-workforce/data-research/Behavioral-Health-Workforce-Brief-2025.pdf' },
+        { text: '~50% des patients abandonnent avant la 3e séance. Ils ne se sentent pas assez connectés pour revenir.', source: 'Barrett et al., PMC 2009 ; méta-analyses 2024', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/' },
+        { text: 'Ce qui se passe entre les séances — une mauvaise semaine, une percée, une rechute — ne remonte jamais au praticien.', source: 'Les frictions administratives réduisent la capacité et l\'accès. (PMC 2024)', sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11203202/' },
+        { text: 'L\'espace entre les séances est là où les patients se perdent. L\'espace sûr construit en séance s\'estompe. Ils ne voient pas leurs propres progrès. Et petit à petit, ils ont l\'impression que rien ne se passe — alors ils arrêtent de venir.', source: '', sourceUrl: '' },
       ],
-      quote: '',
-    },
-    connection: {
-      title: 'Même fossé. Deux symptômes. Une solution.',
-      detail: 'Le thérapeute oublie parce que rien ne connecte les séances. Le client part parce que rien ne connecte les séances. Bloomsline comble le fossé. Le thérapeute se souvient (identité guérie). Le client se sent accompagné (business guéri).',
     },
   },
 

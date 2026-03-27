@@ -52,75 +52,93 @@ export default function GTMPage() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900">1. Who are we going after?</h2>
-              <p className="text-sm text-gray-500">Two segments confirmed from 15 product demos</p>
+              <p className="text-sm text-gray-500">Three segments, prioritized. Validated from 15 product demos.</p>
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Segment A */}
-            <div className="bg-white rounded-xl border-2 border-teal-200 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded">SEGMENT A</span>
-                <span className="text-xs text-gray-400">Primary target</span>
+          <div className="grid md:grid-cols-3 gap-4">
+            {/* Segment A — Primary */}
+            <div className="bg-white rounded-xl border-2 border-teal-200 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded">PRIMARY</span>
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Young Psychologists</h3>
-              <p className="text-sm text-gray-500 mb-4">1-5 years in practice, building their client base</p>
-              <ul className="space-y-2">
-                <li className="flex items-start gap-2 text-sm text-gray-600">
-                  <CheckCircle className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                  No established system yet — no habits to break
+              <h3 className="text-sm font-bold text-gray-900 mb-1">Young brief therapy psychologists</h3>
+              <p className="text-xs text-gray-500 mb-3">CBT, ACT, EMDR. 1-10 years in practice. High patient turnover.</p>
+              <ul className="space-y-1.5 mb-4">
+                <li className="flex items-start gap-1.5 text-xs text-gray-600">
+                  <CheckCircle className="w-3 h-3 text-teal-500 mt-0.5 flex-shrink-0" />
+                  Homework between sessions is core to their method
                 </li>
-                <li className="flex items-start gap-2 text-sm text-gray-600">
-                  <CheckCircle className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                  Digital native, open to new tools
+                <li className="flex items-start gap-1.5 text-xs text-gray-600">
+                  <CheckCircle className="w-3 h-3 text-teal-500 mt-0.5 flex-shrink-0" />
+                  More patient names = bigger pain
                 </li>
-                <li className="flex items-start gap-2 text-sm text-gray-600">
-                  <CheckCircle className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                <li className="flex items-start gap-1.5 text-xs text-gray-600">
+                  <CheckCircle className="w-3 h-3 text-teal-500 mt-0.5 flex-shrink-0" />
+                  Findable via AFTCC directory
+                </li>
+              </ul>
+              <div className="pt-3 border-t border-gray-100">
+                <p className="text-lg font-bold text-teal-600">~2,500</p>
+                <p className="text-[10px] text-gray-400">AFTCC members, France</p>
+              </div>
+            </div>
+
+            {/* Segment B — Secondary */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">SECONDARY</span>
+              </div>
+              <h3 className="text-sm font-bold text-gray-900 mb-1">Young psychologists (all approaches)</h3>
+              <p className="text-xs text-gray-500 mb-3">Early career, private practice. 3,500 new graduates yearly. 70% micro-entrepreneurs.</p>
+              <ul className="space-y-1.5 mb-4">
+                <li className="flex items-start gap-1.5 text-xs text-gray-600">
+                  <CheckCircle className="w-3 h-3 text-blue-400 mt-0.5 flex-shrink-0" />
                   Need structure from day one
                 </li>
-                <li className="flex items-start gap-2 text-sm text-gray-600">
-                  <CheckCircle className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                  Active on Instagram and in communities like Ose ton Lib&apos;
+                <li className="flex items-start gap-1.5 text-xs text-gray-600">
+                  <CheckCircle className="w-3 h-3 text-blue-400 mt-0.5 flex-shrink-0" />
+                  Active in Ose ton Lib&apos; (9,000+)
+                </li>
+                <li className="flex items-start gap-1.5 text-xs text-gray-600">
+                  <CheckCircle className="w-3 h-3 text-blue-400 mt-0.5 flex-shrink-0" />
+                  Willing to pay €20/month
                 </li>
               </ul>
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">What they said in demos</p>
-                <p className="text-sm text-gray-700 italic">&quot;It&apos;s well designed. I could figure it out on my own without you explaining.&quot; — Yoann</p>
+              <div className="pt-3 border-t border-gray-100">
+                <p className="text-lg font-bold text-blue-600">~30,000</p>
+                <p className="text-[10px] text-gray-400">Psychologists in private practice</p>
               </div>
             </div>
 
-            {/* Segment B */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded">SEGMENT B</span>
-                <span className="text-xs text-gray-400">Secondary target</span>
+            {/* Segment C — Expansion */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded">EXPANSION</span>
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Brief / CBT Therapists</h3>
-              <p className="text-sm text-gray-500 mb-4">See patients for 6-8 months, high turnover</p>
-              <ul className="space-y-2">
-                <li className="flex items-start gap-2 text-sm text-gray-600">
-                  <CheckCircle className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                  More names to remember = bigger pain
+              <h3 className="text-sm font-bold text-gray-900 mb-1">Practitioners & coaches</h3>
+              <p className="text-xs text-gray-500 mb-3">Psychotherapists, sophrologues, coaches, hypnotherapists. Sophrologie doubled since 2019.</p>
+              <ul className="space-y-1.5 mb-4">
+                <li className="flex items-start gap-1.5 text-xs text-gray-600">
+                  <CheckCircle className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
+                  Same pain, less regulation
                 </li>
-                <li className="flex items-start gap-2 text-sm text-gray-600">
-                  <CheckCircle className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                  Between-session work (homework, exercises) is core to their method
+                <li className="flex items-start gap-1.5 text-xs text-gray-600">
+                  <CheckCircle className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
+                  40% under 2 years in practice
                 </li>
-                <li className="flex items-start gap-2 text-sm text-gray-600">
-                  <CheckCircle className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                  Resources and tracking directly impact outcomes
-                </li>
-                <li className="flex items-start gap-2 text-sm text-gray-600">
-                  <CheckCircle className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                  Findable via AFTCC (2,500 members, public directory)
+                <li className="flex items-start gap-1.5 text-xs text-gray-600">
+                  <CheckCircle className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
+                  Higher willingness to pay
                 </li>
               </ul>
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">What they said in demos</p>
-                <p className="text-sm text-gray-700 italic">&quot;The resources you share between sessions — that triggers the decision to come back.&quot; — Kevin</p>
+              <div className="pt-3 border-t border-gray-100">
+                <p className="text-lg font-bold text-gray-900">70,000+</p>
+                <p className="text-[10px] text-gray-400">Total addressable, France</p>
               </div>
             </div>
           </div>
+
         </section>
 
         {/* ============================================ */}
@@ -143,14 +161,35 @@ export default function GTMPage() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <span className="w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold">1</span>
-                  <h3 className="font-semibold text-gray-900">The 13 Demo Contacts</h3>
+                  <h3 className="font-semibold text-gray-900">Personalized Cold Outreach</h3>
                 </div>
-                <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded font-medium">Warm leads</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded font-medium">Active</span>
+                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded font-medium">1 month in</span>
+                </div>
               </div>
-              <p className="text-sm text-gray-500 mb-3">13 practitioners who saw the product and liked it but were never asked to commit. They already know us. They already saw the demo. This is the fastest path to 5 more users.</p>
+              <p className="text-sm text-gray-500 mb-3">Direct, one-to-one messages to practitioners found via directories, LinkedIn, and Instagram. No templates — every message is personalized to their practice, approach, and location.</p>
+              <div className="grid grid-cols-4 gap-3 mb-3">
+                <div className="text-center">
+                  <p className="text-lg font-bold text-gray-900">~100</p>
+                  <p className="text-[10px] text-gray-400">Reached out</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-gray-900">25</p>
+                  <p className="text-[10px] text-gray-400">Replied</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-teal-600">11</p>
+                  <p className="text-[10px] text-gray-400">Demos done</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-teal-600">5</p>
+                  <p className="text-[10px] text-gray-400">Onboarding</p>
+                </div>
+              </div>
               <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs font-semibold text-gray-700 mb-1">Action</p>
-                <p className="text-sm text-gray-600">Message each one personally: &quot;We&apos;ve been building since we last talked. The product is live. Would you be open to trying it for 60 days, free?&quot;</p>
+                <p className="text-xs font-semibold text-gray-700 mb-1">What&apos;s working</p>
+                <p className="text-sm text-gray-600">25% reply rate on personalized messages. 44% of replies convert to demo. 45% of demos convert to onboarding. The funnel works — now it needs volume.</p>
               </div>
             </div>
 
@@ -159,16 +198,28 @@ export default function GTMPage() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <span className="w-7 h-7 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">2</span>
-                  <h3 className="font-semibold text-gray-900">Ose ton Lib&apos; Community</h3>
+                  <h3 className="font-semibold text-gray-900">Online Communities</h3>
                 </div>
-                <span className="text-xs text-teal-600 bg-teal-50 px-2 py-1 rounded font-medium">Segment A</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-teal-600 bg-teal-50 px-2 py-1 rounded font-medium">Both segments</span>
+                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded font-medium">Starting April</span>
+                </div>
               </div>
-              <p className="text-sm text-gray-500 mb-3">9,000+ psychologists setting up in private practice. Active Slack community. 165K Instagram followers. Run by Marion.</p>
+              <p className="text-sm text-gray-500 mb-3">Practitioners gather in private communities to share advice, ask questions, and recommend tools. The trust is already built — we just need to be present and useful.</p>
+              <div className="space-y-2 mb-3">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-gray-700 mb-0.5">Ose ton Lib&apos;</p>
+                  <p className="text-xs text-gray-500">9,000+ psychologists setting up in private practice. Active Slack community. 165K Instagram followers. Run by Marion.</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-gray-700 mb-0.5">Facebook groups</p>
+                  <p className="text-xs text-gray-500">Psychologues en libéral, Psychologues et TCC, Sophrologie professionnelle — active groups where practitioners discuss tools and workflows daily.</p>
+                </div>
+              </div>
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs font-semibold text-gray-700 mb-1">Action</p>
-                <p className="text-sm text-gray-600">Reach out to Marion for partnership. Offer value first — guest content, free tool for her community. Get into the Slack. Don&apos;t pitch. Be helpful.</p>
+                <p className="text-sm text-gray-600">Join and contribute first — answer questions, share practice-building content. Build trust before mentioning the product. Propose partnerships with community leaders.</p>
               </div>
-              <a href="https://www.osetonlib.com/" target="_blank" rel="noopener noreferrer" className="text-xs text-teal-600 hover:text-teal-800 underline mt-2 inline-block">osetonlib.com</a>
             </div>
 
             {/* Channel 3 */}
@@ -178,7 +229,10 @@ export default function GTMPage() {
                   <span className="w-7 h-7 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">3</span>
                   <h3 className="font-semibold text-gray-900">AFTCC Directory + Congress</h3>
                 </div>
-                <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded font-medium">Segment B</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded font-medium">Segment B</span>
+                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded font-medium">Starting April</span>
+                </div>
               </div>
               <p className="text-sm text-gray-500 mb-3">2,500 CBT practitioners. Public searchable directory by name and location. Annual congress (December 2025).</p>
               <div className="bg-gray-50 rounded-lg p-3">
@@ -192,22 +246,25 @@ export default function GTMPage() {
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <span className="w-7 h-7 rounded-full bg-gray-300 text-white flex items-center justify-center text-xs font-bold">4</span>
+                  <span className="w-7 h-7 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">4</span>
                   <h3 className="font-semibold text-gray-900">Instagram + LinkedIn Content</h3>
                 </div>
-                <span className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded font-medium">Both segments</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded font-medium">Active</span>
+                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded font-medium">Testing phase</span>
+                </div>
               </div>
-              <p className="text-sm text-gray-500 mb-3">Young psychologists are highly active on Instagram (#psychologueliberal). LinkedIn works for professional credibility. Both are free.</p>
+              <p className="text-sm text-gray-500 mb-3">Currently learning what resonates. Testing content formats, hashtags, and engagement strategies on both platforms. Initial pilot results expected in 3 weeks — then shifting to a concrete targeting approach.</p>
               <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs font-semibold text-gray-700 mb-1">Action</p>
-                <p className="text-sm text-gray-600">Post 3x/week. Content about practice-building, not product features. Engage on @osetonlib, @encoreunepsy, @catherine_la_psy posts. Build presence before pitching.</p>
+                <p className="text-xs font-semibold text-gray-700 mb-1">Current approach</p>
+                <p className="text-sm text-gray-600">Practice-building content, not product features. Engaging with practitioner accounts (@osetonlib, @encoreunepsy, @catherine_la_psy). Learning which topics and formats drive real conversations before scaling.</p>
               </div>
             </div>
           </div>
         </section>
 
         {/* ============================================ */}
-        {/* 3. THE 30-DAY PLAN */}
+        {/* 3. THE MILESTONES */}
         {/* ============================================ */}
         <section>
           <div className="flex items-center gap-3 mb-6">
@@ -215,130 +272,23 @@ export default function GTMPage() {
               <Calendar className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">3. The 30-day plan</h2>
-              <p className="text-sm text-gray-500">From 2 to 10 paying practitioners</p>
+              <h2 className="text-xl font-bold text-gray-900">3. The milestones</h2>
+              <p className="text-sm text-gray-500">Two targets. Everything else follows.</p>
             </div>
           </div>
 
-          <div className="space-y-6">
-            {/* Week 1 */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded">WEEK 1</span>
-                <span className="text-sm font-semibold text-gray-900">Activate warm leads</span>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded border border-gray-300 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-800 font-medium">Message all 13 demo contacts personally</p>
-                    <p className="text-xs text-gray-500">&quot;We&apos;ve been building since we last spoke. It&apos;s live. Would you try it for 60 days?&quot;</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded border border-gray-300 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-800 font-medium">Book 5 setup calls</p>
-                    <p className="text-xs text-gray-500">15-minute white-glove onboarding. You set it up for them. Import their first 3 patients.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded border border-gray-300 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-800 font-medium">Ask each new user for 1 introduction</p>
-                    <p className="text-xs text-gray-500">&quot;Do you know one colleague who might find this useful?&quot; — before hanging up.</p>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-400">Target: 5 new active users by end of week 1</p>
-              </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-xl border-2 border-purple-200 p-6 text-center">
+              <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded">30 DAYS</span>
+              <p className="text-3xl font-bold text-gray-900 mt-3 mb-1">10</p>
+              <p className="text-sm text-gray-500">practitioners onboarding</p>
+              <p className="text-xs text-gray-400 mt-2">Using the platform with real patients. Not demo data, not free trials — real sessions, real notes, real engagement.</p>
             </div>
-
-            {/* Week 2 */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded">WEEK 2</span>
-                <span className="text-sm font-semibold text-gray-900">Enter the communities</span>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded border border-gray-300 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-800 font-medium">Reach out to Marion (Ose ton Lib&apos;)</p>
-                    <p className="text-xs text-gray-500">Propose value first: free guest content, case study, or tool for her community. Not a sales pitch.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded border border-gray-300 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-800 font-medium">Start Instagram content (3 posts)</p>
-                    <p className="text-xs text-gray-500">Practice-building tips, not product features. Use #psychologueliberal #psychologue #santementale</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded border border-gray-300 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-800 font-medium">Join Facebook groups for psychologues en libéral</p>
-                    <p className="text-xs text-gray-500">Observe first. Answer questions. Build trust before mentioning your product.</p>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-400">Target: community presence established, 2 new conversations started</p>
-              </div>
-            </div>
-
-            {/* Week 3-4 */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded">WEEK 3-4</span>
-                <span className="text-sm font-semibold text-gray-900">Cold outreach to CBT practitioners</span>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded border border-gray-300 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-800 font-medium">AFTCC annuaire: find 50 CBT practitioners in Paris/Lyon</p>
-                    <p className="text-xs text-gray-500">Use the public directory. Cross-reference with LinkedIn for contact info.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded border border-gray-300 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-800 font-medium">Send 10 personalized messages per day</p>
-                    <p className="text-xs text-gray-500">&quot;Quick question: how do you prepare for your first session on Monday morning?&quot; — not a pitch, a conversation starter.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded border border-gray-300 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-800 font-medium">Convert conversations to 15-min demo calls</p>
-                    <p className="text-xs text-gray-500">End every positive reply with: &quot;Would love to show you in 10 minutes if you&apos;re curious.&quot;</p>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-400">Target: 3-5 more active users from cold outreach</p>
-              </div>
-            </div>
-          </div>
-
-          {/* 30-day summary */}
-          <div className="mt-6 bg-gray-900 rounded-xl p-6">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold text-white">13</p>
-                <p className="text-xs text-gray-400">warm leads to reactivate</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-white">50</p>
-                <p className="text-xs text-gray-400">cold outreach targets</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-teal-400">10</p>
-                <p className="text-xs text-gray-400">active practitioners (goal)</p>
-              </div>
+            <div className="bg-gray-900 rounded-xl p-6 text-center">
+              <span className="text-xs font-bold text-teal-400 bg-teal-400/10 px-2 py-1 rounded">90 DAYS</span>
+              <p className="text-3xl font-bold text-white mt-3 mb-1">50</p>
+              <p className="text-sm text-gray-400">practitioners active</p>
+              <p className="text-xs text-gray-500 mt-2">Logging in weekly, sharing resources, relying on Bloom AI. The product is part of their routine — not something they try once.</p>
             </div>
           </div>
         </section>
