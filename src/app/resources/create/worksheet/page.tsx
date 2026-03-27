@@ -433,7 +433,7 @@ function CreateWorksheetContent() {
   const [blocks, setBlocks] = useState<WorksheetBlock[]>([])
   const [tags, setTags] = useState<string[]>([])
   const [isSaving, setIsSaving] = useState(false)
-  const [visibility, setVisibility] = useState<'private' | 'link_only' | 'public'>('private')
+  const [visibility, setVisibility] = useState<'private' | 'link_only' | 'public' | 'onboarding'>('private')
   const [resourceLanguage, setResourceLanguage] = useState<'en' | 'fr'>('en')
   const [saveAs, setSaveAs] = useState<'draft' | 'published'>('draft')
 

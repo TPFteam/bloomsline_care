@@ -163,7 +163,7 @@ function CreateTableExerciseContent() {
   const [saving, setSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [loading, setLoading] = useState(!!editId)
-  const [visibility, setVisibility] = useState<'private' | 'link_only' | 'public'>('private')
+  const [visibility, setVisibility] = useState<'private' | 'link_only' | 'public' | 'onboarding'>('private')
   const [saveAs, setSaveAs] = useState<'draft' | 'published'>('draft')
 
   // Row settings

@@ -20,7 +20,7 @@ export async function getResources(filters?: {
   type?: ResourceType
   status?: ResourceStatus
   category?: string
-  visibility?: 'private' | 'link_only' | 'public'
+  visibility?: 'private' | 'link_only' | 'public' | 'onboarding'
   publicOnly?: boolean
   myResourcesOnly?: boolean // Only fetch resources created by the current user
 }): Promise<Resource[]> {

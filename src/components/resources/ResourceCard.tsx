@@ -19,6 +19,7 @@ import {
   Heart,
   Send,
   Copy,
+  BookMarked,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -170,6 +171,7 @@ export function ResourceCard({
   const TypeIcon = resourceTypeIcons[resource.type] || FileText
   const styles = resourceTypeStyles[resource.type] || resourceTypeStyles.worksheet
   const statusLabel = statusLabels[resource.status] || statusLabels.draft
+  const isOnboarding = resource.visibility === 'onboarding'
 
   const handleClick = () => {
     if (onPreview) {
@@ -234,8 +236,13 @@ export function ResourceCard({
             {resource.language?.toUpperCase()}
           </span>
 
-          <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded-lg">
-            {resource.visibility === 'public' ? (
+          <span className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg ${resource.visibility === 'onboarding' ? 'text-teal-600 bg-teal-50' : 'text-gray-500 bg-white'}`}>
+            {resource.visibility === 'onboarding' ? (
+              <>
+                <BookMarked className="w-3 h-3" />
+                {locale === 'fr' ? 'Onboarding' : locale === 'es' ? 'Onboarding' : 'Onboarding'}
+              </>
+            ) : resource.visibility === 'public' ? (
               <>
                 <Globe className="w-3 h-3" />
                 {locale === 'fr' ? 'Public' : locale === 'es' ? 'Público' : 'Public'}
@@ -282,19 +289,19 @@ export function ResourceCard({
                   {locale === 'fr' ? 'Modifier' : locale === 'es' ? 'Editar' : 'Edit'}
                 </DropdownMenuItem>
               )}
-              {onDuplicate && (
+              {onDuplicate && !(isOnboarding && !isOwner) && (
                 <DropdownMenuItem onClick={onDuplicate}>
                   <Copy className="w-4 h-4 mr-2 text-gray-400" />
                   {locale === 'fr' ? 'Dupliquer' : locale === 'es' ? 'Duplicar' : 'Duplicate'}
                 </DropdownMenuItem>
               )}
-              {(variant === 'owned' || variant === 'saved') && onShare && (
+              {!isOnboarding && (variant === 'owned' || variant === 'saved') && onShare && (
                 <DropdownMenuItem onClick={onShare} className="text-purple-600">
                   <Users className="w-4 h-4 mr-2" />
                   {locale === 'fr' ? 'Envoyer' : locale === 'es' ? 'Enviar' : 'Send'}
                 </DropdownMenuItem>
               )}
-              {(onDelete || onRemove) && (
+              {(onDelete || onRemove) && !(isOnboarding && !isOwner) && (
                 <>
                   <DropdownMenuSeparator />
                   {isOwner && onDelete ? (
@@ -390,25 +397,25 @@ export function ResourceCard({
                   {locale === 'fr' ? 'Modifier' : locale === 'es' ? 'Editar' : 'Edit'}
                 </DropdownMenuItem>
               )}
-              {onDuplicate && (
+              {onDuplicate && !(isOnboarding && !isOwner) && (
                 <DropdownMenuItem onClick={onDuplicate}>
                   <Copy className="w-4 h-4 mr-2 text-gray-400" />
                   {locale === 'fr' ? 'Dupliquer' : locale === 'es' ? 'Duplicar' : 'Duplicate'}
                 </DropdownMenuItem>
               )}
-              {(variant === 'owned' || variant === 'saved') && onShare && (
+              {!isOnboarding && (variant === 'owned' || variant === 'saved') && onShare && (
                 <DropdownMenuItem onClick={onShare} className="text-purple-600">
                   <Users className="w-4 h-4 mr-2" />
                   {locale === 'fr' ? 'Envoyer' : locale === 'es' ? 'Enviar' : 'Send'}
                 </DropdownMenuItem>
               )}
-              {variant === 'library' && members.length > 0 && onShareWithMembers && (
+              {!isOnboarding && variant === 'library' && members.length > 0 && onShareWithMembers && (
                 <DropdownMenuItem onClick={() => setShowShareModal(true)}>
                   <Send className="w-4 h-4 mr-2 text-gray-400" />
                   {locale === 'fr' ? 'Envoyer' : locale === 'es' ? 'Enviar' : 'Send'}
                 </DropdownMenuItem>
               )}
-              {(onDelete || onRemove) && (
+              {(onDelete || onRemove) && !(isOnboarding && !isOwner) && (
                 <>
                   <DropdownMenuSeparator />
                   {isOwner && onDelete ? (

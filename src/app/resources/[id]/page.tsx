@@ -232,6 +232,7 @@ export default function ResourceDetailPage() {
   const [reviewNotes, setReviewNotes] = useState('')
   const [savingNotes, setSavingNotes] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [lightbox, setLightbox] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
   const [showShareModal, setShowShareModal] = useState(false)
   const [members, setMembers] = useState<SimpleMember[]>([])
   const [memberGroups, setMemberGroups] = useState<{ id: string; name: string; color: string; member_ids: string[] }[]>([])
@@ -1246,7 +1247,7 @@ export default function ResourceDetailPage() {
                                   src={(block as any).mediaFile.url}
                                   alt={(block as any).mediaAlt || (block as any).mediaCaption || ''}
                                   className="max-h-64 w-auto rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                                  onClick={() => window.open((block as any).mediaFile.url, '_blank')}
+                                  onClick={() => setLightbox({ url: (block as any).mediaFile.url, type: 'image' })}
                                 />
                                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                                   <div className="bg-black/60 text-white text-xs px-3 py-1.5 rounded-full">
@@ -1678,7 +1679,7 @@ export default function ResourceDetailPage() {
                             {(block as any).mediaFile?.url ? (
                               <div
                                 className="group relative w-48 h-32 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-amber-400 transition-all"
-                                onClick={() => window.open((block as any).mediaFile.url, '_blank')}
+                                onClick={() => setLightbox({ url: (block as any).mediaFile.url, type: 'image' })}
                               >
                                 <img
                                   src={(block as any).mediaFile.url}
@@ -1747,7 +1748,7 @@ export default function ResourceDetailPage() {
                             {(block as any).mediaFile?.url ? (
                               <div
                                 className="group relative w-56 h-36 bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-amber-400 transition-all"
-                                onClick={() => window.open((block as any).mediaFile.url, '_blank')}
+                                onClick={() => setLightbox({ url: (block as any).mediaFile.url, type: 'video' })}
                               >
                                 <video
                                   src={(block as any).mediaFile.url}
@@ -2133,7 +2134,12 @@ export default function ResourceDetailPage() {
                   {/* Visibility badge - only show for owner */}
                   {isOwner && (
                     <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600">
-                      {resource.visibility === 'public' ? (
+                      {resource.visibility === 'onboarding' ? (
+                        <>
+                          <BookOpen className="w-4 h-4 text-teal-500" />
+                          Onboarding
+                        </>
+                      ) : resource.visibility === 'public' ? (
                         <>
                           <Globe className="w-4 h-4 text-gray-400" />
                           {locale === 'fr' ? 'Public' : 'Public'}
@@ -2213,9 +2219,11 @@ export default function ResourceDetailPage() {
                       <Edit className="w-5 h-5 mr-2" />
                       {locale === 'fr' ? 'Éditer' : 'Edit'}
                     </Button>
-                    <Button variant="outline" className="h-11 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 transition-all px-3" onClick={() => setShowShareModal(true)}>
-                      <Send className="w-4 h-4" />
-                    </Button>
+                    {resource.visibility !== 'onboarding' && (
+                      <Button variant="outline" className="h-11 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 transition-all px-3" onClick={() => setShowShareModal(true)}>
+                        <Send className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
 
                   <Button
@@ -2481,21 +2489,27 @@ export default function ResourceDetailPage() {
                       <Send className="w-6 h-6 text-gray-400" />
                     </div>
                     <p className="text-gray-500">
-                      {locale === 'fr' ? 'Pas encore partagé' : 'Not shared yet'}
+                      {resource.visibility === 'onboarding'
+                        ? (locale === 'fr' ? 'Ressource d\'onboarding' : 'Onboarding resource')
+                        : (locale === 'fr' ? 'Pas encore partagé' : 'Not shared yet')}
                     </p>
-                    <p className="text-sm text-gray-400 mt-1">
-                      {locale === 'fr'
-                        ? 'Partagez cette ressource avec vos patients pour voir leurs réponses'
-                        : 'Share this resource with your members to see their responses'}
-                    </p>
-                    <Button
-                      onClick={() => setShowShareModal(true)}
-                      className="mt-4 bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
-                      size="sm"
-                    >
-                      <Send className="w-4 h-4 mr-2" />
-                      {locale === 'fr' ? 'Partager' : 'Share'}
-                    </Button>
+                    {resource.visibility !== 'onboarding' && (
+                      <>
+                        <p className="text-sm text-gray-400 mt-1">
+                          {locale === 'fr'
+                            ? 'Partagez cette ressource avec vos patients pour voir leurs réponses'
+                            : 'Share this resource with your members to see their responses'}
+                        </p>
+                        <Button
+                          onClick={() => setShowShareModal(true)}
+                          className="mt-4 bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
+                          size="sm"
+                        >
+                          <Send className="w-4 h-4 mr-2" />
+                          {locale === 'fr' ? 'Partager' : 'Share'}
+                        </Button>
+                      </>
+                    )}
                   </div>
                 ) : (
                   (() => {
@@ -2908,6 +2922,37 @@ export default function ResourceDetailPage() {
           />
         )}
       </main>
+
+      {/* Lightbox modal */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            onClick={() => setLightbox(null)}
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+          {lightbox.type === 'image' ? (
+            <img
+              src={lightbox.url}
+              alt=""
+              className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <video
+              src={lightbox.url}
+              controls
+              autoPlay
+              className="max-w-[90vw] max-h-[90vh] rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }
