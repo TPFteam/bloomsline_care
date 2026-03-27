@@ -64,6 +64,7 @@ export async function middleware(request: NextRequest) {
       'https://bloomsline.com',
       'http://localhost:3000',
       'http://localhost:8081', // Expo dev
+      'http://localhost:8083', // Expo web dev
     ]
     // Allow mobile apps (no origin header) and allowed origins
     const corsOrigin = !origin || allowedOrigins.includes(origin) ? origin || '*' : ''

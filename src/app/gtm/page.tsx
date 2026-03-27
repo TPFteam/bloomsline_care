@@ -33,7 +33,7 @@ export default function GTMPage() {
       <div className="max-w-4xl mx-auto px-6 py-12 space-y-16">
         {/* Title */}
         <div className="max-w-2xl">
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">Go-To-Market: The Next 30 Days</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">Go-To-Market</h1>
           <p className="text-gray-500 text-lg">From 2 users to 10 paying practitioners. Everything else comes after.</p>
           <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-100">
             <p className="text-sm text-amber-800">
@@ -63,7 +63,7 @@ export default function GTMPage() {
                 <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded">PRIMARY</span>
               </div>
               <h3 className="text-sm font-bold text-gray-900 mb-1">Young brief therapy psychologists</h3>
-              <p className="text-xs text-gray-500 mb-3">CBT, ACT, EMDR. 1-10 years in practice. High patient turnover.</p>
+              <p className="text-xs text-gray-500 mb-3">CBT, ACT, EMDR. 1-5 years in practice. High patient turnover.</p>
               <ul className="space-y-1.5 mb-4">
                 <li className="flex items-start gap-1.5 text-xs text-gray-600">
                   <CheckCircle className="w-3 h-3 text-teal-500 mt-0.5 flex-shrink-0" />
