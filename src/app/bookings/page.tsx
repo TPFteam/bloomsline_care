@@ -101,24 +101,24 @@ const STATUS_CONFIG = {
   },
 }
 
-const STATUS_LABELS = {
-  pending: 'Pending Approval',
-  confirmed: 'Confirmed',
-  cancelled: 'Cancelled',
-  completed: 'Completed',
-  no_show: 'No Show',
+const STATUS_LABELS: Record<string, { en: string; fr: string }> = {
+  pending: { en: 'Pending Approval', fr: 'En attente' },
+  confirmed: { en: 'Confirmed', fr: 'Confirmé' },
+  cancelled: { en: 'Cancelled', fr: 'Annulé' },
+  completed: { en: 'Completed', fr: 'Terminé' },
+  no_show: { en: 'No Show', fr: 'Absent' },
 }
 
 const DAYS_OF_WEEK: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
-const DAY_LABELS: Record<DayOfWeek, string> = {
-  monday: 'Monday',
-  tuesday: 'Tuesday',
-  wednesday: 'Wednesday',
-  thursday: 'Thursday',
-  friday: 'Friday',
-  saturday: 'Saturday',
-  sunday: 'Sunday',
+const DAY_LABELS: Record<DayOfWeek, { en: string; fr: string }> = {
+  monday: { en: 'Monday', fr: 'Lundi' },
+  tuesday: { en: 'Tuesday', fr: 'Mardi' },
+  wednesday: { en: 'Wednesday', fr: 'Mercredi' },
+  thursday: { en: 'Thursday', fr: 'Jeudi' },
+  friday: { en: 'Friday', fr: 'Vendredi' },
+  saturday: { en: 'Saturday', fr: 'Samedi' },
+  sunday: { en: 'Sunday', fr: 'Dimanche' },
 }
 
 const DEFAULT_SESSION_TYPES: SessionType[] = [
@@ -312,6 +312,7 @@ export default function BookingsPage() {
   // Get session type name
   const getSessionTypeName = (typeId: string) => {
     const type = sessionTypes.find(st => st.id === typeId)
+    if (locale === 'fr' && type?.name_fr) return type.name_fr
     return type?.name || typeId
   }
 
@@ -432,7 +433,7 @@ export default function BookingsPage() {
         prev.map(b => (b.id === bookingId ? { ...b, status } : b))
       )
 
-      setMessage({ type: 'success', text: `Booking marked as ${STATUS_LABELS[status].toLowerCase()}.` })
+      setMessage({ type: 'success', text: locale === 'fr' ? `Rendez-vous marqué comme ${STATUS_LABELS[status]?.fr?.toLowerCase()}.` : `Booking marked as ${STATUS_LABELS[status]?.en?.toLowerCase()}.` })
     } catch (err) {
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update booking' })
     }
@@ -563,7 +564,7 @@ export default function BookingsPage() {
           leftContent={
             <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <CalendarCheck className="w-4 h-4" />
-              <span>Bookings</span>
+              <span>{locale === 'fr' ? 'Réservations' : 'Bookings'}</span>
             </div>
           }
         />
@@ -578,13 +579,13 @@ export default function BookingsPage() {
               className="flex items-center justify-between"
             >
               <div>
-                <h1 className="text-xl font-semibold text-gray-900 mb-1">Bookings</h1>
-                <p className="text-gray-500 text-sm">Manage appointments and booking settings</p>
+                <h1 className="text-xl font-semibold text-gray-900 mb-1">{locale === 'fr' ? 'Réservations' : 'Bookings'}</h1>
+                <p className="text-gray-500 text-sm">{locale === 'fr' ? 'Gérer les rendez-vous et les paramètres' : 'Manage appointments and booking settings'}</p>
               </div>
               {pendingCount > 0 && (
                 <div className="flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg text-sm font-medium">
                   <AlertCircle className="w-4 h-4" />
-                  <span>{pendingCount} pending</span>
+                  <span>{pendingCount} {locale === 'fr' ? 'en attente' : 'pending'}</span>
                 </div>
               )}
             </motion.div>
@@ -630,7 +631,7 @@ export default function BookingsPage() {
                 }`}
               >
                 <Calendar className="w-4 h-4" />
-                Appointments
+                {locale === 'fr' ? 'Rendez-vous' : 'Appointments'}
                 {pendingCount > 0 && (
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
                     mainTab === 'appointments'
@@ -650,7 +651,7 @@ export default function BookingsPage() {
                 }`}
               >
                 <Settings className="w-4 h-4" />
-                Settings
+                {locale === 'fr' ? 'Paramètres' : 'Settings'}
               </button>
             </div>
 
@@ -663,10 +664,10 @@ export default function BookingsPage() {
                   <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-medium text-amber-800">
-                      You&apos;re using an external booking system
+                      {locale === 'fr' ? 'Vous utilisez un système de réservation externe' : 'You\'re using an external booking system'}
                     </p>
                     <p className="text-sm text-amber-700 mt-0.5">
-                      Bookings made through your external platform won&apos;t sync to Bloomsline automatically. Remember to create a manual session when needed to keep your records up to date.
+                      {locale === 'fr' ? 'Les réservations faites via votre plateforme externe ne se synchronisent pas automatiquement avec Bloomsline. Pensez à créer une séance manuellement pour garder vos dossiers à jour.' : 'Bookings made through your external platform won\'t sync to Bloomsline automatically. Remember to create a manual session when needed to keep your records up to date.'}
                     </p>
                   </div>
                 </div>
@@ -687,7 +688,9 @@ export default function BookingsPage() {
                           : 'text-gray-500 hover:text-gray-700 hover:bg-white/50'
                       }`}
                     >
-                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      {locale === 'fr'
+                        ? (tab === 'upcoming' ? 'À venir' : tab === 'past' ? 'Passés' : 'Tous')
+                        : tab.charAt(0).toUpperCase() + tab.slice(1)}
                     </button>
                   )
                 })}
@@ -711,10 +714,10 @@ export default function BookingsPage() {
                   </div>
                   <p className="text-gray-600 font-medium">
                     {appointmentFilter === 'upcoming'
-                      ? 'No upcoming appointments'
+                      ? (locale === 'fr' ? 'Aucun rendez-vous à venir' : 'No upcoming appointments')
                       : appointmentFilter === 'past'
-                      ? 'No past appointments'
-                      : 'No bookings yet'}
+                      ? (locale === 'fr' ? 'Aucun rendez-vous passé' : 'No past appointments')
+                      : (locale === 'fr' ? 'Aucune réservation' : 'No bookings yet')}
                   </p>
                 </motion.div>
               ) : (
@@ -750,7 +753,7 @@ export default function BookingsPage() {
                                   {booking.client_name}
                                 </h3>
                                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.text}`}>
-                                  {STATUS_LABELS[booking.status]}
+                                  {STATUS_LABELS[booking.status]?.[locale as 'en' | 'fr'] || booking.status}
                                 </span>
                                 {booking.google_event_id && (
                                   <span className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
@@ -810,7 +813,7 @@ export default function BookingsPage() {
                                     ) : (
                                       <Check className="w-4 h-4" />
                                     )}
-                                    Approve
+                                    {locale === 'fr' ? 'Accepter' : 'Approve'}
                                   </motion.button>
                                   <motion.button
                                     whileHover={{ scale: 1.02 }}
@@ -820,7 +823,7 @@ export default function BookingsPage() {
                                     className="flex items-center gap-2 px-4 py-2.5 bg-white text-red-600 text-sm font-medium rounded-xl border border-red-200 hover:bg-red-50 transition-all disabled:opacity-50"
                                   >
                                     <X className="w-4 h-4" />
-                                    Reject
+                                    {locale === 'fr' ? 'Refuser' : 'Reject'}
                                   </motion.button>
                                 </>
                               )}
@@ -838,7 +841,7 @@ export default function BookingsPage() {
                                     ) : (
                                       <CheckCircle2 className="w-4 h-4" />
                                     )}
-                                    Completed
+                                    {locale === 'fr' ? 'Terminé' : 'Completed'}
                                   </motion.button>
                                   <motion.button
                                     whileHover={{ scale: 1.02 }}
@@ -848,7 +851,7 @@ export default function BookingsPage() {
                                     className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-600 text-sm font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-all disabled:opacity-50"
                                   >
                                     <XCircle className="w-4 h-4" />
-                                    No Show
+                                    {locale === 'fr' ? 'Absent' : 'No Show'}
                                   </motion.button>
                                 </>
                               )}
@@ -865,7 +868,7 @@ export default function BookingsPage() {
                                   ) : (
                                     <X className="w-4 h-4" />
                                   )}
-                                  Cancel
+                                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
                                 </motion.button>
                               )}
                             </div>
@@ -901,10 +904,10 @@ export default function BookingsPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <LinkIcon className="w-5 h-5 text-gray-600" />
-                      Your Booking Link
+                      {locale === 'fr' ? 'Votre lien de réservation' : 'Your Booking Link'}
                     </CardTitle>
                     <CardDescription>
-                      Share this link with clients so they can book appointments with you
+                      {locale === 'fr' ? 'Partagez ce lien avec vos clients pour qu\'ils puissent prendre rendez-vous' : 'Share this link with clients so they can book appointments with you'}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -923,19 +926,19 @@ export default function BookingsPage() {
                         {linkCopied ? (
                           <>
                             <Check className="w-4 h-4 mr-2 text-green-600" />
-                            Copied!
+                            {locale === 'fr' ? 'Copié !' : 'Copied!'}
                           </>
                         ) : (
                           <>
                             <Copy className="w-4 h-4 mr-2" />
-                            Copy
+                            {locale === 'fr' ? 'Copier' : 'Copy'}
                           </>
                         )}
                       </Button>
                       <Link href={`/practitioner/${practitionerSlug}/book`} target="_blank">
                         <Button variant="outline">
                           <ExternalLink className="w-4 h-4 mr-2" />
-                          Preview
+                          {locale === 'fr' ? 'Aperçu' : 'Preview'}
                         </Button>
                       </Link>
                     </div>
@@ -949,17 +952,17 @@ export default function BookingsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Calendar className="w-5 h-5" />
-                    Calendar Integration
+                    {locale === 'fr' ? 'Intégration Calendrier' : 'Calendar Integration'}
                   </CardTitle>
                   <CardDescription>
-                    Connect your Google Calendar to sync appointments and show real-time availability
+                    {locale === 'fr' ? 'Connectez votre Google Calendar pour synchroniser les rendez-vous et afficher vos disponibilités' : 'Connect your Google Calendar to sync appointments and show real-time availability'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {isLoadingSettings ? (
                     <div className="flex items-center gap-2 text-gray-500">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Loading...
+                      {locale === 'fr' ? 'Chargement...' : 'Loading...'}
                     </div>
                   ) : calendarConnection ? (
                     <div className="flex items-center justify-between">
@@ -968,7 +971,7 @@ export default function BookingsPage() {
                           <Check className="w-5 h-5 text-green-600" />
                         </div>
                         <div>
-                          <p className="font-medium">Google Calendar Connected</p>
+                          <p className="font-medium">{locale === 'fr' ? 'Google Calendar connecté' : 'Google Calendar Connected'}</p>
                           <p className="text-sm text-gray-500">{calendarConnection.provider_email}</p>
                         </div>
                       </div>
@@ -980,7 +983,7 @@ export default function BookingsPage() {
                         {isDisconnecting ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
-                          'Disconnect'
+                          locale === 'fr' ? 'Déconnecter' : 'Disconnect'
                         )}
                       </Button>
                     </div>
@@ -991,7 +994,7 @@ export default function BookingsPage() {
                       ) : (
                         <Calendar className="w-4 h-4 mr-2" />
                       )}
-                      Connect Google Calendar
+                      {locale === 'fr' ? 'Connecter Google Calendar' : 'Connect Google Calendar'}
                     </Button>
                   )}
                 </CardContent>
@@ -1004,10 +1007,10 @@ export default function BookingsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Clock className="w-5 h-5 text-gray-600" />
-                    Session Types
+                    {locale === 'fr' ? 'Types de séance' : 'Session Types'}
                   </CardTitle>
                   <CardDescription>
-                    Configure the types of sessions you offer and their durations
+                    {locale === 'fr' ? 'Configurez les types de séances que vous proposez et leur durée' : 'Configure the types of sessions you offer and their durations'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -1021,7 +1024,7 @@ export default function BookingsPage() {
                     >
                       <div className="flex-1 grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Name</label>
+                          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{locale === 'fr' ? 'Nom' : 'Name'}</label>
                           <input
                             type="text"
                             value={isLocked && locale === 'fr' ? lockedNameFr[type.id] : type.name}
@@ -1038,7 +1041,7 @@ export default function BookingsPage() {
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Duration (min)</label>
+                          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{locale === 'fr' ? 'Durée (min)' : 'Duration (min)'}</label>
                           <select
                             value={type.duration}
                             onChange={(e) => {
@@ -1086,7 +1089,7 @@ export default function BookingsPage() {
                     className="flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 font-medium px-3 py-2 rounded-lg hover:bg-teal-50 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
-                    Add session type
+                    {locale === 'fr' ? 'Ajouter un type de séance' : 'Add session type'}
                   </button>
 
                   <div className="pt-2">
@@ -1098,7 +1101,7 @@ export default function BookingsPage() {
                       {isSavingSettings ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       ) : null}
-                      Save Session Types
+                      {locale === 'fr' ? 'Enregistrer les types de séance' : 'Save Session Types'}
                     </Button>
                   </div>
                 </CardContent>
@@ -1111,7 +1114,7 @@ export default function BookingsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Clock className="w-5 h-5" />
-                    Availability Schedule
+                    {locale === 'fr' ? 'Horaires de disponibilité' : 'Availability Schedule'}
                   </CardTitle>
                   <CardDescription>
                     Set your weekly availability for client bookings
@@ -1144,7 +1147,7 @@ export default function BookingsPage() {
                       return (
                         <div key={day} className="border rounded-lg p-4">
                           <div className="flex items-center justify-between mb-3">
-                            <span className="font-medium">{DAY_LABELS[day]}</span>
+                            <span className="font-medium">{DAY_LABELS[day]?.[locale as 'en' | 'fr'] || day}</span>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -1199,7 +1202,7 @@ export default function BookingsPage() {
                     {isSavingAvailability ? (
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
                     ) : null}
-                    Save Availability
+                    {locale === 'fr' ? 'Enregistrer les disponibilités' : 'Save Availability'}
                   </Button>
                 </CardContent>
               </Card>
@@ -1208,17 +1211,17 @@ export default function BookingsPage() {
               {/* Booking Settings */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Booking Preferences</CardTitle>
+                  <CardTitle>{locale === 'fr' ? 'Préférences de réservation' : 'Booking Preferences'}</CardTitle>
                   <CardDescription>
-                    Configure how clients can book appointments with you
+                    {locale === 'fr' ? 'Configurez comment vos clients peuvent prendre rendez-vous' : 'Configure how clients can book appointments with you'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">Enable Booking Page</p>
+                      <p className="font-medium">{locale === 'fr' ? 'Activer la page de réservation' : 'Enable Booking Page'}</p>
                       <p className="text-sm text-gray-500">
-                        Allow clients to book appointments through your public profile
+                        {locale === 'fr' ? 'Permettre aux clients de prendre rendez-vous via votre profil public' : 'Allow clients to book appointments through your public profile'}
                       </p>
                     </div>
                     <button
@@ -1255,9 +1258,9 @@ export default function BookingsPage() {
                   <div className="space-y-3 border border-gray-100 rounded-xl p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium">Use external booking system</p>
+                        <p className="font-medium">{locale === 'fr' ? 'Utiliser un système de réservation externe' : 'Use external booking system'}</p>
                         <p className="text-sm text-gray-500">
-                          Redirect clients to Calendly, Doctolib, or another booking tool
+                          {locale === 'fr' ? 'Rediriger les clients vers Calendly, Doctolib ou un autre outil' : 'Redirect clients to Calendly, Doctolib, or another booking tool'}
                         </p>
                       </div>
                       <button
@@ -1442,7 +1445,7 @@ export default function BookingsPage() {
                     {isSavingSettings ? (
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
                     ) : null}
-                    Save Settings
+                    {locale === 'fr' ? 'Enregistrer' : 'Save Settings'}
                   </Button>
                 </CardContent>
               </Card>

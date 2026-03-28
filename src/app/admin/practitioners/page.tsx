@@ -33,6 +33,7 @@ interface AdminResource {
   type: string
   category: string | null
   status: string
+  visibility: string
   practitioner_id: string
   created_at: string
   updated_at: string
@@ -329,6 +330,33 @@ export default function AdminPractitionersPage() {
     return 'bg-amber-50 text-amber-700'
   }
 
+  const visibilityColor = (v: string) => {
+    if (v === 'onboarding') return 'bg-teal-50 text-teal-700'
+    if (v === 'public') return 'bg-blue-50 text-blue-700'
+    if (v === 'link_only') return 'bg-purple-50 text-purple-700'
+    return 'bg-gray-100 text-gray-500'
+  }
+
+  const visibilityLabel = (v: string) => {
+    const labels: Record<string, string> = { private: 'Private', public: 'Public', link_only: 'Link', onboarding: 'Onboarding' }
+    return labels[v] || v
+  }
+
+  const handleVisibilityChange = async (resourceId: string, newVisibility: string) => {
+    try {
+      const res = await fetch('/api/admin/resources', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resourceId, visibility: newVisibility }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      setResources(prev => prev.map(r => r.id === resourceId ? { ...r, visibility: newVisibility } : r))
+      toast.success(`Visibility changed to ${visibilityLabel(newVisibility)}`)
+    } catch {
+      toast.error('Failed to update visibility')
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -569,7 +597,7 @@ export default function AdminPractitionersPage() {
               ) : (
                 <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                   {/* Table header */}
-                  <div className="grid grid-cols-[40px_1fr_120px_140px_200px] gap-4 px-5 py-3 border-b border-gray-100 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="grid grid-cols-[40px_1fr_120px_130px_130px_200px] gap-4 px-5 py-3 border-b border-gray-100 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <div className="flex items-center">
                       <input
                         type="checkbox"
@@ -581,6 +609,7 @@ export default function AdminPractitionersPage() {
                     <div>{locale === 'fr' ? 'Titre' : 'Title'}</div>
                     <div>{locale === 'fr' ? 'Type' : 'Type'}</div>
                     <div>{locale === 'fr' ? 'Statut' : 'Status'}</div>
+                    <div>{locale === 'fr' ? 'Visibilité' : 'Visibility'}</div>
                     <div>{locale === 'fr' ? 'Propriétaire' : 'Owner'}</div>
                   </div>
 
@@ -589,7 +618,7 @@ export default function AdminPractitionersPage() {
                     {filteredResources.map((r) => (
                       <div
                         key={r.id}
-                        className={`grid grid-cols-[40px_1fr_120px_140px_200px] gap-4 px-5 py-4 items-center hover:bg-gray-50 transition-colors cursor-pointer ${
+                        className={`grid grid-cols-[40px_1fr_120px_130px_130px_200px] gap-4 px-5 py-4 items-center hover:bg-gray-50 transition-colors cursor-pointer ${
                           selectedResources.has(r.id) ? 'bg-blue-50/50' : ''
                         }`}
                         onClick={() => toggleResource(r.id)}
@@ -616,6 +645,18 @@ export default function AdminPractitionersPage() {
                           <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(r.status)}`}>
                             {r.status}
                           </span>
+                        </div>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <select
+                            value={r.visibility || 'private'}
+                            onChange={(e) => handleVisibilityChange(r.id, e.target.value)}
+                            className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer ${visibilityColor(r.visibility || 'private')}`}
+                          >
+                            <option value="private">Private</option>
+                            <option value="public">Public</option>
+                            <option value="link_only">Link</option>
+                            <option value="onboarding">Onboarding</option>
+                          </select>
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm text-gray-700 truncate">{r.owner_name}</p>

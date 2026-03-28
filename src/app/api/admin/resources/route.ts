@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     // Fetch all resources
     const { data: resources, error } = await adminClient
       .from('resources')
-      .select('id, title, type, category, status, practitioner_id, created_at, updated_at')
+      .select('id, title, type, category, status, visibility, practitioner_id, created_at, updated_at')
       .order('updated_at', { ascending: false })
 
     if (error) throw error
@@ -58,6 +58,34 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ resources: result })
   } catch (error) {
     console.error('Error fetching resources:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// PATCH: Update resource visibility
+export async function PATCH(request: NextRequest) {
+  try {
+    const userId = await getAuthUserId(request)
+    if (!userId || !ADMIN_USER_IDS.includes(userId)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { resourceId, visibility } = await request.json()
+    if (!resourceId || !['private', 'link_only', 'public', 'onboarding'].includes(visibility)) {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    }
+
+    const adminClient = createAdminClient()
+    const { error } = await adminClient
+      .from('resources')
+      .update({ visibility })
+      .eq('id', resourceId)
+
+    if (error) throw error
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error updating visibility:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

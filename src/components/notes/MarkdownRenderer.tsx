@@ -225,7 +225,7 @@ export function MarkdownRenderer({ content, className, onContentChange, onEdit, 
               content: attr(data-tag-label) ": ";
             }
             .rte-read.show-labels mark[data-verbatim]::before {
-              content: attr(data-verbatim) ": ";
+              content: none;
             }
             .tag-highlight-pulse {
               animation: tagPulse 2s ease-in-out;

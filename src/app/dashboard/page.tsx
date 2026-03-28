@@ -484,8 +484,7 @@ function DashboardContent() {
     const hour = new Date().getHours()
     if (hour < 12) return locale === 'fr' ? 'Bonjour' : 'Good morning'
     if (hour < 18) return locale === 'fr' ? 'Bonjour' : 'Good afternoon'
-    if (hour < 22) return locale === 'fr' ? 'Bonsoir' : 'Good evening'
-    return locale === 'fr' ? 'Bonne nuit' : 'Good night'
+    return locale === 'fr' ? 'Bonsoir' : 'Good evening'
   }
 
   const getTemplateIcon = (type: TemplateOption['type']) => {

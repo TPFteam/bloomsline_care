@@ -61,6 +61,10 @@ function getCleanHtml(el: HTMLElement): string {
     const text = mark.textContent?.replace(/\u200B/g, '').replace(/\u00A0/g, '').trim()
     if (!text) mark.parentNode?.removeChild(mark)
   })
+  // Remove verbatim "mention" marks (the member name prefix) — keep only the "said" marks
+  clone.querySelectorAll('mark[data-verbatim-type="mention"]').forEach(mark => {
+    mark.parentNode?.removeChild(mark)
+  })
   return clone.innerHTML
 }
 
