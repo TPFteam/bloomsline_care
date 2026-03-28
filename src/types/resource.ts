@@ -5,7 +5,7 @@ export type ResourceStatus = 'draft' | 'published' | 'archived'
 
 export type ResourceVisibility = 'private' | 'link_only' | 'public' | 'onboarding'
 
-export type ResourceLanguage = 'en' | 'fr'
+export type ResourceLanguage = 'en' | 'fr' | 'es' | 'de' | 'it' | 'pt' | 'nl'
 
 export type AssignmentStatus = 'pending' | 'in_progress' | 'completed' | 'expired'
 
@@ -28,7 +28,7 @@ export type BlockType =
   | 'key_points'
   | 'callout'
   | 'quote'
-  | 'image_placeholder'
+  | 'affirmation'
   // Worksheet-specific block types
   | 'tip'
   | 'divider'
@@ -47,6 +47,13 @@ export type BlockType =
   | 'video_response'
   | 'audio_response'
   | 'file_response'
+  // Exercise step types
+  | 'instruction'
+  | 'timed_action'
+  | 'breathing'
+  | 'visualization'
+  | 'body_scan'
+  | 'reflection'
 
 // Media file interface
 export interface MediaFile {
@@ -145,11 +152,6 @@ export interface CalloutBlock extends BaseBlock {
 export interface QuoteBlock extends BaseBlock {
   type: 'quote'
   attribution?: string
-}
-
-export interface ImagePlaceholderBlock extends BaseBlock {
-  type: 'image_placeholder'
-  caption?: string
 }
 
 // Worksheet-specific block types
@@ -289,7 +291,6 @@ export type ResourceBlock =
   | KeyPointsBlock
   | CalloutBlock
   | QuoteBlock
-  | ImagePlaceholderBlock
   // Worksheet-specific blocks
   | TipBlock
   | DividerBlock
@@ -462,7 +463,8 @@ export interface ResourceAssignment {
 }
 
 // Response data type (keyed by block ID)
-export type ResponseData = Record<string, string | number | number[] | boolean>
+export type ResponseValue = string | number | number[] | boolean | string[] | Record<string, string>[] | Record<string, number>
+export type ResponseData = Record<string, ResponseValue>
 
 // Assessment scores
 export interface AssessmentScores {

@@ -455,11 +455,7 @@ export function ResourceCard({
       {/* Footer: Badges */}
       <div className="flex items-center gap-2 flex-wrap">
         {/* Language */}
-        <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${
-          resource.language === 'fr'
-            ? 'bg-blue-50 text-blue-600'
-            : 'bg-orange-50 text-orange-600'
-        }`}>
+        <span className="text-xs font-semibold px-2 py-1 rounded-lg bg-gray-100 text-gray-600">
           {resource.language?.toUpperCase()}
         </span>
 
@@ -600,11 +596,7 @@ export function ResourceCardList({
 
       {/* Badges */}
       <div className="flex items-center gap-2 flex-shrink-0" onClick={handleMenuClick}>
-        <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${
-          resource.language === 'fr'
-            ? 'bg-blue-50 text-blue-600'
-            : 'bg-orange-50 text-orange-600'
-        }`}>
+        <span className="text-xs font-semibold px-2 py-1 rounded-lg bg-gray-100 text-gray-600">
           {resource.language?.toUpperCase()}
         </span>
 

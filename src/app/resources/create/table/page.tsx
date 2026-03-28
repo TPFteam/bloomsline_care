@@ -153,7 +153,7 @@ function CreateTableExerciseContent() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<ResourceCategory | null>(null)
-  const [resourceLanguage, setResourceLanguage] = useState<'en' | 'fr'>(locale as 'en' | 'fr')
+  const [resourceLanguage, setResourceLanguage] = useState<string>(locale === 'fr' ? 'fr' : 'en')
   const [columns, setColumns] = useState<TableColumn[]>([
     { id: generateId(), header: '', description: '' },
     { id: generateId(), header: '', description: '' },
@@ -307,7 +307,7 @@ function CreateTableExerciseContent() {
       ])
       setInstructions('')
       setVisibility('private')
-      setResourceLanguage(locale as 'en' | 'fr')
+      setResourceLanguage(locale === 'fr' ? 'fr' : 'en')
       setSaveAs('draft')
       setStep('template')
       setDetailsStep(1)
@@ -472,7 +472,7 @@ function CreateTableExerciseContent() {
         category: selectedCategory,
         status: saveAs,
         visibility: visibility,
-        language: resourceLanguage,
+        language: resourceLanguage as any,
         blocks: [
           {
             id: editId ? columns[0]?.id || generateId() : generateId(),
@@ -559,7 +559,7 @@ function CreateTableExerciseContent() {
         category: selectedCategory,
         status: 'draft' as const,
         visibility: 'private' as const,
-        language: resourceLanguage,
+        language: resourceLanguage as any,
         blocks: [
           {
             id: saveToId ? columns[0]?.id || generateId() : generateId(),
@@ -1377,32 +1377,30 @@ function CreateTableExerciseContent() {
                       {locale === 'fr' ? 'Langue' : 'Language'}
                     </h2>
                     <div className="flex flex-wrap gap-2">
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setResourceLanguage('en')}
-                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                          resourceLanguage === 'en'
-                            ? 'bg-red-50 text-red-600 border border-red-200 shadow-sm'
-                            : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
-                        }`}
-                      >
-                        <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600">EN</span>
-                        English
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setResourceLanguage('fr')}
-                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                          resourceLanguage === 'fr'
-                            ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-sm'
-                            : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
-                        }`}
-                      >
-                        <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-600">FR</span>
-                        Français
-                      </motion.button>
+                      {[
+                        { code: 'en', label: 'English' },
+                        { code: 'fr', label: 'Français' },
+                        { code: 'es', label: 'Español' },
+                        { code: 'de', label: 'Deutsch' },
+                        { code: 'it', label: 'Italiano' },
+                        { code: 'pt', label: 'Português' },
+                        { code: 'nl', label: 'Nederlands' },
+                      ].map((lang) => (
+                        <motion.button
+                          key={lang.code}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setResourceLanguage(lang.code)}
+                          className={`px-3 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                            resourceLanguage === lang.code
+                              ? 'bg-gray-900 text-white shadow-sm'
+                              : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
+                          }`}
+                        >
+                          <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${resourceLanguage === lang.code ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>{lang.code.toUpperCase()}</span>
+                          {lang.label}
+                        </motion.button>
+                      ))}
                     </div>
                   </motion.div>
 

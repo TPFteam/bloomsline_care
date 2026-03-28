@@ -37,6 +37,11 @@ import {
   Video,
   Mic2,
   Paperclip,
+  Info,
+  Target,
+  Lightbulb,
+  BookMarked,
+  ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -1549,35 +1554,49 @@ export default function ResourceDetailPage() {
               </motion.div>
             )}
 
+            {/* Learning objectives — separate card */}
+            {resource.type === 'psychoeducation' && (() => {
+              const objectives = (resource.settings as any)?.learningObjectives?.filter((o: string) => o?.trim()) || []
+              return objectives.length > 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
+                >
+                  <p className="text-sm font-semibold text-gray-900 mb-3">{locale === 'fr' ? 'Objectifs d\'apprentissage' : 'Learning Objectives'}</p>
+                  <ul className="space-y-2">
+                    {objectives.map((obj: string, i: number) => (
+                      <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
+                        <CheckCircle className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                        {obj}
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              ) : null
+            })()}
+
             {/* Psychoeducation Blocks Preview */}
             {resource.type === 'psychoeducation' && resource.blocks && resource.blocks.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
+                className="bg-[#FAFAF8] rounded-2xl shadow-sm border border-gray-200/60 p-8 md:p-10"
               >
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
-                      <Eye className="w-5 h-5 text-amber-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-900">
-                        {locale === 'fr' ? 'Contenu' : 'Content'}
-                      </h2>
-                      <p className="text-sm text-gray-500">
-                        {locale === 'fr' ? 'Ce que les patients verront' : 'As seen by members'}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge className="bg-amber-50 text-amber-600 border-amber-100">
-                    {resource.blocks.length} {locale === 'fr' ? (resource.blocks.length === 1 ? 'section' : 'sections') : 'sections'}
-                  </Badge>
+                {/* Reading time */}
+                <div className="flex items-center gap-3 mb-8 pb-6 border-b border-gray-200/50">
+                  <span className="text-xs font-medium text-gray-400">
+                    {Math.max(1, Math.ceil(resource.blocks.reduce((acc: number, b: any) => acc + (typeof b.content === 'string' ? b.content.length : 0), 0) / 1000))} min {locale === 'fr' ? 'de lecture' : 'read'}
+                  </span>
+                  <span className="text-gray-200">·</span>
+                  <span className="text-xs text-gray-400">
+                    {resource.blocks.length} {locale === 'fr' ? 'sections' : 'sections'}
+                  </span>
                 </div>
 
-                {/* Clean reading preview for psychoeducation */}
-                <div className="space-y-6">
+                {/* Therapeutic reading layout */}
+                <div className="max-w-[640px] mx-auto space-y-10">
                   {(() => {
                     const typeLabels: Record<string, Record<string, string>> = {
                       heading: { en: 'Title', fr: 'Titre' },
@@ -1602,7 +1621,7 @@ export default function ResourceDetailPage() {
                       if (blockType === 'heading') {
                         return (
                           <div key={blockId}>
-                            <h3 className="text-xl font-semibold text-gray-900">{blockContent}</h3>
+                            <h3 className="text-2xl font-bold text-[#1A1A1A] tracking-tight mt-2">{blockContent}</h3>
                           </div>
                         )
                       }
@@ -1611,7 +1630,7 @@ export default function ResourceDetailPage() {
                       if (blockType === 'paragraph') {
                         return (
                           <div key={blockId}>
-                            <p className="text-gray-700 leading-relaxed">{blockContent}</p>
+                            <p className="text-[17px] text-[#374151] leading-[1.75]">{blockContent}</p>
                           </div>
                         )
                       }
@@ -1621,13 +1640,13 @@ export default function ResourceDetailPage() {
                         const points = (block as any).points || []
                         return (
                           <div key={blockId}>
-                            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
-                              {blockContent && <p className="text-emerald-800 font-medium mb-3">{blockContent}</p>}
-                              <ul className="space-y-2">
+                            <div className="p-6 bg-white border-l-[3px] border-teal-400 rounded-r-xl shadow-sm">
+                              {blockContent && <p className="text-[15px] font-semibold text-[#1A1A1A] mb-3">{blockContent}</p>}
+                              <ul className="space-y-3">
                                 {points.map((point: string, i: number) => (
-                                  <li key={i} className="flex items-start gap-2 text-emerald-700">
-                                    <span className="text-emerald-500 mt-1">✓</span>
-                                    <span>{point}</span>
+                                  <li key={i} className="flex items-start gap-3 text-[#374151]">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-teal-400 mt-2.5 flex-shrink-0" />
+                                    <span className="text-[15px] leading-[1.7]">{point}</span>
                                   </li>
                                 ))}
                               </ul>
@@ -1639,19 +1658,20 @@ export default function ResourceDetailPage() {
                       // Callout
                       if (blockType === 'callout') {
                         const calloutStyles = {
-                          info: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: 'ℹ️' },
-                          warning: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800', icon: '⚠️' },
-                          tip: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-800', icon: '💡' },
-                          example: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-800', icon: '📝' },
+                          info: { borderColor: 'border-l-blue-400', iconColor: 'text-blue-400', textColor: 'text-[#374151]', Icon: Info },
+                          warning: { borderColor: 'border-l-amber-400', iconColor: 'text-amber-400', textColor: 'text-[#374151]', Icon: Target },
+                          tip: { borderColor: 'border-l-emerald-400', iconColor: 'text-emerald-400', textColor: 'text-[#374151]', Icon: Lightbulb },
+                          example: { borderColor: 'border-l-purple-400', iconColor: 'text-purple-400', textColor: 'text-[#374151]', Icon: BookMarked },
                         }
                         const calloutType = (block as any).calloutType || 'info'
                         const style = calloutStyles[calloutType as keyof typeof calloutStyles] || calloutStyles.info
+                        const CalloutIcon = style.Icon
                         return (
                           <div key={blockId}>
-                            <div className={`p-4 rounded-xl border ${style.bg} ${style.border}`}>
+                            <div className={`p-5 bg-white border-l-[3px] ${style.borderColor} rounded-r-xl shadow-sm`}>
                               <div className="flex items-start gap-3">
-                                <span className="text-lg">{style.icon}</span>
-                                <p className={`text-sm ${style.text}`}>{blockContent}</p>
+                                <CalloutIcon className={`w-5 h-5 mt-0.5 flex-shrink-0 ${style.iconColor}`} />
+                                <p className={`text-[15px] leading-[1.7] ${style.textColor}`}>{blockContent}</p>
                               </div>
                             </div>
                           </div>
@@ -1662,10 +1682,10 @@ export default function ResourceDetailPage() {
                       if (blockType === 'quote') {
                         return (
                           <div key={blockId}>
-                            <blockquote className="border-l-4 border-amber-300 pl-4 py-2 italic text-gray-700 bg-amber-50/30 rounded-r-lg">
-                              "{blockContent}"
+                            <blockquote className="border-l-[3px] border-amber-300 pl-5 py-3 italic text-[17px] text-[#374151] leading-[1.75] rounded-r-xl">
+                              &ldquo;{blockContent}&rdquo;
                               {(block as any).attribution && (
-                                <footer className="text-sm text-gray-500 mt-2 not-italic">— {(block as any).attribution}</footer>
+                                <footer className="text-sm text-gray-400 mt-3 not-italic">— {(block as any).attribution}</footer>
                               )}
                             </blockquote>
                           </div>
@@ -1678,27 +1698,19 @@ export default function ResourceDetailPage() {
                           <div key={blockId}>
                             {(block as any).mediaFile?.url ? (
                               <div
-                                className="group relative w-48 h-32 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-amber-400 transition-all"
+                                className="group relative rounded-xl overflow-hidden cursor-pointer"
                                 onClick={() => setLightbox({ url: (block as any).mediaFile.url, type: 'image' })}
                               >
                                 <img
                                   src={(block as any).mediaFile.url}
                                   alt={(block as any).caption || ''}
-                                  className="w-full h-full object-cover"
+                                  className="w-full max-h-[400px] object-cover rounded-xl"
                                 />
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                                  <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-medium bg-black/50 px-2 py-1 rounded">
-                                    {locale === 'fr' ? 'Agrandir' : 'View'}
-                                  </span>
-                                </div>
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                               </div>
-                            ) : (
-                              <div className="w-48 h-32 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-                                <span className="text-2xl">🖼️</span>
-                              </div>
-                            )}
+                            ) : null}
                             {(block as any).caption && (
-                              <p className="text-xs text-gray-500 mt-1 italic">{(block as any).caption}</p>
+                              <p className="text-xs text-gray-500 mt-2 italic">{(block as any).caption}</p>
                             )}
                           </div>
                         )
@@ -1708,29 +1720,21 @@ export default function ResourceDetailPage() {
                       if (blockType === 'audio') {
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
-                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
-                              <div className="h-px flex-1 bg-gray-100" />
-                            </div>
-                            <div className="flex flex-col gap-2">
-                              {(block as any).caption && (
-                                <span className="text-sm text-gray-700">{(block as any).caption}</span>
-                              )}
+                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center">
+                                  <Mic2 className="w-4 h-4 text-teal-600" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">{(block as any).title || (locale === 'fr' ? 'Audio' : 'Audio')}</p>
+                                  {(block as any).caption && <p className="text-xs text-gray-500">{(block as any).caption}</p>}
+                                </div>
+                              </div>
                               {(block as any).mediaFile?.url ? (
-                                <audio
-                                  controls
-                                  className="h-10 w-64"
-                                  src={(block as any).mediaFile.url}
-                                >
+                                <audio controls className="w-full" src={(block as any).mediaFile.url}>
                                   Your browser does not support audio.
                                 </audio>
-                              ) : (
-                                <div className="inline-flex items-center gap-3 px-3 py-2 bg-gray-100 rounded-lg text-gray-400">
-                                  <span className="text-sm">🎵</span>
-                                  <span className="text-sm">{locale === 'fr' ? 'Aucun audio' : 'No audio'}</span>
-                                </div>
-                              )}
+                              ) : null}
                             </div>
                           </div>
                         )
@@ -1740,36 +1744,25 @@ export default function ResourceDetailPage() {
                       if (blockType === 'video') {
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
-                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
-                              <div className="h-px flex-1 bg-gray-100" />
-                            </div>
                             {(block as any).mediaFile?.url ? (
                               <div
-                                className="group relative w-56 h-36 bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-amber-400 transition-all"
+                                className="group relative w-full max-h-[360px] bg-gray-900 rounded-xl overflow-hidden cursor-pointer"
                                 onClick={() => setLightbox({ url: (block as any).mediaFile.url, type: 'video' })}
                               >
                                 <video
                                   src={(block as any).mediaFile.url}
-                                  className="w-full h-full object-cover"
+                                  className="w-full max-h-[360px] object-cover"
                                   muted
                                 />
-                                <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors flex items-center justify-center">
-                                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
-                                    <span className="text-gray-900 ml-0.5">▶</span>
+                                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                                  <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                                    <span className="text-gray-900 text-lg ml-1">▶</span>
                                   </div>
                                 </div>
                               </div>
-                            ) : (
-                              <div className="w-56 h-36 bg-gray-900 rounded-lg flex items-center justify-center">
-                                <div className="text-center text-white">
-                                  <span className="text-2xl">▶️</span>
-                                </div>
-                              </div>
-                            )}
+                            ) : null}
                             {(block as any).caption && (
-                              <p className="text-xs text-gray-500 mt-1 italic">{(block as any).caption}</p>
+                              <p className="text-xs text-gray-500 mt-2 italic">{(block as any).caption}</p>
                             )}
                           </div>
                         )
@@ -1777,36 +1770,52 @@ export default function ResourceDetailPage() {
 
                       // Link
                       if (blockType === 'link') {
-                        const platformIcons: Record<string, string> = {
-                          youtube: '📺',
-                          vimeo: '🎬',
-                          spotify: '🎧',
-                          soundcloud: '🔊',
-                          other: '🔗',
-                        }
-                        const platform = (block as any).linkPlatform || 'other'
                         return (
                           <div key={blockId}>
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
-                              <span className="text-xs text-gray-300 uppercase tracking-wide">{typeLabel}</span>
-                              <div className="h-px flex-1 bg-gray-100" />
-                            </div>
                             <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
-                              <a
-                                href={(block as any).linkUrl || '#'}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
-                              >
-                                <span className="text-2xl">{platformIcons[platform]}</span>
-                                <div>
-                                  <p className="font-medium">{(block as any).linkTitle || (block as any).linkUrl || 'Link'}</p>
-                                  {(block as any).linkUrl && (
-                                    <p className="text-sm text-gray-500 truncate max-w-md">{(block as any).linkUrl}</p>
+                              <div className="flex items-start gap-3">
+                                <div className={`p-2 rounded-lg flex-shrink-0 ${
+                                  (block as any).linkPlatform === 'youtube' ? 'bg-red-100 text-red-600'
+                                    : (block as any).linkPlatform === 'vimeo' ? 'bg-blue-100 text-blue-600'
+                                    : (block as any).linkPlatform === 'spotify' ? 'bg-green-100 text-green-600'
+                                    : (block as any).linkPlatform === 'soundcloud' ? 'bg-orange-100 text-orange-600'
+                                    : 'bg-teal-50 text-teal-600'
+                                }`}>
+                                  <Link2 className="w-5 h-5" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-gray-900 truncate">
+                                    {(block as any).linkTitle || (locale === 'fr' ? 'Lien externe' : 'External Link')}
+                                  </p>
+                                  <p className="text-sm text-gray-500 truncate">{(block as any).linkUrl}</p>
+                                  {blockContent && (
+                                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">{blockContent}</p>
                                   )}
                                 </div>
-                              </a>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                      navigator.clipboard.writeText((block as any).linkUrl || '')
+                                      toast.success(locale === 'fr' ? 'Lien copié' : 'Link copied')
+                                    }}
+                                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                                    title={locale === 'fr' ? 'Copier' : 'Copy'}
+                                  >
+                                    <Copy className="w-4 h-4" />
+                                  </button>
+                                  <a
+                                    href={(block as any).linkUrl || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                                    title={locale === 'fr' ? 'Ouvrir' : 'Open'}
+                                  >
+                                    <ExternalLink className="w-4 h-4" />
+                                  </a>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         )
@@ -1815,16 +1824,61 @@ export default function ResourceDetailPage() {
                       // Default fallback
                       return blockContent ? (
                         <div key={blockId}>
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs font-medium text-gray-400">{sectionNumber}</span>
-                            <span className="text-xs text-gray-300 uppercase tracking-wide">{blockType}</span>
-                            <div className="h-px flex-1 bg-gray-100" />
-                          </div>
-                          <p className="text-gray-700">{blockContent}</p>
+                          <p className="text-[17px] text-[#374151] leading-[1.75]">{blockContent}</p>
                         </div>
                       ) : null
                     })
                   })()}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Exercise content */}
+            {resource.type === 'exercise' && resource.blocks && resource.blocks.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white rounded-2xl border border-gray-200 p-6 md:p-8"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
+                    <Eye className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">{locale === 'fr' ? 'Étapes' : 'Steps'}</h2>
+                    <p className="text-sm text-gray-500">{resource.blocks.length} {locale === 'fr' ? 'étapes' : 'steps'}</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {resource.blocks.map((block: ResourceBlock, idx: number) => {
+                    const stepLabels: Record<string, string> = {
+                      instruction: locale === 'fr' ? 'Instructions' : 'Instructions',
+                      timed_action: locale === 'fr' ? 'Action minutée' : 'Timed Action',
+                      breathing: locale === 'fr' ? 'Respiration' : 'Breathing',
+                      visualization: locale === 'fr' ? 'Visualisation' : 'Visualization',
+                      body_scan: locale === 'fr' ? 'Scan corporel' : 'Body Scan',
+                      reflection: locale === 'fr' ? 'Réflexion' : 'Reflection',
+                    }
+                    return (
+                      <div key={block.id || idx} className="flex gap-3 items-start">
+                        <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-xs font-bold text-gray-500">{idx + 1}</span>
+                        </div>
+                        <div className="flex-1 bg-gray-50 rounded-xl p-4">
+                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">{stepLabels[block.type] || block.type}</p>
+                          {(block as any).instructions && <p className="text-sm text-gray-700">{(block as any).instructions}</p>}
+                          {typeof block.content === 'string' && block.content && <p className="text-sm text-gray-700">{block.content}</p>}
+                          {(block.type as string) === 'breathing' && (block as any).pattern && (
+                            <p className="text-sm font-bold text-emerald-600 mt-1">{(block as any).pattern} &middot; {(block as any).cycles || 3} cycles</p>
+                          )}
+                          {(block.type as string) === 'timed_action' && (block as any).duration && (
+                            <p className="text-xs text-gray-400 mt-1">{Math.floor((block as any).duration / 60)}m {(block as any).duration % 60}s</p>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </motion.div>
             )}

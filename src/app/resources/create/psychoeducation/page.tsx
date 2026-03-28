@@ -41,6 +41,8 @@ import {
   Link2,
   Youtube,
   ExternalLink,
+  Info,
+  AlertTriangle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -168,8 +170,8 @@ const contentBlockTypes: ContentBlockOption[] = [
 ]
 
 const calloutTypes = {
-  info: { en: 'Information', fr: 'Information', icon: AlertCircle, color: 'blue' },
-  warning: { en: 'Important', fr: 'Important', icon: AlertCircle, color: 'amber' },
+  info: { en: 'Information', fr: 'Information', icon: Info, color: 'blue' },
+  warning: { en: 'Important', fr: 'Important', icon: Target, color: 'amber' },
   tip: { en: 'Tip', fr: 'Conseil', icon: Lightbulb, color: 'green' },
   example: { en: 'Example', fr: 'Exemple', icon: BookMarked, color: 'purple' },
 }
@@ -273,7 +275,7 @@ function CreatePsychoeducationContent() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<ResourceCategory | null>(null)
-  const [resourceLanguage, setResourceLanguage] = useState<'en' | 'fr'>(locale as 'en' | 'fr')
+  const [resourceLanguage, setResourceLanguage] = useState<string>(locale === 'fr' ? 'fr' : 'en')
   const [blocks, setBlocks] = useState<ContentBlock[]>([])
   const [learningObjectives, setLearningObjectives] = useState<string[]>([''])
   const [isSaving, setIsSaving] = useState(false)
@@ -456,7 +458,7 @@ function CreatePsychoeducationContent() {
       setBlocks([])
       setLearningObjectives([''])
       setVisibility('private')
-      setResourceLanguage(locale as 'en' | 'fr')
+      setResourceLanguage(locale === 'fr' ? 'fr' : 'en')
       setSaveAs('draft')
       setStep('template')
       setDetailsStep(1)
@@ -656,6 +658,21 @@ function CreatePsychoeducationContent() {
   // Start audio recording
   const startRecording = async (blockId: string) => {
     try {
+      // Check permission state first — if denied, show instructions
+      if (navigator.permissions) {
+        try {
+          const permStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName })
+          if (permStatus.state === 'denied') {
+            toast.error(
+              locale === 'fr'
+                ? 'Le microphone est bloqué. Ouvrez les paramètres de votre navigateur > Confidentialité > Microphone, et autorisez ce site.'
+                : 'Microphone is blocked. Open your browser settings > Privacy > Microphone, and allow this site.',
+              { duration: 8000 }
+            )
+            return
+          }
+        } catch {}
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
 
       // Try to find a supported MIME type (prefer mp4/ogg over webm for better compatibility)
@@ -715,9 +732,18 @@ function CreatePsychoeducationContent() {
         setRecordingTime(prev => prev + 1)
       }, 1000)
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to start recording:', error)
-      toast.error(locale === 'fr' ? 'Impossible d\'accéder au microphone' : 'Could not access microphone')
+      if (error?.name === 'NotAllowedError') {
+        toast.error(
+          locale === 'fr'
+            ? 'Accès au microphone refusé. Cliquez sur l\'icône 🔒 dans la barre d\'adresse pour autoriser le microphone.'
+            : 'Microphone access denied. Click the 🔒 icon in the address bar to allow microphone access.',
+          { duration: 6000 }
+        )
+      } else {
+        toast.error(locale === 'fr' ? 'Impossible d\'accéder au microphone' : 'Could not access microphone')
+      }
     }
   }
 
@@ -735,6 +761,21 @@ function CreatePsychoeducationContent() {
   // Start video recording
   const startVideoRecording = async (blockId: string) => {
     try {
+      // Check permission state first
+      if (navigator.permissions) {
+        try {
+          const permStatus = await navigator.permissions.query({ name: 'camera' as PermissionName })
+          if (permStatus.state === 'denied') {
+            toast.error(
+              locale === 'fr'
+                ? 'La caméra est bloquée. Ouvrez les paramètres de votre navigateur > Confidentialité > Caméra, et autorisez ce site.'
+                : 'Camera is blocked. Open your browser settings > Privacy > Camera, and allow this site.',
+              { duration: 8000 }
+            )
+            return
+          }
+        } catch {}
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       streamRef.current = stream
 
@@ -780,9 +821,18 @@ function CreatePsychoeducationContent() {
         setRecordingTime(prev => prev + 1)
       }, 1000)
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to start video recording:', error)
-      toast.error(locale === 'fr' ? 'Impossible d\'accéder à la caméra' : 'Could not access camera')
+      if (error?.name === 'NotAllowedError') {
+        toast.error(
+          locale === 'fr'
+            ? 'Accès à la caméra refusé. Cliquez sur l\'icône 🔒 dans la barre d\'adresse pour autoriser la caméra et le microphone.'
+            : 'Camera access denied. Click the 🔒 icon in the address bar to allow camera and microphone access.',
+          { duration: 6000 }
+        )
+      } else {
+        toast.error(locale === 'fr' ? 'Impossible d\'accéder à la caméra' : 'Could not access camera')
+      }
     }
   }
 
@@ -1050,7 +1100,7 @@ function CreatePsychoeducationContent() {
           title,
           description: description || undefined,
           category: selectedCategory || undefined,
-          language: resourceLanguage,
+          language: resourceLanguage as any,
           blocks: resourceBlocks,
           settings,
           status: saveAs,
@@ -1065,7 +1115,7 @@ function CreatePsychoeducationContent() {
           title,
           description: description || undefined,
           category: selectedCategory || undefined,
-          language: resourceLanguage,
+          language: resourceLanguage as any,
           blocks: resourceBlocks,
           settings,
           status: saveAs,
@@ -1535,7 +1585,8 @@ function CreatePsychoeducationContent() {
   const renderBlockEditor = (block: ContentBlock, dragControls?: ReturnType<typeof useDragControls>) => {
     const isExpanded = expandedBlock === block.id
     const blockType = contentBlockTypes.find(bt => bt.type === block.type)
-    const Icon = blockType?.icon || BookOpen
+    const calloutConfig = block.type === 'callout' && block.calloutType ? calloutTypes[block.calloutType] : null
+    const Icon = calloutConfig?.icon || blockType?.icon || BookOpen
     const colors = getBlockColors(block.type)
 
     return (
@@ -2957,32 +3008,30 @@ function CreatePsychoeducationContent() {
                       {locale === 'fr' ? 'Langue' : 'Language'}
                     </h2>
                     <div className="flex flex-wrap gap-2">
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setResourceLanguage('en')}
-                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                          resourceLanguage === 'en'
-                            ? 'bg-red-50 text-red-600 border border-red-200 shadow-sm'
-                            : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
-                        }`}
-                      >
-                        <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600">EN</span>
-                        English
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setResourceLanguage('fr')}
-                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                          resourceLanguage === 'fr'
-                            ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-sm'
-                            : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
-                        }`}
-                      >
-                        <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-600">FR</span>
-                        Français
-                      </motion.button>
+                      {[
+                        { code: 'en', label: 'English', color: 'red' },
+                        { code: 'fr', label: 'Français', color: 'blue' },
+                        { code: 'es', label: 'Español', color: 'orange' },
+                        { code: 'de', label: 'Deutsch', color: 'gray' },
+                        { code: 'it', label: 'Italiano', color: 'green' },
+                        { code: 'pt', label: 'Português', color: 'emerald' },
+                        { code: 'nl', label: 'Nederlands', color: 'amber' },
+                      ].map((lang) => (
+                        <motion.button
+                          key={lang.code}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setResourceLanguage(lang.code)}
+                          className={`px-3 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                            resourceLanguage === lang.code
+                              ? `bg-${lang.color}-50 text-${lang.color}-600 border border-${lang.color}-200 shadow-sm`
+                              : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
+                          }`}
+                        >
+                          <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${resourceLanguage === lang.code ? `bg-${lang.color}-100 text-${lang.color}-600` : 'bg-gray-100 text-gray-500'}`}>{lang.code.toUpperCase()}</span>
+                          {lang.label}
+                        </motion.button>
+                      ))}
                     </div>
                   </motion.div>
 

@@ -434,7 +434,7 @@ function CreateWorksheetContent() {
   const [tags, setTags] = useState<string[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [visibility, setVisibility] = useState<'private' | 'link_only' | 'public' | 'onboarding'>('private')
-  const [resourceLanguage, setResourceLanguage] = useState<'en' | 'fr'>('en')
+  const [resourceLanguage, setResourceLanguage] = useState<string>('en')
   const [saveAs, setSaveAs] = useState<'draft' | 'published'>('draft')
 
   // Scoring state (for assessments/scored worksheets)
@@ -1280,7 +1280,7 @@ function CreateWorksheetContent() {
           settings,
           status: saveAs,
           visibility,
-          language: resourceLanguage,
+          language: resourceLanguage as any,
         })
         toast.success(locale === 'fr' ? 'Exercice mis à jour avec succès!' : 'Worksheet updated successfully!')
       } else {
@@ -1295,7 +1295,7 @@ function CreateWorksheetContent() {
           settings,
           status: saveAs,
           visibility,
-          language: resourceLanguage,
+          language: resourceLanguage as any,
         })
         toast.success(locale === 'fr' ? 'Exercice créé avec succès!' : 'Worksheet created successfully!')
       }
@@ -1433,7 +1433,7 @@ function CreateWorksheetContent() {
           tags: tags.length > 0 ? tags : undefined,
           blocks: resourceBlocks,
           settings,
-          language: resourceLanguage,
+          language: resourceLanguage as any,
         })
       } else {
         // Create new draft for auto-save
@@ -1447,7 +1447,7 @@ function CreateWorksheetContent() {
           settings,
           status: 'draft',
           visibility: 'private',
-          language: resourceLanguage,
+          language: resourceLanguage as any,
         })
         // Store the new draft ID for future auto-saves
         if (newResource?.id) {
@@ -5043,36 +5043,30 @@ function CreateWorksheetContent() {
                     {locale === 'fr' ? 'Langue' : 'Language'}
                   </h2>
                   <div className="flex flex-wrap gap-2">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setResourceLanguage('en')}
-                      className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                        resourceLanguage === 'en'
-                          ? 'bg-red-50 text-red-600 border border-red-200 shadow-sm'
-                          : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
-                      }`}
-                    >
-                      <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                        resourceLanguage === 'en' ? 'bg-red-100 text-red-600' : 'bg-red-100 text-red-600'
-                      }`}>EN</span>
-                      English
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setResourceLanguage('fr')}
-                      className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                        resourceLanguage === 'fr'
-                          ? 'bg-blue-50 text-blue-600 border border-gray-200 shadow-sm'
-                          : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
-                      }`}
-                    >
-                      <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                        resourceLanguage === 'fr' ? 'bg-blue-100 text-blue-600' : 'bg-blue-100 text-blue-600'
-                      }`}>FR</span>
-                      Français
-                    </motion.button>
+                    {[
+                      { code: 'en', label: 'English' },
+                      { code: 'fr', label: 'Français' },
+                      { code: 'es', label: 'Español' },
+                      { code: 'de', label: 'Deutsch' },
+                      { code: 'it', label: 'Italiano' },
+                      { code: 'pt', label: 'Português' },
+                      { code: 'nl', label: 'Nederlands' },
+                    ].map((lang) => (
+                      <motion.button
+                        key={lang.code}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setResourceLanguage(lang.code)}
+                        className={`px-3 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                          resourceLanguage === lang.code
+                            ? 'bg-gray-900 text-white shadow-sm'
+                            : 'bg-gray-50/80 text-gray-600 hover:bg-gray-100/80'
+                        }`}
+                      >
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${resourceLanguage === lang.code ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>{lang.code.toUpperCase()}</span>
+                        {lang.label}
+                      </motion.button>
+                    ))}
                   </div>
                 </motion.div>
 

@@ -36,6 +36,11 @@ export async function uploadResourceFile(
     ? `${userId}/${resourceId}/${timestamp}-${sanitizedName}`
     : `${userId}/temp/${timestamp}-${sanitizedName}`
 
+  // Normalize MIME types that Supabase storage may not accept
+  let contentType = file.type
+  if (contentType === 'audio/ogg') contentType = 'audio/mpeg'
+  if (contentType === 'video/quicktime') contentType = 'video/mp4'
+
   // Upload to Supabase Storage
   const supabase = getSupabase()
   const { data, error } = await supabase.storage
@@ -43,6 +48,7 @@ export async function uploadResourceFile(
     .upload(filePath, file, {
       cacheControl: '3600',
       upsert: false,
+      contentType,
     })
 
   if (error) {
