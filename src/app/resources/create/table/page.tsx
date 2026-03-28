@@ -48,9 +48,9 @@ interface TableColumn {
 }
 
 const allCategories: ResourceCategory[] = [
-  'anxiety', 'depression', 'stress', 'relationships', 'self_esteem',
-  'mindfulness', 'coping_skills', 'communication', 'grief', 'trauma',
-  'children', 'teens', 'adults', 'couples', 'family', 'general'
+  'emotions', 'emotional_regulation', 'self_confidence', 'self_esteem',
+  'relationships', 'communication', 'stress', 'anxiety', 'burnout',
+  'decision_making', 'behavior', 'habits', 'psychoeducation', 'reflection', 'action'
 ]
 
 const generateId = () => Math.random().toString(36).substring(2, 9)

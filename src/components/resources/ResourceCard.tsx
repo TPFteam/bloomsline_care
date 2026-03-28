@@ -86,22 +86,28 @@ const statusLabels: Record<string, { en: string; fr: string; es: string }> = {
 }
 
 const categoryLabels: Record<string, { en: string; fr: string; es: string }> = {
-  anxiety: { en: 'Anxiety', fr: 'Anxiété', es: 'Ansiedad' },
-  depression: { en: 'Depression', fr: 'Dépression', es: 'Depresión' },
-  stress: { en: 'Stress Management', fr: 'Gestion du stress', es: 'Manejo del estrés' },
-  relationships: { en: 'Relationships', fr: 'Relations', es: 'Relaciones' },
+  emotions: { en: 'Emotions', fr: 'Émotions', es: 'Emociones' },
+  emotional_regulation: { en: 'Emotional Regulation', fr: 'Régulation émotionnelle', es: 'Regulación emocional' },
+  self_confidence: { en: 'Self-Confidence', fr: 'Confiance en soi', es: 'Confianza en sí mismo' },
   self_esteem: { en: 'Self-Esteem', fr: 'Estime de soi', es: 'Autoestima' },
+  relationships: { en: 'Relationships', fr: 'Relations', es: 'Relaciones' },
+  communication: { en: 'Communication', fr: 'Communication', es: 'Comunicación' },
+  stress: { en: 'Stress', fr: 'Stress', es: 'Estrés' },
+  anxiety: { en: 'Anxiety', fr: 'Anxiété', es: 'Ansiedad' },
+  burnout: { en: 'Burnout', fr: 'Burn-out', es: 'Burnout' },
+  decision_making: { en: 'Decision-Making', fr: 'Prise de décision', es: 'Toma de decisiones' },
+  behavior: { en: 'Behavior', fr: 'Comportements', es: 'Comportamiento' },
+  habits: { en: 'Habits', fr: 'Habitudes', es: 'Hábitos' },
+  psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation', es: 'Psicoeducación' },
+  reflection: { en: 'Reflection', fr: 'Réflexion', es: 'Reflexión' },
+  action: { en: 'Action', fr: 'Passage à l\'action', es: 'Acción' },
+  // Legacy categories for backward compatibility
+  general: { en: 'General', fr: 'Général', es: 'General' },
+  depression: { en: 'Depression', fr: 'Dépression', es: 'Depresión' },
   mindfulness: { en: 'Mindfulness', fr: 'Pleine conscience', es: 'Atención plena' },
   coping_skills: { en: 'Coping Skills', fr: "Stratégies d'adaptation", es: 'Habilidades de afrontamiento' },
-  communication: { en: 'Communication', fr: 'Communication', es: 'Comunicación' },
   grief: { en: 'Grief & Loss', fr: 'Deuil & perte', es: 'Duelo y pérdida' },
   trauma: { en: 'Trauma', fr: 'Traumatisme', es: 'Trauma' },
-  children: { en: 'Children', fr: 'Enfants', es: 'Niños' },
-  teens: { en: 'Teens', fr: 'Adolescents', es: 'Adolescentes' },
-  adults: { en: 'Adults', fr: 'Adultes', es: 'Adultos' },
-  couples: { en: 'Couples', fr: 'Couples', es: 'Parejas' },
-  family: { en: 'Family', fr: 'Famille', es: 'Familia' },
-  general: { en: 'General', fr: 'Général', es: 'General' },
 }
 
 function getCategoryLabel(category: string, locale: 'en' | 'fr' | 'es'): string {

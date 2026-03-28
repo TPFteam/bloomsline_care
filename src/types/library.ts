@@ -12,14 +12,26 @@ export type ResourceType =
   | 'template'        // Session templates, forms
 
 export type ResourceCategory =
-  | 'anxiety'
-  | 'depression'
-  | 'stress'
-  | 'relationships'
+  | 'emotions'
+  | 'emotional_regulation'
+  | 'self_confidence'
   | 'self_esteem'
+  | 'relationships'
+  | 'communication'
+  | 'stress'
+  | 'anxiety'
+  | 'burnout'
+  | 'decision_making'
+  | 'behavior'
+  | 'habits'
+  | 'psychoeducation'
+  | 'reflection'
+  | 'action'
+  // Legacy
+  | 'general'
+  | 'depression'
   | 'mindfulness'
   | 'coping_skills'
-  | 'communication'
   | 'grief'
   | 'trauma'
   | 'children'
@@ -27,7 +39,6 @@ export type ResourceCategory =
   | 'adults'
   | 'couples'
   | 'family'
-  | 'general'
 
 export type AgeGroup = 'children' | 'teens' | 'adults' | 'all'
 
@@ -289,15 +300,26 @@ export function getResourceTypeColor(type: ResourceType): string {
 }
 
 export function getCategoryColor(category: ResourceCategory): string {
-  const colors: Record<ResourceCategory, string> = {
-    anxiety: 'blue',
-    depression: 'indigo',
-    stress: 'orange',
-    relationships: 'pink',
+  const colors: Record<string, string> = {
+    emotions: 'rose',
+    emotional_regulation: 'violet',
+    self_confidence: 'amber',
     self_esteem: 'amber',
+    relationships: 'pink',
+    communication: 'cyan',
+    stress: 'orange',
+    anxiety: 'blue',
+    burnout: 'red',
+    decision_making: 'indigo',
+    behavior: 'emerald',
+    habits: 'lime',
+    psychoeducation: 'purple',
+    reflection: 'teal',
+    action: 'green',
+    general: 'neutral',
+    depression: 'indigo',
     mindfulness: 'teal',
     coping_skills: 'emerald',
-    communication: 'cyan',
     grief: 'slate',
     trauma: 'purple',
     children: 'yellow',
@@ -305,7 +327,6 @@ export function getCategoryColor(category: ResourceCategory): string {
     adults: 'gray',
     couples: 'rose',
     family: 'violet',
-    general: 'neutral'
   }
   return colors[category] || 'gray'
 }

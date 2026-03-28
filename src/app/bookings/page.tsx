@@ -1117,13 +1117,13 @@ export default function BookingsPage() {
                     {locale === 'fr' ? 'Horaires de disponibilité' : 'Availability Schedule'}
                   </CardTitle>
                   <CardDescription>
-                    Set your weekly availability for client bookings
+                    {locale === 'fr' ? 'Définissez vos disponibilités hebdomadaires pour les réservations' : 'Set your weekly availability for client bookings'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Timezone
+                      {locale === 'fr' ? 'Fuseau horaire' : 'Timezone'}
                     </label>
                     <select
                       value={timezone}
@@ -1154,7 +1154,7 @@ export default function BookingsPage() {
                               onClick={() => addAvailabilitySlot(day)}
                             >
                               <Plus className="w-4 h-4 mr-1" />
-                              Add slot
+                              {locale === 'fr' ? 'Ajouter un créneau' : 'Add slot'}
                             </Button>
                           </div>
                           {slots.length === 0 ? (
@@ -1174,7 +1174,7 @@ export default function BookingsPage() {
                                     }
                                     className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
                                   />
-                                  <span className="text-gray-500">to</span>
+                                  <span className="text-gray-500">{locale === 'fr' ? 'à' : 'to'}</span>
                                   <input
                                     type="time"
                                     value={slot.endTime}
@@ -1313,12 +1313,12 @@ export default function BookingsPage() {
                           />
                         </div>
                         <p className="text-xs text-gray-400 mt-1.5">
-                          The &quot;Book&quot; button on your public profile will open this URL instead of the built-in booking page.
+                          {locale === 'fr' ? 'Le bouton « Réserver » sur votre profil public ouvrira ce lien au lieu de la page de réservation intégrée.' : 'The "Book" button on your public profile will open this URL instead of the built-in booking page.'}
                         </p>
                         <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-lg p-3 mt-3">
                           <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                           <p className="text-xs text-amber-700">
-                            Bookings made externally won&apos;t sync to Bloomsline. Remember to create a manual session when needed to keep your records up to date.
+                            {locale === 'fr' ? 'Les réservations externes ne se synchronisent pas avec Bloomsline. Pensez à créer une séance manuellement pour garder vos dossiers à jour.' : 'Bookings made externally won\'t sync to Bloomsline. Remember to create a manual session when needed to keep your records up to date.'}
                           </p>
                         </div>
                       </div>

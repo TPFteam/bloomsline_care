@@ -665,9 +665,7 @@ function DashboardContent() {
                     if (action.id === 'add-patient') {
                       setShowAddMemberModal(true)
                     } else if (action.id === 'share-resource') {
-                      setMemberPickerAction('share')
-                      setMemberSearchQuery('')
-                      setShowMemberPicker(true)
+                      router.push('/resources')
                     } else if (action.id === 'reengage') {
                       setMemberPickerAction('reengage')
                       setMemberSearchQuery('')
