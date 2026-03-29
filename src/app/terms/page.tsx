@@ -13,10 +13,14 @@ export default function TermsOfServicePage() {
   const content = {
     en: {
       title: 'Terms of Service',
-      lastUpdated: 'Last updated: January 2025',
+      lastUpdated: 'Last updated: March 2026',
       intro: 'Welcome to Bloomsline. By using our service, you agree to these terms. Please read them carefully.',
       mvpNote: 'Bloomsline is currently in early development and testing. These terms of service will be finalized before public launch.',
       sections: [
+        {
+          title: 'Legal Notice (Mentions Légales)',
+          content: 'Publisher: Bloomsline Care, based in Paris, France. Company registration is currently in progress. Contact: hi@bloomsline.com. Hosting provider: Vercel Inc. (EU data region). Database hosting: Supabase Inc. (EU data region). This page will be updated with full legal details (SIRET, RCS) once company registration is complete, in accordance with French law n°2004-575 (LCEN).'
+        },
         {
           title: 'Acceptance of Terms',
           content: 'By accessing or using Bloomsline, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our service.'
@@ -38,8 +42,16 @@ export default function TermsOfServicePage() {
           content: 'All content and materials available on Bloomsline, including but not limited to text, graphics, and software, are the property of Bloomsline or its licensors.'
         },
         {
+          title: 'Data Protection',
+          content: 'Bloomsline processes personal data in compliance with the GDPR (EU Regulation 2016/679) and the French Loi Informatique et Libertés. For details, see our Privacy Policy. You may exercise your data rights by contacting hi@bloomsline.com or by contacting the CNIL (www.cnil.fr).'
+        },
+        {
           title: 'Limitation of Liability',
           content: 'Bloomsline is not a substitute for professional medical or mental health advice. We are not liable for any decisions made based on information provided through our platform.'
+        },
+        {
+          title: 'Applicable Law & Jurisdiction',
+          content: 'These terms are governed by French law. Any dispute arising from the use of Bloomsline shall be subject to the exclusive jurisdiction of the courts of Paris, France.'
         },
         {
           title: 'Changes to Terms',
@@ -52,14 +64,18 @@ export default function TermsOfServicePage() {
       ]
     },
     fr: {
-      title: 'Conditions d\'Utilisation',
-      lastUpdated: 'Dernière mise à jour : Janvier 2025',
+      title: 'Conditions Générales d\'Utilisation',
+      lastUpdated: 'Dernière mise à jour : Mars 2026',
       intro: 'Bienvenue sur Bloomsline. En utilisant notre service, vous acceptez ces conditions. Veuillez les lire attentivement.',
       mvpNote: 'Bloomsline est actuellement en développement et en phase de test. Ces conditions d\'utilisation seront finalisées avant le lancement public.',
       sections: [
         {
+          title: 'Mentions légales',
+          content: 'Éditeur : Bloomsline Care, basé à Paris, France. L\'immatriculation de la société est en cours. Contact : hi@bloomsline.com. Hébergeur : Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA (région de données UE). Hébergement base de données : Supabase Inc. (région de données UE). Cette page sera mise à jour avec les informations légales complètes (SIRET, RCS) dès la finalisation de l\'immatriculation, conformément à la loi française n°2004-575 (LCEN).'
+        },
+        {
           title: 'Acceptation des conditions',
-          content: 'En accédant ou en utilisant Bloomsline, vous acceptez d\'être lié par ces Conditions d\'Utilisation. Si vous n\'acceptez pas ces conditions, veuillez ne pas utiliser notre service.'
+          content: 'En accédant ou en utilisant Bloomsline, vous acceptez d\'être lié par ces Conditions Générales d\'Utilisation. Si vous n\'acceptez pas ces conditions, veuillez ne pas utiliser notre service.'
         },
         {
           title: 'Description du service',
@@ -78,8 +94,16 @@ export default function TermsOfServicePage() {
           content: 'Tout le contenu et les matériaux disponibles sur Bloomsline, y compris mais sans s\'y limiter les textes, graphiques et logiciels, sont la propriété de Bloomsline ou de ses concédants de licence.'
         },
         {
+          title: 'Protection des données',
+          content: 'Bloomsline traite les données personnelles conformément au RGPD (Règlement UE 2016/679) et à la loi française Informatique et Libertés. Pour plus de détails, consultez notre Politique de Confidentialité. Vous pouvez exercer vos droits en contactant hi@bloomsline.com ou en contactant la CNIL (www.cnil.fr).'
+        },
+        {
           title: 'Limitation de responsabilité',
           content: 'Bloomsline ne remplace pas les conseils médicaux ou de santé mentale professionnels. Nous ne sommes pas responsables des décisions prises sur la base des informations fournies via notre plateforme.'
+        },
+        {
+          title: 'Droit applicable et juridiction',
+          content: 'Les présentes conditions sont régies par le droit français. Tout litige relatif à l\'utilisation de Bloomsline sera soumis à la compétence exclusive des tribunaux de Paris, France.'
         },
         {
           title: 'Modifications des conditions',

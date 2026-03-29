@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     // Get user info (bypasses RLS)
     const { data: user } = await adminClient
       .from('users')
-      .select('full_name, avatar_url')
+      .select('full_name, avatar_url, preferred_language')
       .eq('id', profile.user_id)
       .single()
 

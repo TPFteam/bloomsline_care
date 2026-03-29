@@ -13,8 +13,8 @@ export default function SecurityPage() {
   const content = {
     en: {
       title: 'Security',
-      lastUpdated: 'Last updated: January 2025',
-      intro: 'Your trust is our foundation. We take security seriously and implement robust measures to protect your data.',
+      lastUpdated: 'Last updated: March 2026',
+      intro: 'Your trust is our foundation. We take security seriously and implement robust measures to protect your data in compliance with the GDPR and French data protection regulations.',
       mvpNote: 'Bloomsline is currently in early development and testing. Our security practices will continue to evolve as we prepare for public launch.',
       practices: [
         {
@@ -50,7 +50,7 @@ export default function SecurityPage() {
       ],
       commitment: {
         title: 'Our Commitment',
-        content: 'Security is not a feature—it\'s a core part of how we build Bloomsline. We are committed to protecting your personal information and the trust you place in us.'
+        content: 'Security is not a feature—it\'s a core part of how we build Bloomsline. We are committed to protecting your personal information and the trust you place in us. All data is hosted within the European Union. We comply with the GDPR (EU Regulation 2016/679) and the French Loi Informatique et Libertés. You may exercise your data protection rights or file a complaint with the CNIL (www.cnil.fr) at any time.'
       },
       contact: {
         title: 'Report a Vulnerability',
@@ -59,8 +59,8 @@ export default function SecurityPage() {
     },
     fr: {
       title: 'Sécurité',
-      lastUpdated: 'Dernière mise à jour : Janvier 2025',
-      intro: 'Votre confiance est notre fondement. Nous prenons la sécurité au sérieux et mettons en place des mesures robustes pour protéger vos données.',
+      lastUpdated: 'Dernière mise à jour : Mars 2026',
+      intro: 'Votre confiance est notre fondement. Nous prenons la sécurité au sérieux et mettons en place des mesures robustes pour protéger vos données conformément au RGPD et à la réglementation française en matière de protection des données.',
       mvpNote: 'Bloomsline est actuellement en développement et en phase de test. Nos pratiques de sécurité continueront d\'évoluer avant le lancement public.',
       practices: [
         {
@@ -96,7 +96,7 @@ export default function SecurityPage() {
       ],
       commitment: {
         title: 'Notre engagement',
-        content: 'La sécurité n\'est pas une fonctionnalité—c\'est une partie essentielle de la façon dont nous construisons Bloomsline. Nous nous engageons à protéger vos informations personnelles et la confiance que vous nous accordez.'
+        content: 'La sécurité n\'est pas une fonctionnalité—c\'est une partie essentielle de la façon dont nous construisons Bloomsline. Nous nous engageons à protéger vos informations personnelles et la confiance que vous nous accordez. Toutes les données sont hébergées au sein de l\'Union européenne. Nous respectons le RGPD (Règlement UE 2016/679) et la loi française Informatique et Libertés. Vous pouvez exercer vos droits en matière de protection des données ou déposer une plainte auprès de la CNIL (www.cnil.fr) à tout moment.'
       },
       contact: {
         title: 'Signaler une vulnérabilité',

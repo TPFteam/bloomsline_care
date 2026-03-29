@@ -13,8 +13,8 @@ export default function DataProtectionPage() {
   const content = {
     en: {
       title: 'Data Protection',
-      lastUpdated: 'Last updated: January 2025',
-      intro: 'We believe you should have full control over your personal data. Here\'s how we protect it and what rights you have.',
+      lastUpdated: 'Last updated: March 2026',
+      intro: 'We believe you should have full control over your personal data. Bloomsline processes data in compliance with the GDPR (EU Regulation 2016/679) and the French Loi Informatique et Libertés. Here\'s how we protect your data and what rights you have.',
       mvpNote: 'Bloomsline is currently in early development and testing. Our data protection practices align with GDPR principles and will be formalized before public launch.',
       rights: [
         {
@@ -63,18 +63,18 @@ export default function DataProtectionPage() {
         },
         {
           title: 'International Transfers',
-          content: 'Your data may be processed in different countries. We ensure appropriate safeguards are in place for any international data transfers.'
+          content: 'Your data is stored and processed within the European Union. In the event data needs to be transferred outside the EU, we ensure appropriate safeguards are in place (Standard Contractual Clauses or adequacy decisions).'
         }
       ],
       exercise: {
         title: 'Exercise Your Rights',
-        content: 'To exercise any of these rights, contact us at hi@bloomsline.com. We will respond to your request within 30 days.'
+        content: 'To exercise any of these rights, contact us at hi@bloomsline.com. We will respond to your request within 30 days. You also have the right to lodge a complaint with the CNIL (Commission Nationale de l\'Informatique et des Libertés): 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07 — www.cnil.fr.'
       }
     },
     fr: {
       title: 'Protection des Données',
-      lastUpdated: 'Dernière mise à jour : Janvier 2025',
-      intro: 'Nous croyons que vous devez avoir le contrôle total de vos données personnelles. Voici comment nous les protégeons et quels sont vos droits.',
+      lastUpdated: 'Dernière mise à jour : Mars 2026',
+      intro: 'Nous croyons que vous devez avoir le contrôle total de vos données personnelles. Bloomsline traite les données conformément au RGPD (Règlement UE 2016/679) et à la loi française Informatique et Libertés. Voici comment nous protégeons vos données et quels sont vos droits.',
       mvpNote: 'Bloomsline est actuellement en développement et en phase de test. Nos pratiques de protection des données sont alignées sur les principes du RGPD et seront formalisées avant le lancement public.',
       rights: [
         {
@@ -123,12 +123,12 @@ export default function DataProtectionPage() {
         },
         {
           title: 'Transferts internationaux',
-          content: 'Vos données peuvent être traitées dans différents pays. Nous veillons à ce que des garanties appropriées soient en place pour tout transfert international de données.'
+          content: 'Vos données sont stockées et traitées au sein de l\'Union européenne. En cas de transfert de données hors de l\'UE, nous veillons à ce que des garanties appropriées soient en place (Clauses Contractuelles Types ou décisions d\'adéquation).'
         }
       ],
       exercise: {
         title: 'Exercer vos droits',
-        content: 'Pour exercer l\'un de ces droits, contactez-nous à hi@bloomsline.com. Nous répondrons à votre demande dans les 30 jours.'
+        content: 'Pour exercer l\'un de ces droits, contactez-nous à hi@bloomsline.com. Nous répondrons à votre demande dans les 30 jours. Vous disposez également du droit d\'introduire une réclamation auprès de la CNIL (Commission Nationale de l\'Informatique et des Libertés) : 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07 — www.cnil.fr.'
       }
     },
     es: {

@@ -24,6 +24,7 @@ interface PractitionerInfo {
   user: {
     full_name: string
     avatar_url: string | null
+    preferred_language?: string
   }
 }
 
@@ -31,11 +32,34 @@ type Step = 'service' | 'datetime' | 'details' | 'confirm'
 
 const STEP_ORDER: Step[] = ['service', 'datetime', 'details', 'confirm']
 
-const STEP_LABELS: Record<Step, string> = {
-  service: 'Service',
-  datetime: 'Date & Time',
-  details: 'Details',
-  confirm: 'Confirm',
+const STEP_LABELS: Record<string, Record<Step, string>> = {
+  en: { service: 'Service', datetime: 'Date & Time', details: 'Details', confirm: 'Confirm' },
+  fr: { service: 'Service', datetime: 'Date & Heure', details: 'Détails', confirm: 'Confirmer' },
+}
+
+const t = (locale: string, translations: Record<string, string>) =>
+  translations[locale] || translations['en']
+
+const SPECIALTY_FR: Record<string, string> = {
+  stress_anxiety: 'Stress / Anxiété',
+  confidence_esteem: 'Confiance / Estime',
+  emotional_regulation: 'Gestion des émotions',
+  relationships: 'Relations',
+  work_career: 'Travail / Carrière',
+  burnout: 'Burn-out',
+  decision_making: 'Prise de décision',
+  life_transitions: 'Transition de vie',
+  nutrition: 'Nutrition',
+  grief_loss: 'Deuil / Perte',
+  trauma: 'Trauma',
+  parenting: 'Parentalité',
+  addiction: 'Addiction',
+  sleep: 'Troubles du sommeil',
+  anxiety: 'Anxiété',
+  depression: 'Dépression',
+  couples: 'Couple',
+  lgbtq: 'LGBTQ+',
+  other: 'Autre',
 }
 
 export default function BookingPage() {
@@ -74,6 +98,9 @@ export default function BookingPage() {
 
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date())
+
+  // Locale from practitioner's preferred language
+  const locale = practitioner?.user?.preferred_language === 'fr' ? 'fr' : 'en'
 
   // Load practitioner info via API route (bypasses RLS for user data)
   useEffect(() => {
@@ -168,26 +195,26 @@ export default function BookingPage() {
 
   const formatTime = (isoString: string) => {
     const date = new Date(isoString)
-    return date.toLocaleTimeString('en-US', {
+    return date.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true,
+      hour12: locale !== 'fr',
     })
   }
 
   const formatTimeInZone = (isoString: string, timezone: string) => {
     const date = new Date(isoString)
-    return date.toLocaleTimeString('en-US', {
+    return date.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true,
+      hour12: locale !== 'fr',
       timeZone: timezone,
     })
   }
 
   const getShortTzName = (timezone: string) => {
     try {
-      const parts = new Intl.DateTimeFormat('en-US', {
+      const parts = new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
         timeZone: timezone,
         timeZoneName: 'short',
       }).formatToParts(new Date())
@@ -203,7 +230,7 @@ export default function BookingPage() {
   }
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
@@ -212,7 +239,7 @@ export default function BookingPage() {
   }
 
   const formatDateShort = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -305,7 +332,7 @@ export default function BookingPage() {
           className="text-center"
         >
           <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
-          <p className="text-gray-600 font-medium">Loading booking page...</p>
+          <p className="text-gray-600 font-medium">{locale === 'fr' ? 'Chargement...' : 'Loading booking page...'}</p>
         </motion.div>
       </div>
     )
@@ -323,8 +350,8 @@ export default function BookingPage() {
           <div className="w-20 h-20 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Calendar className="w-10 h-10 text-red-400" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">Booking Unavailable</h2>
-          <p className="text-gray-600">{error || 'This practitioner is not accepting bookings.'}</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">{locale === 'fr' ? 'Réservation indisponible' : 'Booking Unavailable'}</h2>
+          <p className="text-gray-600">{error || (locale === 'fr' ? 'Ce praticien n\'accepte pas les réservations pour le moment.' : 'This practitioner is not accepting bookings.')}</p>
         </motion.div>
       </div>
     )
@@ -353,21 +380,23 @@ export default function BookingPage() {
                 <Check className="w-10 h-10 text-emerald-500" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {practitioner.settings.require_approval ? 'Request Submitted!' : 'Booking Confirmed!'}
+                {practitioner.settings.require_approval
+                  ? (locale === 'fr' ? 'Demande envoyée !' : 'Request Submitted!')
+                  : (locale === 'fr' ? 'Réservation confirmée !' : 'Booking Confirmed!')}
               </h2>
               <p className="text-gray-600 mb-8">
                 {practitioner.settings.require_approval
-                  ? 'Your booking request has been submitted and is awaiting confirmation.'
-                  : 'Your appointment has been confirmed.'}
+                  ? (locale === 'fr' ? 'Votre demande a été soumise et est en attente de confirmation.' : 'Your booking request has been submitted and is awaiting confirmation.')
+                  : (locale === 'fr' ? 'Votre rendez-vous a été confirmé.' : 'Your appointment has been confirmed.')}
               </p>
               {calendarSynced && (
                 <p className="text-sm text-emerald-600 mb-6">
-                  A calendar invite has been sent to {clientEmail}
+                  {locale === 'fr' ? `Une invitation a été envoyée à ${clientEmail}` : `A calendar invite has been sent to ${clientEmail}`}
                 </p>
               )}
               {!calendarSynced && !practitioner.settings.require_approval && (
                 <p className="text-sm text-gray-500 mb-6">
-                  Please save this appointment to your calendar manually.
+                  {locale === 'fr' ? 'Veuillez enregistrer ce rendez-vous dans votre calendrier.' : 'Please save this appointment to your calendar manually.'}
                 </p>
               )}
 
@@ -474,14 +503,14 @@ export default function BookingPage() {
                   {/* Specialties */}
                   {practitioner.profile.specialties && practitioner.profile.specialties.length > 0 && (
                     <div className="mt-5 pt-5 border-t border-gray-100">
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 text-left">Specialties</p>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 text-left">{locale === 'fr' ? 'Spécialités' : 'Specialties'}</p>
                       <div className="flex flex-wrap gap-1.5">
                         {practitioner.profile.specialties.slice(0, 6).map((specialty) => (
                           <span
                             key={specialty}
                             className="px-2.5 py-1 rounded-full text-xs font-medium bg-teal-50 text-teal-700 border border-teal-100"
                           >
-                            {specialty.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            {locale === 'fr' ? (SPECIALTY_FR[specialty] || specialty.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())) : specialty.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                           </span>
                         ))}
                       </div>
@@ -493,12 +522,12 @@ export default function BookingPage() {
                     <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2 justify-center">
                       {practitioner.profile.offers_telehealth && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600 border border-blue-100">
-                          Video
+                          {locale === 'fr' ? 'Vidéo' : 'Video'}
                         </span>
                       )}
                       {practitioner.profile.offers_in_person && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-600 border border-amber-100">
-                          In-Person
+                          {locale === 'fr' ? 'En personne' : 'In-Person'}
                         </span>
                       )}
                     </div>
@@ -509,7 +538,7 @@ export default function BookingPage() {
                     href={`/practitioner/${slug}`}
                     className="mt-5 block text-sm text-teal-600 hover:text-teal-700 font-medium transition-colors"
                   >
-                    View full profile
+                    {locale === 'fr' ? 'Voir le profil complet' : 'View full profile'}
                   </Link>
                 </div>
               </div>
@@ -579,7 +608,7 @@ export default function BookingPage() {
                     <span className={`text-xs font-medium hidden sm:block ${
                       currentStepIndex >= index ? 'text-teal-600' : 'text-gray-400'
                     }`}>
-                      {STEP_LABELS[step]}
+                      {(STEP_LABELS[locale] || STEP_LABELS['en'])[step]}
                     </span>
                   </button>
                   {index < STEP_ORDER.length - 1 && (
@@ -608,16 +637,16 @@ export default function BookingPage() {
             {/* Step Header */}
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                {currentStep === 'service' && 'Select a Service'}
-                {currentStep === 'datetime' && 'Choose Date & Time'}
-                {currentStep === 'details' && 'Your Details'}
-                {currentStep === 'confirm' && 'Confirm Booking'}
+                {currentStep === 'service' && t(locale, { en: 'Select a Service', fr: 'Choisir un service' })}
+                {currentStep === 'datetime' && t(locale, { en: 'Choose Date & Time', fr: 'Choisir la date et l\'heure' })}
+                {currentStep === 'details' && t(locale, { en: 'Your Details', fr: 'Vos coordonnées' })}
+                {currentStep === 'confirm' && t(locale, { en: 'Confirm Booking', fr: 'Confirmer la réservation' })}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                {currentStep === 'service' && 'Choose the type of session you\'d like to book'}
-                {currentStep === 'datetime' && 'Pick an available time that works for you'}
-                {currentStep === 'details' && 'We\'ll use this to confirm your appointment'}
-                {currentStep === 'confirm' && 'Review everything before confirming'}
+                {currentStep === 'service' && t(locale, { en: 'Choose the type of session you\'d like to book', fr: 'Choisissez le type de séance que vous souhaitez réserver' })}
+                {currentStep === 'datetime' && t(locale, { en: 'Pick an available time that works for you', fr: 'Sélectionnez un créneau qui vous convient' })}
+                {currentStep === 'details' && t(locale, { en: 'We\'ll use this to confirm your appointment', fr: 'Ces informations serviront à confirmer votre rendez-vous' })}
+                {currentStep === 'confirm' && t(locale, { en: 'Review everything before confirming', fr: 'Vérifiez les détails avant de confirmer' })}
               </p>
             </div>
 
@@ -652,7 +681,7 @@ export default function BookingPage() {
                         </div>
                         <div>
                           <p className="font-medium text-gray-900">{service.name}</p>
-                          <p className="text-sm text-gray-500">{service.duration} minutes</p>
+                          <p className="text-sm text-gray-500">{service.duration} {locale === 'fr' ? 'minutes' : 'minutes'}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -692,7 +721,7 @@ export default function BookingPage() {
                       <ChevronLeft className="w-5 h-5 text-gray-600" />
                     </button>
                     <h3 className="font-semibold text-gray-900">
-                      {currentMonth.toLocaleDateString('en-US', {
+                      {currentMonth.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
                         month: 'long',
                         year: 'numeric',
                       })}
@@ -709,7 +738,7 @@ export default function BookingPage() {
                     </button>
                   </div>
                   <div className="grid grid-cols-7 gap-1 text-center">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                    {(locale === 'fr' ? ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']).map((day) => (
                       <div key={day} className="p-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                         {day}
                       </div>
@@ -742,7 +771,7 @@ export default function BookingPage() {
                 {selectedDate && (
                   <div>
                     <h4 className="font-medium text-gray-900 mb-3">
-                      Available times for {formatDateShort(selectedDate)}
+                      {locale === 'fr' ? `Créneaux disponibles pour le ${formatDateShort(selectedDate)}` : `Available times for ${formatDateShort(selectedDate)}`}
                     </h4>
                     {isLoadingSlots ? (
                       <div className="flex items-center justify-center py-10">
@@ -753,8 +782,8 @@ export default function BookingPage() {
                         <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
                           <Clock className="w-7 h-7 text-gray-300" />
                         </div>
-                        <p className="text-gray-500 text-sm">No available times on this date.</p>
-                        <p className="text-gray-400 text-xs mt-1">Please select another day.</p>
+                        <p className="text-gray-500 text-sm">{locale === 'fr' ? 'Aucun créneau disponible à cette date.' : 'No available times on this date.'}</p>
+                        <p className="text-gray-400 text-xs mt-1">{locale === 'fr' ? 'Veuillez sélectionner un autre jour.' : 'Please select another day.'}</p>
                       </div>
                     ) : (
                       <>
@@ -765,8 +794,12 @@ export default function BookingPage() {
                             <Info className="w-4 h-4 mt-0.5 shrink-0" />
                             <p>
                               {isSameTimezone
-                                ? `You and the practitioner are both in ${getShortTzName(clientTimezone)}${getTzCity(clientTimezone) ? ` (${getTzCity(clientTimezone)})` : ''}.`
-                                : `Times shown in your timezone (${getShortTzName(clientTimezone)}${getTzCity(clientTimezone) ? ` \u2013 ${getTzCity(clientTimezone)}` : ''}). Practitioner is in ${getShortTzName(practitionerTimezone)}${getTzCity(practitionerTimezone) ? ` \u2013 ${getTzCity(practitionerTimezone)}` : ''}.`
+                                ? (locale === 'fr'
+                                    ? `Vous et le praticien êtes dans le même fuseau horaire (${getShortTzName(clientTimezone)}${getTzCity(clientTimezone) ? ` — ${getTzCity(clientTimezone)}` : ''}).`
+                                    : `You and the practitioner are both in ${getShortTzName(clientTimezone)}${getTzCity(clientTimezone) ? ` (${getTzCity(clientTimezone)})` : ''}.`)
+                                : (locale === 'fr'
+                                    ? `Horaires affichés dans votre fuseau (${getShortTzName(clientTimezone)}${getTzCity(clientTimezone) ? ` — ${getTzCity(clientTimezone)}` : ''}). Le praticien est en ${getShortTzName(practitionerTimezone)}${getTzCity(practitionerTimezone) ? ` — ${getTzCity(practitionerTimezone)}` : ''}.`
+                                    : `Times shown in your timezone (${getShortTzName(clientTimezone)}${getTzCity(clientTimezone) ? ` \u2013 ${getTzCity(clientTimezone)}` : ''}). Practitioner is in ${getShortTzName(practitionerTimezone)}${getTzCity(practitionerTimezone) ? ` \u2013 ${getTzCity(practitionerTimezone)}` : ''}.`)
                               }
                             </p>
                           </div>
@@ -809,20 +842,20 @@ export default function BookingPage() {
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                     <User className="w-4 h-4 text-gray-400" />
-                    Full Name <span className="text-red-400">*</span>
+                    {locale === 'fr' ? 'Nom complet' : 'Full Name'} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
-                    placeholder="Your full name"
+                    placeholder={locale === 'fr' ? 'Votre nom complet' : 'Your full name'}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow bg-white placeholder-gray-400"
                   />
                 </div>
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                     <Mail className="w-4 h-4 text-gray-400" />
-                    Email Address <span className="text-red-400">*</span>
+                    {locale === 'fr' ? 'Adresse e-mail' : 'Email Address'} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="email"
@@ -835,7 +868,7 @@ export default function BookingPage() {
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                     <Phone className="w-4 h-4 text-gray-400" />
-                    Phone Number <span className="text-gray-400 font-normal">(optional)</span>
+                    {locale === 'fr' ? 'Téléphone' : 'Phone Number'} <span className="text-gray-400 font-normal">{locale === 'fr' ? '(facultatif)' : '(optional)'}</span>
                   </label>
                   <input
                     type="tel"
@@ -848,12 +881,12 @@ export default function BookingPage() {
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                     <FileText className="w-4 h-4 text-gray-400" />
-                    Additional Notes <span className="text-gray-400 font-normal">(optional)</span>
+                    {locale === 'fr' ? 'Notes' : 'Additional Notes'} <span className="text-gray-400 font-normal">{locale === 'fr' ? '(facultatif)' : '(optional)'}</span>
                   </label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Anything you'd like the practitioner to know..."
+                    placeholder={locale === 'fr' ? 'Informations supplémentaires pour le praticien...' : 'Anything you\'d like the practitioner to know...'}
                     rows={3}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow resize-none bg-white placeholder-gray-400"
                   />
@@ -890,7 +923,7 @@ export default function BookingPage() {
                       </p>
                       {!isSameTimezone && practitionerTimezone && selectedSlot && (
                         <p className="text-xs text-gray-400 mt-0.5">
-                          {formatTimeInZone(selectedSlot.slot_start, practitionerTimezone)} {getShortTzName(practitionerTimezone)} for practitioner
+                          {formatTimeInZone(selectedSlot.slot_start, practitionerTimezone)} {getShortTzName(practitionerTimezone)} {locale === 'fr' ? 'pour le praticien' : 'for practitioner'}
                         </p>
                       )}
                     </div>
@@ -927,7 +960,7 @@ export default function BookingPage() {
 
                 {practitioner.settings.cancellation_policy && (
                   <div className="text-sm text-gray-500 bg-gray-50/50 rounded-xl p-4 border border-gray-100">
-                    <p className="font-medium text-gray-700 mb-1">Cancellation Policy</p>
+                    <p className="font-medium text-gray-700 mb-1">{locale === 'fr' ? 'Politique d\'annulation' : 'Cancellation Policy'}</p>
                     <p>{practitioner.settings.cancellation_policy}</p>
                   </div>
                 )}
@@ -939,7 +972,7 @@ export default function BookingPage() {
               {currentStep !== 'service' ? (
                 <Button variant="outline" onClick={goBack} className="rounded-xl">
                   <ChevronLeft className="w-4 h-4 mr-2" />
-                  Back
+                  {locale === 'fr' ? 'Retour' : 'Back'}
                 </Button>
               ) : (
                 <div />
@@ -956,7 +989,7 @@ export default function BookingPage() {
                   ) : (
                     <Check className="w-4 h-4 mr-2" />
                   )}
-                  Confirm Booking
+                  {locale === 'fr' ? 'Confirmer la réservation' : 'Confirm Booking'}
                 </Button>
               ) : (
                 <Button
@@ -964,7 +997,7 @@ export default function BookingPage() {
                   disabled={!canProceed()}
                   className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl shadow-lg shadow-teal-200/50 disabled:opacity-50 disabled:shadow-none"
                 >
-                  Continue
+                  {locale === 'fr' ? 'Continuer' : 'Continue'}
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               )}
@@ -983,7 +1016,7 @@ export default function BookingPage() {
           className="text-center mt-10 py-6"
         >
           <p className="text-sm text-gray-400">
-            Powered by{' '}
+            {locale === 'fr' ? 'Propulsé par' : 'Powered by'}{' '}
             <Link href="/" className="text-teal-500 hover:text-teal-600 font-medium">
               Bloomsline Care
             </Link>

@@ -282,9 +282,9 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
   if (!profile) return null
 
   const acceptanceStatusStyles: Record<string, { bg: string; text: string; dot: string; label: string }> = {
-    accepting: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', label: 'Accepting New Clients' },
-    waitlist: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500', label: 'Waitlist Only' },
-    not_accepting: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400', label: 'Not Accepting' },
+    accepting: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', label: locale === 'fr' ? 'Accepte de nouveaux clients' : 'Accepting New Clients' },
+    waitlist: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500', label: locale === 'fr' ? 'Liste d\'attente' : 'Waitlist Only' },
+    not_accepting: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400', label: locale === 'fr' ? 'N\'accepte pas' : 'Not Accepting' },
   }
 
   const status = profile.client_acceptance_status
@@ -307,14 +307,14 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 <a href={externalBookingUrl} target="_blank" rel="noopener noreferrer">
                   <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-md shadow-teal-200/50">
                     <ExternalLink className="w-4 h-4 mr-2" />
-                    Book Appointment
+                    {locale === 'fr' ? 'Prendre rendez-vous' : 'Book Appointment'}
                   </Button>
                 </a>
               ) : (
                 <Link href={`/practitioner/${profile.slug}/book`}>
                   <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-md shadow-teal-200/50">
                     <Calendar className="w-4 h-4 mr-2" />
-                    Book Appointment
+                    {locale === 'fr' ? 'Prendre rendez-vous' : 'Book Appointment'}
                   </Button>
                 </Link>
               )
@@ -386,14 +386,14 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                   {profile.offers_telehealth && (
                     <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-teal-50 text-teal-700">
                       <Video className="w-3.5 h-3.5 mr-1.5" />
-                      Telehealth
+                      {locale === 'fr' ? 'Téléconsultation' : 'Telehealth'}
                     </span>
                   )}
 
                   {profile.offers_in_person && (
                     <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-slate-50 text-slate-700">
                       <Building className="w-3.5 h-3.5 mr-1.5" />
-                      In-Person
+                      {locale === 'fr' ? 'En personne' : 'In-Person'}
                     </span>
                   )}
                 </>
@@ -402,7 +402,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
               {profile.years_experience && (
                 <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-50 text-gray-600">
                   <Clock className="w-3.5 h-3.5 mr-1.5" />
-                  {profile.years_experience}+ Years
+                  {profile.years_experience}+ {locale === 'fr' ? 'ans' : 'Years'}
                 </span>
               )}
 
@@ -421,14 +421,14 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                   <a href={externalBookingUrl} target="_blank" rel="noopener noreferrer">
                     <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-md shadow-teal-200/50 h-11 px-6">
                       <ExternalLink className="w-4 h-4 mr-2" />
-                      Book a Session
+                      {locale === 'fr' ? 'Réserver une séance' : 'Book a Session'}
                     </Button>
                   </a>
                 ) : (
                   <Link href={`/practitioner/${profile.slug}/book`}>
                     <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-md shadow-teal-200/50 h-11 px-6">
                       <Calendar className="w-4 h-4 mr-2" />
-                      Book a Session
+                      {locale === 'fr' ? 'Réserver une séance' : 'Book a Session'}
                     </Button>
                   </Link>
                 )
@@ -437,7 +437,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 <a href={`mailto:${profile.contact_email}`}>
                   <Button variant="outline" className="rounded-xl h-11 px-6 border-gray-200">
                     <Mail className="w-4 h-4 mr-2" />
-                    Contact
+                    {locale === 'fr' ? 'Contacter' : 'Contact'}
                   </Button>
                 </a>
               )}
@@ -445,7 +445,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 <a href={`tel:${profile.contact_phone}`}>
                   <Button variant="outline" className="rounded-xl h-11 border-gray-200">
                     <Phone className="w-4 h-4 mr-2" />
-                    Call
+                    {locale === 'fr' ? 'Appeler' : 'Call'}
                   </Button>
                 </a>
               )}
@@ -453,7 +453,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 <a href={profile.social_links.website} target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" className="rounded-xl h-11 border-gray-200">
                     <Globe className="w-4 h-4 mr-2" />
-                    Website
+                    {locale === 'fr' ? 'Site web' : 'Website'}
                   </Button>
                 </a>
               )}
@@ -482,7 +482,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
               >
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <Heart className="w-5 h-5 text-teal-500" />
-                  About
+                  {locale === 'fr' ? 'À propos' : 'About'}
                 </h2>
                 <p className="text-gray-600 whitespace-pre-wrap leading-relaxed">{profile.bio}</p>
               </motion.div>
@@ -498,7 +498,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
               >
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <Shield className="w-5 h-5 text-teal-500" />
-                  Areas of Specialty
+                  {locale === 'fr' ? 'Domaines de spécialité' : 'Areas of Specialty'}
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {profile.specialties.map((specialty) => (
@@ -523,7 +523,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
               >
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-teal-500" />
-                  Therapeutic Approaches
+                  {locale === 'fr' ? 'Approches thérapeutiques' : 'Therapeutic Approaches'}
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {profile.approaches.map((approach) => (
@@ -591,7 +591,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
               >
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-teal-500" />
-                  Published Resources
+                  {locale === 'fr' ? 'Ressources publiées' : 'Published Resources'}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {publishedResources.map((resource) => (
@@ -623,22 +623,24 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 transition={{ delay: 0.1 }}
                 className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl p-6 text-white shadow-lg shadow-teal-200/40"
               >
-                <h3 className="font-semibold text-lg mb-2">Ready to get started?</h3>
+                <h3 className="font-semibold text-lg mb-2">{locale === 'fr' ? 'Prêt à commencer ?' : 'Ready to get started?'}</h3>
                 <p className="text-teal-100 text-sm mb-4">
-                  Book a session with {profile.user?.full_name?.split(' ')[0]} and take the next step in your journey.
+                  {locale === 'fr'
+                    ? `Réservez une séance avec ${profile.user?.full_name?.split(' ')[0]} et faites le prochain pas.`
+                    : `Book a session with ${profile.user?.full_name?.split(' ')[0]} and take the next step in your journey.`}
                 </p>
                 {externalBookingUrl ? (
                   <a href={externalBookingUrl} target="_blank" rel="noopener noreferrer" className="block">
                     <Button className="w-full bg-white text-teal-700 hover:bg-teal-50 rounded-xl font-semibold h-11">
                       <ExternalLink className="w-4 h-4 mr-2" />
-                      Book a Session
+                      {locale === 'fr' ? 'Réserver une séance' : 'Book a Session'}
                     </Button>
                   </a>
                 ) : (
                   <Link href={`/practitioner/${profile.slug}/book`}>
                     <Button className="w-full bg-white text-teal-700 hover:bg-teal-50 rounded-xl font-semibold h-11">
                       <Calendar className="w-4 h-4 mr-2" />
-                      Book a Session
+                      {locale === 'fr' ? 'Réserver une séance' : 'Book a Session'}
                     </Button>
                   </Link>
                 )}
@@ -655,13 +657,13 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
               >
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <GraduationCap className="w-5 h-5 text-teal-500" />
-                  Credentials
+                  {locale === 'fr' ? 'Qualifications' : 'Credentials'}
                 </h2>
 
                 {/* Education */}
                 {profile.education && profile.education.length > 0 && (
                   <div className="mb-5">
-                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Education</h3>
+                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{locale === 'fr' ? 'Formation' : 'Education'}</h3>
                     <div className="space-y-3">
                       {profile.education.map((edu: { id: string; degree: string; institution: string; year_completed: number | null }) => (
                         <div key={edu.id} className="text-sm">
@@ -679,7 +681,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 {/* Licenses */}
                 {profile.licenses && profile.licenses.length > 0 && (
                   <div>
-                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Licenses</h3>
+                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{locale === 'fr' ? 'Licences' : 'Licenses'}</h3>
                     <div className="space-y-3">
                       {profile.licenses.map((lic: { id: string; type: string; state_province: string | null; is_verified: boolean }) => (
                         <div key={lic.id} className="flex items-start gap-2">
@@ -712,13 +714,13 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
             >
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-teal-500" />
-                Session Info
+                {locale === 'fr' ? 'Infos séance' : 'Session Info'}
               </h2>
 
               {/* Session Types */}
               {profile.session_types && profile.session_types.length > 0 && (
                 <div className="mb-4">
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Session Types</h3>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{locale === 'fr' ? 'Types de séances' : 'Session Types'}</h3>
                   <div className="flex flex-wrap gap-2">
                     {profile.session_types.map((type) => (
                       <span key={type} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-teal-50 text-teal-700 capitalize">
@@ -732,7 +734,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
               {/* Age Groups */}
               {profile.age_groups && profile.age_groups.length > 0 && (
                 <div className="mb-4">
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Ages Served</h3>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{locale === 'fr' ? 'Tranches d\'âge' : 'Ages Served'}</h3>
                   <div className="flex flex-wrap gap-2">
                     {profile.age_groups.map((age) => (
                       <span key={age} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-50 text-gray-600">
@@ -746,7 +748,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
               {/* Languages */}
               {profile.show_languages !== false && profile.languages && profile.languages.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Languages</h3>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{locale === 'fr' ? 'Langues' : 'Languages'}</h3>
                   <p className="text-sm text-gray-700">{profile.languages.join(', ')}</p>
                 </div>
               )}
@@ -762,7 +764,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
               >
                 <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-teal-500" />
-                  Location
+                  {locale === 'fr' ? 'Lieu' : 'Location'}
                 </h2>
                 <p className="text-sm text-gray-600">
                   {[profile.practice_location.city, profile.practice_location.state_province, profile.practice_location.country].filter(Boolean).join(', ')}
@@ -780,7 +782,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
           className="text-center mt-12 py-8 border-t border-gray-100"
         >
           <p className="text-sm text-gray-400">
-            Powered by{' '}
+            {locale === 'fr' ? 'Propulsé par' : 'Powered by'}{' '}
             <Link href={isLoggedIn ? '/dashboard' : '/'} className="text-teal-600 hover:text-teal-700 font-medium">
               Bloomsline Care
             </Link>
