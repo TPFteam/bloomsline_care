@@ -108,7 +108,7 @@ function DashboardContent() {
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
   const [selectedType, setSelectedType] = useState<ResourceType | null>(null)
-  const [upcomingSessions, setUpcomingSessions] = useState<{ id: string; client_name: string; session_type: string; start_time: string; member_id: string | null }[]>([])
+  const [upcomingSessions, setUpcomingSessions] = useState<{ id: string; client_name: string; session_type: string; start_time: string; member_id: string | null; status: string }[]>([])
 
   // Member picker for quick actions
   const [members, setMembers] = useState<{ id: string; first_name: string; last_name: string; status: string; last_session_at: string | null; email: string | null; phone: string | null; user_id: string | null }[]>([])
@@ -453,7 +453,7 @@ function DashboardContent() {
       // Fetch upcoming sessions
       const { data: sessionsData } = await supabase
         .from('bookings')
-        .select('id, client_name, session_type, start_time, member_id')
+        .select('id, client_name, session_type, start_time, member_id, status')
         .eq('practitioner_id', authUser.id)
         .in('status', ['confirmed', 'pending'])
         .gte('start_time', new Date().toISOString())
@@ -959,6 +959,11 @@ function DashboardContent() {
                             {dayLabel} · {timeLabel}
                           </p>
                         </div>
+                        {session.status === 'pending' && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 whitespace-nowrap">
+                            {locale === 'fr' ? 'En attente' : 'Pending'}
+                          </span>
+                        )}
                         <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
                       </div>
                     )

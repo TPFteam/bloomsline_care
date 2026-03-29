@@ -105,6 +105,7 @@ export interface CreateBookingInput {
   client_email: string;
   client_phone?: string;
   notes?: string;
+  member_id?: string;
 }
 
 export interface GoogleCalendarEvent {

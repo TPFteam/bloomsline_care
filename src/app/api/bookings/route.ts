@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
         client_phone: body.client_phone || null,
         notes: body.notes || null,
         status: bookingStatus,
+        member_id: body.member_id || null,
       })
       .select()
       .single();
