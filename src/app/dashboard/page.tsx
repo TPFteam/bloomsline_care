@@ -482,8 +482,8 @@ function DashboardContent() {
 
   const getGreeting = () => {
     const hour = new Date().getHours()
-    if (hour < 12) return locale === 'fr' ? 'Bonjour' : 'Good morning'
-    if (hour < 18) return locale === 'fr' ? 'Bonjour' : 'Good afternoon'
+    if (hour >= 6 && hour < 12) return locale === 'fr' ? 'Bonjour' : 'Good morning'
+    if (hour >= 12 && hour < 18) return locale === 'fr' ? 'Bonjour' : 'Good afternoon'
     return locale === 'fr' ? 'Bonsoir' : 'Good evening'
   }
 
