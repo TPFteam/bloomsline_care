@@ -196,11 +196,15 @@ export async function updateResource(id: string, updates: UpdateResourceDTO): Pr
     })
     .eq('id', id)
     .select()
-    .single()
+    .maybeSingle()
 
   if (error) {
     console.error('Error updating resource:', error)
     throw error
+  }
+
+  if (!data) {
+    throw new Error('Resource not found or you do not have permission to update it')
   }
 
   return data as Resource
