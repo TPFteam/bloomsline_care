@@ -590,8 +590,8 @@ function CreateWorksheetContent() {
               items: block.items?.map((item: any) =>
                 typeof item === 'string' ? item : (typeof item.text === 'string' ? item.text : (item.text as Record<string, string>)?.[locale] || '')
               ),
-              scaleMin: block.scaleMin,
-              scaleMax: block.scaleMax,
+              scaleMin: block.scaleMin ?? (block.scaleType === 'rating' || block.type === 'scale' ? 1 : undefined),
+              scaleMax: block.scaleMax ?? (block.scaleType === 'rating' || block.type === 'scale' ? 10 : undefined),
               scaleMinLabel: typeof block.scaleMinLabel === 'string' ? block.scaleMinLabel : (block.scaleMinLabel as Record<string, string>)?.[locale] || '',
               scaleMaxLabel: typeof block.scaleMaxLabel === 'string' ? block.scaleMaxLabel : (block.scaleMaxLabel as Record<string, string>)?.[locale] || '',
               placeholder: block.placeholder,
@@ -1144,8 +1144,10 @@ function CreateWorksheetContent() {
             ...baseBlock,
             type: 'likert' as const,
             scaleLabels: block.scaleLabels,
-            scaleRange: block.scaleRange,
+            scaleRange: block.scaleType === 'rating' ? (block.scaleMax ?? block.scaleRange ?? 5) : (block.scaleRange || 5),
             scaleType: block.scaleType,
+            scaleMin: block.scaleMin,
+            scaleMax: block.scaleMax,
             likertScale: block.scaleRange || 5,
             likertLabels: block.scaleLabels ? { start: block.scaleLabels[0], end: block.scaleLabels[block.scaleLabels.length - 1] } : undefined,
             required: block.required,
@@ -1365,7 +1367,7 @@ function CreateWorksheetContent() {
           return { ...baseBlock, type: 'yes_no' as const, required: block.required, scoring: block.scoring }
         }
         if (block.type === 'likert') {
-          return { ...baseBlock, type: 'likert' as const, scaleLabels: block.scaleLabels, scaleRange: block.scaleRange, scaleType: block.scaleType, likertScale: block.scaleRange || 5, likertLabels: block.scaleLabels ? { start: block.scaleLabels[0], end: block.scaleLabels[block.scaleLabels.length - 1] } : undefined, required: block.required, scoring: block.scoring }
+          return { ...baseBlock, type: 'likert' as const, scaleLabels: block.scaleLabels, scaleRange: block.scaleType === 'rating' ? (block.scaleMax ?? block.scaleRange ?? 5) : (block.scaleRange || 5), scaleType: block.scaleType, scaleMin: block.scaleMin, scaleMax: block.scaleMax, likertScale: block.scaleRange || 5, likertLabels: block.scaleLabels ? { start: block.scaleLabels[0], end: block.scaleLabels[block.scaleLabels.length - 1] } : undefined, required: block.required, scoring: block.scoring }
         }
         if (block.type === 'mood') {
           return { ...baseBlock, type: 'mood' as const, moodOptions: block.moodOptions, required: block.required, scoring: block.scoring }
@@ -3595,7 +3597,8 @@ function CreateWorksheetContent() {
                                 updateBlock(block.id, { scaleMin: v === '' ? undefined : parseInt(v) })
                               }}
                               onBlur={() => { if (block.scaleMin === undefined) updateBlock(block.id, { scaleMin: 0 }) }}
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                              placeholder="1"
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900"
                             />
                           </div>
                           <div>
@@ -3611,7 +3614,8 @@ function CreateWorksheetContent() {
                                 updateBlock(block.id, { scaleMax: v === '' ? undefined : parseInt(v) })
                               }}
                               onBlur={() => { if (block.scaleMax === undefined) updateBlock(block.id, { scaleMax: 10 }) }}
-                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                              placeholder="10"
+                              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900"
                             />
                           </div>
                         </div>

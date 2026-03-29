@@ -1471,8 +1471,8 @@ export default function ResourceDetailPage() {
                             {/* Rating Scale */}
                             {(block as any).scaleType === 'rating' && (
                               <div className="flex items-center gap-1 flex-wrap">
-                                {Array.from({ length: ((block as any).scaleMax || (block as any).scaleRange || 10) - ((block as any).scaleMin || 1) + 1 }, (_, i) => {
-                                  const value = ((block as any).scaleMin || 1) + i
+                                {Array.from({ length: ((block as any).scaleMax ?? (block as any).scaleRange ?? 5) - ((block as any).scaleMin ?? 1) + 1 }, (_, i) => {
+                                  const value = ((block as any).scaleMin ?? 1) + i
                                   return (
                                     <div key={value} className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-sm text-gray-400 hover:border-amber-300 hover:bg-amber-50 cursor-pointer transition-all">
                                       {value}
