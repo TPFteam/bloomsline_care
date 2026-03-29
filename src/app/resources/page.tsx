@@ -87,7 +87,7 @@ export default function MyResourcesPage() {
   // Sub-tab state (within My Resources)
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('created')
   const [searchQuery, setSearchQuery] = useState('')
-  const [languageFilter, setLanguageFilter] = useState<'all' | 'en' | 'fr'>('all')
+  const [languageFilter, setLanguageFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'worksheet' | 'psychoeducation' | 'exercise' | 'table'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>('all')
   const [showFilters, setShowFilters] = useState(false)
@@ -809,6 +809,11 @@ export default function MyResourcesPage() {
                           { value: 'all', label: locale === 'fr' ? 'Toutes' : 'All' },
                           { value: 'en', label: 'English' },
                           { value: 'fr', label: 'Français' },
+                          { value: 'es', label: 'Español' },
+                          { value: 'de', label: 'Deutsch' },
+                          { value: 'it', label: 'Italiano' },
+                          { value: 'pt', label: 'Português' },
+                          { value: 'nl', label: 'Nederlands' },
                         ].map((item) => (
                           <button
                             key={item.value}
