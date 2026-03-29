@@ -341,8 +341,36 @@ export async function PATCH(
             tag: 'booking_confirmed',
             attachments: [calendarAttachment],
           });
+          // Also send .ics confirmation to the practitioner
+          if (user.email) {
+            const practitionerCalendarAttachment = generateCalendarAttachment({
+              uid: booking.id,
+              summary: `${sessionTypeName} — ${booking.client_name}`,
+              startTime: booking.start_time,
+              endTime: booking.end_time,
+              description: `${sessionTypeName} with ${booking.client_name}\nEmail: ${booking.client_email}${booking.client_phone ? `\nPhone: ${booking.client_phone}` : ''}`,
+              attendeeEmail: booking.client_email,
+              attendeeName: booking.client_name,
+              organizerEmail: user.email,
+            });
+
+            const practitionerHtmlBody = generateEmailHtml({
+              subject: `Booking confirmed: ${sessionTypeName} with ${booking.client_name}`,
+              body: `Your ${sessionTypeName} with ${booking.client_name} is confirmed for ${scheduledAt}.`,
+              actionUrl: `/bookings`,
+              actionText: 'View Bookings',
+            });
+
+            await sendEmail({
+              to: user.email,
+              subject: `Booking confirmed: ${sessionTypeName} with ${booking.client_name}`,
+              htmlBody: practitionerHtmlBody,
+              tag: 'booking_confirmed_practitioner',
+              attachments: [practitionerCalendarAttachment],
+            });
+          }
         } catch (emailError) {
-          console.error('Error sending booking confirmation email to client:', emailError);
+          console.error('Error sending booking confirmation email:', emailError);
         }
       })();
     }
