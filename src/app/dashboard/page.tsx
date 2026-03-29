@@ -117,6 +117,9 @@ function DashboardContent() {
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
   const [schedulePreselectedMember, setSchedulePreselectedMember] = useState<Member | null>(null)
 
+  // User's latest resources
+  const [userResources, setUserResources] = useState<{ id: string; title: string; type: string }[]>([])
+
   // Add Member Modal
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
   const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '' })
@@ -457,6 +460,15 @@ function DashboardContent() {
         .order('start_time', { ascending: true })
         .limit(3)
       if (sessionsData) setUpcomingSessions(sessionsData)
+
+      // Fetch user's latest resources
+      const { data: latestResources } = await supabase
+        .from('resources')
+        .select('id, title, type')
+        .eq('practitioner_id', authUser.id)
+        .order('created_at', { ascending: false })
+        .limit(3)
+      if (latestResources && latestResources.length > 0) setUserResources(latestResources)
 
       if (searchParams.get('welcome') === 'true' && !welcomeShown.current) {
         welcomeShown.current = true
@@ -979,37 +991,68 @@ function DashboardContent() {
             className="mt-10"
           >
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              {locale === 'fr' ? 'Modèles à explorer' : 'Explore templates'}
+              {userResources.length > 0
+                ? (locale === 'fr' ? 'Vos dernières ressources' : 'Your latest resources')
+                : (locale === 'fr' ? 'Modèles à explorer' : 'Explore templates')}
             </h2>
 
             <div className="grid grid-cols-3 gap-3">
-              {featuredTemplates.map((template, index) => {
-                const TemplateIcon = getTemplateIcon(template.type)
-                const colorClass = getTemplateColor(template.type)
-                return (
-                  <Link key={template.id} href={template.href}>
-                    <motion.div
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.45 + index * 0.05 }}
-                      className="flex items-center gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group"
-                    >
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass.split(' ')[0]}`}>
-                        <TemplateIcon className={`w-5 h-5 ${colorClass.split(' ')[1]}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-gray-700">
-                          {lt(template.name, locale)}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {getTemplateTypeLabel(template.type)}
-                        </p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
-                    </motion.div>
-                  </Link>
-                )
-              })}
+              {userResources.length > 0
+                ? userResources.map((resource, index) => {
+                    const TemplateIcon = getTemplateIcon(resource.type as 'worksheet' | 'table' | 'psychoeducation')
+                    const colorClass = getTemplateColor(resource.type as 'worksheet' | 'table' | 'psychoeducation')
+                    return (
+                      <Link key={resource.id} href={`/resources/${resource.id}`}>
+                        <motion.div
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.45 + index * 0.05 }}
+                          className="flex items-center gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group"
+                        >
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass.split(' ')[0]}`}>
+                            <TemplateIcon className={`w-5 h-5 ${colorClass.split(' ')[1]}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-gray-700">
+                              {resource.title || (locale === 'fr' ? 'Sans titre' : 'Untitled')}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {getTemplateTypeLabel(resource.type as TemplateOption['type'])}
+                            </p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
+                        </motion.div>
+                      </Link>
+                    )
+                  })
+                : featuredTemplates.map((template, index) => {
+                    const TemplateIcon = getTemplateIcon(template.type)
+                    const colorClass = getTemplateColor(template.type)
+                    return (
+                      <Link key={template.id} href={template.href}>
+                        <motion.div
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.45 + index * 0.05 }}
+                          className="flex items-center gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group"
+                        >
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass.split(' ')[0]}`}>
+                            <TemplateIcon className={`w-5 h-5 ${colorClass.split(' ')[1]}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-gray-700">
+                              {lt(template.name, locale)}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {getTemplateTypeLabel(template.type)}
+                            </p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
+                        </motion.div>
+                      </Link>
+                    )
+                  })
+              }
             </div>
           </motion.div>
 
