@@ -4,6 +4,7 @@ import type { CreateBookingInput, GoogleCalendarEvent } from '@/types/calendar';
 import { getNotificationContent } from '@/lib/notifications/templates';
 import { generateEmailHtml, getEmailContent } from '@/lib/notifications/email';
 import { sendEmail } from '@/lib/email';
+import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
 
@@ -157,6 +158,55 @@ export async function POST(request: NextRequest) {
     } catch (notifyError) {
       console.error('Error sending booking notification:', notifyError);
       // Don't fail the booking if notification fails
+    }
+
+    // If confirmed (no approval needed), send confirmation email to client with .ics
+    if (bookingStatus === 'confirmed' && body.client_email) {
+      ;(async () => {
+        try {
+          const scheduledAt = new Date(body.start_time).toLocaleString('en-US', {
+            weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+            hour: 'numeric', minute: '2-digit', hour12: true,
+          });
+
+          const confirmMetadata = {
+            bookingId: booking.id,
+            sessionType: sessionType.name,
+            scheduledAt,
+            clientName: body.client_name,
+          };
+
+          const confirmContent = getNotificationContent('booking_confirmed', confirmMetadata, 'en');
+          const confirmEmailContent = getEmailContent('booking_confirmed', confirmMetadata, 'en');
+          const patientAppUrl = process.env.NEXT_PUBLIC_PATIENT_APP_URL || 'https://app.bloomsline.com';
+          const confirmHtmlBody = generateEmailHtml({
+            subject: confirmContent.emailSubject,
+            body: confirmContent.body,
+            actionUrl: `${patientAppUrl}/practitioner`,
+            actionText: confirmEmailContent.actionText,
+          });
+
+          const calendarAttachment = generateCalendarAttachment({
+            uid: booking.id,
+            summary: `${sessionType.name} — Bloomsline Care`,
+            startTime: body.start_time,
+            endTime: body.end_time,
+            description: `Your ${sessionType.name} session with your practitioner`,
+            attendeeEmail: body.client_email,
+            attendeeName: body.client_name,
+          });
+
+          await sendEmail({
+            to: body.client_email,
+            subject: confirmContent.emailSubject,
+            htmlBody: confirmHtmlBody,
+            tag: 'booking_confirmed',
+            attachments: [calendarAttachment],
+          });
+        } catch (emailError) {
+          console.error('Error sending booking confirmation email to client:', emailError);
+        }
+      })();
     }
 
     // If confirmed (no approval needed), create Google Calendar event

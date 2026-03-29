@@ -6,6 +6,7 @@ import { getValidGoogleToken } from '@/lib/services/google-auth';
 import { getNotificationContent } from '@/lib/notifications/templates';
 import { generateEmailHtml, getEmailContent } from '@/lib/notifications/email';
 import { sendEmail } from '@/lib/email';
+import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
 
 // PATCH /api/bookings/[id] - Update booking status (approve/reject)
 export async function PATCH(
@@ -315,11 +316,22 @@ export async function PATCH(
 
           const content = getNotificationContent('booking_confirmed', metadata, 'en');
           const emailContent = getEmailContent('booking_confirmed', metadata, 'en');
+          const patientAppUrl = process.env.NEXT_PUBLIC_PATIENT_APP_URL || 'https://app.bloomsline.com';
           const htmlBody = generateEmailHtml({
             subject: content.emailSubject,
             body: content.body,
-            actionUrl: content.actionUrl,
+            actionUrl: `${patientAppUrl}/practitioner`,
             actionText: emailContent.actionText,
+          });
+
+          const calendarAttachment = generateCalendarAttachment({
+            uid: booking.id,
+            summary: `${sessionTypeName} — Bloomsline Care`,
+            startTime: booking.start_time,
+            endTime: booking.end_time,
+            description: `Your ${sessionTypeName} session with your practitioner`,
+            attendeeEmail: booking.client_email,
+            attendeeName: booking.client_name,
           });
 
           await sendEmail({
@@ -327,6 +339,7 @@ export async function PATCH(
             subject: content.emailSubject,
             htmlBody,
             tag: 'booking_confirmed',
+            attachments: [calendarAttachment],
           });
         } catch (emailError) {
           console.error('Error sending booking confirmation email to client:', emailError);

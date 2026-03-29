@@ -80,7 +80,7 @@ export function generateEmailHtml(params: {
     ? `
       <tr>
         <td style="padding: 24px 0;">
-          <a href="${appUrl}${actionUrl}"
+          <a href="${actionUrl.startsWith('http') ? actionUrl : `${appUrl}${actionUrl}`}"
              style="display: inline-block; background: linear-gradient(135deg, #10B981, #14B8A6);
                     color: white; padding: 14px 28px; border-radius: 12px;
                     text-decoration: none; font-weight: 600; font-size: 15px;">

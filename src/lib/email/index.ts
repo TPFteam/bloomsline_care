@@ -23,6 +23,7 @@ export interface SendEmailOptions {
   textBody?: string
   tag?: string
   metadata?: Record<string, string>
+  attachments?: Array<{ Name: string; Content: string; ContentType: string }>
 }
 
 export async function sendEmail({
@@ -32,6 +33,7 @@ export async function sendEmail({
   textBody,
   tag,
   metadata,
+  attachments,
 }: SendEmailOptions) {
   const postmarkClient = getClient()
 
@@ -50,6 +52,7 @@ export async function sendEmail({
       Tag: tag,
       Metadata: metadata,
       MessageStream: 'outbound',
+      Attachments: attachments?.map(a => ({ ...a, ContentID: null as unknown as string })),
     })
 
     return { success: true, messageId: response.MessageID }
