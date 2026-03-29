@@ -15,7 +15,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
     const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com'
 
-    if (posthogKey && typeof window !== 'undefined') {
+    if (posthogKey && typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
       posthog.init(posthogKey, {
         api_host: '/ingest',
         ui_host: 'https://eu.posthog.com',
