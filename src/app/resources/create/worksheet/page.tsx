@@ -1849,17 +1849,24 @@ function CreateWorksheetContent() {
             )}
             {/* Rating variant */}
             {block.scaleType === 'rating' && (
-              <div className="flex items-center gap-2">
-                {Array.from({ length: block.scaleRange || 5 }).map((_, i) => {
-                  const isSelected = isTestMode && typeof testResponses[block.id] === 'number' && i <= (testResponses[block.id] as number)
+              <div className="flex items-center gap-1 flex-wrap">
+                {Array.from({ length: (block.scaleMax || 10) - (block.scaleMin || 1) + 1 }, (_, i) => {
+                  const value = (block.scaleMin || 1) + i
+                  const isSelected = isTestMode && testResponses[block.id] === value
                   return (
                     <button
-                      key={i}
-                      onClick={() => isTestMode && !testSubmitted && updateTestResponse(block.id, i)}
+                      key={value}
+                      onClick={() => isTestMode && !testSubmitted && updateTestResponse(block.id, value)}
                       disabled={!isTestMode || testSubmitted}
-                      className={`text-3xl transition-colors ${isSelected ? 'text-amber-400' : 'text-gray-300 hover:text-amber-300'}`}
+                      className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${
+                        isSelected
+                          ? 'bg-amber-400 text-white shadow-md'
+                          : isTestMode
+                            ? 'bg-white border border-gray-200 text-gray-600 hover:border-amber-300 hover:bg-amber-50'
+                            : 'bg-gray-100 text-gray-400'
+                      }`}
                     >
-                      ★
+                      {value}
                     </button>
                   )
                 })}
@@ -3576,11 +3583,14 @@ function CreateWorksheetContent() {
                               {locale === 'fr' ? 'Valeur min' : 'Min value'}
                             </label>
                             <input
-                              type="number"
-                              min="0"
-                              max="10"
-                              value={block.scaleMin ?? 1}
-                              onChange={(e) => updateBlock(block.id, { scaleMin: parseInt(e.target.value) || 1 })}
+                              type="text"
+                              inputMode="numeric"
+                              value={block.scaleMin ?? ''}
+                              onChange={(e) => {
+                                const v = e.target.value.replace(/[^0-9]/g, '')
+                                updateBlock(block.id, { scaleMin: v === '' ? undefined : parseInt(v) })
+                              }}
+                              onBlur={() => { if (block.scaleMin === undefined) updateBlock(block.id, { scaleMin: 0 }) }}
                               className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
                             />
                           </div>
@@ -3589,11 +3599,14 @@ function CreateWorksheetContent() {
                               {locale === 'fr' ? 'Valeur max' : 'Max value'}
                             </label>
                             <input
-                              type="number"
-                              min="1"
-                              max="10"
-                              value={block.scaleMax ?? 10}
-                              onChange={(e) => updateBlock(block.id, { scaleMax: parseInt(e.target.value) || 10 })}
+                              type="text"
+                              inputMode="numeric"
+                              value={block.scaleMax ?? ''}
+                              onChange={(e) => {
+                                const v = e.target.value.replace(/[^0-9]/g, '')
+                                updateBlock(block.id, { scaleMax: v === '' ? undefined : parseInt(v) })
+                              }}
+                              onBlur={() => { if (block.scaleMax === undefined) updateBlock(block.id, { scaleMax: 10 }) }}
                               className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
                             />
                           </div>

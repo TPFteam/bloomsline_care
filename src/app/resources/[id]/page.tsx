@@ -1410,10 +1410,20 @@ export default function ResourceDetailPage() {
                             <div className="overflow-x-auto">
                               <table className="w-full">
                                 <thead>
+                                  {(block as any).matrixScaleLabels && (
+                                    <tr>
+                                      <th></th>
+                                      <th className="px-3 pt-2 text-center text-xs text-gray-400 font-normal">{(block as any).matrixScaleLabels.min}</th>
+                                      {Array.from({ length: Math.max(0, ((block as any).matrixScaleMax || 5) - 2) }).map((_, i) => (
+                                        <th key={i}></th>
+                                      ))}
+                                      <th className="px-3 pt-2 text-center text-xs text-gray-400 font-normal">{(block as any).matrixScaleLabels.max}</th>
+                                    </tr>
+                                  )}
                                   <tr>
-                                    <th className="text-left py-3 pr-4 text-sm text-gray-500 font-normal"></th>
+                                    <th className="text-left py-2 pr-4 text-sm text-gray-500 font-normal"></th>
                                     {Array.from({ length: (block as any).matrixScaleMax || 5 }).map((_, i) => (
-                                      <th key={i} className="px-3 py-3 text-center text-sm text-gray-500 font-medium">
+                                      <th key={i} className="px-3 py-2 text-center text-sm text-gray-500 font-medium">
                                         {i + 1}
                                       </th>
                                     ))}
@@ -1433,12 +1443,6 @@ export default function ResourceDetailPage() {
                                 </tbody>
                               </table>
                             </div>
-                            {(block as any).matrixScaleLabels && (
-                              <div className="flex justify-between text-xs text-gray-400 mt-3 px-2">
-                                <span>{(block as any).matrixScaleLabels.min}</span>
-                                <span>{(block as any).matrixScaleLabels.max}</span>
-                              </div>
-                            )}
                           </>
                         )}
 
@@ -1464,10 +1468,15 @@ export default function ResourceDetailPage() {
                             )}
                             {/* Rating Scale */}
                             {(block as any).scaleType === 'rating' && (
-                              <div className="flex items-center justify-center gap-2">
-                                {Array.from({ length: (block as any).scaleRange || 5 }).map((_, i) => (
-                                  <span key={i} className="text-3xl text-gray-300 hover:text-amber-400 cursor-pointer transition-colors">★</span>
-                                ))}
+                              <div className="flex items-center gap-1 flex-wrap">
+                                {Array.from({ length: ((block as any).scaleMax || (block as any).scaleRange || 10) - ((block as any).scaleMin || 1) + 1 }, (_, i) => {
+                                  const value = ((block as any).scaleMin || 1) + i
+                                  return (
+                                    <div key={value} className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-sm text-gray-400 hover:border-amber-300 hover:bg-amber-50 cursor-pointer transition-all">
+                                      {value}
+                                    </div>
+                                  )
+                                })}
                               </div>
                             )}
                             {/* Likert Scale (default) */}
