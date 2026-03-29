@@ -13,7 +13,7 @@ export default function PrivacyPolicyPage() {
   const content = {
     en: {
       title: 'Privacy Policy',
-      lastUpdated: 'Last updated: March 2026',
+      lastUpdated: 'Last updated: 30 March 2026',
       intro: 'At Bloomsline, your privacy matters deeply to us. This policy explains how we collect, use, store, and protect your personal data in compliance with the General Data Protection Regulation (GDPR — EU Regulation 2016/679) and French data protection law (Loi Informatique et Libertés).',
       mvpNote: 'Bloomsline is currently in early development and testing. This privacy policy will be updated as we finalize our practices before public launch.',
       sections: [
@@ -69,7 +69,7 @@ export default function PrivacyPolicyPage() {
     },
     fr: {
       title: 'Politique de Confidentialité',
-      lastUpdated: 'Dernière mise à jour : Mars 2026',
+      lastUpdated: 'Dernière mise à jour : 30 mars 2026',
       intro: 'Chez Bloomsline, votre vie privée nous tient à cœur. Cette politique explique comment nous collectons, utilisons, stockons et protégeons vos données personnelles conformément au Règlement Général sur la Protection des Données (RGPD — Règlement UE 2016/679) et à la loi française Informatique et Libertés.',
       mvpNote: 'Bloomsline est actuellement en développement et en phase de test. Cette politique de confidentialité sera mise à jour avant le lancement public.',
       sections: [

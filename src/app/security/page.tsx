@@ -13,7 +13,7 @@ export default function SecurityPage() {
   const content = {
     en: {
       title: 'Security',
-      lastUpdated: 'Last updated: March 2026',
+      lastUpdated: 'Last updated: 30 March 2026',
       intro: 'Your trust is our foundation. We take security seriously and implement robust measures to protect your data in compliance with the GDPR and French data protection regulations.',
       mvpNote: 'Bloomsline is currently in early development and testing. Our security practices will continue to evolve as we prepare for public launch.',
       practices: [
@@ -59,7 +59,7 @@ export default function SecurityPage() {
     },
     fr: {
       title: 'Sécurité',
-      lastUpdated: 'Dernière mise à jour : Mars 2026',
+      lastUpdated: 'Dernière mise à jour : 30 mars 2026',
       intro: 'Votre confiance est notre fondement. Nous prenons la sécurité au sérieux et mettons en place des mesures robustes pour protéger vos données conformément au RGPD et à la réglementation française en matière de protection des données.',
       mvpNote: 'Bloomsline est actuellement en développement et en phase de test. Nos pratiques de sécurité continueront d\'évoluer avant le lancement public.',
       practices: [

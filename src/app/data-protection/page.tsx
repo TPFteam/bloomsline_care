@@ -13,7 +13,7 @@ export default function DataProtectionPage() {
   const content = {
     en: {
       title: 'Data Protection',
-      lastUpdated: 'Last updated: March 2026',
+      lastUpdated: 'Last updated: 30 March 2026',
       intro: 'We believe you should have full control over your personal data. Bloomsline processes data in compliance with the GDPR (EU Regulation 2016/679) and the French Loi Informatique et Libertés. Here\'s how we protect your data and what rights you have.',
       mvpNote: 'Bloomsline is currently in early development and testing. Our data protection practices align with GDPR principles and will be formalized before public launch.',
       rights: [
@@ -73,7 +73,7 @@ export default function DataProtectionPage() {
     },
     fr: {
       title: 'Protection des Données',
-      lastUpdated: 'Dernière mise à jour : Mars 2026',
+      lastUpdated: 'Dernière mise à jour : 30 mars 2026',
       intro: 'Nous croyons que vous devez avoir le contrôle total de vos données personnelles. Bloomsline traite les données conformément au RGPD (Règlement UE 2016/679) et à la loi française Informatique et Libertés. Voici comment nous protégeons vos données et quels sont vos droits.',
       mvpNote: 'Bloomsline est actuellement en développement et en phase de test. Nos pratiques de protection des données sont alignées sur les principes du RGPD et seront formalisées avant le lancement public.',
       rights: [
@@ -133,7 +133,7 @@ export default function DataProtectionPage() {
     },
     es: {
       title: 'Protección de Datos',
-      lastUpdated: 'Última actualización: Enero 2025',
+      lastUpdated: 'Última actualización: 30 de marzo de 2026',
       intro: 'Creemos que usted debe tener control total sobre sus datos personales. Así es como los protegemos y cuáles son sus derechos.',
       mvpNote: 'Bloomsline está actualmente en desarrollo temprano y pruebas. Nuestras prácticas de protección de datos se alinean con los principios del RGPD y se formalizarán antes del lanzamiento público.',
       rights: [

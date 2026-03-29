@@ -13,7 +13,7 @@ export default function TermsOfServicePage() {
   const content = {
     en: {
       title: 'Terms of Service',
-      lastUpdated: 'Last updated: March 2026',
+      lastUpdated: 'Last updated: 30 March 2026',
       intro: 'Welcome to Bloomsline. By using our service, you agree to these terms. Please read them carefully.',
       mvpNote: 'Bloomsline is currently in early development and testing. These terms of service will be finalized before public launch.',
       sections: [
@@ -65,7 +65,7 @@ export default function TermsOfServicePage() {
     },
     fr: {
       title: 'Conditions Générales d\'Utilisation',
-      lastUpdated: 'Dernière mise à jour : Mars 2026',
+      lastUpdated: 'Dernière mise à jour : 30 mars 2026',
       intro: 'Bienvenue sur Bloomsline. En utilisant notre service, vous acceptez ces conditions. Veuillez les lire attentivement.',
       mvpNote: 'Bloomsline est actuellement en développement et en phase de test. Ces conditions d\'utilisation seront finalisées avant le lancement public.',
       sections: [
