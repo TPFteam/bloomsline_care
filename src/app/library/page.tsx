@@ -698,6 +698,11 @@ export default function LibraryPage() {
                           { value: 'all', label: locale === 'fr' ? 'Toutes' : 'All' },
                           { value: 'en', label: 'English' },
                           { value: 'fr', label: 'Français' },
+                          { value: 'es', label: 'Español' },
+                          { value: 'de', label: 'Deutsch' },
+                          { value: 'it', label: 'Italiano' },
+                          { value: 'pt', label: 'Português' },
+                          { value: 'nl', label: 'Nederlands' },
                         ].map((item) => (
                           <button
                             key={item.value}
