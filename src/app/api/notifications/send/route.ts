@@ -34,11 +34,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify the user is authenticated
+    // Verify the user is authenticated (try cookie-based auth first, then Bearer token)
+    let user = null
     const supabaseAuth = await createServerClient()
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
+    const { data: { user: cookieUser } } = await supabaseAuth.auth.getUser()
+    user = cookieUser
 
-    if (authError || !user) {
+    if (!user) {
+      // Fallback: check for Bearer token in Authorization header
+      const authHeader = request.headers.get('Authorization')
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.substring(7)
+        const supabaseAdmin = createAdminClient()
+        const { data: { user: tokenUser } } = await supabaseAdmin.auth.getUser(token)
+        user = tokenUser
+      }
+    }
+
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

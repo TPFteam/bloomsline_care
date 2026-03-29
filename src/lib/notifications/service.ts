@@ -279,9 +279,19 @@ async function sendNotificationViaAPI(params: {
   recipientEmail?: string
 }): Promise<void> {
   try {
+    // Get the current session token for auth
+    const { createClient } = await import('@/lib/supabase/browser-client')
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`
+    }
+
     const response = await fetch('/api/notifications/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(params),
     })
 
@@ -340,9 +350,18 @@ export async function sendResourceSharedEmail(params: {
   shareToken?: string
 }): Promise<void> {
   try {
+    const { createClient } = await import('@/lib/supabase/browser-client')
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`
+    }
+
     const response = await fetch('/api/notifications/email-only', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         type: 'resource_shared',
         email: params.memberEmail,

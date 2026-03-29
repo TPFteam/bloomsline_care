@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient as createServerClient } from '@/lib/supabase/server-client'
+import { createClient as createServerClient, createAdminClient } from '@/lib/supabase/server-client'
 import { getNotificationContent } from '@/lib/notifications/templates'
 import { generateEmailHtml } from '@/lib/notifications/email'
 import { sendEmail } from '@/lib/email'
@@ -12,11 +12,23 @@ import type { NotificationType } from '@/lib/notifications/types'
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify the caller is authenticated (must be a practitioner)
+    // Verify the caller is authenticated (cookie or Bearer token)
+    let user = null
     const supabase = await createServerClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user: cookieUser } } = await supabase.auth.getUser()
+    user = cookieUser
 
-    if (authError || !user) {
+    if (!user) {
+      const authHeader = request.headers.get('Authorization')
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.substring(7)
+        const adminClient = createAdminClient()
+        const { data: { user: tokenUser } } = await adminClient.auth.getUser(token)
+        user = tokenUser
+      }
+    }
+
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
