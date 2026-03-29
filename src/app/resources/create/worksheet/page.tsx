@@ -1622,9 +1622,8 @@ function CreateWorksheetContent() {
         {block.type === 'scale' && (
           <div className="space-y-3">
             <label className="block text-gray-900 font-medium">{block.content}</label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 w-20 text-right">{block.scaleMinLabel}</span>
-              <div className="flex-1 flex items-center justify-center gap-1">
+            <div>
+              <div className="flex items-center justify-center gap-1">
                 {Array.from({ length: (block.scaleMax || 10) - (block.scaleMin || 1) + 1 }, (_, i) => {
                   const value = (block.scaleMin || 1) + i
                   const isSelected = isTestMode && testResponses[block.id] === value
@@ -1646,7 +1645,12 @@ function CreateWorksheetContent() {
                   )
                 })}
               </div>
-              <span className="text-sm text-gray-500 w-20">{block.scaleMaxLabel}</span>
+              {(block.scaleMinLabel || block.scaleMaxLabel) && (
+                <div className="flex justify-between mt-2 px-1">
+                  <span className="text-xs text-gray-400">{block.scaleMinLabel}</span>
+                  <span className="text-xs text-gray-400">{block.scaleMaxLabel}</span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1817,27 +1821,74 @@ function CreateWorksheetContent() {
         {block.type === 'likert' && (
           <div className="space-y-3">
             <label className="block text-gray-900 font-medium">{block.content}</label>
-            <div className="flex flex-wrap gap-2">
-              {block.scaleLabels?.map((label, index) => {
-                const isSelected = isTestMode && testResponses[block.id] === index
-                return (
-                  <button
-                    key={index}
-                    onClick={() => isTestMode && !testSubmitted && updateTestResponse(block.id, index)}
-                    disabled={!isTestMode || testSubmitted}
-                    className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                      isSelected
-                        ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
-                        : isTestMode
-                          ? 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                          : 'border-gray-200 text-gray-400 bg-gray-50'
-                    } ${testSubmitted && isTestMode ? 'cursor-not-allowed opacity-80' : ''}`}
-                  >
-                    {label}
-                  </button>
-                )
-              })}
-            </div>
+            {/* Mood variant */}
+            {block.scaleType === 'mood' && (
+              <div className="flex items-center gap-6 py-2">
+                {[
+                  { icon: Laugh, label: locale === 'fr' ? 'Épanoui' : 'Thriving', color: 'text-emerald-500' },
+                  { icon: Smile, label: locale === 'fr' ? 'Bien' : 'Good', color: 'text-teal-500' },
+                  { icon: Meh, label: locale === 'fr' ? 'Neutre' : 'Okay', color: 'text-amber-500' },
+                  { icon: Frown, label: locale === 'fr' ? 'Fragile' : 'Low', color: 'text-orange-500' },
+                  { icon: Angry, label: locale === 'fr' ? 'Difficile' : 'Struggling', color: 'text-red-500' },
+                ].map((mood, i) => {
+                  const MoodIcon = mood.icon
+                  const isSelected = isTestMode && testResponses[block.id] === i
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => isTestMode && !testSubmitted && updateTestResponse(block.id, i)}
+                      disabled={!isTestMode || testSubmitted}
+                      className={`flex flex-col items-center gap-1.5 transition-transform ${isSelected ? 'scale-125' : 'hover:scale-110'}`}
+                    >
+                      <MoodIcon className={`w-8 h-8 ${isSelected ? mood.color : 'text-gray-300'} ${!isTestMode ? mood.color : ''}`} />
+                      <p className={`text-xs ${isSelected ? mood.color : 'text-gray-400'} ${!isTestMode ? mood.color : ''}`}>{mood.label}</p>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            {/* Rating variant */}
+            {block.scaleType === 'rating' && (
+              <div className="flex items-center gap-2">
+                {Array.from({ length: block.scaleRange || 5 }).map((_, i) => {
+                  const isSelected = isTestMode && typeof testResponses[block.id] === 'number' && i <= (testResponses[block.id] as number)
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => isTestMode && !testSubmitted && updateTestResponse(block.id, i)}
+                      disabled={!isTestMode || testSubmitted}
+                      className={`text-3xl transition-colors ${isSelected ? 'text-amber-400' : 'text-gray-300 hover:text-amber-300'}`}
+                    >
+                      ★
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            {/* Likert variant (default) */}
+            {(!block.scaleType || block.scaleType === 'likert') && (
+              <div className="flex flex-wrap gap-2 justify-start">
+                {block.scaleLabels?.map((label, index) => {
+                  const isSelected = isTestMode && testResponses[block.id] === index
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => isTestMode && !testSubmitted && updateTestResponse(block.id, index)}
+                      disabled={!isTestMode || testSubmitted}
+                      className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                        isSelected
+                          ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                          : isTestMode
+                            ? 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                            : 'border-gray-200 text-gray-400 bg-gray-50'
+                      } ${testSubmitted && isTestMode ? 'cursor-not-allowed opacity-80' : ''}`}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -1893,15 +1944,13 @@ function CreateWorksheetContent() {
           <div className="space-y-4">
             <label className="block text-gray-900 font-medium">{block.content}</label>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table>
                 <thead>
                   <tr>
-                    <th className="text-left text-sm font-medium text-gray-500 pb-3 pr-4 min-w-[150px]"></th>
-                    <th className="text-center text-xs text-gray-400 pb-3 px-2">{block.matrixScaleLabels?.min || '1'}</th>
-                    {Array.from({ length: (block.matrixScaleMax || 5) - 2 }, (_, i) => (
-                      <th key={i} className="text-center text-xs text-gray-400 pb-3 px-2">{i + 2}</th>
+                    <th className="text-left text-sm font-medium text-gray-500 pb-3 pr-4"></th>
+                    {Array.from({ length: block.matrixScaleMax || 5 }, (_, i) => (
+                      <th key={i} className="text-center text-xs text-gray-400 pb-3 px-2">{i + 1}</th>
                     ))}
-                    <th className="text-center text-xs text-gray-400 pb-3 px-2">{block.matrixScaleLabels?.max || (block.matrixScaleMax || 5).toString()}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1939,12 +1988,16 @@ function CreateWorksheetContent() {
                       </tr>
                     )
                   })}
+                  <tr>
+                    <td></td>
+                    <td className="text-center text-xs text-gray-400 pt-1 px-2">{block.matrixScaleLabels?.min || (locale === 'fr' ? 'Pas du tout' : 'Not at all')}</td>
+                    {Array.from({ length: Math.max(0, (block.matrixScaleMax || 5) - 2) }, (_, i) => (
+                      <td key={i}></td>
+                    ))}
+                    <td className="text-center text-xs text-gray-400 pt-1 px-2">{block.matrixScaleLabels?.max || (locale === 'fr' ? 'Complètement' : 'Completely')}</td>
+                  </tr>
                 </tbody>
               </table>
-            </div>
-            <div className="flex justify-between text-xs text-gray-400 px-4">
-              <span>{block.matrixScaleLabels?.min || (locale === 'fr' ? 'Pas du tout' : 'Not at all')}</span>
-              <span>{block.matrixScaleLabels?.max || (locale === 'fr' ? 'Complètement' : 'Completely')}</span>
             </div>
           </div>
         )}
@@ -2162,7 +2215,9 @@ function CreateWorksheetContent() {
   const renderBlockEditor = (block: WorksheetBlock, dragControls: ReturnType<typeof useDragControls>) => {
     const isExpanded = expandedBlock === block.id
     const blockType = blockTypes.find(bt => bt.type === block.type)
-    const Icon = blockType?.icon || FileText
+    // Use sub-type icon for likert/scale blocks
+    const scaleIcons: Record<string, any> = { likert: SlidersHorizontal, rating: Star, mood: Smile }
+    const Icon = ((block.type === 'scale' || block.type === 'likert') && block.scaleType && scaleIcons[block.scaleType]) ? scaleIcons[block.scaleType] : (blockType?.icon || FileText)
     const colors = getBlockColors(block.type)
 
     return (

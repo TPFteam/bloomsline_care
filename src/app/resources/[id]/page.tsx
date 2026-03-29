@@ -42,6 +42,11 @@ import {
   Lightbulb,
   BookMarked,
   ExternalLink,
+  Laugh,
+  Smile,
+  Meh,
+  Frown,
+  Angry,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -1362,15 +1367,15 @@ export default function ResourceDetailPage() {
                             {(block as any).scaleType === 'mood' && (
                               <div className="flex items-center justify-center gap-6 py-2">
                                 {[
-                                  { emoji: '🌧️', label: locale === 'fr' ? 'Difficile' : 'Struggling' },
-                                  { emoji: '🍂', label: locale === 'fr' ? 'Fragile' : 'Low' },
-                                  { emoji: '🌱', label: locale === 'fr' ? 'Neutre' : 'Okay' },
-                                  { emoji: '🌿', label: locale === 'fr' ? 'Bien' : 'Good' },
-                                  { emoji: '🌸', label: locale === 'fr' ? 'Épanoui' : 'Thriving' },
+                                  { Icon: Laugh, label: locale === 'fr' ? 'Épanoui' : 'Thriving', color: 'text-emerald-500' },
+                                  { Icon: Smile, label: locale === 'fr' ? 'Bien' : 'Good', color: 'text-teal-500' },
+                                  { Icon: Meh, label: locale === 'fr' ? 'Neutre' : 'Okay', color: 'text-amber-500' },
+                                  { Icon: Frown, label: locale === 'fr' ? 'Fragile' : 'Low', color: 'text-orange-500' },
+                                  { Icon: Angry, label: locale === 'fr' ? 'Difficile' : 'Struggling', color: 'text-red-500' },
                                 ].map((mood, i) => (
-                                  <div key={i} className="flex flex-col items-center gap-1 cursor-pointer hover:scale-110 transition-transform">
-                                    <span className="text-3xl">{mood.emoji}</span>
-                                    <p className="text-xs text-gray-500">{mood.label}</p>
+                                  <div key={i} className="flex flex-col items-center gap-1.5 cursor-pointer hover:scale-110 transition-transform">
+                                    <mood.Icon className={`w-8 h-8 ${mood.color}`} />
+                                    <p className={`text-xs ${mood.color}`}>{mood.label}</p>
                                   </div>
                                 ))}
                               </div>
@@ -1385,16 +1390,18 @@ export default function ResourceDetailPage() {
                             )}
                             {/* Likert Scale (default) */}
                             {(!(block as any).scaleType || (block as any).scaleType === 'likert') && (
-                              <div className="flex items-center justify-center gap-3">
-                                <span className="text-sm text-gray-500 min-w-[60px] text-right">{(block as any).scaleLabels?.[0] || (block as any).likertLabels?.start || '1'}</span>
-                                <div className="flex gap-2">
+                              <div>
+                                <div className="flex justify-center gap-2">
                                   {Array.from({ length: (block as any).scaleRange || (block as any).likertScale || 5 }).map((_, i) => (
-                                    <div key={i} className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center text-sm text-gray-500 hover:border-emerald-400 hover:bg-emerald-50 cursor-pointer transition-all">
+                                    <div key={i} className="w-9 h-9 rounded-full border-2 border-gray-300 flex items-center justify-center text-sm text-gray-500 hover:border-emerald-400 hover:bg-emerald-50 cursor-pointer transition-all">
                                       {i + 1}
                                     </div>
                                   ))}
                                 </div>
-                                <span className="text-sm text-gray-500 min-w-[60px]">{(block as any).scaleLabels?.[(block as any).scaleLabels?.length - 1] || (block as any).likertLabels?.end || ((block as any).scaleRange || (block as any).likertScale || 5).toString()}</span>
+                                <div className="flex justify-between mt-2 px-1">
+                                  <span className="text-xs text-gray-400">{(block as any).scaleLabels?.[0] || (block as any).likertLabels?.start || ''}</span>
+                                  <span className="text-xs text-gray-400">{(block as any).scaleLabels?.[(block as any).scaleLabels?.length - 1] || (block as any).likertLabels?.end || ''}</span>
+                                </div>
                               </div>
                             )}
                           </>
