@@ -17,6 +17,7 @@ import {
   Puzzle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { TutorialVideo } from '@/components/ui/tutorial-video'
 import { useLanguage, lt } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -250,7 +251,13 @@ export default function CreateResourcePage() {
               animate={{ opacity: 1, y: 0 }}
               className="text-2xl font-semibold text-gray-900 mb-2"
             >
-              {locale === 'fr' ? 'Créer un support' : 'Create a Resource'}
+              <span className="flex items-center justify-between">
+                {locale === 'fr' ? 'Créer un support' : 'Create a Resource'}
+                <TutorialVideo
+                  url="https://sfzlbjdjqbzxruwzebjc.supabase.co/storage/v1/object/public/tutorials/short-video-demo-practitioners-app/creer%20un%20support.mov"
+                  title={locale === 'fr' ? "Comment créer un support d'accompagnement" : 'How to create a resource'}
+                />
+              </span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 10 }}

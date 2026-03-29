@@ -23,6 +23,7 @@ import {
   Search,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { TutorialVideo } from '@/components/ui/tutorial-video'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -1631,17 +1632,31 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
       )}
 
       {/* View recommendations button when hidden */}
-      {!showSuggestions && (
-        <motion.button
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          onClick={() => setShowSuggestions(true)}
-          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-teal-600 bg-teal-500/5 hover:bg-teal-500/10 border border-teal-500/20 rounded-xl transition-colors"
-        >
-          <Lightbulb className="w-4 h-4" />
-          {locale === 'fr' ? 'Voir les recommandations' : locale === 'es' ? 'Ver recomendaciones' : 'View recommendations'}
-        </motion.button>
-      )}
+      <div className="flex items-center gap-2">
+        {!showSuggestions && (
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            onClick={() => setShowSuggestions(true)}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-teal-600 bg-teal-500/5 hover:bg-teal-500/10 border border-teal-500/20 rounded-xl transition-colors"
+          >
+            <Lightbulb className="w-4 h-4" />
+            {locale === 'fr' ? 'Voir les recommandations' : locale === 'es' ? 'Ver recomendaciones' : 'View recommendations'}
+          </motion.button>
+        )}
+        <TutorialVideo
+          videos={[
+            {
+              url: 'https://sfzlbjdjqbzxruwzebjc.supabase.co/storage/v1/object/public/tutorials/short-video-demo-practitioners-app/ajouter%20une%20note%20dobjctif.mov',
+              title: locale === 'fr' ? 'Comment ajouter une note à un axe de travail' : 'How to add a note to a goal',
+            },
+            {
+              url: 'https://sfzlbjdjqbzxruwzebjc.supabase.co/storage/v1/object/public/tutorials/short-video-demo-practitioners-app/deplacer%20un%20axe%20de%20travail.mov',
+              title: locale === 'fr' ? 'Comment déplacer un axe dans le tableau' : 'How to move a goal on the board',
+            },
+          ]}
+        />
+      </div>
 
       {/* Add Milestone Form */}
       <AnimatePresence>
@@ -1769,7 +1784,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
       </AnimatePresence>
 
       {/* Add Journey Button */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-2">
         <Button
           onClick={() => setShowAddMilestone(!showAddMilestone)}
           className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"

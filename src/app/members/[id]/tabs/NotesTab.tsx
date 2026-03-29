@@ -42,6 +42,7 @@ import { MarkdownRenderer } from '@/components/notes/MarkdownRenderer'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
 import { getUserPreferences, updateUserPreferences } from '@/lib/services/preferences'
+import { TutorialVideo } from '@/components/ui/tutorial-video'
 
 interface NotesTabProps {
   memberId: string
@@ -1470,8 +1471,26 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
               {tab.label}
             </button>
           ))}
-        {/* Zoom controls */}
-        <div className="flex items-center gap-0.5 ml-auto pr-3">
+        {/* Tutorial + Zoom controls */}
+        <div className="flex items-center gap-1 ml-auto pr-3">
+          <TutorialVideo
+            videos={[
+              {
+                url: 'https://sfzlbjdjqbzxruwzebjc.supabase.co/storage/v1/object/public/tutorials/short-video-demo-practitioners-app/ajouter%20des%20tags.mov',
+                title: locale === 'fr' ? 'Taguer vos notes' : 'Tag your notes',
+              },
+              {
+                url: 'https://sfzlbjdjqbzxruwzebjc.supabase.co/storage/v1/object/public/tutorials/short-video-demo-practitioners-app/filtrer%20ses%20notes.mov',
+                title: locale === 'fr' ? 'Naviguer dans vos notes' : 'Navigate your notes',
+              },
+              {
+                url: 'https://sfzlbjdjqbzxruwzebjc.supabase.co/storage/v1/object/public/tutorials/short-video-demo-practitioners-app/personnaliser%20ses%20tags.mov',
+                title: locale === 'fr' ? 'Personnaliser vos tags' : 'Customize your tags',
+              },
+            ]}
+          />
+        </div>
+        <div className="flex items-center gap-0.5 pr-3">
           <button
             onClick={() => handleZoomChange(-10)}
             disabled={notesZoom <= 80}
