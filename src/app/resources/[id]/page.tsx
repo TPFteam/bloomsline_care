@@ -49,6 +49,7 @@ import {
   Angry,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { Logo } from '@/components/ui/logo'
 import { useLanguage, lt } from '@/lib/i18n/context'
@@ -2666,20 +2667,21 @@ export default function ResourceDetailPage() {
                   </div>
                 ) : (
                   (() => {
-                    // Build a map of member_id -> latest submission
-                    const submissionByMember = new Map<string, ResourceSubmission>()
+                    // Build a map of member_id -> submissions (all for recurring, latest for non-recurring)
+                    const submissionsByMember = new Map<string, ResourceSubmission[]>()
                     submissions.forEach(sub => {
                       if (sub.member?.id) {
-                        const existing = submissionByMember.get(sub.member.id)
-                        // Prefer submitted/reviewed over draft
-                        if (!existing || (sub.status !== 'draft' && existing.status === 'draft')) {
-                          submissionByMember.set(sub.member.id, sub)
-                        }
+                        const existing = submissionsByMember.get(sub.member.id) || []
+                        existing.push(sub)
+                        submissionsByMember.set(sub.member.id, existing)
                       }
                     })
+                    const isRecurringResource = !!(resource as any).is_recurring
 
                     return sharedMembers.map((shared) => {
-                      const submission = submissionByMember.get(shared.member_id)
+                      const memberSubmissions = submissionsByMember.get(shared.member_id) || []
+                      const submission = memberSubmissions.find(s => s.status !== 'draft') || memberSubmissions[0] || null
+                      const submissionCount = memberSubmissions.filter(s => s.status === 'submitted' || s.status === 'reviewed').length
                       const isPsychoeducation = resource.type === 'psychoeducation'
 
                       // Determine status
@@ -2774,22 +2776,48 @@ export default function ResourceDetailPage() {
 
                               {statusBadge}
 
+                              {/* Submission count for recurring */}
+                              {isRecurringResource && submissionCount > 1 && (
+                                <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
+                                  {submissionCount}
+                                </span>
+                              )}
+
                               {/* View button for submissions */}
                               {!isPsychoeducation && submission && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    // Use effective status (completed_at means submitted even if response is still draft)
-                                    const effectiveStatus = (submission.status === 'draft' && shared.completed_at) ? 'submitted' : submission.status
-                                    setSelectedSubmission({ ...submission, status: effectiveStatus as 'draft' | 'submitted' | 'reviewed' })
-                                    setReviewNotes(submission.practitioner_notes || '')
-                                  }}
-                                  className="rounded-lg"
-                                >
-                                  <Eye className="w-4 h-4 mr-1" />
-                                  {locale === 'fr' ? 'Voir' : 'View'}
-                                </Button>
+                                isRecurringResource && submissionCount > 1 ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const latest = memberSubmissions
+                                        .filter(s => s.status === 'submitted' || s.status === 'reviewed')
+                                        .sort((a, b) => new Date(b.submitted_at || b.created_at).getTime() - new Date(a.submitted_at || a.created_at).getTime())[0]
+                                      if (latest) {
+                                        setSelectedSubmission({ ...latest, status: latest.status as 'draft' | 'submitted' | 'reviewed' })
+                                        setReviewNotes(latest.practitioner_notes || '')
+                                      }
+                                    }}
+                                    className="rounded-lg"
+                                  >
+                                    <Eye className="w-4 h-4 mr-1" />
+                                    {locale === 'fr' ? 'Voir' : 'View'}
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const effectiveStatus = (submission.status === 'draft' && shared.completed_at) ? 'submitted' : submission.status
+                                      setSelectedSubmission({ ...submission, status: effectiveStatus as 'draft' | 'submitted' | 'reviewed' })
+                                      setReviewNotes(submission.practitioner_notes || '')
+                                    }}
+                                    className="rounded-lg"
+                                  >
+                                    <Eye className="w-4 h-4 mr-1" />
+                                    {locale === 'fr' ? 'Voir' : 'View'}
+                                  </Button>
+                                )
                               )}
                             </div>
                           </div>
@@ -2854,6 +2882,36 @@ export default function ResourceDetailPage() {
                   <X className="w-5 h-5 text-gray-400" />
                 </button>
               </div>
+
+              {/* Submission navigation tabs for recurring */}
+              {(() => {
+                if (!(resource as any).is_recurring || !selectedSubmission.member?.id) return null
+                const memberSubs = submissions
+                  .filter(s => s.member?.id === selectedSubmission.member?.id && (s.status === 'submitted' || s.status === 'reviewed'))
+                  .sort((a, b) => new Date(b.submitted_at || b.created_at).getTime() - new Date(a.submitted_at || a.created_at).getTime())
+                if (memberSubs.length <= 1) return null
+                return (
+                  <div className="flex gap-1.5 overflow-x-auto px-6 py-2.5 border-b border-gray-100 bg-gray-50/50">
+                    {memberSubs.map((sub) => (
+                      <button
+                        key={sub.id}
+                        onClick={() => {
+                          setSelectedSubmission({ ...sub, status: sub.status as 'draft' | 'submitted' | 'reviewed' })
+                          setReviewNotes(sub.practitioner_notes || '')
+                        }}
+                        className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          selectedSubmission.id === sub.id
+                            ? 'bg-gray-900 text-white'
+                            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        {new Date(sub.submitted_at || sub.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        {sub.status === 'reviewed' && <span className="ml-1 text-emerald-400">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                )
+              })()}
 
               {/* Modal Body */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
