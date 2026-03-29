@@ -188,6 +188,16 @@ export async function createResource(resource: CreateResourceDTO): Promise<Resou
 export async function updateResource(id: string, updates: UpdateResourceDTO): Promise<Resource> {
   const supabase = createClient()
 
+  // Ensure we have a valid session before attempting update
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) {
+    // Try to refresh the session
+    const { data: { session: refreshed } } = await supabase.auth.refreshSession()
+    if (!refreshed) {
+      throw new Error('Session expired. Please refresh the page and try again.')
+    }
+  }
+
   const { data, error } = await supabase
     .from('resources')
     .update({
