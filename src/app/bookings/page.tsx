@@ -1330,9 +1330,9 @@ export default function BookingsPage() {
                     <>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">Require Approval</p>
+                      <p className="font-medium">{locale === 'fr' ? 'Approbation requise' : 'Require Approval'}</p>
                       <p className="text-sm text-gray-500">
-                        Manually approve booking requests before they are confirmed
+                        {locale === 'fr' ? 'Approuver manuellement les demandes de rendez-vous avant confirmation' : 'Manually approve booking requests before they are confirmed'}
                       </p>
                     </div>
                     <button
@@ -1357,7 +1357,7 @@ export default function BookingsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Buffer before (minutes)
+                        {locale === 'fr' ? 'Délai avant (minutes)' : 'Buffer before (minutes)'}
                       </label>
                       <input
                         type="number"
@@ -1375,7 +1375,7 @@ export default function BookingsPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Buffer after (minutes)
+                        {locale === 'fr' ? 'Délai après (minutes)' : 'Buffer after (minutes)'}
                       </label>
                       <input
                         type="number"
@@ -1396,7 +1396,7 @@ export default function BookingsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Minimum notice (hours)
+                        {locale === 'fr' ? 'Préavis minimum (heures)' : 'Minimum notice (hours)'}
                       </label>
                       <input
                         type="number"
@@ -1414,7 +1414,7 @@ export default function BookingsPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Max advance booking (days)
+                        {locale === 'fr' ? 'Réservation max à l\'avance (jours)' : 'Max advance booking (days)'}
                       </label>
                       <input
                         type="number"
