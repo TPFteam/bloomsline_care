@@ -330,6 +330,11 @@ export default function BookingsPage() {
       default:
         return true
     }
+  }).sort((a, b) => {
+    // Pending bookings first, then by start_time ascending
+    if (a.status === 'pending' && b.status !== 'pending') return -1
+    if (a.status !== 'pending' && b.status === 'pending') return 1
+    return new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
   })
 
   // Count pending bookings
