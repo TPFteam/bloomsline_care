@@ -551,7 +551,7 @@ export default function ResourceDetailPage() {
             practitioner_id: user.id,
             shared_at: new Date().toISOString(),
             message: message || null,
-            is_recurring: isRecurring || false,
+            is_recurring: isRecurring || !!(resource as any).is_recurring || false,
           })
 
         if (error) {

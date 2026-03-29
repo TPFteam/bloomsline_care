@@ -106,7 +106,6 @@ export function ShareResourceModal({
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set())
   const [message, setMessage] = useState('')
-  const [isRecurring, setIsRecurring] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
   const [fetchedSharedIds, setFetchedSharedIds] = useState<string[]>([])
 
@@ -231,11 +230,10 @@ export function ShareResourceModal({
 
     setIsSharing(true)
     try {
-      await onShare(resource.id, Array.from(selectedMembers), message.trim() || undefined, isRecurring)
+      await onShare(resource.id, Array.from(selectedMembers), message.trim() || undefined, !!(resource as any).is_recurring)
       // Reset and close
       setSelectedMembers(new Set())
       setMessage('')
-      setIsRecurring(false)
       setSearchQuery('')
       onClose()
     } catch (error) {
@@ -492,30 +490,6 @@ export function ShareResourceModal({
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm resize-none"
               />
             </div>
-
-            {/* Recurring toggle — only for worksheet/exercise/table */}
-            {['worksheet', 'exercise', 'table'].includes(resource.type) && (
-              <div className="flex items-center justify-between px-1 py-2">
-                <div>
-                  <p className="text-sm font-medium text-gray-700">
-                    {locale === 'fr' ? 'Récurrent' : 'Recurring'}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {locale === 'fr' ? 'Le patient pourra remplir plusieurs fois' : 'Patient can fill multiple times'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsRecurring(!isRecurring)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    isRecurring ? 'bg-teal-600' : 'bg-gray-200'
-                  }`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    isRecurring ? 'translate-x-6' : 'translate-x-1'
-                  }`} />
-                </button>
-              </div>
-            )}
 
             {/* Footer */}
             <div className="flex items-center justify-between p-5 border-t border-gray-100 bg-gray-50">

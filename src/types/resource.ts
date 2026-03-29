@@ -513,6 +513,7 @@ export interface CreateResourceDTO {
   status?: ResourceStatus
   visibility?: ResourceVisibility
   language?: ResourceLanguage
+  is_recurring?: boolean
 }
 
 export interface UpdateResourceDTO {
@@ -525,6 +526,7 @@ export interface UpdateResourceDTO {
   status?: ResourceStatus
   visibility?: ResourceVisibility
   language?: ResourceLanguage
+  is_recurring?: boolean
 }
 
 export interface CreateAssignmentDTO {

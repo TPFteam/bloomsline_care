@@ -436,6 +436,7 @@ function CreateWorksheetContent() {
   const [visibility, setVisibility] = useState<'private' | 'link_only' | 'public' | 'onboarding'>('private')
   const [resourceLanguage, setResourceLanguage] = useState<string>('en')
   const [saveAs, setSaveAs] = useState<'draft' | 'published'>('draft')
+  const [isRecurring, setIsRecurring] = useState(false)
 
   // Scoring state (for assessments/scored worksheets)
   const [enableScoring, setEnableScoring] = useState(false)
@@ -572,6 +573,7 @@ function CreateWorksheetContent() {
           setVisibility(resource.visibility || 'private')
           setResourceLanguage(resource.language || 'en')
           setSaveAs(resource.status === 'published' ? 'published' : 'draft')
+          setIsRecurring(!!(resource as any).is_recurring)
           if (resource.tags) {
             const loadedTags = Array.isArray(resource.tags)
               ? resource.tags.map((t: any) => typeof t === 'string' ? t : (t as Record<string, string>)?.[locale] || '')
@@ -1281,6 +1283,7 @@ function CreateWorksheetContent() {
           status: saveAs,
           visibility,
           language: resourceLanguage as any,
+          is_recurring: isRecurring,
         })
         toast.success(locale === 'fr' ? 'Exercice mis à jour avec succès!' : 'Worksheet updated successfully!')
       } else {
@@ -1296,6 +1299,7 @@ function CreateWorksheetContent() {
           status: saveAs,
           visibility,
           language: resourceLanguage as any,
+          is_recurring: isRecurring,
         })
         toast.success(locale === 'fr' ? 'Exercice créé avec succès!' : 'Worksheet created successfully!')
       }
@@ -4447,22 +4451,10 @@ function CreateWorksheetContent() {
 
                   <div className="w-6 h-0.5 bg-gray-200" />
 
-                  {/* Step 3: Scoring */}
+                  {/* Step 3: Publish */}
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-200 text-gray-500">
                       3
-                    </div>
-                    <span className="text-sm font-medium text-gray-400 hidden sm:inline">
-                      {locale === 'fr' ? 'Notation' : 'Scoring'}
-                    </span>
-                  </div>
-
-                  <div className="w-6 h-0.5 bg-gray-200" />
-
-                  {/* Step 4: Publish */}
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-200 text-gray-500">
-                      4
                     </div>
                     <span className="text-sm font-medium text-gray-400 hidden sm:inline">
                       {locale === 'fr' ? 'Publier' : 'Publish'}
@@ -4946,7 +4938,7 @@ function CreateWorksheetContent() {
                       if (detailsStep === 1) {
                         setStep('build')
                       } else {
-                        setDetailsStep((detailsStep - 1) as 1 | 2 | 3)
+                        setDetailsStep(1)
                       }
                     }}
                     className="rounded-xl hover:bg-white/80"
@@ -5014,42 +5006,19 @@ function CreateWorksheetContent() {
 
                   <div className={`w-6 h-0.5 ${detailsStep > 1 ? 'bg-blue-500' : 'bg-gray-200'}`} />
 
-                  {/* Step 3: Scoring */}
+                  {/* Step 3: Publish */}
                   <button
                     onClick={() => {
-                      // Only allow if Step 2 (Details) is complete
                       if (description.trim() && selectedCategory) {
-                        setDetailsStep(2)
-                      }
-                    }}
-                    className={`flex items-center gap-2 ${!(description.trim() && selectedCategory) && detailsStep < 2 ? 'cursor-not-allowed opacity-50' : ''}`}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                      detailsStep >= 2 ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500'
-                    }`}>
-                      {detailsStep > 2 ? <CheckCircle2 className="w-4 h-4" /> : '3'}
-                    </div>
-                    <span className={`text-sm font-medium hidden sm:inline ${detailsStep >= 2 ? 'text-gray-900' : 'text-gray-400'}`}>
-                      {locale === 'fr' ? 'Notation' : 'Scoring'}
-                    </span>
-                  </button>
-
-                  <div className={`w-6 h-0.5 ${detailsStep > 2 ? 'bg-blue-500' : 'bg-gray-200'}`} />
-
-                  {/* Step 4: Publish */}
-                  <button
-                    onClick={() => {
-                      // Only allow if Step 2 (Details) is complete
-                      if (description.trim() && selectedCategory && detailsStep >= 2) {
                         setDetailsStep(3)
                       }
                     }}
-                    className={`flex items-center gap-2 ${detailsStep < 2 ? 'cursor-not-allowed opacity-50' : ''}`}
+                    className={`flex items-center gap-2 ${!(description.trim() && selectedCategory) ? 'cursor-not-allowed opacity-50' : ''}`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
                       detailsStep >= 3 ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500'
                     }`}>
-                      4
+                      3
                     </div>
                     <span className={`text-sm font-medium hidden sm:inline ${detailsStep >= 3 ? 'text-gray-900' : 'text-gray-400'}`}>
                       {locale === 'fr' ? 'Publier' : 'Publish'}
@@ -5150,7 +5119,7 @@ function CreateWorksheetContent() {
 
                   <motion.div whileHover={description.trim() && selectedCategory ? { scale: 1.02 } : {}} whileTap={description.trim() && selectedCategory ? { scale: 0.98 } : {}}>
                     <Button
-                      onClick={() => setDetailsStep(2)}
+                      onClick={() => setDetailsStep(3)}
                       disabled={!description.trim() || !selectedCategory}
                       className={`rounded-xl px-8 ${
                         description.trim() && selectedCategory
@@ -5563,6 +5532,28 @@ function CreateWorksheetContent() {
                       })}
                     </div>
                   </motion.div>
+
+                  {/* Recurring toggle */}
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl mb-6">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">
+                        {locale === 'fr' ? 'Récurrent' : 'Recurring'}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {locale === 'fr' ? 'Le patient pourra remplir cet exercice plusieurs fois' : 'Patient can fill this worksheet multiple times'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setIsRecurring(!isRecurring)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        isRecurring ? 'bg-teal-600' : 'bg-gray-200'
+                      }`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        isRecurring ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                    </button>
+                  </div>
 
                   {/* Save Button */}
                   <div className="flex justify-end">
