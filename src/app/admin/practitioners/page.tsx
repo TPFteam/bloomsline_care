@@ -65,6 +65,8 @@ export default function AdminPractitionersPage() {
   const [resources, setResources] = useState<AdminResource[]>([])
   const [resourcesLoading, setResourcesLoading] = useState(false)
   const [resourceSearch, setResourceSearch] = useState('')
+  const [clearConfirmId, setClearConfirmId] = useState<string | null>(null)
+  const [clearing, setClearing] = useState(false)
   const [selectedResources, setSelectedResources] = useState<Set<string>>(new Set())
   const [showTransferModal, setShowTransferModal] = useState(false)
   const [practitionerAccounts, setPractitionerAccounts] = useState<PractitionerAccount[]>([])
@@ -357,6 +359,20 @@ export default function AdminPractitionersPage() {
     }
   }
 
+  const handleClearResource = async () => {
+    if (!clearConfirmId) return
+    setClearing(true)
+    try {
+      const res = await fetch(`/api/admin/resources?resourceId=${clearConfirmId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed')
+      toast.success(locale === 'fr' ? 'Données effacées' : 'Data cleared')
+    } catch {
+      toast.error(locale === 'fr' ? 'Échec' : 'Failed to clear')
+    }
+    setClearing(false)
+    setClearConfirmId(null)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -597,7 +613,7 @@ export default function AdminPractitionersPage() {
               ) : (
                 <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                   {/* Table header */}
-                  <div className="grid grid-cols-[40px_1fr_120px_130px_130px_200px] gap-4 px-5 py-3 border-b border-gray-100 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="grid grid-cols-[40px_1fr_120px_130px_130px_200px_80px] gap-4 px-5 py-3 border-b border-gray-100 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <div className="flex items-center">
                       <input
                         type="checkbox"
@@ -611,6 +627,7 @@ export default function AdminPractitionersPage() {
                     <div>{locale === 'fr' ? 'Statut' : 'Status'}</div>
                     <div>{locale === 'fr' ? 'Visibilité' : 'Visibility'}</div>
                     <div>{locale === 'fr' ? 'Propriétaire' : 'Owner'}</div>
+                    <div></div>
                   </div>
 
                   {/* Rows */}
@@ -618,7 +635,7 @@ export default function AdminPractitionersPage() {
                     {filteredResources.map((r) => (
                       <div
                         key={r.id}
-                        className={`grid grid-cols-[40px_1fr_120px_130px_130px_200px] gap-4 px-5 py-4 items-center hover:bg-gray-50 transition-colors cursor-pointer ${
+                        className={`grid grid-cols-[40px_1fr_120px_130px_130px_200px_80px] gap-4 px-5 py-4 items-center hover:bg-gray-50 transition-colors cursor-pointer ${
                           selectedResources.has(r.id) ? 'bg-blue-50/50' : ''
                         }`}
                         onClick={() => toggleResource(r.id)}
@@ -661,6 +678,14 @@ export default function AdminPractitionersPage() {
                         <div className="min-w-0">
                           <p className="text-sm text-gray-700 truncate">{r.owner_name}</p>
                           <p className="text-xs text-gray-400 truncate">{r.owner_email}</p>
+                        </div>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => setClearConfirmId(r.id)}
+                            className="px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            {locale === 'fr' ? 'Effacer' : 'Clear'}
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -816,6 +841,40 @@ export default function AdminPractitionersPage() {
           )}
         </div>
       </main>
+
+      {/* Clear Confirmation Modal */}
+      {clearConfirmId && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              {locale === 'fr' ? 'Effacer toutes les données ?' : 'Clear all data?'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              {locale === 'fr'
+                ? 'Cela supprimera tous les partages, réponses et assignations pour cette ressource. Cette action est irréversible.'
+                : 'This will delete all shares, responses, and assignments for this resource. This action cannot be undone.'}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setClearConfirmId(null)}
+                disabled={clearing}
+                className="rounded-xl"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </Button>
+              <Button
+                onClick={handleClearResource}
+                disabled={clearing}
+                className="bg-red-600 hover:bg-red-700 text-white rounded-xl"
+              >
+                {clearing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                {locale === 'fr' ? 'Effacer' : 'Clear'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Transfer Modal */}
       {showTransferModal && (

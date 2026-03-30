@@ -62,6 +62,40 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// DELETE: Clear all shares, assignments, and responses for a resource
+export async function DELETE(request: NextRequest) {
+  try {
+    const userId = await getAuthUserId(request)
+    if (!userId || !ADMIN_USER_IDS.includes(userId)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const resourceId = searchParams.get('resourceId')
+    if (!resourceId) {
+      return NextResponse.json({ error: 'resourceId is required' }, { status: 400 })
+    }
+
+    const adminClient = createAdminClient()
+
+    // Delete in order: responses → assignments → shares, then reset counters
+    await adminClient.from('resource_responses').delete().eq('resource_id', resourceId)
+    await adminClient.from('resource_assignments').delete().eq('resource_id', resourceId)
+    await adminClient.from('member_shared_resources').delete().eq('resource_id', resourceId)
+
+    // Reset counters
+    await adminClient
+      .from('resources')
+      .update({ times_assigned: 0, times_completed: 0 })
+      .eq('id', resourceId)
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error clearing resource data:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
 // PATCH: Update resource visibility
 export async function PATCH(request: NextRequest) {
   try {
