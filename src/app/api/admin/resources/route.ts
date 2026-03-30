@@ -49,10 +49,43 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Fetch share and response counts per resource
+    const resourceIds = (resources || []).map(r => r.id)
+
+    let shareCounts: Record<string, number> = {}
+    let responseCounts: Record<string, number> = {}
+
+    if (resourceIds.length > 0) {
+      const { data: shares } = await adminClient
+        .from('member_shared_resources')
+        .select('resource_id')
+        .in('resource_id', resourceIds)
+
+      if (shares) {
+        for (const s of shares) {
+          shareCounts[s.resource_id] = (shareCounts[s.resource_id] || 0) + 1
+        }
+      }
+
+      const { data: responses } = await adminClient
+        .from('resource_responses')
+        .select('resource_id')
+        .in('resource_id', resourceIds)
+        .eq('status', 'submitted')
+
+      if (responses) {
+        for (const r of responses) {
+          responseCounts[r.resource_id] = (responseCounts[r.resource_id] || 0) + 1
+        }
+      }
+    }
+
     const result = (resources || []).map(r => ({
       ...r,
       owner_name: owners[r.practitioner_id]?.full_name || 'Unknown',
       owner_email: owners[r.practitioner_id]?.email || '',
+      share_count: shareCounts[r.id] || 0,
+      response_count: responseCounts[r.id] || 0,
     }))
 
     return NextResponse.json({ resources: result })

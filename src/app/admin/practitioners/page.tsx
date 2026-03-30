@@ -39,6 +39,8 @@ interface AdminResource {
   updated_at: string
   owner_name: string
   owner_email: string
+  share_count: number
+  response_count: number
 }
 
 interface PractitionerAccount {
@@ -613,7 +615,7 @@ export default function AdminPractitionersPage() {
               ) : (
                 <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                   {/* Table header */}
-                  <div className="grid grid-cols-[40px_1fr_120px_130px_130px_200px_80px] gap-4 px-5 py-3 border-b border-gray-100 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="grid grid-cols-[40px_1fr_100px_100px_110px_70px_70px_180px_70px] gap-3 px-5 py-3 border-b border-gray-100 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <div className="flex items-center">
                       <input
                         type="checkbox"
@@ -626,6 +628,8 @@ export default function AdminPractitionersPage() {
                     <div>{locale === 'fr' ? 'Type' : 'Type'}</div>
                     <div>{locale === 'fr' ? 'Statut' : 'Status'}</div>
                     <div>{locale === 'fr' ? 'Visibilité' : 'Visibility'}</div>
+                    <div>{locale === 'fr' ? 'Partages' : 'Shares'}</div>
+                    <div>{locale === 'fr' ? 'Réponses' : 'Responses'}</div>
                     <div>{locale === 'fr' ? 'Propriétaire' : 'Owner'}</div>
                     <div></div>
                   </div>
@@ -635,7 +639,7 @@ export default function AdminPractitionersPage() {
                     {filteredResources.map((r) => (
                       <div
                         key={r.id}
-                        className={`grid grid-cols-[40px_1fr_120px_130px_130px_200px_80px] gap-4 px-5 py-4 items-center hover:bg-gray-50 transition-colors cursor-pointer ${
+                        className={`grid grid-cols-[40px_1fr_100px_100px_110px_70px_70px_180px_70px] gap-3 px-5 py-4 items-center hover:bg-gray-50 transition-colors cursor-pointer ${
                           selectedResources.has(r.id) ? 'bg-blue-50/50' : ''
                         }`}
                         onClick={() => toggleResource(r.id)}
@@ -674,6 +678,12 @@ export default function AdminPractitionersPage() {
                             <option value="link_only">Link</option>
                             <option value="onboarding">Onboarding</option>
                           </select>
+                        </div>
+                        <div className="text-center">
+                          <span className={`text-sm font-medium ${r.share_count > 0 ? 'text-gray-900' : 'text-gray-300'}`}>{r.share_count}</span>
+                        </div>
+                        <div className="text-center">
+                          <span className={`text-sm font-medium ${r.response_count > 0 ? 'text-gray-900' : 'text-gray-300'}`}>{r.response_count}</span>
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm text-gray-700 truncate">{r.owner_name}</p>
