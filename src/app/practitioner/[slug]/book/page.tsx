@@ -33,8 +33,8 @@ type Step = 'service' | 'datetime' | 'details' | 'confirm'
 const STEP_ORDER: Step[] = ['service', 'datetime', 'details', 'confirm']
 
 const STEP_LABELS: Record<string, Record<Step, string>> = {
-  en: { service: 'Service', datetime: 'Date & Time', details: 'Details', confirm: 'Confirm' },
-  fr: { service: 'Service', datetime: 'Date & Heure', details: 'Détails', confirm: 'Confirmer' },
+  en: { service: 'Session', datetime: 'Date & Time', details: 'Details', confirm: 'Confirm' },
+  fr: { service: 'Séance', datetime: 'Date & Heure', details: 'Détails', confirm: 'Confirmer' },
 }
 
 const t = (locale: string, translations: Record<string, string>) =>
@@ -637,7 +637,7 @@ export default function BookingPage() {
             {/* Step Header */}
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                {currentStep === 'service' && t(locale, { en: 'Select a Service', fr: 'Choisir un service' })}
+                {currentStep === 'service' && t(locale, { en: 'Choose a Session', fr: 'Choisir une séance' })}
                 {currentStep === 'datetime' && t(locale, { en: 'Choose Date & Time', fr: 'Choisir la date et l\'heure' })}
                 {currentStep === 'details' && t(locale, { en: 'Your Details', fr: 'Vos coordonnées' })}
                 {currentStep === 'confirm' && t(locale, { en: 'Confirm Booking', fr: 'Confirmer la réservation' })}
