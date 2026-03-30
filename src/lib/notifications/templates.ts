@@ -189,7 +189,7 @@ const templates: Record<NotificationType, NotificationTemplate> = {
         : locale === 'es'
           ? `Tu ${m.sessionType} está confirmado para el ${m.scheduledAt}`
           : `Your ${m.sessionType} is confirmed for ${m.scheduledAt}`,
-    actionUrl: (m) => `/bookings/${m.bookingId}`,
+    actionUrl: () => '/bookings',
     emailSubject: (m, locale) =>
       locale === 'fr'
         ? `Réservation confirmée: ${m.scheduledAt}`
@@ -319,7 +319,7 @@ const templates: Record<NotificationType, NotificationTemplate> = {
         : locale === 'es'
           ? `${m.clientName} solicitó un ${m.sessionType} el ${m.requestedTime}`
           : `${m.clientName} requested a ${m.sessionType} on ${m.requestedTime}`,
-    actionUrl: (m) => `/bookings/${m.bookingId}`,
+    actionUrl: () => '/bookings',
     emailSubject: (m, locale) =>
       locale === 'fr'
         ? `Nouvelle réservation de ${m.clientName}`
