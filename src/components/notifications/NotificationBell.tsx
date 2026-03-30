@@ -340,20 +340,6 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
               )}
             </div>
 
-            {/* Footer */}
-            {notifications.length > 0 && (
-              <div className="px-4 py-3 border-t border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
-                <button
-                  onClick={() => {
-                    router.push(settingsUrl)
-                    setIsOpen(false)
-                  }}
-                  className="text-sm text-gray-500 dark:text-white/50 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-                >
-                  {locale === 'fr' ? '⚙️ Gérer les préférences' : locale === 'es' ? '⚙️ Administrar preferencias' : '⚙️ Manage preferences'}
-                </button>
-              </div>
-            )}
           </motion.div>
         )}
       </AnimatePresence>
