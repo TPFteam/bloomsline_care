@@ -59,7 +59,7 @@ import { removeResourceFromAllCollections, isResourceSaved } from '@/lib/service
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { Resource, ResourceType, ResourceBlock } from '@/types/resource'
-import { notifyResourceShared, sendResourceSharedEmail } from '@/lib/notifications'
+// Notification + email for resource sharing handled by Supabase edge function
 import { ShareResourceModal } from '@/components/resources/ShareResourceModal'
 
 interface SimpleMember {
@@ -578,44 +578,7 @@ export default function ResourceDetailPage() {
 
           console.log('[share] Member lookup:', { memberId, user_id: memberResult?.user_id, email: memberResult?.email })
 
-          if (memberResult?.user_id) {
-            await notifyResourceShared(supabase, {
-              memberId,
-              memberUserId: memberResult.user_id,
-              resourceId,
-              resourceTitle: resTitle,
-              resourceType: resource.type,
-              practitionerName: practName,
-              memberEmail: memberResult.email || undefined,
-            })
-          } else if (memberResult?.email) {
-            // Create a share token for preview link
-            const { data: tokenData, error: tokenError } = await supabase
-              .from('resource_share_tokens')
-              .insert({
-                resource_id: resourceId,
-                member_id: memberId,
-                practitioner_id: user.id,
-                member_email: memberResult.email,
-              })
-              .select('token')
-              .single()
-
-            if (tokenError) {
-              console.error('[share] Token creation failed:', tokenError)
-            }
-
-            await sendResourceSharedEmail({
-              memberEmail: memberResult.email,
-              resourceTitle: resTitle,
-              resourceType: resource.type,
-              practitionerName: practName,
-              resourceId,
-              shareToken: tokenData?.token,
-            })
-          } else {
-            console.warn('[share] Member has no user_id and no email — cannot notify:', memberId)
-          }
+          // Notification + email handled by Supabase edge function (on_resource_shared webhook)
         } catch (notifyError) {
           console.error('[share] Error sending notification:', notifyError)
         }
