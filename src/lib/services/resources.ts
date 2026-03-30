@@ -59,9 +59,9 @@ export async function getResources(filters?: {
   if (filters?.visibility) {
     query = query.eq('visibility', filters.visibility)
   }
-  // For Digital Library - get all public published resources
+  // For Digital Library - get all public + onboarding published resources
   if (filters?.publicOnly) {
-    query = query.eq('visibility', 'public').eq('status', 'published')
+    query = query.in('visibility', ['public', 'onboarding']).eq('status', 'published')
   }
 
   const { data, error } = await query

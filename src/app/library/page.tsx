@@ -306,7 +306,12 @@ export default function LibraryPage() {
       filtered = filtered.filter(r => r.language === languageFilter)
     }
 
-    return filtered
+    // Pin onboarding resources to the top
+    return filtered.sort((a, b) => {
+      const aOnboarding = (a as any).visibility === 'onboarding' ? 0 : 1
+      const bOnboarding = (b as any).visibility === 'onboarding' ? 0 : 1
+      return aOnboarding - bOnboarding
+    })
   }, [publicResources, searchQuery, typeFilter, languageFilter])
 
   // Get stats
