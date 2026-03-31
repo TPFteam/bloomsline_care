@@ -226,15 +226,15 @@ export default function SharedResourcesPage() {
           {/* Tabs Navigation */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-1">
+              <Link href="/resources">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors text-sm">
+                  <span>{locale === 'fr' ? 'Mes ressources' : 'My Resources'}</span>
+                </div>
+              </Link>
               <Link href="/library">
                 <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors text-sm">
                   <BookOpen className="w-4 h-4" />
                   <span>{locale === 'fr' ? 'Explorer' : 'Explore'}</span>
-                </div>
-              </Link>
-              <Link href="/resources">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors text-sm">
-                  <span>{locale === 'fr' ? 'Mes ressources' : 'My Resources'}</span>
                 </div>
               </Link>
               <Link href="/shared-resources">

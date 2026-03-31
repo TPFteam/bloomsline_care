@@ -539,18 +539,18 @@ export default function LibraryPage() {
           {/* Tabs Navigation */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-1">
+              {/* My Resources Tab */}
+              <Link href="/resources">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors text-sm">
+                  <span>{locale === 'fr' ? 'Mes ressources' : 'My Resources'}</span>
+                </div>
+              </Link>
+
               {/* Explore Tab - Active */}
               <Link href="/library">
                 <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-900 font-medium text-sm">
                   <BookOpen className="w-4 h-4" />
                   <span>{locale === 'fr' ? 'Explorer' : 'Explore'}</span>
-                </div>
-              </Link>
-
-              {/* My Resources Tab */}
-              <Link href="/resources">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors text-sm">
-                  <span>{locale === 'fr' ? 'Mes ressources' : 'My Resources'}</span>
                 </div>
               </Link>
 
