@@ -23,7 +23,7 @@ export function AppSidebar({ activeItem }: AppSidebarProps) {
   const navItems = [
     { id: 'home' as NavItem, href: '/dashboard', icon: Home, label: locale === 'fr' ? 'Accueil' : locale === 'es' ? 'Inicio' : 'Home' },
     { id: 'members' as NavItem, href: '/members', icon: Users, label: locale === 'fr' ? 'Personnes suivies' : locale === 'es' ? 'Personas' : 'People' },
-    { id: 'library' as NavItem, href: '/library', icon: BookOpen, label: locale === 'fr' ? 'Bibliothèque' : locale === 'es' ? 'Biblioteca' : 'Library' },
+    { id: 'library' as NavItem, href: '/resources', icon: BookOpen, label: locale === 'fr' ? 'Ressources' : locale === 'es' ? 'Recursos' : 'Resources' },
     { id: 'bookings' as NavItem, href: '/bookings', icon: CalendarCheck, label: locale === 'fr' ? 'Réservations' : locale === 'es' ? 'Reservas' : 'Bookings' },
     { id: 'analytics' as NavItem, href: '/analytics', icon: Activity, label: locale === 'fr' ? 'Signaux' : locale === 'es' ? 'Señales' : 'Signals' },
   ]
