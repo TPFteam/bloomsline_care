@@ -946,7 +946,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     .filter(s => s.status === 'scheduled' && new Date(s.scheduled_at) >= now)
     .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
   const snCompleted = sessions
-    .filter(s => s.status === 'completed' || s.status === 'no_show' ||
+    .filter(s => s.status === 'completed' || s.status === 'no_show' || s.status === 'cancelled' ||
       (s.status === 'scheduled' && new Date(s.scheduled_at) < now))
     .sort((a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime())
 
