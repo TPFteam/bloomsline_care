@@ -37,38 +37,38 @@ export async function getValidGoogleToken(
   const calendarId = connection.calendar_id || 'primary';
 
   // Decrypt the stored access token
-  let accessToken: string;
+  let accessToken: string | null = null;
   try {
     accessToken = isEncrypted(connection.access_token)
       ? decryptToken(connection.access_token)
       : connection.access_token;
   } catch {
-    console.error('Failed to decrypt access token');
-    return null;
+    console.warn('Failed to decrypt access token, will try refresh');
   }
 
-  // If token is still valid, return it
-  if (expiresAt > now) {
+  // If token is still valid and decrypted, return it
+  if (accessToken && expiresAt > now) {
     return { accessToken, calendarId };
   }
 
-  // Token expired, refresh it
-  console.log('Google token expired, attempting refresh for user:', userId);
+  // Token expired or decrypt failed, refresh it
+  console.log('Google token expired/invalid, attempting refresh for user:', userId);
   if (!connection.refresh_token) {
     console.error('No refresh token available for user:', userId);
     return null;
   }
 
-  // Decrypt refresh token
+  // Decrypt refresh token — try decryption, fall back to raw value
   let refreshToken: string;
   try {
     refreshToken = isEncrypted(connection.refresh_token)
       ? decryptToken(connection.refresh_token)
       : connection.refresh_token;
     console.log('Refresh token decrypted successfully, length:', refreshToken.length);
-  } catch (e) {
-    console.error('Failed to decrypt refresh token:', e);
-    return null;
+  } catch {
+    // If decrypt fails, try using the raw value (might not be encrypted)
+    console.warn('Failed to decrypt refresh token, trying raw value');
+    refreshToken = connection.refresh_token;
   }
 
   try {
