@@ -30,6 +30,7 @@ import {
   Clock,
   ZoomIn,
   ZoomOut,
+  AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -1750,6 +1751,40 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 {t.members.sessionStatus[selectedSession.status as keyof typeof t.members.sessionStatus] || selectedSession.status}
               </span>
             </div>
+
+            {/* Cancellation reason */}
+            {(selectedSession.status === 'cancelled' || selectedSession.status === 'no_show') && ((selectedSession as any).cancellation_reason || selectedSession.notes) && (
+              <div className="mx-5 mt-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                <div className="flex items-start gap-2 text-sm">
+                  <AlertCircle className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    {(selectedSession as any).cancellation_reason && (
+                      <span className="text-gray-600 font-medium">
+                        {(() => {
+                          const reasons: Record<string, string> = {
+                            client_request: locale === 'fr' ? 'Demande du patient' : 'Client request',
+                            practitioner_unavailable: locale === 'fr' ? 'Praticien indisponible' : 'Practitioner unavailable',
+                            scheduling_conflict: locale === 'fr' ? "Conflit d'agenda" : 'Scheduling conflict',
+                            illness: locale === 'fr' ? 'Maladie' : 'Illness',
+                            personal_reasons: locale === 'fr' ? 'Raisons personnelles' : 'Personal reasons',
+                            rescheduled: locale === 'fr' ? 'Reprogrammée' : 'Rescheduled',
+                            no_communication: locale === 'fr' ? 'Aucune communication' : 'No communication',
+                            forgot: locale === 'fr' ? 'Patient a oublié' : 'Client forgot',
+                            late_cancellation: locale === 'fr' ? 'Annulation tardive' : 'Late cancellation',
+                            technical_issue: locale === 'fr' ? 'Problème technique' : 'Technical issue',
+                            emergency: locale === 'fr' ? 'Urgence' : 'Emergency',
+                            other: locale === 'fr' ? 'Autre' : 'Other',
+                          }
+                          return reasons[(selectedSession as any).cancellation_reason] || (selectedSession as any).cancellation_reason
+                        })()}
+                      </span>
+                    )}
+                    {(selectedSession as any).cancellation_reason && selectedSession.notes && <span className="text-gray-300 mx-1">·</span>}
+                    {selectedSession.notes && <span className="text-gray-400">{selectedSession.notes}</span>}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Editor / read content */}
             <div className="flex-1 overflow-y-auto px-5 py-4">
