@@ -25,21 +25,12 @@ const textSizeMap = {
 }
 
 export function Logo({ size = 'sm', className, showText = false, variant = 'light' }: LogoProps) {
-  const logoIcon = (
-    <div className={cn(sizeMap[size], 'relative flex-shrink-0 flex items-center justify-center')}>
-      <div
-        className="w-3/5 h-3/5 bg-gradient-to-br from-[#4A9A86] to-[#5AB39C] rounded-full"
-      />
-    </div>
-  )
-
   if (!showText) {
-    return <div className={className}>{logoIcon}</div>
+    return null
   }
 
   return (
-    <div className={cn('flex items-center gap-1', className)}>
-      {logoIcon}
+    <div className={cn('flex items-center', className)}>
       <span className={cn(
         textSizeMap[size],
         'tracking-wide whitespace-nowrap',
