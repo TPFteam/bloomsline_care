@@ -26,7 +26,11 @@ const textSizeMap = {
 
 export function Logo({ size = 'sm', className, showText = false, variant = 'light' }: LogoProps) {
   if (!showText) {
-    return null
+    return (
+      <div className={cn('flex items-center justify-center', className)}>
+        <div className="w-3 h-3 rounded-full bg-white/90" />
+      </div>
+    )
   }
 
   return (
