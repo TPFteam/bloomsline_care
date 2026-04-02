@@ -36,7 +36,7 @@ export function Logo({ size = 'sm', className, showText = false, variant = 'ligh
         'tracking-wide whitespace-nowrap',
         variant === 'dark' ? 'text-white' : ''
       )} style={variant === 'light' ? { color: '#1F2227' } : undefined}>
-        <span className="font-medium">blooms</span><span className="font-light text-gray-400">line</span>
+        <span className="font-medium">blooms</span><span className="font-light text-[#4A9A86]">line</span>
       </span>
     </div>
   )
