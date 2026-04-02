@@ -1147,36 +1147,49 @@ export default function BookingsPage() {
                             <p className="text-sm text-gray-500">Unavailable</p>
                           ) : (
                             <div className="space-y-2">
-                              {slots.map((slot) => (
-                                <div
-                                  key={slot.index}
-                                  className="flex items-center gap-3"
-                                >
-                                  <input
-                                    type="time"
-                                    value={slot.startTime}
-                                    onChange={(e) =>
-                                      updateAvailabilitySlot(slot.index, 'startTime', e.target.value)
-                                    }
-                                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
-                                  />
-                                  <span className="text-gray-500">{locale === 'fr' ? 'à' : 'to'}</span>
-                                  <input
-                                    type="time"
-                                    value={slot.endTime}
-                                    onChange={(e) =>
-                                      updateAvailabilitySlot(slot.index, 'endTime', e.target.value)
-                                    }
-                                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
-                                  />
-                                  <button
-                                    onClick={() => removeAvailabilitySlot(slot.index)}
-                                    className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                              {slots.map((slot) => {
+                                const timeOptions = Array.from({ length: 48 }, (_, i) => {
+                                  const h = Math.floor(i / 2)
+                                  const m = i % 2 === 0 ? '00' : '30'
+                                  return `${String(h).padStart(2, '0')}:${m}`
+                                })
+                                return (
+                                  <div
+                                    key={slot.index}
+                                    className="flex items-center gap-3"
                                   >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              ))}
+                                    <select
+                                      value={slot.startTime}
+                                      onChange={(e) =>
+                                        updateAvailabilitySlot(slot.index, 'startTime', e.target.value)
+                                      }
+                                      className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none cursor-pointer"
+                                    >
+                                      {timeOptions.map((t) => (
+                                        <option key={t} value={t}>{t}</option>
+                                      ))}
+                                    </select>
+                                    <span className="text-gray-400 text-sm">{locale === 'fr' ? 'à' : 'to'}</span>
+                                    <select
+                                      value={slot.endTime}
+                                      onChange={(e) =>
+                                        updateAvailabilitySlot(slot.index, 'endTime', e.target.value)
+                                      }
+                                      className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none cursor-pointer"
+                                    >
+                                      {timeOptions.map((t) => (
+                                        <option key={t} value={t}>{t}</option>
+                                      ))}
+                                    </select>
+                                    <button
+                                      onClick={() => removeAvailabilitySlot(slot.index)}
+                                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                )
+                              })}
                             </div>
                           )}
                         </div>
