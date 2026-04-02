@@ -1148,10 +1148,11 @@ export default function BookingsPage() {
                           ) : (
                             <div className="space-y-2">
                               {slots.map((slot) => {
-                                const timeOptions = Array.from({ length: 48 }, (_, i) => {
-                                  const h = Math.floor(i / 2)
-                                  const m = i % 2 === 0 ? '00' : '30'
-                                  return `${String(h).padStart(2, '0')}:${m}`
+                                const timeOptions = Array.from({ length: 36 }, (_, i) => {
+                                  const totalMin = (6 * 60) + (i * 30) // Start at 06:00
+                                  const h = Math.floor(totalMin / 60)
+                                  const m = totalMin % 60
+                                  return `${String(h).padStart(2, '0')}:${m === 0 ? '00' : '30'}`
                                 })
                                 return (
                                   <div
