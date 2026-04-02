@@ -31,7 +31,7 @@ export function AppSidebar({ activeItem }: AppSidebarProps) {
   return (
     <aside className="fixed left-0 top-0 bottom-0 z-[110] bg-teal-700 flex flex-col h-screen w-14">
       {/* Logo */}
-      <div className="h-[65px] flex items-center justify-center">
+      <div className="h-[48px] flex items-center justify-center">
         <Link href="/dashboard" className="flex items-center outline-none focus:outline-none" tabIndex={-1}>
           <Logo size="sm" showText={false} />
         </Link>
