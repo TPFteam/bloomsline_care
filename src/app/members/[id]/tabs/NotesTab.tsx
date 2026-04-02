@@ -1868,7 +1868,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
               ) : snSessionSummaryNotes[selectedItemId] ? (
                 <div>
                   <MarkdownRenderer
-                    content={snSessionSummaryNotes[selectedItemId]!.content}
+                    content={snSessionSummaryNotes[selectedItemId]!.content.replace(/&nbsp;/g, ' ')}
                     className="leading-relaxed"
                     onEdit={() => {
                       setSnSummaryDraft(snSessionSummaryNotes[selectedItemId]!.content)
