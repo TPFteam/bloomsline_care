@@ -2046,7 +2046,34 @@ export default function ResourceDetailPage() {
 
             {/* Sidebar - Creator Info for public view */}
             <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-              {resource.creator_profile && (
+              {resource.visibility === 'onboarding' ? (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl shadow-sm border border-emerald-200 p-6"
+                >
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                      <span className="text-2xl">🌱</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Bloom</p>
+                      <p className="text-xs text-emerald-600 font-medium mt-0.5">Bloomsline Care</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 leading-relaxed mb-4">
+                    {locale === 'fr'
+                      ? "Salut ! Je suis Bloom, votre compagnon bien-être sur Bloomsline. Je suis là pour vous aider à découvrir des outils qui vous feront du bien. Pas de jugement, juste du soutien 💚"
+                      : "Hi! I'm Bloom, your wellness companion on Bloomsline. I'm here to help you discover tools that feel good. No judgment, just support 💚"}
+                  </p>
+                  <div className="pt-4 border-t border-emerald-200">
+                    <p className="text-xs text-emerald-600 text-center flex items-center justify-center gap-2">
+                      <span className="w-2 h-2 bg-emerald-400 rounded-full" />
+                      {locale === 'fr' ? 'Fait avec soin sur Bloomsline' : 'Made with care on Bloomsline'}
+                    </p>
+                  </div>
+                </motion.div>
+              ) : resource.creator_profile && (
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
