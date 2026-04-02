@@ -235,8 +235,8 @@ export async function GET(request: NextRequest) {
   const googleAuth = await getValidGoogleToken(practitionerId, supabase);
 
   if (!googleAuth) {
-    console.log('[available-slots] No Google auth — returning base slots');
-    return NextResponse.json({ slots, practitionerTimezone: timezone });
+    console.warn('[available-slots] No Google auth — returning base slots WITHOUT calendar filtering. Practitioner:', practitionerId);
+    return NextResponse.json({ slots, practitionerTimezone: timezone, calendarFiltered: false });
   }
 
   console.log('[available-slots] Google auth OK, calendarId:', googleAuth.calendarId);
@@ -284,5 +284,6 @@ export async function GET(request: NextRequest) {
     });
   });
 
-  return NextResponse.json({ slots: filteredSlots, practitionerTimezone: timezone });
+  console.log('[available-slots] Filtered:', slots.length, '→', filteredSlots.length, 'slots (removed', slots.length - filteredSlots.length, 'busy)');
+  return NextResponse.json({ slots: filteredSlots, practitionerTimezone: timezone, calendarFiltered: true });
 }

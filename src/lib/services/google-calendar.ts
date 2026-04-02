@@ -14,8 +14,15 @@ export async function getGoogleCalendarBusyTimes(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
 
-    const timeMin = `${dateStr}T00:00:00`;
-    const timeMax = `${dateStr}T23:59:59`;
+    // Calculate UTC offset for the practitioner's timezone on this date
+    const refDate = new Date(`${dateStr}T12:00:00Z`)
+    const utcStr = refDate.toLocaleString('en-US', { timeZone: 'UTC' })
+    const tzStr = refDate.toLocaleString('en-US', { timeZone: timezone })
+    const offsetMs = new Date(utcStr).getTime() - new Date(tzStr).getTime()
+
+    // Convert practitioner's local midnight/end-of-day to UTC
+    const timeMinUtc = new Date(new Date(`${dateStr}T00:00:00`).getTime() + offsetMs).toISOString()
+    const timeMaxUtc = new Date(new Date(`${dateStr}T23:59:59`).getTime() + offsetMs).toISOString()
 
     const response = await fetch(
       'https://www.googleapis.com/calendar/v3/freeBusy',
@@ -26,8 +33,8 @@ export async function getGoogleCalendarBusyTimes(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          timeMin: new Date(`${timeMin}`).toISOString(),
-          timeMax: new Date(`${timeMax}`).toISOString(),
+          timeMin: timeMinUtc,
+          timeMax: timeMaxUtc,
           timeZone: timezone,
           items: [{ id: calendarId }],
         }),
