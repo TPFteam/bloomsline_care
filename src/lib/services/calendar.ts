@@ -128,11 +128,19 @@ export async function bulkUpdateAvailability(
 ): Promise<boolean> {
   const supabase = createClient();
 
+  // Ensure valid session before modifying
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) {
+    await supabase.auth.refreshSession()
+  }
+
   // Delete all existing schedules for this user, then insert fresh
-  const { error: deleteError } = await supabase
+  const { error: deleteError, count } = await supabase
     .from('availability_schedules')
     .delete()
     .eq('user_id', userId);
+
+  console.log('[availability] Delete result:', { error: deleteError?.message, count });
 
   if (deleteError) {
     console.error('Error deleting existing availability:', deleteError);
@@ -174,14 +182,16 @@ export async function bulkUpdateAvailability(
       timezone: s.timezone,
     }))
 
+    console.log('[availability] Inserting', insertData.length, 'slots:', insertData.map(s => `${s.day_of_week} ${s.start_time}-${s.end_time}`))
     const { error } = await supabase
       .from('availability_schedules')
       .insert(insertData);
 
     if (error) {
-      console.error('Error inserting availability:', error);
+      console.error('[availability] Error inserting:', error);
       return false;
     }
+    console.log('[availability] Insert success');
   }
 
   return true;
