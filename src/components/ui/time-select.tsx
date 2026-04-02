@@ -12,9 +12,10 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 interface TimeSelectProps {
   value: string
   onChange: (value: string) => void
+  className?: string
 }
 
-export function TimeSelect({ value, onChange }: TimeSelectProps) {
+export function TimeSelect({ value, onChange, className }: TimeSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -42,11 +43,11 @@ export function TimeSelect({ value, onChange }: TimeSelectProps) {
   }, [isOpen])
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className={`relative ${className || ''}`}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white hover:border-gray-300 transition-colors min-w-[100px] justify-between"
+        className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white hover:border-gray-300 transition-colors w-full justify-between"
       >
         <span className="font-medium text-gray-900">{value || '09:00'}</span>
         <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
