@@ -18,10 +18,10 @@ const sizeMap = {
 }
 
 const textSizeMap = {
-  xs: 'text-sm',
-  sm: 'text-base',
-  md: 'text-lg',
-  lg: 'text-xl',
+  xs: 'text-base',
+  sm: 'text-lg',
+  md: 'text-xl',
+  lg: 'text-2xl',
 }
 
 export function Logo({ size = 'sm', className, showText = false, variant = 'light' }: LogoProps) {
