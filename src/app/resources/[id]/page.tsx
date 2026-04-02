@@ -711,16 +711,16 @@ export default function ResourceDetailPage() {
                     ? 'Cette ressource est réservée aux praticiens. Découvrez comment Bloomsline peut vous aider dans votre pratique.'
                     : 'This resource is for practitioners. Discover how Bloomsline can help your practice.')}
               </p>
-              <div className="flex gap-3 justify-center">
+              <div className="flex flex-col gap-3 items-center mt-2">
                 {accessStatus === 'login_required' ? (
                   <Link href="/sign-in">
-                    <Button className="rounded-xl bg-gray-900 hover:bg-gray-800 text-white px-6">
+                    <Button className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white px-8 h-11">
                       {locale === 'fr' ? 'Se connecter' : 'Sign in'}
                     </Button>
                   </Link>
                 ) : (
                   <a href="https://bloomsline.com" target="_blank" rel="noopener noreferrer">
-                    <Button className="rounded-xl bg-gray-900 hover:bg-gray-800 text-white px-6">
+                    <Button className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white px-8 h-11">
                       {locale === 'fr' ? 'Découvrir Bloomsline' : 'Explore Bloomsline'}
                     </Button>
                   </a>
