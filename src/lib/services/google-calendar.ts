@@ -24,6 +24,28 @@ export async function getGoogleCalendarBusyTimes(
     const timeMinUtc = new Date(new Date(`${dateStr}T00:00:00`).getTime() + offsetMs).toISOString()
     const timeMaxUtc = new Date(new Date(`${dateStr}T23:59:59`).getTime() + offsetMs).toISOString()
 
+    // First, fetch the user's calendar list to check ALL calendars (not just primary)
+    let calendarIds = [calendarId]
+    try {
+      const listRes = await fetch(
+        'https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=owner',
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          signal: controller.signal,
+        }
+      )
+      if (listRes.ok) {
+        const listData = await listRes.json()
+        if (listData.items && Array.isArray(listData.items)) {
+          calendarIds = listData.items.map((cal: { id: string }) => cal.id)
+          console.log('[google-calendar] Checking', calendarIds.length, 'calendars:', calendarIds)
+        }
+      }
+    } catch {
+      // Fall back to just the stored calendar ID
+      console.log('[google-calendar] Calendar list fetch failed, using:', calendarId)
+    }
+
     const response = await fetch(
       'https://www.googleapis.com/calendar/v3/freeBusy',
       {
@@ -36,7 +58,7 @@ export async function getGoogleCalendarBusyTimes(
           timeMin: timeMinUtc,
           timeMax: timeMaxUtc,
           timeZone: timezone,
-          items: [{ id: calendarId }],
+          items: calendarIds.map(id => ({ id })),
         }),
         signal: controller.signal,
       }
@@ -45,21 +67,28 @@ export async function getGoogleCalendarBusyTimes(
     clearTimeout(timeout);
 
     if (!response.ok) {
-      console.error('Google FreeBusy API error:', response.status);
+      const errBody = await response.text().catch(() => '')
+      console.error('Google FreeBusy API error:', response.status, errBody);
       return [];
     }
 
     const data = await response.json();
-    const calendarBusy = data.calendars?.[calendarId]?.busy;
 
-    if (!Array.isArray(calendarBusy)) {
-      return [];
+    // Merge busy times from ALL calendars
+    const allBusy: BusyInterval[] = []
+    if (data.calendars) {
+      for (const calId of Object.keys(data.calendars)) {
+        const busy = data.calendars[calId]?.busy
+        if (Array.isArray(busy)) {
+          for (const b of busy) {
+            allBusy.push({ start: b.start, end: b.end })
+          }
+        }
+      }
     }
 
-    return calendarBusy.map((b: { start: string; end: string }) => ({
-      start: b.start,
-      end: b.end,
-    }));
+    console.log('[google-calendar] Found', allBusy.length, 'busy intervals across', Object.keys(data.calendars || {}).length, 'calendars')
+    return allBusy;
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') {
       console.error('Google FreeBusy request timed out');
