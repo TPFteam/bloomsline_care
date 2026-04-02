@@ -27,8 +27,8 @@ const textSizeMap = {
 export function Logo({ size = 'sm', className, showText = false, variant = 'light' }: LogoProps) {
   if (!showText) {
     return (
-      <div className={cn('flex items-center justify-center', className)}>
-        <div className="w-3 h-3 rounded-full bg-white/90" />
+      <div className={cn(sizeMap[size], 'relative flex-shrink-0 flex items-center justify-center', className)}>
+        <div className="w-3/5 h-3/5 bg-gradient-to-br from-[#4A9A86] to-[#5AB39C] rounded-full" />
       </div>
     )
   }
