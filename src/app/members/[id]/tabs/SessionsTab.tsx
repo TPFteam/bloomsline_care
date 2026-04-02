@@ -25,7 +25,7 @@ import {
   Target,
   Loader2,
 } from 'lucide-react'
-import { format, startOfDay, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isBefore } from 'date-fns'
+import { format, startOfDay, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isBefore, isAfter } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -1382,12 +1382,15 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           days.push(day)
                           day = addDays(day, 1)
                         }
-                        const yesterday = addDays(startOfDay(new Date()), -1)
-                        const allowPastDates = editStatus === 'completed' || editStatus === 'cancelled' || editStatus === 'no_show'
+                        const today = startOfDay(new Date())
+                        const originalSessionDate = editingSession ? startOfDay(new Date(editingSession.scheduled_at)) : today
                         return days.map((d) => {
                           const isCurrentMonth = isSameMonth(d, editCalendarMonth)
                           const isSelected = isSameDay(d, editSelectedDate)
-                          const isPast = !allowPastDates && isBefore(d, yesterday)
+                          // Dates on or before the original session date: always allowed
+                          // Dates after the original session date: only if not in the past
+                          const isOnOrBeforeOriginal = !isAfter(startOfDay(d), originalSessionDate)
+                          const isPast = isOnOrBeforeOriginal ? false : isBefore(d, today)
                           return (
                             <button
                               key={d.toISOString()}
@@ -1416,8 +1419,8 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                     {format(editSelectedDate, 'EEEE, MMMM d, yyyy')}
                   </p>
 
-                  {/* Time Slots — for past dates, show manual input; for future dates, show available slots */}
-                  {(editStatus === 'completed' || editStatus === 'cancelled' || editStatus === 'no_show') && isBefore(editSelectedDate, startOfDay(new Date())) ? (
+                  {/* Time Slots — for dates on/before original session date, show manual input; for future dates, show availability */}
+                  {editingSession && !isAfter(startOfDay(editSelectedDate), startOfDay(new Date(editingSession.scheduled_at))) ? (
                     <div>
                       <input
                         type="time"
