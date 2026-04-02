@@ -38,13 +38,11 @@ export function Logo({ size = 'sm', className, showText = false, variant = 'ligh
       )} style={variant === 'light' ? { color: '#1F2227' } : undefined}>
         <span className="font-medium">blooms</span>
         <motion.span
-          className="font-light text-[#4A9A86] inline-block overflow-hidden"
-          initial={{ width: 0, opacity: 0 }}
-          animate={{ width: 'auto', opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.6, ease: 'easeOut' }}
-        >
-          line
-        </motion.span>
+          className="font-light text-[#4A9A86]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.8, ease: 'easeOut' }}
+        >line</motion.span>
       </span>
     </div>
   )
