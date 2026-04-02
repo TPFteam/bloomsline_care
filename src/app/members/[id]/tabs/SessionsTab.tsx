@@ -31,6 +31,7 @@ import {
 } from 'lucide-react'
 import { format, startOfDay, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isBefore, isAfter } from 'date-fns'
 import { Button } from '@/components/ui/button'
+import { TimeSelect } from '@/components/ui/time-select'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
@@ -1557,11 +1558,9 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   {/* Time Slots — for dates on/before original session date, show manual input; for future dates, show availability */}
                   {editingSession && !isAfter(startOfDay(editSelectedDate), startOfDay(new Date(editingSession.scheduled_at))) ? (
                     <div>
-                      <input
-                        type="time"
-                        value={editSelectedTime || ''}
-                        onChange={(e) => setEditSelectedTime(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
+                      <TimeSelect
+                        value={editSelectedTime || '09:00'}
+                        onChange={(v) => setEditSelectedTime(v)}
                       />
                     </div>
                   ) : editLoadingSlots ? (
@@ -1729,11 +1728,9 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Proposed time
                   </label>
-                  <input
-                    type="time"
-                    value={proposedTime}
-                    onChange={(e) => setProposedTime(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-amber-400 focus:ring-4 focus:ring-amber-100 outline-none bg-white"
+                  <TimeSelect
+                    value={proposedTime || '09:00'}
+                    onChange={(v) => setProposedTime(v)}
                   />
                 </div>
               </div>
