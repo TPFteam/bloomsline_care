@@ -68,51 +68,8 @@ export async function GET(request: NextRequest) {
 
     console.log('[available-slots] schedules for', dayOfWeek, ':', JSON.stringify(schedules), 'error:', schedError);
 
-    // Check if user has ANY schedules at all
-    const { data: allSchedules } = await supabase
-      .from('availability_schedules')
-      .select('day_of_week')
-      .eq('user_id', practitionerId)
-      .limit(1);
-
-    // If no schedules exist at all, seed default Mon-Fri 9-5
-    if (!allSchedules || allSchedules.length === 0) {
-      console.log('[available-slots] No schedules found — seeding defaults for user:', practitionerId);
-      const defaultDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-      const { error: seedError } = await supabase
-        .from('availability_schedules')
-        .insert(
-          defaultDays.map((day) => ({
-            user_id: practitionerId,
-            day_of_week: day,
-            start_time: '09:00:00',
-            end_time: '17:00:00',
-            is_active: true,
-            timezone: 'Europe/Paris',
-          }))
-        );
-
-      if (seedError) {
-        console.error('[available-slots] Seed error:', seedError);
-        return NextResponse.json({ slots: [], practitionerTimezone: 'Europe/Paris' });
-      }
-
-      // Re-query for the requested day
-      const { data: seededSchedules } = await supabase
-        .from('availability_schedules')
-        .select('start_time, end_time, timezone')
-        .eq('user_id', practitionerId)
-        .eq('day_of_week', dayOfWeek)
-        .eq('is_active', true);
-
-      if (!seededSchedules || seededSchedules.length === 0) {
-        // Requested day is a weekend
-        return NextResponse.json({ slots: [], practitionerTimezone: 'Europe/Paris' });
-      }
-
-      // Use the seeded schedules and continue to slot generation below
-      schedules = seededSchedules;
-    }
+    // If no schedules exist for this day, return empty
+    // (Do NOT auto-seed — practitioners manage their own availability)
 
     if (!schedules || schedules.length === 0) {
       return NextResponse.json({ slots: [], practitionerTimezone: 'UTC' });
