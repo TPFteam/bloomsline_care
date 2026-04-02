@@ -24,6 +24,10 @@ import {
   ChevronRight,
   Target,
   Loader2,
+  MoreHorizontal,
+  CheckCircle,
+  XCircle,
+  Ban,
 } from 'lucide-react'
 import { format, startOfDay, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isBefore, isAfter } from 'date-fns'
 import { Button } from '@/components/ui/button'
@@ -106,6 +110,8 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
   // Delete state
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
+  const [actionMenuId, setActionMenuId] = useState<string | null>(null)
+  const [confirmAction, setConfirmAction] = useState<{ sessionId: string; action: 'complete' | 'cancel' | 'no_show' | 'delete' } | null>(null)
 
   // Reschedule proposal state
   const [proposingSession, setProposingSession] = useState<Session | null>(null)
@@ -885,64 +891,57 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="relative">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleStartEdit(session)}
-                        className="h-10 w-10 p-0 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-                        title="Edit session"
+                        onClick={() => setActionMenuId(actionMenuId === session.id ? null : session.id)}
+                        className="h-10 w-10 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
                       >
-                        <Pencil className="w-5 h-5" />
+                        <MoreHorizontal className="w-5 h-5" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleUpdateStatus(session.id, 'completed')}
-                        className="h-10 w-10 p-0 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
-                        title={t.members.sessions.markComplete}
-                      >
-                        <Check className="w-5 h-5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleUpdateStatus(session.id, 'cancelled')}
-                        className="h-10 w-10 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                        title={t.members.sessions.cancel}
-                      >
-                        <X className="w-5 h-5" />
-                      </Button>
-                      {deletingSessionId === session.id ? (
-                        <div className="flex items-center gap-1 bg-red-50 rounded-xl px-2 py-1">
-                          <span className="text-xs text-red-600">Delete?</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteSession(session.id)}
-                            className="h-8 w-8 p-0 text-red-600 hover:bg-red-100 rounded-lg"
-                          >
-                            <Check className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeletingSessionId(null)}
-                            className="h-8 w-8 p-0 text-gray-500 hover:bg-gray-100 rounded-lg"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeletingSessionId(session.id)}
-                          className="h-10 w-10 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                          title="Delete session"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </Button>
+                      {actionMenuId === session.id && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setActionMenuId(null)} />
+                          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-50">
+                            <button
+                              onClick={() => { setActionMenuId(null); handleStartEdit(session) }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <Pencil className="w-4 h-4 text-gray-400" />
+                              {locale === 'fr' ? 'Modifier' : 'Edit'}
+                            </button>
+                            <button
+                              onClick={() => { setActionMenuId(null); setConfirmAction({ sessionId: session.id, action: 'complete' }) }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <CheckCircle className="w-4 h-4 text-emerald-500" />
+                              {locale === 'fr' ? 'Marquer terminée' : 'Mark as completed'}
+                            </button>
+                            <button
+                              onClick={() => { setActionMenuId(null); setConfirmAction({ sessionId: session.id, action: 'cancel' }) }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <XCircle className="w-4 h-4 text-orange-500" />
+                              {locale === 'fr' ? 'Annuler la séance' : 'Cancel session'}
+                            </button>
+                            <button
+                              onClick={() => { setActionMenuId(null); setConfirmAction({ sessionId: session.id, action: 'no_show' }) }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <Ban className="w-4 h-4 text-amber-500" />
+                              {locale === 'fr' ? 'Absent' : 'No show'}
+                            </button>
+                            <div className="border-t border-gray-100 my-1" />
+                            <button
+                              onClick={() => { setActionMenuId(null); setConfirmAction({ sessionId: session.id, action: 'delete' }) }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                            </button>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
@@ -1228,6 +1227,46 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
           </div>
         )}
       </motion.div>
+
+      {/* Confirmation Modal */}
+      {confirmAction && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setConfirmAction(null)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              {confirmAction.action === 'complete' ? (locale === 'fr' ? 'Marquer comme terminée ?' : 'Mark as completed?') :
+               confirmAction.action === 'cancel' ? (locale === 'fr' ? 'Annuler cette séance ?' : 'Cancel this session?') :
+               confirmAction.action === 'no_show' ? (locale === 'fr' ? 'Marquer comme absent ?' : 'Mark as no show?') :
+               (locale === 'fr' ? 'Supprimer cette séance ?' : 'Delete this session?')}
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              {confirmAction.action === 'delete'
+                ? (locale === 'fr' ? 'Cette action est irréversible.' : 'This action cannot be undone.')
+                : (locale === 'fr' ? 'Vous pouvez modifier le statut ultérieurement.' : 'You can change the status later.')}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={() => setConfirmAction(null)} className="rounded-xl">
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (confirmAction.action === 'delete') {
+                    await handleDeleteSession(confirmAction.sessionId)
+                  } else {
+                    await handleUpdateStatus(confirmAction.sessionId, confirmAction.action === 'complete' ? 'completed' : confirmAction.action === 'cancel' ? 'cancelled' : 'no_show')
+                  }
+                  setConfirmAction(null)
+                }}
+                className={`rounded-xl ${confirmAction.action === 'delete' ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}
+              >
+                {confirmAction.action === 'complete' ? (locale === 'fr' ? 'Confirmer' : 'Confirm') :
+                 confirmAction.action === 'cancel' ? (locale === 'fr' ? 'Annuler la séance' : 'Cancel session') :
+                 confirmAction.action === 'no_show' ? (locale === 'fr' ? 'Confirmer' : 'Confirm') :
+                 (locale === 'fr' ? 'Supprimer' : 'Delete')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Session Modal */}
       <AnimatePresence>
