@@ -353,8 +353,6 @@ export default function ResourceDetailPage() {
         const data = await getResourceById(params.id as string)
         console.log('Resource practitioner_id:', data?.practitioner_id)
         console.log('Match:', user?.id === data?.practitioner_id)
-        setResource(data)
-
         // Onboarding resources: require logged-in practitioner
         if (data?.visibility === 'onboarding') {
           if (!user) {
@@ -373,6 +371,8 @@ export default function ResourceDetailPage() {
             return
           }
         }
+
+        setResource(data)
 
         // Check if current user is the owner
         if (user && data && data.practitioner_id === user.id) {
