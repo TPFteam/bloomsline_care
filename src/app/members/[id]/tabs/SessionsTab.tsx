@@ -1372,7 +1372,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50  z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 pt-16 overflow-y-auto"
             onClick={handleCancelEdit}
           >
             <motion.div
@@ -1380,10 +1380,10 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mb-8"
             >
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl z-10">
                 <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                   <Pencil className="w-5 h-5 text-teal-500" />
                   Edit Session
