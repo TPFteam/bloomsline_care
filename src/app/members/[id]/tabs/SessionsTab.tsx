@@ -112,6 +112,8 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const [actionMenuId, setActionMenuId] = useState<string | null>(null)
   const [confirmAction, setConfirmAction] = useState<{ sessionId: string; action: 'complete' | 'cancel' | 'no_show' | 'delete' } | null>(null)
+  const [confirmReason, setConfirmReason] = useState('')
+  const [confirmNotes, setConfirmNotes] = useState('')
 
   // Reschedule proposal state
   const [proposingSession, setProposingSession] = useState<Session | null>(null)
@@ -358,11 +360,14 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     }
   }
 
-  const handleUpdateStatus = async (sessionId: string, newStatus: SessionStatus) => {
+  const handleUpdateStatus = async (sessionId: string, newStatus: SessionStatus, reason?: string, notes?: string) => {
     try {
+      const updateData: Record<string, unknown> = { status: newStatus, updated_at: new Date().toISOString() }
+      if (reason) updateData.cancellation_reason = reason
+      if (notes) updateData.notes = (notes || '').trim() || null
       const { error } = await supabase
         .from('sessions')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .update(updateData)
         .eq('id', sessionId)
 
       if (error) throw error
@@ -1230,31 +1235,91 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
       {/* Confirmation Modal */}
       {confirmAction && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setConfirmAction(null)}>
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setConfirmAction(null); setConfirmReason(''); setConfirmNotes('') }}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-gray-900 mb-2">
               {confirmAction.action === 'complete' ? (locale === 'fr' ? 'Marquer comme terminée ?' : 'Mark as completed?') :
                confirmAction.action === 'cancel' ? (locale === 'fr' ? 'Annuler cette séance ?' : 'Cancel this session?') :
                confirmAction.action === 'no_show' ? (locale === 'fr' ? 'Marquer comme absent ?' : 'Mark as no show?') :
                (locale === 'fr' ? 'Supprimer cette séance ?' : 'Delete this session?')}
             </h3>
-            <p className="text-sm text-gray-500 mb-6">
-              {confirmAction.action === 'delete'
-                ? (locale === 'fr' ? 'Cette action est irréversible.' : 'This action cannot be undone.')
-                : (locale === 'fr' ? 'Vous pouvez modifier le statut ultérieurement.' : 'You can change the status later.')}
-            </p>
-            <div className="flex gap-3 justify-end">
-              <Button variant="outline" onClick={() => setConfirmAction(null)} className="rounded-xl">
-                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+
+            {/* Reason dropdown for cancel/no_show */}
+            {(confirmAction.action === 'cancel' || confirmAction.action === 'no_show') && (
+              <div className="mt-4 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {locale === 'fr' ? 'Raison' : 'Reason'}
+                  </label>
+                  <select
+                    value={confirmReason}
+                    onChange={(e) => setConfirmReason(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white text-sm"
+                  >
+                    <option value="">{locale === 'fr' ? 'Sélectionner une raison...' : 'Select a reason...'}</option>
+                    {confirmAction.action === 'cancel' ? (
+                      <>
+                        <option value="client_request">{locale === 'fr' ? 'Demande du patient' : 'Client request'}</option>
+                        <option value="practitioner_unavailable">{locale === 'fr' ? 'Praticien indisponible' : 'Practitioner unavailable'}</option>
+                        <option value="scheduling_conflict">{locale === 'fr' ? 'Conflit d\'agenda' : 'Scheduling conflict'}</option>
+                        <option value="illness">{locale === 'fr' ? 'Maladie' : 'Illness'}</option>
+                        <option value="personal_reasons">{locale === 'fr' ? 'Raisons personnelles' : 'Personal reasons'}</option>
+                        <option value="rescheduled">{locale === 'fr' ? 'Reprogrammée' : 'Rescheduled'}</option>
+                        <option value="other">{locale === 'fr' ? 'Autre' : 'Other'}</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="no_communication">{locale === 'fr' ? 'Aucune communication' : 'No communication'}</option>
+                        <option value="forgot">{locale === 'fr' ? 'Patient a oublié' : 'Client forgot'}</option>
+                        <option value="late_cancellation">{locale === 'fr' ? 'Annulation tardive' : 'Late cancellation'}</option>
+                        <option value="technical_issue">{locale === 'fr' ? 'Problème technique' : 'Technical issue'}</option>
+                        <option value="emergency">{locale === 'fr' ? 'Urgence' : 'Emergency'}</option>
+                        <option value="other">{locale === 'fr' ? 'Autre' : 'Other'}</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {locale === 'fr' ? 'Commentaire' : 'Comment'} <span className="text-gray-400 font-normal">({locale === 'fr' ? 'facultatif' : 'optional'})</span>
+                  </label>
+                  <textarea
+                    value={confirmNotes}
+                    onChange={(e) => setConfirmNotes(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Ajouter un commentaire...' : 'Add a comment...'}
+                    rows={2}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none resize-none text-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Simple message for complete/delete */}
+            {confirmAction.action !== 'cancel' && confirmAction.action !== 'no_show' && (
+              <p className="text-sm text-gray-500 mt-2 mb-4">
+                {confirmAction.action === 'delete'
+                  ? (locale === 'fr' ? 'Cette action est irréversible.' : 'This action cannot be undone.')
+                  : (locale === 'fr' ? 'Vous pouvez modifier le statut ultérieurement.' : 'You can change the status later.')}
+              </p>
+            )}
+
+            <div className="flex gap-3 justify-end mt-6">
+              <Button variant="outline" onClick={() => { setConfirmAction(null); setConfirmReason(''); setConfirmNotes('') }} className="rounded-xl">
+                {locale === 'fr' ? 'Retour' : 'Back'}
               </Button>
               <Button
                 onClick={async () => {
+                  const status = confirmAction.action === 'complete' ? 'completed' : confirmAction.action === 'cancel' ? 'cancelled' : confirmAction.action === 'no_show' ? 'no_show' : null
                   if (confirmAction.action === 'delete') {
                     await handleDeleteSession(confirmAction.sessionId)
-                  } else {
-                    await handleUpdateStatus(confirmAction.sessionId, confirmAction.action === 'complete' ? 'completed' : confirmAction.action === 'cancel' ? 'cancelled' : 'no_show')
+                  } else if (status) {
+                    const reason = confirmReason || undefined
+                    const notes = confirmNotes || undefined
+                    await handleUpdateStatus(confirmAction.sessionId, status as SessionStatus, reason, notes)
                   }
                   setConfirmAction(null)
+                  setConfirmReason('')
+                  setConfirmNotes('')
                 }}
                 className={`rounded-xl ${confirmAction.action === 'delete' ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}
               >
