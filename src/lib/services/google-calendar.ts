@@ -1,108 +1,74 @@
 import type { BusyInterval } from '@/types/calendar';
 
 /**
- * Fetch busy times from Google Calendar using the FreeBusy API.
- * Checks ALL calendars the user owns. Returns empty array on any error.
+ * Fetch busy times from Google Calendar using the Events List API.
+ * Uses calendar.events scope (no additional scopes needed).
+ * Returns empty array on any error (never breaks the booking flow).
  */
 export async function getGoogleCalendarBusyTimes(
   accessToken: string,
-  calendarId: string,
+  _calendarId: string,
   dateStr: string,
-  timezone: string
+  _timezone: string
 ): Promise<BusyInterval[]> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
 
-    // Use a wide UTC window to cover any timezone (full 48h to be safe)
-    const timeMinUtc = `${dateStr}T00:00:00Z`
-    const timeMaxUtc = `${dateStr}T23:59:59Z`
+    const timeMin = `${dateStr}T00:00:00Z`
+    const timeMax = `${dateStr}T23:59:59Z`
 
-    console.log('[google-calendar] FreeBusy query:', { dateStr, timezone, timeMinUtc, timeMaxUtc })
-
-    // Fetch the user's calendar list to check ALL calendars
-    let calendarIds = [calendarId]
-    try {
-      const listRes = await fetch(
-        'https://www.googleapis.com/calendar/v3/users/me/calendarList',
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          signal: controller.signal,
-        }
-      )
-      if (listRes.ok) {
-        const listData = await listRes.json()
-        if (listData.items && Array.isArray(listData.items)) {
-          // Include all calendars (not just owned — shared calendars may have relevant events)
-          calendarIds = listData.items.map((cal: { id: string }) => cal.id)
-          console.log('[google-calendar] Found', calendarIds.length, 'calendars:', calendarIds.map((id: string) => id.substring(0, 30)))
-        }
-      } else {
-        console.warn('[google-calendar] Calendar list failed:', listRes.status)
-      }
-    } catch (e) {
-      console.warn('[google-calendar] Calendar list fetch error:', e)
-    }
-
-    const freeBusyBody = {
-      timeMin: timeMinUtc,
-      timeMax: timeMaxUtc,
-      timeZone: timezone,
-      items: calendarIds.map((id: string) => ({ id })),
-    }
-
-    console.log('[google-calendar] FreeBusy request body:', JSON.stringify(freeBusyBody).substring(0, 500))
+    // Use Events List API on primary calendar (works with calendar.events scope)
+    const params = new URLSearchParams({
+      timeMin,
+      timeMax,
+      singleEvents: 'true',
+      orderBy: 'startTime',
+      maxResults: '50',
+      fields: 'items(start,end,status,transparency)',
+    })
 
     const response = await fetch(
-      'https://www.googleapis.com/calendar/v3/freeBusy',
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
       {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(freeBusyBody),
+        headers: { Authorization: `Bearer ${accessToken}` },
         signal: controller.signal,
       }
-    );
+    )
 
     clearTimeout(timeout);
 
     if (!response.ok) {
       const errBody = await response.text().catch(() => '')
-      console.error('[google-calendar] FreeBusy API error:', response.status, errBody);
+      console.error('[google-calendar] Events List API error:', response.status, errBody);
       return [];
     }
 
     const data = await response.json();
+    const events = data.items || [];
 
-    console.log('[google-calendar] FreeBusy raw response calendars:', JSON.stringify(data.calendars).substring(0, 1000))
-
-    // Merge busy times from ALL calendars
+    // Convert events to busy intervals
+    // Skip cancelled events and transparent (free/available) events
     const allBusy: BusyInterval[] = []
-    if (data.calendars) {
-      for (const calId of Object.keys(data.calendars)) {
-        const calData = data.calendars[calId]
-        const busy = calData?.busy
-        if (calData?.errors) {
-          console.warn('[google-calendar] Calendar errors for', calId, ':', calData.errors)
-        }
-        if (Array.isArray(busy) && busy.length > 0) {
-          console.log('[google-calendar] Calendar', calId, 'has', busy.length, 'busy intervals:', busy)
-          for (const b of busy) {
-            allBusy.push({ start: b.start, end: b.end })
-          }
-        }
+    for (const event of events) {
+      if (event.status === 'cancelled') continue
+      if (event.transparency === 'transparent') continue // "free" events don't block
+
+      const start = event.start?.dateTime || event.start?.date
+      const end = event.end?.dateTime || event.end?.date
+
+      if (start && end) {
+        allBusy.push({ start, end })
       }
     }
 
-    console.log('[google-calendar] Total busy intervals:', allBusy.length)
+    console.log('[google-calendar] Found', allBusy.length, 'busy events out of', events.length, 'total events for', dateStr)
     return allBusy;
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') {
-      console.error('[google-calendar] FreeBusy request timed out');
+      console.error('[google-calendar] Events request timed out');
     } else {
-      console.error('[google-calendar] FreeBusy error:', err);
+      console.error('[google-calendar] Events error:', err);
     }
     return [];
   }
