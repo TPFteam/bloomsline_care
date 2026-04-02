@@ -711,16 +711,16 @@ export default function ResourceDetailPage() {
                     ? 'Cette ressource est réservée aux praticiens. Découvrez comment Bloomsline peut vous aider dans votre pratique.'
                     : 'This resource is for practitioners. Discover how Bloomsline can help your practice.')}
               </p>
-              <div className="flex flex-col gap-3 items-center mt-2">
+              <div className="flex flex-col gap-3 items-center mt-2 w-full max-w-[200px] mx-auto">
                 {accessStatus === 'login_required' ? (
-                  <Link href="/sign-in">
-                    <Button className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white px-8 h-11">
+                  <Link href="/sign-in" className="w-full">
+                    <Button className="w-full rounded-xl bg-gray-900 hover:bg-gray-800 text-white h-11">
                       {locale === 'fr' ? 'Se connecter' : 'Sign in'}
                     </Button>
                   </Link>
                 ) : (
-                  <a href="https://bloomsline.com" target="_blank" rel="noopener noreferrer">
-                    <Button className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white px-8 h-11">
+                  <a href="https://bloomsline.com" target="_blank" rel="noopener noreferrer" className="w-full">
+                    <Button className="w-full rounded-xl bg-gray-900 hover:bg-gray-800 text-white h-11">
                       {locale === 'fr' ? 'Découvrir Bloomsline' : 'Explore Bloomsline'}
                     </Button>
                   </a>
@@ -829,7 +829,7 @@ export default function ResourceDetailPage() {
             </>
           )}
           <Link href="/resources">
-            <Button className="bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-600 hover:to-lavender-700 text-white rounded-xl">
+            <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl">
               {locale === 'fr' ? 'Retour aux ressources' : 'Back to Resources'}
             </Button>
           </Link>
