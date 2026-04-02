@@ -265,8 +265,8 @@ export async function GET(request: NextRequest) {
 
   // If no busy times, return base slots as-is
   if (busyTimes.length === 0) {
-    console.log('[available-slots] No busy times — returning base slots');
-    return NextResponse.json({ slots, practitionerTimezone: timezone });
+    console.log('[available-slots] No busy times found — returning all base slots');
+    return NextResponse.json({ slots, practitionerTimezone: timezone, calendarFiltered: true, busyCount: 0 });
   }
 
   // 3. Filter out slots that overlap with busy intervals (including buffers)
