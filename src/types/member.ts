@@ -112,6 +112,7 @@ export interface Session {
   // Content
   notes: string | null
   summary: string | null
+  cancellation_reason: string | null
   mood_rating: number | null // 1-10
 
   // Goals & Outcomes

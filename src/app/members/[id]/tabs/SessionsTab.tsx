@@ -1094,8 +1094,39 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                       )}
                     </div>
                   </div>
+                  {/* Cancellation reason */}
+                  {(session.status === 'cancelled' || session.status === 'no_show') && (session.cancellation_reason || session.notes) && (
+                    <div className="mt-3 pl-12">
+                      <div className="flex items-start gap-2 text-sm">
+                        <AlertCircle className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          {session.cancellation_reason && (
+                            <span className="text-gray-500 font-medium">
+                              {{
+                                client_request: locale === 'fr' ? 'Demande du patient' : 'Client request',
+                                practitioner_unavailable: locale === 'fr' ? 'Praticien indisponible' : 'Practitioner unavailable',
+                                scheduling_conflict: locale === 'fr' ? 'Conflit d\'agenda' : 'Scheduling conflict',
+                                illness: locale === 'fr' ? 'Maladie' : 'Illness',
+                                personal_reasons: locale === 'fr' ? 'Raisons personnelles' : 'Personal reasons',
+                                rescheduled: locale === 'fr' ? 'Reprogrammée' : 'Rescheduled',
+                                no_communication: locale === 'fr' ? 'Aucune communication' : 'No communication',
+                                forgot: locale === 'fr' ? 'Patient a oublié' : 'Client forgot',
+                                late_cancellation: locale === 'fr' ? 'Annulation tardive' : 'Late cancellation',
+                                technical_issue: locale === 'fr' ? 'Problème technique' : 'Technical issue',
+                                emergency: locale === 'fr' ? 'Urgence' : 'Emergency',
+                                other: locale === 'fr' ? 'Autre' : 'Other',
+                              }[session.cancellation_reason] || session.cancellation_reason}
+                            </span>
+                          )}
+                          {session.cancellation_reason && session.notes && <span className="text-gray-300 mx-1">·</span>}
+                          {session.notes && <span className="text-gray-400">{session.notes}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Summary */}
-                  {session.summary && (
+                  {session.summary && session.status !== 'cancelled' && session.status !== 'no_show' && (
                     <div className="mt-3 pl-12">
                       <div className="flex items-start gap-2">
                         <FileText className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
