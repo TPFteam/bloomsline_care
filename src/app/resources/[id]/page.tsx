@@ -330,7 +330,7 @@ export default function ResourceDetailPage() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [members, setMembers] = useState<SimpleMember[]>([])
   const [memberGroups, setMemberGroups] = useState<{ id: string; name: string; color: string; member_ids: string[] }[]>([])
-  const [accessStatus, setAccessStatus] = useState<'allowed' | 'private' | 'not_found' | null>(null)
+  const [accessStatus, setAccessStatus] = useState<'allowed' | 'private' | 'not_found' | 'login_required' | 'practitioner_only' | null>(null)
   const [privateResourceCreator, setPrivateResourceCreator] = useState<{
     id: string
     slug: string | null
@@ -354,6 +354,25 @@ export default function ResourceDetailPage() {
         console.log('Resource practitioner_id:', data?.practitioner_id)
         console.log('Match:', user?.id === data?.practitioner_id)
         setResource(data)
+
+        // Onboarding resources: require logged-in practitioner
+        if (data?.visibility === 'onboarding') {
+          if (!user) {
+            setAccessStatus('login_required')
+            setLoading(false)
+            return
+          }
+          const { data: userProfile } = await supabase
+            .from('users')
+            .select('user_type')
+            .eq('id', user.id)
+            .single()
+          if (!userProfile || (userProfile.user_type !== 'mentor' && userProfile.user_type !== 'practitioner')) {
+            setAccessStatus('practitioner_only')
+            setLoading(false)
+            return
+          }
+        }
 
         // Check if current user is the owner
         if (user && data && data.practitioner_id === user.id) {
@@ -677,7 +696,38 @@ export default function ResourceDetailPage() {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center bg-white/90 backdrop-blur-xl rounded-[1.5rem] p-8 shadow-lg shadow-gray-200/40 border border-white/60 max-w-md"
         >
-          {accessStatus === 'private' ? (
+          {(accessStatus === 'login_required' || accessStatus === 'practitioner_only') ? (
+            <>
+              <Heart className="w-12 h-12 text-teal-500 mx-auto mb-4" />
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                {locale === 'fr' ? 'Bienvenue sur Bloomsline' : 'Welcome to Bloomsline'}
+              </h1>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                {accessStatus === 'login_required'
+                  ? (locale === 'fr'
+                    ? 'Cette ressource est réservée aux praticiens Bloomsline. Connectez-vous pour y accéder.'
+                    : 'This resource is for Bloomsline practitioners. Sign in to access it.')
+                  : (locale === 'fr'
+                    ? 'Cette ressource est réservée aux praticiens. Découvrez comment Bloomsline peut vous aider dans votre pratique.'
+                    : 'This resource is for practitioners. Discover how Bloomsline can help your practice.')}
+              </p>
+              <div className="flex gap-3 justify-center">
+                {accessStatus === 'login_required' ? (
+                  <Link href="/sign-in">
+                    <Button className="rounded-xl bg-gray-900 hover:bg-gray-800 text-white px-6">
+                      {locale === 'fr' ? 'Se connecter' : 'Sign in'}
+                    </Button>
+                  </Link>
+                ) : (
+                  <a href="https://bloomsline.com" target="_blank" rel="noopener noreferrer">
+                    <Button className="rounded-xl bg-gray-900 hover:bg-gray-800 text-white px-6">
+                      {locale === 'fr' ? 'Découvrir Bloomsline' : 'Explore Bloomsline'}
+                    </Button>
+                  </a>
+                )}
+              </div>
+            </>
+          ) : accessStatus === 'private' ? (
             <>
               <Lock className="w-12 h-12 text-amber-500 mx-auto mb-4" />
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
