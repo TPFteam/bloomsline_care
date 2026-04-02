@@ -228,7 +228,7 @@ export async function GET(request: NextRequest) {
 
   // If no base slots, return early
   if (slots.length === 0) {
-    return NextResponse.json({ slots: [], practitionerTimezone: timezone });
+    return NextResponse.json({ slots: [], practitionerTimezone: timezone, v: 2 });
   }
 
   // 2. Get Google Calendar busy times (graceful fallback)
@@ -236,7 +236,7 @@ export async function GET(request: NextRequest) {
 
   if (!googleAuth) {
     console.warn('[available-slots] No Google auth — returning base slots WITHOUT calendar filtering. Practitioner:', practitionerId);
-    return NextResponse.json({ slots, practitionerTimezone: timezone, calendarFiltered: false });
+    return NextResponse.json({ slots, practitionerTimezone: timezone, calendarFiltered: false, v: 2 });
   }
 
   console.log('[available-slots] Google auth OK, calendarId:', googleAuth.calendarId);
