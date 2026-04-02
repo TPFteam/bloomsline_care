@@ -36,7 +36,15 @@ export function Logo({ size = 'sm', className, showText = false, variant = 'ligh
         'tracking-wide whitespace-nowrap',
         variant === 'dark' ? 'text-white' : ''
       )} style={variant === 'light' ? { color: '#1F2227' } : undefined}>
-        <span className="font-medium">blooms</span><span className="font-light text-[#4A9A86]">line</span>
+        <span className="font-medium">blooms</span>
+        <motion.span
+          className="font-light text-[#4A9A86] inline-block overflow-hidden"
+          initial={{ width: 0, opacity: 0 }}
+          animate={{ width: 'auto', opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.6, ease: 'easeOut' }}
+        >
+          line
+        </motion.span>
       </span>
     </div>
   )
