@@ -27,6 +27,7 @@ import {
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { TimeSelect } from '@/components/ui/time-select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
@@ -1148,41 +1149,20 @@ export default function BookingsPage() {
                           ) : (
                             <div className="space-y-2">
                               {slots.map((slot) => {
-                                const timeOptions = [
-                                  '07:00','07:30','08:00','08:30','09:00','09:30',
-                                  '10:00','10:30','11:00','11:30','12:00','12:30',
-                                  '13:00','13:30','14:00','14:30','15:00','15:30',
-                                  '16:00','16:30','17:00','17:30','18:00','18:30',
-                                  '19:00','19:30','20:00','20:30','21:00',
-                                ]
                                 return (
                                   <div
                                     key={slot.index}
                                     className="flex items-center gap-3"
                                   >
-                                    <select
+                                    <TimeSelect
                                       value={slot.startTime}
-                                      onChange={(e) =>
-                                        updateAvailabilitySlot(slot.index, 'startTime', e.target.value)
-                                      }
-                                      className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none cursor-pointer"
-                                    >
-                                      {timeOptions.map((t) => (
-                                        <option key={t} value={t}>{t}</option>
-                                      ))}
-                                    </select>
+                                      onChange={(v) => updateAvailabilitySlot(slot.index, 'startTime', v)}
+                                    />
                                     <span className="text-gray-400 text-sm">{locale === 'fr' ? 'à' : 'to'}</span>
-                                    <select
+                                    <TimeSelect
                                       value={slot.endTime}
-                                      onChange={(e) =>
-                                        updateAvailabilitySlot(slot.index, 'endTime', e.target.value)
-                                      }
-                                      className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none cursor-pointer"
-                                    >
-                                      {timeOptions.map((t) => (
-                                        <option key={t} value={t}>{t}</option>
-                                      ))}
-                                    </select>
+                                      onChange={(v) => updateAvailabilitySlot(slot.index, 'endTime', v)}
+                                    />
                                     <button
                                       onClick={() => removeAvailabilitySlot(slot.index)}
                                       className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
