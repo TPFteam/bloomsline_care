@@ -1383,10 +1383,11 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           day = addDays(day, 1)
                         }
                         const yesterday = addDays(startOfDay(new Date()), -1)
+                        const allowPastDates = editStatus === 'completed' || editStatus === 'cancelled' || editStatus === 'no_show'
                         return days.map((d) => {
                           const isCurrentMonth = isSameMonth(d, editCalendarMonth)
                           const isSelected = isSameDay(d, editSelectedDate)
-                          const isPast = isBefore(d, yesterday)
+                          const isPast = !allowPastDates && isBefore(d, yesterday)
                           return (
                             <button
                               key={d.toISOString()}
