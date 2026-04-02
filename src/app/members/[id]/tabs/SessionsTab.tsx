@@ -888,7 +888,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                               <div>
                                 <p className="text-xs font-medium text-gray-500 mb-1">Summary</p>
                                 <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                                  {session.summary}
+                                  {session.summary?.replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, '')}
                                 </p>
                               </div>
                             </div>
@@ -1119,7 +1119,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             </span>
                           )}
                           {session.cancellation_reason && session.notes && <span className="text-gray-300 mx-1">·</span>}
-                          {session.notes && <span className="text-gray-400">{session.notes}</span>}
+                          {session.notes && <span className="text-gray-400">{session.notes.replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, '')}</span>}
                         </div>
                       </div>
                     </div>
@@ -1131,7 +1131,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                       <div className="flex items-start gap-2">
                         <FileText className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                         <p className="text-sm text-gray-600 line-clamp-2">
-                          {session.summary}
+                          {session.summary?.replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, '')}
                         </p>
                       </div>
                     </div>

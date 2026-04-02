@@ -1780,7 +1780,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       </span>
                     )}
                     {(selectedSession as any).cancellation_reason && selectedSession.notes && <span className="text-gray-300 mx-1">·</span>}
-                    {selectedSession.notes && <span className="text-gray-400">{selectedSession.notes}</span>}
+                    {selectedSession.notes && <span className="text-gray-400">{selectedSession.notes.replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, '')}</span>}
                   </div>
                 </div>
               </div>
