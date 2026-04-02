@@ -255,7 +255,7 @@ export default function BookingsPage() {
       const connection = await getCalendarConnection()
       setCalendarConnection(connection)
 
-      const schedules = await getAvailabilitySchedules()
+      const schedules = await getAvailabilitySchedules(authUser.id)
       if (schedules.length > 0) {
         setAvailabilitySlots(
           schedules.map((s) => ({
