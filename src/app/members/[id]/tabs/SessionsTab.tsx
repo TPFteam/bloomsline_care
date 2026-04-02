@@ -1416,8 +1416,17 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                     {format(editSelectedDate, 'EEEE, MMMM d, yyyy')}
                   </p>
 
-                  {/* Time Slots */}
-                  {editLoadingSlots ? (
+                  {/* Time Slots — for past dates, show manual input; for future dates, show available slots */}
+                  {(editStatus === 'completed' || editStatus === 'cancelled' || editStatus === 'no_show') && isBefore(editSelectedDate, startOfDay(new Date())) ? (
+                    <div>
+                      <input
+                        type="time"
+                        value={editSelectedTime || ''}
+                        onChange={(e) => setEditSelectedTime(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
+                      />
+                    </div>
+                  ) : editLoadingSlots ? (
                     <div className="flex items-center justify-center py-4">
                       <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                     </div>
