@@ -828,11 +828,13 @@ export default function ResourceDetailPage() {
               </p>
             </>
           )}
-          <Link href="/resources">
-            <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl">
-              {locale === 'fr' ? 'Retour aux ressources' : 'Back to Resources'}
-            </Button>
-          </Link>
+          {accessStatus !== 'login_required' && accessStatus !== 'practitioner_only' && (
+            <Link href="/resources">
+              <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl mt-4">
+                {locale === 'fr' ? 'Retour aux ressources' : 'Back to Resources'}
+              </Button>
+            </Link>
+          )}
         </motion.div>
       </div>
     )
