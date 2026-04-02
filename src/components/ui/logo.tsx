@@ -42,10 +42,10 @@ export function Logo({ size = 'sm', className, showText = false, variant = 'ligh
       {logoIcon}
       <span className={cn(
         textSizeMap[size],
-        'font-medium tracking-wide whitespace-nowrap',
+        'tracking-wide whitespace-nowrap',
         variant === 'dark' ? 'text-white' : ''
-      )} style={variant === 'light' ? { color: '#1F2227', textShadow: '0 1px 3px rgba(0,0,0,0.2)' } : undefined}>
-        Bloomsline
+      )} style={variant === 'light' ? { color: '#1F2227' } : undefined}>
+        <span className="font-medium">blooms</span><span className="font-light text-gray-400">line</span>
       </span>
     </div>
   )
