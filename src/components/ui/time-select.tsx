@@ -57,7 +57,8 @@ export function TimeSelect({ value, onChange }: TimeSelectProps) {
       {isOpen && (
         <div
           ref={listRef}
-          className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-[200px] overflow-y-auto py-1"
+          className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-[200px] overflow-y-auto py-1 scrollbar-none"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {TIME_OPTIONS.map((t) => (
             <button
