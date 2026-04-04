@@ -302,6 +302,10 @@ export async function saveBookingSettings(
 ): Promise<BookingSettings | null> {
   const supabase = createClient();
 
+  // Ensure valid session
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) await supabase.auth.refreshSession()
+
   // Strip read-only fields that shouldn't be sent on insert/update
   const { id: _id, created_at: _ca, updated_at: _ua, ...settingsToSave } = settings as BookingSettings;
 
@@ -318,10 +322,14 @@ export async function saveBookingSettings(
       .update(settingsToSave)
       .eq('user_id', settings.user_id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('[saveBookingSettings] Update error:', error.code, error.message, error.details);
+      return null;
+    }
+    if (!data) {
+      console.error('[saveBookingSettings] Update returned no data — possible RLS issue');
       return null;
     }
     return data;
