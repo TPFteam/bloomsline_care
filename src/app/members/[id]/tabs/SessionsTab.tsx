@@ -640,7 +640,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-teal-500" />
-                    ${locale === 'fr' ? 'Date et heure' : 'Date & Time'}
+                    {locale === 'fr' ? 'Date et heure' : 'Date & Time'}
                   </label>
                   <input
                     type="datetime-local"
@@ -1368,7 +1368,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         </div>
       )}
 
-      {/* ${locale === 'fr' ? 'Modifier la séance' : 'Edit Session'} Modal */}
+      {/* Edit Session Modal */}
       <AnimatePresence>
         {editingSession && (
           <motion.div
@@ -1389,7 +1389,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
               <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
                 <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                   <Pencil className="w-5 h-5 text-teal-500" />
-                  ${locale === 'fr' ? 'Modifier la séance' : 'Edit Session'}
+                  {locale === 'fr' ? 'Modifier la séance' : 'Edit Session'}
                 </h2>
                 <button
                   onClick={handleCancelEdit}
@@ -1475,10 +1475,10 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   </div>
                 </div>
 
-                {/* ${locale === 'fr' ? 'Date et heure' : 'Date & Time'} Picker */}
+                {/* {locale === 'fr' ? 'Date et heure' : 'Date & Time'} Picker */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ${locale === 'fr' ? 'Date et heure' : 'Date & Time'}
+                    {locale === 'fr' ? 'Date et heure' : 'Date & Time'}
                   </label>
 
                   {/* Mini Calendar */}
