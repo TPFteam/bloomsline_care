@@ -41,8 +41,13 @@ export async function uploadResourceFile(
   if (contentType === 'audio/ogg') contentType = 'audio/mpeg'
   if (contentType === 'video/quicktime') contentType = 'video/mp4'
 
-  // Upload to Supabase Storage
+  // Ensure valid session before upload
   const supabase = getSupabase()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) {
+    await supabase.auth.refreshSession()
+  }
+
   const { data, error } = await supabase.storage
     .from(BUCKET_NAME)
     .upload(filePath, file, {
