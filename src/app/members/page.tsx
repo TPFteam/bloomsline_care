@@ -160,6 +160,7 @@ export default function MembersPage() {
   // Add Member Modal
   const [showAddModal, setShowAddModal] = useState(false)
   const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] as string[] })
+  const [sendInvite, setSendInvite] = useState(true)
   const [saving, setSaving] = useState(false)
 
   // Groups
@@ -524,6 +525,44 @@ export default function MembersPage() {
       setShowAddModal(false)
       toast.success(t.members.success.memberCreated)
       analytics.memberAdded({ total_count: updatedMembers.length })
+
+      // Send invitation email if toggle is on
+      if (sendInvite && data.id && emailToAdd) {
+        try {
+          const { data: practitionerProfile } = await supabase
+            .from('users')
+            .select('full_name')
+            .eq('id', authUser.id)
+            .single()
+
+          const { data: { session } } = await supabase.auth.getSession()
+
+          await fetch('/api/notifications/email-only', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+            },
+            body: JSON.stringify({
+              type: 'member_welcome',
+              email: emailToAdd,
+              metadata: {
+                memberName: newMember.firstName.trim(),
+                practitionerName: practitionerProfile?.full_name || 'Your practitioner',
+              },
+              locale,
+            }),
+          })
+
+          await supabase
+            .from('members')
+            .update({ invitation_sent: true, invitation_sent_at: new Date().toISOString() })
+            .eq('id', data.id)
+        } catch (inviteErr) {
+          console.error('Error sending invitation:', inviteErr)
+        }
+      }
+
       fetchMembers() // refresh group counts
     } catch (error) {
       console.error('Error creating member:', error)
@@ -1620,6 +1659,28 @@ export default function MembersPage() {
                     <span className="text-sm text-gray-700 group-hover/minor:text-gray-900 transition-colors">
                       {locale === 'fr' ? 'Mineur' : locale === 'es' ? 'Menor' : 'Minor'}
                     </span>
+                  </label>
+
+                  {/* Send Invitation Toggle */}
+                  <label className="flex items-center gap-3 cursor-pointer group/invite">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={sendInvite}
+                        onChange={(e) => setSendInvite(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-gray-200 rounded-full peer-checked:bg-teal-600 transition-colors" />
+                      <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-4" />
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-700 group-hover/invite:text-gray-900 transition-colors">
+                        {locale === 'fr' ? 'Envoyer une invitation' : 'Send invitation'}
+                      </span>
+                      <p className="text-xs text-gray-400">
+                        {locale === 'fr' ? 'Un email de bienvenue sera envoyé au patient' : 'A welcome email will be sent to the patient'}
+                      </p>
+                    </div>
                   </label>
 
                   {/* Group selector */}

@@ -417,6 +417,24 @@ const templates: Record<NotificationType, NotificationTemplate> = {
           ? `${m.memberName} está inactivo`
           : `${m.memberName} is inactive`,
   },
+
+  member_welcome: {
+    title: (m, locale) =>
+      locale === 'fr' ? 'Bienvenue sur Bloomsline' : locale === 'es' ? 'Bienvenido a Bloomsline' : 'Welcome to Bloomsline',
+    body: (m, locale) =>
+      locale === 'fr'
+        ? `Bonjour ${m.memberName},\n\n${m.practitionerName} utilise Bloomsline pour partager des ressources thérapeutiques avec vous entre vos séances.\n\nVous pourrez recevoir des exercices, des fiches de travail et des rappels de séance via cette plateforme.\n\nBloomsline est un espace sécurisé et confidentiel, conforme au RGPD. Vos données sont protégées.\n\nSi vous avez des questions, contactez directement ${m.practitionerName}.`
+        : locale === 'es'
+          ? `Hola ${m.memberName},\n\n${m.practitionerName} usa Bloomsline para compartir recursos terapéuticos contigo entre sesiones.\n\nPodrás recibir ejercicios y recordatorios a través de esta plataforma.\n\nBloomsline es un espacio seguro y confidencial.\n\nSi tienes preguntas, contacta directamente a ${m.practitionerName}.`
+          : `Hi ${m.memberName},\n\n${m.practitionerName} uses Bloomsline to share therapeutic resources with you between sessions.\n\nYou may receive exercises, worksheets, and session reminders through this platform.\n\nBloomsline is a secure and confidential space, GDPR-compliant. Your data is protected.\n\nIf you have any questions, contact ${m.practitionerName} directly.`,
+    actionUrl: () => '/',
+    emailSubject: (m, locale) =>
+      locale === 'fr'
+        ? `${m.practitionerName} vous invite sur Bloomsline`
+        : locale === 'es'
+          ? `${m.practitionerName} te invita a Bloomsline`
+          : `${m.practitionerName} invites you to Bloomsline`,
+  },
 }
 
 /**

@@ -27,6 +27,7 @@ export type NotificationType =
   | 'member_invitation_accepted'
   | 'member_invitation_rejected'
   | 'member_inactive'
+  | 'member_welcome'
 
 export type UserType = 'practitioner' | 'member'
 
