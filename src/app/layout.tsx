@@ -11,6 +11,7 @@ import { PostHogProvider } from "@/lib/analytics/posthog-provider";
 import { PostHogIdentify } from "@/lib/analytics/posthog-identify";
 import { FloatingNotesProvider } from "@/lib/floating-notes/context";
 import { FloatingNotesPanel } from "@/components/notes/FloatingNotesPanel";
+import { SessionGuard } from "@/components/auth/session-guard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,7 +53,9 @@ export default function RootLayout({
             <LanguageProvider>
               <QueryProvider>
                 <FloatingNotesProvider>
+                  <SessionGuard>
                   {children}
+                  </SessionGuard>
                   <FloatingNotesPanel />
                 </FloatingNotesProvider>
               </QueryProvider>
