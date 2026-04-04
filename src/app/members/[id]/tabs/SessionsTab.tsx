@@ -640,7 +640,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-teal-500" />
-                    Date & Time
+                    ${locale === 'fr' ? 'Date et heure' : 'Date & Time'}
                   </label>
                   <input
                     type="datetime-local"
@@ -1368,7 +1368,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         </div>
       )}
 
-      {/* Edit Session Modal */}
+      {/* ${locale === 'fr' ? 'Modifier la séance' : 'Edit Session'} Modal */}
       <AnimatePresence>
         {editingSession && (
           <motion.div
@@ -1389,7 +1389,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
               <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
                 <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                   <Pencil className="w-5 h-5 text-teal-500" />
-                  Edit Session
+                  ${locale === 'fr' ? 'Modifier la séance' : 'Edit Session'}
                 </h2>
                 <button
                   onClick={handleCancelEdit}
@@ -1404,7 +1404,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                 {/* Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Status
+                    {locale === 'fr' ? 'Statut' : 'Status'}
                   </label>
                   <select
                     value={editStatus}
@@ -1475,10 +1475,10 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   </div>
                 </div>
 
-                {/* Date & Time Picker */}
+                {/* ${locale === 'fr' ? 'Date et heure' : 'Date & Time'} Picker */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date & Time
+                    ${locale === 'fr' ? 'Date et heure' : 'Date & Time'}
                   </label>
 
                   {/* Mini Calendar */}
@@ -1503,7 +1503,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
                     {/* Day headers */}
                     <div className="grid grid-cols-7 gap-1 mb-1">
-                      {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((d) => (
+                      {(locale === 'fr' ? ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'] : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']).map((d) => (
                         <div key={d} className="text-center text-xs text-gray-400 py-1">{d}</div>
                       ))}
                     </div>
@@ -1622,14 +1622,14 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   onClick={handleCancelEdit}
                   className="rounded-xl"
                 >
-                  Cancel
+                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
                 </Button>
                 <Button
                   onClick={handleSaveEdit}
                   disabled={saving}
                   className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg"
                 >
-                  {saving ? 'Saving...' : 'Save Changes'}
+                  {saving ? (locale === 'fr' ? 'Enregistrement...' : 'Saving...') : (locale === 'fr' ? 'Enregistrer' : 'Save Changes')}
                 </Button>
               </div>
             </motion.div>
