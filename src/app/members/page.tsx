@@ -173,6 +173,7 @@ export default function MembersPage() {
 
   // CSV Import Modal
   const [showImportModal, setShowImportModal] = useState(false)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [importStep, setImportStep] = useState<'upload' | 'mapping' | 'preview' | 'result'>('upload')
   const [importMode, setImportMode] = useState<'paste' | 'csv'>('paste')
   const [pasteText, setPasteText] = useState('')
@@ -349,7 +350,13 @@ export default function MembersPage() {
   }
 
   const handleDeleteMember = async (id: string) => {
-    if (!confirm(t.members.actions.confirmDelete)) return
+    setDeleteConfirmId(id)
+  }
+
+  const confirmDeleteMember = async () => {
+    if (!deleteConfirmId) return
+    const id = deleteConfirmId
+    setDeleteConfirmId(null)
 
     try {
       const { error } = await supabase
@@ -1471,6 +1478,36 @@ export default function MembersPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setDeleteConfirmId(null)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              {locale === 'fr' ? 'Supprimer ce patient ?' : 'Delete this member?'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              {locale === 'fr'
+                ? 'Cette action supprimera définitivement ce patient et toutes ses données associées. Cette action est irréversible.'
+                : 'This will permanently delete this member and all associated data. This action cannot be undone.'}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={confirmDeleteMember}
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-medium"
+              >
+                {locale === 'fr' ? 'Supprimer' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Member Modal */}
       <AnimatePresence>
