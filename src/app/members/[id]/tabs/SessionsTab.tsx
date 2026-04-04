@@ -770,7 +770,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             <p className="text-sm text-amber-700 mt-1 flex items-center gap-1">
                               <CalendarCheck className="w-4 h-4" />
                               <span className="font-medium">Suggested:</span>{' '}
-                              {new Date(session.member_suggested_date).toLocaleDateString('en-US', {
+                              {new Date(session.member_suggested_date).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
                                 weekday: 'short',
                                 month: 'short',
                                 day: 'numeric',
@@ -824,7 +824,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           {session.practitioner_proposed_date && (
                             <p className="text-sm text-purple-700 mt-1">
                               <span className="font-medium">Proposed:</span>{' '}
-                              {new Date(session.practitioner_proposed_date).toLocaleDateString('en-US', {
+                              {new Date(session.practitioner_proposed_date).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
                                 weekday: 'short',
                                 month: 'short',
                                 day: 'numeric',
@@ -868,7 +868,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           )}
                         </div>
                         <p className="text-sm text-gray-500 mt-1">
-                          {new Date(session.scheduled_at).toLocaleDateString('en-US', {
+                          {new Date(session.scheduled_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
                             weekday: 'long',
                             month: 'short',
                             day: 'numeric',
@@ -1042,7 +1042,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                         </div>
                         <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
                           <span>
-                            {new Date(session.scheduled_at).toLocaleDateString('en-US', {
+                            {new Date(session.scheduled_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
                               month: 'short',
                               day: 'numeric',
                               year: 'numeric',
@@ -1257,7 +1257,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                         className="h-7 px-2 text-xs text-red-500 hover:bg-red-50 rounded-lg"
                       >
                         <X className="w-3 h-3 mr-1" />
-                        No Show
+                        {locale === 'fr' ? 'Absent' : 'No Show'}
                       </Button>
                     </div>
                   )}
@@ -1684,7 +1684,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                 <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
                   <p className="text-sm text-gray-500">Current session scheduled for:</p>
                   <p className="font-semibold text-gray-900 mt-1">
-                    {new Date(proposingSession.scheduled_at).toLocaleDateString('en-US', {
+                    {new Date(proposingSession.scheduled_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
                       weekday: 'long',
                       month: 'short',
                       day: 'numeric',
@@ -1702,7 +1702,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                       Member suggested:
                     </p>
                     <p className="font-semibold text-amber-800 mt-1">
-                      {new Date(proposingSession.member_suggested_date).toLocaleDateString('en-US', {
+                      {new Date(proposingSession.member_suggested_date).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
                         weekday: 'long',
                         month: 'short',
                         day: 'numeric',
