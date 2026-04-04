@@ -1338,39 +1338,45 @@ export default function BookingsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {locale === 'fr' ? 'Délai avant (minutes)' : 'Buffer before (minutes)'}
+                        {locale === 'fr' ? 'Délai avant' : 'Buffer before'}
                       </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="60"
+                      <select
                         value={bookingSettings?.buffer_before || 0}
                         onChange={(e) =>
                           setBookingSettings((prev) => ({
                             ...prev!,
-                            buffer_before: parseInt(e.target.value) || 0,
+                            buffer_before: parseInt(e.target.value),
                           }))
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl bg-white text-sm"
+                      >
+                        <option value={0}>{locale === 'fr' ? 'Aucun' : 'None'}</option>
+                        <option value={30}>30 min</option>
+                        <option value={60}>1h</option>
+                        <option value={90}>1h30</option>
+                        <option value={120}>2h</option>
+                      </select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {locale === 'fr' ? 'Délai après (minutes)' : 'Buffer after (minutes)'}
+                        {locale === 'fr' ? 'Délai après' : 'Buffer after'}
                       </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="60"
-                        value={bookingSettings?.buffer_after || 15}
+                      <select
+                        value={bookingSettings?.buffer_after || 0}
                         onChange={(e) =>
                           setBookingSettings((prev) => ({
                             ...prev!,
-                            buffer_after: parseInt(e.target.value) || 0,
+                            buffer_after: parseInt(e.target.value),
                           }))
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl bg-white text-sm"
+                      >
+                        <option value={0}>{locale === 'fr' ? 'Aucun' : 'None'}</option>
+                        <option value={30}>30 min</option>
+                        <option value={60}>1h</option>
+                        <option value={90}>1h30</option>
+                        <option value={120}>2h</option>
+                      </select>
                     </div>
                   </div>
 
