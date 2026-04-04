@@ -407,13 +407,16 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     setSaving(true)
     try {
       // Build scheduled_at from date picker state
-      let scheduledAtValue = editScheduledAt
+      const dt = new Date(editSelectedDate)
       if (editSelectedTime) {
         const [hours, minutes] = editSelectedTime.split(':').map(Number)
-        const dt = new Date(editSelectedDate)
         dt.setHours(hours, minutes, 0, 0)
-        scheduledAtValue = dt.toISOString()
+      } else {
+        // Keep original time if no time selected
+        const originalDate = new Date(editingSession.scheduled_at)
+        dt.setHours(originalDate.getHours(), originalDate.getMinutes(), 0, 0)
       }
+      const scheduledAtValue = dt.toISOString()
 
       const { error } = await supabase
         .from('sessions')
