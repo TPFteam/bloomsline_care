@@ -166,12 +166,12 @@ function getWelcomeResourceTemplate(params: {
             <span style="font-size:24px;font-weight:500;color:#1F2227;">blooms</span><span style="font-size:24px;font-weight:300;color:${accentColor};">line</span>
           </div>
           <div style="color:#333;line-height:1.7;">
-            <p style="margin:0 0 20px;font-weight:500;">${c.greeting}</p>
-
             <!-- Connection circles -->
-            <div style="text-align:center;margin-bottom:24px;">
+            <div style="text-align:center;margin-bottom:20px;">
               ${practitionerCircle}${memberCircle}
             </div>
+
+            <p style="margin:0 0 16px;font-weight:500;text-align:center;">${c.greeting}</p>
 
             <p style="margin:0 0 8px;color:#555;">${c.intro}</p>
             <p style="margin:0 0 24px;color:#555;">${c.intro2}</p>

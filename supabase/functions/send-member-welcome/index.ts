@@ -83,15 +83,14 @@ function getTemplate(params: {
 
             <!-- Content -->
             <div style="color: #333; line-height: 1.7;">
-              <p style="margin: 0 0 20px 0; font-weight: 500;">
+              <!-- Connection circles -->
+              <div style="text-align: center; margin-bottom: 20px;">
+                ${practitionerCircle}${memberCircle}
+              </div>
+
+              <p style="margin: 0 0 16px 0; font-weight: 500; text-align: center;">
                 ${content.greeting}
               </p>
-
-              <!-- Connection circles -->
-              <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 24px;">
-                <!--[if mso]><table><tr><td>${practitionerCircle}</td><td>${memberCircle}</td></tr></table><![endif]-->
-                <!--[if !mso]><!-->${practitionerCircle}${memberCircle}<!--<![endif]-->
-              </div>
 
               <p style="margin: 0 0 8px 0; color: #555;">
                 ${content.intro}

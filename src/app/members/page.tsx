@@ -12,6 +12,7 @@ import {
   Mail,
   Edit,
   Trash2,
+  Clock,
   LayoutGrid,
   List,
   Loader2,
@@ -2336,15 +2337,6 @@ function MemberCard({
 
         {/* Actions */}
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-          {!(member as any).invitation_sent && member.email && onInviteClick && (
-            <button
-              onClick={() => onInviteClick(member)}
-              className="p-2 rounded-full text-teal-500 hover:text-teal-600 hover:bg-teal-50 transition-colors"
-              title={locale === 'fr' ? 'Envoyer l\'invitation' : 'Send invitation'}
-            >
-              <Mail className="w-4 h-4" />
-            </button>
-          )}
           <button
             onClick={() => router.push(`/members/${member.id}/edit`)}
             className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
@@ -2400,7 +2392,30 @@ function MemberCard({
           )}
         </div>
 
+        {/* App status */}
+        {!member.user_id && member.email && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onInviteClick?.(member) }}
+            className="flex items-center justify-between w-full hover:opacity-80 transition-opacity"
+          >
+            <div className="flex items-center gap-2">
+              <Mail className="w-4 h-4 text-teal-500 flex-shrink-0" />
+              <span className="text-sm text-teal-600">
+                {locale === 'fr'
+                  ? `${member.first_name} n'est pas sur l'app`
+                  : `${member.first_name} is not on the app`}
+              </span>
+            </div>
+            <span className="text-xs font-medium text-teal-600">
+              {(member as any).invitation_sent
+                ? (locale === 'fr' ? 'Renvoyer' : 'Resend')
+                : (locale === 'fr' ? 'Inviter' : 'Invite')}
+            </span>
+          </button>
+        )}
+
       </div>
+
 
     </motion.div>
   )
