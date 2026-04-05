@@ -185,6 +185,8 @@ export default function MembersPage() {
   // CSV Import Modal
   const [showImportModal, setShowImportModal] = useState(false)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [inviteConfirmMember, setInviteConfirmMember] = useState<Member | null>(null)
+  const [sendingInviteGlobal, setSendingInviteGlobal] = useState(false)
   const [importStep, setImportStep] = useState<'upload' | 'mapping' | 'preview' | 'result'>('upload')
   const [importMode, setImportMode] = useState<'paste' | 'csv'>('paste')
   const [pasteText, setPasteText] = useState('')
@@ -541,15 +543,17 @@ export default function MembersPage() {
         try {
           const { data: practitionerProfile } = await supabase
             .from('users')
-            .select('full_name')
+            .select('full_name, avatar_url')
             .eq('id', authUser.id)
             .single()
 
           await supabase.functions.invoke('send-member-welcome', {
             body: {
               memberName: newMember.firstName.trim(),
+              memberLastName: newMember.lastName.trim(),
               memberEmail: emailToAdd,
               practitionerName: practitionerProfile?.full_name || 'Your practitioner',
+              practitionerAvatarUrl: practitionerProfile?.avatar_url || null,
               locale,
             },
           })
@@ -1332,6 +1336,7 @@ export default function MembersPage() {
                       index={index}
                       onDelete={handleDeleteMember}
                       onStatusChange={handleStatusChange}
+                      onInviteClick={(m) => setInviteConfirmMember(m)}
                       t={t}
                       locale={locale}
                       nextSession={nextSessions[member.id] || null}
@@ -1517,6 +1522,77 @@ export default function MembersPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Invite Confirmation Modal */}
+      {inviteConfirmMember && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setInviteConfirmMember(null)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-4">
+              <Mail className="w-5 h-5 text-teal-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 text-center mb-1">
+              {locale === 'fr' ? 'Envoyer l\'invitation ?' : 'Send invitation?'}
+            </h3>
+            <p className="text-sm text-gray-500 text-center mb-6">
+              {locale === 'fr'
+                ? `${inviteConfirmMember.first_name} ${inviteConfirmMember.last_name} recevra un email de bienvenue à ${inviteConfirmMember.email}`
+                : `${inviteConfirmMember.first_name} ${inviteConfirmMember.last_name} will receive a welcome email at ${inviteConfirmMember.email}`}
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setInviteConfirmMember(null)}
+                className="px-5 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={async () => {
+                  const m = inviteConfirmMember
+                  setInviteConfirmMember(null)
+                  setSendingInviteGlobal(true)
+                  try {
+                    const { data: { user: authUser } } = await supabase.auth.getUser()
+                    if (!authUser) return
+                    const { data: practitionerProfile } = await supabase
+                      .from('users')
+                      .select('full_name, avatar_url')
+                      .eq('id', authUser.id)
+                      .single()
+
+                    await supabase.functions.invoke('send-member-welcome', {
+                      body: {
+                        memberName: m.first_name,
+                        memberLastName: m.last_name,
+                        memberEmail: m.email,
+                        practitionerName: practitionerProfile?.full_name || 'Your practitioner',
+                        practitionerAvatarUrl: practitionerProfile?.avatar_url || null,
+                        locale,
+                      },
+                    })
+
+                    await supabase
+                      .from('members')
+                      .update({ invitation_sent: true, invitation_sent_at: new Date().toISOString() })
+                      .eq('id', m.id)
+
+                    setMembers(prev => prev.map(member => member.id === m.id ? { ...member, invitation_sent: true } as any : member))
+                    toast.success(locale === 'fr' ? 'Invitation envoyée' : 'Invitation sent')
+                  } catch {
+                    toast.error(locale === 'fr' ? 'Échec de l\'envoi' : 'Failed to send')
+                  }
+                  setSendingInviteGlobal(false)
+                }}
+                disabled={sendingInviteGlobal}
+                className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-medium disabled:opacity-50"
+              >
+                {sendingInviteGlobal
+                  ? (locale === 'fr' ? 'Envoi...' : 'Sending...')
+                  : (locale === 'fr' ? 'Envoyer' : 'Send')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
@@ -2170,6 +2246,7 @@ function MemberCard({
   index,
   onDelete,
   onStatusChange,
+  onInviteClick,
   t,
   locale,
   nextSession,
@@ -2179,6 +2256,7 @@ function MemberCard({
   index: number
   onDelete: (id: string) => void
   onStatusChange: (id: string, newStatus: 'active' | 'inactive') => void
+  onInviteClick?: (member: Member) => void
   t: ReturnType<typeof useLanguage>['t']
   locale: 'en' | 'fr' | 'es'
   nextSession: Session | null
@@ -2258,6 +2336,15 @@ function MemberCard({
 
         {/* Actions */}
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+          {!(member as any).invitation_sent && member.email && onInviteClick && (
+            <button
+              onClick={() => onInviteClick(member)}
+              className="p-2 rounded-full text-teal-500 hover:text-teal-600 hover:bg-teal-50 transition-colors"
+              title={locale === 'fr' ? 'Envoyer l\'invitation' : 'Send invitation'}
+            >
+              <Mail className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={() => router.push(`/members/${member.id}/edit`)}
             className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
@@ -2312,6 +2399,7 @@ function MemberCard({
             <span className="text-xs text-gray-400">{locale === 'fr' ? 'Non planifiée' : 'Not scheduled'}</span>
           )}
         </div>
+
       </div>
 
     </motion.div>

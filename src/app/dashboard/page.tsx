@@ -393,15 +393,17 @@ function DashboardContent() {
         try {
           const { data: practitionerProfile } = await supabase
             .from('users')
-            .select('full_name')
+            .select('full_name, avatar_url')
             .eq('id', authUser.id)
             .single()
 
           await supabase.functions.invoke('send-member-welcome', {
             body: {
               memberName: newMember.firstName.trim(),
+              memberLastName: newMember.lastName.trim(),
               memberEmail: newMember.email.trim(),
               practitionerName: practitionerProfile?.full_name || 'Your practitioner',
+              practitionerAvatarUrl: practitionerProfile?.avatar_url || null,
               locale,
             },
           })
@@ -629,14 +631,6 @@ function DashboardContent() {
       icon: Share2,
       color: 'from-indigo-400 to-indigo-500',
       bgColor: 'bg-indigo-50',
-    },
-    {
-      id: 'bloom-pulse',
-      type: null,
-      title: locale === 'fr' ? 'Obtenir un résumé' : 'Get a Summary',
-      icon: Sparkles,
-      color: 'from-violet-400 to-violet-500',
-      bgColor: 'bg-violet-50',
     },
   ]
 
