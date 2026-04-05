@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { analytics } from '@/lib/analytics/events'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -138,7 +138,17 @@ function getRelativeTime(dateString: string, locale: 'en' | 'fr' | 'es'): string
 export default function MembersPage() {
   const { t, locale } = useLanguage()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+
+  // Auto-open add modal if ?add=true
+  useEffect(() => {
+    if (searchParams.get('add') === 'true') {
+      setShowAddModal(true)
+      // Clean the URL
+      router.replace('/members', { scroll: false })
+    }
+  }, [searchParams, router])
 
   const [members, setMembers] = useState<Member[]>([])
   const [nextSessions, setNextSessions] = useState<Record<string, Session | null>>({})
@@ -535,23 +545,13 @@ export default function MembersPage() {
             .eq('id', authUser.id)
             .single()
 
-          const { data: { session } } = await supabase.auth.getSession()
-
-          await fetch('/api/notifications/email-only', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
-            },
-            body: JSON.stringify({
-              type: 'member_welcome',
-              email: emailToAdd,
-              metadata: {
-                memberName: newMember.firstName.trim(),
-                practitionerName: practitionerProfile?.full_name || 'Your practitioner',
-              },
+          await supabase.functions.invoke('send-member-welcome', {
+            body: {
+              memberName: newMember.firstName.trim(),
+              memberEmail: emailToAdd,
+              practitionerName: practitionerProfile?.full_name || 'Your practitioner',
               locale,
-            }),
+            },
           })
 
           await supabase
@@ -1650,7 +1650,7 @@ export default function MembersPage() {
                       <input
                         type="checkbox"
                         checked={newMember.isMinor}
-                        onChange={(e) => setNewMember({ ...newMember, isMinor: e.target.checked })}
+                        onChange={(e) => { setNewMember({ ...newMember, isMinor: e.target.checked }); if (e.target.checked) setSendInvite(false) }}
                         className="sr-only peer"
                       />
                       <div className="w-9 h-5 bg-gray-200 rounded-full peer-checked:bg-gray-900 transition-colors" />
@@ -1661,27 +1661,35 @@ export default function MembersPage() {
                     </span>
                   </label>
 
-                  {/* Send Invitation Toggle */}
-                  <label className="flex items-center gap-3 cursor-pointer group/invite">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={sendInvite}
-                        onChange={(e) => setSendInvite(e.target.checked)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-9 h-5 bg-gray-200 rounded-full peer-checked:bg-teal-600 transition-colors" />
-                      <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-4" />
+                  {/* Send Invitation Card */}
+                  <div
+                    onClick={() => setSendInvite(!sendInvite)}
+                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                      sendInvite ? 'border-teal-200 bg-teal-50/50' : 'border-gray-100 bg-gray-50/50'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      sendInvite ? 'bg-teal-100' : 'bg-gray-100'
+                    }`}>
+                      <Mail className={`w-4 h-4 ${sendInvite ? 'text-teal-600' : 'text-gray-400'}`} />
                     </div>
-                    <div>
-                      <span className="text-sm text-gray-700 group-hover/invite:text-gray-900 transition-colors">
-                        {locale === 'fr' ? 'Envoyer une invitation' : 'Send invitation'}
-                      </span>
-                      <p className="text-xs text-gray-400">
-                        {locale === 'fr' ? 'Un email de bienvenue sera envoyé au patient' : 'A welcome email will be sent to the patient'}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium ${sendInvite ? 'text-teal-900' : 'text-gray-500'}`}>
+                        {locale === 'fr'
+                          ? `Inviter ${newMember.firstName.trim() || 'cette personne'} sur l'app bien-être`
+                          : `Invite ${newMember.firstName.trim() || 'this person'} to the wellbeing app`}
+                      </p>
+                      <p className="text-xs text-gray-400 leading-snug">
+                        {locale === 'fr'
+                          ? 'Accès gratuit entre les séances'
+                          : 'Free access between sessions'}
                       </p>
                     </div>
-                  </label>
+                    <div className="flex-shrink-0 relative">
+                      <div className={`w-9 h-5 rounded-full transition-colors ${sendInvite ? 'bg-teal-600' : 'bg-gray-200'}`} />
+                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${sendInvite ? 'translate-x-4' : ''}`} />
+                    </div>
+                  </div>
 
                   {/* Group selector */}
                   {memberGroups.length > 0 && (

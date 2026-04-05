@@ -122,9 +122,11 @@ function DashboardContent() {
 
   // Add Member Modal
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
-  const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '' })
+  const [sendInvite, setSendInvite] = useState(true)
+  const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] as string[] })
   const [savingMember, setSavingMember] = useState(false)
   const [hasConsented, setHasConsented] = useState(true)
+  const [memberGroups, setMemberGroups] = useState<{ id: string; name: string; color: string }[]>([])
 
   // Featured templates - one from each type
   const featuredTemplates: TemplateOption[] = [
@@ -368,9 +370,10 @@ function DashboardContent() {
         phone: newMember.phone.trim() || null,
         status: 'pending' as const,
         engagement_level: 'medium' as const,
+        is_minor: newMember.isMinor,
       }
 
-      const { error } = await supabase
+      const { data: memberResult, error } = await supabase
         .from('members')
         .insert(memberData)
         .select()
@@ -378,8 +381,43 @@ function DashboardContent() {
 
       if (error) throw error
 
+      // Add to groups if any selected
+      if (newMember.groupIds.length > 0 && memberResult?.id) {
+        await supabase.from('member_group_members').insert(
+          newMember.groupIds.map(gid => ({ group_id: gid, member_id: memberResult.id }))
+        )
+      }
+
+      // Send invitation email if toggle is on
+      if (sendInvite && memberResult?.id) {
+        try {
+          const { data: practitionerProfile } = await supabase
+            .from('users')
+            .select('full_name')
+            .eq('id', authUser.id)
+            .single()
+
+          await supabase.functions.invoke('send-member-welcome', {
+            body: {
+              memberName: newMember.firstName.trim(),
+              memberEmail: newMember.email.trim(),
+              practitionerName: practitionerProfile?.full_name || 'Your practitioner',
+              locale,
+            },
+          })
+
+          await supabase
+            .from('members')
+            .update({ invitation_sent: true, invitation_sent_at: new Date().toISOString() })
+            .eq('id', memberResult.id)
+        } catch (inviteErr) {
+          console.error('Error sending invitation:', inviteErr)
+        }
+      }
+
       // Reset form and close modal
-      setNewMember({ firstName: '', lastName: '', email: '', phone: '' })
+      setNewMember({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] })
+      setSendInvite(true)
       setShowAddMemberModal(false)
       toast.success(locale === 'fr' ? 'Patient créé avec succès!' : 'Member created successfully!')
 
@@ -676,6 +714,10 @@ function DashboardContent() {
                   onClick={() => {
                     if (action.id === 'add-patient') {
                       setShowAddMemberModal(true)
+                      // Fetch groups for the modal
+                      supabase.from('member_groups').select('id, name, color').order('name').then(({ data }) => {
+                        if (data) setMemberGroups(data)
+                      })
                     } else if (action.id === 'share-resource') {
                       router.push('/resources')
                     } else if (action.id === 'reengage') {
@@ -1190,7 +1232,7 @@ function DashboardContent() {
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  {locale === 'fr' ? 'Nouveau Patient' : 'New Patient'}
+                  {locale === 'fr' ? 'Ajouter un nouveau patient / client' : 'Add a New Person'}
                 </h2>
                 <button
                   onClick={() => setShowAddMemberModal(false)}
@@ -1266,6 +1308,87 @@ function DashboardContent() {
                     />
                   </div>
                 </div>
+
+                {/* Minor Toggle */}
+                <label className="flex items-center gap-3 cursor-pointer mt-2">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={newMember.isMinor || false}
+                      onChange={(e) => { setNewMember({ ...newMember, isMinor: e.target.checked }); if (e.target.checked) setSendInvite(false) }}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-gray-200 rounded-full peer-checked:bg-gray-900 transition-colors" />
+                    <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-4" />
+                  </div>
+                  <span className="text-sm text-gray-700">
+                    {locale === 'fr' ? 'Mineur' : 'Minor'}
+                  </span>
+                </label>
+
+                {/* Send Invitation Card */}
+                <div
+                  onClick={() => setSendInvite(!sendInvite)}
+                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all mt-4 ${
+                    sendInvite ? 'border-teal-200 bg-teal-50/50' : 'border-gray-100 bg-gray-50/50'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    sendInvite ? 'bg-teal-100' : 'bg-gray-100'
+                  }`}>
+                    <Mail className={`w-4 h-4 ${sendInvite ? 'text-teal-600' : 'text-gray-400'}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${sendInvite ? 'text-teal-900' : 'text-gray-500'}`}>
+                      {locale === 'fr'
+                        ? `Inviter ${newMember.firstName.trim() || 'cette personne'} sur l'app bien-être`
+                        : `Invite ${newMember.firstName.trim() || 'this person'} to the wellbeing app`}
+                    </p>
+                    <p className="text-xs text-gray-400 leading-snug">
+                      {locale === 'fr' ? 'Accès gratuit entre les séances' : 'Free access between sessions'}
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 relative">
+                    <div className={`w-9 h-5 rounded-full transition-colors ${sendInvite ? 'bg-teal-600' : 'bg-gray-200'}`} />
+                    <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${sendInvite ? 'translate-x-4' : ''}`} />
+                  </div>
+                </div>
+
+                {/* Group selector */}
+                {memberGroups.length > 0 && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      {locale === 'fr' ? 'Ajouter à un groupe' : 'Add to a Group'}
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {memberGroups.map(group => {
+                        const selected = newMember.groupIds.includes(group.id)
+                        const dotColors: Record<string, string> = {
+                          blue: 'bg-blue-500', emerald: 'bg-emerald-500', purple: 'bg-purple-500',
+                          amber: 'bg-amber-500', red: 'bg-red-500', pink: 'bg-pink-500', cyan: 'bg-cyan-500',
+                        }
+                        return (
+                          <button
+                            key={group.id}
+                            type="button"
+                            onClick={() => setNewMember({
+                              ...newMember,
+                              groupIds: selected
+                                ? newMember.groupIds.filter(id => id !== group.id)
+                                : [...newMember.groupIds, group.id]
+                            })}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                              selected ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${dotColors[group.color] || 'bg-blue-500'}`} />
+                            {group.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Actions */}
                 <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
