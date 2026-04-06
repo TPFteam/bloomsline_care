@@ -188,6 +188,8 @@ export default function MembersPage() {
   const [showImportModal, setShowImportModal] = useState(false)
   const [prospects, setProspects] = useState<{ client_name: string; client_email: string; client_phone: string | null; session_type: string; start_time: string; status: string; id: string }[]>([])
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [deleteProspect, setDeleteProspect] = useState<{ id: string; email: string; name: string } | null>(null)
+  const [convertConfirm, setConvertConfirm] = useState<{ id: string; name: string } | null>(null)
   const [inviteConfirmMember, setInviteConfirmMember] = useState<Member | null>(null)
   const [inviteState, setInviteState] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
   const [importStep, setImportStep] = useState<'upload' | 'mapping' | 'preview' | 'result'>('upload')
@@ -241,6 +243,7 @@ export default function MembersPage() {
         .from('members')
         .select('*')
         .eq('practitioner_id', authUser.id)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -340,7 +343,7 @@ export default function MembersPage() {
         })))
       }
 
-      // Fetch prospects — bookings with no member_id and email not matching any member
+      // Fetch prospects — bookings with no member_id and email not matching ANY member (including prospects)
       const memberEmails = new Set((data || []).map(m => m.email?.toLowerCase()).filter(Boolean))
       const { data: guestBookings } = await supabase
         .from('bookings')
@@ -351,15 +354,73 @@ export default function MembersPage() {
         .order('start_time', { ascending: false })
 
       if (guestBookings) {
-        // Deduplicate by email — keep the most recent booking per person
-        const seen = new Map<string, typeof guestBookings[0]>()
+        let needsRefresh = false
+        // Auto-convert legacy booking prospects to prospect members
         for (const b of guestBookings) {
-          const email = b.client_email.toLowerCase()
-          if (!memberEmails.has(email) && !seen.has(email)) {
-            seen.set(email, b)
+          const email = b.client_email.toLowerCase().trim()
+          if (!memberEmails.has(email)) {
+            // Double-check DB to prevent duplicates (exclude soft-deleted)
+            const { data: alreadyExists } = await supabase
+              .from('members')
+              .select('id')
+              .eq('practitioner_id', authUser.id)
+              .ilike('email', email)
+              .is('deleted_at', null)
+              .maybeSingle()
+
+            if (alreadyExists) {
+              // Member exists but wasn't in our initial fetch — just link bookings
+              await supabase
+                .from('bookings')
+                .update({ member_id: alreadyExists.id })
+                .eq('client_email', b.client_email)
+                .eq('practitioner_id', authUser.id)
+                .is('member_id', null)
+              memberEmails.add(email)
+              needsRefresh = true
+              continue
+            }
+
+            const nameParts = b.client_name.trim().split(' ')
+            const { data: newMember } = await supabase
+              .from('members')
+              .insert({
+                practitioner_id: authUser.id,
+                first_name: nameParts[0] || b.client_name,
+                last_name: nameParts.slice(1).join(' ') || '',
+                email: b.client_email.trim(),
+                phone: b.client_phone || null,
+                status: 'prospect',
+                engagement_level: 'medium',
+              })
+              .select('id')
+              .maybeSingle()
+
+            if (newMember) {
+              await supabase
+                .from('bookings')
+                .update({ member_id: newMember.id })
+                .eq('client_email', b.client_email)
+                .eq('practitioner_id', authUser.id)
+                .is('member_id', null)
+              memberEmails.add(email)
+              needsRefresh = true
+            }
           }
         }
-        setProspects(Array.from(seen.values()))
+        setProspects([])
+        if (needsRefresh) {
+          const { data: refreshed } = await supabase
+            .from('members')
+            .select('*')
+            .eq('practitioner_id', authUser.id)
+            .is('deleted_at', null)
+            .order('created_at', { ascending: false })
+          if (refreshed) {
+            setMembers(refreshed)
+            calculateStats(refreshed)
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching members:', error)
@@ -370,15 +431,16 @@ export default function MembersPage() {
   }
 
   const calculateStats = (membersList: Member[]) => {
+    const nonProspects = membersList.filter(m => m.status !== 'prospect')
     const active = membersList.filter(m => m.status === 'active').length
     const inactive = membersList.filter(m => m.status === 'inactive').length
 
     const engagementValues = { low: 1, medium: 2, high: 3 }
-    const totalEngagement = membersList.reduce((sum, m) => sum + engagementValues[m.engagement_level], 0)
-    const avgEngagement = membersList.length > 0 ? Math.round((totalEngagement / membersList.length / 3) * 100) : 0
+    const totalEngagement = nonProspects.reduce((sum, m) => sum + engagementValues[m.engagement_level], 0)
+    const avgEngagement = nonProspects.length > 0 ? Math.round((totalEngagement / nonProspects.length / 3) * 100) : 0
 
     setStats({
-      total_members: membersList.length,
+      total_members: nonProspects.length,
       active_members: active,
       inactive_members: inactive,
       pending_members: 0,
@@ -397,15 +459,17 @@ export default function MembersPage() {
     setDeleteConfirmId(null)
 
     try {
-      const { error } = await supabase
-        .from('members')
-        .delete()
-        .eq('id', id)
+      // Use API route for all deletions — handles bookings cleanup with admin client
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`/api/members/${id}/delete-prospect`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      })
+      if (!res.ok) throw new Error('Delete failed')
 
-      if (error) throw error
-
-      setMembers(members.filter(m => m.id !== id))
-      calculateStats(members.filter(m => m.id !== id))
+      const updated = members.filter(m => m.id !== id)
+      setMembers(updated)
+      calculateStats(updated)
       toast.success(t.members.success.memberDeleted)
     } catch (error) {
       console.error('Error deleting member:', error)
@@ -1024,7 +1088,9 @@ export default function MembersPage() {
   }
 
   const filteredMembers = members.filter(member => {
+    if (filter === 'new') return member.status === 'prospect'
     if (filter !== 'all' && member.status !== filter) return false
+    if (filter === 'all' && member.status === 'prospect') return false // hide prospects from "All"
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
@@ -1040,11 +1106,14 @@ export default function MembersPage() {
     return true
   })
 
+  const prospectMembers = members.filter(m => m.status === 'prospect')
   const filterOptions: { value: MemberFilter; label: string; count: number; accent?: boolean }[] = [
     { value: 'all', label: t.members.filters.all, count: stats.total_members },
     { value: 'active', label: t.members.filters.active, count: stats.active_members },
     { value: 'inactive', label: t.members.filters.inactive, count: stats.inactive_members },
-    ...(prospects.length > 0 ? [{ value: 'new' as MemberFilter, label: locale === 'fr' ? 'Nouveaux' : 'New', count: prospects.length, accent: true }] : []),
+    ...(prospectMembers.length > 0 || prospects.length > 0
+      ? [{ value: 'new' as MemberFilter, label: locale === 'fr' ? 'Nouveaux' : 'New', count: prospectMembers.length + prospects.length, accent: true }]
+      : []),
   ]
 
   if (loading) {
@@ -1093,8 +1162,8 @@ export default function MembersPage() {
                     onClick={() => { setFilter(option.value); setShowGroupsView(false) }}
                     className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
                       filter === option.value && !showGroupsView
-                        ? (option.accent ? 'bg-amber-500 text-white' : 'bg-gray-900 text-white')
-                        : (option.accent ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200')
+                        ? (option.accent ? 'bg-teal-600 text-white' : 'bg-gray-900 text-white')
+                        : (option.accent ? 'bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200')
                     }`}
                   >
                     {option.label}
@@ -1362,8 +1431,85 @@ export default function MembersPage() {
               </div>
             </motion.div>
           ) : filter === 'new' ? (
-            /* Prospect cards — non-member bookings */
+            /* Prospect cards — prospect-status members + legacy booking prospects */
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {/* Prospect members (have member records) */}
+              {filteredMembers.map((member) => {
+                const initials = `${member.first_name?.[0] || ''}${member.last_name?.[0] || ''}`.toUpperCase()
+                const nextSession = nextSessions[member.id]
+                // Check bookings for session info if no session record
+                const matchingBooking = !nextSession ? prospects.find(p => p.client_email.toLowerCase() === member.email?.toLowerCase()) : null
+                return (
+                  <motion.div
+                    key={member.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={() => router.push(`/members/${member.id}`)}
+                    className="bg-white rounded-2xl p-5 border border-gray-200 hover:border-teal-200 hover:shadow-md transition-all cursor-pointer flex flex-col"
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-sm">
+                        {initials}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 truncate">{member.first_name} {member.last_name}</h3>
+                        <p className="text-xs text-gray-500 truncate">{member.email}</p>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-teal-50 text-teal-600 border border-teal-200">
+                        {locale === 'fr' ? 'Nouveau' : 'New'}
+                      </span>
+                    </div>
+
+                    {(nextSession || matchingBooking) && (
+                      <div>
+                        <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>
+                            {nextSession
+                              ? (locale === 'fr' ? 'Prochaine séance' : 'Next session')
+                              : new Date(matchingBooking!.start_time) > new Date()
+                                ? (locale === 'fr' ? 'Prochaine séance' : 'Next session')
+                                : (locale === 'fr' ? 'Dernière séance' : 'Last session')}
+                          </span>
+                          <span className="ml-auto text-gray-700 font-medium">
+                            {new Date(nextSession?.scheduled_at || matchingBooking!.start_time).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                        {matchingBooking && (
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>{matchingBooking.session_type}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 mt-auto pt-4">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setConvertConfirm({ id: member.id, name: `${member.first_name} ${member.last_name}` })
+                        }}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-gray-900 hover:bg-gray-800 text-white transition-colors flex items-center justify-center gap-2"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        {locale === 'fr' ? 'Convertir en patient' : 'Convert to patient'}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDeleteConfirmId(member.id)
+                        }}
+                        className="py-2.5 px-3 rounded-xl text-sm text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors border border-gray-200"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </motion.div>
+                )
+              })}
+
+              {/* Legacy booking prospects (no member record yet) */}
               {prospects.map((prospect) => {
                 const nameParts = prospect.client_name.split(' ')
                 const firstName = nameParts[0] || ''
@@ -1374,26 +1520,66 @@ export default function MembersPage() {
 
                 return (
                   <motion.div
-                    key={prospect.id}
+                    key={`prospect-${prospect.id}`}
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-white rounded-2xl p-5 border-2 border-amber-200 hover:border-amber-300 transition-all cursor-pointer"
+                    onClick={async () => {
+                      // Find or create prospect member, then navigate
+                      const { data: { user: authUser } } = await supabase.auth.getUser()
+                      if (!authUser) return
+
+                      // Check if member already exists for this email
+                      const { data: existing } = await supabase
+                        .from('members')
+                        .select('id')
+                        .eq('practitioner_id', authUser.id)
+                        .ilike('email', prospect.client_email.trim())
+                        .maybeSingle()
+
+                      if (existing) {
+                        router.push(`/members/${existing.id}`)
+                        return
+                      }
+
+                      const { data: newMember } = await supabase
+                        .from('members')
+                        .insert({
+                          practitioner_id: authUser.id,
+                          first_name: firstName,
+                          last_name: lastName || '',
+                          email: prospect.client_email,
+                          phone: prospect.client_phone || null,
+                          status: 'prospect',
+                          engagement_level: 'medium',
+                        })
+                        .select('id')
+                        .single()
+                      if (newMember) {
+                        // Link bookings
+                        await supabase
+                          .from('bookings')
+                          .update({ member_id: newMember.id })
+                          .eq('client_email', prospect.client_email)
+                          .eq('practitioner_id', authUser.id)
+                          .is('member_id', null)
+                        router.push(`/members/${newMember.id}`)
+                      }
+                    }}
+                    className="bg-white rounded-2xl p-5 border border-gray-200 hover:border-teal-200 hover:shadow-md transition-all cursor-pointer flex flex-col"
                   >
-                    {/* Header */}
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">
+                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-sm">
                         {initials}
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 truncate">{prospect.client_name}</h3>
                         <p className="text-xs text-gray-500 truncate">{prospect.client_email}</p>
                       </div>
-                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-600 border border-amber-200">
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-teal-50 text-teal-600 border border-teal-200">
                         {locale === 'fr' ? 'Nouveau' : 'New'}
                       </span>
                     </div>
 
-                    {/* Session info */}
                     <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
                       <Calendar className="w-3.5 h-3.5" />
                       <span>{isPast ? (locale === 'fr' ? 'Dernière séance' : 'Last session') : (locale === 'fr' ? 'Prochaine séance' : 'Next session')}</span>
@@ -1406,24 +1592,31 @@ export default function MembersPage() {
                       <span>{prospect.session_type}</span>
                     </div>
 
-                    {/* Add to patients CTA */}
-                    <button
-                      onClick={() => {
-                        setNewMember({
-                          firstName,
-                          lastName,
-                          email: prospect.client_email,
-                          phone: prospect.client_phone || '',
-                          isMinor: false,
-                          groupIds: [],
-                        })
-                        setShowAddModal(true)
-                      }}
-                      className="w-full py-2.5 rounded-xl text-sm font-medium bg-amber-500 hover:bg-amber-600 text-white transition-colors flex items-center justify-center gap-2"
-                    >
-                      <UserPlus className="w-4 h-4" />
-                      {locale === 'fr' ? 'Ajouter à mes patients' : 'Add to my patients'}
-                    </button>
+                    <div className="flex gap-2 mt-auto pt-4">
+                      <button
+                        onClick={() => {
+                          setNewMember({
+                            firstName,
+                            lastName,
+                            email: prospect.client_email,
+                            phone: prospect.client_phone || '',
+                            isMinor: false,
+                            groupIds: [],
+                          })
+                          setShowAddModal(true)
+                        }}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-gray-900 hover:bg-gray-800 text-white transition-colors flex items-center justify-center gap-2"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        {locale === 'fr' ? 'Ajouter' : 'Add'}
+                      </button>
+                      <button
+                        onClick={() => setDeleteProspect({ id: prospect.id, email: prospect.client_email, name: prospect.client_name })}
+                        className="py-2.5 px-3 rounded-xl text-sm text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors border border-gray-200"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </motion.div>
                 )
               })}
@@ -1780,6 +1973,87 @@ export default function MembersPage() {
               </button>
               <button
                 onClick={confirmDeleteMember}
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-medium"
+              >
+                {locale === 'fr' ? 'Supprimer' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Convert to Patient Confirmation */}
+      {convertConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setConvertConfirm(null)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-4">
+              <UserPlus className="w-5 h-5 text-teal-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 text-center mb-1">
+              {locale === 'fr' ? 'Convertir en patient ?' : 'Convert to patient?'}
+            </h3>
+            <p className="text-sm text-gray-500 text-center mb-6">
+              {locale === 'fr'
+                ? `${convertConfirm.name} deviendra un patient actif avec accès à toutes les fonctionnalités.`
+                : `${convertConfirm.name} will become an active patient with access to all features.`}
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setConvertConfirm(null)}
+                className="px-5 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={async () => {
+                  await supabase.from('members').update({ status: 'active' }).eq('id', convertConfirm.id)
+                  setMembers(prev => prev.map(m => m.id === convertConfirm.id ? { ...m, status: 'active' as const } : m))
+                  calculateStats(members.map(m => m.id === convertConfirm.id ? { ...m, status: 'active' as const } : m))
+                  setConvertConfirm(null)
+                  toast.success(locale === 'fr' ? 'Converti en patient !' : 'Converted to patient!')
+                }}
+                className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-medium"
+              >
+                {locale === 'fr' ? 'Convertir' : 'Convert'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Prospect Modal */}
+      {deleteProspect && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setDeleteProspect(null)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-5 h-5 text-red-500" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 text-center mb-1">
+              {locale === 'fr' ? 'Supprimer ce contact ?' : 'Delete this contact?'}
+            </h3>
+            <p className="text-sm text-gray-500 text-center mb-6">
+              {locale === 'fr'
+                ? `${deleteProspect.name} et ses réservations seront supprimés.`
+                : `${deleteProspect.name} and their bookings will be deleted.`}
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setDeleteProspect(null)}
+                className="px-5 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={async () => {
+                  await supabase
+                    .from('bookings')
+                    .delete()
+                    .eq('client_email', deleteProspect.email)
+                    .is('member_id', null)
+                  setProspects(prev => prev.filter(p => p.id !== deleteProspect.id))
+                  setDeleteProspect(null)
+                  toast.success(locale === 'fr' ? 'Contact supprimé' : 'Contact deleted')
+                }}
                 className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-medium"
               >
                 {locale === 'fr' ? 'Supprimer' : 'Delete'}
@@ -2473,7 +2747,7 @@ function MemberCard({
           </div>
           <div className="flex items-center gap-1 mt-1 group/status">
             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
-              {t.members.status[member.status] || t.members.status.active}
+              {member.status === 'prospect' ? (locale === 'fr' ? 'Nouveau' : 'New') : (t.members.status[member.status as 'active' | 'inactive' | 'pending'] || t.members.status.active)}
             </span>
             <button
               onClick={(e) => {
@@ -2650,7 +2924,7 @@ function MemberListItem({
           )}
           <div className="flex items-center gap-1 group/status">
             <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${status.bg} ${status.text}`}>
-              {t.members.status[member.status] || t.members.status.active}
+              {member.status === 'prospect' ? (locale === 'fr' ? 'Nouveau' : 'New') : (t.members.status[member.status as 'active' | 'inactive' | 'pending'] || t.members.status.active)}
             </span>
             <button
               onClick={(e) => {

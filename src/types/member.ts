@@ -4,7 +4,7 @@
 // ENUMS
 // ============================================
 
-export type MemberStatus = 'active' | 'inactive' | 'pending'
+export type MemberStatus = 'active' | 'inactive' | 'pending' | 'prospect'
 
 export type EngagementLevel = 'low' | 'medium' | 'high'
 

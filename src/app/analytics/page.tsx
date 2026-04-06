@@ -90,6 +90,14 @@ interface ResourceRow {
   status: string
 }
 
+interface DeletedProspect {
+  first_name: string
+  last_name: string
+  email: string | null
+  created_at: string
+  deleted_at: string
+}
+
 interface AnalyticsState {
   members: MemberRow[]
   sessions: SessionRow[]
@@ -218,6 +226,7 @@ export default function AnalyticsPage() {
   const supabase = createClient()
 
   const [loading, setLoading] = useState(true)
+  const [deletedProspects, setDeletedProspects] = useState<DeletedProspect[]>([])
   const [data, setData] = useState<AnalyticsState | null>(null)
   const [userProfile, setUserProfile] = useState<User | null>(null)
   const [selectedMonth, setSelectedMonth] = useState(() => new Date())
@@ -355,6 +364,16 @@ export default function AnalyticsPage() {
         upcomingSessions: enrichedUpcoming,
         resources: ((resourcesRes.data || []) as ResourceRow[]).filter(r => !demoMemberIds.has(r.member_id)),
       })
+
+      // Fetch deleted/unconverted prospects
+      const { data: deletedData } = await supabase
+        .from('members')
+        .select('first_name, last_name, email, created_at, deleted_at')
+        .eq('practitioner_id', user.id)
+        .eq('deletion_reason', 'prospect_not_converted')
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false })
+      setDeletedProspects((deletedData || []) as DeletedProspect[])
     } catch (error) {
       console.error('Error fetching analytics:', error)
     } finally {
@@ -1571,6 +1590,63 @@ export default function AnalyticsPage() {
                 ? `${notesInMonth} notas · ${data.sharedResources} recursos compartidos · ${newClientsInMonth} clientes nuevos`
                 : `${notesInMonth} notes · ${data.sharedResources} resources shared · ${newClientsInMonth} new clients`}
           </motion.div>
+
+        {/* Prospect Conversion */}
+        {(data.members.filter(m => m.status === 'prospect').length > 0 || deletedProspects.length > 0) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8 mb-12"
+          >
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5 text-gray-400" />
+              {locale === 'fr' ? 'Conversion des prospects' : 'Prospect Conversion'}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+              <div className="bg-white rounded-xl p-5 border border-gray-200">
+                <p className="text-sm text-gray-500 mb-1">{locale === 'fr' ? 'Prospects actifs' : 'Active prospects'}</p>
+                <p className="text-2xl font-bold text-gray-900">{data.members.filter(m => m.status === 'prospect').length}</p>
+              </div>
+              <div className="bg-white rounded-xl p-5 border border-gray-200">
+                <p className="text-sm text-gray-500 mb-1">{locale === 'fr' ? 'Convertis en patients' : 'Converted to patients'}</p>
+                <p className="text-2xl font-bold text-teal-600">
+                  {data.members.filter(m => m.status === 'active' && m.created_at).length > 0
+                    ? data.members.filter(m => m.status === 'active').length
+                    : 0}
+                </p>
+              </div>
+              <div className="bg-white rounded-xl p-5 border border-gray-200">
+                <p className="text-sm text-gray-500 mb-1">{locale === 'fr' ? 'Non convertis' : 'Not converted'}</p>
+                <p className="text-2xl font-bold text-gray-400">{deletedProspects.length}</p>
+              </div>
+            </div>
+
+            {deletedProspects.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100">
+                  <p className="text-sm font-semibold text-gray-700">
+                    {locale === 'fr' ? 'Prospects non convertis' : 'Unconverted prospects'}
+                  </p>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {deletedProspects.slice(0, 10).map((p, i) => (
+                    <div key={i} className="px-5 py-3 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{p.first_name} {p.last_name}</p>
+                        <p className="text-xs text-gray-400">{p.email}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-400">
+                          {locale === 'fr' ? 'Supprimé le' : 'Removed'} {new Date(p.deleted_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
         </div>
       </main>
 

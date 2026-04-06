@@ -28,6 +28,7 @@ import {
   CheckCircle,
   XCircle,
   Ban,
+  StickyNote,
 } from 'lucide-react'
 import { format, startOfDay, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isBefore, isAfter } from 'date-fns'
 import { Button } from '@/components/ui/button'
@@ -52,6 +53,56 @@ interface SessionsTabProps {
 export default function SessionsTab({ memberId, member, sessions, onSessionsUpdate, highlightSessionId }: SessionsTabProps) {
   const { t, locale } = useLanguage()
   const supabase = createClient()
+
+  // Pending bookings for this member
+  const [pendingBookings, setPendingBookings] = useState<any[]>([])
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      const { data } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('member_id', memberId)
+        .in('status', ['pending', 'confirmed'])
+        .gte('start_time', new Date().toISOString())
+        .order('start_time', { ascending: true })
+      setPendingBookings(data || [])
+    }
+    fetchBookings()
+  }, [memberId])
+
+  const handleBookingAction = async (bookingId: string, action: 'confirmed' | 'cancelled') => {
+    const booking = pendingBookings.find(b => b.id === bookingId)
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: action })
+      .eq('id', bookingId)
+    if (!error) {
+      // When confirming, also create a session record so it shows in the sessions list
+      if (action === 'confirmed' && booking) {
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        if (authUser) {
+          const duration = Math.round((new Date(booking.end_time).getTime() - new Date(booking.start_time).getTime()) / 60000)
+          const { error: sessionError } = await supabase.from('sessions').insert({
+            member_id: memberId,
+            practitioner_id: authUser.id,
+            session_type: 'follow_up',
+            session_format: 'in_person',
+            scheduled_at: booking.start_time,
+            duration_minutes: duration,
+            status: 'scheduled',
+            notes: booking.notes || null,
+          })
+          if (sessionError) console.error('Failed to create session:', sessionError)
+          onSessionsUpdate() // refresh sessions list
+        }
+      }
+      setPendingBookings(prev => prev.filter(b => b.id !== bookingId))
+      toast.success(action === 'confirmed'
+        ? (locale === 'fr' ? 'Séance confirmée' : 'Session confirmed')
+        : (locale === 'fr' ? 'Séance refusée' : 'Session rejected'))
+    }
+  }
 
   const [showAddSession, setShowAddSession] = useState(false)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
@@ -697,6 +748,63 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         )}
       </AnimatePresence>
 
+      {/* Pending Bookings */}
+      {pendingBookings.filter(b => b.status === 'pending').length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-amber-50 rounded-2xl p-6 border border-amber-200 mb-6"
+        >
+          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-amber-600" />
+            </div>
+            {locale === 'fr' ? 'En attente d\'approbation' : 'Pending Approval'}
+            <span className="ml-2 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
+              {pendingBookings.filter(b => b.status === 'pending').length}
+            </span>
+          </h3>
+          <div className="space-y-3">
+            {pendingBookings.filter(b => b.status === 'pending').map(booking => (
+              <div key={booking.id} className="bg-white rounded-xl p-4 border border-amber-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900">{booking.session_type}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      <Calendar className="w-3.5 h-3.5 inline mr-1" />
+                      {new Date(booking.start_time).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      {' · '}
+                      {new Date(booking.start_time).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                      {' - '}
+                      {new Date(booking.end_time).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                    {booking.notes && (
+                      <p className="text-xs text-gray-400 mt-2 italic">{booking.notes}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleBookingAction(booking.id, 'confirmed')}
+                      className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium flex items-center gap-1.5"
+                    >
+                      <Check className="w-4 h-4" />
+                      {locale === 'fr' ? 'Accepter' : 'Approve'}
+                    </button>
+                    <button
+                      onClick={() => handleBookingAction(booking.id, 'cancelled')}
+                      className="px-4 py-2 text-red-600 hover:bg-red-50 border border-red-200 rounded-lg text-sm font-medium flex items-center gap-1.5"
+                    >
+                      <X className="w-4 h-4" />
+                      {locale === 'fr' ? 'Refuser' : 'Reject'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {/* Upcoming Sessions */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -900,6 +1008,19 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                         )}
                       </div>
                     </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingSummarySession(editingSummarySession === session.id ? null : session.id)
+                          setSummaryDraft(sessionSummaryNotes[session.id]?.content || '')
+                        }}
+                        className="h-10 w-10 p-0 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-colors"
+                        title={locale === 'fr' ? 'Notes de séance' : 'Session notes'}
+                      >
+                        <StickyNote className="w-5 h-5" />
+                      </Button>
                     <div className="relative">
                       <Button
                         variant="ghost"
@@ -954,6 +1075,57 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                       )}
                     </div>
                   </div>
+                  </div>
+
+                  {/* Saved note indicator */}
+                  {sessionSummaryNotes[session.id] && editingSummarySession !== session.id && (
+                    <div className="mt-3 pl-12">
+                      <button
+                        onClick={() => { setEditingSummarySession(session.id); setSummaryDraft(sessionSummaryNotes[session.id]?.content || '') }}
+                        className="flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 font-medium"
+                      >
+                        <StickyNote className="w-3.5 h-3.5" />
+                        {locale === 'fr' ? 'Voir la note' : 'View note'}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Inline Session Note editor for upcoming */}
+                  {editingSummarySession === session.id && (
+                    <div className="mt-3 pl-12">
+                      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                        <RichTextEditor
+                          value={summaryDraft}
+                          onChange={setSummaryDraft}
+                          placeholder={locale === 'fr' ? 'Rédigez votre note de séance...' : 'Write your session note...'}
+                          memberId={memberId}
+                          locale={locale}
+                          autoFocus
+                          milestones={milestones}
+                          noteTypes={editorNoteTypes}
+                          memberName={member?.first_name}
+                        />
+                        <div className="flex items-center justify-end gap-2 px-3 py-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => { setEditingSummarySession(null); setSummaryDraft('') }}
+                            className="h-8 px-3 text-gray-500 hover:text-gray-700 rounded-lg"
+                          >
+                            {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleSaveSessionSummary(session.id, summaryDraft)}
+                            disabled={savingSummary || !summaryDraft.replace(/<[^>]*>/g, '').trim()}
+                            className="h-8 px-3 bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+                          >
+                            {savingSummary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (locale === 'fr' ? 'Enregistrer' : 'Save')}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                 </motion.div>
               )

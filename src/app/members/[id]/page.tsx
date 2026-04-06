@@ -18,6 +18,7 @@ import {
   Edit,
   Loader2,
   Copy,
+  UserPlus,
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
@@ -55,6 +56,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
   const [user, setUser] = useState<UserType | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>(initialTab)
+  const [showConvertConfirm, setShowConvertConfirm] = useState(false)
   const [highlightId, setHighlightId] = useState<string | undefined>(undefined)
   const [notes, setNotes] = useState<ProgressNote[]>([])
   const [sessions, setSessions] = useState<MemberSession[]>([])
@@ -63,6 +65,13 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
     fetchMember()
     fetchRelatedData()
   }, [resolvedParams.id])
+
+  // Redirect prospect to 'sessions' tab if on a tab they can't see
+  useEffect(() => {
+    if (member?.status === 'prospect' && !prospectTabs.includes(activeTab)) {
+      setActiveTab('sessions')
+    }
+  }, [member?.status])
 
   const fetchMember = async () => {
     try {
@@ -217,7 +226,9 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
     updateTabInUrl(tab)
   }
 
-  const tabs: { id: TabId; label: string; icon: typeof FileText }[] = [
+  const isProspect = member?.status === 'prospect'
+
+  const allTabs: { id: TabId; label: string; icon: typeof FileText }[] = [
     { id: 'overview', label: t.members.profile.overview, icon: User },
     { id: 'sessions', label: t.members.profile.sessions, icon: Clock },
     { id: 'notes', label: t.members.profile.notes, icon: StickyNote },
@@ -226,10 +237,14 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
     { id: 'shared', label: t.members.profile.sharedResources, icon: Share2 },
   ]
 
-  const statusConfig = {
+  const prospectTabs: TabId[] = ['sessions', 'files']
+  const tabs = isProspect ? allTabs.filter(tab => prospectTabs.includes(tab.id)) : allTabs
+
+  const statusConfig: Record<string, { bg: string; text: string; dot: string }> = {
     active: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
     inactive: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' },
     pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
+    prospect: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
   }
 
   if (loading) {
@@ -308,7 +323,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                     {/* Status Badge with Edit */}
                     <div className="flex items-center gap-1 group/status">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
-                        {t.members.status[member.status] || t.members.status.active}
+                        {member.status === 'prospect' ? (locale === 'fr' ? 'Nouveau' : 'New') : (t.members.status[member.status as 'active' | 'inactive' | 'pending'] || t.members.status.active)}
                       </span>
                       <button
                         onClick={() => {
@@ -381,6 +396,31 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
             </div>
           </motion.div>
 
+          {/* Prospect banner */}
+          {isProspect && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 bg-teal-50 border border-teal-200 rounded-xl p-4 flex items-center justify-between"
+            >
+              <div>
+                <p className="text-sm font-semibold text-teal-800">
+                  {locale === 'fr' ? 'Nouveau contact' : 'New contact'}
+                </p>
+                <p className="text-xs text-teal-600">
+                  {locale === 'fr' ? 'Ce contact a réservé une séance mais n\'est pas encore patient.' : 'This contact booked a session but is not a patient yet.'}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowConvertConfirm(true)}
+                className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm font-medium whitespace-nowrap ml-4 flex items-center gap-2"
+              >
+                <UserPlus className="w-4 h-4" />
+                {locale === 'fr' ? 'Convertir en patient' : 'Convert to patient'}
+              </button>
+            </motion.div>
+          )}
+
           {/* Tabs Navigation */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -451,6 +491,44 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
           </AnimatePresence>
         </div>
       </main>
+
+      {/* Convert to patient confirmation */}
+      {showConvertConfirm && member && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowConvertConfirm(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-4">
+              <UserPlus className="w-5 h-5 text-teal-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 text-center mb-1">
+              {locale === 'fr' ? 'Convertir en patient ?' : 'Convert to patient?'}
+            </h3>
+            <p className="text-sm text-gray-500 text-center mb-6">
+              {locale === 'fr'
+                ? `${member.first_name} ${member.last_name} deviendra un patient actif avec accès à toutes les fonctionnalités.`
+                : `${member.first_name} ${member.last_name} will become an active patient with access to all features.`}
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setShowConvertConfirm(false)}
+                className="px-5 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={async () => {
+                  await supabase.from('members').update({ status: 'active' }).eq('id', member.id)
+                  setMember(prev => prev ? { ...prev, status: 'active' as const } : prev)
+                  setShowConvertConfirm(false)
+                  toast.success(locale === 'fr' ? 'Converti en patient !' : 'Converted to patient!')
+                }}
+                className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-medium"
+              >
+                {locale === 'fr' ? 'Convertir' : 'Convert'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

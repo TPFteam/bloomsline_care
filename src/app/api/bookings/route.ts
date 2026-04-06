@@ -71,6 +71,46 @@ export async function POST(request: NextRequest) {
     // Create the booking
     const bookingStatus = settings.require_approval ? 'pending' : 'confirmed';
 
+    // Auto-link or create member
+    let memberId = body.member_id || null;
+
+    if (!memberId && body.client_email) {
+      // Check if email matches an existing member for this practitioner
+      const { data: existingMember } = await supabase
+        .from('members')
+        .select('id')
+        .eq('practitioner_id', body.practitioner_id)
+        .ilike('email', body.client_email.trim())
+        .maybeSingle();
+
+      if (existingMember) {
+        memberId = existingMember.id;
+      } else {
+        // Create a new prospect member
+        const nameParts = body.client_name.trim().split(' ');
+        const firstName = nameParts[0] || body.client_name;
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        const { data: newMember } = await supabase
+          .from('members')
+          .insert({
+            practitioner_id: body.practitioner_id,
+            first_name: firstName,
+            last_name: lastName,
+            email: body.client_email.trim(),
+            phone: body.client_phone || null,
+            status: 'prospect',
+            engagement_level: 'medium',
+          })
+          .select('id')
+          .maybeSingle();
+
+        if (newMember) {
+          memberId = newMember.id;
+        }
+      }
+    }
+
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({
@@ -84,7 +124,7 @@ export async function POST(request: NextRequest) {
         client_phone: body.client_phone || null,
         notes: body.notes || null,
         status: bookingStatus,
-        member_id: body.member_id || null,
+        member_id: memberId,
       })
       .select()
       .single();
