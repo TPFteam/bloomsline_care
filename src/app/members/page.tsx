@@ -1310,7 +1310,10 @@ export default function MembersPage() {
                 exit={{ opacity: 0, height: 0 }}
                 className="text-sm text-gray-500 mb-4"
               >
-                {t.members.list.showing} <span className="font-semibold text-gray-700">{filteredMembers.length}</span> {t.members.list.of} {members.length} {t.members.list.members}
+                {filter === 'new'
+                  ? <><span className="font-semibold text-gray-700">{prospects.length}</span> {locale === 'fr' ? 'nouveaux contacts' : 'new contacts'}</>
+                  : <>{t.members.list.showing} <span className="font-semibold text-gray-700">{filteredMembers.length}</span> {t.members.list.of} {members.length} {t.members.list.members}</>
+                }
               </motion.p>
             )}
           </AnimatePresence>
@@ -1340,7 +1343,7 @@ export default function MembersPage() {
                 </Link>
               </div>
             </motion.div>
-          ) : filteredMembers.length === 0 ? (
+          ) : filteredMembers.length === 0 && filter !== 'new' ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
