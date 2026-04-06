@@ -358,7 +358,7 @@ export interface CreateMilestoneInput {
 // FILTER TYPES
 // ============================================
 
-export type MemberFilter = 'all' | MemberStatus
+export type MemberFilter = 'all' | 'new' | MemberStatus
 
 export interface MemberSearchParams {
   filter: MemberFilter

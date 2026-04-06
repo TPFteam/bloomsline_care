@@ -1,19 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/server-client'
 
-const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN
+const NOTION_API_KEY = process.env.NOTION_API_KEY
+const NOTION_DATABASE_ID = process.env.NOTION_DATABASE_ID
 
-// Map our types to HubSpot categories
-const typeToCategory: Record<string, string> = {
-  bug: 'BUG',
-  feature: 'FEATURE_REQUEST',
-  question: 'GENERAL_INQUIRY',
-  other: 'GENERAL_INQUIRY',
+const typeToPriority: Record<string, string> = {
+  bug: 'High',
+  feature: 'Medium',
+  question: 'Low',
+}
+
+const typeToNotionType: Record<string, string> = {
+  bug: 'Bug',
+  feature: 'Feature request',
+  question: 'Question',
+}
+
+async function uploadImageToSupabase(base64: string, name: string): Promise<string | null> {
+  try {
+    const supabase = createAdminClient()
+    const base64Data = base64.split(',')[1]
+    const buffer = Buffer.from(base64Data, 'base64')
+    const mimeMatch = base64.match(/data:image\/(\w+);/)
+    const ext = mimeMatch ? mimeMatch[1] : 'png'
+    const fileName = `feedback/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
+
+    const { error } = await supabase.storage
+      .from('feedback-screenshots')
+      .upload(fileName, buffer, { contentType: `image/${ext}`, upsert: false })
+
+    if (error) {
+      // Bucket might not exist — try creating it
+      if (error.message?.includes('not found')) {
+        await supabase.storage.createBucket('feedback-screenshots', { public: true })
+        const { error: retryError } = await supabase.storage
+          .from('feedback-screenshots')
+          .upload(fileName, buffer, { contentType: `image/${ext}`, upsert: false })
+        if (retryError) {
+          console.error('Upload retry failed:', retryError)
+          return null
+        }
+      } else {
+        console.error('Upload failed:', error)
+        return null
+      }
+    }
+
+    const { data: urlData } = supabase.storage.from('feedback-screenshots').getPublicUrl(fileName)
+    return urlData.publicUrl
+  } catch (err) {
+    console.error('Image upload error:', err)
+    return null
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    if (!HUBSPOT_ACCESS_TOKEN) {
-      console.error('HUBSPOT_ACCESS_TOKEN not configured')
+    if (!NOTION_API_KEY || !NOTION_DATABASE_ID) {
+      console.error('Notion API not configured')
       return NextResponse.json(
         { error: 'Feedback service not configured' },
         { status: 500 }
@@ -30,142 +74,98 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Upload images to HubSpot and get URLs
-    const imageUrls: string[] = []
+    // Build rich text content blocks
+    const children: any[] = [
+      {
+        object: 'block',
+        type: 'paragraph',
+        paragraph: {
+          rich_text: [{ type: 'text', text: { content: description } }],
+        },
+      },
+      {
+        object: 'block',
+        type: 'divider',
+        divider: {},
+      },
+      {
+        object: 'block',
+        type: 'paragraph',
+        paragraph: {
+          rich_text: [
+            { type: 'text', text: { content: `${userName || 'Anonymous'}${userEmail ? ` · ${userEmail}` : ''}` }, annotations: { color: 'gray', italic: true } },
+          ],
+        },
+      },
+    ]
+
+    // Upload images to Supabase and embed in Notion
     if (images && images.length > 0) {
+      children.push({
+        object: 'block',
+        type: 'heading_3',
+        heading_3: {
+          rich_text: [{ type: 'text', text: { content: 'Screenshots' } }],
+        },
+      })
+
       for (const image of images) {
-        try {
-          // Extract base64 data (remove data:image/xxx;base64, prefix)
-          const base64Data = image.base64.split(',')[1]
-          const buffer = Buffer.from(base64Data, 'base64')
-
-          // Determine file extension from base64 prefix
-          const mimeMatch = image.base64.match(/data:image\/(\w+);/)
-          const ext = mimeMatch ? mimeMatch[1] : 'png'
-          const fileName = `feedback-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
-
-          // Upload to HubSpot Files API
-          const formData = new FormData()
-          formData.append('file', new Blob([buffer]), fileName)
-          formData.append('folderPath', '/feedback-attachments')
-          formData.append('options', JSON.stringify({
-            access: 'PUBLIC_INDEXABLE'
-          }))
-
-          const uploadResponse = await fetch('https://api.hubapi.com/files/v3/files', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${HUBSPOT_ACCESS_TOKEN}`,
+        const publicUrl = await uploadImageToSupabase(image.base64, image.name || 'screenshot')
+        if (publicUrl) {
+          children.push({
+            object: 'block',
+            type: 'image',
+            image: {
+              type: 'external',
+              external: { url: publicUrl },
             },
-            body: formData,
           })
-
-          if (uploadResponse.ok) {
-            const fileData = await uploadResponse.json()
-            console.log('Image uploaded successfully:', fileData.url)
-            imageUrls.push(fileData.url)
-          } else {
-            const errorData = await uploadResponse.json()
-            console.error('HubSpot file upload failed:', errorData)
-          }
-        } catch (uploadError) {
-          console.error('Error uploading image to HubSpot:', uploadError)
         }
       }
     }
 
-    // Build images section if any
-    const imagesSection = imageUrls.length > 0
-      ? `\n\nAttachments:\n${imageUrls.map((url: string, i: number) => `${i + 1}. ${url}`).join('\n')}`
-      : ''
-
-    // Build the ticket description with user info
-    const fullDescription = `
-${description}${imagesSection}
-
----
-Submitted by: ${userName || 'Anonymous'} ${userEmail ? `(${userEmail})` : ''}
-Type: ${type}
-Source: In-App Feedback
-    `.trim()
-
-    // Create ticket in HubSpot
-    // Using EU endpoint since the token is pat-eu1-*
-    const hubspotResponse = await fetch('https://api.hubapi.com/crm/v3/objects/tickets', {
+    // Create page in Notion database
+    const notionResponse = await fetch('https://api.notion.com/v1/pages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${HUBSPOT_ACCESS_TOKEN}`,
+        'Authorization': `Bearer ${NOTION_API_KEY}`,
+        'Notion-Version': '2022-06-28',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        parent: { database_id: NOTION_DATABASE_ID },
         properties: {
-          subject: `[${type.toUpperCase()}] ${subject}`,
-          content: fullDescription,
-          hs_pipeline: '0', // Default pipeline
-          hs_pipeline_stage: '1', // New/Open stage
-          hs_ticket_priority: type === 'bug' ? 'HIGH' : 'MEDIUM',
-          // Custom properties - create these in HubSpot first
-          ...(userEmail && { submitter_email: userEmail }),
-          ...(userName && { submitter_name: userName }),
-          ticket_type: type, // bug, feature, or question
+          'Issue': {
+            title: [{ text: { content: `[${type.toUpperCase()}] ${subject}` } }],
+          },
+          'Type': {
+            multi_select: [{ name: typeToNotionType[type] || 'Question' }],
+          },
+          'Priority': {
+            select: { name: typeToPriority[type] || 'Medium' },
+          },
+          'Source': {
+            rich_text: [{ text: { content: 'In-App Feedback' } }],
+          },
         },
+        children,
       }),
     })
 
-    if (!hubspotResponse.ok) {
-      const errorData = await hubspotResponse.json()
-      console.error('HubSpot API error:', errorData)
+    if (!notionResponse.ok) {
+      const errorData = await notionResponse.json()
+      console.error('Notion API error:', errorData)
       return NextResponse.json(
         { error: 'Failed to create ticket' },
         { status: 500 }
       )
     }
 
-    const ticket = await hubspotResponse.json()
-
-    // If we have a user email, try to associate the ticket with a contact
-    if (userEmail) {
-      try {
-        // Search for existing contact
-        const searchResponse = await fetch('https://api.hubapi.com/crm/v3/objects/contacts/search', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${HUBSPOT_ACCESS_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            filterGroups: [{
-              filters: [{
-                propertyName: 'email',
-                operator: 'EQ',
-                value: userEmail,
-              }],
-            }],
-          }),
-        })
-
-        const searchData = await searchResponse.json()
-
-        if (searchData.total > 0) {
-          const contactId = searchData.results[0].id
-
-          // Associate ticket with contact
-          await fetch(`https://api.hubapi.com/crm/v3/objects/tickets/${ticket.id}/associations/contacts/${contactId}/ticket_to_contact`, {
-            method: 'PUT',
-            headers: {
-              'Authorization': `Bearer ${HUBSPOT_ACCESS_TOKEN}`,
-            },
-          })
-        }
-      } catch (assocError) {
-        // Don't fail if association fails, ticket is still created
-        console.error('Failed to associate ticket with contact:', assocError)
-      }
-    }
+    const page = await notionResponse.json()
 
     return NextResponse.json({
       success: true,
-      ticketId: ticket.id
+      ticketId: page.id,
     })
 
   } catch (error) {

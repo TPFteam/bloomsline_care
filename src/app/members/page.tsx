@@ -27,6 +27,7 @@ import {
   AlertCircle,
   Download,
   UserPlus,
+  Send,
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
@@ -185,9 +186,10 @@ export default function MembersPage() {
 
   // CSV Import Modal
   const [showImportModal, setShowImportModal] = useState(false)
+  const [prospects, setProspects] = useState<{ client_name: string; client_email: string; client_phone: string | null; session_type: string; start_time: string; status: string; id: string }[]>([])
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [inviteConfirmMember, setInviteConfirmMember] = useState<Member | null>(null)
-  const [sendingInviteGlobal, setSendingInviteGlobal] = useState(false)
+  const [inviteState, setInviteState] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
   const [importStep, setImportStep] = useState<'upload' | 'mapping' | 'preview' | 'result'>('upload')
   const [importMode, setImportMode] = useState<'paste' | 'csv'>('paste')
   const [pasteText, setPasteText] = useState('')
@@ -336,6 +338,28 @@ export default function MembersPage() {
           member_count: membersByGroup[g.id]?.length || 0,
           member_ids: membersByGroup[g.id] || [],
         })))
+      }
+
+      // Fetch prospects — bookings with no member_id and email not matching any member
+      const memberEmails = new Set((data || []).map(m => m.email?.toLowerCase()).filter(Boolean))
+      const { data: guestBookings } = await supabase
+        .from('bookings')
+        .select('id, client_name, client_email, client_phone, session_type, start_time, status')
+        .eq('practitioner_id', authUser.id)
+        .is('member_id', null)
+        .in('status', ['pending', 'confirmed', 'completed'])
+        .order('start_time', { ascending: false })
+
+      if (guestBookings) {
+        // Deduplicate by email — keep the most recent booking per person
+        const seen = new Map<string, typeof guestBookings[0]>()
+        for (const b of guestBookings) {
+          const email = b.client_email.toLowerCase()
+          if (!memberEmails.has(email) && !seen.has(email)) {
+            seen.set(email, b)
+          }
+        }
+        setProspects(Array.from(seen.values()))
       }
     } catch (error) {
       console.error('Error fetching members:', error)
@@ -521,6 +545,16 @@ export default function MembersPage() {
 
       if (error) throw error
 
+      // Link any existing bookings with matching email to this new member
+      if (data.id && emailToAdd) {
+        await supabase
+          .from('bookings')
+          .update({ member_id: data.id })
+          .eq('client_email', emailToAdd)
+          .eq('practitioner_id', authUser.id)
+          .is('member_id', null)
+      }
+
       // Add to groups if any selected
       if (newMember.groupIds.length > 0 && data.id) {
         await supabase.from('member_group_members').insert(
@@ -528,10 +562,11 @@ export default function MembersPage() {
         )
       }
 
-      // Add to list and recalculate stats
+      // Add to list, recalculate, and remove from prospects
       const updatedMembers = [data, ...members]
       setMembers(updatedMembers)
       calculateStats(updatedMembers)
+      setProspects(prev => prev.filter(p => p.client_email.toLowerCase() !== emailToAdd.toLowerCase()))
 
       // Reset form and close modal
       setNewMember({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] })
@@ -1005,10 +1040,11 @@ export default function MembersPage() {
     return true
   })
 
-  const filterOptions: { value: MemberFilter; label: string; count: number }[] = [
+  const filterOptions: { value: MemberFilter; label: string; count: number; accent?: boolean }[] = [
     { value: 'all', label: t.members.filters.all, count: stats.total_members },
     { value: 'active', label: t.members.filters.active, count: stats.active_members },
     { value: 'inactive', label: t.members.filters.inactive, count: stats.inactive_members },
+    ...(prospects.length > 0 ? [{ value: 'new' as MemberFilter, label: locale === 'fr' ? 'Nouveaux' : 'New', count: prospects.length, accent: true }] : []),
   ]
 
   if (loading) {
@@ -1057,8 +1093,8 @@ export default function MembersPage() {
                     onClick={() => { setFilter(option.value); setShowGroupsView(false) }}
                     className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
                       filter === option.value && !showGroupsView
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                        ? (option.accent ? 'bg-amber-500 text-white' : 'bg-gray-900 text-white')
+                        : (option.accent ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200')
                     }`}
                   >
                     {option.label}
@@ -1322,6 +1358,73 @@ export default function MembersPage() {
                 </p>
               </div>
             </motion.div>
+          ) : filter === 'new' ? (
+            /* Prospect cards — non-member bookings */
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {prospects.map((prospect) => {
+                const nameParts = prospect.client_name.split(' ')
+                const firstName = nameParts[0] || ''
+                const lastName = nameParts.slice(1).join(' ') || ''
+                const initials = `${firstName[0] || ''}${lastName[0] || firstName[1] || ''}`.toUpperCase()
+                const sessionDate = new Date(prospect.start_time)
+                const isPast = sessionDate < new Date()
+
+                return (
+                  <motion.div
+                    key={prospect.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-2xl p-5 border-2 border-amber-200 hover:border-amber-300 transition-all cursor-pointer"
+                  >
+                    {/* Header */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">
+                        {initials}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 truncate">{prospect.client_name}</h3>
+                        <p className="text-xs text-gray-500 truncate">{prospect.client_email}</p>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-600 border border-amber-200">
+                        {locale === 'fr' ? 'Nouveau' : 'New'}
+                      </span>
+                    </div>
+
+                    {/* Session info */}
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>{isPast ? (locale === 'fr' ? 'Dernière séance' : 'Last session') : (locale === 'fr' ? 'Prochaine séance' : 'Next session')}</span>
+                      <span className="ml-auto text-gray-700 font-medium">
+                        {sessionDate.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>{prospect.session_type}</span>
+                    </div>
+
+                    {/* Add to patients CTA */}
+                    <button
+                      onClick={() => {
+                        setNewMember({
+                          firstName,
+                          lastName,
+                          email: prospect.client_email,
+                          phone: prospect.client_phone || '',
+                          isMinor: false,
+                          groupIds: [],
+                        })
+                        setShowAddModal(true)
+                      }}
+                      className="w-full py-2.5 rounded-xl text-sm font-medium bg-amber-500 hover:bg-amber-600 text-white transition-colors flex items-center justify-center gap-2"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      {locale === 'fr' ? 'Ajouter à mes patients' : 'Add to my patients'}
+                    </button>
+                  </motion.div>
+                )
+              })}
+            </div>
           ) : (
             <div className={
               viewMode === 'grid'
@@ -1526,71 +1629,129 @@ export default function MembersPage() {
 
       {/* Invite Confirmation Modal */}
       {inviteConfirmMember && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setInviteConfirmMember(null)}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => inviteState === 'idle' ? setInviteConfirmMember(null) : undefined}>
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-4">
-              <Mail className="w-5 h-5 text-teal-600" />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 text-center mb-1">
-              {locale === 'fr' ? 'Envoyer l\'invitation ?' : 'Send invitation?'}
-            </h3>
-            <p className="text-sm text-gray-500 text-center mb-6">
-              {locale === 'fr'
-                ? `${inviteConfirmMember.first_name} ${inviteConfirmMember.last_name} recevra un email de bienvenue à ${inviteConfirmMember.email}`
-                : `${inviteConfirmMember.first_name} ${inviteConfirmMember.last_name} will receive a welcome email at ${inviteConfirmMember.email}`}
-            </p>
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={() => setInviteConfirmMember(null)}
-                className="px-5 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl"
-              >
-                {locale === 'fr' ? 'Annuler' : 'Cancel'}
-              </button>
-              <button
-                onClick={async () => {
-                  const m = inviteConfirmMember
-                  setInviteConfirmMember(null)
-                  setSendingInviteGlobal(true)
-                  try {
-                    const { data: { user: authUser } } = await supabase.auth.getUser()
-                    if (!authUser) return
-                    const { data: practitionerProfile } = await supabase
-                      .from('users')
-                      .select('full_name, avatar_url')
-                      .eq('id', authUser.id)
-                      .single()
-
-                    await supabase.functions.invoke('send-member-welcome', {
-                      body: {
-                        memberName: m.first_name,
-                        memberLastName: m.last_name,
-                        memberEmail: m.email,
-                        practitionerName: practitionerProfile?.full_name || 'Your practitioner',
-                        practitionerAvatarUrl: practitionerProfile?.avatar_url || null,
-                        locale,
-                      },
-                    })
-
-                    await supabase
-                      .from('members')
-                      .update({ invitation_sent: true, invitation_sent_at: new Date().toISOString() })
-                      .eq('id', m.id)
-
-                    setMembers(prev => prev.map(member => member.id === m.id ? { ...member, invitation_sent: true } as any : member))
-                    toast.success(locale === 'fr' ? 'Invitation envoyée' : 'Invitation sent')
-                  } catch {
-                    toast.error(locale === 'fr' ? 'Échec de l\'envoi' : 'Failed to send')
+            {inviteState === 'success' ? (
+              <>
+                <div className="w-14 h-14 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-4 animate-[scale-in_0.3s_ease-out]">
+                  <Check className="w-7 h-7 text-teal-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 text-center mb-1">
+                  {locale === 'fr' ? 'Invitation envoyée !' : 'Invitation sent!'}
+                </h3>
+                <p className="text-sm text-gray-500 text-center">
+                  {locale === 'fr'
+                    ? `${inviteConfirmMember.first_name} recevra l'email dans quelques instants.`
+                    : `${inviteConfirmMember.first_name} will receive the email shortly.`}
+                </p>
+              </>
+            ) : inviteState === 'error' ? (
+              <>
+                <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+                  <Mail className="w-7 h-7 text-red-500" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 text-center mb-1">
+                  {locale === 'fr' ? 'Échec de l\'envoi' : 'Failed to send'}
+                </h3>
+                <p className="text-sm text-gray-500 text-center mb-4">
+                  {locale === 'fr' ? 'Veuillez réessayer.' : 'Please try again.'}
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <button onClick={() => { setInviteState('idle'); setInviteConfirmMember(null) }} className="px-5 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl">
+                    {locale === 'fr' ? 'Fermer' : 'Close'}
+                  </button>
+                  <button onClick={() => setInviteState('idle')} className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-medium">
+                    {locale === 'fr' ? 'Réessayer' : 'Retry'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="w-14 h-14 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-4 overflow-hidden relative">
+                  {inviteState === 'sending' ? (
+                    <Send className="w-6 h-6 text-teal-600 animate-[fly_1.5s_ease-in-out_infinite]" style={{ transform: 'rotate(-45deg)' }} />
+                  ) : (
+                    <Mail className="w-6 h-6 text-teal-600" />
+                  )}
+                </div>
+                <style>{`
+                  @keyframes fly {
+                    0% { transform: rotate(-45deg) translate(0, 0); opacity: 1; }
+                    50% { transform: rotate(-45deg) translate(12px, -12px); opacity: 0.4; }
+                    51% { transform: rotate(-45deg) translate(-12px, 12px); opacity: 0; }
+                    70% { transform: rotate(-45deg) translate(-6px, 6px); opacity: 0.6; }
+                    100% { transform: rotate(-45deg) translate(0, 0); opacity: 1; }
                   }
-                  setSendingInviteGlobal(false)
-                }}
-                disabled={sendingInviteGlobal}
-                className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-medium disabled:opacity-50"
-              >
-                {sendingInviteGlobal
-                  ? (locale === 'fr' ? 'Envoi...' : 'Sending...')
-                  : (locale === 'fr' ? 'Envoyer' : 'Send')}
-              </button>
-            </div>
+                `}</style>
+                <h3 className="text-lg font-bold text-gray-900 text-center mb-1">
+                  {inviteState === 'sending'
+                    ? (locale === 'fr' ? 'Envoi en cours...' : 'Sending...')
+                    : (locale === 'fr' ? 'Envoyer l\'invitation ?' : 'Send invitation?')}
+                </h3>
+                <p className="text-sm text-gray-500 text-center mb-6">
+                  {inviteState === 'sending'
+                    ? (locale === 'fr'
+                      ? `Préparation de l'email pour ${inviteConfirmMember.first_name}...`
+                      : `Preparing email for ${inviteConfirmMember.first_name}...`)
+                    : (locale === 'fr'
+                      ? `${inviteConfirmMember.first_name} ${inviteConfirmMember.last_name} recevra un email de bienvenue à ${inviteConfirmMember.email}`
+                      : `${inviteConfirmMember.first_name} ${inviteConfirmMember.last_name} will receive a welcome email at ${inviteConfirmMember.email}`)}
+                </p>
+                {inviteState === 'idle' && (
+                  <div className="flex gap-3 justify-center">
+                    <button
+                      onClick={() => setInviteConfirmMember(null)}
+                      className="px-5 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl"
+                    >
+                      {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const m = inviteConfirmMember
+                        setInviteState('sending')
+                        try {
+                          const { data: { user: authUser } } = await supabase.auth.getUser()
+                          if (!authUser) throw new Error('Not authenticated')
+                          const { data: practitionerProfile } = await supabase
+                            .from('users')
+                            .select('full_name, avatar_url')
+                            .eq('id', authUser.id)
+                            .single()
+
+                          await supabase.functions.invoke('send-member-welcome', {
+                            body: {
+                              memberName: m.first_name,
+                              memberLastName: m.last_name,
+                              memberEmail: m.email,
+                              practitionerName: practitionerProfile?.full_name || 'Your practitioner',
+                              practitionerAvatarUrl: practitionerProfile?.avatar_url || null,
+                              locale,
+                            },
+                          })
+
+                          await supabase
+                            .from('members')
+                            .update({ invitation_sent: true, invitation_sent_at: new Date().toISOString() })
+                            .eq('id', m.id)
+
+                          setMembers(prev => prev.map(member => member.id === m.id ? { ...member, invitation_sent: true } as any : member))
+                          setInviteState('success')
+                          setTimeout(() => {
+                            setInviteConfirmMember(null)
+                            setInviteState('idle')
+                          }, 2500)
+                        } catch {
+                          setInviteState('error')
+                        }
+                      }}
+                      className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-medium"
+                    >
+                      {locale === 'fr' ? 'Envoyer' : 'Send'}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}

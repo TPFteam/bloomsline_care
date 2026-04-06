@@ -43,7 +43,10 @@ export function useNotifications(): UseNotificationsReturn {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch notifications')
+        // Silently fail — session may have expired
+        setNotifications([])
+        setUnreadCount(0)
+        return
       }
 
       const data = await response.json()

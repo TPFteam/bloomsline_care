@@ -23,44 +23,44 @@ function getTemplate(params: {
   const memberInitials = getInitials(`${memberName} ${memberLastName}`)
 
   const practitionerCircle = practitionerAvatarUrl
-    ? `<div style="width: 56px; height: 56px; border-radius: 50%; border: 3px solid white; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"><img src="${practitionerAvatarUrl}" alt="${practitionerName}" style="width: 100%; height: 100%; object-fit: cover;" /></div>`
-    : `<div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, ${accentColor}, #5AB39C); display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"><span style="color: white; font-weight: 700; font-size: 18px;">${practitionerInitials}</span></div>`
+    ? `<div style="width: 56px; height: 56px; border-radius: 50%; border: 3px solid white; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin: 0 auto;"><img src="${practitionerAvatarUrl}" alt="${practitionerName}" style="width: 100%; height: 100%; object-fit: cover;" /></div>`
+    : `<div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, ${accentColor}, #5AB39C); display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin: 0 auto;"><span style="color: white; font-weight: 700; font-size: 18px;">${practitionerInitials}</span></div>`
 
   const memberCircle = `<div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #6B7280, #9CA3AF); display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-left: -12px;"><span style="color: white; font-weight: 700; font-size: 18px;">${memberInitials}</span></div>`
 
   const content = lang === 'fr' ? {
-    subject: `${practitionerName} vous a préparé un espace bien-être`,
+    subject: `${practitionerName} vous invite à rejoindre Bloomsline`,
     greeting: `Bonjour ${memberName},`,
-    intro: `${practitionerName} souhaite vous accompagner entre vos séances avec des outils pensés pour votre bien-être.`,
-    intro2: `Un espace vous attend sur Bloomsline, une app bien-être pour prendre soin de vous à votre rythme. Sans frais, sans engagement.`,
+    intro: `${practitionerName} vous invite à rejoindre Bloomsline pour prolonger votre accompagnement entre les séances.`,
+    intro2: '',
     what: `Qu'est-ce que Bloomsline ?`,
-    whatDesc: `Un espace sécurisé et privé où vous pouvez recevoir des ressources de votre praticien(ne), suivre votre progression et explorer des outils bien-être par vous-même — quand vous en avez envie.`,
-    expectTitle: `Ce qui vous attend :`,
+    whatDesc: `C'est votre espace privé et sécurisé pour accéder aux ressources partagées par votre praticien(ne), organiser vos séances et mieux comprendre ce que vous vivez entre les séances.`,
+    expectTitle: `Concrètement, vous pouvez :`,
     expectItems: [
-      `Des exercices et fiches partagés par ${practitionerName}`,
-      'Des rappels pour vos séances',
-      'Un espace personnel pour capturer vos réflexions et suivre votre évolution',
-      'Des ressources bien-être à explorer librement, à votre rythme',
+      'Consulter et compléter des ressources',
+      'Planifier et gérer vos séances',
+      'Déposer vos réflexions si vous le souhaitez',
+      'Suivre votre parcours dans le temps',
     ],
-    secure: 'Confidentiel et sécurisé.',
-    secureDesc: 'Vos données sont protégées et conformes au RGPD.',
+    secure: 'Confidentialité et sécurité',
+    secureDesc: 'Vos données sont protégées et conformes aux normes RGPD.',
     footerSub: 'Accompagner votre parcours vers le bien-être',
   } : {
-    subject: `${practitionerName} has created a wellbeing space for you`,
+    subject: `${practitionerName} invites you to join Bloomsline`,
     greeting: `Hi ${memberName},`,
-    intro: `${practitionerName} wants to support you between sessions with tools designed for your wellbeing.`,
-    intro2: `You have a space waiting for you on Bloomsline, a wellbeing app to take care of yourself at your own pace. No cost, no commitment.`,
+    intro: `${practitionerName} invites you to join Bloomsline to continue your care between sessions.`,
+    intro2: '',
     what: `What is Bloomsline?`,
-    whatDesc: `A secure and private place where you can receive resources from your practitioner, track your progress, and explore wellbeing tools on your own — whenever you feel like it.`,
-    expectTitle: `What to expect:`,
+    whatDesc: `It's your private and secure space to access resources shared by your practitioner, organize your sessions, and better understand what you're going through between sessions.`,
+    expectTitle: `Here's what you can do:`,
     expectItems: [
-      `Exercises and worksheets shared by ${practitionerName}`,
-      'Reminders for your sessions',
-      'A personal space to capture your thoughts and track how you\'re doing',
-      'Wellbeing resources to explore freely, at your own pace',
+      'Access and complete resources',
+      'Plan and manage your sessions',
+      'Capture your thoughts along the way',
+      'Track your journey over time',
     ],
-    secure: 'Confidential and secure.',
-    secureDesc: 'Your data is protected and GDPR-compliant.',
+    secure: 'Privacy and security',
+    secureDesc: 'Your data is protected and compliant with GDPR standards.',
     footerSub: 'Supporting your journey to wellbeing',
   }
 
@@ -83,21 +83,17 @@ function getTemplate(params: {
 
             <!-- Content -->
             <div style="color: #333; line-height: 1.7;">
-              <!-- Connection circles -->
-              <div style="text-align: center; margin-bottom: 20px;">
-                ${practitionerCircle}${memberCircle}
+              <!-- Practitioner avatar -->
+              <div style="text-align: center; margin-bottom: 24px;">
+                ${practitionerCircle}
               </div>
 
-              <p style="margin: 0 0 16px 0; font-weight: 500; text-align: center;">
+              <p style="margin: 0 0 16px 0; font-weight: 500;">
                 ${content.greeting}
               </p>
 
-              <p style="margin: 0 0 8px 0; color: #555;">
-                ${content.intro}
-              </p>
-
               <p style="margin: 0 0 24px 0; color: #555;">
-                ${content.intro2}
+                ${content.intro}
               </p>
 
               <!-- What is Bloomsline -->
@@ -131,7 +127,7 @@ function getTemplate(params: {
               <!-- CTA Button -->
               <div style="text-align: center; margin-bottom: 24px;">
                 <a href="https://app.bloomsline.com/welcome" style="display: inline-block; background-color: #1F2227; color: white; padding: 14px 32px; border-radius: 28px; text-decoration: none; font-weight: 600; font-size: 15px;">
-                  ${lang === 'fr' ? 'Découvrir mon espace' : 'Discover my space'}
+                  ${lang === 'fr' ? 'Accéder à mon espace' : 'Access my space'}
                 </a>
               </div>
 
