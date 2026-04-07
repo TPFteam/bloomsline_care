@@ -89,6 +89,16 @@ export async function getValidGoogleToken(
     if (!tokenResponse.ok) {
       const errBody = await tokenResponse.text().catch(() => '');
       console.error('Failed to refresh Google token:', tokenResponse.status, errBody);
+
+      // If refresh token is invalid/revoked, mark connection as broken
+      if (tokenResponse.status === 400 && errBody.includes('invalid_grant')) {
+        console.warn('Google refresh token revoked — marking connection as broken for user:', userId);
+        await supabase
+          .from('calendar_connections')
+          .update({ sync_status: 'broken' })
+          .eq('id', connection.id);
+      }
+
       return null;
     }
 

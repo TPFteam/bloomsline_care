@@ -103,6 +103,7 @@ export async function GET(request: NextRequest) {
         token_expires_at: expiresAt.toISOString(),
         calendar_id: 'primary',
         sync_enabled: true,
+        sync_status: 'active',
         connected_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id,provider',

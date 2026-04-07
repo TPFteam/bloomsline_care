@@ -37,7 +37,6 @@ function getTemplate(params: {
     whatDesc: `C'est votre espace privé et sécurisé pour accéder aux ressources partagées par votre praticien(ne), organiser vos séances et mieux comprendre ce que vous vivez entre les séances.`,
     expectTitle: `Concrètement, vous pouvez :`,
     expectItems: [
-      'Consulter et compléter des ressources',
       'Planifier et gérer vos séances',
       'Déposer vos réflexions si vous le souhaitez',
       'Suivre votre parcours dans le temps',
@@ -54,10 +53,9 @@ function getTemplate(params: {
     whatDesc: `It's your private and secure space to access resources shared by your practitioner, organize your sessions, and better understand what you're going through between sessions.`,
     expectTitle: `Here's what you can do:`,
     expectItems: [
-      'Access and complete resources',
-      'Plan and manage your sessions',
-      'Capture your thoughts along the way',
-      'Track your journey over time',
+      'Book and manage your sessions',
+      'Capture your thoughts, whenever you feel like it',
+      'See how far you\'ve come, over time',
     ],
     secure: 'Privacy and security',
     secureDesc: 'Your data is protected and compliant with GDPR standards.',
