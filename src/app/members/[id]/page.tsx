@@ -20,6 +20,7 @@ import {
   Copy,
   UserPlus,
 } from 'lucide-react'
+import { EditMemberModal } from '@/components/members/EditMemberModal'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -57,6 +58,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>(initialTab)
   const [showConvertConfirm, setShowConvertConfirm] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [highlightId, setHighlightId] = useState<string | undefined>(undefined)
   const [notes, setNotes] = useState<ProgressNote[]>([])
   const [sessions, setSessions] = useState<MemberSession[]>([])
@@ -315,11 +317,9 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                     <h1 className="text-xl font-semibold text-gray-900">
                       {getMemberFullName(member)}
                     </h1>
-                    <Link href={`/members/${member.id}/edit`}>
-                      <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    </Link>
+                    <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700" onClick={() => setShowEditModal(true)}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
                     {/* Status Badge with Edit */}
                     <div className="flex items-center gap-1 group/status">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
@@ -491,6 +491,18 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
           </AnimatePresence>
         </div>
       </main>
+
+      {/* Edit Member Modal */}
+      {showEditModal && member && (
+        <EditMemberModal
+          memberId={member.id}
+          isOpen={true}
+          onClose={() => setShowEditModal(false)}
+          onSaved={(updated) => {
+            setMember(updated)
+          }}
+        />
+      )}
 
       {/* Convert to patient confirmation */}
       {showConvertConfirm && member && (

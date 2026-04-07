@@ -36,6 +36,7 @@ import { AppHeader, AppSidebar } from '@/components/layout'
 import type { User } from '@/types/user'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
+import { EditMemberModal } from '@/components/members/EditMemberModal'
 import type { Member, MemberFilter, MemberHubStats, Session } from '@/types/member'
 import { getMemberFullName, getMemberInitials } from '@/types/member'
 import type { MemberGroup } from '@/types/member-group'
@@ -190,6 +191,7 @@ export default function MembersPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [deleteProspect, setDeleteProspect] = useState<{ id: string; email: string; name: string } | null>(null)
   const [convertConfirm, setConvertConfirm] = useState<{ id: string; name: string } | null>(null)
+  const [editMemberId, setEditMemberId] = useState<string | null>(null)
   const [inviteConfirmMember, setInviteConfirmMember] = useState<Member | null>(null)
   const [inviteState, setInviteState] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
   const [importStep, setImportStep] = useState<'upload' | 'mapping' | 'preview' | 'result'>('upload')
@@ -1637,6 +1639,7 @@ export default function MembersPage() {
                       onDelete={handleDeleteMember}
                       onStatusChange={handleStatusChange}
                       onInviteClick={(m) => setInviteConfirmMember(m)}
+                      onEdit={setEditMemberId}
                       t={t}
                       locale={locale}
                       nextSession={nextSessions[member.id] || null}
@@ -1649,6 +1652,7 @@ export default function MembersPage() {
                       index={index}
                       onDelete={handleDeleteMember}
                       onStatusChange={handleStatusChange}
+                      onEdit={setEditMemberId}
                       t={t}
                       locale={locale}
                       nextSession={nextSessions[member.id] || null}
@@ -2019,6 +2023,19 @@ export default function MembersPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Edit Member Modal */}
+      {editMemberId && (
+        <EditMemberModal
+          memberId={editMemberId}
+          isOpen={true}
+          onClose={() => setEditMemberId(null)}
+          onSaved={(updated) => {
+            setMembers(prev => prev.map(m => m.id === updated.id ? updated : m))
+            calculateStats(members.map(m => m.id === updated.id ? updated : m))
+          }}
+        />
       )}
 
       {/* Delete Prospect Modal */}
@@ -2686,6 +2703,7 @@ function MemberCard({
   onDelete,
   onStatusChange,
   onInviteClick,
+  onEdit,
   t,
   locale,
   nextSession,
@@ -2696,6 +2714,7 @@ function MemberCard({
   onDelete: (id: string) => void
   onStatusChange: (id: string, newStatus: 'active' | 'inactive') => void
   onInviteClick?: (member: Member) => void
+  onEdit?: (id: string) => void
   t: ReturnType<typeof useLanguage>['t']
   locale: 'en' | 'fr' | 'es'
   nextSession: Session | null
@@ -2776,7 +2795,7 @@ function MemberCard({
         {/* Actions */}
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
           <button
-            onClick={() => router.push(`/members/${member.id}/edit`)}
+            onClick={(e) => { e.stopPropagation(); onEdit?.(member.id) }}
             className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           >
             <Edit className="w-4 h-4" />
@@ -2865,6 +2884,7 @@ function MemberListItem({
   index,
   onDelete,
   onStatusChange,
+  onEdit,
   t,
   locale,
   nextSession,
@@ -2874,6 +2894,7 @@ function MemberListItem({
   index: number
   onDelete: (id: string) => void
   onStatusChange: (id: string, newStatus: 'active' | 'inactive') => void
+  onEdit?: (id: string) => void
   t: ReturnType<typeof useLanguage>['t']
   locale: 'en' | 'fr' | 'es'
   nextSession: Session | null
@@ -2990,7 +3011,7 @@ function MemberListItem({
           <Share2 className="w-4 h-4" />
         </button>
         <button
-          onClick={() => router.push(`/members/${member.id}/edit`)}
+          onClick={(e) => { e.stopPropagation(); onEdit?.(member.id) }}
           className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
         >
           <Edit className="w-4 h-4" />
