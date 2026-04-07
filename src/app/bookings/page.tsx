@@ -33,6 +33,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
 import { format, parseISO, isToday, isTomorrow, isPast } from 'date-fns'
+import { WeekCalendarView } from '@/components/bookings/WeekCalendarView'
 import {
   getCalendarConnection,
   disconnectCalendar,
@@ -150,6 +151,7 @@ export default function BookingsPage() {
   const [sessionTypes, setSessionTypes] = useState<SessionType[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [appointmentFilter, setAppointmentFilter] = useState<AppointmentFilter>('upcoming')
+  const [bookingView, setBookingView] = useState<'list' | 'calendar'>('list')
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [showSavedModal, setShowSavedModal] = useState(false)
@@ -681,8 +683,28 @@ export default function BookingsPage() {
                     </button>
                   )
                 })}
+                {/* View toggle */}
+                <div className="flex items-center bg-gray-100 rounded-lg p-0.5 ml-auto">
+                  <button
+                    onClick={() => setBookingView('list')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${bookingView === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    {locale === 'fr' ? 'Liste' : 'List'}
+                  </button>
+                  <button
+                    onClick={() => setBookingView('calendar')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${bookingView === 'calendar' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    {locale === 'fr' ? 'Calendrier' : 'Calendar'}
+                  </button>
+                </div>
               </div>
 
+              {/* Calendar View */}
+              {bookingView === 'calendar' ? (
+                <WeekCalendarView bookings={bookings} onApprove={handleApprove} onReject={handleReject} processingId={processingId} />
+              ) : (
+              <>
               {/* Bookings List */}
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
@@ -708,178 +730,150 @@ export default function BookingsPage() {
                   </p>
                 </motion.div>
               ) : (
-                <div className="space-y-4">
-                  {filteredBookings.map((booking, index) => {
-                    const startTime = parseISO(booking.start_time)
-                    const isPastBooking = isPast(startTime) && booking.status !== 'completed' && booking.status !== 'cancelled' && booking.status !== 'no_show'
-                    const statusConfig = STATUS_CONFIG[booking.status]
+                <div>
+                  {/* Group bookings by date */}
+                  {(() => {
+                    const grouped: Record<string, typeof filteredBookings> = {}
+                    filteredBookings.forEach(b => {
+                      const dateKey = format(parseISO(b.start_time), 'yyyy-MM-dd')
+                      if (!grouped[dateKey]) grouped[dateKey] = []
+                      grouped[dateKey].push(b)
+                    })
 
-                    return (
-                      <motion.div
-                        key={booking.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: index * 0.05 }}
-                        whileHover={{ y: -2 }}
-                        className={`bg-gradient-to-r ${statusConfig.cardBg} backdrop-blur-xl rounded-[1.25rem] p-6 shadow-lg shadow-gray-200/40 border ${statusConfig.border} transition-all duration-300`}
-                      >
-                        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
-                          {/* Left Section - Client Avatar & Info */}
-                          <div className="flex gap-4">
-                            {/* Avatar */}
-                            <div className={`w-14 h-14 rounded-2xl ${statusConfig.bg} flex items-center justify-center flex-shrink-0`}>
-                              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${statusConfig.iconBg} flex items-center justify-center shadow-md`}>
-                                <User className="w-5 h-5 text-white" />
-                              </div>
-                            </div>
+                    return Object.entries(grouped).map(([dateKey, dayBookings]) => {
+                      const dateObj = parseISO(dateKey)
+                      const isToday = format(new Date(), 'yyyy-MM-dd') === dateKey
+                      const isTmrw = format(new Date(Date.now() + 86400000), 'yyyy-MM-dd') === dateKey
 
-                            {/* Client Details */}
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-3 flex-wrap">
-                                <h3 className="font-semibold text-lg text-gray-900">
-                                  {booking.client_name}
-                                </h3>
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.text}`}>
-                                  {STATUS_LABELS[booking.status]?.[locale as 'en' | 'fr'] || booking.status}
-                                </span>
-                                {booking.google_event_id && (
-                                  <span className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-                                    <CheckCircle2 className="w-3 h-3" />
-                                    Synced
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                                <span className="flex items-center gap-1.5">
-                                  <Mail className="w-4 h-4" />
-                                  {booking.client_email}
-                                </span>
-                                {booking.client_phone && (
-                                  <span className="flex items-center gap-1.5">
-                                    <Phone className="w-4 h-4" />
-                                    {booking.client_phone}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                      return (
+                        <div key={dateKey} className="mb-6">
+                          {/* Date header */}
+                          <div className="flex items-center gap-3 mb-3">
+                            <h3 className="text-sm font-semibold text-gray-500">
+                              {isToday
+                                ? (locale === 'fr' ? "Aujourd'hui" : 'Today')
+                                : isTmrw
+                                  ? (locale === 'fr' ? 'Demain' : 'Tomorrow')
+                                  : format(dateObj, locale === 'fr' ? 'EEEE d MMMM' : 'EEEE, MMM d')}
+                            </h3>
+                            <div className="flex-1 h-px bg-gray-200" />
+                            <span className="text-xs text-gray-400">{dayBookings.length}</span>
                           </div>
 
-                          {/* Right Section - Date/Time & Actions */}
-                          <div className="flex flex-col lg:items-end gap-4 lg:min-w-[200px]">
-                            {/* Session Info Card */}
-                            <div className="bg-white/60 rounded-xl px-4 py-3 space-y-1.5">
-                              <p className="font-medium text-gray-900 text-sm">
-                                {getSessionTypeName(booking.session_type)}
-                              </p>
-                              <div className="flex items-center gap-3 text-xs text-gray-500">
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-3.5 h-3.5" />
-                                  {formatBookingDate(booking.start_time)}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 text-xs text-gray-500">
-                                <Clock className="w-3.5 h-3.5" />
-                                {format(parseISO(booking.start_time), 'h:mm a')} - {format(parseISO(booking.end_time), 'h:mm a')}
-                              </div>
-                            </div>
+                          {/* Bookings for this day */}
+                          <div className="space-y-2">
+                            {dayBookings.map((booking, index) => {
+                              const startTime = parseISO(booking.start_time)
+                              const isPastBooking = isPast(startTime) && booking.status !== 'completed' && booking.status !== 'cancelled' && booking.status !== 'no_show'
+                              const statusConfig = STATUS_CONFIG[booking.status]
 
-                            {/* Action Buttons */}
-                            <div className="flex gap-2">
-                              {booking.status === 'pending' && (
-                                <>
-                                  <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => handleApprove(booking.id)}
-                                    disabled={processingId === booking.id}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-sm font-medium rounded-xl shadow-md shadow-emerald-200/50 hover:shadow-lg transition-all disabled:opacity-50"
-                                  >
-                                    {processingId === booking.id ? (
-                                      <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                      <Check className="w-4 h-4" />
-                                    )}
-                                    {locale === 'fr' ? 'Accepter' : 'Approve'}
-                                  </motion.button>
-                                  <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => handleReject(booking.id)}
-                                    disabled={processingId === booking.id}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-white text-red-600 text-sm font-medium rounded-xl border border-red-200 hover:bg-red-50 transition-all disabled:opacity-50"
-                                  >
-                                    <X className="w-4 h-4" />
-                                    {locale === 'fr' ? 'Refuser' : 'Reject'}
-                                  </motion.button>
-                                </>
-                              )}
-                              {booking.status === 'confirmed' && isPastBooking && (
-                                <>
-                                  <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => handleMarkStatus(booking.id, 'completed')}
-                                    disabled={processingId === booking.id}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-all disabled:opacity-50"
-                                  >
-                                    {processingId === booking.id ? (
-                                      <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                      <CheckCircle2 className="w-4 h-4" />
-                                    )}
-                                    {locale === 'fr' ? 'Terminé' : 'Completed'}
-                                  </motion.button>
-                                  <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => handleMarkStatus(booking.id, 'no_show')}
-                                    disabled={processingId === booking.id}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-600 text-sm font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-all disabled:opacity-50"
-                                  >
-                                    <XCircle className="w-4 h-4" />
-                                    {locale === 'fr' ? 'Absent' : 'No Show'}
-                                  </motion.button>
-                                </>
-                              )}
-                              {booking.status === 'confirmed' && !isPastBooking && (
-                                <motion.button
-                                  whileHover={{ scale: 1.02 }}
-                                  whileTap={{ scale: 0.98 }}
-                                  onClick={() => handleReject(booking.id)}
-                                  disabled={processingId === booking.id}
-                                  className="flex items-center gap-2 px-4 py-2.5 bg-white text-red-600 text-sm font-medium rounded-xl border border-red-200 hover:bg-red-50 transition-all disabled:opacity-50"
+                              return (
+                                <motion.div
+                                  key={booking.id}
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.3, delay: index * 0.03 }}
+                                  className="bg-white rounded-xl p-4 border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
                                 >
-                                  {processingId === booking.id ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <X className="w-4 h-4" />
+                                  <div className="flex items-center gap-4">
+                                    {/* Time */}
+                                    <div className="w-20 flex-shrink-0 text-center">
+                                      <p className="text-sm font-semibold text-gray-900">{format(startTime, 'h:mm a')}</p>
+                                      <p className="text-xs text-gray-400">
+                                        {Math.round((parseISO(booking.end_time).getTime() - startTime.getTime()) / 60000)} min
+                                      </p>
+                                    </div>
+
+                                    {/* Divider */}
+                                    <div className={`w-1 h-10 rounded-full ${booking.status === 'pending' ? 'bg-amber-400' : booking.status === 'confirmed' ? 'bg-teal-400' : booking.status === 'completed' ? 'bg-gray-300' : booking.status === 'cancelled' ? 'bg-red-300' : 'bg-gray-300'}`} />
+
+                                    {/* Client + Session */}
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <p className="font-medium text-gray-900 truncate">{booking.client_name}</p>
+                                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${statusConfig.bg} ${statusConfig.text}`}>
+                                          {STATUS_LABELS[booking.status]?.[locale as 'en' | 'fr'] || booking.status}
+                                        </span>
+                                      </div>
+                                      <p className="text-xs text-gray-500 truncate">
+                                        {getSessionTypeName(booking.session_type)} · {booking.client_email}
+                                      </p>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                      {booking.status === 'pending' && (
+                                        <>
+                                          <button
+                                            onClick={() => handleApprove(booking.id)}
+                                            disabled={processingId === booking.id}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                                          >
+                                            {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                            {locale === 'fr' ? 'Accepter' : 'Approve'}
+                                          </button>
+                                          <button
+                                            onClick={() => handleReject(booking.id)}
+                                            disabled={processingId === booking.id}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
+                                          >
+                                            <X className="w-3.5 h-3.5" />
+                                            {locale === 'fr' ? 'Refuser' : 'Reject'}
+                                          </button>
+                                        </>
+                                      )}
+                                      {booking.status === 'confirmed' && isPastBooking && (
+                                        <>
+                                          <button
+                                            onClick={() => handleMarkStatus(booking.id, 'completed')}
+                                            disabled={processingId === booking.id}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                                          >
+                                            {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                                            {locale === 'fr' ? 'Terminé' : 'Completed'}
+                                          </button>
+                                          <button
+                                            onClick={() => handleMarkStatus(booking.id, 'no_show')}
+                                            disabled={processingId === booking.id}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 text-xs font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                          >
+                                            <XCircle className="w-3.5 h-3.5" />
+                                            {locale === 'fr' ? 'Absent' : 'No Show'}
+                                          </button>
+                                        </>
+                                      )}
+                                      {booking.status === 'confirmed' && !isPastBooking && (
+                                        <button
+                                          onClick={() => handleReject(booking.id)}
+                                          disabled={processingId === booking.id}
+                                          className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
+                                        >
+                                          {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                                          {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Notes — compact */}
+                                  {booking.notes && (
+                                    <div className="mt-2 ml-24 pl-5 border-l-2 border-gray-100">
+                                      <p className="text-xs text-gray-500 italic">{booking.notes}</p>
+                                    </div>
                                   )}
-                                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
-                                </motion.button>
-                              )}
-                            </div>
+                                </motion.div>
+                              )
+                            })}
                           </div>
                         </div>
-
-                        {/* Notes Section */}
-                        {booking.notes && (
-                          <div className="mt-4 flex items-start gap-3 text-sm text-gray-600 bg-white/60 backdrop-blur-sm p-4 rounded-xl">
-                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                              <FileText className="w-4 h-4 text-gray-500" />
-                            </div>
-                            <div>
-                              <p className="text-xs font-medium text-gray-400 mb-1">Client Notes</p>
-                              <p className="text-gray-700">{booking.notes}</p>
-                            </div>
-                          </div>
-                        )}
-                      </motion.div>
-                    )
-                  })}
+                      )
+                    })
+                  })()}
                 </div>
               )}
             </>
+          )}
+          </>
           )}
 
           {/* Settings Tab Content */}

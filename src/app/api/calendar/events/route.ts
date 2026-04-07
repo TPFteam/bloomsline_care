@@ -4,6 +4,57 @@ import type { GoogleCalendarEvent } from '@/types/calendar';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
 
+// GET /api/calendar/events - Fetch Google Calendar events for a date range
+export async function GET(request: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { searchParams } = request.nextUrl;
+  const start = searchParams.get('start');
+  const end = searchParams.get('end');
+  if (!start || !end) {
+    return NextResponse.json({ error: 'start and end required' }, { status: 400 });
+  }
+
+  const googleAuth = await getValidGoogleToken(user.id, supabase);
+  if (!googleAuth) {
+    return NextResponse.json({ events: [], connected: false });
+  }
+
+  try {
+    const calendarId = encodeURIComponent(googleAuth.calendarId);
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?` +
+      `timeMin=${encodeURIComponent(start)}&timeMax=${encodeURIComponent(end)}&` +
+      `singleEvents=true&orderBy=startTime&maxResults=200`;
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${googleAuth.accessToken}` },
+    });
+
+    if (!res.ok) {
+      return NextResponse.json({ events: [], connected: true, error: 'fetch_failed' });
+    }
+
+    const data = await res.json();
+    const events = (data.items || [])
+      .filter((e: any) => e.status !== 'cancelled' && e.start?.dateTime)
+      .map((e: any) => ({
+        id: e.id,
+        title: e.summary || '(No title)',
+        start: e.start.dateTime,
+        end: e.end.dateTime,
+      }));
+
+    return NextResponse.json({ events, connected: true });
+  } catch (err) {
+    console.error('Fetch calendar events error:', err);
+    return NextResponse.json({ events: [], connected: true, error: 'fetch_failed' });
+  }
+}
+
 // POST /api/calendar/events - Create calendar event
 export async function POST(request: NextRequest) {
   // Rate limiting
