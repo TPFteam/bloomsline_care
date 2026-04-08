@@ -633,6 +633,12 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                                         {locale === 'fr' ? `${daysPending}j en attente` : `Pending ${daysPending}d`}
                                       </span>
                                     )}
+                                    {resource.last_reminder_at && (
+                                      <span className="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg">
+                                        <Bell className="w-3 h-3" />
+                                        {locale === 'fr' ? 'Rappel envoyé le' : 'Reminded'} {new Date(resource.last_reminder_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })}
+                                      </span>
+                                    )}
                                   </>
                                 )
                               })()}
@@ -645,15 +651,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                             const hoursSinceReminder = lastReminder ? (Date.now() - lastReminder.getTime()) / (60 * 60 * 1000) : 999
                             const canRemind = hoursSinceReminder >= 24
 
-                            if (!canRemind) {
-                              return (
-                                <span className="text-[11px] text-gray-400 px-3">
-                                  {locale === 'fr' ? 'Rappel envoyé' : 'Reminded'} {lastReminder!.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })}
-                                </span>
-                              )
-                            }
-
-                            return (
+                            return canRemind ? (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -668,7 +666,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                                   ? (locale === 'fr' ? 'Re-rappeler' : 'Remind again')
                                   : (locale === 'fr' ? 'Rappeler' : 'Remind')}
                               </Button>
-                            )
+                            ) : null
                           })()}
                           <Link href={`/resources/${resource.resource_id}`}>
                             <Button variant="ghost" size="sm" className="text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-colors h-9 w-9 p-0">
