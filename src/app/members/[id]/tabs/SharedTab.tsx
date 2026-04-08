@@ -22,6 +22,8 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  Clock,
+  Bell,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -53,6 +55,7 @@ interface SharedLibraryResource {
   shared_at: string
   message: string | null
   viewed_at: string | null
+  last_reminder_at: string | null
   resource: {
     id: string
     title: string
@@ -100,6 +103,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
 
   // Submissions state
   const [submissions, setSubmissions] = useState<SubmissionWithResource[]>([])
+  const [remindResource, setRemindResource] = useState<{ id: string; title: string } | null>(null)
 
   // Expanded response viewer
   const [expandedResponseId, setExpandedResponseId] = useState<string | null>(null)
@@ -573,6 +577,15 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
 
                                 // Check for submission first
                                 if (submission) {
+                                  // Draft = in progress
+                                  if (submission.status === 'draft') {
+                                    return (
+                                      <span className="flex items-center gap-1.5 text-xs text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+                                        <Clock className="w-3 h-3" />
+                                        {locale === 'fr' ? 'En cours' : 'In progress'}
+                                      </span>
+                                    )
+                                  }
                                   // For psychoeducation, show "Read on" instead of "Submitted on"
                                   if (isPsychoeducation) {
                                     return (
@@ -603,21 +616,60 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                                   )
                                 }
 
-                                // Not viewed/read
+                                // Not viewed/read — show days pending
+                                const daysPending = Math.floor((Date.now() - new Date(resource.shared_at).getTime()) / (24 * 60 * 60 * 1000))
                                 return (
-                                  <span className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
-                                    <EyeOff className="w-3 h-3" />
-                                    {isPsychoeducation
-                                      ? (locale === 'fr' ? 'Non lu' : 'Not read')
-                                      : (locale === 'fr' ? 'Non vu' : 'Not viewed')
-                                    }
-                                  </span>
+                                  <>
+                                    <span className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
+                                      <EyeOff className="w-3 h-3" />
+                                      {isPsychoeducation
+                                        ? (locale === 'fr' ? 'Non lu' : 'Not read')
+                                        : (locale === 'fr' ? 'Non vu' : 'Not viewed')
+                                      }
+                                    </span>
+                                    {daysPending >= 2 && (
+                                      <span className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg">
+                                        <Clock className="w-3 h-3" />
+                                        {locale === 'fr' ? `${daysPending}j en attente` : `Pending ${daysPending}d`}
+                                      </span>
+                                    )}
+                                  </>
                                 )
                               })()}
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
+                          {!resource.viewed_at && !submissions.find(s => s.resource_id === resource.resource_id) && Math.floor((Date.now() - new Date(resource.shared_at).getTime()) / (24 * 60 * 60 * 1000)) >= 2 && (() => {
+                            const lastReminder = resource.last_reminder_at ? new Date(resource.last_reminder_at) : null
+                            const hoursSinceReminder = lastReminder ? (Date.now() - lastReminder.getTime()) / (60 * 60 * 1000) : 999
+                            const canRemind = hoursSinceReminder >= 24
+
+                            if (!canRemind) {
+                              return (
+                                <span className="text-[11px] text-gray-400 px-3">
+                                  {locale === 'fr' ? 'Rappel envoyé' : 'Reminded'} {lastReminder!.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                              )
+                            }
+
+                            return (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setRemindResource({ id: resource.id, title: resource.resource.title })
+                                }}
+                                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-xl transition-colors h-9 px-3 text-xs font-medium gap-1.5"
+                              >
+                                <Bell className="w-3.5 h-3.5" />
+                                {lastReminder
+                                  ? (locale === 'fr' ? 'Re-rappeler' : 'Remind again')
+                                  : (locale === 'fr' ? 'Rappeler' : 'Remind')}
+                              </Button>
+                            )
+                          })()}
                           <Link href={`/resources/${resource.resource_id}`}>
                             <Button variant="ghost" size="sm" className="text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-colors h-9 w-9 p-0">
                               <ExternalLink className="w-4 h-4" />
@@ -824,6 +876,76 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
             ) : null}
           </motion.div>
         </>
+      {/* Remind Confirmation Modal */}
+      {remindResource && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setRemindResource(null)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4">
+              <Bell className="w-5 h-5 text-amber-500" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 text-center mb-1">
+              {locale === 'fr' ? 'Envoyer un rappel ?' : 'Send a reminder?'}
+            </h3>
+            <p className="text-sm text-gray-500 text-center mb-6">
+              {locale === 'fr'
+                ? `Un rappel sera envoyé pour "${remindResource.title}".`
+                : `A reminder will be sent for "${remindResource.title}".`}
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setRemindResource(null)}
+                className="px-5 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const { data: { user: authUser } } = await supabase.auth.getUser()
+                    if (!authUser) return
+
+                    // Find the shared resource record to get resource_id
+                    const sharedRecord = sharedLibraryResources.find(r => r.id === remindResource.id)
+                    if (!sharedRecord) throw new Error('Record not found')
+
+                    await supabase.functions.invoke('send-resource-shared-email', {
+                      body: {
+                        type: 'INSERT',
+                        record: {
+                          member_id: memberId,
+                          resource_id: sharedRecord.resource_id,
+                          practitioner_id: authUser.id,
+                          isReminder: true,
+                        },
+                      },
+                    })
+
+                    // Save reminder timestamp
+                    const now = new Date().toISOString()
+                    await supabase
+                      .from('member_shared_resources')
+                      .update({ last_reminder_at: now })
+                      .eq('id', remindResource.id)
+
+                    // Update local state
+                    setSharedLibraryResources(prev => prev.map(r =>
+                      r.id === remindResource.id ? { ...r, last_reminder_at: now } : r
+                    ))
+
+                    toast.success(locale === 'fr' ? 'Rappel envoyé !' : 'Reminder sent!')
+                  } catch {
+                    toast.error(locale === 'fr' ? 'Échec de l\'envoi' : 'Failed to send')
+                  }
+                  setRemindResource(null)
+                }}
+                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-medium"
+              >
+                {locale === 'fr' ? 'Envoyer' : 'Send'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

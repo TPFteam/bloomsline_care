@@ -156,6 +156,7 @@ export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [nextSessions, setNextSessions] = useState<Record<string, Session | null>>({})
   const [lastSharedResources, setLastSharedResources] = useState<Record<string, { title: string; type: string; sharedAt: string } | null>>({})
+  const [pendingWorksheets, setPendingWorksheets] = useState<Record<string, { title: string; daysPending: number } | null>>({})
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<MemberFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -292,7 +293,9 @@ export default function MembersPage() {
           .from('member_shared_resources')
           .select(`
             member_id,
+            resource_id,
             shared_at,
+            viewed_at,
             resource:resources(title, type)
           `)
           .in('member_id', memberIds)
@@ -301,7 +304,7 @@ export default function MembersPage() {
         const sharedMap: Record<string, { title: string; type: string; sharedAt: string } | null> = {}
         memberIds.forEach(id => { sharedMap[id] = null })
 
-        sharedResources?.forEach((share: { member_id: string; shared_at: string; resource: { title: string; type: string }[] | { title: string; type: string } | null }) => {
+        sharedResources?.forEach((share: { member_id: string; resource_id: string; shared_at: string; resource: { title: string; type: string }[] | { title: string; type: string } | null }) => {
           if (!sharedMap[share.member_id] && share.resource) {
             const resource = Array.isArray(share.resource) ? share.resource[0] : share.resource
             if (resource) {
@@ -311,6 +314,35 @@ export default function MembersPage() {
         })
 
         setLastSharedResources(sharedMap)
+
+        // Check for pending worksheets — shared but no completed submission after 2+ days
+        const { data: submissions } = await supabase
+          .from('resource_submissions')
+          .select('member_id, resource_id, status')
+          .eq('practitioner_id', authUser.id)
+          .neq('status', 'draft')
+
+        const submittedSet = new Set(
+          (submissions || []).map((s: { member_id: string; resource_id: string }) => `${s.member_id}_${s.resource_id}`)
+        )
+
+        const pendingMap: Record<string, { title: string; daysPending: number } | null> = {}
+        const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000
+
+        sharedResources?.forEach((share: any) => {
+          if (pendingMap[share.member_id]) return // already found one
+          if (share.viewed_at) return // already viewed/read
+          const sharedTime = new Date(share.shared_at).getTime()
+          if (sharedTime > twoDaysAgo) return // shared less than 2 days ago
+          const key = `${share.member_id}_${share.resource_id}`
+          if (submittedSet.has(key)) return // already submitted
+          const resource = Array.isArray(share.resource) ? share.resource[0] : share.resource
+          if (resource) {
+            const daysPending = Math.floor((Date.now() - sharedTime) / (24 * 60 * 60 * 1000))
+            pendingMap[share.member_id] = { title: resource.title, daysPending }
+          }
+        })
+        setPendingWorksheets(pendingMap)
       }
 
       // Fetch member groups
@@ -1644,6 +1676,7 @@ export default function MembersPage() {
                       locale={locale}
                       nextSession={nextSessions[member.id] || null}
                       lastSharedResource={lastSharedResources[member.id] || null}
+                      pendingWorksheet={pendingWorksheets[member.id] || null}
                     />
                   ) : (
                     <MemberListItem
@@ -1657,6 +1690,7 @@ export default function MembersPage() {
                       locale={locale}
                       nextSession={nextSessions[member.id] || null}
                       lastSharedResource={lastSharedResources[member.id] || null}
+                      pendingWorksheet={pendingWorksheets[member.id] || null}
                     />
                   )
                 ))}
@@ -2708,6 +2742,7 @@ function MemberCard({
   locale,
   nextSession,
   lastSharedResource,
+  pendingWorksheet,
 }: {
   member: Member
   index: number
@@ -2719,6 +2754,7 @@ function MemberCard({
   locale: 'en' | 'fr' | 'es'
   nextSession: Session | null
   lastSharedResource: { title: string; type: string; sharedAt: string } | null
+  pendingWorksheet?: { title: string; daysPending: number } | null
 }) {
   const router = useRouter()
 
@@ -2829,6 +2865,19 @@ function MemberCard({
           </div>
         )}
 
+        {/* Pending worksheet indicator */}
+        {pendingWorksheet && (
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
+            <span className="text-sm text-amber-600 truncate flex-1">
+              {pendingWorksheet.title}
+            </span>
+            <span className="text-xs text-amber-500 flex-shrink-0">
+              {pendingWorksheet.daysPending}d
+            </span>
+          </div>
+        )}
+
         {/* Next Session */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -2859,8 +2908,8 @@ function MemberCard({
               <Mail className="w-4 h-4 text-teal-500 flex-shrink-0" />
               <span className="text-sm text-teal-600">
                 {locale === 'fr'
-                  ? `${member.first_name} n'est pas sur l'app`
-                  : `${member.first_name} is not on the app`}
+                  ? `${member.first_name} n'est pas encore sur l'app`
+                  : `${member.first_name} is not on the app yet`}
               </span>
             </div>
             <span className="text-xs font-medium text-teal-600">
@@ -2872,7 +2921,6 @@ function MemberCard({
         )}
 
       </div>
-
 
     </motion.div>
   )
@@ -2899,6 +2947,7 @@ function MemberListItem({
   locale: 'en' | 'fr' | 'es'
   nextSession: Session | null
   lastSharedResource: { title: string; type: string; sharedAt: string } | null
+  pendingWorksheet?: { title: string; daysPending: number } | null
 }) {
   const router = useRouter()
 

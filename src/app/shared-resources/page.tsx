@@ -45,6 +45,7 @@ export default function SharedResourcesPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [memberFilter, setMemberFilter] = useState<string[]>([])
 
   useEffect(() => {
     fetchData()
@@ -111,6 +112,17 @@ export default function SharedResourcesPage() {
 
   const [expandedResource, setExpandedResource] = useState<string | null>(null)
 
+  // Unique members for filter dropdown
+  const uniqueMembers = useMemo(() => {
+    const seen = new Map<string, { id: string; name: string }>()
+    records.forEach(r => {
+      if (!seen.has(r.member_id)) {
+        seen.set(r.member_id, { id: r.member_id, name: `${r.member_first_name} ${r.member_last_name}` })
+      }
+    })
+    return Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }, [records])
+
   const filteredRecords = useMemo(() => {
     return records.filter(r => {
       if (search) {
@@ -118,12 +130,13 @@ export default function SharedResourcesPage() {
         if (!r.resource_title.toLowerCase().includes(q) &&
             !`${r.member_first_name} ${r.member_last_name}`.toLowerCase().includes(q)) return false
       }
+      if (memberFilter.length > 0 && !memberFilter.includes(r.member_id)) return false
       if (statusFilter === 'pending' && r.response_status) return false
       if (statusFilter === 'submitted' && r.response_status !== 'submitted') return false
       if (statusFilter === 'reviewed' && r.response_status !== 'reviewed') return false
       return true
     })
-  }, [records, search, statusFilter])
+  }, [records, search, statusFilter, memberFilter])
 
   // Group filtered records by resource_id
   const groupedRecords = useMemo(() => {
@@ -196,7 +209,7 @@ export default function SharedResourcesPage() {
     if (!status) return { label: locale === 'fr' ? 'En attente' : 'Pending', bg: 'bg-amber-50', text: 'text-amber-600', icon: Clock }
     if (status === 'submitted') return { label: locale === 'fr' ? 'Soumis' : 'Submitted', bg: 'bg-blue-50', text: 'text-blue-600', icon: CheckCircle2 }
     if (status === 'reviewed') return { label: locale === 'fr' ? 'Relu' : 'Reviewed', bg: 'bg-emerald-50', text: 'text-emerald-600', icon: Eye }
-    if (status === 'draft') return { label: locale === 'fr' ? 'Brouillon' : 'Draft', bg: 'bg-gray-100', text: 'text-gray-500', icon: FileText }
+    if (status === 'draft') return { label: locale === 'fr' ? 'En cours' : 'In progress', bg: 'bg-blue-50', text: 'text-blue-500', icon: Clock }
     return { label: status, bg: 'bg-gray-100', text: 'text-gray-500', icon: Clock }
   }
 
@@ -260,6 +273,19 @@ export default function SharedResourcesPage() {
                 placeholder={locale === 'fr' ? 'Rechercher par ressource ou membre...' : 'Search by resource or member...'}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:border-gray-400 transition-colors"
               />
+            </div>
+            {/* Patient filter */}
+            <div className="relative">
+              <select
+                value={memberFilter.length === 0 ? '' : memberFilter[0]}
+                onChange={(e) => setMemberFilter(e.target.value ? [e.target.value] : [])}
+                className="pl-3 pr-8 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:border-gray-400 transition-colors appearance-none text-gray-600"
+              >
+                <option value="">{locale === 'fr' ? 'Tous les patients' : 'All patients'}</option>
+                {uniqueMembers.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
             </div>
             <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
               {(['all', 'pending', 'submitted', 'reviewed'] as const).map(s => (
@@ -390,6 +416,14 @@ export default function SharedResourcesPage() {
                                 <BadgeIcon className="w-3 h-3" />
                                 {badge.label}
                               </span>
+                              {!record.response_status && (() => {
+                                const days = Math.floor((Date.now() - new Date(record.shared_at).getTime()) / 86400000)
+                                return days >= 2 ? (
+                                  <span className="text-[10px] text-amber-500 font-medium">
+                                    {days}{locale === 'fr' ? 'j' : 'd'}
+                                  </span>
+                                ) : null
+                              })()}
                               {!record.response_status && (
                                 <button
                                   onClick={(e) => handleRemind(e, record)}
