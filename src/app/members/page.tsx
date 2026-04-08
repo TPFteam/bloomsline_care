@@ -567,11 +567,12 @@ export default function MembersPage() {
 
       const emailToAdd = newMember.email.trim().toLowerCase()
 
-      // Check if a member with this email already exists
+      // Check if a member with this email already exists (exclude soft-deleted)
       const { data: existingMembers } = await supabase
         .from('members')
-        .select('id, practitioner_id, first_name, last_name')
+        .select('id, practitioner_id, first_name, last_name, user_id')
         .eq('email', emailToAdd)
+        .is('deleted_at', null)
 
       if (existingMembers && existingMembers.length > 0) {
         // Check if already linked to this practitioner
@@ -624,7 +625,14 @@ export default function MembersPage() {
         }
       }
 
-      const memberData = {
+      // If this email already belongs to a signed-up user, link user_id immediately
+      let existingUserId: string | null = null
+      if (existingMembers && existingMembers.length > 0) {
+        const linked = existingMembers.find((m: any) => m.user_id)
+        if (linked) existingUserId = (linked as any).user_id
+      }
+
+      const memberData: Record<string, any> = {
         practitioner_id: authUser.id,
         first_name: newMember.firstName.trim(),
         last_name: newMember.lastName.trim(),
@@ -634,6 +642,7 @@ export default function MembersPage() {
         engagement_level: 'medium' as const,
         is_minor: newMember.isMinor,
       }
+      if (existingUserId) memberData.user_id = existingUserId
 
       const { data, error } = await supabase
         .from('members')

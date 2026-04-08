@@ -38,13 +38,14 @@ export async function setupNewUser(
     .eq('email', userEmail)
     .single()
 
-  // 2. Check if they were added as a member by a practitioner
-  const { data: memberEntry } = await adminClient
+  // 2. Check if they were added as a member by a practitioner (may have multiple)
+  const { data: memberEntries } = await adminClient
     .from('members')
     .select('id, practitioner_id, first_name')
     .eq('email', userEmail)
     .is('user_id', null)
-    .single()
+
+  const memberEntry = memberEntries?.[0] || null
 
   // Determine signup eligibility
   let canSignup = false
@@ -149,22 +150,25 @@ export async function setupNewUser(
     }
   }
 
-  if (signupSource === 'practitioner_invite' && memberEntry) {
-    // Link existing member record to this user, fill in name if missing
+  if (signupSource === 'practitioner_invite' && memberEntries && memberEntries.length > 0) {
+    // Link ALL existing member records to this user
     const nameParts = (userMetadata.full_name || '').split(' ')
-    const updateData: Record<string, any> = {
-      user_id: userId,
-      status: 'active',
-      updated_at: new Date().toISOString(),
+
+    for (const entry of memberEntries) {
+      const updateData: Record<string, any> = {
+        user_id: userId,
+        status: 'active',
+        updated_at: new Date().toISOString(),
+      }
+      if (!entry.first_name && nameParts[0]) {
+        updateData.first_name = nameParts[0]
+        updateData.last_name = nameParts.slice(1).join(' ') || ''
+      }
+      await adminClient
+        .from('members')
+        .update(updateData)
+        .eq('id', entry.id)
     }
-    if (!memberEntry.first_name && nameParts[0]) {
-      updateData.first_name = nameParts[0]
-      updateData.last_name = nameParts.slice(1).join(' ') || ''
-    }
-    await adminClient
-      .from('members')
-      .update(updateData)
-      .eq('id', memberEntry.id)
 
     userType = 'member'
     action = 'mobile_app'
