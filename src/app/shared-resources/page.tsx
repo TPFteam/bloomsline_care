@@ -33,6 +33,7 @@ interface SharedRecord {
   member_last_name: string
   response_status: string | null
   response_submitted_at: string | null
+  last_reminder_at: string | null
 }
 
 export default function SharedResourcesPage() {
@@ -70,16 +71,20 @@ export default function SharedResourcesPage() {
         resource_id,
         member_id,
         shared_at,
+        last_reminder_at,
         resources(title, type),
-        members(first_name, last_name)
+        members!inner(first_name, last_name, deleted_at)
       `)
       .eq('practitioner_id', authUser.id)
       .order('shared_at', { ascending: false })
 
     if (!shared) { setLoading(false); return }
 
+    // Filter out soft-deleted members
+    const activeShared = shared.filter((s: any) => !s.members?.deleted_at)
+
     // Fetch response statuses for these shares
-    const resourceMemberPairs = shared.map(s => ({ resource_id: s.resource_id, member_id: s.member_id }))
+    const resourceMemberPairs = activeShared.map(s => ({ resource_id: s.resource_id, member_id: s.member_id }))
     const { data: responses } = await supabase
       .from('resource_responses')
       .select('resource_id, member_id, status, submitted_at')
@@ -90,7 +95,7 @@ export default function SharedResourcesPage() {
       responseMap.set(`${r.resource_id}|${r.member_id}`, { status: r.status, submitted_at: r.submitted_at })
     })
 
-    const enriched: SharedRecord[] = shared.map((s: any) => {
+    const enriched: SharedRecord[] = activeShared.map((s: any) => {
       const resp = responseMap.get(`${s.resource_id}|${s.member_id}`)
       return {
         id: s.id,
@@ -103,6 +108,7 @@ export default function SharedResourcesPage() {
         member_last_name: s.members?.last_name || '',
         response_status: resp?.status || null,
         response_submitted_at: resp?.submitted_at || null,
+        last_reminder_at: s.last_reminder_at || null,
       }
     })
 
@@ -197,6 +203,16 @@ export default function SharedResourcesPage() {
           resourceId: record.resource_id,
         })
       }
+
+      // Save reminder timestamp
+      const now = new Date().toISOString()
+      await supabase
+        .from('member_shared_resources')
+        .update({ last_reminder_at: now })
+        .eq('id', record.id)
+
+      // Update local state
+      setRecords(prev => prev.map(r => r.id === record.id ? { ...r, last_reminder_at: now } : r))
 
       toast.success(locale === 'fr' ? 'Rappel envoyé' : 'Reminder sent')
     } catch {
@@ -424,20 +440,37 @@ export default function SharedResourcesPage() {
                                   </span>
                                 ) : null
                               })()}
-                              {!record.response_status && (
-                                <button
-                                  onClick={(e) => handleRemind(e, record)}
-                                  disabled={sendingReminder === record.id}
-                                  className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors flex items-center gap-1"
-                                >
-                                  {sendingReminder === record.id ? (
-                                    <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                                  ) : (
-                                    <Bell className="w-2.5 h-2.5" />
-                                  )}
-                                  {locale === 'fr' ? 'Rappel' : 'Remind'}
-                                </button>
-                              )}
+                              {!record.response_status && (() => {
+                                const lastReminder = record.last_reminder_at ? new Date(record.last_reminder_at) : null
+                                const hoursSince = lastReminder ? (Date.now() - lastReminder.getTime()) / (60 * 60 * 1000) : 999
+                                const canRemind = hoursSince >= 24
+
+                                if (lastReminder && !canRemind) {
+                                  return (
+                                    <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                                      <Bell className="w-2.5 h-2.5" />
+                                      {locale === 'fr' ? 'Rappel envoyé le' : 'Reminded'} {lastReminder.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })}
+                                    </span>
+                                  )
+                                }
+
+                                return (
+                                  <button
+                                    onClick={(e) => handleRemind(e, record)}
+                                    disabled={sendingReminder === record.id}
+                                    className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors flex items-center gap-1"
+                                  >
+                                    {sendingReminder === record.id ? (
+                                      <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                    ) : (
+                                      <Bell className="w-2.5 h-2.5" />
+                                    )}
+                                    {lastReminder
+                                      ? (locale === 'fr' ? 'Re-rappeler' : 'Remind again')
+                                      : (locale === 'fr' ? 'Rappel' : 'Remind')}
+                                  </button>
+                                )
+                              })()}
                             </div>
                           )
                         })}
