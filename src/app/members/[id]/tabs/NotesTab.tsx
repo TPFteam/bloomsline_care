@@ -50,6 +50,7 @@ interface NotesTabProps {
   sessions: MemberSession[]
   notes: ProgressNote[]
   onNotesUpdate: () => void
+  onSessionsUpdate?: () => void
   member?: Member
 }
 
@@ -155,7 +156,7 @@ const defaultNoteTypes: readonly string[] = DEFAULT_NOTE_TYPES
 const fixedNoteTypes: readonly string[] = FIXED_NOTE_TYPES
 const deletableDefaults: readonly string[] = DELETABLE_DEFAULT_NOTE_TYPES
 
-export default function NotesTab({ memberId, sessions, notes: initialNotes, onNotesUpdate, member }: NotesTabProps) {
+export default function NotesTab({ memberId, sessions, notes: initialNotes, onNotesUpdate, onSessionsUpdate, member }: NotesTabProps) {
   const { t, locale } = useLanguage()
   const supabase = createClient()
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -183,6 +184,12 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   // Category & selection
   const [activeCategory, setActiveCategory] = useState<ActiveCategory>('sessions')
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
+
+  // Edit session date inline
+  const [editingDate, setEditingDate] = useState(false)
+  const [editDateValue, setEditDateValue] = useState('')
+  const [editTimeValue, setEditTimeValue] = useState('')
+  const [savingDate, setSavingDate] = useState(false)
 
   // All notes (fetched without limit)
   const [allNotes, setAllNotes] = useState<ProgressNote[]>(initialNotes)
@@ -1445,6 +1452,38 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     : null
   const SelectedSessionIcon = selectedSession ? (snFormatIcon[selectedSession.session_format] || User) : User
 
+  const handleStartEditDate = () => {
+    if (!selectedSession) return
+    const d = new Date(selectedSession.scheduled_at)
+    setEditDateValue(d.toISOString().split('T')[0])
+    setEditTimeValue(d.toTimeString().slice(0, 5))
+    setEditingDate(true)
+  }
+
+  const handleSaveDate = async () => {
+    if (!selectedSession || !editDateValue || !editTimeValue) return
+    setSavingDate(true)
+    try {
+      const [year, month, day] = editDateValue.split('-').map(Number)
+      const [hours, minutes] = editTimeValue.split(':').map(Number)
+      const dt = new Date(year, month - 1, day, hours, minutes, 0, 0)
+
+      const { error } = await supabase
+        .from('sessions')
+        .update({ scheduled_at: dt.toISOString(), updated_at: new Date().toISOString() })
+        .eq('id', selectedSession.id)
+
+      if (error) throw error
+      toast.success(locale === 'fr' ? 'Date mise à jour' : 'Date updated')
+      setEditingDate(false)
+      onSessionsUpdate?.()
+    } catch {
+      toast.error(locale === 'fr' ? 'Erreur lors de la mise à jour' : 'Failed to update date')
+    } finally {
+      setSavingDate(false)
+    }
+  }
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 280px)', minHeight: '500px' }}>
       {/* Category tabs + zoom — always full width at top */}
@@ -1741,6 +1780,13 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                   {selectedSession.duration_minutes} {t.members.sessions.minutes}
                 </p>
               </div>
+              <button
+                onClick={handleStartEditDate}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0"
+                title={locale === 'fr' ? 'Modifier la date' : 'Edit date'}
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${
                 selectedSession.status === 'completed' ? 'bg-emerald-50 text-emerald-700'
                 : selectedSession.status === 'scheduled' ? 'bg-blue-50 text-blue-700'
@@ -1751,6 +1797,49 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 {t.members.sessionStatus[selectedSession.status as keyof typeof t.members.sessionStatus] || selectedSession.status}
               </span>
             </div>
+
+            {/* Inline date editor */}
+            <AnimatePresence>
+              {editingDate && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden border-b border-gray-100"
+                >
+                  <div className="px-5 py-3 bg-gray-50 flex items-center gap-3 flex-wrap">
+                    <input
+                      type="date"
+                      value={editDateValue}
+                      onChange={(e) => setEditDateValue(e.target.value)}
+                      className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
+                    />
+                    <input
+                      type="time"
+                      value={editTimeValue}
+                      onChange={(e) => setEditTimeValue(e.target.value)}
+                      className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
+                    />
+                    <div className="flex items-center gap-2 ml-auto">
+                      <button
+                        onClick={() => setEditingDate(false)}
+                        className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                      </button>
+                      <button
+                        onClick={handleSaveDate}
+                        disabled={savingDate}
+                        className="px-3 py-1.5 text-xs bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {savingDate && <Loader2 className="w-3 h-3 animate-spin" />}
+                        {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Cancellation reason */}
             {(selectedSession.status === 'cancelled' || selectedSession.status === 'no_show') && ((selectedSession as any).cancellation_reason || selectedSession.notes) && (
