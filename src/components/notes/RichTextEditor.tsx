@@ -1671,8 +1671,18 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
 
   return (
     <>
-      {/* Show all annotation labels as floating bubbles when toggled */}
+      {/* Force consistent quote styling on all verbatim marks (overrides old inline styles from DB) */}
       <style>{`
+        .rte-editor mark[data-verbatim] {
+          display: block !important;
+          background-color: #eff6ff !important;
+          border-left: 4px solid #3b82f6 !important;
+          padding: 12px 16px !important;
+          margin: 12px 0 !important;
+          border-radius: 0 !important;
+          font-style: italic !important;
+          color: #1e3a5f !important;
+        }
         .rte-editor.show-labels mark[data-goal-id],
         .rte-editor.show-labels mark[data-tag] {
           background-color: var(--tag-bg, #f3f4f6) !important;
