@@ -1067,7 +1067,7 @@ function DashboardContent() {
                 {upcomingSessions.length > 0 && (
                   <Link
                     href="/bookings"
-                    className="flex items-center justify-center gap-2 py-3 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                    className="flex items-center justify-end gap-2 py-3 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
                   >
                     {locale === 'fr' ? 'Voir toutes les séances' : 'View all sessions'}
                     <ChevronRight className="w-4 h-4" />
