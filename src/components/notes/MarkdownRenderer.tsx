@@ -206,7 +206,7 @@ export function MarkdownRenderer({ content, className, onContentChange, onEdit, 
               border-left: 3px solid #1e3a5f !important;
               padding: 6px 10px !important;
               margin: 8px 0 !important;
-              border-radius: 0 !important;
+              border-radius: 6px !important;
               font-style: italic !important;
               color: #1e3a5f !important;
             }
