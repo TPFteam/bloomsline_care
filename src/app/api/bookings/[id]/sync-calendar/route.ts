@@ -63,6 +63,15 @@ export async function POST(
       });
     }
 
+    // Backdated session: historical record only — never touch the calendar
+    if (new Date(booking.start_time).getTime() < Date.now()) {
+      return NextResponse.json({
+        calendarSynced: false,
+        calendarError: null,
+        message: 'Backdated session — calendar sync skipped',
+      });
+    }
+
     // Get access token
     const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
 
@@ -107,8 +116,13 @@ export async function POST(
         },
       };
 
+      // Backdated session: create the event for the practitioner's historical record
+      // but don't send Google Calendar invites to attendees
+      const isBackdated = new Date(booking.start_time).getTime() < Date.now();
+      const sendUpdates = isBackdated ? 'none' : 'all';
+
       const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all`,
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=${sendUpdates}`,
         {
           method: 'POST',
           headers: {

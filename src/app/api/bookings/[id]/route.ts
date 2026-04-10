@@ -185,12 +185,16 @@ export async function PATCH(
       }
     }
 
+    // Backdated booking: skip Google Calendar invites + confirmation emails
+    const isBackdatedBooking = new Date(booking.start_time).getTime() < Date.now();
+
     // If approving (confirming), sync to Google Calendar
+    // Backdated bookings: skip calendar sync entirely (historical record only)
     let calendarSynced = false;
     let calendarError: string | null = null;
 
     console.log('=== Booking approval ===', { status, bookingStatus: booking.status, userId: user.id });
-    if (status === 'confirmed' && booking.status === 'pending') {
+    if (status === 'confirmed' && booking.status === 'pending' && !isBackdatedBooking) {
       console.log('Attempting calendar sync for user:', user.id);
       const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
 
@@ -269,7 +273,8 @@ export async function PATCH(
     }
 
     // If cancelling and there's a Google event, delete it
-    if (status === 'cancelled' && booking.google_event_id) {
+    // Backdated bookings: skip calendar deletion entirely (historical record only)
+    if (status === 'cancelled' && booking.google_event_id && !isBackdatedBooking) {
       const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
       if (googleAuth) {
         try {
@@ -289,7 +294,8 @@ export async function PATCH(
     }
 
     // Send confirmation email to client when booking is approved
-    if (status === 'confirmed' && booking.status === 'pending' && booking.client_email) {
+    // Skip for backdated bookings — the session already happened
+    if (status === 'confirmed' && booking.status === 'pending' && booking.client_email && !isBackdatedBooking) {
       ;(async () => {
         try {
           const { data: settings } = await adminSupabase

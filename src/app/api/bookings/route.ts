@@ -137,8 +137,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Backdated booking: skip notifications and confirmation emails — already happened
+    const isBackdated = new Date(body.start_time).getTime() < Date.now();
+
     // Send notification + email to practitioner about new booking request
-    try {
+    if (!isBackdated) try {
       const metadata = {
         bookingId: booking.id,
         clientName: body.client_name,
@@ -202,7 +205,8 @@ export async function POST(request: NextRequest) {
     }
 
     // If confirmed (no approval needed), send confirmation email to client with .ics
-    if (bookingStatus === 'confirmed' && body.client_email) {
+    // Skip for backdated bookings — the session already happened
+    if (bookingStatus === 'confirmed' && body.client_email && !isBackdated) {
       ;(async () => {
         try {
           const scheduledAt = new Date(body.start_time).toLocaleString('en-US', {
@@ -251,10 +255,11 @@ export async function POST(request: NextRequest) {
     }
 
     // If confirmed (no approval needed), create Google Calendar event
+    // Backdated bookings: skip calendar sync entirely (historical record only)
     let calendarSynced = false;
     let calendarError: string | null = null;
 
-    if (bookingStatus === 'confirmed') {
+    if (bookingStatus === 'confirmed' && !isBackdated) {
       const googleAuth = await getValidGoogleToken(body.practitioner_id, supabase);
 
       if (!googleAuth) {

@@ -204,6 +204,23 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
     setLoading(true)
     try {
+      // Defensive auth check: verify the session is still valid before attempting the insert
+      // If the token expired silently, this catches it before we hit a confusing "Failed to schedule" error
+      const { data: { session: currentSession } } = await supabase.auth.getSession()
+      if (!currentSession) {
+        // Try a refresh once
+        const { data: { session: refreshed } } = await supabase.auth.refreshSession()
+        if (!refreshed) {
+          toast.error(locale === 'fr'
+            ? 'Votre session a expiré. Veuillez vous reconnecter.'
+            : 'Your session has expired. Please sign in again.')
+          setLoading(false)
+          // Trigger the SessionGuard popup by signing out cleanly
+          await supabase.auth.signOut()
+          return
+        }
+      }
+
       const timeToUse = scheduleMode === 'manual' ? manualTime : selectedTime!
       const durationToUse = scheduleMode === 'manual' ? manualDuration : selectedSessionType!.duration
 
@@ -214,6 +231,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
       const endTime = new Date(startTime)
       endTime.setMinutes(endTime.getMinutes() + durationToUse)
+
+      // Backdated session: skip notifications and emails — the session already happened
+      const isBackdated = startTime.getTime() < Date.now()
 
       if (scheduleMode === 'manual') {
         // Save to sessions table for member tracking
@@ -238,8 +258,14 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           .single()
 
         if (sessionError) {
-          console.error('Supabase session error:', sessionError)
-          throw new Error(sessionError.message || 'Failed to create session')
+          console.error('Supabase session error:', {
+            code: sessionError.code,
+            message: sessionError.message,
+            details: sessionError.details,
+            hint: sessionError.hint,
+            sessionData,
+          })
+          throw new Error(sessionError.message || sessionError.details || 'Failed to create session')
         }
 
         // Also create a booking entry so it shows in the bookings page
@@ -266,8 +292,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           // Don't fail - session was created successfully
         }
 
-        // Send notification to member
-        if (selectedMember.user_id && sessionResult?.id) {
+        // Send notification to member (skip for backdated sessions)
+        if (selectedMember.user_id && sessionResult?.id && !isBackdated) {
           try {
             const { data: practitioner } = await supabase
               .from('users')
@@ -344,8 +370,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
         console.log('Booking created:', data)
 
-        // Send notification to member
-        if (selectedMember.user_id && data?.id) {
+        // Send notification to member (skip for backdated sessions)
+        if (selectedMember.user_id && data?.id && !isBackdated) {
           try {
             const { data: practitioner } = await supabase
               .from('users')
@@ -397,7 +423,24 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       onClose()
     } catch (error) {
       console.error('Error booking session:', error)
-      toast.error('Failed to schedule session')
+      const message = error instanceof Error ? error.message : 'Unknown error'
+
+      // If the error looks like a JWT/auth failure, surface it as a session-expired message
+      // and trigger the global SessionGuard popup via signOut
+      const isAuthError =
+        message.toLowerCase().includes('jwt') ||
+        message.toLowerCase().includes('expired') ||
+        message.toLowerCase().includes('invalid token') ||
+        (error as { code?: string })?.code === 'PGRST301'
+
+      if (isAuthError) {
+        toast.error(locale === 'fr'
+          ? 'Votre session a expiré. Veuillez vous reconnecter.'
+          : 'Your session has expired. Please sign in again.')
+        await supabase.auth.signOut()
+      } else {
+        toast.error(`Failed to schedule session: ${message}`)
+      }
     } finally {
       setLoading(false)
     }
