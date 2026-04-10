@@ -1693,26 +1693,19 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           days.push(day)
                           day = addDays(day, 1)
                         }
-                        const today = startOfDay(new Date())
-                        const originalSessionDate = editingSession ? startOfDay(new Date(editingSession.scheduled_at)) : today
                         return days.map((d) => {
                           const isCurrentMonth = isSameMonth(d, editCalendarMonth)
                           const isSelected = isSameDay(d, editSelectedDate)
-                          // Dates on or before the original session date: always allowed
-                          // Dates after the original session date: only if not in the past
-                          const isOnOrBeforeOriginal = !isAfter(startOfDay(d), originalSessionDate)
-                          const isPast = isOnOrBeforeOriginal ? false : isBefore(d, today)
                           return (
                             <button
                               key={d.toISOString()}
-                              disabled={isPast || !isCurrentMonth}
+                              disabled={!isCurrentMonth}
                               onClick={() => {
                                 setEditSelectedDate(startOfDay(d))
                                 setEditSelectedTime(null)
                               }}
                               className={`text-xs py-1.5 rounded-lg transition-all ${
                                 !isCurrentMonth ? 'text-gray-200' :
-                                isPast ? 'text-gray-300 cursor-not-allowed' :
                                 isSelected ? 'bg-gray-900 text-white font-medium' :
                                 'text-gray-700 hover:bg-gray-100'
                               }`}
@@ -1730,8 +1723,8 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                     {format(editSelectedDate, 'EEEE, MMMM d, yyyy')}
                   </p>
 
-                  {/* Time Slots — for dates on/before original session date, show manual input; for future dates, show availability */}
-                  {editingSession && !isAfter(startOfDay(editSelectedDate), startOfDay(new Date(editingSession.scheduled_at))) ? (
+                  {/* Time picker — always show manual input, any date */}
+                  {true ? (
                     <div>
                       <TimeSelect
                         value={editSelectedTime || '09:00'}

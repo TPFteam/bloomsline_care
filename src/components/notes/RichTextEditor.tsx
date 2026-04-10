@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Bold, Italic, ChevronDown, List, ListOrdered, Minus, ScanLine, Loader2, Type, Target, Tag, Quote, X, Eye, EyeOff, Undo2, Redo2, Lock, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Bold, Italic, ChevronDown, List, ListOrdered, Minus, ScanLine, FileUp, Loader2, Type, Target, Tag, Quote, X, Eye, EyeOff, Undo2, Redo2, Lock, Plus, Pencil, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 
@@ -153,7 +153,9 @@ interface RichTextEditorProps {
 export function RichTextEditor({ value, onChange, placeholder, memberId, locale, autoFocus, milestones, noteTypes, memberName, onAutoSave, autoSaveDelay = 2000, toolbarActions, compact, onSubmit, lockedTypes, onAddType, onRenameType, onDeleteType, getTagNoteCount, maxTypes = 10, onTagInsert, activeTagType }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const textFileInputRef = useRef<HTMLInputElement>(null)
   const [extracting, setExtracting] = useState(false)
+  const [importing, setImporting] = useState(false)
   const [isEmpty, setIsEmpty] = useState(!value)
   const [headingOpen, setHeadingOpen] = useState(false)
   const [sideMenu, setSideMenu] = useState<'tags' | 'goals' | null>(null)
@@ -1453,6 +1455,41 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     }
   }
 
+  const handleImportTextFile = async (file: File) => {
+    setImporting(true)
+    try {
+      // 5 MB cap to keep things reasonable
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(fr ? 'Fichier trop volumineux (max 5 Mo).' : 'File too large (max 5 MB).')
+        return
+      }
+
+      const text = await file.text()
+
+      if (!text.trim()) {
+        toast.error(fr ? 'Le fichier est vide.' : 'The file is empty.')
+        return
+      }
+
+      if (editorRef.current) {
+        const lines = text
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .split('\n')
+          .map(line => line.trim() ? `<p>${line}</p>` : '<p><br></p>')
+          .join('')
+        editorRef.current.innerHTML += lines
+        handleInput()
+      }
+      toast.success(fr ? 'Fichier importé' : 'File imported')
+      setTimeout(() => editorRef.current?.focus(), 100)
+    } catch {
+      toast.error(fr ? "Impossible de lire le fichier." : 'Could not read the file.')
+    } finally {
+      setImporting(false)
+      if (textFileInputRef.current) textFileInputRef.current.value = ''
+    }
+  }
+
   const btn = (icon: React.ReactNode, label: string, onClick: () => void) => (
     <button
       type="button"
@@ -1578,9 +1615,9 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         }
       `}</style>
 
-      {/* P0 — Toolbar at top */}
+      {/* P0 — Toolbar at top (sticky so it stays visible while scrolling notes) */}
       {compact ? (
-        <div className="flex items-center px-2 py-1 border-b border-gray-100 bg-white">
+        <div className="sticky top-0 z-30 flex items-center px-2 py-1 border-b border-gray-100 bg-white">
           <input
             ref={fileInputRef}
             type="file"
@@ -1596,7 +1633,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
           </div>
         </div>
       ) : (
-      <div className="flex items-center flex-wrap gap-0.5 px-2 py-1.5 border-b border-gray-200 bg-white">
+      <div className="sticky top-0 z-30 flex items-center flex-wrap gap-0.5 px-2 py-1.5 border-b border-gray-200 bg-white">
         {btn(<Undo2 className="w-3.5 h-3.5" />, fr ? 'Annuler' : 'Undo', () => exec('undo'))}
         {btn(<Redo2 className="w-3.5 h-3.5" />, fr ? 'Rétablir' : 'Redo', () => exec('redo'))}
         <div className="w-px h-4 bg-gray-200 mx-0.5" />
@@ -1663,6 +1700,27 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
           onChange={(e) => {
             const file = e.target.files?.[0]
             if (file) handleOCR(file)
+          }}
+        />
+
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => textFileInputRef.current?.click()}
+          disabled={importing}
+          className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors disabled:opacity-50"
+        >
+          {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileUp className="w-3.5 h-3.5" />}
+          <span>{importing ? (fr ? 'Import...' : 'Importing...') : (fr ? 'Importer fichier' : 'Import file')}</span>
+        </button>
+        <input
+          ref={textFileInputRef}
+          type="file"
+          accept=".txt,.md,.markdown,.rtf,.csv,.log,text/plain,text/markdown,text/csv"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) handleImportTextFile(file)
           }}
         />
 

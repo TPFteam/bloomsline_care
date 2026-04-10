@@ -1787,10 +1787,10 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
             )}
 
             {/* Editor / read content */}
-            <div className="flex-1 overflow-y-auto px-5 py-4">
+            <div className="flex-1 overflow-y-auto px-5">
               {snIsEditing ? (
-                <div className="flex flex-col h-full">
-                  <div className="flex-1 min-h-0">
+                <div className="flex flex-col">
+                  <div>
                     <RichTextEditor
                       value={snSummaryDraft}
                       onChange={setSnSummaryDraft}
@@ -1866,7 +1866,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                   </div>
                 </div>
               ) : snSessionSummaryNotes[selectedItemId] ? (
-                <div>
+                <div className="py-4">
                   <MarkdownRenderer
                     content={snSessionSummaryNotes[selectedItemId]!.content.replace(/&nbsp;/g, ' ')}
                     className="leading-relaxed"
@@ -1895,7 +1895,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                   )}
                 </div>
               ) : (
-                <div className="flex flex-col h-full">
+                <div className="flex flex-col">
                   <RichTextEditor
                     value={snSummaryDraft}
                     onChange={setSnSummaryDraft}
