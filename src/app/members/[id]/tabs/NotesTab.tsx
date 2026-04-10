@@ -499,14 +499,45 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
     // 2. For notes with inline <mark data-tag="typeName"> in content,
     //    unwrap the mark tags (keep text, remove the mark wrapper)
+    //    Uses DOM parsing as fallback if regex fails (nested/malformed marks)
     const notesWithInlineTag = allNotes.filter(n =>
       n.content.includes(`data-tag="${typeName}"`)
     )
     for (const note of notesWithInlineTag) {
-      const updated = note.content.replace(
-        new RegExp(`<mark[^>]*data-tag="${typeName}"[^>]*>(.*?)</mark>`, 'gis'),
-        '$1'
-      )
+      let updated = note.content
+      try {
+        // Try regex first (fast path)
+        updated = note.content.replace(
+          new RegExp(`<mark[^>]*data-tag="${typeName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>(.*?)</mark>`, 'gis'),
+          '$1'
+        )
+        // If regex didn't change anything, try DOM-based unwrap as fallback
+        if (updated === note.content) {
+          const doc = new DOMParser().parseFromString(note.content, 'text/html')
+          const marks = doc.querySelectorAll(`mark[data-tag="${typeName}"]`)
+          marks.forEach(mark => {
+            const parent = mark.parentNode
+            if (parent) {
+              while (mark.firstChild) parent.insertBefore(mark.firstChild, mark)
+              parent.removeChild(mark)
+            }
+          })
+          updated = doc.body.innerHTML
+        }
+      } catch {
+        // Last resort: DOM-based unwrap
+        try {
+          const doc = new DOMParser().parseFromString(note.content, 'text/html')
+          doc.querySelectorAll(`mark[data-tag="${typeName}"]`).forEach(mark => {
+            const parent = mark.parentNode
+            if (parent) {
+              while (mark.firstChild) parent.insertBefore(mark.firstChild, mark)
+              parent.removeChild(mark)
+            }
+          })
+          updated = doc.body.innerHTML
+        } catch { /* give up gracefully */ }
+      }
       if (updated !== note.content) {
         await supabase.from('progress_notes')
           .update({ content: updated })

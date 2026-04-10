@@ -1271,6 +1271,29 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       sel.addRange(range)
     }
 
+    // Safety: reject if selection crosses an existing mark boundary
+    // (extractContents would split the mark and corrupt the DOM)
+    const ancestor = range.commonAncestorContainer
+    const container = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentElement : ancestor as HTMLElement
+    if (container) {
+      const marks = container.querySelectorAll('mark[data-tag], mark[data-goal-id], mark[data-verbatim]')
+      for (const mark of Array.from(marks)) {
+        const markRange = document.createRange()
+        markRange.selectNodeContents(mark)
+        // Check if selection partially overlaps this mark (starts inside, ends outside or vice versa)
+        const startsInside = range.compareBoundaryPoints(Range.START_TO_START, markRange) >= 0 &&
+                             range.compareBoundaryPoints(Range.START_TO_END, markRange) < 0
+        const endsInside = range.compareBoundaryPoints(Range.END_TO_START, markRange) > 0 &&
+                           range.compareBoundaryPoints(Range.END_TO_END, markRange) <= 0
+        if ((startsInside && !endsInside) || (!startsInside && endsInside)) {
+          // Partial overlap — abort
+          toast?.error?.(fr ? 'Sélection invalide — chevauche une annotation existante.' : 'Invalid selection — overlaps an existing annotation.')
+          savedRange.current = null
+          return
+        }
+      }
+    }
+
     // Extract the selected content and put it inside the mark
     const fragment = range.extractContents()
     markEl.appendChild(fragment)
@@ -1289,7 +1312,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     setPopoverMode('choices')
     savedRange.current = null
     handleInput()
-  }, [handleInput])
+  }, [handleInput, fr])
 
   const wrapSelectionWithGoal = useCallback((milestone: { id: string; title: string; status: string }) => {
     const colors = getGoalColor(milestone.status)
