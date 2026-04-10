@@ -392,6 +392,8 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
       setSaveStatus('idle')
       autoSaveTimer.current = setTimeout(async () => {
+        // Re-check: content may have been saved manually while we waited
+        if (html === lastSavedHtml.current) return
         setSaveStatus('saving')
         try {
           await onAutoSave(html)
@@ -918,6 +920,27 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       }
     }
 
+    // Delete (forward) at the end of a line right before a verbatim quote: prevent merging quote into current line
+    if (e.key === 'Delete' && !activeVerbatim && !activeTag && !activeGoal && !inlineTrigger) {
+      const sel = window.getSelection()
+      if (sel && sel.isCollapsed && sel.rangeCount) {
+        const range = sel.getRangeAt(0)
+        const node = range.startContainer
+        const block = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node as HTMLElement)
+        // Check if cursor is at the end of the text
+        const atEnd = node.nodeType === Node.TEXT_NODE
+          ? range.startOffset === (node.textContent?.length || 0)
+          : range.startOffset === (node as HTMLElement).childNodes.length
+        if (atEnd) {
+          const nextEl = block?.nextElementSibling || block?.parentElement?.nextElementSibling
+          if (nextEl?.matches?.('mark[data-verbatim]')) {
+            e.preventDefault()
+            return
+          }
+        }
+      }
+    }
+
     // Enter inside a verbatim quote block (non-active mode): exit the quote and create a new line below
     if (e.key === 'Enter' && !e.shiftKey && !activeVerbatim && !activeTag && !activeGoal && !inlineTrigger) {
       const sel = window.getSelection()
@@ -1327,7 +1350,8 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     if (!editor) return
     const marks = editor.querySelectorAll('mark[data-tag], mark[data-goal-id], mark[data-verbatim]')
     marks.forEach(mark => {
-      const text = mark.textContent?.trim()
+      // Strip zero-width spaces and non-breaking spaces before checking if empty
+      const text = mark.textContent?.replace(/\u200B/g, '').replace(/\u00A0/g, '').trim()
       if (!text) {
         mark.parentNode?.removeChild(mark)
       }
