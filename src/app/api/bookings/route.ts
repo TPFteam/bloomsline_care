@@ -142,15 +142,6 @@ export async function POST(request: NextRequest) {
 
     // Send notification + email to practitioner about new booking request
     if (!isBackdated) try {
-      const metadata = {
-        bookingId: booking.id,
-        clientName: body.client_name,
-        clientEmail: body.client_email,
-        sessionType: sessionType.name,
-        requestedTime: body.start_time,
-        notes: body.notes,
-      };
-
       // Look up practitioner's preferred language
       const { data: practitionerProfile } = await supabase
         .from('users')
@@ -158,6 +149,21 @@ export async function POST(request: NextRequest) {
         .eq('id', body.practitioner_id)
         .single();
       const practitionerLocale = (practitionerProfile?.preferred_language as 'en' | 'fr' | 'es') || 'en';
+
+      // Format the requested time in the practitioner's locale
+      const formattedTime = new Date(body.start_time).toLocaleString(
+        practitionerLocale === 'fr' ? 'fr-FR' : practitionerLocale === 'es' ? 'es-ES' : 'en-US',
+        { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' }
+      );
+
+      const metadata = {
+        bookingId: booking.id,
+        clientName: body.client_name,
+        clientEmail: body.client_email,
+        sessionType: sessionType.name,
+        requestedTime: formattedTime,
+        notes: body.notes,
+      };
 
       const content = getNotificationContent('booking_request', metadata, practitionerLocale);
 
