@@ -42,6 +42,7 @@ import type { PromptKey } from '@/lib/assist/prompts'
 import { MarkdownRenderer } from '@/components/notes/MarkdownRenderer'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
+import { EditSessionModal } from '@/components/EditSessionModal'
 import { getUserPreferences, updateUserPreferences } from '@/lib/services/preferences'
 import { TutorialVideo } from '@/components/ui/tutorial-video'
 
@@ -185,11 +186,8 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [activeCategory, setActiveCategory] = useState<ActiveCategory>('sessions')
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
 
-  // Edit session date inline
-  const [editingDate, setEditingDate] = useState(false)
-  const [editDateValue, setEditDateValue] = useState('')
-  const [editTimeValue, setEditTimeValue] = useState('')
-  const [savingDate, setSavingDate] = useState(false)
+  // Edit session modal
+  const [editingSessionModal, setEditingSessionModal] = useState(false)
 
   // All notes (fetched without limit)
   const [allNotes, setAllNotes] = useState<ProgressNote[]>(initialNotes)
@@ -1452,37 +1450,6 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     : null
   const SelectedSessionIcon = selectedSession ? (snFormatIcon[selectedSession.session_format] || User) : User
 
-  const handleStartEditDate = () => {
-    if (!selectedSession) return
-    const d = new Date(selectedSession.scheduled_at)
-    setEditDateValue(d.toISOString().split('T')[0])
-    setEditTimeValue(d.toTimeString().slice(0, 5))
-    setEditingDate(true)
-  }
-
-  const handleSaveDate = async () => {
-    if (!selectedSession || !editDateValue || !editTimeValue) return
-    setSavingDate(true)
-    try {
-      const [year, month, day] = editDateValue.split('-').map(Number)
-      const [hours, minutes] = editTimeValue.split(':').map(Number)
-      const dt = new Date(year, month - 1, day, hours, minutes, 0, 0)
-
-      const { error } = await supabase
-        .from('sessions')
-        .update({ scheduled_at: dt.toISOString(), updated_at: new Date().toISOString() })
-        .eq('id', selectedSession.id)
-
-      if (error) throw error
-      toast.success(locale === 'fr' ? 'Date mise à jour' : 'Date updated')
-      setEditingDate(false)
-      onSessionsUpdate?.()
-    } catch {
-      toast.error(locale === 'fr' ? 'Erreur lors de la mise à jour' : 'Failed to update date')
-    } finally {
-      setSavingDate(false)
-    }
-  }
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 280px)', minHeight: '500px' }}>
@@ -1781,9 +1748,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 </p>
               </div>
               <button
-                onClick={handleStartEditDate}
+                onClick={() => setEditingSessionModal(true)}
                 className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0"
-                title={locale === 'fr' ? 'Modifier la date' : 'Edit date'}
+                title={locale === 'fr' ? 'Modifier la séance' : 'Edit session'}
               >
                 <Pencil className="w-3.5 h-3.5" />
               </button>
@@ -1798,48 +1765,12 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
               </span>
             </div>
 
-            {/* Inline date editor */}
-            <AnimatePresence>
-              {editingDate && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden border-b border-gray-100"
-                >
-                  <div className="px-5 py-3 bg-gray-50 flex items-center gap-3 flex-wrap">
-                    <input
-                      type="date"
-                      value={editDateValue}
-                      onChange={(e) => setEditDateValue(e.target.value)}
-                      className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
-                    />
-                    <input
-                      type="time"
-                      value={editTimeValue}
-                      onChange={(e) => setEditTimeValue(e.target.value)}
-                      className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
-                    />
-                    <div className="flex items-center gap-2 ml-auto">
-                      <button
-                        onClick={() => setEditingDate(false)}
-                        className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-                      >
-                        {locale === 'fr' ? 'Annuler' : 'Cancel'}
-                      </button>
-                      <button
-                        onClick={handleSaveDate}
-                        disabled={savingDate}
-                        className="px-3 py-1.5 text-xs bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-1"
-                      >
-                        {savingDate && <Loader2 className="w-3 h-3 animate-spin" />}
-                        {locale === 'fr' ? 'Enregistrer' : 'Save'}
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Edit Session Modal */}
+            <EditSessionModal
+              session={editingSessionModal ? selectedSession : null}
+              onClose={() => setEditingSessionModal(false)}
+              onSave={() => onSessionsUpdate?.()}
+            />
 
             {/* Cancellation reason */}
             {(selectedSession.status === 'cancelled' || selectedSession.status === 'no_show') && ((selectedSession as any).cancellation_reason || selectedSession.notes) && (
