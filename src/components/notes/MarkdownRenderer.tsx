@@ -203,7 +203,7 @@ export function MarkdownRenderer({ content, className, onContentChange, onEdit, 
             .rte-read mark[data-verbatim] {
               display: block !important;
               background-color: #f0f7ff !important;
-              border-left: 3px solid #1e3a5f !important;
+              border-left: none !important;
               padding: 6px 10px !important;
               margin: 8px 0 !important;
               border-radius: 6px !important;
