@@ -182,6 +182,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     type: 'tag' | 'goal' | 'end-tag' | 'end-goal' | 'verbatim' | 'end-verbatim'
     query: string
     position: { top: number; left: number }
+    source?: string // which character triggered it (e.g. '/' vs '>')
   } | null>(null)
   const [inlineHighlight, setInlineHighlight] = useState(0)
   const inlineDropdownRef = useRef<HTMLDivElement>(null)
@@ -444,11 +445,13 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     const offset = sel.anchorOffset
     const before = textContent.slice(0, offset)
 
-    // Walk backwards to find #, @, or >
+    // Walk backwards to find #, @, >, or /
     const hashIdx = before.lastIndexOf('#')
     const atIdx = before.lastIndexOf('@')
     const gtIdx = before.lastIndexOf('>')
-    const triggerIdx = Math.max(hashIdx, atIdx, gtIdx)
+    const slashIdx = before.lastIndexOf('/')
+    const triggerIdx = Math.max(hashIdx, atIdx, gtIdx, slashIdx)
+    // Note: / is handled as a direct action (no dropdown), while > shows the dropdown
 
     if (triggerIdx >= 0) {
       const triggerChar = before[triggerIdx]
@@ -486,6 +489,18 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
             }
             setInlineTrigger({ type: 'verbatim', query, position: pos })
             setInlineHighlight(0)
+            return
+          }
+
+          // / shortcut: show quote dropdown (only "Name said", no mention)
+          if (triggerChar === '/' && memberName && !query) {
+            if (activeVerbatim) {
+              setInlineTrigger({ type: 'end-verbatim', query, position: pos, source: '/' })
+              setInlineHighlight(0)
+              return
+            }
+            setInlineTrigger({ type: 'verbatim', query, position: pos, source: '/' })
+            setInlineHighlight(0) // Only one option, so index 0
             return
           }
         }
@@ -552,8 +567,20 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     const text = anchor.textContent || ''
     const offset = sel.anchorOffset
     const before = text.slice(0, offset)
+    // For verbatim triggers, detect which character was actually used (> or /)
+    const verbatimTriggerChar = (() => {
+      if (inlineTrigger.type !== 'verbatim' && inlineTrigger.type !== 'end-verbatim') return '>'
+      const sel2 = window.getSelection()
+      if (!sel2 || !sel2.anchorNode) return '>'
+      const txt = sel2.anchorNode.textContent || ''
+      const off = sel2.anchorOffset
+      const bef = txt.slice(0, off)
+      const si = bef.lastIndexOf('/')
+      const gi = bef.lastIndexOf('>')
+      return si > gi ? '/' : '>'
+    })()
     const triggerChar = (inlineTrigger.type === 'end-goal' || inlineTrigger.type === 'goal') ? '#'
-      : (inlineTrigger.type === 'verbatim' || inlineTrigger.type === 'end-verbatim') ? '>'
+      : (inlineTrigger.type === 'verbatim' || inlineTrigger.type === 'end-verbatim') ? verbatimTriggerChar
       : '@'
     const triggerIdx = before.lastIndexOf(triggerChar)
     if (triggerIdx < 0) return
@@ -858,6 +885,62 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       return
     }
 
+    // Backspace at the start of a line right after a verbatim quote: prevent merging into the quote
+    if (e.key === 'Backspace' && !activeVerbatim && !activeTag && !activeGoal && !inlineTrigger) {
+      const sel = window.getSelection()
+      if (sel && sel.isCollapsed && sel.rangeCount) {
+        const range = sel.getRangeAt(0)
+        // Only intercept when cursor is at position 0 (start of text node or element)
+        if (range.startOffset === 0) {
+          const node = range.startContainer
+          const block = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node as HTMLElement)
+          // Check if the previous sibling (or parent's previous sibling) is a verbatim mark
+          const prevEl = block?.previousElementSibling || block?.parentElement?.previousElementSibling
+          if (prevEl?.matches?.('mark[data-verbatim]')) {
+            e.preventDefault()
+            // Just delete the current empty block if it's empty, otherwise do nothing
+            if (block && !block.textContent?.trim()) {
+              block.parentElement?.removeChild(block)
+              // Move cursor to end of the mark (without entering it)
+              const p = document.createElement('p')
+              p.appendChild(document.createElement('br'))
+              prevEl.after(p)
+              const newRange = document.createRange()
+              newRange.setStart(p, 0)
+              newRange.collapse(true)
+              sel.removeAllRanges()
+              sel.addRange(newRange)
+              handleInput()
+            }
+            return
+          }
+        }
+      }
+    }
+
+    // Enter inside a verbatim quote block (non-active mode): exit the quote and create a new line below
+    if (e.key === 'Enter' && !e.shiftKey && !activeVerbatim && !activeTag && !activeGoal && !inlineTrigger) {
+      const sel = window.getSelection()
+      if (sel && sel.rangeCount) {
+        const range = sel.getRangeAt(0)
+        const node = range.startContainer
+        const markEl = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node as HTMLElement)?.closest?.('mark[data-verbatim]')
+        if (markEl && editorRef.current?.contains(markEl)) {
+          e.preventDefault()
+          const p = document.createElement('p')
+          p.appendChild(document.createElement('br'))
+          markEl.after(p)
+          const newRange = document.createRange()
+          newRange.setStart(p, 0)
+          newRange.collapse(true)
+          sel.removeAllRanges()
+          sel.addRange(newRange)
+          handleInput()
+          return
+        }
+      }
+    }
+
     // Enter or Escape ends the innermost active annotation the cursor is in
     // Skip if an inline trigger dropdown is open — let the trigger handler below handle it
     if ((e.key === 'Enter' || e.key === 'Escape') && (activeGoal || activeTag || activeVerbatim) && !inlineTrigger) {
@@ -901,7 +984,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     // P2 — Inline trigger keyboard handling
     if (inlineTrigger) {
       const items = getFilteredInlineItems()
-      const maxIdx = inlineTrigger.type === 'verbatim' ? 1 : (inlineTrigger.type === 'end-goal' || inlineTrigger.type === 'end-tag' || inlineTrigger.type === 'end-verbatim') ? 0 : items.length - 1
+      const maxIdx = inlineTrigger.type === 'verbatim' ? (inlineTrigger.source === '/' ? 0 : 1) : (inlineTrigger.type === 'end-goal' || inlineTrigger.type === 'end-tag' || inlineTrigger.type === 'end-verbatim') ? 0 : items.length - 1
       if (e.key === 'Escape') {
         e.preventDefault()
         setInlineTrigger(null)
@@ -949,15 +1032,15 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
           if (editor) {
             const sel = window.getSelection()
             if (sel && sel.rangeCount) {
-              if (inlineHighlight === 0) {
-                // Name mention — subtle tag, cursor placed after
+              if (inlineHighlight === 0 && inlineTrigger.source !== '/') {
+                // Name mention — subtle tag, cursor placed after (only for > trigger)
                 const mentionHTML =
                   `<mark data-verbatim="${memberName}" data-verbatim-type="mention" style="background-color:#e0f2fe;padding:1px 4px;border-radius:3px;color:#0369a1;font-weight:500;--tag-color:#0369a1;">${memberName}</mark>\u00A0`
                 document.execCommand('insertHTML', false, mentionHTML)
               } else {
                 // "Name said:" — enter annotation mode, cursor inside mark
                 const saidHTML =
-                  `<mark data-verbatim="${memberName}" data-verbatim-type="said" style="background-color:#e0f2fe;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;--tag-bg:#e0f2fe;">\u200B</mark>`
+                  `<mark data-verbatim="${memberName}" data-verbatim-type="said" style="display:block;background-color:#f0f9ff;border-left:3px solid #38bdf8;padding:8px 12px;margin:8px 0;border-radius:6px;font-style:italic;color:#0c4a6e;--tag-color:#0ea5e9;--tag-bg:#f0f9ff;">\u200B</mark>`
                 document.execCommand('insertHTML', false, saidHTML)
                 // Place cursor inside the mark
                 const marks = editor.querySelectorAll('mark[data-verbatim-type="said"]')
@@ -1220,7 +1303,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     const mark = document.createElement('mark')
     mark.dataset.verbatim = memberName
     mark.setAttribute('style',
-      'background-color:#e0f2fe;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;--tag-bg:#e0f2fe;'
+      'display:block;background-color:#f0f9ff;border-left:3px solid #38bdf8;padding:8px 12px;margin:8px 0;border-radius:6px;font-style:italic;color:#0c4a6e;--tag-color:#0ea5e9;--tag-bg:#f0f9ff;'
     )
     wrapWithMark(mark)
     editor.focus()
@@ -1591,14 +1674,23 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       {/* Show all annotation labels as floating bubbles when toggled */}
       <style>{`
         .rte-editor.show-labels mark[data-goal-id],
-        .rte-editor.show-labels mark[data-tag],
-        .rte-editor.show-labels mark[data-verbatim] {
+        .rte-editor.show-labels mark[data-tag] {
           background-color: var(--tag-bg, #f3f4f6) !important;
           border-bottom: none !important;
           border-left: none !important;
           padding: 2px 4px;
           border-radius: 3px;
           color: inherit;
+        }
+        .rte-editor.show-labels mark[data-verbatim] {
+          background-color: #f0f9ff !important;
+          border-left: 3px solid #38bdf8 !important;
+          padding: 8px 12px;
+          border-radius: 6px;
+          font-style: italic;
+          color: #0c4a6e;
+          display: block;
+          margin: 8px 0;
         }
         .rte-editor.show-labels mark[data-goal-id]::before,
         .rte-editor.show-labels mark[data-tag]::before {
@@ -1747,7 +1839,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         <div className="relative flex flex-1 gap-0">
           {/* Side rail — tag toggle (hidden in compact mode) */}
           {!compact && hasAnnotations && (
-            <div ref={sideMenuRef} data-side-menu className="sticky top-0 z-50 flex flex-col pt-2 bg-white self-start">
+            <div ref={sideMenuRef} data-side-menu className="sticky top-[38px] z-20 flex flex-col pt-2 bg-white self-start">
               {hasTags && (
                 activeTag ? (
                   <button
@@ -1815,7 +1907,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                       mark.dataset.verbatim = memberName
                       mark.dataset.verbatimType = 'said'
                       mark.setAttribute('style',
-                        'background-color:#e0f2fe;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;--tag-bg:#e0f2fe;'
+                        'display:block;background-color:#f0f9ff;border-left:3px solid #38bdf8;padding:8px 12px;margin:8px 0;border-radius:6px;font-style:italic;color:#0c4a6e;--tag-color:#0ea5e9;--tag-bg:#f0f9ff;'
                       )
                       const zwsp = document.createTextNode('\u200B')
                       mark.appendChild(zwsp)
@@ -2204,12 +2296,15 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
             ) : inlineTrigger.type === 'verbatim' && memberName ? (
               <>
                 <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                  {fr ? 'Mention' : 'Mention'}
+                  {inlineTrigger.source === '/' ? (fr ? 'Citation' : 'Quote') : (fr ? 'Mention' : 'Mention')}
                 </div>
-                {[
-                  { label: memberName, isVerbatim: false },
-                  { label: `${memberName} ${fr ? 'a dit' : es ? 'dijo' : 'said'}`, isVerbatim: true },
-                ].map((opt, idx) => (
+                {(inlineTrigger.source === '/'
+                  ? [{ label: `${memberName} ${fr ? 'a dit' : es ? 'dijo' : 'said'}`, isVerbatim: true }]
+                  : [
+                      { label: memberName, isVerbatim: false },
+                      { label: `${memberName} ${fr ? 'a dit' : es ? 'dijo' : 'said'}`, isVerbatim: true },
+                    ]
+                ).map((opt, idx) => (
                   <button
                     key={idx}
                     type="button"
@@ -2227,7 +2322,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                             // "Name said:" — enter annotation mode
                             mark.dataset.verbatimType = 'said'
                             mark.setAttribute('style',
-                              'background-color:#e0f2fe;border-left:3px solid #0ea5e9;padding:2px 6px;border-radius:4px;font-style:italic;--tag-color:#0ea5e9;--tag-bg:#e0f2fe;'
+                              'display:block;background-color:#f0f9ff;border-left:3px solid #38bdf8;padding:8px 12px;margin:8px 0;border-radius:6px;font-style:italic;color:#0c4a6e;--tag-color:#0ea5e9;--tag-bg:#f0f9ff;'
                             )
                             const zwsp = document.createTextNode('\u200B')
                             mark.appendChild(zwsp)
