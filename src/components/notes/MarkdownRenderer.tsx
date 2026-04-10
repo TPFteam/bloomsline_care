@@ -200,6 +200,16 @@ export function MarkdownRenderer({ content, className, onContentChange, onEdit, 
       <>
         {hasAnnotations && (
           <style>{`
+            .rte-read mark[data-verbatim] {
+              display: block !important;
+              background-color: #f0f7ff !important;
+              border-left: 3px solid #1e3a5f !important;
+              padding: 6px 10px !important;
+              margin: 8px 0 !important;
+              border-radius: 0 !important;
+              font-style: italic !important;
+              color: #1e3a5f !important;
+            }
             .rte-read.show-labels mark[data-goal-id],
             .rte-read.show-labels mark[data-tag],
             .rte-read.show-labels mark[data-verbatim] {

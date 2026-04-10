@@ -1675,10 +1675,10 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       <style>{`
         .rte-editor mark[data-verbatim] {
           display: block !important;
-          background-color: #eff6ff !important;
-          border-left: 4px solid #3b82f6 !important;
-          padding: 12px 16px !important;
-          margin: 12px 0 !important;
+          background-color: #f0f7ff !important;
+          border-left: 3px solid #1e3a5f !important;
+          padding: 6px 10px !important;
+          margin: 8px 0 !important;
           border-radius: 0 !important;
           font-style: italic !important;
           color: #1e3a5f !important;
@@ -1693,14 +1693,14 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
           color: inherit;
         }
         .rte-editor.show-labels mark[data-verbatim] {
-          background-color: #eff6ff !important;
-          border-left: 4px solid #3b82f6 !important;
-          padding: 12px 16px;
+          background-color: #f0f7ff !important;
+          border-left: 3px solid #1e3a5f !important;
+          padding: 6px 10px;
           border-radius: 0;
           font-style: italic;
           color: #1e3a5f;
           display: block;
-          margin: 12px 0;
+          margin: 8px 0;
         }
         .rte-editor.show-labels mark[data-goal-id]::before,
         .rte-editor.show-labels mark[data-tag]::before {
