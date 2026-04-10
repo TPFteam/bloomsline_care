@@ -25,8 +25,10 @@ const translations = {
     slides: {
       hero: 'Open',
       silence: 'The Silence',
+      whyItMatters: 'Why It Matters',
       origin: 'Origin',
       product: 'Product',
+      boundary: 'Boundary',
       whyNow: 'Why Now',
       model: 'Model',
       real: "What's Real",
@@ -38,61 +40,103 @@ const translations = {
     hero: {
       tag: 'Bloomsline',
       title1: 'Therapy happens in sessions.',
-      title2: 'The work happens everywhere else.',
+      title2: 'Change happens in between.',
       subtitle: 'The between-session care platform.',
       stage: 'Pre-seed · Pre-revenue · 2026',
       cta: 'See what we built',
     },
     silence: {
       label: 'THE PROBLEM',
-      headline: 'Therapy is structured around sessions.',
-      headline2: 'Human change isn\'t.',
-      inRoom: 'In the room',
-      inRoomItems: ['reflection', 'interpretation', 'guidance'],
-      inLife: 'In life',
-      inLifeItems: ['arguments', 'stress', 'habits', 'decisions', '2am moments'],
+      headline: 'Between sessions, there\'s no system.',
+      headline2: 'Just memory. And memory fails.',
+      patientLabel: 'For patients',
+      patientItems: [
+        'Forget what they discussed',
+        'Fall back into old patterns',
+        'Come back starting over',
+      ],
+      practitionerLabel: 'For practitioners',
+      practitionerItems: [
+        'See only what makes it back to the session',
+        'Rebuild context from scratch, every time',
+        'Half the session is catch-up',
+      ],
       quote: '"My client shared something painful on Tuesday. By our next session, I\'d lost the thread. I spent 15 minutes catching up instead of doing the work."',
       quoteAttribution: 'Practitioner, Paris',
       stats: [
-        { value: '~50%', label: 'of session time is catch-up', source: 'APA' },
-        { value: '86%', label: 'get no mental health treatment', source: 'WHO 2025' },
-        { value: '49%', label: 'already use AI tools', source: 'Sentio 2025' },
+        {
+          value: '~50%',
+          label: 'of patients drop out by session 3',
+          source: 'Barrett et al., Psychotherapy 2008',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/',
+        },
+        {
+          value: '35%',
+          label: 'of clinician time goes to documentation',
+          source: 'AHRQ Technical Brief, 2024',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/',
+        },
+        {
+          value: '9%',
+          label: 'receive adequate care for depression',
+          source: 'WHO 2025',
+          url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
+        },
       ],
+    },
+    whyItMatters: {
+      label: 'WHY IT MATTERS',
+      headline1: 'This isn\'t just inefficient.',
+      headline2: 'It changes the depth of care.',
+      item1Label: 'TIME',
+      item1Body: '10–15 minutes per session rebuilding context.',
+      item2Label: 'SIGNALS',
+      item2Body: 'Patterns, improvements, relapses — invisible.',
+      item3Label: 'FEELING',
+      item3Body: '"I\'m not progressing. I\'m not understood."',
+      item4Label: 'BUSINESS',
+      item4Body: 'Disengagement. Dropout. Lower retention.',
+      closing: 'Nothing supports what happens in between.',
     },
     origin: {
       label: 'HOW WE GOT HERE',
       headline: 'We built the wrong thing first.',
       para1: 'In 2023, Sarah and I built Doctalink — a way to find a therapist based on values, not degrees. It failed.',
-      para2: 'But in 119 interviews across 7 countries, the same thing kept coming up: finding a therapist wasn\'t the problem.',
+      para2: 'But in the conversations that followed, the same thing kept coming up: finding a therapist wasn\'t the problem.',
       para3: 'The silence after was.',
       para4: 'Bloomsline is what we built with that insight.',
       quote: 'We didn\'t find a problem and build a product. We earned the insight through a product that failed.',
       timeline1: '2023',
       timeline1Label: 'Doctalink',
       timeline2: '2024-25',
-      timeline2Label: '119 interviews · 7 countries',
+      timeline2Label: 'Listening.',
       timeline3: '2026',
       timeline3Label: 'Bloomsline — live',
     },
     product: {
       label: 'WHAT WE BUILT',
-      headline: 'Bloomsline makes what happens between sessions visible.',
-      practitionerTag: 'For practitioners',
-      practitionerTitle: 'Walk into every session prepared.',
-      practitionerItems: [
-        'Pre-session context, not catch-up',
-        'Resources in one place, connected to the person',
-        'Less admin, more presence',
-      ],
-      memberTag: 'For members',
-      memberTitle: '10 seconds. No streaks. No guilt.',
-      memberItems: [
-        'Capture a moment — photo, voice, a few words',
-        'Bloom AI companion, always in context',
-        'Quiet progress, not performance',
-      ],
-      connector: 'The same person. Both sides of the room.',
-      footer: 'Live in production · Web + mobile · EN + FR',
+      hero1: 'Not a tool.',
+      hero2: 'A visibility layer.',
+      description1: 'Everything a practice needs — notes, sessions, resources.',
+      description2: 'Plus the layer no one else built: what happens between them.',
+      question: '"How was your week?"',
+      answer: 'With Bloomsline, you see it.',
+      outcome: 'Patients come back — one retained patient pays for Bloomsline for months.',
+      closing1: 'Not more work.',
+      closing2: 'Just what\'s already happening — made visible.',
+    },
+    boundary: {
+      label: 'THE BOUNDARY',
+      hero1: 'There\'s a boundary in therapy.',
+      hero2: 'We respect it.',
+      explanation: 'The therapeutic frame — the space between practitioner and patient — is what makes therapy work.',
+      howLabel: 'How we protect it:',
+      dont1: 'We don\'t message patients.',
+      dont2: 'We don\'t replace the practitioner.',
+      dont3: 'We don\'t gamify reflection.',
+      dont4: 'We add context, not interaction.',
+      closing1: 'Not forcing behavior.',
+      closing2: 'Capturing what already happens.',
     },
     whyNow: {
       label: 'WHY NOW',
@@ -135,22 +179,22 @@ const translations = {
       builtItems: [
         'Practitioner web app',
         'Member mobile app',
-        'Bloom AI companion',
-        '3 languages · 24+ API endpoints',
+        'Bloom AI',
+        '2 languages · 24+ API endpoints',
         'Live in production',
       ],
       learnedLabel: 'LEARNED',
       learnedItems: [
-        '119 interviews · 7 countries',
-        '15 beta testers',
-        'Pivoted once',
+        'Deep discovery across Europe',
+        'Early testers in the loop',
+        'Pivoted once, from real signal',
         'Found the wedge',
       ],
       honestLabel: 'HONEST',
       honestItems: [
-        'No PMF yet — close',
-        'Pricing not set — learning',
-        'Two people — moving fast',
+        'Close to PMF — the inflection point is near',
+        'Pricing calibrated by real conversations, not spreadsheets',
+        'Two founders, full-stack. Speed as our moat',
       ],
       quote: 'This isn\'t a deck. It\'s a working platform you can touch today.',
     },
@@ -163,7 +207,7 @@ const translations = {
       adityaName: 'Aditya Channe',
       adityaRole: 'Product & Technology',
       adityaBio: 'Built everything — web and mobile. Personal connection to the problem.',
-      quote: 'We built what most teams take 18 months and €1M to build — with near-zero burn. That\'s not a limitation. That\'s proof we execute.',
+      quote: 'This problem is too close to outsource. So we built it ourselves — two people, in-house, near-zero burn.',
       footnote: 'Actively looking for a clinical advisor. The clinical voice is in the product — not yet on the cap table.',
     },
     vision: {
@@ -220,7 +264,7 @@ const translations = {
       closing: 'Enough to find product-market fit without compromising the story we\'re building.',
     },
     close: {
-      line1: 'Care doesn\'t happen once a week.',
+      line1: 'Therapy happens in sessions.',
       line2: 'Life happens every day.',
       line3: 'And today, nothing connects the two.',
       line4: "That's the layer we're building.",
@@ -234,8 +278,10 @@ const translations = {
     slides: {
       hero: 'Ouverture',
       silence: 'Le Silence',
+      whyItMatters: 'Pourquoi Ça Compte',
       origin: 'Origine',
       product: 'Produit',
+      boundary: 'Limite',
       whyNow: 'Pourquoi Maintenant',
       model: 'Modèle',
       real: 'Ce Qui Est Réel',
@@ -246,62 +292,104 @@ const translations = {
     },
     hero: {
       tag: 'Bloomsline',
-      title1: 'La thérapie se passe en séance.',
-      title2: 'Le travail se passe partout ailleurs.',
+      title1: 'La thérapie a lieu en séance.',
+      title2: 'Le changement a lieu entre elles.',
       subtitle: 'La plateforme de soins entre les séances.',
       stage: 'Pre-seed · Pré-revenu · 2026',
       cta: 'Voir ce que nous avons construit',
     },
     silence: {
       label: 'LE PROBLÈME',
-      headline: 'La thérapie est structurée autour des séances.',
-      headline2: 'Le changement humain, non.',
-      inRoom: 'Dans la pièce',
-      inRoomItems: ['réflexion', 'interprétation', 'accompagnement'],
-      inLife: 'Dans la vie',
-      inLifeItems: ['disputes', 'stress', 'habitudes', 'décisions', 'moments de 2h du matin'],
+      headline: 'Entre les séances, il n\'y a pas de système.',
+      headline2: 'Juste la mémoire. Et la mémoire trahit.',
+      patientLabel: 'Pour les patients',
+      patientItems: [
+        'Oublient ce qu\'ils ont abordé',
+        'Retombent dans les anciens schémas',
+        'Reviennent en recommençant',
+      ],
+      practitionerLabel: 'Pour les praticiens',
+      practitionerItems: [
+        'Ne voient que ce que le patient partage',
+        'Reconstruction du contexte à chaque fois',
+        'La moitié de la séance, du rattrapage',
+      ],
       quote: '"Mon patient m\'a partagé quelque chose de douloureux mardi. À notre prochaine séance, j\'avais perdu le fil. J\'ai passé 15 minutes à rattraper au lieu de faire le travail."',
       quoteAttribution: 'Praticienne, Paris',
       stats: [
-        { value: '~50%', label: 'du temps de séance en rattrapage', source: 'APA' },
-        { value: '86%', label: 'sans traitement de santé mentale', source: 'OMS 2025' },
-        { value: '49%', label: 'utilisent déjà l\'IA', source: 'Sentio 2025' },
+        {
+          value: '~50%',
+          label: 'des patients abandonnent avant la 3ᵉ séance',
+          source: 'Barrett et al., Psychotherapy 2008',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/',
+        },
+        {
+          value: '35%',
+          label: 'du temps clinicien consacré à la documentation',
+          source: 'AHRQ Technical Brief, 2024',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/',
+        },
+        {
+          value: '9%',
+          label: 'reçoivent des soins adéquats pour la dépression',
+          source: 'OMS 2025',
+          url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
+        },
       ],
+    },
+    whyItMatters: {
+      label: 'POURQUOI ÇA COMPTE',
+      headline1: 'Ce n\'est pas juste inefficace.',
+      headline2: 'Ça change la profondeur des soins.',
+      item1Label: 'TEMPS',
+      item1Body: '10–15 minutes par séance à reconstruire le contexte.',
+      item2Label: 'SIGNAUX',
+      item2Body: 'Patterns, progrès, rechutes — invisibles.',
+      item3Label: 'RESSENTI',
+      item3Body: '« Je n\'avance pas. On ne me comprend pas. »',
+      item4Label: 'BUSINESS',
+      item4Body: 'Désengagement. Abandon. Rétention en baisse.',
+      closing: 'Rien ne soutient ce qui se passe entre les séances.',
     },
     origin: {
       label: 'COMMENT NOUS SOMMES ARRIVÉS ICI',
       headline: 'Nous avons d\'abord construit la mauvaise chose.',
       para1: 'En 2023, Sarah et moi avons construit Doctalink — un moyen de trouver un thérapeute basé sur les valeurs, pas les diplômes. Ça a échoué.',
-      para2: 'Mais en 119 entretiens à travers 7 pays, la même chose revenait : trouver un thérapeute n\'était pas le problème.',
+      para2: 'Mais dans les conversations qui ont suivi, la même chose revenait : trouver un thérapeute n\'était pas le problème.',
       para3: 'Le silence après, l\'était.',
       para4: 'Bloomsline est ce que nous avons construit avec cette insight.',
       quote: 'Nous n\'avons pas trouvé un problème puis construit un produit. Nous avons gagné l\'insight à travers un produit qui a échoué.',
       timeline1: '2023',
       timeline1Label: 'Doctalink',
       timeline2: '2024-25',
-      timeline2Label: '119 entretiens · 7 pays',
+      timeline2Label: 'Écoute.',
       timeline3: '2026',
       timeline3Label: 'Bloomsline — en production',
     },
     product: {
       label: 'CE QUE NOUS AVONS CONSTRUIT',
-      headline: 'Bloomsline rend visible ce qui se passe entre les séances.',
-      practitionerTag: 'Pour les praticiens',
-      practitionerTitle: 'Entrer dans chaque séance préparé.',
-      practitionerItems: [
-        'Contexte avant séance, pas de rattrapage',
-        'Ressources en un seul endroit, connectées à la personne',
-        'Moins d\'admin, plus de présence',
-      ],
-      memberTag: 'Pour les membres',
-      memberTitle: '10 secondes. Pas de streaks. Pas de culpabilité.',
-      memberItems: [
-        'Capturer un moment — photo, voix, quelques mots',
-        'Bloom, un compagnon IA toujours en contexte',
-        'Progression silencieuse, pas de performance',
-      ],
-      connector: 'La même personne. Des deux côtés de la pièce.',
-      footer: 'En production · Web + mobile · EN + FR',
+      hero1: 'Pas un outil.',
+      hero2: 'Une couche de visibilité.',
+      description1: 'Tout ce dont un cabinet a besoin — notes, séances, ressources.',
+      description2: 'Plus la couche que personne n\'a construite : ce qui se passe entre les séances.',
+      question: '« Comment s\'est passée ta semaine ? »',
+      answer: 'Avec Bloomsline, vous la voyez.',
+      outcome: 'Les patients reviennent — un patient retenu paie Bloomsline pendant des mois.',
+      closing1: 'Pas plus de travail.',
+      closing2: 'Juste ce qui se passe déjà — rendu visible.',
+    },
+    boundary: {
+      label: 'LA LIMITE',
+      hero1: 'Il y a une limite en thérapie.',
+      hero2: 'Nous la respectons.',
+      explanation: 'Le cadre thérapeutique — l\'espace entre le praticien et le patient — est ce qui fait fonctionner la thérapie.',
+      howLabel: 'Comment nous la protégeons :',
+      dont1: 'Nous n\'envoyons pas de messages aux patients.',
+      dont2: 'Nous ne remplaçons pas le praticien.',
+      dont3: 'Nous ne gamifions pas la réflexion.',
+      dont4: 'Nous ajoutons du contexte, pas de l\'interaction.',
+      closing1: 'Pas de comportement forcé.',
+      closing2: 'On capture ce qui se passe déjà.',
     },
     whyNow: {
       label: 'POURQUOI MAINTENANT',
@@ -344,22 +432,22 @@ const translations = {
       builtItems: [
         'App web praticien',
         'App mobile membre',
-        'Compagnon IA Bloom',
-        '3 langues · 24+ endpoints API',
+        'Bloom IA',
+        '2 langues · 24+ endpoints API',
         'En production',
       ],
       learnedLabel: 'APPRIS',
       learnedItems: [
-        '119 entretiens · 7 pays',
-        '15 beta testeurs',
-        'Un pivot',
-        'Wedge trouvé',
+        'Découverte en profondeur à travers l\'Europe',
+        'Testeurs précoces dans la boucle',
+        'Un pivot, depuis un signal réel',
+        'Le wedge trouvé',
       ],
       honestLabel: 'HONNÊTE',
       honestItems: [
-        'Pas encore de PMF — proche',
-        'Prix non fixé — on apprend',
-        'Deux personnes — rapide',
+        'Proche du PMF — le point d\'inflexion approche',
+        'Prix calibré par de vraies conversations, pas des tableurs',
+        'Deux fondateurs, full-stack. La vitesse comme moat',
       ],
       quote: 'Ce n\'est pas un deck. C\'est une plateforme fonctionnelle que vous pouvez toucher aujourd\'hui.',
     },
@@ -372,7 +460,7 @@ const translations = {
       adityaName: 'Aditya Channe',
       adityaRole: 'Produit & Technologie',
       adityaBio: 'A tout construit — web et mobile. Connexion personnelle au problème.',
-      quote: 'Nous avons construit ce que la plupart des équipes mettent 18 mois et €1M à construire — avec un burn quasi nul. Ce n\'est pas une limitation. C\'est la preuve que nous exécutons.',
+      quote: 'Ce problème est trop proche pour être délégué. Alors on l\'a construit nous-mêmes — deux personnes, en interne, burn quasi nul.',
       footnote: 'Nous cherchons activement un conseiller clinique. La voix clinique est dans le produit — pas encore au cap table.',
     },
     vision: {
@@ -429,9 +517,9 @@ const translations = {
       closing: 'Assez pour trouver le product-market fit sans compromettre l\'histoire que nous construisons.',
     },
     close: {
-      line1: 'Les soins ne se passent pas une fois par semaine.',
-      line2: 'La vie se passe chaque jour.',
-      line3: 'Et aujourd\'hui, rien ne connecte les deux.',
+      line1: 'La thérapie a lieu en séance.',
+      line2: 'La vie a lieu chaque jour.',
+      line3: 'Et aujourd\'hui, rien ne relie les deux.',
       line4: 'C\'est la couche que nous construisons.',
       cta: 'Discutons.',
       bookCall: 'Réserver un appel de 20 min',
@@ -452,8 +540,10 @@ export default function PitchNewPage() {
   const slides = [
     { id: 'hero', title: t.slides.hero },
     { id: 'silence', title: t.slides.silence },
+    { id: 'whyItMatters', title: t.slides.whyItMatters },
     { id: 'origin', title: t.slides.origin },
     { id: 'product', title: t.slides.product },
+    { id: 'boundary', title: t.slides.boundary },
     { id: 'whyNow', title: t.slides.whyNow },
     { id: 'model', title: t.slides.model },
     { id: 'real', title: t.slides.real },
@@ -497,7 +587,7 @@ export default function PitchNewPage() {
   }
 
   // Dark slide gets dark nav styling
-  const isDark = currentSlide === 4 // whyNow
+  const isDark = currentSlide === 6 // whyNow
 
   return (
     <div className="h-screen w-screen overflow-hidden" style={{ backgroundColor: isDark ? '#0a0a0a' : '#FAF8F5' }}>
@@ -589,15 +679,17 @@ export default function PitchNewPage() {
         >
           {currentSlide === 0 && <HeroSlide onNext={nextSlide} t={t.hero} />}
           {currentSlide === 1 && <SilenceSlide t={t.silence} />}
-          {currentSlide === 2 && <OriginSlide t={t.origin} />}
-          {currentSlide === 3 && <ProductSlide t={t.product} />}
-          {currentSlide === 4 && <WhyNowSlide t={t.whyNow} />}
-          {currentSlide === 5 && <ModelSlide t={t.model} />}
-          {currentSlide === 6 && <RealSlide t={t.real} />}
-          {currentSlide === 7 && <TeamSlide t={t.team} />}
-          {currentSlide === 8 && <VisionSlide t={t.vision} />}
-          {currentSlide === 9 && <AskSlide t={t.ask} />}
-          {currentSlide === 10 && <CloseSlide t={t.close} />}
+          {currentSlide === 2 && <WhyItMattersSlide t={t.whyItMatters} />}
+          {currentSlide === 3 && <OriginSlide t={t.origin} />}
+          {currentSlide === 4 && <ProductSlide t={t.product} />}
+          {currentSlide === 5 && <BoundarySlide t={t.boundary} />}
+          {currentSlide === 6 && <WhyNowSlide t={t.whyNow} />}
+          {currentSlide === 7 && <ModelSlide t={t.model} />}
+          {currentSlide === 8 && <RealSlide t={t.real} />}
+          {currentSlide === 9 && <TeamSlide t={t.team} />}
+          {currentSlide === 10 && <VisionSlide t={t.vision} />}
+          {currentSlide === 11 && <AskSlide t={t.ask} />}
+          {currentSlide === 12 && <CloseSlide t={t.close} />}
         </motion.div>
       </AnimatePresence>
 
@@ -691,7 +783,7 @@ function HeroSlide({ onNext, t }: { onNext: () => void; t: typeof translations.e
 function SilenceSlide({ t }: { t: typeof translations.en.silence }) {
   return (
     <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
-      <div className="max-w-6xl w-full py-20">
+      <div className="max-w-6xl w-full py-16">
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -719,43 +811,30 @@ function SilenceSlide({ t }: { t: typeof translations.en.silence }) {
           {t.headline2}
         </motion.h2>
 
-        {/* Two column contrast */}
+        {/* Two column contrast — what breaks on each side */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="grid grid-cols-2 gap-12 mb-16 max-w-3xl"
+          className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16 max-w-4xl"
         >
           <div>
-            <p className="text-xs tracking-[0.2em] text-neutral-400 uppercase mb-4">{t.inRoom}</p>
+            <p className="text-xs tracking-[0.2em] text-neutral-400 uppercase mb-4">{t.patientLabel}</p>
             <ul className="space-y-2">
-              {t.inRoomItems.map((item, i) => (
+              {t.patientItems.map((item, i) => (
                 <li key={i} className="text-lg text-neutral-700 font-light">{item}</li>
               ))}
             </ul>
           </div>
-          <div className="border-l border-neutral-200 pl-12">
-            <p className="text-xs tracking-[0.2em] text-teal-700 uppercase mb-4">{t.inLife}</p>
+          <div className="md:border-l border-neutral-200 md:pl-12">
+            <p className="text-xs tracking-[0.2em] text-teal-700 uppercase mb-4">{t.practitionerLabel}</p>
             <ul className="space-y-2">
-              {t.inLifeItems.map((item, i) => (
+              {t.practitionerItems.map((item, i) => (
                 <li key={i} className="text-lg text-neutral-900 font-light">{item}</li>
               ))}
             </ul>
           </div>
         </motion.div>
-
-        {/* Pull quote */}
-        <motion.blockquote
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.7 }}
-          className="border-l-2 border-teal-600 pl-6 py-2 max-w-3xl mb-12"
-        >
-          <p className="text-xl text-neutral-700 italic leading-relaxed font-light">
-            {t.quote}
-          </p>
-          <footer className="text-sm text-neutral-500 mt-3">— {t.quoteAttribution}</footer>
-        </motion.blockquote>
 
         {/* Stats footer */}
         <motion.div
@@ -768,7 +847,14 @@ function SilenceSlide({ t }: { t: typeof translations.en.silence }) {
             <div key={i} className="flex items-baseline gap-2">
               <span className="text-2xl font-light text-neutral-900">{stat.value}</span>
               <span className="text-xs text-neutral-500">{stat.label}</span>
-              <span className="text-xs text-neutral-300">· {stat.source}</span>
+              <a
+                href={stat.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-neutral-400 hover:text-teal-700 underline decoration-dotted underline-offset-2 transition-colors"
+              >
+                {stat.source} ↗
+              </a>
             </div>
           ))}
         </motion.div>
@@ -778,7 +864,82 @@ function SilenceSlide({ t }: { t: typeof translations.en.silence }) {
 }
 
 // =============================================================================
-// SLIDE 3: ORIGIN — "We built the wrong thing first"
+// SLIDE 3: WHY IT MATTERS — consequences of the problem
+// =============================================================================
+
+function WhyItMattersSlide({ t }: { t: typeof translations.en.whyItMatters }) {
+  const items = [
+    { label: t.item1Label, body: t.item1Body },
+    { label: t.item2Label, body: t.item2Body },
+    { label: t.item3Label, body: t.item3Body },
+    { label: t.item4Label, body: t.item4Body },
+  ]
+
+  return (
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-16">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
+        >
+          {t.label}
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-2"
+        >
+          {t.headline1}
+        </motion.h2>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-teal-700 leading-[1.1] tracking-tight mb-16"
+        >
+          {t.headline2}
+        </motion.h2>
+
+        {/* Four consequence quadrants */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 mb-14 max-w-4xl">
+          {items.map((item, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 + i * 0.1 }}
+              className="flex flex-col gap-2"
+            >
+              <p className="text-xs tracking-[0.25em] uppercase font-mono text-teal-700">
+                {item.label}
+              </p>
+              <p className="text-lg text-neutral-800 font-light leading-snug">
+                {item.body}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1 }}
+          className="text-lg text-neutral-500 italic font-light pt-8 border-t border-neutral-200 max-w-3xl"
+        >
+          {t.closing}
+        </motion.p>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// SLIDE 4: ORIGIN — "We built the wrong thing first"
 // =============================================================================
 
 function OriginSlide({ t }: { t: typeof translations.en.origin }) {
@@ -864,90 +1025,171 @@ function OriginSlide({ t }: { t: typeof translations.en.origin }) {
 function ProductSlide({ t }: { t: typeof translations.en.product }) {
   return (
     <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
-      <div className="max-w-6xl w-full py-20">
+      <div className="max-w-5xl w-full py-16">
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-8"
         >
           {t.label}
         </motion.p>
 
+        {/* Hero — Not a tool / A visibility layer */}
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-900 leading-[1.15] tracking-tight mb-16 max-w-4xl"
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-400 leading-[1.1] tracking-tight mb-2"
         >
-          {t.headline}
+          {t.hero1}
         </motion.h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 mb-12">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            <p className="text-xs tracking-[0.2em] uppercase mb-3" style={{ color: '#D4856A' }}>
-              {t.practitionerTag}
-            </p>
-            <h3 className="text-2xl font-medium text-neutral-900 mb-6">{t.practitionerTitle}</h3>
-            <ul className="space-y-3">
-              {t.practitionerItems.map((item, i) => (
-                <li key={i} className="text-base text-neutral-700 flex items-start gap-3 font-light">
-                  <span className="text-neutral-300 mt-1">—</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-teal-700 leading-[1.1] tracking-tight mb-14"
+        >
+          {t.hero2}
+        </motion.h2>
 
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            className="md:border-l border-neutral-200 md:pl-16"
-          >
-            <p className="text-xs tracking-[0.2em] uppercase mb-3 text-teal-700">
-              {t.memberTag}
-            </p>
-            <h3 className="text-2xl font-medium text-neutral-900 mb-6">{t.memberTitle}</h3>
-            <ul className="space-y-3">
-              {t.memberItems.map((item, i) => (
-                <li key={i} className="text-base text-neutral-700 flex items-start gap-3 font-light">
-                  <span className="text-neutral-300 mt-1">—</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        </div>
-
-        <motion.p
+        {/* Description — two tight lines */}
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="mb-12 max-w-3xl space-y-1"
+        >
+          <p className="text-lg text-neutral-700 font-light leading-relaxed">{t.description1}</p>
+          <p className="text-lg text-neutral-700 font-light leading-relaxed">{t.description2}</p>
+        </motion.div>
+
+        {/* Q → A mini-demo */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
-          className="text-lg text-neutral-600 italic text-center mb-10"
+          className="mb-10 max-w-3xl"
         >
-          {t.connector}
-        </motion.p>
+          <p className="text-2xl sm:text-3xl font-light italic text-neutral-400 leading-snug mb-1">
+            {t.question}
+          </p>
+          <p className="text-2xl sm:text-3xl font-light text-teal-700 leading-snug">
+            {t.answer}
+          </p>
+        </motion.div>
 
+        {/* Single business outcome */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.9 }}
-          className="text-xs tracking-[0.2em] uppercase text-neutral-400 text-center pt-8 border-t border-neutral-200"
+          transition={{ duration: 0.6, delay: 0.9 }}
+          className="text-sm text-neutral-900 font-light max-w-3xl mb-10"
         >
-          {t.footer}
+          — {t.outcome}
         </motion.p>
+
+        {/* Closing */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1.05 }}
+          className="max-w-3xl"
+        >
+          <p className="text-lg text-neutral-400 font-light">{t.closing1}</p>
+          <p className="text-lg text-neutral-900 font-light">{t.closing2}</p>
+        </motion.div>
       </div>
     </div>
   )
 }
 
 // =============================================================================
-// SLIDE 5: WHY NOW — dark slide
+// SLIDE 5: BOUNDARY — objection handling
+// =============================================================================
+
+function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
+  return (
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-5xl w-full py-16">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-8"
+        >
+          {t.label}
+        </motion.p>
+
+        {/* Two hero lines */}
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-2"
+        >
+          {t.hero1}
+        </motion.h2>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-teal-700 leading-[1.1] tracking-tight mb-12"
+        >
+          {t.hero2}
+        </motion.h2>
+
+        {/* Explanation of what the boundary is */}
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="text-lg text-neutral-700 font-light max-w-3xl mb-12 leading-relaxed"
+        >
+          {t.explanation}
+        </motion.p>
+
+        {/* How we protect it — label + 4 bullets */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.65 }}
+          className="text-xs tracking-[0.25em] uppercase text-neutral-400 font-mono mb-4"
+        >
+          {t.howLabel}
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.8 }}
+          className="space-y-2 max-w-3xl mb-10"
+        >
+          <p className="text-base text-neutral-700 font-light">— {t.dont1}</p>
+          <p className="text-base text-neutral-700 font-light">— {t.dont2}</p>
+          <p className="text-base text-neutral-700 font-light">— {t.dont3}</p>
+          <p className="text-base text-neutral-900 font-light">— {t.dont4}</p>
+        </motion.div>
+
+        {/* Closing philosophy */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1 }}
+          className="max-w-3xl"
+        >
+          <p className="text-lg text-neutral-400 font-light">{t.closing1}</p>
+          <p className="text-lg text-neutral-900 font-light">{t.closing2}</p>
+        </motion.div>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// SLIDE 6: WHY NOW — dark slide
 // =============================================================================
 
 function WhyNowSlide({ t }: { t: typeof translations.en.whyNow }) {
