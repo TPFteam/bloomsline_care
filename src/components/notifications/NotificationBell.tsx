@@ -21,6 +21,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { fr, es } from 'date-fns/locale'
 import { useLanguage } from '@/lib/i18n/context'
 import type { NotificationType } from '@/lib/notifications/types'
+import { getNotificationContent } from '@/lib/notifications/templates'
 
 interface NotificationBellProps {
   className?: string
@@ -288,22 +289,41 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
                               {/* Content */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2">
-                                  <p
-                                    className={`text-sm font-medium leading-snug ${
-                                      !notification.read
-                                        ? 'text-gray-900 dark:text-white'
-                                        : 'text-gray-600 dark:text-white/70'
-                                    }`}
-                                  >
-                                    {notification.title}
-                                  </p>
-                                  {!notification.read && (
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0 mt-1.5" />
-                                  )}
+                                  {(() => {
+                                    // Re-render title/body in the current UI locale (not the stored language)
+                                    const localized = notification.metadata
+                                      ? getNotificationContent(notification.type as NotificationType, notification.metadata, locale as 'en' | 'fr' | 'es')
+                                      : null
+                                    const displayTitle = localized?.title || notification.title
+                                    const displayBody = localized?.body || notification.body
+                                    return (
+                                      <>
+                                        <p
+                                          className={`text-sm font-medium leading-snug ${
+                                            !notification.read
+                                              ? 'text-gray-900 dark:text-white'
+                                              : 'text-gray-600 dark:text-white/70'
+                                          }`}
+                                        >
+                                          {displayTitle}
+                                        </p>
+                                        {!notification.read && (
+                                          <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0 mt-1.5" />
+                                        )}
+                                      </>
+                                    )
+                                  })()}
                                 </div>
-                                <p className="text-sm text-gray-500 dark:text-white/50 line-clamp-2 mt-0.5 leading-snug">
-                                  {notification.body}
-                                </p>
+                                {(() => {
+                                  const localized = notification.metadata
+                                    ? getNotificationContent(notification.type as NotificationType, notification.metadata, locale as 'en' | 'fr' | 'es')
+                                    : null
+                                  return (
+                                    <p className="text-sm text-gray-500 dark:text-white/50 line-clamp-2 mt-0.5 leading-snug">
+                                      {localized?.body || notification.body}
+                                    </p>
+                                  )
+                                })()}
                                 <div className="flex items-center justify-between mt-2">
                                   <p className="text-xs text-gray-400 dark:text-white/30">
                                     {formatTime(notification.created_at)}
