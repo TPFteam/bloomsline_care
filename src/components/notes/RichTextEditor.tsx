@@ -1040,7 +1040,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
               } else {
                 // "Name said:" — enter annotation mode, cursor inside mark
                 const saidHTML =
-                  `<mark data-verbatim="${memberName}" data-verbatim-type="said" style="display:block;background-color:#f0f9ff;border-left:3px solid #38bdf8;padding:8px 12px;margin:8px 0;border-radius:6px;font-style:italic;color:#0c4a6e;--tag-color:#0ea5e9;--tag-bg:#f0f9ff;">\u200B</mark>`
+                  `<mark data-verbatim="${memberName}" data-verbatim-type="said" style="display:block;background-color:#eff6ff;border-left:4px solid #3b82f6;padding:12px 16px;margin:12px 0;border-radius:0 8px 8px 0;font-style:italic;color:#1e3a5f;--tag-color:#3b82f6;--tag-bg:#eff6ff;">\u200B</mark>`
                 document.execCommand('insertHTML', false, saidHTML)
                 // Place cursor inside the mark
                 const marks = editor.querySelectorAll('mark[data-verbatim-type="said"]')
@@ -1303,7 +1303,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     const mark = document.createElement('mark')
     mark.dataset.verbatim = memberName
     mark.setAttribute('style',
-      'display:block;background-color:#f0f9ff;border-left:3px solid #38bdf8;padding:8px 12px;margin:8px 0;border-radius:6px;font-style:italic;color:#0c4a6e;--tag-color:#0ea5e9;--tag-bg:#f0f9ff;'
+      'display:block;background-color:#eff6ff;border-left:4px solid #3b82f6;padding:12px 16px;margin:12px 0;border-radius:0 8px 8px 0;font-style:italic;color:#1e3a5f;--tag-color:#3b82f6;--tag-bg:#eff6ff;'
     )
     wrapWithMark(mark)
     editor.focus()
@@ -1683,14 +1683,14 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
           color: inherit;
         }
         .rte-editor.show-labels mark[data-verbatim] {
-          background-color: #f0f9ff !important;
-          border-left: 3px solid #38bdf8 !important;
-          padding: 8px 12px;
-          border-radius: 6px;
+          background-color: #eff6ff !important;
+          border-left: 4px solid #3b82f6 !important;
+          padding: 12px 16px;
+          border-radius: 0 8px 8px 0;
           font-style: italic;
-          color: #0c4a6e;
+          color: #1e3a5f;
           display: block;
-          margin: 8px 0;
+          margin: 12px 0;
         }
         .rte-editor.show-labels mark[data-goal-id]::before,
         .rte-editor.show-labels mark[data-tag]::before {
@@ -1907,7 +1907,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                       mark.dataset.verbatim = memberName
                       mark.dataset.verbatimType = 'said'
                       mark.setAttribute('style',
-                        'display:block;background-color:#f0f9ff;border-left:3px solid #38bdf8;padding:8px 12px;margin:8px 0;border-radius:6px;font-style:italic;color:#0c4a6e;--tag-color:#0ea5e9;--tag-bg:#f0f9ff;'
+                        'display:block;background-color:#eff6ff;border-left:4px solid #3b82f6;padding:12px 16px;margin:12px 0;border-radius:0 8px 8px 0;font-style:italic;color:#1e3a5f;--tag-color:#3b82f6;--tag-bg:#eff6ff;'
                       )
                       const zwsp = document.createTextNode('\u200B')
                       mark.appendChild(zwsp)
@@ -2322,7 +2322,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                             // "Name said:" — enter annotation mode
                             mark.dataset.verbatimType = 'said'
                             mark.setAttribute('style',
-                              'display:block;background-color:#f0f9ff;border-left:3px solid #38bdf8;padding:8px 12px;margin:8px 0;border-radius:6px;font-style:italic;color:#0c4a6e;--tag-color:#0ea5e9;--tag-bg:#f0f9ff;'
+                              'display:block;background-color:#eff6ff;border-left:4px solid #3b82f6;padding:12px 16px;margin:12px 0;border-radius:0 8px 8px 0;font-style:italic;color:#1e3a5f;--tag-color:#3b82f6;--tag-bg:#eff6ff;'
                             )
                             const zwsp = document.createTextNode('\u200B')
                             mark.appendChild(zwsp)
