@@ -490,16 +490,60 @@ function DashboardContent() {
         .order('first_name')
       if (membersData) setMembers(membersData)
 
-      // Fetch upcoming sessions
-      const { data: sessionsData } = await supabase
-        .from('bookings')
-        .select('id, client_name, session_type, start_time, member_id, status')
-        .eq('practitioner_id', authUser.id)
-        .in('status', ['confirmed', 'pending'])
-        .gte('start_time', new Date().toISOString())
-        .order('start_time', { ascending: true })
-        .limit(3)
-      if (sessionsData) setUpcomingSessions(sessionsData)
+      // Fetch upcoming sessions from BOTH bookings and sessions tables
+      // Some sessions may exist only in the sessions table (if booking insert failed silently)
+      const now = new Date().toISOString()
+
+      const [bookingsRes, sessionsRes] = await Promise.all([
+        supabase
+          .from('bookings')
+          .select('id, client_name, session_type, start_time, member_id, status')
+          .eq('practitioner_id', authUser.id)
+          .in('status', ['confirmed', 'pending'])
+          .gte('start_time', now)
+          .order('start_time', { ascending: true })
+          .limit(5),
+        supabase
+          .from('sessions')
+          .select('id, session_type, scheduled_at, member_id, status, practitioner_id')
+          .eq('practitioner_id', authUser.id)
+          .eq('status', 'scheduled')
+          .gte('scheduled_at', now)
+          .order('scheduled_at', { ascending: true })
+          .limit(5),
+      ])
+
+      // Merge: use bookings as primary, fill in sessions-only entries
+      const bookingMemberIds = new Set((bookingsRes.data || []).map(b => `${b.member_id}_${b.start_time}`))
+      const sessionsOnly = (sessionsRes.data || []).filter(
+        s => !bookingMemberIds.has(`${s.member_id}_${s.scheduled_at}`)
+      )
+
+      // Look up member names for sessions-only entries
+      let sessionsMapped: typeof upcomingSessions = []
+      if (sessionsOnly.length > 0) {
+        const memberIds = [...new Set(sessionsOnly.map(s => s.member_id).filter(Boolean))]
+        const { data: memberNames } = memberIds.length > 0
+          ? await supabase.from('members').select('id, first_name, last_name').in('id', memberIds)
+          : { data: [] }
+        const nameMap: Record<string, string> = {}
+        memberNames?.forEach(m => { nameMap[m.id] = `${m.first_name} ${m.last_name}` })
+
+        sessionsMapped = sessionsOnly.map(s => ({
+          id: s.id,
+          client_name: nameMap[s.member_id] || 'Unknown',
+          session_type: s.session_type,
+          start_time: s.scheduled_at,
+          member_id: s.member_id,
+          status: 'confirmed',
+        }))
+      }
+
+      const merged = [...(bookingsRes.data || []), ...sessionsMapped]
+        .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+        .slice(0, 3)
+
+      setUpcomingSessions(merged)
 
       // Fetch user's latest resources
       const { data: latestResources } = await supabase
