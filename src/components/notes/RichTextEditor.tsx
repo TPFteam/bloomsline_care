@@ -522,6 +522,12 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         clearTimeout(autoSaveTimer.current)
         autoSaveTimer.current = null
       }
+      // Clear active annotation states — undo may remove the mark they reference
+      setActiveTag(null)
+      setActiveGoal(null)
+      setActiveVerbatim(false)
+      setInlineTrigger(null)
+
       const before = editor.innerHTML
       document.execCommand(command, false)
       const after = editor.innerHTML
@@ -831,28 +837,28 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
     const editor = editorRef.current
     if (!editor) return
 
-    // If there's an active tag/goal/verbatim annotation, force plain-text paste
-    // inside the mark element to prevent the browser from breaking out of it
-    if (activeTag || activeVerbatim) {
-      e.preventDefault()
-      const text = e.clipboardData.getData('text/plain')
-      if (!text) return
-
-      const sel = window.getSelection()
-      if (!sel || !sel.rangeCount) return
-
-      // Check if cursor is inside a mark element
+    // Check if cursor is inside a mark element (even without activeTag/activeVerbatim)
+    const sel = window.getSelection()
+    const isInsideMark = (() => {
+      if (!sel || !sel.rangeCount) return false
       let node: Node | null = sel.anchorNode
-      let insideMark = false
       while (node && node !== editor) {
-        if (node instanceof HTMLElement && node.tagName === 'MARK') {
-          insideMark = true
-          break
-        }
+        if (node instanceof HTMLElement && node.tagName === 'MARK') return true
         node = node.parentNode
       }
+      return false
+    })()
 
-      if (insideMark) {
+    // Force plain-text paste if inside an active annotation OR any mark element
+    if (activeTag || activeVerbatim || isInsideMark) {
+      e.preventDefault()
+      // Strip newlines when pasting inside a mark to prevent breaking block structure
+      const text = e.clipboardData.getData('text/plain').replace(/\r?\n/g, ' ')
+      if (!text) return
+
+      if (!sel || !sel.rangeCount) return
+
+      if (isInsideMark) {
         // Insert as plain text within the mark
         const range = sel.getRangeAt(0)
         range.deleteContents()
@@ -869,7 +875,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
 
       handleInput()
     }
-    // If no active annotation, let the browser handle paste normally
+    // If no active annotation and not inside a mark, let the browser handle paste normally
   }, [activeTag, activeVerbatim, handleInput])
 
   // Break out of <mark> on Enter — let browser handle Enter, then unwrap
@@ -1565,12 +1571,13 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         return
       }
 
-      // Append extracted text
-      if (editorRef.current) {
-        const lines = (data.extractedText as string)
+      // Append extracted text (validate type first)
+      const extractedText = typeof data.extractedText === 'string' ? data.extractedText : String(data.extractedText || '')
+      if (editorRef.current && extractedText.trim()) {
+        const lines = extractedText
           .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
           .split('\n')
-          .map(line => line.trim() ? `<p>${line}</p>` : '<p><br></p>')
+          .map((line: string) => line.trim() ? `<p>${line}</p>` : '<p><br></p>')
           .join('')
         editorRef.current.innerHTML += lines
         handleInput()
@@ -2259,7 +2266,14 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => unlinkMark(markTooltip.markEl)}
+              onClick={() => {
+                // Guard: check mark still exists in DOM (could have been undone)
+                if (markTooltip.markEl.parentNode) {
+                  unlinkMark(markTooltip.markEl)
+                } else {
+                  setMarkTooltip(null)
+                }
+              }}
               className="flex items-center gap-1 text-red-400 hover:text-red-300 transition-colors"
             >
               <X className="w-3 h-3" />
