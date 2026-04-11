@@ -1081,22 +1081,23 @@ export default function BookingsPage() {
                           </button>
                         )}
                       </div>
-                      <label className="flex items-center gap-2 cursor-pointer mt-2 pt-2 border-t border-gray-100">
-                        <input
-                          type="checkbox"
-                          checked={type.notesRequired || false}
-                          onChange={(e) => {
-                            const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
-                            updated[index] = { ...updated[index], notesRequired: e.target.checked }
-                            setSessionTypes(updated)
-                            setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
-                          }}
-                          className="w-3.5 h-3.5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                        />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
+                          updated[index] = { ...updated[index], notesRequired: !type.notesRequired }
+                          setSessionTypes(updated)
+                          setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
+                        }}
+                        className="flex items-center gap-2 cursor-pointer mt-2 pt-2 border-t border-gray-100 w-full"
+                      >
+                        <div className={`relative w-8 h-[18px] rounded-full transition-colors ${type.notesRequired ? 'bg-teal-500' : 'bg-gray-200'}`}>
+                          <div className={`absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white shadow-sm transition-transform ${type.notesRequired ? 'translate-x-[16px]' : 'translate-x-[2px]'}`} />
+                        </div>
                         <span className="text-xs text-gray-500">
                           {locale === 'fr' ? 'Notes obligatoires lors de la réservation' : 'Require notes when booking'}
                         </span>
-                      </label>
+                      </button>
                     </div>
                   )})}
 
