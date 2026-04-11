@@ -107,9 +107,9 @@ const translations = {
       para4: 'Bloomsline is what we built with that insight.',
       quote: 'We didn\'t find a problem and build a product. We earned the insight through a product that failed.',
       timeline: [
-        { period: 'Q4 2023', label: 'Doctalink' },
-        { period: '2024-25', label: 'Listening & learning' },
-        { period: 'Jan 2026', label: 'Bloomsline — live', accent: true },
+        { period: '2024', label: 'Doctalink' },
+        { period: '2025', label: 'Discovery' },
+        { period: '2026', label: 'Bloomsline — live', accent: true },
       ],
     },
     product: {
@@ -359,9 +359,9 @@ const translations = {
       para4: 'Bloomsline est ce que nous avons construit avec cette insight.',
       quote: 'Nous n\'avons pas trouvé un problème puis construit un produit. Nous avons gagné l\'insight à travers un produit qui a échoué.',
       timeline: [
-        { period: 'Q4 2023', label: 'Doctalink' },
-        { period: '2024-25', label: 'Écoute & apprentissage' },
-        { period: 'Jan 2026', label: 'Bloomsline — en production', accent: true },
+        { period: '2024', label: 'Doctalink' },
+        { period: '2025', label: 'Découverte' },
+        { period: '2026', label: 'Bloomsline — en production', accent: true },
       ],
     },
     product: {
