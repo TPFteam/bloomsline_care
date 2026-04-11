@@ -1067,6 +1067,20 @@ export default function BookingsPage() {
                           </select>
                         </div>
                       </div>
+                      <label className="flex items-center gap-1.5 cursor-pointer flex-shrink-0" title={locale === 'fr' ? 'Notes obligatoires' : 'Require notes'}>
+                        <input
+                          type="checkbox"
+                          checked={type.notesRequired || false}
+                          onChange={(e) => {
+                            const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
+                            updated[index] = { ...updated[index], notesRequired: e.target.checked }
+                            setSessionTypes(updated)
+                            setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
+                          }}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                        />
+                        <span className="text-[11px] text-gray-500">{locale === 'fr' ? 'Notes requises' : 'Require notes'}</span>
+                      </label>
                       {!isLocked && (sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES).length > 1 && (
                         <button
                           onClick={() => {

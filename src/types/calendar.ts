@@ -46,6 +46,7 @@ export interface SessionType {
   duration: number; // minutes
   price: number | null;
   is_default?: boolean;
+  notesRequired?: boolean; // Whether "Additional Notes" is mandatory for this session type
 }
 
 export interface BookingSettings {

@@ -269,6 +269,14 @@ export default function BookingPage() {
   const handleSubmit = async () => {
     if (!practitioner || !selectedService || !selectedSlot) return
 
+    // Validate required notes
+    if (selectedService.notesRequired && !notes.trim()) {
+      setBookingError(locale === 'fr'
+        ? 'Les notes sont obligatoires pour ce type de séance.'
+        : 'Notes are required for this session type.')
+      return
+    }
+
     setIsSubmitting(true)
     setBookingError(null)
 
@@ -881,7 +889,11 @@ export default function BookingPage() {
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                     <FileText className="w-4 h-4 text-gray-400" />
-                    {locale === 'fr' ? 'Notes' : 'Additional Notes'} <span className="text-gray-400 font-normal">{locale === 'fr' ? '(facultatif)' : '(optional)'}</span>
+                    {locale === 'fr' ? 'Notes' : 'Additional Notes'}
+                    {selectedService?.notesRequired
+                      ? <span className="text-red-500 font-normal">*</span>
+                      : <span className="text-gray-400 font-normal">{locale === 'fr' ? '(facultatif)' : '(optional)'}</span>
+                    }
                   </label>
                   <textarea
                     value={notes}
