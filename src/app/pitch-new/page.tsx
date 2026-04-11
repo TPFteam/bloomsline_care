@@ -1081,7 +1081,7 @@ function ProductSlide({ t }: { t: typeof translations.en.product }) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.7 }}
           >
-            <p className="text-xs tracking-[0.2em] uppercase mb-3" style={{ color: '#D4856A' }}>
+            <p className="text-xs tracking-[0.2em] uppercase mb-3 text-neutral-500">
               {t.practitionerTag}
             </p>
             <ul className="space-y-2">
