@@ -48,7 +48,7 @@ const translations = {
     },
     silence: {
       label: 'THE PROBLEM',
-      headline: 'Between sessions, continuity depends on memory.',
+      headline: 'Between sessions, everything depends on memory.',
       headline2: 'And memory fades.',
       patientLabel: 'For patients',
       patientItems: [
