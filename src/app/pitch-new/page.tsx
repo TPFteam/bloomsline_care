@@ -1577,12 +1577,12 @@ function VisionSlide({ t }: { t: typeof translations.en.vision }) {
 
   return (
     <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
-      <div className="max-w-6xl w-full py-20">
+      <div className="max-w-6xl w-full py-12">
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-4"
         >
           {t.label}
         </motion.p>
@@ -1600,13 +1600,13 @@ function VisionSlide({ t }: { t: typeof translations.en.vision }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.35 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-light text-teal-700 leading-[1.1] tracking-tight mb-20"
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-teal-700 leading-[1.1] tracking-tight mb-12"
         >
           {t.headline2}
         </motion.h2>
 
         {/* Three phases — one supporting line each, expandable */}
-        <div className="space-y-8 mb-12">
+        <div className="space-y-6 mb-8">
           {phases.map((phase, i) => {
             const isOpen = expanded.has(i)
             return (
