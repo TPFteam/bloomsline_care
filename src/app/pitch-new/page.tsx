@@ -71,6 +71,12 @@ const translations = {
           source: 'PMC meta-analysis, 146 studies, 2022',
           url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/',
         },
+        {
+          value: '9%',
+          label: 'receive adequate care for depression',
+          source: 'WHO 2025',
+          url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
+        },
       ],
     },
     whyItMatters: {
@@ -87,12 +93,6 @@ const translations = {
       item4Body: 'Disengagement. Dropout. Lower retention.',
       closing: 'Lost time. Lost signals. Lost patients. And no one built anything to fix it.',
       stats: [
-        {
-          value: '9%',
-          label: 'receive adequate care for depression',
-          source: 'WHO 2025',
-          url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
-        },
         {
           value: '35%',
           label: 'of clinician time goes to documentation',
@@ -352,6 +352,12 @@ const translations = {
           source: 'PMC méta-analyse, 146 études, 2022',
           url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/',
         },
+        {
+          value: '9%',
+          label: 'reçoivent des soins adéquats pour la dépression',
+          source: 'OMS 2025',
+          url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
+        },
       ],
     },
     whyItMatters: {
@@ -368,12 +374,6 @@ const translations = {
       item4Body: 'Désengagement. Abandon. Rétention en baisse.',
       closing: 'Temps perdu. Signaux perdus. Patients perdus. Et personne n\'a rien construit pour y remédier.',
       stats: [
-        {
-          value: '9%',
-          label: 'reçoivent des soins adéquats pour la dépression',
-          source: 'OMS 2025',
-          url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
-        },
         {
           value: '35%',
           label: 'du temps clinicien consacré à la documentation',
