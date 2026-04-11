@@ -1029,45 +1029,59 @@ export default function BookingsPage() {
                     return (
                     <div
                       key={type.id}
-                      className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50/50"
+                      className="p-3 rounded-xl border border-gray-200 bg-gray-50/50"
                     >
-                      <div className="flex-1 grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{locale === 'fr' ? 'Nom' : 'Name'}</label>
-                          <input
-                            type="text"
-                            value={isLocked && locale === 'fr' ? lockedNameFr[type.id] : type.name}
-                            readOnly={isLocked}
-                            onChange={(e) => {
-                              if (isLocked) return
-                              const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
-                              updated[index] = { ...updated[index], name: e.target.value }
-                              setSessionTypes(updated)
-                              setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
-                            }}
-                            className={`w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 ${isLocked ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
-                            placeholder="e.g. Initial Consultation"
-                          />
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{locale === 'fr' ? 'Nom' : 'Name'}</label>
+                            <input
+                              type="text"
+                              value={isLocked && locale === 'fr' ? lockedNameFr[type.id] : type.name}
+                              readOnly={isLocked}
+                              onChange={(e) => {
+                                if (isLocked) return
+                                const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
+                                updated[index] = { ...updated[index], name: e.target.value }
+                                setSessionTypes(updated)
+                                setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
+                              }}
+                              className={`w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 ${isLocked ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                              placeholder="e.g. Initial Consultation"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{locale === 'fr' ? 'Durée (min)' : 'Duration (min)'}</label>
+                            <select
+                              value={type.duration}
+                              onChange={(e) => {
+                                const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
+                                updated[index] = { ...updated[index], duration: parseInt(e.target.value) }
+                                setSessionTypes(updated)
+                                setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
+                              }}
+                              className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 bg-white"
+                            >
+                              {[15, 20, 25, 30, 45, 50, 60, 75, 90, 120].map((d) => (
+                                <option key={d} value={d}>{d} min</option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{locale === 'fr' ? 'Durée (min)' : 'Duration (min)'}</label>
-                          <select
-                            value={type.duration}
-                            onChange={(e) => {
-                              const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
-                              updated[index] = { ...updated[index], duration: parseInt(e.target.value) }
+                        {!isLocked && (sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES).length > 1 && (
+                          <button
+                            onClick={() => {
+                              const updated = (sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES).filter((_, i) => i !== index)
                               setSessionTypes(updated)
                               setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
                             }}
-                            className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 bg-white"
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors self-start mt-4"
                           >
-                            {[15, 20, 25, 30, 45, 50, 60, 75, 90, 120].map((d) => (
-                              <option key={d} value={d}>{d} min</option>
-                            ))}
-                          </select>
-                        </div>
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
-                      <label className="flex items-center gap-1.5 cursor-pointer flex-shrink-0" title={locale === 'fr' ? 'Notes obligatoires' : 'Require notes'}>
+                      <label className="flex items-center gap-2 cursor-pointer mt-2 pt-2 border-t border-gray-100">
                         <input
                           type="checkbox"
                           checked={type.notesRequired || false}
@@ -1079,20 +1093,10 @@ export default function BookingsPage() {
                           }}
                           className="w-3.5 h-3.5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
                         />
-                        <span className="text-[11px] text-gray-500">{locale === 'fr' ? 'Notes requises' : 'Require notes'}</span>
+                        <span className="text-xs text-gray-500">
+                          {locale === 'fr' ? 'Notes obligatoires lors de la réservation' : 'Require notes when booking'}
+                        </span>
                       </label>
-                      {!isLocked && (sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES).length > 1 && (
-                        <button
-                          onClick={() => {
-                            const updated = (sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES).filter((_, i) => i !== index)
-                            setSessionTypes(updated)
-                            setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
-                          }}
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
                     </div>
                   )})}
 
