@@ -48,7 +48,7 @@ const translations = {
     silence: {
       label: 'THE PROBLEM',
       headline: 'Between sessions, there\'s no system.',
-      headline2: 'Just memory. And memory fails.',
+      headline2: 'Just memory. And memory fades.',
       patientLabel: 'For patients',
       patientItems: [
         'Forget what they discussed',
