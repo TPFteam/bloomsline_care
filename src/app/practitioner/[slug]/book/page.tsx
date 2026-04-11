@@ -322,7 +322,9 @@ export default function BookingPage() {
       case 'datetime':
         return !!selectedDate && !!selectedSlot
       case 'details':
-        return clientName.trim() !== '' && clientEmail.trim() !== '' && clientEmail.includes('@')
+        const baseValid = clientName.trim() !== '' && clientEmail.trim() !== '' && clientEmail.includes('@')
+        if (selectedService?.notesRequired && !notes.trim()) return false
+        return baseValid
       case 'confirm':
         return true
       default:
