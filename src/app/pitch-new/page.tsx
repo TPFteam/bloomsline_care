@@ -82,6 +82,12 @@ const translations = {
           source: 'WHO 2025',
           url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
         },
+        {
+          value: '42%',
+          label: 'of Gen Z in therapy — up 22% since 2022',
+          source: 'Grow Therapy, 2025',
+          url: 'https://growtherapy.com/blog/mental-health-statistics/',
+        },
       ],
     },
     whyItMatters: {
@@ -353,6 +359,12 @@ const translations = {
           label: 'reçoivent des soins adéquats pour la dépression',
           source: 'OMS 2025',
           url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
+        },
+        {
+          value: '42%',
+          label: 'de la Gen Z en thérapie — +22% depuis 2022',
+          source: 'Grow Therapy, 2025',
+          url: 'https://growtherapy.com/blog/mental-health-statistics/',
         },
       ],
     },
