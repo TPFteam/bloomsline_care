@@ -1227,12 +1227,12 @@ function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
 function WhyNowSlide({ t }: { t: typeof translations.en.whyNow }) {
   return (
     <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto" style={{ backgroundColor: '#0a0a0a' }}>
-      <div className="max-w-6xl w-full py-20">
+      <div className="max-w-6xl w-full py-12">
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-xs tracking-[0.3em] text-teal-400 uppercase mb-6"
+          className="text-xs tracking-[0.3em] text-teal-400 uppercase mb-4"
         >
           {t.label}
         </motion.p>
@@ -1241,12 +1241,12 @@ function WhyNowSlide({ t }: { t: typeof translations.en.whyNow }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-light text-white leading-[1.1] tracking-tight mb-20"
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-white leading-[1.1] tracking-tight mb-12"
         >
           {t.headline}
         </motion.h2>
 
-        <div className="space-y-10 mb-16 max-w-4xl">
+        <div className="space-y-8 mb-10 max-w-4xl">
           {[
             { title: t.item1Title, body: t.item1Body, sources: t.item1Sources as Array<{ label: string; url: string }>, num: '01' },
             { title: t.item2Title, body: t.item2Body, sources: t.item2Sources as Array<{ label: string; url: string }>, num: '02' },
