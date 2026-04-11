@@ -28,6 +28,7 @@ interface WeekCalendarViewProps {
     status: string
     session_type: string
     notes: string | null
+    google_event_id?: string | null
   }>
   onApprove?: (id: string) => void
   onReject?: (id: string) => void
@@ -72,7 +73,19 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
     .filter(b => b.status !== 'cancelled')
     .map(b => ({ id: b.id, title: b.client_name, start: b.start_time, end: b.end_time, source: 'booking' as const, status: b.status, email: b.client_email, sessionType: b.session_type, notes: b.notes || undefined }))
 
-  const allEvents = [...bookingEvents, ...googleEvents]
+  // Deduplicate: remove Google Calendar events that are synced copies of Bloomsline bookings
+  // A Google event is a duplicate if its start time matches a booking's start time (within 1 min)
+  const bookingStartTimes = new Set(
+    bookings
+      .filter(b => b.status !== 'cancelled' && b.google_event_id)
+      .map(b => Math.floor(new Date(b.start_time).getTime() / 60000)) // round to minute
+  )
+  const dedupedGoogleEvents = googleEvents.filter(e => {
+    const startMin = Math.floor(new Date(e.start).getTime() / 60000)
+    return !bookingStartTimes.has(startMin)
+  })
+
+  const allEvents = [...bookingEvents, ...dedupedGoogleEvents]
   const getEventsForDay = (day: Date) => allEvents.filter(e => isSameDay(parseISO(e.start), day))
 
   const getEventPosition = (event: CalendarEvent) => {
