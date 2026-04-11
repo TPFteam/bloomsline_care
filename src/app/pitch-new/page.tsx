@@ -189,7 +189,7 @@ const translations = {
         'SEO-indexed practitioner profiles',
         'Every member is a future practitioner-referrer',
       ],
-      footnote: 'Solo practitioner baseline: ~€4,800/mo. One patient who stays instead of dropping out covers Bloomsline for 6 months.',
+      footnote: '~20 patients/week × ~€60/session = ~€4,800/mo. One patient who stays instead of dropping out covers Bloomsline for 6 months.',
     },
     real: {
       label: "WHAT'S REAL",
