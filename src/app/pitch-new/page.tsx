@@ -40,7 +40,7 @@ const translations = {
     hero: {
       tag: 'Bloomsline',
       title1: 'Therapy happens in sessions.',
-      title2: 'Change happens every day.',
+      title2: 'Real change happens between sessions.',
       changeTooltip: 'Mood shifts. Pattern breaks. Small wins. Hard days.',
       subtitle: 'The between-session care platform.',
       stage: '',
@@ -319,7 +319,7 @@ const translations = {
     hero: {
       tag: 'Bloomsline',
       title1: 'La thérapie a lieu en séance.',
-      title2: 'Le changement se passe chaque jour.',
+      title2: 'Le vrai changement se passe entre les séances.',
       changeTooltip: 'Humeurs. Ruptures de schémas. Petites victoires. Jours difficiles.',
       subtitle: 'La plateforme de soins entre les séances.',
       stage: 'Pre-seed · Pré-revenu · 2026',
@@ -790,13 +790,19 @@ function HeroSlide({ onNext, t }: { onNext: () => void; t: typeof translations.e
           className="text-4xl sm:text-5xl lg:text-[4.5rem] font-light leading-[1.1] tracking-tight mb-16"
         >
           <span className="text-teal-700">
-            <span className="relative group/change cursor-default inline-block">
-              <span className="border-b-2 border-teal-400/50 pb-1">{t.title2.split(' ')[0]}</span>
-              <span className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-full mt-1 px-4 py-2 bg-neutral-900 text-white text-sm font-normal rounded-xl opacity-0 group-hover/change:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap" style={{ zIndex: 9999 }}>
-                {t.changeTooltip}
-              </span>
-            </span>
-            {' '}{t.title2.split(' ').slice(1).join(' ')}
+            {t.title2.split(' ').map((word, i) => {
+              if (word.toLowerCase() === 'change' || word.toLowerCase() === 'changement') {
+                return (
+                  <span key={i} className="relative group/change cursor-default inline-block">
+                    <span className="border-b-2 border-teal-400/50 pb-1">{word}</span>
+                    <span className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-full mt-1 px-4 py-2 bg-neutral-900 text-white text-sm font-normal rounded-xl opacity-0 group-hover/change:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap" style={{ zIndex: 9999 }}>
+                      {t.changeTooltip}
+                    </span>
+                  </span>
+                )
+              }
+              return <span key={i}>{word}</span>
+            }).reduce((acc: React.ReactNode[], el, i) => i === 0 ? [el] : [...acc, ' ', el], [])}
           </span>
         </motion.h1>
 
