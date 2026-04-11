@@ -48,7 +48,7 @@ const translations = {
     },
     silence: {
       label: 'THE PROBLEM',
-      headline: 'Between sessions, there\'s no system.',
+      headline: 'Between sessions, nothing holds the thread.',
       headline2: 'Just memory. And memory fades.',
       patientLabel: 'For patients',
       patientItems: [
@@ -327,7 +327,7 @@ const translations = {
     },
     silence: {
       label: 'LE PROBLÈME',
-      headline: 'Entre les séances, il n\'y a pas de système.',
+      headline: 'Entre les séances, rien ne tient le fil.',
       headline2: 'Juste la mémoire. Et la mémoire trahit.',
       patientLabel: 'Pour les patients',
       patientItems: [
