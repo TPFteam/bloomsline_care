@@ -136,20 +136,37 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4">
-        <button onClick={() => setWeekStart(prev => addDays(prev, -7))} className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors">
-          <ChevronLeft className="w-4 h-4 text-gray-400" />
-        </button>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <button onClick={() => setWeekStart(prev => addDays(prev, -7))} className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors">
+            <ChevronLeft className="w-4 h-4 text-gray-400" />
+          </button>
           <h3 className="text-sm font-semibold text-gray-800">
             {format(weekStart, locale === 'fr' ? 'd MMM' : 'MMM d')} — {format(addDays(weekStart, 6), locale === 'fr' ? 'd MMM yyyy' : 'MMM d, yyyy')}
           </h3>
+          <button onClick={() => setWeekStart(prev => addDays(prev, 7))} className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors">
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+          </button>
           <button onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))} className="text-xs text-teal-600 hover:text-teal-700 font-medium px-2.5 py-1 rounded-lg hover:bg-teal-50 transition-colors">
             {locale === 'fr' ? "Aujourd'hui" : 'Today'}
           </button>
         </div>
-        <button onClick={() => setWeekStart(prev => addDays(prev, 7))} className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors">
-          <ChevronRight className="w-4 h-4 text-gray-400" />
-        </button>
+        {/* Legend */}
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
+            <span className="w-2 h-2 rounded-full bg-teal-100 border border-teal-200" />
+            {locale === 'fr' ? 'Confirmé' : 'Confirmed'}
+          </span>
+          <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
+            <span className="w-2 h-2 rounded-full bg-amber-100 border border-amber-300" />
+            {locale === 'fr' ? 'En attente' : 'Pending'}
+          </span>
+          {googleConnected && (
+            <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
+              <span className="w-2 h-2 rounded-full bg-blue-100 border border-blue-200" />
+              Google Calendar
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Day headers */}
@@ -324,23 +341,6 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
         })}
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center gap-5 px-6 py-3 border-t border-gray-100">
-        <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
-          <span className="w-2.5 h-2.5 rounded-sm bg-teal-100 border border-teal-200" />
-          {locale === 'fr' ? 'Confirmé' : 'Confirmed'}
-        </span>
-        <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
-          <span className="w-2.5 h-2.5 rounded-sm bg-amber-100 border border-amber-300" />
-          {locale === 'fr' ? 'En attente' : 'Pending'}
-        </span>
-        {googleConnected && (
-          <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
-            <span className="w-2.5 h-2.5 rounded-sm bg-blue-100 border border-blue-200" />
-            Google Calendar
-          </span>
-        )}
-      </div>
     </div>
   )
 }
