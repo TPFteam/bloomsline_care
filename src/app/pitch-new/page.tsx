@@ -869,18 +869,18 @@ function SilenceSlide({ t }: { t: typeof translations.en.silence }) {
           className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16 max-w-4xl"
         >
           <div>
-            <p className="text-xs tracking-[0.2em] text-neutral-400 uppercase mb-4">{t.patientLabel}</p>
-            <ul className="space-y-2">
-              {t.patientItems.map((item, i) => (
-                <li key={i} className="text-lg text-neutral-700 font-light">{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="md:border-l border-neutral-200 md:pl-12">
             <p className="text-xs tracking-[0.2em] text-teal-700 uppercase mb-4">{t.practitionerLabel}</p>
             <ul className="space-y-2">
               {t.practitionerItems.map((item, i) => (
                 <li key={i} className="text-lg text-neutral-900 font-light">{item}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="md:border-l border-neutral-200 md:pl-12">
+            <p className="text-xs tracking-[0.2em] text-neutral-400 uppercase mb-4">{t.patientLabel}</p>
+            <ul className="space-y-2">
+              {t.patientItems.map((item, i) => (
+                <li key={i} className="text-lg text-neutral-700 font-light">{item}</li>
               ))}
             </ul>
           </div>
