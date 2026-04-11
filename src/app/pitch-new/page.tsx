@@ -42,7 +42,7 @@ const translations = {
       title1: 'Therapy happens in sessions.',
       title2: 'Change happens in between.',
       subtitle: 'The between-session care platform.',
-      stage: 'Pre-seed · Pre-revenue · 2026',
+      stage: '',
       cta: 'See what we built',
     },
     silence: {
