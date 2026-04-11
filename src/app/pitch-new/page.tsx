@@ -71,6 +71,22 @@ const translations = {
           source: 'PMC meta-analysis, 146 studies, 2022',
           url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/',
         },
+      ],
+    },
+    whyItMatters: {
+      label: 'WHY IT MATTERS',
+      headline1: 'This isn\'t just inefficient.',
+      headline2: 'It changes the depth of care.',
+      item1Label: 'TIME',
+      item1Body: '10–15 minutes per session rebuilding context.',
+      item2Label: 'SIGNALS',
+      item2Body: 'Patterns, improvements, relapses — invisible.',
+      item3Label: 'FEELING',
+      item3Body: '"I\'m not progressing. I\'m not understood."',
+      item4Label: 'BUSINESS',
+      item4Body: 'Disengagement. Dropout. Lower retention.',
+      closing: 'Lost time. Lost signals. Lost patients. And no one built anything to fix it.',
+      stats: [
         {
           value: '9%',
           label: 'receive adequate care for depression',
@@ -90,20 +106,6 @@ const translations = {
           url: 'https://growtherapy.com/blog/mental-health-statistics/',
         },
       ],
-    },
-    whyItMatters: {
-      label: 'WHY IT MATTERS',
-      headline1: 'This isn\'t just inefficient.',
-      headline2: 'It changes the depth of care.',
-      item1Label: 'TIME',
-      item1Body: '10–15 minutes per session rebuilding context.',
-      item2Label: 'SIGNALS',
-      item2Body: 'Patterns, improvements, relapses — invisible.',
-      item3Label: 'FEELING',
-      item3Body: '"I\'m not progressing. I\'m not understood."',
-      item4Label: 'BUSINESS',
-      item4Body: 'Disengagement. Dropout. Lower retention.',
-      closing: 'Lost time. Lost signals. Lost patients. And no one built anything to fix it.',
     },
     origin: {
       label: 'HOW WE GOT HERE',
@@ -350,6 +352,22 @@ const translations = {
           source: 'PMC méta-analyse, 146 études, 2022',
           url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/',
         },
+      ],
+    },
+    whyItMatters: {
+      label: 'POURQUOI ÇA COMPTE',
+      headline1: 'Ce n\'est pas juste inefficace.',
+      headline2: 'Ça change la profondeur des soins.',
+      item1Label: 'TEMPS',
+      item1Body: '10–15 minutes par séance à reconstruire le contexte.',
+      item2Label: 'SIGNAUX',
+      item2Body: 'Patterns, progrès, rechutes — invisibles.',
+      item3Label: 'RESSENTI',
+      item3Body: '« Je n\'avance pas. On ne me comprend pas. »',
+      item4Label: 'BUSINESS',
+      item4Body: 'Désengagement. Abandon. Rétention en baisse.',
+      closing: 'Temps perdu. Signaux perdus. Patients perdus. Et personne n\'a rien construit pour y remédier.',
+      stats: [
         {
           value: '9%',
           label: 'reçoivent des soins adéquats pour la dépression',
@@ -369,20 +387,6 @@ const translations = {
           url: 'https://growtherapy.com/blog/mental-health-statistics/',
         },
       ],
-    },
-    whyItMatters: {
-      label: 'POURQUOI ÇA COMPTE',
-      headline1: 'Ce n\'est pas juste inefficace.',
-      headline2: 'Ça change la profondeur des soins.',
-      item1Label: 'TEMPS',
-      item1Body: '10–15 minutes par séance à reconstruire le contexte.',
-      item2Label: 'SIGNAUX',
-      item2Body: 'Patterns, progrès, rechutes — invisibles.',
-      item3Label: 'RESSENTI',
-      item3Body: '« Je n\'avance pas. On ne me comprend pas. »',
-      item4Label: 'BUSINESS',
-      item4Body: 'Désengagement. Abandon. Rétention en baisse.',
-      closing: 'Rien ne soutient ce qui se passe entre les séances.',
     },
     origin: {
       label: 'COMMENT NOUS SOMMES ARRIVÉS ICI',
@@ -981,10 +985,35 @@ function WhyItMattersSlide({ t }: { t: typeof translations.en.whyItMatters }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 1 }}
-          className="text-lg text-neutral-500 italic font-light pt-8 border-t border-neutral-200 max-w-3xl"
+          className="text-lg text-neutral-500 italic font-light pt-6 border-t border-neutral-200 max-w-3xl mb-6"
         >
           {t.closing}
         </motion.p>
+
+        {/* Stats */}
+        {(t as any).stats && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 1.2 }}
+            className="flex flex-wrap gap-8"
+          >
+            {((t as any).stats as Array<{ value: string; label: string; source: string; url: string }>).map((stat, i) => (
+              <div key={i} className="flex items-baseline gap-2">
+                <span className="text-2xl font-light text-neutral-900">{stat.value}</span>
+                <span className="text-xs text-neutral-900">{stat.label}</span>
+                <a
+                  href={stat.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-neutral-400 hover:text-teal-700 underline decoration-dotted underline-offset-2 transition-colors"
+                >
+                  {stat.source} ↗
+                </a>
+              </div>
+            ))}
+          </motion.div>
+        )}
       </div>
     </div>
   )
