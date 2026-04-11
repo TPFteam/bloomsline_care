@@ -44,7 +44,7 @@ const translations = {
       changeTooltip: 'Mood shifts. Pattern breaks. Small wins. Hard days.',
       subtitle: 'The platform for care between sessions.',
       stage: '',
-      cta: 'See what we built',
+      cta: 'Here\'s the story',
     },
     silence: {
       label: 'THE PROBLEM',
@@ -323,7 +323,7 @@ const translations = {
       changeTooltip: 'Humeurs. Ruptures de schémas. Petites victoires. Jours difficiles.',
       subtitle: 'La plateforme pour le soin entre les séances.',
       stage: 'Pre-seed · Pré-revenu · 2026',
-      cta: 'Voir ce que nous avons construit',
+      cta: 'Voici l\'histoire',
     },
     silence: {
       label: 'LE PROBLÈME',
