@@ -91,16 +91,37 @@ export async function GET(request: NextRequest) {
 
     const tz = schedules[0].timezone || 'UTC';
 
-    // Calculate the practitioner's local day boundaries in UTC for conflict checks
+    // Calculate the UTC offset for the practitioner's timezone on this date.
+    // Uses Intl.DateTimeFormat to reliably get the offset — works on any server locale.
+    function getTimezoneOffsetMs(timezone: string, dateStr: string): number {
+      // Create a known UTC reference point at noon on the date
+      const utcMs = Date.UTC(
+        parseInt(dateStr.slice(0, 4)),
+        parseInt(dateStr.slice(5, 7)) - 1,
+        parseInt(dateStr.slice(8, 10)),
+        12, 0, 0
+      )
+      // Format that UTC moment in the target timezone to extract its local components
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false,
+      }).formatToParts(new Date(utcMs))
+      const get = (type: string) => parseInt(parts.find(p => p.type === type)?.value || '0')
+      const localMs = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') === 24 ? 0 : get('hour'), get('minute'), get('second'))
+      // Offset = UTC - local (positive means timezone is ahead of UTC)
+      return utcMs - localMs
+    }
+
+    const tzOffsetMs = getTimezoneOffsetMs(tz, date);
+
+    // Calculate the practitioner's local day boundaries in UTC
     // e.g., for Paris (UTC+2) on May 5: day starts May 4 22:00 UTC, ends May 5 22:00 UTC
-    const dayStartLocal = new Date(`${date}T00:00:00`);
-    const dayEndLocal = new Date(`${date}T23:59:59`);
-    const refDate = new Date(`${date}T12:00:00Z`);
-    const utcRef = refDate.toLocaleString('en-US', { timeZone: 'UTC' });
-    const tzRef = refDate.toLocaleString('en-US', { timeZone: tz });
-    const tzOffsetMs = new Date(utcRef).getTime() - new Date(tzRef).getTime();
-    const dayStartUtc = new Date(dayStartLocal.getTime() + tzOffsetMs).toISOString();
-    const dayEndUtc = new Date(dayEndLocal.getTime() + tzOffsetMs).toISOString();
+    const dayStartLocal = new Date(`${date}T00:00:00Z`);
+    const dayEndLocal = new Date(`${date}T23:59:59Z`);
+    const dayStartUtc = new Date(dayStartLocal.getTime() - tzOffsetMs).toISOString();
+    const dayEndUtc = new Date(dayEndLocal.getTime() - tzOffsetMs).toISOString();
 
     // Get existing bookings for conflict check (using timezone-aware day boundaries)
     const { data: bookings } = await supabase
@@ -141,11 +162,12 @@ export async function GET(request: NextRequest) {
     const stepMs = 30 * 60 * 1000;
 
     for (const schedule of schedules) {
-      // Convert practitioner local times to UTC using the same offset
-      const startLocal = new Date(`${date}T${schedule.start_time}`);
-      const endLocal = new Date(`${date}T${schedule.end_time}`);
-      const startUtc = new Date(startLocal.getTime() + tzOffsetMs);
-      const endUtc = new Date(endLocal.getTime() + tzOffsetMs);
+      // Convert practitioner local times to UTC
+      // schedule.start_time is like "09:00:00" in the practitioner's timezone
+      const startLocal = new Date(`${date}T${schedule.start_time}Z`);
+      const endLocal = new Date(`${date}T${schedule.end_time}Z`);
+      const startUtc = new Date(startLocal.getTime() - tzOffsetMs);
+      const endUtc = new Date(endLocal.getTime() - tzOffsetMs);
 
       for (let t = startUtc.getTime(); t + durationMs <= endUtc.getTime(); t += stepMs) {
         const slotStart = new Date(t);
