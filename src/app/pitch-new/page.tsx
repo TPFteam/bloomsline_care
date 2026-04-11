@@ -102,7 +102,7 @@ const translations = {
       item3Body: '"I\'m not progressing. I\'m not understood."',
       item4Label: 'BUSINESS',
       item4Body: 'Disengagement. Dropout. Lower retention.',
-      closing: 'Nothing supports what happens in between.',
+      closing: 'Lost time. Lost signals. Lost patients. And no one built anything to fix it.',
     },
     origin: {
       label: 'HOW WE GOT HERE',
