@@ -135,14 +135,16 @@ const translations = {
       label: 'THE BOUNDARY',
       hero1: 'There\'s a boundary in therapy.',
       hero2: 'We respect it.',
-      explanation: 'The therapeutic frame — the space between practitioner and patient — is what makes therapy work.',
+      explanation: 'The therapeutic frame — the professional structure of the relationship — is what makes therapy work.',
       howLabel: 'How we protect it:',
-      dont1: 'We don\'t message patients.',
-      dont2: 'We don\'t replace the practitioner.',
-      dont3: 'We don\'t gamify reflection.',
-      dont4: 'We add context, not interaction.',
-      closing1: 'Not forcing behavior.',
-      closing2: 'Capturing what already happens.',
+      items: [
+        { rule: 'No chat. No back-and-forth messaging.', detail: 'The practitioner sees context, not conversations.' },
+        { rule: 'We don\'t replace the practitioner.', detail: 'Bloom AI reflects patterns — never gives advice.' },
+        { rule: 'We don\'t gamify reflection.', detail: 'No streaks, no badges, no guilt.' },
+        { rule: 'We add context, not interaction.', detail: 'Data flows to the session — not messages between sessions.' },
+      ],
+      closing1: 'Not forcing new habits.',
+      closing2: 'Making what already happens visible.',
     },
     whyNow: {
       label: 'WHY NOW',
@@ -394,14 +396,16 @@ const translations = {
       label: 'LA LIMITE',
       hero1: 'Il y a une limite en thérapie.',
       hero2: 'Nous la respectons.',
-      explanation: 'Le cadre thérapeutique — l\'espace entre le praticien et le patient — est ce qui fait fonctionner la thérapie.',
+      explanation: 'Le cadre thérapeutique — la structure professionnelle de la relation — est ce qui fait fonctionner la thérapie.',
       howLabel: 'Comment nous la protégeons :',
-      dont1: 'Nous n\'envoyons pas de messages aux patients.',
-      dont2: 'Nous ne remplaçons pas le praticien.',
-      dont3: 'Nous ne gamifions pas la réflexion.',
-      dont4: 'Nous ajoutons du contexte, pas de l\'interaction.',
-      closing1: 'Pas de comportement forcé.',
-      closing2: 'On capture ce qui se passe déjà.',
+      items: [
+        { rule: 'Pas de chat. Pas de messagerie.', detail: 'Le praticien voit du contexte, pas des conversations.' },
+        { rule: 'Nous ne remplaçons pas le praticien.', detail: 'Bloom IA reflète les patterns — ne donne jamais de conseils.' },
+        { rule: 'Nous ne gamifions pas la réflexion.', detail: 'Pas de streaks, pas de badges, pas de culpabilité.' },
+        { rule: 'Nous ajoutons du contexte, pas de l\'interaction.', detail: 'Les données vont vers la séance — pas des messages entre les séances.' },
+      ],
+      closing1: 'Pas de nouvelles habitudes forcées.',
+      closing2: 'Rendre visible ce qui se passe déjà.',
     },
     whyNow: {
       label: 'POURQUOI MAINTENANT',
@@ -1172,12 +1176,14 @@ function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.8 }}
-          className="space-y-2 max-w-3xl mb-10"
+          className="space-y-4 max-w-3xl mb-10"
         >
-          <p className="text-base text-neutral-700 font-light">— {t.dont1}</p>
-          <p className="text-base text-neutral-700 font-light">— {t.dont2}</p>
-          <p className="text-base text-neutral-700 font-light">— {t.dont3}</p>
-          <p className="text-base text-neutral-900 font-light">— {t.dont4}</p>
+          {(t.items as Array<{ rule: string; detail: string }>).map((item, i) => (
+            <div key={i}>
+              <p className="text-base text-neutral-900 font-light">— {item.rule}</p>
+              <p className="text-xs text-neutral-500 font-light ml-4 mt-0.5">{item.detail}</p>
+            </div>
+          ))}
         </motion.div>
 
         {/* Closing philosophy */}
