@@ -49,7 +49,7 @@ const translations = {
     silence: {
       label: 'THE PROBLEM',
       headline: 'Between sessions, it all relies on memory',
-      headline2: '— and memory fades.',
+      headline2: 'and memory fades.',
       patientLabel: 'For patients',
       patientItems: [
         'Forget what they discussed',
