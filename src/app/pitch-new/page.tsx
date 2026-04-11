@@ -118,11 +118,18 @@ const translations = {
       hero2: 'A visibility layer.',
       description1: 'Everything a practice needs — notes, sessions, resources.',
       description2: 'Plus the layer no one else built: what happens between them.',
-      question: '"How was your week?"',
-      answer: 'With Bloomsline, you see it.',
-      outcome: 'Patients come back — one retained patient pays for Bloomsline for months.',
-      closing1: 'Not more work.',
-      closing2: 'Just what\'s already happening — made visible.',
+      practitionerTag: 'For practitioners',
+      practitionerItems: [
+        'Walk in prepared.',
+        'Context, not catch-up.',
+        'Patients who come back.',
+      ],
+      memberTag: 'For members',
+      memberItems: [
+        'Capture in 10 seconds.',
+        'A mirror for your patterns.',
+        'Visible progress, not performance.',
+      ],
     },
     boundary: {
       label: 'THE BOUNDARY',
@@ -370,11 +377,18 @@ const translations = {
       hero2: 'Une couche de visibilité.',
       description1: 'Tout ce dont un cabinet a besoin — notes, séances, ressources.',
       description2: 'Plus la couche que personne n\'a construite : ce qui se passe entre les séances.',
-      question: '« Comment s\'est passée ta semaine ? »',
-      answer: 'Avec Bloomsline, vous la voyez.',
-      outcome: 'Les patients reviennent — un patient retenu paie Bloomsline pendant des mois.',
-      closing1: 'Pas plus de travail.',
-      closing2: 'Juste ce qui se passe déjà — rendu visible.',
+      practitionerTag: 'Pour les praticiens',
+      practitionerItems: [
+        'Arriver préparé.',
+        'Du contexte, pas du rattrapage.',
+        'Des patients qui reviennent.',
+      ],
+      memberTag: 'Pour les membres',
+      memberItems: [
+        'Capturer en 10 secondes.',
+        'Un miroir de vos ressentis.',
+        'Progression visible, pas de performance.',
+      ],
     },
     boundary: {
       label: 'LA LIMITE',
@@ -1060,41 +1074,39 @@ function ProductSlide({ t }: { t: typeof translations.en.product }) {
           <p className="text-lg text-neutral-700 font-light leading-relaxed">{t.description2}</p>
         </motion.div>
 
-        {/* Q → A mini-demo */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.7 }}
-          className="mb-10 max-w-3xl"
-        >
-          <p className="text-2xl sm:text-3xl font-light italic text-neutral-400 leading-snug mb-1">
-            {t.question}
-          </p>
-          <p className="text-2xl sm:text-3xl font-light text-teal-700 leading-snug">
-            {t.answer}
-          </p>
-        </motion.div>
+        {/* Two columns: practitioners + members */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.7 }}
+          >
+            <p className="text-xs tracking-[0.2em] uppercase mb-3" style={{ color: '#D4856A' }}>
+              {t.practitionerTag}
+            </p>
+            <ul className="space-y-2">
+              {(t.practitionerItems as string[]).map((item, i) => (
+                <li key={i} className="text-base text-neutral-700 font-light">{item}</li>
+              ))}
+            </ul>
+          </motion.div>
 
-        {/* Single business outcome */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.9 }}
-          className="text-sm text-neutral-900 font-light max-w-3xl mb-10"
-        >
-          — {t.outcome}
-        </motion.p>
-
-        {/* Closing */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 1.05 }}
-          className="max-w-3xl"
-        >
-          <p className="text-lg text-neutral-400 font-light">{t.closing1}</p>
-          <p className="text-lg text-neutral-900 font-light">{t.closing2}</p>
-        </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.8 }}
+            className="md:border-l border-neutral-200 md:pl-12"
+          >
+            <p className="text-xs tracking-[0.2em] uppercase mb-3 text-teal-700">
+              {t.memberTag}
+            </p>
+            <ul className="space-y-2">
+              {(t.memberItems as string[]).map((item, i) => (
+                <li key={i} className="text-base text-neutral-700 font-light">{item}</li>
+              ))}
+            </ul>
+          </motion.div>
+        </div>
       </div>
     </div>
   )
