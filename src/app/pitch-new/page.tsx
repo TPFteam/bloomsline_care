@@ -40,7 +40,8 @@ const translations = {
     hero: {
       tag: 'Bloomsline',
       title1: 'Therapy happens in sessions.',
-      title2: 'Change happens in between.',
+      title2: 'Change happens every day.',
+      changeTooltip: 'Mood shifts. Pattern breaks. Small wins. Hard days.',
       subtitle: 'The between-session care platform.',
       stage: '',
       cta: 'See what we built',
@@ -318,7 +319,8 @@ const translations = {
     hero: {
       tag: 'Bloomsline',
       title1: 'La thérapie a lieu en séance.',
-      title2: 'Le changement a lieu entre elles.',
+      title2: 'Le changement se passe chaque jour.',
+      changeTooltip: 'Humeurs. Ruptures de schémas. Petites victoires. Jours difficiles.',
       subtitle: 'La plateforme de soins entre les séances.',
       stage: 'Pre-seed · Pré-revenu · 2026',
       cta: 'Voir ce que nous avons construit',
@@ -787,7 +789,15 @@ function HeroSlide({ onNext, t }: { onNext: () => void; t: typeof translations.e
           transition={{ duration: 0.7, delay: 0.5 }}
           className="text-4xl sm:text-5xl lg:text-[4.5rem] font-light leading-[1.1] tracking-tight mb-16"
         >
-          <span className="text-teal-700">{t.title2}</span>
+          <span className="text-teal-700">
+            <span className="relative group cursor-default">
+              <span className="underline decoration-dotted decoration-teal-400 underline-offset-4">{t.title2.split(' ')[0]}</span>
+              <span className="absolute left-0 top-full mt-2 px-3 py-1.5 bg-neutral-900 text-white text-sm font-normal rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                {t.changeTooltip}
+              </span>
+            </span>
+            {' '}{t.title2.split(' ').slice(1).join(' ')}
+          </span>
         </motion.h1>
 
         <motion.p
