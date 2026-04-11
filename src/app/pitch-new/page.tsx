@@ -1821,13 +1821,13 @@ function CloseSlide({ t }: { t: typeof translations.en.close }) {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <Button className="px-7 py-6 bg-neutral-900 text-white hover:bg-neutral-800 rounded-full text-base font-medium">
+            <Button className="px-10 py-5 bg-neutral-900 text-white hover:bg-neutral-800 rounded-full text-base font-medium">
               <Calendar className="w-4 h-4 mr-2" />
               {t.bookCall}
             </Button>
           </a>
           <a href={`mailto:${t.emailUs}`}>
-            <Button variant="outline" className="px-7 py-6 border-neutral-300 text-neutral-900 hover:bg-neutral-50 rounded-full text-base font-medium">
+            <Button variant="outline" className="px-10 py-5 border-neutral-300 text-neutral-900 hover:bg-neutral-50 rounded-full text-base font-medium">
               <Mail className="w-4 h-4 mr-2" />
               {t.emailUs}
             </Button>
