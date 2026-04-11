@@ -48,8 +48,8 @@ const translations = {
     },
     silence: {
       label: 'THE PROBLEM',
-      headline: 'Between sessions, it all relies on memory',
-      headline2: 'and memory fades.',
+      headline: 'Between sessions, it all relies on memory.',
+      headline2: 'And memory fades.',
       patientLabel: 'For patients',
       patientItems: [
         'Forget what they discussed',
@@ -327,8 +327,8 @@ const translations = {
     },
     silence: {
       label: 'LE PROBLÈME',
-      headline: 'Entre les séances, tout repose sur la mémoire',
-      headline2: '— et la mémoire s\'efface.',
+      headline: 'Entre les séances, tout repose sur la mémoire.',
+      headline2: 'Et la mémoire s\'efface.',
       patientLabel: 'Pour les patients',
       patientItems: [
         'Oublient ce qu\'ils ont abordé',
