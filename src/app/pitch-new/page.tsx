@@ -595,8 +595,8 @@ export default function PitchNewPage() {
     { id: 'product', title: t.slides.product },
     { id: 'boundary', title: t.slides.boundary },
     { id: 'whyNow', title: t.slides.whyNow },
-    { id: 'model', title: t.slides.model },
     { id: 'real', title: t.slides.real },
+    { id: 'model', title: t.slides.model },
     { id: 'team', title: t.slides.team },
     { id: 'vision', title: t.slides.vision },
     { id: 'ask', title: t.slides.ask },
@@ -734,8 +734,8 @@ export default function PitchNewPage() {
           {currentSlide === 4 && <ProductSlide t={t.product} />}
           {currentSlide === 5 && <BoundarySlide t={t.boundary} />}
           {currentSlide === 6 && <WhyNowSlide t={t.whyNow} />}
-          {currentSlide === 7 && <ModelSlide t={t.model} />}
-          {currentSlide === 8 && <RealSlide t={t.real} />}
+          {currentSlide === 7 && <RealSlide t={t.real} />}
+          {currentSlide === 8 && <ModelSlide t={t.model} />}
           {currentSlide === 9 && <TeamSlide t={t.team} />}
           {currentSlide === 10 && <VisionSlide t={t.vision} />}
           {currentSlide === 11 && <AskSlide t={t.ask} />}
