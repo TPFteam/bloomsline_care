@@ -126,7 +126,7 @@ const translations = {
       ],
       memberTag: 'For members',
       memberItems: [
-        'Capture in 10 seconds.',
+        'Capture thoughts in 10 seconds.',
         'A mirror for your patterns.',
         'Visible progress, not performance.',
       ],
@@ -385,7 +385,7 @@ const translations = {
       ],
       memberTag: 'Pour les membres',
       memberItems: [
-        'Capturer en 10 secondes.',
+        'Capturer ses pensées en 10 secondes.',
         'Un miroir de vos ressentis.',
         'Progression visible, pas de performance.',
       ],
