@@ -853,7 +853,7 @@ function SilenceSlide({ t }: { t: typeof translations.en.silence }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-2"
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-2"
         >
           {t.headline}
         </motion.h2>
@@ -862,7 +862,7 @@ function SilenceSlide({ t }: { t: typeof translations.en.silence }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.35 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-400 leading-[1.1] tracking-tight mb-16"
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-400 leading-[1.1] tracking-tight mb-16"
         >
           {t.headline2}
         </motion.h2>
