@@ -2277,9 +2277,14 @@ export default function MembersPage() {
                   {/* Group selector */}
                   {memberGroups.length > 0 && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      <label className="block text-sm font-medium text-gray-700 mb-0.5">
                         {locale === 'fr' ? 'Ajouter à un groupe' : locale === 'es' ? 'Añadir a un grupo' : 'Add to a Group'}
                       </label>
+                      <p className="text-[11px] text-gray-400 mb-1.5">
+                        {locale === 'fr'
+                          ? 'Les groupes sont privés — votre patient ne le saura pas.'
+                          : 'Groups are private — your patient won\'t know.'}
+                      </p>
                       <div className="flex flex-wrap gap-1.5">
                         {memberGroups.map(group => {
                           const colors = groupColorMap[group.color] || groupColorMap.blue
