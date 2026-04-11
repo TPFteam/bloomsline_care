@@ -226,7 +226,7 @@ const translations = {
       adityaName: 'Aditya Channe',
       adityaRole: 'Product & Technology',
       adityaBio: 'Built every screen you see. Leads the product — and makes sure it stays close to the problem.',
-      quote: 'This problem is too close to outsource. So we built it ourselves — two people, in-house, near-zero burn.',
+      quote: 'Two people. Everything in-house. Because this had to be built by people who feel the problem.',
       footnote: 'Actively looking for a clinical advisor. The clinical voice is in the product — not yet on the cap table.',
     },
     vision: {
