@@ -101,7 +101,7 @@ const translations = {
     origin: {
       label: 'HOW WE GOT HERE',
       headline: 'We didn\'t start here.',
-      para1: 'In 2023, Sarah and I built Doctalink — a way to find a therapist based on values, not degrees. It failed.',
+      para1: 'In 2024, Sarah and I built Doctalink — a way to find a therapist based on values, not degrees. It failed.',
       para2: 'But in the conversations that followed, the same thing kept coming up: finding a therapist wasn\'t the problem.',
       para3: 'The silence after was.',
       para4: 'Bloomsline is what we built with that insight.',
