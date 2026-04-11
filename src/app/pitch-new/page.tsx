@@ -778,7 +778,7 @@ function HeroSlide({ onNext, t }: { onNext: () => void; t: typeof translations.e
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3 }}
-          className="text-4xl sm:text-5xl lg:text-[4.5rem] font-light text-neutral-900 leading-[1.1] tracking-tight mb-4"
+          className="text-3xl sm:text-4xl lg:text-[3.5rem] font-light text-neutral-900 leading-[1.1] tracking-tight mb-4"
         >
           {t.title1}
         </motion.h1>
@@ -787,23 +787,9 @@ function HeroSlide({ onNext, t }: { onNext: () => void; t: typeof translations.e
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.5 }}
-          className="text-4xl sm:text-5xl lg:text-[4.5rem] font-light leading-[1.1] tracking-tight mb-16"
+          className="text-3xl sm:text-4xl lg:text-[3.5rem] font-light leading-[1.1] tracking-tight mb-16"
         >
-          <span className="text-teal-700">
-            {t.title2.split(' ').map((word, i) => {
-              if (word.toLowerCase() === 'change' || word.toLowerCase() === 'changement') {
-                return (
-                  <span key={i} className="relative group/change cursor-default inline-block">
-                    <span className="border-b-2 border-teal-400/50 pb-1">{word}</span>
-                    <span className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-full mt-1 px-4 py-2 bg-neutral-900 text-white text-sm font-normal rounded-xl opacity-0 group-hover/change:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap" style={{ zIndex: 9999 }}>
-                      {t.changeTooltip}
-                    </span>
-                  </span>
-                )
-              }
-              return <span key={i}>{word}</span>
-            }).reduce((acc: React.ReactNode[], el, i) => i === 0 ? [el] : [...acc, ' ', el], [])}
-          </span>
+          <span className="text-teal-700">{t.title2}</span>
         </motion.h1>
 
         <motion.p
