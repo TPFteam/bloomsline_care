@@ -150,11 +150,22 @@ const translations = {
       label: 'WHY NOW',
       headline: 'Three things just became true.',
       item1Title: 'B2C therapy collapsed.',
-      item1Body: 'BetterHelp is down. Woebot shut down. The market learned you can\'t cut out the therapist.',
+      item1Body: 'BetterHelp revenue down 9%, $1B loss in 2024. Woebot shut down June 2025. The market learned you can\'t cut out the therapist.',
+      item1Sources: [
+        { label: 'Healthcare Dive, 2024', url: 'https://www.healthcaredive.com/news/teladoc-1-billion-net-loss-2024-betterhelp-challenges/741134/' },
+        { label: 'STAT News, 2025', url: 'https://www.statnews.com/2025/07/02/woebot-therapy-chatbot-shuts-down-founder-says-ai-moving-faster-than-regulators/' },
+      ],
       item2Title: 'AI is clinically acceptable.',
       item2Body: '49% of people with mental health issues already use AI tools. The resistance is gone.',
+      item2Sources: [
+        { label: 'Sentio Research, 2025', url: 'https://sentio.org/ai-research/ai-survey' },
+      ],
       item3Title: 'Europe has a regulatory moat.',
       item3Body: 'EU AI Act mandates healthcare AI compliance by August 2026. Building compliant from day 1 is a 12–24 month lead over US competitors.',
+      item3Sources: [
+        { label: 'EU Digital Strategy', url: 'https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai' },
+        { label: 'DataGuard Timeline', url: 'https://www.dataguard.com/eu-ai-act/timeline' },
+      ],
       closing: 'Zero AI-native clinical SaaS in EU. The wedge is open.',
     },
     model: {
@@ -411,11 +422,22 @@ const translations = {
       label: 'POURQUOI MAINTENANT',
       headline: 'Trois choses viennent de devenir vraies.',
       item1Title: 'La thérapie B2C s\'est effondrée.',
-      item1Body: 'BetterHelp est en baisse. Woebot a fermé. Le marché a appris qu\'on ne peut pas exclure le thérapeute.',
+      item1Body: 'BetterHelp : revenus en baisse de 9%, perte de 1 Md$ en 2024. Woebot a fermé en juin 2025. Le marché a appris qu\'on ne peut pas exclure le thérapeute.',
+      item1Sources: [
+        { label: 'Healthcare Dive, 2024', url: 'https://www.healthcaredive.com/news/teladoc-1-billion-net-loss-2024-betterhelp-challenges/741134/' },
+        { label: 'STAT News, 2025', url: 'https://www.statnews.com/2025/07/02/woebot-therapy-chatbot-shuts-down-founder-says-ai-moving-faster-than-regulators/' },
+      ],
       item2Title: 'L\'IA est cliniquement acceptable.',
       item2Body: '49% des personnes ayant des problèmes de santé mentale utilisent déjà l\'IA. La résistance a disparu.',
+      item2Sources: [
+        { label: 'Sentio Research, 2025', url: 'https://sentio.org/ai-research/ai-survey' },
+      ],
       item3Title: 'L\'Europe a un fossé réglementaire.',
       item3Body: 'L\'AI Act européen impose la conformité IA santé d\'ici août 2026. Construire conforme dès le jour 1, c\'est 12–24 mois d\'avance sur les concurrents US.',
+      item3Sources: [
+        { label: 'EU Digital Strategy', url: 'https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai' },
+        { label: 'DataGuard Timeline', url: 'https://www.dataguard.com/eu-ai-act/timeline' },
+      ],
       closing: 'Zéro SaaS clinique AI-native en Europe. La fenêtre est ouverte.',
     },
     model: {
@@ -1226,9 +1248,9 @@ function WhyNowSlide({ t }: { t: typeof translations.en.whyNow }) {
 
         <div className="space-y-10 mb-16 max-w-4xl">
           {[
-            { title: t.item1Title, body: t.item1Body, num: '01' },
-            { title: t.item2Title, body: t.item2Body, num: '02' },
-            { title: t.item3Title, body: t.item3Body, num: '03' },
+            { title: t.item1Title, body: t.item1Body, sources: t.item1Sources as Array<{ label: string; url: string }>, num: '01' },
+            { title: t.item2Title, body: t.item2Body, sources: t.item2Sources as Array<{ label: string; url: string }>, num: '02' },
+            { title: t.item3Title, body: t.item3Body, sources: t.item3Sources as Array<{ label: string; url: string }>, num: '03' },
           ].map((item, i) => (
             <motion.div
               key={i}
@@ -1241,6 +1263,21 @@ function WhyNowSlide({ t }: { t: typeof translations.en.whyNow }) {
               <div className="flex-1">
                 <h3 className="text-2xl font-medium text-white mb-2">{item.title}</h3>
                 <p className="text-lg text-neutral-400 font-light leading-relaxed">{item.body}</p>
+                {item.sources && (
+                  <div className="flex flex-wrap gap-3 mt-2">
+                    {item.sources.map((src, j) => (
+                      <a
+                        key={j}
+                        href={src.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-neutral-600 hover:text-teal-400 underline decoration-dotted underline-offset-2 transition-colors"
+                      >
+                        {src.label} ↗
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}
