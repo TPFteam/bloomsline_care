@@ -65,10 +65,10 @@ const translations = {
       quoteAttribution: 'Practitioner, Paris',
       stats: [
         {
-          value: '~50%',
-          label: 'of patients drop out by session 3',
-          source: 'Barrett et al., Psychotherapy 2008',
-          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/',
+          value: '~35%',
+          label: 'of patients drop out of therapy',
+          source: 'PMC meta-analysis, 146 studies, 2022',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/',
         },
         {
           value: '35%',
@@ -343,10 +343,10 @@ const translations = {
       quoteAttribution: 'Praticienne, Paris',
       stats: [
         {
-          value: '~50%',
-          label: 'des patients abandonnent avant la 3ᵉ séance',
-          source: 'Barrett et al., Psychotherapy 2008',
-          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2762228/',
+          value: '~35%',
+          label: 'des patients abandonnent la thérapie',
+          source: 'PMC méta-analyse, 146 études, 2022',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/',
         },
         {
           value: '35%',
