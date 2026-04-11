@@ -91,7 +91,7 @@ const translations = {
       item3Body: '"I\'m not progressing. I\'m not understood."',
       item4Label: 'BUSINESS',
       item4Body: 'Disengagement. Dropout. Lower retention.',
-      closing: 'Lost time. Lost signals. Lost patients. And no one built anything to fix it.',
+      closing: 'Lost time. Lost signals. Lost patients.',
       stats: [
         {
           value: '35%',
@@ -372,7 +372,7 @@ const translations = {
       item3Body: '« Je n\'avance pas. On ne me comprend pas. »',
       item4Label: 'BUSINESS',
       item4Body: 'Désengagement. Abandon. Rétention en baisse.',
-      closing: 'Temps perdu. Signaux perdus. Patients perdus. Et personne n\'a rien construit pour y remédier.',
+      closing: 'Temps perdu. Signaux perdus. Patients perdus.',
       stats: [
         {
           value: '35%',
