@@ -58,8 +58,8 @@ const translations = {
       ],
       practitionerLabel: 'For practitioners',
       practitionerItems: [
-        'See only what makes it back to the session',
-        'Rebuild context from scratch, every time',
+        'Know only what patients remember to share',
+        'Start every session from scratch',
         'Half the session is catch-up',
       ],
       quote: '"My client shared something painful on Tuesday. By our next session, I\'d lost the thread. I spent 15 minutes catching up instead of doing the work."',
@@ -337,8 +337,8 @@ const translations = {
       ],
       practitionerLabel: 'Pour les praticiens',
       practitionerItems: [
-        'Ne voient que ce que le patient partage',
-        'Reconstruction du contexte à chaque fois',
+        'Ne savent que ce que le patient se souvient de partager',
+        'Chaque séance repart de zéro',
         'La moitié de la séance, du rattrapage',
       ],
       quote: '"Mon patient m\'a partagé quelque chose de douloureux mardi. À notre prochaine séance, j\'avais perdu le fil. J\'ai passé 15 minutes à rattraper au lieu de faire le travail."',
