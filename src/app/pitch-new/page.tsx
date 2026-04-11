@@ -40,7 +40,7 @@ const translations = {
     hero: {
       tag: 'Bloomsline',
       title1: 'Therapy happens in sessions.',
-      title2: 'Real change happens between sessions.',
+      title2: 'Change happens between sessions.',
       changeTooltip: 'Mood shifts. Pattern breaks. Small wins. Hard days.',
       subtitle: 'The between-session care platform.',
       stage: '',
@@ -319,7 +319,7 @@ const translations = {
     hero: {
       tag: 'Bloomsline',
       title1: 'La thérapie a lieu en séance.',
-      title2: 'Le vrai changement se passe entre les séances.',
+      title2: 'Le changement se passe entre les séances.',
       changeTooltip: 'Humeurs. Ruptures de schémas. Petites victoires. Jours difficiles.',
       subtitle: 'La plateforme de soins entre les séances.',
       stage: 'Pre-seed · Pré-revenu · 2026',
