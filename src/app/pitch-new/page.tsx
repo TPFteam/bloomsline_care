@@ -803,7 +803,7 @@ function HeroSlide({ onNext, t }: { onNext: () => void; t: typeof translations.e
         >
           <Button
             onClick={onNext}
-            className="px-8 py-6 bg-neutral-900 text-white hover:bg-neutral-800 rounded-full text-base font-medium"
+            className="px-12 py-5 bg-neutral-900 text-white hover:bg-neutral-800 rounded-full text-base font-medium"
           >
             {t.cta}
             <ArrowRight className="w-4 h-4 ml-2" />
