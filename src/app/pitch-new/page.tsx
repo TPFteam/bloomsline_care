@@ -896,7 +896,7 @@ function SilenceSlide({ t }: { t: typeof translations.en.silence }) {
           {t.stats.map((stat, i) => (
             <div key={i} className="flex items-baseline gap-2">
               <span className="text-2xl font-light text-neutral-900">{stat.value}</span>
-              <span className="text-xs text-neutral-500">{stat.label}</span>
+              <span className="text-xs text-neutral-900">{stat.label}</span>
               <a
                 href={stat.url}
                 target="_blank"
