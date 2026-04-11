@@ -1176,13 +1176,10 @@ function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.8 }}
-          className="space-y-4 max-w-3xl mb-10"
+          className="space-y-2 max-w-3xl mb-10"
         >
           {(t.items as Array<{ rule: string; detail: string }>).map((item, i) => (
-            <div key={i}>
-              <p className="text-base text-neutral-900 font-light">— {item.rule}</p>
-              <p className="text-xs text-neutral-500 font-light ml-4 mt-0.5">{item.detail}</p>
-            </div>
+            <p key={i} className="text-base text-neutral-700 font-light">— {item.rule}</p>
           ))}
         </motion.div>
 
