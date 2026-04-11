@@ -28,6 +28,7 @@ import {
   Download,
   UserPlus,
   Send,
+  Lock,
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
@@ -1309,6 +1310,13 @@ export default function MembersPage() {
           {/* Groups View */}
           {showGroupsView ? (
             <div>
+              {/* Info note: groups are private */}
+              <p className="text-xs text-gray-400 mb-4 flex items-center gap-1.5">
+                <Lock className="w-3 h-3 flex-shrink-0" />
+                {locale === 'fr'
+                  ? 'Les groupes sont privés — uniquement visibles par vous pour organiser vos patients. Vos patients ne savent pas qu\'ils font partie d\'un groupe.'
+                  : 'Groups are private — only visible to you for organizing your patients. Your patients don\'t know they\'re part of a group.'}
+              </p>
               {memberGroups.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
