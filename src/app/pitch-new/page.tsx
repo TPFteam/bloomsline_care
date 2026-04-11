@@ -790,9 +790,9 @@ function HeroSlide({ onNext, t }: { onNext: () => void; t: typeof translations.e
           className="text-4xl sm:text-5xl lg:text-[4.5rem] font-light leading-[1.1] tracking-tight mb-16"
         >
           <span className="text-teal-700">
-            <span className="relative group cursor-default">
-              <span className="underline decoration-dotted decoration-teal-400 underline-offset-4">{t.title2.split(' ')[0]}</span>
-              <span className="absolute left-0 top-full mt-2 px-3 py-1.5 bg-neutral-900 text-white text-sm font-normal rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+            <span className="relative group/change cursor-default inline-block">
+              <span className="border-b-2 border-teal-400/50 pb-1">{t.title2.split(' ')[0]}</span>
+              <span className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-full mt-1 px-4 py-2 bg-neutral-900 text-white text-sm font-normal rounded-xl opacity-0 group-hover/change:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap" style={{ zIndex: 9999 }}>
                 {t.changeTooltip}
               </span>
             </span>
