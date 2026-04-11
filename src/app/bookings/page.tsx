@@ -1392,10 +1392,11 @@ export default function BookingsPage() {
                         className="w-full px-3 py-2.5 border border-gray-200 rounded-xl bg-white text-sm"
                       >
                         <option value={0}>{locale === 'fr' ? 'Aucun' : 'None'}</option>
+                        <option value={5}>5 min</option>
+                        <option value={10}>10 min</option>
+                        <option value={15}>15 min</option>
+                        <option value={20}>20 min</option>
                         <option value={30}>30 min</option>
-                        <option value={60}>1h</option>
-                        <option value={90}>1h30</option>
-                        <option value={120}>2h</option>
                       </select>
                     </div>
                     <div>
@@ -1413,10 +1414,11 @@ export default function BookingsPage() {
                         className="w-full px-3 py-2.5 border border-gray-200 rounded-xl bg-white text-sm"
                       >
                         <option value={0}>{locale === 'fr' ? 'Aucun' : 'None'}</option>
+                        <option value={5}>5 min</option>
+                        <option value={10}>10 min</option>
+                        <option value={15}>15 min</option>
+                        <option value={20}>20 min</option>
                         <option value={30}>30 min</option>
-                        <option value={60}>1h</option>
-                        <option value={90}>1h30</option>
-                        <option value={120}>2h</option>
                       </select>
                     </div>
                   </div>
