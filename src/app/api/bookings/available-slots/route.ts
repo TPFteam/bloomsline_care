@@ -89,13 +89,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ slots: [], practitionerTimezone: schedules[0].timezone || 'UTC' });
     }
 
-    // Get existing bookings for conflict check
+    const tz = schedules[0].timezone || 'UTC';
+
+    // Calculate the practitioner's local day boundaries in UTC for conflict checks
+    // e.g., for Paris (UTC+2) on May 5: day starts May 4 22:00 UTC, ends May 5 22:00 UTC
+    const dayStartLocal = new Date(`${date}T00:00:00`);
+    const dayEndLocal = new Date(`${date}T23:59:59`);
+    const refDate = new Date(`${date}T12:00:00Z`);
+    const utcRef = refDate.toLocaleString('en-US', { timeZone: 'UTC' });
+    const tzRef = refDate.toLocaleString('en-US', { timeZone: tz });
+    const tzOffsetMs = new Date(utcRef).getTime() - new Date(tzRef).getTime();
+    const dayStartUtc = new Date(dayStartLocal.getTime() + tzOffsetMs).toISOString();
+    const dayEndUtc = new Date(dayEndLocal.getTime() + tzOffsetMs).toISOString();
+
+    // Get existing bookings for conflict check (using timezone-aware day boundaries)
     const { data: bookings } = await supabase
       .from('bookings')
       .select('start_time, end_time')
       .eq('practitioner_id', practitionerId)
-      .gte('start_time', `${date}T00:00:00`)
-      .lte('start_time', `${date}T23:59:59`)
+      .gte('start_time', dayStartUtc)
+      .lte('start_time', dayEndUtc)
+      .neq('status', 'cancelled');
+
+    // Also check sessions table for conflicts (sessions without bookings)
+    const { data: sessionConflicts } = await supabase
+      .from('sessions')
+      .select('scheduled_at, duration_minutes')
+      .eq('practitioner_id', practitionerId)
+      .gte('scheduled_at', dayStartUtc)
+      .lte('scheduled_at', dayEndUtc)
       .neq('status', 'cancelled');
 
     const { data: bufferSettings } = await supabase
@@ -107,38 +129,33 @@ export async function GET(request: NextRequest) {
     const bufBefore = (bufferSettings?.buffer_before || 0) * 60 * 1000;
     const bufAfter = (bufferSettings?.buffer_after || 0) * 60 * 1000;
 
+    // Merge bookings + sessions into one conflict list
+    const allConflicts = [
+      ...(bookings || []).map(b => ({ start: new Date(b.start_time).getTime(), end: new Date(b.end_time).getTime() })),
+      ...(sessionConflicts || []).map(s => ({ start: new Date(s.scheduled_at).getTime(), end: new Date(s.scheduled_at).getTime() + s.duration_minutes * 60 * 1000 })),
+    ];
+
     // Generate slots from each schedule window
     const generatedSlots: TimeSlot[] = [];
-    const tz = schedules[0].timezone || 'UTC';
     const durationMs = duration * 60 * 1000;
     const stepMs = 30 * 60 * 1000;
 
     for (const schedule of schedules) {
-      // schedule.start_time / end_time are like "09:00:00"
-      // Create Date objects treating these as local times in the practitioner's timezone
-      // by using toLocaleString to get the UTC equivalent
+      // Convert practitioner local times to UTC using the same offset
       const startLocal = new Date(`${date}T${schedule.start_time}`);
       const endLocal = new Date(`${date}T${schedule.end_time}`);
-
-      // Get UTC offset for practitioner's timezone on this date
-      const refDate = new Date(`${date}T12:00:00Z`);
-      const utcStr = refDate.toLocaleString('en-US', { timeZone: 'UTC' });
-      const tzStr = refDate.toLocaleString('en-US', { timeZone: tz });
-      const offsetMs = new Date(utcStr).getTime() - new Date(tzStr).getTime();
-
-      // Convert practitioner local times to UTC
-      const startUtc = new Date(startLocal.getTime() + offsetMs);
-      const endUtc = new Date(endLocal.getTime() + offsetMs);
+      const startUtc = new Date(startLocal.getTime() + tzOffsetMs);
+      const endUtc = new Date(endLocal.getTime() + tzOffsetMs);
 
       for (let t = startUtc.getTime(); t + durationMs <= endUtc.getTime(); t += stepMs) {
         const slotStart = new Date(t);
         const slotEnd = new Date(t + durationMs);
 
-        // Check for conflicts with existing bookings
-        const hasConflict = (bookings || []).some((b) => {
-          const bStart = new Date(b.start_time).getTime() - bufBefore;
-          const bEnd = new Date(b.end_time).getTime() + bufAfter;
-          return slotStart.getTime() < bEnd && slotEnd.getTime() > bStart;
+        // Check for conflicts with existing bookings + sessions
+        const hasConflict = allConflicts.some((c) => {
+          const cStart = c.start - bufBefore;
+          const cEnd = c.end + bufAfter;
+          return slotStart.getTime() < cEnd && slotEnd.getTime() > cStart;
         });
 
         if (!hasConflict) {
