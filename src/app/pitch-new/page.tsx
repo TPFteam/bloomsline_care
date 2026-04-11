@@ -71,16 +71,16 @@ const translations = {
           url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/',
         },
         {
-          value: '35%',
-          label: 'of clinician time goes to documentation',
-          source: 'AHRQ Technical Brief, 2024',
-          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/',
-        },
-        {
           value: '9%',
           label: 'receive adequate care for depression',
           source: 'WHO 2025',
           url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
+        },
+        {
+          value: '35%',
+          label: 'of clinician time goes to documentation',
+          source: 'AHRQ Technical Brief, 2024',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/',
         },
         {
           value: '42%',
@@ -349,16 +349,16 @@ const translations = {
           url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/',
         },
         {
-          value: '35%',
-          label: 'du temps clinicien consacré à la documentation',
-          source: 'AHRQ Technical Brief, 2024',
-          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/',
-        },
-        {
           value: '9%',
           label: 'reçoivent des soins adéquats pour la dépression',
           source: 'OMS 2025',
           url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
+        },
+        {
+          value: '35%',
+          label: 'du temps clinicien consacré à la documentation',
+          source: 'AHRQ Technical Brief, 2024',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/',
         },
         {
           value: '42%',
