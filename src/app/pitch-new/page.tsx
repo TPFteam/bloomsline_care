@@ -106,12 +106,13 @@ const translations = {
       para3: 'The silence after was.',
       para4: 'Bloomsline is what we built with that insight.',
       quote: 'We didn\'t find a problem and build a product. We earned the insight through a product that failed.',
-      timeline1: '2023',
-      timeline1Label: 'Doctalink',
-      timeline2: '2024-25',
-      timeline2Label: 'Listening.',
-      timeline3: '2026',
-      timeline3Label: 'Bloomsline — live',
+      timeline: [
+        { period: 'Q4 2023', label: 'Doctalink', sub: 'Built & tested' },
+        { period: 'Q2 2024', label: 'Pivot', sub: 'Found the real problem' },
+        { period: '2024-25', label: 'Discovery', sub: 'Listening & exploring' },
+        { period: 'Q4 2025', label: 'Building', sub: 'Started building Bloomsline' },
+        { period: 'Jan 2026', label: 'Live', sub: 'Bloomsline in production', accent: true },
+      ],
     },
     product: {
       label: 'WHAT WE BUILT',
@@ -359,12 +360,13 @@ const translations = {
       para3: 'Le silence après, l\'était.',
       para4: 'Bloomsline est ce que nous avons construit avec cette insight.',
       quote: 'Nous n\'avons pas trouvé un problème puis construit un produit. Nous avons gagné l\'insight à travers un produit qui a échoué.',
-      timeline1: '2023',
-      timeline1Label: 'Doctalink',
-      timeline2: '2024-25',
-      timeline2Label: 'Écoute.',
-      timeline3: '2026',
-      timeline3Label: 'Bloomsline — en production',
+      timeline: [
+        { period: 'Q4 2023', label: 'Doctalink', sub: 'Construit & testé' },
+        { period: 'Q2 2024', label: 'Pivot', sub: 'Le vrai problème trouvé' },
+        { period: '2024-25', label: 'Découverte', sub: 'Écoute & exploration' },
+        { period: 'Q4 2025', label: 'Construction', sub: 'Début de Bloomsline' },
+        { period: 'Jan 2026', label: 'Live', sub: 'Bloomsline en production', accent: true },
+      ],
     },
     product: {
       label: 'CE QUE NOUS AVONS CONSTRUIT',
@@ -996,21 +998,22 @@ function OriginSlide({ t }: { t: typeof translations.en.origin }) {
           transition={{ duration: 0.5, delay: 0.9 }}
           className="pt-8 border-t border-neutral-200"
         >
-          <div className="flex items-start justify-between max-w-3xl">
-            <div>
-              <p className="text-sm font-medium text-neutral-900">{t.timeline1}</p>
-              <p className="text-xs text-neutral-500 mt-1">{t.timeline1Label}</p>
-            </div>
-            <div className="flex-1 mx-6 mt-2 border-t border-dashed border-neutral-300" />
-            <div>
-              <p className="text-sm font-medium text-neutral-900">{t.timeline2}</p>
-              <p className="text-xs text-neutral-500 mt-1">{t.timeline2Label}</p>
-            </div>
-            <div className="flex-1 mx-6 mt-2 border-t border-dashed border-neutral-300" />
-            <div>
-              <p className="text-sm font-medium text-teal-700">{t.timeline3}</p>
-              <p className="text-xs text-teal-600 mt-1">{t.timeline3Label}</p>
-            </div>
+          <div className="flex items-start max-w-4xl">
+            {(t.timeline as Array<{ period: string; label: string; sub: string; accent?: boolean }>).map((item, i, arr) => (
+              <div key={i} className="flex items-start flex-1">
+                <div className="flex flex-col items-center">
+                  <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${item.accent ? 'bg-teal-600' : 'bg-neutral-300'}`} />
+                  <div className="mt-3">
+                    <p className={`text-xs font-medium ${item.accent ? 'text-teal-700' : 'text-neutral-900'}`}>{item.period}</p>
+                    <p className={`text-sm font-medium mt-0.5 ${item.accent ? 'text-teal-700' : 'text-neutral-800'}`}>{item.label}</p>
+                    <p className="text-[11px] text-neutral-500 mt-0.5">{item.sub}</p>
+                  </div>
+                </div>
+                {i < arr.length - 1 && (
+                  <div className="flex-1 mt-1 mx-2 border-t border-dashed border-neutral-300" />
+                )}
+              </div>
+            ))}
           </div>
         </motion.div>
       </div>
