@@ -123,8 +123,8 @@ const translations = {
     },
     product: {
       label: 'WHAT WE BUILT',
-      hero1: 'Not a tool.',
-      hero2: 'A visibility layer.',
+      hero1: 'A visibility layer.',
+      hero2: '',
       description1: 'Everything a practice needs — notes, sessions, resources.',
       description2: 'Plus the layer no one else built: what happens between them.',
       practitionerTag: 'For practitioners',
@@ -404,8 +404,8 @@ const translations = {
     },
     product: {
       label: 'CE QUE NOUS AVONS CONSTRUIT',
-      hero1: 'Pas un outil.',
-      hero2: 'Une couche de visibilité.',
+      hero1: 'Une couche de visibilité.',
+      hero2: '',
       description1: 'Tout ce dont un cabinet a besoin — notes, séances, ressources.',
       description2: 'Plus la couche que personne n\'a construite : ce qui se passe entre les séances.',
       practitionerTag: 'Pour les praticiens',
