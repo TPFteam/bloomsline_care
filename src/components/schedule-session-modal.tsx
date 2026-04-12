@@ -807,17 +807,10 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                       <label className="text-sm font-medium text-gray-700">
                         {locale === 'fr' ? 'Sélectionner l\'heure' : locale === 'es' ? 'Seleccionar hora' : 'Select Time'}
                       </label>
-                      {practitionerTz && (
-                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-                          <span className="text-xs text-teal-600">
-                            {locale === 'fr' ? 'Fuseau' : 'Timezone'}: {practitionerTz.replace(/_/g, ' ').split('/').pop()}
-                          </span>
-                          {browserTz && browserTz !== practitionerTz && (
-                            <span className="text-xs text-gray-400">
-                              {locale === 'fr' ? 'Votre appareil' : 'Your device'}: {browserTz.replace(/_/g, ' ').split('/').pop()}
-                            </span>
-                          )}
-                        </div>
+                      {practitionerTz && browserTz && browserTz !== practitionerTz && (
+                        <p className="mt-1 text-xs text-amber-600">
+                          {locale === 'fr' ? `Horaires en heure de ${practitionerTz.replace(/_/g, ' ').split('/').pop()}` : `Times shown in ${practitionerTz.replace(/_/g, ' ').split('/').pop()} time`}
+                        </p>
                       )}
                     </div>
                     <button
@@ -845,8 +838,6 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                         // slot_start is ISO string like "2025-12-03T09:00:00-05:00"
                         const slotDate = new Date(slot.slot_start)
                         const timeStr = format(slotDate, 'HH:mm')
-                        const showMemberTz = browserTz && practitionerTz && browserTz !== practitionerTz
-                        const memberTime = showMemberTz ? slotDate.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { timeZone: browserTz, hour: 'numeric', minute: '2-digit', hour12: !use24Hour }) : null
                         return (
                           <button
                             key={slot.slot_start}
@@ -858,9 +849,6 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                             }`}
                           >
                             {format(slotDate, use24Hour ? 'HH:mm' : 'h:mm a')}
-                            {memberTime && (
-                              <span className="block text-[10px] text-gray-400 font-normal mt-0.5">{memberTime}</span>
-                            )}
                           </button>
                         )
                       })}
