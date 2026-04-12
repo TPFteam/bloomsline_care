@@ -97,6 +97,12 @@ export default function BookingPage() {
   const [bookingError, setBookingError] = useState<string | null>(null)
   const [calendarSynced, setCalendarSynced] = useState(false)
 
+  // Date view mode
+  const [dateViewMode, setDateViewMode] = useState<'calendar' | 'quick'>('quick')
+  const [quickDays, setQuickDays] = useState<{ date: string; dayLabel: string; slots: TimeSlot[] }[]>([])
+  const [quickLoading, setQuickLoading] = useState(false)
+  const [quickExpandedDate, setQuickExpandedDate] = useState<string | null>(null)
+
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
@@ -160,6 +166,22 @@ export default function BookingPage() {
 
     loadSlots()
   }, [selectedDate, practitioner, selectedService])
+
+  // Load quick view (next available days)
+  useEffect(() => {
+    if (dateViewMode !== 'quick' || !practitioner || !selectedService) return
+    setQuickLoading(true)
+    fetch(`/api/bookings/next-available?practitionerId=${practitioner.profile.user_id}&duration=${selectedService.duration}&limit=6`)
+      .then(res => res.json())
+      .then(data => {
+        setQuickDays(data.days || [])
+        if (data.practitionerTimezone) setPractitionerTimezone(data.practitionerTimezone)
+        // Auto-expand first day
+        if (data.days?.length > 0) setQuickExpandedDate(data.days[0].date)
+      })
+      .catch(() => setQuickDays([]))
+      .finally(() => setQuickLoading(false))
+  }, [dateViewMode, practitioner, selectedService])
 
   // Calendar helpers
   const getDaysInMonth = (date: Date) => {
@@ -726,7 +748,94 @@ export default function BookingPage() {
             {/* Date & Time Selection */}
             {currentStep === 'datetime' && (
               <div className="space-y-6">
-                {/* Calendar */}
+                {/* View toggle */}
+                <div className="flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setDateViewMode('quick')}
+                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+                      dateViewMode === 'quick' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {t(locale, { en: 'Next available', fr: 'Prochaines dispos' })}
+                  </button>
+                  <button
+                    onClick={() => setDateViewMode('calendar')}
+                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+                      dateViewMode === 'calendar' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {t(locale, { en: 'Calendar', fr: 'Calendrier' })}
+                  </button>
+                </div>
+
+                {/* Quick view - next available days */}
+                {dateViewMode === 'quick' && (
+                  <div className="space-y-2">
+                    {quickLoading ? (
+                      <div className="py-8 text-center">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-teal-500 mb-2" />
+                        <p className="text-sm text-gray-500">{t(locale, { en: 'Finding available times...', fr: 'Recherche des créneaux...' })}</p>
+                      </div>
+                    ) : quickDays.length === 0 ? (
+                      <div className="py-8 text-center">
+                        <Calendar className="w-8 h-8 mx-auto text-gray-300 mb-2" />
+                        <p className="text-sm text-gray-500">{t(locale, { en: 'No available times in the next weeks', fr: 'Aucun créneau dans les prochaines semaines' })}</p>
+                      </div>
+                    ) : (
+                      quickDays.map((day) => {
+                        const isExpanded = quickExpandedDate === day.date
+                        const dayDate = new Date(day.date + 'T12:00:00')
+                        const dayLabel = dayDate.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+                        })
+                        return (
+                          <div key={day.date} className="border border-gray-200 rounded-xl overflow-hidden">
+                            <button
+                              onClick={() => setQuickExpandedDate(isExpanded ? null : day.date)}
+                              className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                            >
+                              <span className="text-sm font-medium text-gray-900 capitalize">{dayLabel}</span>
+                              <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                            </button>
+                            {isExpanded && (
+                              <div className="px-4 pb-4 pt-1">
+                                <div className="flex flex-wrap gap-2">
+                                  {day.slots.map((slot) => {
+                                    const slotDate = new Date(slot.slot_start)
+                                    const tz = practitionerTimezone || 'UTC'
+                                    const timeDisplay = slotDate.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                                      timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: locale !== 'fr',
+                                    })
+                                    const isSelected = selectedSlot?.slot_start === slot.slot_start
+                                    return (
+                                      <button
+                                        key={slot.slot_start}
+                                        onClick={() => {
+                                          setSelectedSlot(slot)
+                                          setSelectedDate(new Date(day.date + 'T12:00:00'))
+                                        }}
+                                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                                          isSelected
+                                            ? 'bg-teal-500 text-white shadow-md'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-teal-50 hover:text-teal-700'
+                                        }`}
+                                      >
+                                        {timeDisplay}
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                )}
+
+                {/* Calendar view */}
+                {dateViewMode === 'calendar' && (<>
                 <div className="bg-gray-50/50 rounded-xl p-4 border border-gray-100">
                   <div className="flex items-center justify-between mb-4">
                     <button
@@ -852,6 +961,7 @@ export default function BookingPage() {
                     )}
                   </div>
                 )}
+                </>)}
               </div>
             )}
 
