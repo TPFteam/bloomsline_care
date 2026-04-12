@@ -125,8 +125,10 @@ const translations = {
       label: 'WHAT WE BUILT',
       hero1: 'A visibility layer.',
       hero2: '',
-      description1: 'Everything a practice needs — notes, sessions, resources.',
-      description2: 'Plus the layer no one else built: what happens between them.',
+      practiceLabel: 'The practice',
+      practiceBody: 'Notes, sessions, resources — all in one place.',
+      layerLabel: 'The layer',
+      layerBody: 'What happens between sessions — made visible.',
       practitionerTag: 'For practitioners',
       practitionerItems: [
         'Walk in prepared.',
@@ -406,8 +408,10 @@ const translations = {
       label: 'CE QUE NOUS AVONS CONSTRUIT',
       hero1: 'Une couche de visibilité.',
       hero2: '',
-      description1: 'Tout ce dont un cabinet a besoin — notes, séances, ressources.',
-      description2: 'Plus la couche que personne n\'a construite : ce qui se passe entre les séances.',
+      practiceLabel: 'Le cabinet',
+      practiceBody: 'Notes, séances, ressources — tout au même endroit.',
+      layerLabel: 'La couche',
+      layerBody: 'Ce qui se passe entre les séances — rendu visible.',
       practitionerTag: 'Pour les praticiens',
       practitionerItems: [
         'Arriver préparé.',
@@ -1132,15 +1136,21 @@ function ProductSlide({ t }: { t: typeof translations.en.product }) {
           {t.hero2}
         </motion.h2>
 
-        {/* Description — two tight lines */}
+        {/* Two sections: The Practice + The Layer */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="mb-12 max-w-3xl space-y-1"
+          className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 max-w-4xl"
         >
-          <p className="text-lg text-neutral-700 font-light leading-relaxed">{t.description1}</p>
-          <p className="text-lg text-neutral-700 font-light leading-relaxed">{t.description2}</p>
+          <div>
+            <p className="text-xs tracking-[0.2em] uppercase text-neutral-400 font-mono mb-2">{(t as any).practiceLabel}</p>
+            <p className="text-base text-neutral-700 font-light leading-relaxed">{(t as any).practiceBody}</p>
+          </div>
+          <div className="md:border-l border-neutral-200 md:pl-8">
+            <p className="text-xs tracking-[0.2em] uppercase text-teal-700 font-mono mb-2">{(t as any).layerLabel}</p>
+            <p className="text-base text-neutral-700 font-light leading-relaxed">{(t as any).layerBody}</p>
+          </div>
         </motion.div>
 
         {/* Two columns: practitioners + members */}
