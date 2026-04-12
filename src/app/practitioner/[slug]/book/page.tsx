@@ -169,7 +169,8 @@ export default function BookingPage() {
     const lastDay = new Date(year, month + 1, 0)
     const days: (Date | null)[] = []
 
-    for (let i = 0; i < firstDay.getDay(); i++) {
+    const offset = (firstDay.getDay() + 6) % 7 // Monday = 0
+    for (let i = 0; i < offset; i++) {
       days.push(null)
     }
 
@@ -756,7 +757,7 @@ export default function BookingPage() {
                     </button>
                   </div>
                   <div className="grid grid-cols-7 gap-1 text-center">
-                    {(locale === 'fr' ? ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']).map((day) => (
+                    {(locale === 'fr' ? ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']).map((day) => (
                       <div key={day} className="p-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                         {day}
                       </div>
