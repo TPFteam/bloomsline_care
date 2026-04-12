@@ -1136,24 +1136,28 @@ function ProductSlide({ t }: { t: typeof translations.en.product }) {
           {t.hero2}
         </motion.h2>
 
-        {/* Two sections: The Practice + The Layer */}
+        {/* The Practice — standalone */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 max-w-4xl"
+          className="mb-10 max-w-4xl"
         >
-          <div>
-            <p className="text-xs tracking-[0.2em] uppercase text-neutral-400 font-mono mb-2">{(t as any).practiceLabel}</p>
-            <p className="text-base text-neutral-700 font-light leading-relaxed">{(t as any).practiceBody}</p>
-          </div>
-          <div className="md:border-l border-neutral-200 md:pl-8">
-            <p className="text-xs tracking-[0.2em] uppercase text-teal-700 font-mono mb-2">{(t as any).layerLabel}</p>
-            <p className="text-base text-neutral-700 font-light leading-relaxed">{(t as any).layerBody}</p>
-          </div>
+          <p className="text-xs tracking-[0.2em] uppercase text-neutral-400 font-mono mb-2">{(t as any).practiceLabel}</p>
+          <p className="text-base text-neutral-700 font-light leading-relaxed">{(t as any).practiceBody}</p>
         </motion.div>
 
-        {/* Two columns: practitioners + members */}
+        {/* The Layer — label + two columns underneath */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.65 }}
+          className="mb-6 max-w-4xl"
+        >
+          <p className="text-xs tracking-[0.2em] uppercase text-teal-700 font-mono mb-2">{(t as any).layerLabel}</p>
+          <p className="text-base text-neutral-700 font-light leading-relaxed mb-8">{(t as any).layerBody}</p>
+        </motion.div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
