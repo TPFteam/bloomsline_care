@@ -9,6 +9,10 @@ import {
   Globe,
   Mail,
   Calendar,
+  Clock,
+  Heart,
+  MessageSquare,
+  Zap,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { Button } from '@/components/ui/button'
@@ -110,10 +114,10 @@ const translations = {
     origin: {
       label: 'HOW WE GOT HERE',
       headline: 'We didn\'t start here.',
-      para1: 'In 2024, Sarah and I built Doctalink — a way to find a therapist based on values, not degrees. Practitioners loved it, but it wasn\'t a business.',
-      para2: 'But in the conversations that followed, the same thing kept coming up: finding a therapist wasn\'t the problem.',
+      para1: 'Doctalink, 2024. Find a therapist by values, not degrees. Practitioners loved it. It wasn\'t a business.',
+      para2: '100+ conversations. Same insight kept coming up.',
       para3: 'The silence after was.',
-      para4: 'Bloomsline is what we built with that insight.',
+      para4: '',
       quote: 'We didn\'t find a problem and build a product. We earned the insight through a product that failed.',
       timeline: [
         { period: '2024', label: 'Doctalink' },
@@ -123,39 +127,50 @@ const translations = {
     },
     product: {
       label: 'WHAT WE BUILT',
-      hero1: 'A visibility layer.',
+      hero1: 'A new layer of care.',
       hero2: '',
-      practiceLabel: 'The practice',
-      practiceBody: 'Organize their work. Notes, sessions, resources, all in one place.',
-      layerLabel: 'The layer',
-      layerBody: 'What happens between sessions — made visible.',
-      practitionerTag: 'For practitioners',
-      practitionerItems: [
-        'Walk in prepared.',
-        'Context, not catch-up.',
-        'Patients who come back.',
-      ],
-      memberTag: 'For members',
-      memberItems: [
-        'Capture thoughts in 10 seconds.',
-        'A mirror for your patterns.',
-        'Visible progress, not performance.',
+      supportingText: 'Everything in one place. Notes, sessions, and what actually happens between them.',
+      cards: [
+        {
+          icon: 'clock',
+          title: 'Before a session',
+          oldWay: 'Notes pile up, context gets lost.',
+          newWay: 'Everything you need, already there. No digging.',
+        },
+        {
+          icon: 'heart',
+          title: 'During a session',
+          oldWay: 'Admin steals time from what matters.',
+          newWay: 'Stay present. Notes flow. Nothing gets lost.',
+        },
+        {
+          icon: 'message',
+          title: 'Between sessions',
+          oldWay: 'The connection fades.',
+          newWay: 'Patients reflect. Practitioners see what changed.',
+        },
+        {
+          icon: 'zap',
+          title: 'Over time',
+          oldWay: 'Progress lives in your head, not on screen.',
+          newWay: 'See real progress, not just snapshots.',
+        },
       ],
     },
     boundary: {
       label: 'THE BOUNDARY',
       hero1: 'There\'s a boundary in therapy.',
       hero2: 'We respect it.',
-      explanation: 'The therapeutic frame — the professional structure of the relationship — is what makes therapy work.',
-      howLabel: 'How we protect it:',
+      explanation: '',
+      howLabel: 'Our principles:',
       items: [
-        { rule: 'No chat. No back-and-forth messaging.', detail: 'The practitioner sees context, not conversations.' },
-        { rule: 'We don\'t replace the practitioner.', detail: 'Bloom AI reflects patterns — never gives advice.' },
-        { rule: 'We don\'t gamify reflection.', detail: 'No streaks, no badges, no guilt.' },
-        { rule: 'We add context, not interaction.', detail: 'Data flows to the session — not messages between sessions.' },
+        'Patients reflect on their own. Nothing required.',
+        'Practitioners decide what to see, and when.',
+        'No streaks, no scoring. No pressure to perform.',
+        'We add context, not interaction.',
       ],
-      closing1: 'Not forcing new habits.',
-      closing2: 'Making what already happens visible.',
+      closing1: 'Nothing new to maintain.',
+      closing2: 'Just making what already happens visible.',
     },
     whyNow: {
       label: 'WHY NOW',
@@ -184,49 +199,49 @@ const translations = {
       headline: 'Practitioners are our distribution.',
       flow1Label: '1 practitioner',
       flow1Value: '€29 / month',
-      flow2Label: 'brings',
-      flow2Value: '20–50 members',
-      flow3Label: 'who invite',
-      flow3Value: 'peers, organically',
+      flow2Label: 'invites',
+      flow2Value: 'their own clients',
+      flow3Label: 'and refers',
+      flow3Value: 'peers in their network',
       revenueTitle: 'Revenue',
       revenueItems: [
-        '€19 / €29 / €49 per seat',
-        '~83% modeled gross margin',
-        'Future: member premium €3/mo',
+        '€29 / month per practitioner',
+        'Members free',
+        'High-margin SaaS',
       ],
       compoundTitle: 'Why it compounds',
       compoundItems: [
-        'Practitioners refer each other in a tight community',
-        'SEO-indexed practitioner profiles',
-        'Every member is a future practitioner-referrer',
+        'Practitioners bring their own members from day one',
+        'Engagement is driven by the practitioner relationship',
+        'Growth happens through practitioner networks',
       ],
-      footnote: '~20 patients/week × ~€60/session = ~€4,800/mo. One patient who stays instead of dropping out covers Bloomsline for 6 months.',
+      footnote: '~20 sessions/week × ~€60/session = ~€4,800/mo. One retained patient covers Bloomsline for 6 months.',
     },
     real: {
       label: "WHAT'S REAL",
       headline: "We're pre-revenue. The product isn't.",
       builtLabel: 'BUILT',
       builtItems: [
-        'Practitioner web app',
-        'Member mobile app',
-        'Bloom AI',
-        '2 languages · 24+ API endpoints',
-        'Live in production',
+        'Practitioner platform live',
+        'Member app in use',
+        'Real users interacting with the product',
+        'End-to-end system built in-house',
       ],
       learnedLabel: 'LEARNED',
       learnedItems: [
-        'Deep discovery across Europe',
-        'Early testers in the loop',
-        'Pivoted once, from real signal',
-        'Found the wedge',
+        '100+ conversations with practitioners and patients',
+        'Clear pattern: the gap is between sessions',
+        'Early testers using it in real workflows',
+        'Continuity drives engagement',
       ],
       honestLabel: 'HONEST',
       honestItems: [
-        'Close to PMF — the inflection point is near',
-        'Pricing calibrated by real conversations, not spreadsheets',
-        'Two founders, full-stack. Speed as our moat',
+        'Pre-PMF. But early usage is consistent.',
+        'Practitioners recognize the problem instantly',
+        'Pricing shaped by real conversations',
+        'Two founders, fast iteration loop',
       ],
-      quote: 'This isn\'t a deck. It\'s a working platform you can touch today.',
+      quote: 'This isn\'t a concept. It\'s a working platform you can use today.',
     },
     team: {
       label: 'THE TEAM',
@@ -246,50 +261,35 @@ const translations = {
       headline2: 'Infrastructure tomorrow.',
       viewMore: 'View more',
       showLess: 'Show less',
-      buildingLabel: 'How',
-      unlocksLabel: 'What it unlocks',
-      impactLabel: 'Business impact',
-      headsLabel: 'Where it heads',
+      whatWeDoLabel: 'What we do',
+      whyItMattersLabel: 'Why it matters',
       todayTag: 'Today',
       todayTitle: 'We sell a platform to practitioners.',
-      todayBody: 'Get 100+ paying. Prove patients keep coming back.',
-      todayBuilding: 'Practitioner web app, member mobile app, Bloom AI — live in production.',
-      todayUnlocks: 'First-party data on what actually predicts patient continuity.',
-      todayImpact: '100+ paying practitioners by M12 → €30K+ ARR. Proof of model.',
-      todayHeads: 'A trusted relationship in the most sensitive data category in tech.',
+      todayBody: 'Practitioners prepare better. Patients reflect between sessions. We prove retention.',
+      todayWhatWeDo: 'Practitioners pay €29/month for a tool that makes every session better. Patients stay engaged between sessions. Both sides see the value.',
+      todayWhyItMatters: '100+ paying practitioners. Patients come back. That proves the model works.',
       nextTag: 'Next',
-      nextTitle: 'We turn the platform into a dataset.',
-      nextBody: 'Turn what we capture into insights researchers and insurers pay for.',
-      nextBuilding: 'Anonymized behavioral patterns across thousands of practitioner–patient loops.',
-      nextUnlocks: 'The first longitudinal "moments → interventions → outcomes" dataset outside academia.',
-      nextImpact: 'Research partnerships, insurance pilots, premium analytics tier for practitioners.',
-      nextHeads: 'From "a tool we sell" to "the data partner the industry needs."',
+      nextTitle: 'The platform starts to see patterns.',
+      nextBody: '"Sarah\'s anxiety dropped 40% over 3 months." Real outcome signals for practitioners. Visible progress for patients.',
+      nextWhatWeDo: 'Practitioners get outcome reports. Patients see their own progress over time. Reports that prove therapy is working. Premium tier with deeper insights.',
+      nextWhyItMatters: 'The product becomes more valuable. Practitioners upgrade. Group practices and clinics sign on.',
       laterTag: 'Eventually',
-      laterTitle: 'We turn the dataset into infrastructure.',
-      laterBody: 'Become the layer every mental health tool plugs into.',
-      laterBuilding: 'An interoperable layer for clinical workflows, research, and insurance.',
-      laterUnlocks: 'The industry standard for therapeutic continuity data in Europe.',
-      laterImpact: 'Multi-product SaaS · data licensing · research partnerships.',
-      laterHeads: 'The default substrate for how mental health care is measured and improved.',
+      laterTitle: 'Intelligence layer.',
+      laterBody: 'From data platform to consumer products. Mental health becomes personalized and proactive.',
+      laterWhatWeDo: 'Pattern recognition that catches things early. Practitioners intervene before a crisis, not after. The product moves from visibility to intelligence.',
+      laterWhyItMatters: 'Clinics and health systems need this. The product scales from solo practitioners to institutions. Revenue grows because the product gets smarter.',
       footnote: 'Vision earns the right to exist through execution. Right now, we\'re heads-down on Today.',
     },
     ask: {
       label: 'THE ASK',
-      headline: 'Raising €400–500K pre-seed.',
-      subhead: '18 months of runway. Three milestones.',
-      m6Label: 'M6',
-      m6Value: '30–50 paying practitioners',
-      m12Label: 'M12',
-      m12Value: '100+ practitioners · 80%+ retention',
-      m12Note: 'PMF signal',
-      m18Label: 'M18',
-      m18Value: '€100K+ ARR',
+      headline: 'Raising €500K pre-seed.',
+      subhead: '18 months of runway.',
       fundsLabel: 'Use of funds',
       fundsItems: [
-        { label: 'Product', value: '40%' },
-        { label: 'Team', value: '25%' },
-        { label: 'Go-to-market', value: '25%' },
-        { label: 'Operations', value: '10%' },
+        { label: 'Team', value: '40%' },
+        { label: 'Product', value: '25%' },
+        { label: 'Growth', value: '20%' },
+        { label: 'Reserve', value: '15%' },
       ],
       closing: 'Enough to find product-market fit without compromising the story we\'re building.',
     },
@@ -393,10 +393,10 @@ const translations = {
     origin: {
       label: 'COMMENT NOUS SOMMES ARRIVÉS ICI',
       headline: 'Nous avons d\'abord construit la mauvaise chose.',
-      para1: 'En 2024, Sarah et moi avons construit Doctalink — un moyen de trouver un thérapeute basé sur les valeurs, pas les diplômes. Les praticiens adoraient, mais ce n\'était pas un business.',
-      para2: 'Mais dans les conversations qui ont suivi, la même chose revenait : trouver un thérapeute n\'était pas le problème.',
+      para1: 'Doctalink, 2024. Trouver un thérapeute par valeurs, pas par diplômes. Les praticiens adoraient. Ce n\'était pas un business.',
+      para2: '100+ conversations. Le même insight revenait.',
       para3: 'Le silence après, l\'était.',
-      para4: 'Bloomsline est ce que nous avons construit avec cette insight.',
+      para4: '',
       quote: 'Nous n\'avons pas trouvé un problème puis construit un produit. Nous avons gagné l\'insight à travers un produit qui a échoué.',
       timeline: [
         { period: '2024', label: 'Doctalink' },
@@ -406,39 +406,50 @@ const translations = {
     },
     product: {
       label: 'CE QUE NOUS AVONS CONSTRUIT',
-      hero1: 'Une couche de visibilité.',
+      hero1: 'Une nouvelle couche de soin.',
       hero2: '',
-      practiceLabel: 'Le cabinet',
-      practiceBody: 'Organiser leur travail. Notes, séances, ressources, tout au même endroit.',
-      layerLabel: 'La couche',
-      layerBody: 'Ce qui se passe entre les séances — rendu visible.',
-      practitionerTag: 'Pour les praticiens',
-      practitionerItems: [
-        'Arriver préparé.',
-        'Du contexte, pas du rattrapage.',
-        'Des patients qui reviennent.',
-      ],
-      memberTag: 'Pour les membres',
-      memberItems: [
-        'Capturer ses pensées en 10 secondes.',
-        'Un miroir de vos ressentis.',
-        'Progression visible, pas de performance.',
+      supportingText: 'Tout au même endroit. Notes, séances, et ce qui se passe vraiment entre les deux.',
+      cards: [
+        {
+          icon: 'clock',
+          title: 'Avant une séance',
+          oldWay: 'Les notes s\'accumulent, le contexte se perd.',
+          newWay: 'Tout est là, prêt. Sans chercher.',
+        },
+        {
+          icon: 'heart',
+          title: 'Pendant une séance',
+          oldWay: 'L\'admin vole du temps à l\'essentiel.',
+          newWay: 'Restez présent. Les notes suivent. Rien ne se perd.',
+        },
+        {
+          icon: 'message',
+          title: 'Entre les séances',
+          oldWay: 'La connexion s\'estompe.',
+          newWay: 'Les patients réfléchissent. Les praticiens voient ce qui a changé.',
+        },
+        {
+          icon: 'zap',
+          title: 'Au fil du temps',
+          oldWay: 'La progression reste dans votre tête, pas à l\'écran.',
+          newWay: 'Voir la vraie progression, pas juste des instantanés.',
+        },
       ],
     },
     boundary: {
       label: 'LA LIMITE',
       hero1: 'Il y a une limite en thérapie.',
       hero2: 'Nous la respectons.',
-      explanation: 'Le cadre thérapeutique — la structure professionnelle de la relation — est ce qui fait fonctionner la thérapie.',
-      howLabel: 'Comment nous la protégeons :',
+      explanation: '',
+      howLabel: 'Nos principes :',
       items: [
-        { rule: 'Pas de chat. Pas de messagerie.', detail: 'Le praticien voit du contexte, pas des conversations.' },
-        { rule: 'Nous ne remplaçons pas le praticien.', detail: 'Bloom IA reflète les patterns — ne donne jamais de conseils.' },
-        { rule: 'Nous ne gamifions pas la réflexion.', detail: 'Pas de streaks, pas de badges, pas de culpabilité.' },
-        { rule: 'Nous ajoutons du contexte, pas de l\'interaction.', detail: 'Les données vont vers la séance — pas des messages entre les séances.' },
+        'Les patients réfléchissent seuls. Rien d\'obligatoire.',
+        'Les praticiens décident quoi voir, et quand.',
+        'Pas de streaks, pas de scores. Aucune pression.',
+        'Nous ajoutons du contexte, pas de l\'interaction.',
       ],
-      closing1: 'Pas de nouvelles habitudes forcées.',
-      closing2: 'Rendre visible ce qui se passe déjà.',
+      closing1: 'Rien de nouveau à maintenir.',
+      closing2: 'Juste rendre visible ce qui se passe déjà.',
     },
     whyNow: {
       label: 'POURQUOI MAINTENANT',
@@ -467,49 +478,49 @@ const translations = {
       headline: 'Les praticiens sont notre distribution.',
       flow1Label: '1 praticien',
       flow1Value: '€29 / mois',
-      flow2Label: 'apporte',
-      flow2Value: '20–50 membres',
-      flow3Label: 'qui invitent',
-      flow3Value: 'leurs pairs, organiquement',
+      flow2Label: 'invite',
+      flow2Value: 'ses propres clients',
+      flow3Label: 'et recommande',
+      flow3Value: 'ses pairs dans son réseau',
       revenueTitle: 'Revenus',
       revenueItems: [
-        '€19 / €29 / €49 par siège',
-        '~83% de marge brute modélisée',
-        'Futur : premium membre €3/mois',
+        '€29 / mois par praticien',
+        'Membres gratuits',
+        'SaaS à forte marge',
       ],
       compoundTitle: 'Pourquoi ça compose',
       compoundItems: [
-        'Les praticiens se recommandent dans une communauté serrée',
-        'Profils praticiens indexés SEO',
-        'Chaque membre est un futur parrain de praticien',
+        'Les praticiens amènent leurs propres membres dès le premier jour',
+        'L\'engagement est porté par la relation praticien',
+        'La croissance passe par les réseaux de praticiens',
       ],
-      footnote: 'Revenu de base d\'un praticien solo : €4 800/mois. Une annulation évitée paie 6 mois de Bloomsline.',
+      footnote: '~20 séances/semaine × ~€60/séance = ~€4 800/mois. Un patient retenu couvre Bloomsline pendant 6 mois.',
     },
     real: {
       label: 'CE QUI EST RÉEL',
       headline: 'Nous sommes pré-revenu. Le produit, non.',
       builtLabel: 'CONSTRUIT',
       builtItems: [
-        'App web praticien',
-        'App mobile membre',
-        'Bloom IA',
-        '2 langues · 24+ endpoints API',
-        'En production',
+        'Plateforme praticien en ligne',
+        'App membre en utilisation',
+        'De vrais utilisateurs interagissent avec le produit',
+        'Système complet construit en interne',
       ],
       learnedLabel: 'APPRIS',
       learnedItems: [
-        'Découverte en profondeur à travers l\'Europe',
-        'Testeurs précoces dans la boucle',
-        'Un pivot, depuis un signal réel',
-        'Le wedge trouvé',
+        '100+ conversations avec praticiens et patients',
+        'Un pattern clair : le vide est entre les séances',
+        'Testeurs utilisant le produit dans de vrais workflows',
+        'La continuité génère l\'engagement',
       ],
       honestLabel: 'HONNÊTE',
       honestItems: [
-        'Proche du PMF — le point d\'inflexion approche',
-        'Prix calibré par de vraies conversations, pas des tableurs',
-        'Deux fondateurs, full-stack. La vitesse comme moat',
+        'Pré-PMF. Mais l\'usage précoce est constant.',
+        'Les praticiens reconnaissent le problème instantanément',
+        'Prix façonné par de vraies conversations',
+        'Deux fondateurs, itération rapide',
       ],
-      quote: 'Ce n\'est pas un deck. C\'est une plateforme fonctionnelle que vous pouvez toucher aujourd\'hui.',
+      quote: 'Ce n\'est pas un concept. C\'est une plateforme fonctionnelle que vous pouvez utiliser aujourd\'hui.',
     },
     team: {
       label: 'L\'ÉQUIPE',
@@ -529,50 +540,35 @@ const translations = {
       headline2: 'Infrastructure demain.',
       viewMore: 'Voir plus',
       showLess: 'Voir moins',
-      buildingLabel: 'Comment',
-      unlocksLabel: 'Ce que ça débloque',
-      impactLabel: 'Impact business',
-      headsLabel: 'Direction',
+      whatWeDoLabel: 'Ce qu\'on fait',
+      whyItMattersLabel: 'Pourquoi c\'est important',
       todayTag: 'Aujourd\'hui',
       todayTitle: 'On vend une plateforme aux praticiens.',
-      todayBody: 'Atteindre 100+ praticiens payants. Prouver que les patients reviennent.',
-      todayBuilding: 'App web praticien, app mobile membre, Bloom IA — en production.',
-      todayUnlocks: 'Données de première main sur ce qui prédit vraiment la continuité patient.',
-      todayImpact: '100+ praticiens payants à M12 → €30K+ ARR. Preuve du modèle.',
-      todayHeads: 'Une relation de confiance dans la catégorie de données la plus sensible.',
+      todayBody: 'Les praticiens se préparent mieux. Les patients réfléchissent entre les séances. On prouve la rétention.',
+      todayWhatWeDo: 'Les praticiens paient €29/mois pour un outil qui améliore chaque séance. Les patients restent engagés entre les séances. Les deux côtés voient la valeur.',
+      todayWhyItMatters: '100+ praticiens payants. Les patients reviennent. Ça prouve que le modèle fonctionne.',
       nextTag: 'Ensuite',
-      nextTitle: 'On transforme la plateforme en dataset.',
-      nextBody: 'Transformer ce qu\'on capture en insights que chercheurs et assureurs paient.',
-      nextBuilding: 'Patterns comportementaux anonymisés sur des milliers de boucles praticien-patient.',
-      nextUnlocks: 'Premier dataset longitudinal "moments → interventions → résultats" hors académique.',
-      nextImpact: 'Partenariats recherche, pilotes assurance, tier analytics premium pour praticiens.',
-      nextHeads: 'D\'un "outil qu\'on vend" à "le partenaire data dont l\'industrie a besoin."',
+      nextTitle: 'La plateforme commence à voir des patterns.',
+      nextBody: '"L\'anxiété de Sarah a baissé de 40% en 3 mois." De vrais signaux pour les praticiens. Des progrès visibles pour les patients.',
+      nextWhatWeDo: 'Les praticiens reçoivent des rapports. Les patients voient leur progression. Des preuves que la thérapie fonctionne. Tier premium avec des insights plus profonds.',
+      nextWhyItMatters: 'Le produit prend plus de valeur. Les praticiens upgradent. Les cabinets de groupe et cliniques s\'inscrivent.',
       laterTag: 'Un jour',
-      laterTitle: 'On transforme le dataset en infrastructure.',
-      laterBody: 'Devenir la couche dans laquelle chaque outil de santé mentale se branche.',
-      laterBuilding: 'Une couche interopérable pour les workflows cliniques, la recherche, l\'assurance.',
-      laterUnlocks: 'Le standard de l\'industrie pour les données de continuité thérapeutique en Europe.',
-      laterImpact: 'SaaS multi-produits · licences data · partenariats recherche.',
-      laterHeads: 'Le substrat par défaut pour mesurer et améliorer les soins de santé mentale.',
+      laterTitle: 'Couche d\'intelligence.',
+      laterBody: 'De la plateforme de données aux produits grand public. La santé mentale devient personnalisée et proactive.',
+      laterWhatWeDo: 'Reconnaissance de patterns qui détecte les signaux tôt. Les praticiens interviennent avant une crise, pas après. Le produit passe de la visibilité à l\'intelligence.',
+      laterWhyItMatters: 'Les cliniques et systèmes de santé en ont besoin. Le produit passe des praticiens solo aux institutions. Le revenu croît parce que le produit devient plus intelligent.',
       footnote: 'La vision gagne le droit d\'exister par l\'exécution. Là, on est concentrés sur Aujourd\'hui.',
     },
     ask: {
       label: 'LA DEMANDE',
-      headline: 'Levée de €400–500K en pre-seed.',
-      subhead: '18 mois de runway. Trois jalons.',
-      m6Label: 'M6',
-      m6Value: '30–50 praticiens payants',
-      m12Label: 'M12',
-      m12Value: '100+ praticiens · 80%+ de rétention',
-      m12Note: 'signal PMF',
-      m18Label: 'M18',
-      m18Value: '€100K+ ARR',
+      headline: 'Levée de €500K en pre-seed.',
+      subhead: '18 mois de runway.',
       fundsLabel: 'Utilisation des fonds',
       fundsItems: [
-        { label: 'Produit', value: '40%' },
-        { label: 'Équipe', value: '25%' },
-        { label: 'Go-to-market', value: '25%' },
-        { label: 'Opérations', value: '10%' },
+        { label: 'Équipe', value: '40%' },
+        { label: 'Produit', value: '25%' },
+        { label: 'Croissance', value: '20%' },
+        { label: 'Réserve', value: '15%' },
       ],
       closing: 'Assez pour trouver le product-market fit sans compromettre l\'histoire que nous construisons.',
     },
@@ -1059,7 +1055,7 @@ function OriginSlide({ t }: { t: typeof translations.en.origin }) {
             <p>{t.para1}</p>
             <p>{t.para2}</p>
             <p className="text-neutral-900 font-medium">{t.para3}</p>
-            <p className="text-neutral-700">{t.para4}</p>
+            {t.para4 && <p className="text-neutral-700">{t.para4}</p>}
           </motion.div>
 
           <motion.blockquote
@@ -1117,78 +1113,47 @@ function ProductSlide({ t }: { t: typeof translations.en.product }) {
           {t.label}
         </motion.p>
 
-        {/* Hero — Not a tool / A visibility layer */}
+        {/* Headline */}
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-400 leading-[1.1] tracking-tight mb-2"
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-teal-700 leading-[1.1] tracking-tight mb-6"
         >
           {t.hero1}
         </motion.h2>
 
-        <motion.h2
+        {/* Supporting text */}
+        <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.35 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-light text-teal-700 leading-[1.1] tracking-tight mb-14"
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="text-lg text-neutral-500 font-light leading-relaxed max-w-2xl mb-12"
         >
-          {t.hero2}
-        </motion.h2>
+          {(t as any).supportingText}
+        </motion.p>
 
-        {/* The Practice — standalone */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="mb-10 max-w-4xl"
-        >
-          <p className="text-xs tracking-[0.2em] uppercase text-neutral-400 font-mono mb-2">{(t as any).practiceLabel}</p>
-          <p className="text-base text-neutral-700 font-light leading-relaxed">{(t as any).practiceBody}</p>
-        </motion.div>
-
-        {/* The Layer — label + two columns underneath */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.65 }}
-          className="mb-6 max-w-4xl"
-        >
-          <p className="text-xs tracking-[0.2em] uppercase text-teal-700 font-mono mb-2">{(t as any).layerLabel}</p>
-          <p className="text-base text-neutral-700 font-light leading-relaxed mb-8">{(t as any).layerBody}</p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.7 }}
-          >
-            <p className="text-xs tracking-[0.2em] uppercase mb-3 text-teal-700">
-              {t.practitionerTag}
-            </p>
-            <ul className="space-y-2">
-              {(t.practitionerItems as string[]).map((item, i) => (
-                <li key={i} className="text-base text-neutral-700 font-light">{item}</li>
-              ))}
-            </ul>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.8 }}
-            className="md:border-l border-neutral-200 md:pl-12"
-          >
-            <p className="text-xs tracking-[0.2em] uppercase mb-3 text-teal-700">
-              {t.memberTag}
-            </p>
-            <ul className="space-y-2">
-              {(t.memberItems as string[]).map((item, i) => (
-                <li key={i} className="text-base text-neutral-700 font-light">{item}</li>
-              ))}
-            </ul>
-          </motion.div>
+        {/* 2x2 temporal cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl">
+          {((t as any).cards as { icon: string; title: string; oldWay: string; newWay: string }[]).map((card, i) => {
+            const IconComponent = { clock: Clock, heart: Heart, message: MessageSquare, zap: Zap }[card.icon] || Clock;
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 + i * 0.1 }}
+                className="rounded-xl border border-neutral-200 bg-white p-6"
+              >
+                <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center mb-4">
+                  <IconComponent className="w-4.5 h-4.5 text-teal-600" />
+                </div>
+                <h3 className="text-base font-medium text-neutral-900 mb-2">{card.title}</h3>
+                <p className="text-sm text-neutral-400 line-through mb-1">{card.oldWay}</p>
+                <p className="text-sm text-neutral-700">{card.newWay}</p>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -1232,15 +1197,6 @@ function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
         </motion.h2>
 
         {/* Explanation of what the boundary is */}
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="text-lg text-neutral-700 font-light max-w-3xl mb-12 leading-relaxed"
-        >
-          {t.explanation}
-        </motion.p>
-
         {/* How we protect it — label + 4 bullets */}
         <motion.p
           initial={{ opacity: 0 }}
@@ -1257,8 +1213,8 @@ function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
           transition={{ duration: 0.6, delay: 0.8 }}
           className="space-y-2 max-w-3xl mb-10"
         >
-          {(t.items as Array<{ rule: string; detail: string }>).map((item, i) => (
-            <p key={i} className="text-base text-neutral-700 font-light">— {item.rule}</p>
+          {(t.items as string[]).map((item, i) => (
+            <p key={i} className="text-base text-neutral-700 font-light">— {item}</p>
           ))}
         </motion.div>
 
@@ -1606,28 +1562,28 @@ function VisionSlide({ t }: { t: typeof translations.en.vision }) {
     })
   }
 
-  const subLabels = [t.buildingLabel, t.unlocksLabel, t.impactLabel, t.headsLabel]
+  const subLabels = [(t as any).whatWeDoLabel, (t as any).whyItMattersLabel]
 
   const phases = [
     {
       tag: t.todayTag,
       title: t.todayTitle,
       body: t.todayBody,
-      items: [t.todayBuilding, t.todayUnlocks, t.todayImpact, t.todayHeads],
+      items: [(t as any).todayWhatWeDo, (t as any).todayWhyItMatters],
       accent: true,
     },
     {
       tag: t.nextTag,
       title: t.nextTitle,
       body: t.nextBody,
-      items: [t.nextBuilding, t.nextUnlocks, t.nextImpact, t.nextHeads],
+      items: [(t as any).nextWhatWeDo, (t as any).nextWhyItMatters],
       accent: false,
     },
     {
       tag: t.laterTag,
       title: t.laterTitle,
       body: t.laterBody,
-      items: [t.laterBuilding, t.laterUnlocks, t.laterImpact, t.laterHeads],
+      items: [(t as any).laterWhatWeDo, (t as any).laterWhyItMatters],
       accent: false,
     },
   ]
@@ -1773,27 +1729,6 @@ function AskSlide({ t }: { t: typeof translations.en.ask }) {
         >
           {t.subhead}
         </motion.p>
-
-        {/* Timeline */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="grid grid-cols-3 gap-8 mb-16 max-w-4xl"
-        >
-          {[
-            { label: t.m6Label, value: t.m6Value, note: null },
-            { label: t.m12Label, value: t.m12Value, note: t.m12Note },
-            { label: t.m18Label, value: t.m18Value, note: null },
-          ].map((m, i) => (
-            <div key={i} className="relative">
-              <div className="w-3 h-3 rounded-full bg-teal-600 mb-4" />
-              <p className="text-sm font-medium text-teal-700 mb-2">{m.label}</p>
-              <p className="text-lg text-neutral-900 font-light leading-snug">{m.value}</p>
-              {m.note && <p className="text-xs text-neutral-500 italic mt-1">{m.note}</p>}
-            </div>
-          ))}
-        </motion.div>
 
         {/* Use of funds */}
         <motion.div

@@ -110,8 +110,9 @@ export async function GET(request: NextRequest) {
       }).formatToParts(new Date(utcMs))
       const get = (type: string) => parseInt(parts.find(p => p.type === type)?.value || '0')
       const localMs = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') === 24 ? 0 : get('hour'), get('minute'), get('second'))
-      // Offset = UTC - local (positive means timezone is ahead of UTC)
-      return utcMs - localMs
+      // Offset = local - UTC (positive means timezone is ahead of UTC)
+      // e.g., Paris UTC+2: localMs(14:00) - utcMs(12:00) = +7200000
+      return localMs - utcMs
     }
 
     const tzOffsetMs = getTimezoneOffsetMs(tz, date);

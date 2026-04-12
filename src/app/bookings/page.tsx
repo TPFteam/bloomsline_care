@@ -23,6 +23,7 @@ import {
   Link as LinkIcon,
   Copy,
   ExternalLink,
+  RefreshCw,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -430,6 +431,70 @@ export default function BookingsPage() {
     setProcessingId(null)
   }
 
+  // Reschedule
+  const [rescheduleBooking, setRescheduleBooking] = useState<any | null>(null)
+  const [rescheduleDate, setRescheduleDate] = useState('')
+  const [rescheduleTime, setRescheduleTime] = useState('')
+  const [rescheduleReason, setRescheduleReason] = useState('')
+  const [rescheduleSlots, setRescheduleSlots] = useState<Array<{ slot_start: string; slot_end: string }>>([])
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false)
+
+  const openRescheduleModal = (booking: any) => {
+    setRescheduleBooking(booking)
+    setRescheduleDate('')
+    setRescheduleTime('')
+    setRescheduleReason('')
+    setRescheduleSlots([])
+  }
+
+  const loadRescheduleSlots = async (date: string) => {
+    if (!rescheduleBooking || !date) return
+    setIsLoadingSlots(true)
+    setRescheduleTime('')
+    try {
+      const duration = Math.round(
+        (new Date(rescheduleBooking.end_time).getTime() - new Date(rescheduleBooking.start_time).getTime()) / 60000
+      )
+      const res = await fetch(`/api/bookings/available-slots?practitionerId=${rescheduleBooking.practitioner_id}&date=${date}&duration=${duration}&skipNotice=true`)
+      const data = await res.json()
+      setRescheduleSlots(data.slots || [])
+    } catch {
+      setRescheduleSlots([])
+    }
+    setIsLoadingSlots(false)
+  }
+
+  const handleReschedule = async () => {
+    if (!rescheduleBooking || !rescheduleTime) return
+    setProcessingId(rescheduleBooking.id)
+    const selectedSlot = rescheduleSlots.find(s => s.slot_start === rescheduleTime)
+    if (!selectedSlot) return
+
+    try {
+      const response = await fetch(`/api/bookings/${rescheduleBooking.id}/reschedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          newSlotStart: selectedSlot.slot_start,
+          newSlotEnd: selectedSlot.slot_end,
+          reason: rescheduleReason || undefined,
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to reschedule')
+
+      // Refresh bookings
+      setBookings(prev =>
+        prev.map(b => (b.id === rescheduleBooking.id ? { ...b, status: 'cancelled' as const } : b))
+      )
+      setRescheduleBooking(null)
+      toast.success(locale === 'fr' ? 'Séance reprogrammée' : 'Session rescheduled')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to reschedule')
+    }
+    setProcessingId(null)
+  }
+
   // Settings actions
   const handleConnectGoogle = async () => {
     setIsConnecting(true)
@@ -517,6 +582,9 @@ export default function BookingsPage() {
       booking_instructions: bookingSettings?.booking_instructions ?? null,
       email_notifications: bookingSettings?.email_notifications ?? true,
       external_booking_url: bookingSettings?.external_booking_url ?? null,
+      allow_patient_cancel: (bookingSettings as any)?.allow_patient_cancel ?? false,
+      allow_patient_reschedule: (bookingSettings as any)?.allow_patient_reschedule ?? false,
+      modification_notice_hours: (bookingSettings as any)?.modification_notice_hours ?? 48,
     }
     console.log('[bookings/handleSave] Payload:', JSON.stringify(payload))
 
@@ -841,6 +909,16 @@ export default function BookingsPage() {
                                             {locale === 'fr' ? 'Absent' : 'No Show'}
                                           </button>
                                         </>
+                                      )}
+                                      {booking.status === 'confirmed' && (
+                                        <button
+                                          onClick={() => openRescheduleModal(booking)}
+                                          disabled={processingId === booking.id}
+                                          className="flex items-center gap-1.5 px-3 py-1.5 text-teal-600 text-xs font-medium rounded-lg border border-teal-200 hover:bg-teal-50 transition-colors disabled:opacity-50"
+                                        >
+                                          <RefreshCw className="w-3.5 h-3.5" />
+                                          {locale === 'fr' ? 'Reprogrammer' : 'Reschedule'}
+                                        </button>
                                       )}
                                       {booking.status === 'confirmed' && !isPastBooking && (
                                         <button
@@ -1464,6 +1542,69 @@ export default function BookingsPage() {
                     </>
                   )}
 
+                  {/* Patient modification settings */}
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-4">
+                      {locale === 'fr' ? 'Modifications par le patient' : 'Patient modifications'}
+                    </h4>
+                    <div className="space-y-4">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <div
+                          className={`relative w-10 h-5 rounded-full transition-colors ${(bookingSettings as any)?.allow_patient_cancel ? 'bg-teal-600' : 'bg-gray-300'}`}
+                          onClick={() =>
+                            setBookingSettings((prev: any) => ({
+                              ...prev!,
+                              allow_patient_cancel: !prev?.allow_patient_cancel,
+                            }))
+                          }
+                        >
+                          <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${(bookingSettings as any)?.allow_patient_cancel ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                        </div>
+                        <span className="text-sm text-gray-700">
+                          {locale === 'fr' ? 'Autoriser le patient à annuler' : 'Allow patient to cancel'}
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <div
+                          className={`relative w-10 h-5 rounded-full transition-colors ${(bookingSettings as any)?.allow_patient_reschedule ? 'bg-teal-600' : 'bg-gray-300'}`}
+                          onClick={() =>
+                            setBookingSettings((prev: any) => ({
+                              ...prev!,
+                              allow_patient_reschedule: !prev?.allow_patient_reschedule,
+                            }))
+                          }
+                        >
+                          <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${(bookingSettings as any)?.allow_patient_reschedule ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                        </div>
+                        <span className="text-sm text-gray-700">
+                          {locale === 'fr' ? 'Autoriser le patient à reprogrammer' : 'Allow patient to reschedule'}
+                        </span>
+                      </label>
+                      {((bookingSettings as any)?.allow_patient_cancel || (bookingSettings as any)?.allow_patient_reschedule) && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {locale === 'fr' ? 'Délai minimum pour modifications (heures)' : 'Minimum notice for changes (hours)'}
+                          </label>
+                          <select
+                            value={(bookingSettings as any)?.modification_notice_hours ?? 48}
+                            onChange={(e) =>
+                              setBookingSettings((prev: any) => ({
+                                ...prev!,
+                                modification_notice_hours: parseInt(e.target.value),
+                              }))
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          >
+                            <option value={12}>12h</option>
+                            <option value={24}>24h</option>
+                            <option value={48}>48h</option>
+                            <option value={72}>72h</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <Button
                     type="button"
                     onClick={() => {
@@ -1484,6 +1625,104 @@ export default function BookingsPage() {
           </div>
         </div>
       </main>
+
+      {/* Reschedule Modal */}
+      {rescheduleBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setRescheduleBooking(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              {locale === 'fr' ? 'Reprogrammer la séance' : 'Reschedule session'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              {rescheduleBooking.client_name}
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {locale === 'fr' ? 'Nouvelle date' : 'New date'}
+                </label>
+                <input
+                  type="date"
+                  value={rescheduleDate}
+                  onChange={(e) => {
+                    setRescheduleDate(e.target.value)
+                    loadRescheduleSlots(e.target.value)
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+
+              {rescheduleDate && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {locale === 'fr' ? 'Créneau disponible' : 'Available slot'}
+                  </label>
+                  {isLoadingSlots ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {locale === 'fr' ? 'Chargement...' : 'Loading...'}
+                    </div>
+                  ) : rescheduleSlots.length === 0 ? (
+                    <p className="text-sm text-gray-500 py-2">
+                      {locale === 'fr' ? 'Aucun créneau disponible' : 'No available slots'}
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                      {rescheduleSlots.map((slot) => {
+                        const time = new Date(slot.slot_start).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+                        return (
+                          <button
+                            key={slot.slot_start}
+                            onClick={() => setRescheduleTime(slot.slot_start)}
+                            className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                              rescheduleTime === slot.slot_start
+                                ? 'bg-teal-600 text-white border-teal-600'
+                                : 'border-gray-200 hover:border-teal-300 hover:bg-teal-50'
+                            }`}
+                          >
+                            {time}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {locale === 'fr' ? 'Raison (optionnel)' : 'Reason (optional)'}
+                </label>
+                <input
+                  type="text"
+                  value={rescheduleReason}
+                  onChange={(e) => setRescheduleReason(e.target.value)}
+                  placeholder={locale === 'fr' ? 'Ex: conflit d\'horaire' : 'e.g. scheduling conflict'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setRescheduleBooking(null)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={handleReschedule}
+                disabled={!rescheduleTime || processingId === rescheduleBooking.id}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {processingId === rescheduleBooking.id && <Loader2 className="w-4 h-4 animate-spin" />}
+                {locale === 'fr' ? 'Reprogrammer' : 'Reschedule'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Settings Saved Confirmation Modal */}
       {showSettingsSavedModal && (

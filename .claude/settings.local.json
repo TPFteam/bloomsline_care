@@ -8,5 +8,9 @@
       "Bash(sips:*)",
       "Read(//Users/adityachanne/lauchpad/bloomsline_app/assets/**)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "code-review-graph"
+  ],
+  "enableAllProjectMcpServers": true
 }

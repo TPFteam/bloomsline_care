@@ -216,6 +216,60 @@ const templates: Record<NotificationType, NotificationTemplate> = {
           : `Booking cancelled`,
   },
 
+  booking_cancelled_by_member: {
+    title: (m, locale) =>
+      locale === 'fr' ? 'Séance annulée par le patient' : locale === 'es' ? 'Sesión cancelada por el paciente' : 'Session cancelled by patient',
+    body: (m, locale) =>
+      locale === 'fr'
+        ? `${m.clientName} a annulé sa séance du ${m.scheduledAt}.\nRaison : ${m.reason}`
+        : locale === 'es'
+          ? `${m.clientName} canceló su sesión del ${m.scheduledAt}.\nRazón: ${m.reason}`
+          : `${m.clientName} cancelled their session on ${m.scheduledAt}.\nReason: ${m.reason}`,
+    actionUrl: () => '/bookings',
+    emailSubject: (m, locale) =>
+      locale === 'fr'
+        ? `${m.clientName} a annulé sa séance`
+        : locale === 'es'
+          ? `${m.clientName} canceló su sesión`
+          : `${m.clientName} cancelled their session`,
+  },
+
+  booking_rescheduled_by_member: {
+    title: (m, locale) =>
+      locale === 'fr' ? 'Séance reprogrammée par le patient' : locale === 'es' ? 'Sesión reprogramada por el paciente' : 'Session rescheduled by patient',
+    body: (m, locale) =>
+      locale === 'fr'
+        ? `${m.clientName} a reprogrammé sa séance du ${m.originalTime} au ${m.newTime}.\nRaison : ${m.reason}`
+        : locale === 'es'
+          ? `${m.clientName} reprogramó su sesión del ${m.originalTime} al ${m.newTime}.\nRazón: ${m.reason}`
+          : `${m.clientName} rescheduled their session from ${m.originalTime} to ${m.newTime}.\nReason: ${m.reason}`,
+    actionUrl: () => '/bookings',
+    emailSubject: (m, locale) =>
+      locale === 'fr'
+        ? `${m.clientName} a reprogrammé sa séance`
+        : locale === 'es'
+          ? `${m.clientName} reprogramó su sesión`
+          : `${m.clientName} rescheduled their session`,
+  },
+
+  booking_rescheduled_by_practitioner: {
+    title: (m, locale) =>
+      locale === 'fr' ? 'Votre séance a été reprogrammée' : locale === 'es' ? 'Su sesión ha sido reprogramada' : 'Your session has been rescheduled',
+    body: (m, locale) =>
+      locale === 'fr'
+        ? `Votre séance du ${m.originalTime} a été reprogrammée au ${m.newTime}.${m.reason ? `\nRaison : ${m.reason}` : ''}`
+        : locale === 'es'
+          ? `Su sesión del ${m.originalTime} ha sido reprogramada al ${m.newTime}.${m.reason ? `\nRazón: ${m.reason}` : ''}`
+          : `Your session on ${m.originalTime} has been rescheduled to ${m.newTime}.${m.reason ? `\nReason: ${m.reason}` : ''}`,
+    actionUrl: () => '/bookings',
+    emailSubject: (m, locale) =>
+      locale === 'fr'
+        ? `Votre séance a été reprogrammée`
+        : locale === 'es'
+          ? `Su sesión ha sido reprogramada`
+          : `Your session has been rescheduled`,
+  },
+
   weekly_summary: {
     title: (m, locale) =>
       locale === 'fr' ? 'Votre semaine en résumé' : locale === 'es' ? 'Tu semana en resumen' : 'Your week in review',
