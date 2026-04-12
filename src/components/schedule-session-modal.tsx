@@ -835,9 +835,19 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                   ) : (
                     <div className="grid grid-cols-3 gap-2">
                       {availableSlots.map((slot) => {
-                        // slot_start is ISO string like "2025-12-03T09:00:00-05:00"
                         const slotDate = new Date(slot.slot_start)
-                        const timeStr = format(slotDate, 'HH:mm')
+                        const tz = practitionerTz || 'UTC'
+                        // Always display in practitioner's timezone
+                        const timeDisplay = slotDate.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                          timeZone: tz,
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: !use24Hour,
+                        })
+                        // Store time in practitioner's timezone for booking
+                        const h = parseInt(slotDate.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
+                        const m = slotDate.toLocaleString('en-US', { timeZone: tz, minute: '2-digit' })
+                        const timeStr = `${String(h === 24 ? 0 : h).padStart(2, '0')}:${m.padStart(2, '0')}`
                         return (
                           <button
                             key={slot.slot_start}
@@ -848,7 +858,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
-                            {format(slotDate, use24Hour ? 'HH:mm' : 'h:mm a')}
+                            {timeDisplay}
                           </button>
                         )
                       })}
