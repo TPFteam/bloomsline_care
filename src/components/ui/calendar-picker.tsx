@@ -26,6 +26,7 @@ interface CalendarPickerProps {
   onDateSelect: (date: Date) => void
   minDate?: Date
   maxDate?: Date
+  disabledDaysOfWeek?: number[]
   className?: string
 }
 
@@ -34,6 +35,7 @@ export function CalendarPicker({
   onDateSelect,
   minDate,
   maxDate,
+  disabledDaysOfWeek,
   className = '',
 }: CalendarPickerProps) {
   const { locale } = useLanguage()
@@ -102,6 +104,7 @@ export function CalendarPicker({
   const isDateDisabled = (date: Date) => {
     if (minDate && date < minDate) return true
     if (maxDate && date > maxDate) return true
+    if (disabledDaysOfWeek && disabledDaysOfWeek.includes(date.getDay())) return true
     return false
   }
 

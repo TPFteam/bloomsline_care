@@ -26,6 +26,7 @@ interface PractitionerInfo {
     avatar_url: string | null
     preferred_language?: string
   }
+  activeDays?: number[]
 }
 
 type Step = 'service' | 'datetime' | 'details' | 'confirm'
@@ -188,6 +189,11 @@ export default function BookingPage() {
       const maxDate = new Date()
       maxDate.setDate(maxDate.getDate() + practitioner.settings.max_advance_days)
       if (date > maxDate) return true
+    }
+
+    // Disable days without availability
+    if (practitioner?.activeDays && practitioner.activeDays.length > 0) {
+      if (!practitioner.activeDays.includes(date.getDay())) return true
     }
 
     return false

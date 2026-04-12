@@ -40,10 +40,23 @@ export async function GET(request: NextRequest) {
       .eq('id', profile.user_id)
       .single()
 
+    // Get available days of week
+    const { data: availDays } = await adminClient
+      .from('availability_schedules')
+      .select('day_of_week')
+      .eq('user_id', profile.user_id)
+      .eq('is_active', true)
+
+    const dayNameToNumber: Record<string, number> = {
+      sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
+    }
+    const activeDays = availDays ? [...new Set(availDays.map(d => dayNameToNumber[d.day_of_week]))] : []
+
     return NextResponse.json({
       profile,
       settings,
       user: user || { full_name: 'Practitioner', avatar_url: null },
+      activeDays,
     })
   } catch (error) {
     console.error('Error fetching booking info:', error)

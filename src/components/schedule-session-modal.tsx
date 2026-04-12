@@ -64,6 +64,13 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [manualTime, setManualTime] = useState('10:00')
   const [use24Hour, setUse24Hour] = useState(locale === 'fr')
   const [hasExternalBooking, setHasExternalBooking] = useState(false)
+  const [practitionerTz, setPractitionerTz] = useState<string | null>(null)
+  const browserTz = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : null
+  const [disabledDaysOfWeek, setDisabledDaysOfWeek] = useState<number[]>([])
+
+  const dayNameToNumber: Record<string, number> = {
+    sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
+  }
 
   // Session type options for manual mode (must match database enum)
   const sessionTypeOptions = [
@@ -158,6 +165,18 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       if (settings?.session_types) {
         setSessionTypes(settings.session_types as SessionType[])
       }
+      // Fetch available days of week
+      const { data: availDays } = await supabase
+        .from('availability_schedules')
+        .select('day_of_week')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+      if (availDays) {
+        const activeDays = new Set(availDays.map((d: { day_of_week: string }) => dayNameToNumber[d.day_of_week]))
+        const disabled = [0, 1, 2, 3, 4, 5, 6].filter(d => !activeDays.has(d))
+        setDisabledDaysOfWeek(disabled)
+      }
+
       // Check if external booking is enabled (field is non-null, including empty string)
       const extUrl = (settings as Record<string, unknown>)?.external_booking_url
       const isExternal = extUrl !== null && extUrl !== undefined
@@ -187,6 +206,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
       if (!res.ok) throw new Error(json.error || 'Failed to fetch slots')
       setAvailableSlots(json.slots || [])
+      if (json.practitionerTimezone) setPractitionerTz(json.practitionerTimezone)
     } catch (error) {
       console.error('[modal] Error fetching slots:', error)
       setAvailableSlots([])
@@ -776,15 +796,30 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                       setSelectedDate(startOfDay(date))
                       setSelectedTime(null)
                     }}
+                    disabledDaysOfWeek={disabledDaysOfWeek}
                   />
                 </div>
 
                 {/* Time Selection */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium text-gray-700">
-                      {locale === 'fr' ? 'Sélectionner l\'heure' : locale === 'es' ? 'Seleccionar hora' : 'Select Time'}
-                    </label>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">
+                        {locale === 'fr' ? 'Sélectionner l\'heure' : locale === 'es' ? 'Seleccionar hora' : 'Select Time'}
+                      </label>
+                      {practitionerTz && (
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                          <span className="text-xs text-teal-600">
+                            {practitionerTz.replace(/_/g, ' ').split('/').pop()}
+                          </span>
+                          {browserTz && browserTz !== practitionerTz && (
+                            <span className="text-xs text-gray-400">
+                              {locale === 'fr' ? 'Vous' : 'You'}: {browserTz.replace(/_/g, ' ').split('/').pop()}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <button
                       type="button"
                       onClick={() => setUse24Hour(!use24Hour)}
@@ -810,6 +845,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                         // slot_start is ISO string like "2025-12-03T09:00:00-05:00"
                         const slotDate = new Date(slot.slot_start)
                         const timeStr = format(slotDate, 'HH:mm')
+                        const showMemberTz = browserTz && practitionerTz && browserTz !== practitionerTz
+                        const memberTime = showMemberTz ? slotDate.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { timeZone: browserTz, hour: 'numeric', minute: '2-digit', hour12: !use24Hour }) : null
                         return (
                           <button
                             key={slot.slot_start}
@@ -821,6 +858,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                             }`}
                           >
                             {format(slotDate, use24Hour ? 'HH:mm' : 'h:mm a')}
+                            {memberTime && (
+                              <span className="block text-[10px] text-gray-400 font-normal mt-0.5">{memberTime}</span>
+                            )}
                           </button>
                         )
                       })}

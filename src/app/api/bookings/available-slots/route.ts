@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
   const supabase = createAdminClient();
 
   let slots: TimeSlot[];
+  let knownTz: string | null = null;
 
   if (skipNotice) {
     // Practitioner scheduling internally — build slots without min_notice_hours filter
@@ -72,7 +73,14 @@ export async function GET(request: NextRequest) {
     // (Do NOT auto-seed — practitioners manage their own availability)
 
     if (!schedules || schedules.length === 0) {
-      return NextResponse.json({ slots: [], practitionerTimezone: 'UTC' });
+      // Still fetch timezone from any schedule day for display
+      const { data: anySchedule } = await supabase
+        .from('availability_schedules')
+        .select('timezone')
+        .eq('user_id', practitionerId)
+        .limit(1)
+        .maybeSingle();
+      return NextResponse.json({ slots: [], practitionerTimezone: anySchedule?.timezone || 'UTC' });
     }
 
     // Check for date override blocking the whole day
@@ -90,6 +98,7 @@ export async function GET(request: NextRequest) {
     }
 
     const tz = schedules[0].timezone || 'UTC';
+    knownTz = tz;
 
     // Calculate the UTC offset for the practitioner's timezone on this date.
     // Uses Intl.DateTimeFormat to reliably get the offset — works on any server locale.
@@ -213,15 +222,19 @@ export async function GET(request: NextRequest) {
     slots = baseSlots || [];
   }
 
-  // Get practitioner's timezone from availability schedule
-  const { data: schedules } = await supabase
-    .from('availability_schedules')
-    .select('timezone')
-    .eq('user_id', practitionerId)
-    .limit(1)
-    .single();
-
-  const timezone = schedules?.timezone || 'UTC';
+  // Get practitioner's timezone (use cached value from skipNotice path, or re-query)
+  let timezone: string;
+  if (knownTz) {
+    timezone = knownTz;
+  } else {
+    const { data: tzRow } = await supabase
+      .from('availability_schedules')
+      .select('timezone')
+      .eq('user_id', practitionerId)
+      .limit(1)
+      .maybeSingle();
+    timezone = tzRow?.timezone || 'UTC';
+  }
 
   // If no base slots, return early
   if (slots.length === 0) {
