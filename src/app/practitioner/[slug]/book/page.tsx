@@ -123,6 +123,7 @@ export default function BookingPage() {
           return
         }
 
+        console.log('[book] activeDays from API:', info.activeDays)
         setPractitioner(info as PractitionerInfo)
       } catch {
         setError('Failed to load practitioner information.')
