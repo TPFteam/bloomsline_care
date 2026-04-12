@@ -810,11 +810,11 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                       {practitionerTz && (
                         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
                           <span className="text-xs text-teal-600">
-                            {practitionerTz.replace(/_/g, ' ').split('/').pop()}
+                            {locale === 'fr' ? 'Fuseau' : 'Timezone'}: {practitionerTz.replace(/_/g, ' ').split('/').pop()}
                           </span>
                           {browserTz && browserTz !== practitionerTz && (
                             <span className="text-xs text-gray-400">
-                              {locale === 'fr' ? 'Vous' : 'You'}: {browserTz.replace(/_/g, ' ').split('/').pop()}
+                              {locale === 'fr' ? 'Votre appareil' : 'Your device'}: {browserTz.replace(/_/g, ' ').split('/').pop()}
                             </span>
                           )}
                         </div>
