@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
   const date = searchParams.get('date');
   const duration = parseInt(searchParams.get('duration') || '60', 10);
   const skipNotice = searchParams.get('skipNotice') === 'true';
+  const formatFilter = searchParams.get('format'); // 'in_person', 'video', or null (all)
 
   if (!practitionerId || !date) {
     return NextResponse.json(
@@ -62,10 +63,18 @@ export async function GET(request: NextRequest) {
     // Get availability schedules for this day
     let { data: schedules, error: schedError } = await supabase
       .from('availability_schedules')
-      .select('start_time, end_time, timezone')
+      .select('start_time, end_time, timezone, session_format')
       .eq('user_id', practitionerId)
       .eq('day_of_week', dayOfWeek)
       .eq('is_active', true);
+
+    // Filter by session format if requested
+    if (formatFilter && schedules) {
+      schedules = schedules.filter((s: any) => {
+        const fmt = s.session_format || 'both';
+        return fmt === 'both' || fmt === formatFilter;
+      });
+    }
 
     console.log('[available-slots] schedules for', dayOfWeek, ':', JSON.stringify(schedules), 'error:', schedError);
 

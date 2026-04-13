@@ -135,6 +135,7 @@ interface AvailabilitySlot {
   startTime: string
   endTime: string
   isActive: boolean
+  sessionFormat: 'in_person' | 'video' | 'both'
 }
 
 export default function BookingsPage() {
@@ -262,11 +263,12 @@ export default function BookingsPage() {
       const schedules = await getAvailabilitySchedules(authUser.id)
       if (schedules.length > 0) {
         setAvailabilitySlots(
-          schedules.map((s) => ({
+          schedules.map((s: any) => ({
             day: s.day_of_week,
             startTime: s.start_time.slice(0, 5),
             endTime: s.end_time.slice(0, 5),
             isActive: s.is_active,
+            sessionFormat: s.session_format || 'both',
           }))
         )
         setTimezone(schedules[0].timezone)
@@ -523,7 +525,7 @@ export default function BookingsPage() {
   const addAvailabilitySlot = (day: DayOfWeek) => {
     setAvailabilitySlots([
       ...availabilitySlots,
-      { day, startTime: '09:00', endTime: '17:00', isActive: true },
+      { day, startTime: '09:00', endTime: '17:00', isActive: true, sessionFormat: 'both' },
     ])
   }
 
@@ -549,6 +551,7 @@ export default function BookingsPage() {
         end_time: slot.endTime + ':00',
         is_active: slot.isActive,
         timezone,
+        session_format: slot.sessionFormat || 'both',
       }))
     )
 
@@ -1282,6 +1285,15 @@ export default function BookingsPage() {
                                       value={slot.endTime}
                                       onChange={(v) => updateAvailabilitySlot(slot.index, 'endTime', v)}
                                     />
+                                    <select
+                                      value={slot.sessionFormat || 'both'}
+                                      onChange={(e) => updateAvailabilitySlot(slot.index, 'sessionFormat', e.target.value)}
+                                      className="px-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600"
+                                    >
+                                      <option value="both">{locale === 'fr' ? 'Les deux' : 'Both'}</option>
+                                      <option value="in_person">{locale === 'fr' ? 'En personne' : 'In person'}</option>
+                                      <option value="video">{locale === 'fr' ? 'Vidéo' : 'Video'}</option>
+                                    </select>
                                     <button
                                       onClick={() => removeAvailabilitySlot(slot.index)}
                                       className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -1510,11 +1522,11 @@ export default function BookingsPage() {
                         type="number"
                         min="1"
                         max="168"
-                        value={bookingSettings?.min_notice_hours || 24}
+                        value={bookingSettings?.min_notice_hours ?? ''}
                         onChange={(e) =>
                           setBookingSettings((prev) => ({
                             ...prev!,
-                            min_notice_hours: parseInt(e.target.value) || 24,
+                            min_notice_hours: e.target.value === '' ? 0 : parseInt(e.target.value),
                           }))
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -1528,11 +1540,11 @@ export default function BookingsPage() {
                         type="number"
                         min="1"
                         max="365"
-                        value={bookingSettings?.max_advance_days || 60}
+                        value={bookingSettings?.max_advance_days ?? ''}
                         onChange={(e) =>
                           setBookingSettings((prev) => ({
                             ...prev!,
-                            max_advance_days: parseInt(e.target.value) || 60,
+                            max_advance_days: e.target.value === '' ? 0 : parseInt(e.target.value),
                           }))
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg"

@@ -1601,20 +1601,30 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         return
       }
 
-      const text = await file.text()
+      let htmlContent = ''
 
-      if (!text.trim()) {
-        toast.error(fr ? 'Le fichier est vide.' : 'The file is empty.')
-        return
-      }
-
-      if (editorRef.current) {
-        const lines = text
+      if (file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+        // Parse DOCX using mammoth
+        const mammoth = (await import('mammoth')).default
+        const arrayBuffer = await file.arrayBuffer()
+        const result = await mammoth.convertToHtml({ arrayBuffer })
+        htmlContent = result.value
+      } else {
+        // Plain text file
+        const text = await file.text()
+        if (!text.trim()) {
+          toast.error(fr ? 'Le fichier est vide.' : 'The file is empty.')
+          return
+        }
+        htmlContent = text
           .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
           .split('\n')
-          .map(line => line.trim() ? `<p>${line}</p>` : '<p><br></p>')
+          .map((line: string) => line.trim() ? `<p>${line}</p>` : '<p><br></p>')
           .join('')
-        editorRef.current.innerHTML += lines
+      }
+
+      if (editorRef.current && htmlContent) {
+        editorRef.current.innerHTML += htmlContent
         handleInput()
       }
       toast.success(fr ? 'Fichier importé' : 'File imported')
@@ -1872,7 +1882,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         <input
           ref={textFileInputRef}
           type="file"
-          accept=".txt,.md,.markdown,.rtf,.csv,.log,text/plain,text/markdown,text/csv"
+          accept=".txt,.doc,.docx,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0]

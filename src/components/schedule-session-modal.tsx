@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { analytics } from '@/lib/analytics/events'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video, Settings } from 'lucide-react'
+import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video, Settings, Loader2 } from 'lucide-react'
 import { CalendarPicker } from '@/components/ui/calendar-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -35,7 +35,7 @@ interface ScheduleSessionModalProps {
   preselectedMember?: Member | null
 }
 
-type Step = 'member' | 'session' | 'datetime' | 'confirm'
+type Step = 'member' | 'session' | 'format' | 'datetime' | 'confirm'
 type ScheduleMode = 'calendar' | 'manual'
 
 export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMember }: ScheduleSessionModalProps) {
@@ -46,6 +46,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [sessionTypes, setSessionTypes] = useState<SessionType[]>([])
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([])
   const [loading, setLoading] = useState(false)
+  const [selectedSessionFormat, setSelectedSessionFormat] = useState<'in_person' | 'video' | null>(null)
+  const [availSessionFormats, setAvailSessionFormats] = useState<string[]>(['in_person', 'video'])
   const [searchQuery, setSearchQuery] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
 
@@ -66,7 +68,24 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [hasExternalBooking, setHasExternalBooking] = useState(false)
   const [practitionerTz, setPractitionerTz] = useState<string | null>(null)
   const browserTz = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : null
-  const [disabledDaysOfWeek, setDisabledDaysOfWeek] = useState<number[]>([])
+  const [baseDisabledDays, setBaseDisabledDays] = useState<number[]>([])
+  const [scheduleDayFormats, setScheduleDayFormats] = useState<Record<string, string[]>>({})
+  const [dateViewMode, setDateViewMode] = useState<'calendar' | 'quick'>('calendar')
+
+  // Compute disabled days based on format selection
+  const disabledDaysOfWeek = useMemo(() => {
+    if (!selectedSessionFormat) return baseDisabledDays
+    const disabled: number[] = []
+    for (let d = 0; d < 7; d++) {
+      if (baseDisabledDays.includes(d)) { disabled.push(d); continue }
+      const fmts = scheduleDayFormats[String(d)]
+      if (!fmts || !fmts.includes(selectedSessionFormat)) disabled.push(d)
+    }
+    return disabled
+  }, [baseDisabledDays, selectedSessionFormat, scheduleDayFormats])
+  const [quickDays, setQuickDays] = useState<{ date: string; dayLabel: string; slots: { slot_start: string; slot_end: string }[] }[]>([])
+  const [quickLoading, setQuickLoading] = useState(false)
+  const [quickExpandedDate, setQuickExpandedDate] = useState<string | null>(null)
 
   const dayNameToNumber: Record<string, number> = {
     sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
@@ -168,13 +187,31 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       // Fetch available days of week
       const { data: availDays } = await supabase
         .from('availability_schedules')
-        .select('day_of_week')
+        .select('day_of_week, session_format')
         .eq('user_id', user.id)
         .eq('is_active', true)
       if (availDays) {
-        const activeDays = new Set(availDays.map((d: { day_of_week: string }) => dayNameToNumber[d.day_of_week]))
+        const activeDays = new Set(availDays.map((d: any) => dayNameToNumber[d.day_of_week]))
         const disabled = [0, 1, 2, 3, 4, 5, 6].filter(d => !activeDays.has(d))
-        setDisabledDaysOfWeek(disabled)
+        setBaseDisabledDays(disabled)
+        // Build day format map + available formats
+        const fmts = new Set<string>()
+        const dfMap: Record<string, string[]> = {}
+        for (const d of availDays) {
+          const dayNum = String(dayNameToNumber[(d as any).day_of_week])
+          const fmt = (d as any).session_format || 'both'
+          if (!dfMap[dayNum]) dfMap[dayNum] = []
+          if (fmt === 'both') {
+            if (!dfMap[dayNum].includes('in_person')) dfMap[dayNum].push('in_person')
+            if (!dfMap[dayNum].includes('video')) dfMap[dayNum].push('video')
+            fmts.add('in_person'); fmts.add('video')
+          } else {
+            if (!dfMap[dayNum].includes(fmt)) dfMap[dayNum].push(fmt)
+            fmts.add(fmt)
+          }
+        }
+        setScheduleDayFormats(dfMap)
+        setAvailSessionFormats([...fmts])
       }
 
       // Check if external booking is enabled (field is non-null, including empty string)
@@ -198,7 +235,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd')
-      const url = `/api/bookings/available-slots?practitionerId=${userId}&date=${dateStr}&duration=${selectedSessionType.duration}&skipNotice=true`
+      const url = `/api/bookings/available-slots?practitionerId=${userId}&date=${dateStr}&duration=${selectedSessionType.duration}&skipNotice=true${selectedSessionFormat ? `&format=${selectedSessionFormat}` : ''}`
       console.log('[modal] fetching:', url)
       const res = await fetch(url)
       const json = await res.json()
@@ -212,6 +249,21 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       setAvailableSlots([])
     }
   }
+
+  // Load quick view
+  useEffect(() => {
+    if (dateViewMode !== 'quick' || !userId || !selectedSessionType) return
+    setQuickLoading(true)
+    fetch(`/api/bookings/next-available?practitionerId=${userId}&duration=${selectedSessionType.duration}&limit=6&skipNotice=true${selectedSessionFormat ? `&format=${selectedSessionFormat}` : ''}`)
+      .then(res => res.json())
+      .then(data => {
+        setQuickDays(data.days || [])
+        if (data.practitionerTimezone) setPractitionerTz(data.practitionerTimezone)
+        if (data.days?.length > 0) setQuickExpandedDate(data.days[0].date)
+      })
+      .catch(() => setQuickDays([]))
+      .finally(() => setQuickLoading(false))
+  }, [dateViewMode, userId, selectedSessionType])
 
   const handleBookSession = async () => {
     if (!selectedMember || !userId) return
@@ -312,25 +364,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           // Don't fail - session was created successfully
         }
 
-        // Send notification to member (skip for backdated sessions)
-        if (selectedMember.user_id && sessionResult?.id && !isBackdated) {
-          try {
-            const { data: practitioner } = await supabase
-              .from('users')
-              .select('full_name')
-              .eq('id', userId)
-              .single()
-
-            await notifySessionScheduled(supabase, {
-              memberUserId: selectedMember.user_id,
-              sessionId: sessionResult.id,
-              scheduledAt: startTime.toISOString(),
-              practitionerName: practitioner?.full_name || 'Your practitioner',
-            })
-          } catch (notifyError) {
-            console.error('Error sending session notification:', notifyError)
-          }
-        }
+        // Google Calendar sends its own invite via sendUpdates=all — no separate email needed
 
         toast.success(`Session scheduled with ${selectedMember.first_name} ${selectedMember.last_name}`)
         analytics.sessionScheduled({ format: manualSessionFormat, duration: manualDuration })
@@ -390,25 +424,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
         console.log('Booking created:', data)
 
-        // Send notification to member (skip for backdated sessions)
-        if (selectedMember.user_id && data?.id && !isBackdated) {
-          try {
-            const { data: practitioner } = await supabase
-              .from('users')
-              .select('full_name')
-              .eq('id', userId)
-              .single()
-
-            await notifySessionScheduled(supabase, {
-              memberUserId: selectedMember.user_id,
-              sessionId: data.id,
-              scheduledAt: startTime.toISOString(),
-              practitionerName: practitioner?.full_name || 'Your practitioner',
-            })
-          } catch (notifyError) {
-            console.error('Error sending session notification:', notifyError)
-          }
-        }
+        // Google Calendar sends its own invite via sendUpdates=all — no separate email needed
 
         // Sync to Google Calendar via API
         if (data?.id) {
@@ -473,7 +489,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
   const goBack = () => {
     if (step === 'session' && !preselectedMember) setStep('member')
-    else if (step === 'datetime') setStep('session')
+    else if (step === 'format') setStep('session')
+    else if (step === 'datetime') setStep('format')
     else if (step === 'confirm') setStep('datetime')
   }
 
@@ -483,6 +500,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       if (scheduleMode === 'manual') return !!manualSessionType && manualDuration > 0
       return !!selectedSessionType
     }
+    if (step === 'format') return !!selectedSessionFormat
     if (step === 'datetime') {
       if (scheduleMode === 'manual') return !!manualTime
       return !!selectedTime
@@ -535,34 +553,37 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           {/* Progress Steps */}
           <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
             <div className="flex items-center justify-center">
-              {['member', 'session', 'datetime', 'confirm'].map((s, index) => (
+              {['member', 'session', 'format', 'datetime', 'confirm'].map((s, index, arr) => {
+                const currentIndex = arr.indexOf(step)
+                return (
                 <div key={s} className="flex items-center">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
                       step === s
                         ? 'bg-mint-500 text-white'
-                        : ['member', 'session', 'datetime', 'confirm'].indexOf(step) > index
+                        : currentIndex > index
                         ? 'bg-mint-100 text-mint-600'
                         : 'bg-gray-200 text-gray-500'
                     }`}
                   >
-                    {['member', 'session', 'datetime', 'confirm'].indexOf(step) > index ? (
-                      <Check className="w-4 h-4" />
+                    {currentIndex > index ? (
+                      <Check className="w-3.5 h-3.5" />
                     ) : (
                       index + 1
                     )}
                   </div>
-                  {index < 3 && (
+                  {index < arr.length - 1 && (
                     <div
-                      className={`w-12 h-0.5 mx-2 ${
-                        ['member', 'session', 'datetime', 'confirm'].indexOf(step) > index
+                      className={`w-8 h-0.5 mx-1 ${
+                        currentIndex > index
                           ? 'bg-mint-300'
                           : 'bg-gray-200'
                       }`}
                     />
                   )}
                 </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 
@@ -780,9 +801,151 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               </div>
             )}
 
-            {/* Step 3: Select Date & Time */}
+            {/* Step: Format */}
+            {step === 'format' && (
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-gray-700 mb-1">
+                  {locale === 'fr' ? 'Format de séance' : 'Session Format'}
+                </p>
+                {availSessionFormats.includes('in_person') && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSessionFormat('in_person')}
+                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                      selectedSessionFormat === 'in_person'
+                        ? 'border-mint-500 bg-mint-50/50'
+                        : 'border-gray-100 hover:border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Building2 className="w-5 h-5 text-gray-500" />
+                      <div>
+                        <p className="font-medium text-gray-900">{locale === 'fr' ? 'En personne' : 'In person'}</p>
+                        <p className="text-xs text-gray-500">{locale === 'fr' ? 'Au cabinet' : "At the office"}</p>
+                      </div>
+                    </div>
+                  </button>
+                )}
+                {availSessionFormats.includes('video') && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSessionFormat('video')}
+                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                      selectedSessionFormat === 'video'
+                        ? 'border-mint-500 bg-mint-50/50'
+                        : 'border-gray-100 hover:border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Video className="w-5 h-5 text-gray-500" />
+                      <div>
+                        <p className="font-medium text-gray-900">{locale === 'fr' ? 'Vidéo' : 'Video call'}</p>
+                        <p className="text-xs text-gray-500">{locale === 'fr' ? 'Séance à distance' : 'Remote session'}</p>
+                      </div>
+                    </div>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Step: Select Date & Time */}
             {step === 'datetime' && (
               <div className="space-y-4">
+                {/* View toggle */}
+                <div className="flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    type="button"
+                    onClick={() => setDateViewMode('calendar')}
+                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+                      dateViewMode === 'calendar' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {locale === 'fr' ? 'Calendrier' : 'Calendar'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDateViewMode('quick')}
+                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+                      dateViewMode === 'quick' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {locale === 'fr' ? 'Prochaines dispos' : 'Next available'}
+                  </button>
+                </div>
+
+                {/* Quick view */}
+                {dateViewMode === 'quick' && (
+                  <div className="space-y-2">
+                    {quickLoading ? (
+                      <div className="py-8 text-center">
+                        <Loader2 className="w-5 h-5 animate-spin mx-auto text-teal-500 mb-2" />
+                        <p className="text-sm text-gray-500">{locale === 'fr' ? 'Recherche...' : 'Finding times...'}</p>
+                      </div>
+                    ) : quickDays.length === 0 ? (
+                      <div className="py-8 text-center">
+                        <Clock className="w-6 h-6 mx-auto text-gray-300 mb-2" />
+                        <p className="text-sm text-gray-500">{locale === 'fr' ? 'Aucun créneau disponible' : 'No available times'}</p>
+                      </div>
+                    ) : (
+                      quickDays.map((day) => {
+                        const isExpanded = quickExpandedDate === day.date
+                        const dayDate = new Date(day.date + 'T12:00:00')
+                        const dayLabel = dayDate.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+                        })
+                        return (
+                          <div key={day.date} className="border border-gray-200 rounded-xl overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => setQuickExpandedDate(isExpanded ? null : day.date)}
+                              className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                            >
+                              <span className="text-sm font-medium text-gray-900 capitalize">{dayLabel}</span>
+                              <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                            </button>
+                            {isExpanded && (
+                              <div className="px-4 pb-4 pt-1">
+                                <div className="flex flex-wrap gap-2">
+                                  {day.slots.map((slot) => {
+                                    const slotDate = new Date(slot.slot_start)
+                                    const tz = practitionerTz || 'UTC'
+                                    const timeDisplay = slotDate.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                                      timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: locale !== 'fr',
+                                    })
+                                    const h = parseInt(slotDate.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
+                                    const m = slotDate.toLocaleString('en-US', { timeZone: tz, minute: '2-digit' })
+                                    const timeStr = `${String(h === 24 ? 0 : h).padStart(2, '0')}:${m.padStart(2, '0')}`
+                                    const isSelected = selectedTime === timeStr
+                                    return (
+                                      <button
+                                        type="button"
+                                        key={slot.slot_start}
+                                        onClick={() => {
+                                          setSelectedTime(timeStr)
+                                          setSelectedDate(startOfDay(new Date(day.date + 'T12:00:00')))
+                                        }}
+                                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                                          isSelected
+                                            ? 'bg-mint-500 text-white shadow-md'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-mint-50 hover:text-mint-700'
+                                        }`}
+                                      >
+                                        {timeDisplay}
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                )}
+
+                {/* Calendar view */}
+                {dateViewMode === 'calendar' && (<>
                 {/* Date Selection */}
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-3 block">
@@ -865,6 +1028,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                     </div>
                   )}
                 </div>
+              </>)}
               </div>
             )}
 
@@ -891,6 +1055,16 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                         {scheduleMode === 'manual' ? getSessionTypeLabel(manualSessionType) : selectedSessionType ? getLocaleName(selectedSessionType) : ''}
                       </span>
                     </div>
+                    {selectedSessionFormat && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">{locale === 'fr' ? 'Format' : 'Format'}</span>
+                        <span className="font-medium text-gray-900">
+                          {selectedSessionFormat === 'video'
+                            ? (locale === 'fr' ? 'Vidéo' : 'Video call')
+                            : (locale === 'fr' ? 'En personne' : 'In person')}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">{locale === 'fr' ? 'Durée' : locale === 'es' ? 'Duración' : 'Duration'}</span>
                       <span className="font-medium text-gray-900">
@@ -964,7 +1138,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               <button
                 onClick={() => {
                   if (step === 'member') setStep('session')
-                  else if (step === 'session') setStep('datetime')
+                  else if (step === 'session') setStep('format')
+                  else if (step === 'format') setStep('datetime')
                   else if (step === 'datetime') setStep('confirm')
                 }}
                 disabled={!canProceed()}

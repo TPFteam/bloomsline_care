@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Calendar, Clock, User, Mail, Phone, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info } from 'lucide-react'
+import { Calendar, Clock, User, Mail, Phone, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Building2, Video } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
 import type { BookingSettings, SessionType, TimeSlot } from '@/types/calendar'
@@ -27,15 +27,17 @@ interface PractitionerInfo {
     preferred_language?: string
   }
   activeDays?: number[]
+  availableFormats?: string[]
+  dayFormats?: Record<string, string[]>
 }
 
-type Step = 'service' | 'datetime' | 'details' | 'confirm'
+type Step = 'service' | 'format' | 'datetime' | 'details' | 'confirm'
 
-const STEP_ORDER: Step[] = ['service', 'datetime', 'details', 'confirm']
+const STEP_ORDER: Step[] = ['service', 'format', 'datetime', 'details', 'confirm']
 
 const STEP_LABELS: Record<string, Record<Step, string>> = {
-  en: { service: 'Session', datetime: 'Date & Time', details: 'Details', confirm: 'Confirm' },
-  fr: { service: 'Séance', datetime: 'Date & Heure', details: 'Détails', confirm: 'Confirmer' },
+  en: { service: 'Session', format: 'Format', datetime: 'Date & Time', details: 'Details', confirm: 'Confirm' },
+  fr: { service: 'Séance', format: 'Format', datetime: 'Date & Heure', details: 'Détails', confirm: 'Confirmer' },
 }
 
 const t = (locale: string, translations: Record<string, string>) =>
@@ -75,6 +77,7 @@ export default function BookingPage() {
   // Booking flow state
   const [currentStep, setCurrentStep] = useState<Step>('service')
   const [selectedService, setSelectedService] = useState<SessionType | null>(null)
+  const [selectedFormat, setSelectedFormat] = useState<'in_person' | 'video' | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([])
@@ -98,7 +101,7 @@ export default function BookingPage() {
   const [calendarSynced, setCalendarSynced] = useState(false)
 
   // Date view mode
-  const [dateViewMode, setDateViewMode] = useState<'calendar' | 'quick'>('quick')
+  const [dateViewMode, setDateViewMode] = useState<'calendar' | 'quick'>('calendar')
   const [quickDays, setQuickDays] = useState<{ date: string; dayLabel: string; slots: TimeSlot[] }[]>([])
   const [quickLoading, setQuickLoading] = useState(false)
   const [quickExpandedDate, setQuickExpandedDate] = useState<string | null>(null)
@@ -129,7 +132,7 @@ export default function BookingPage() {
           return
         }
 
-        console.log('[book] activeDays from API:', info.activeDays)
+        console.log('[book] activeDays:', info.activeDays, 'dayFormats:', info.dayFormats, 'availableFormats:', info.availableFormats)
         setPractitioner(info as PractitionerInfo)
       } catch {
         setError('Failed to load practitioner information.')
@@ -150,7 +153,7 @@ export default function BookingPage() {
       const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
       try {
         const res = await fetch(
-          `/api/bookings/available-slots?practitionerId=${practitioner.profile.user_id}&date=${dateStr}&duration=${selectedService.duration}`
+          `/api/bookings/available-slots?practitionerId=${practitioner.profile.user_id}&date=${dateStr}&duration=${selectedService.duration}${selectedFormat ? `&format=${selectedFormat}` : ''}`
         )
         const data = await res.json()
         setAvailableSlots(data.slots || [])
@@ -171,7 +174,7 @@ export default function BookingPage() {
   useEffect(() => {
     if (dateViewMode !== 'quick' || !practitioner || !selectedService) return
     setQuickLoading(true)
-    fetch(`/api/bookings/next-available?practitionerId=${practitioner.profile.user_id}&duration=${selectedService.duration}&limit=6`)
+    fetch(`/api/bookings/next-available?practitionerId=${practitioner.profile.user_id}&duration=${selectedService.duration}&limit=6${selectedFormat ? `&format=${selectedFormat}` : ''}`)
       .then(res => res.json())
       .then(data => {
         setQuickDays(data.days || [])
@@ -218,6 +221,12 @@ export default function BookingPage() {
     // Disable days without availability
     if (practitioner?.activeDays && practitioner.activeDays.length > 0) {
       if (!practitioner.activeDays.includes(date.getDay())) return true
+    }
+
+    // Disable days that don't match the selected format
+    if (selectedFormat && practitioner?.dayFormats) {
+      const dayFmts = practitioner.dayFormats[String(date.getDay())]
+      if (!dayFmts || !dayFmts.includes(selectedFormat)) return true
     }
 
     return false
@@ -349,6 +358,8 @@ export default function BookingPage() {
     switch (currentStep) {
       case 'service':
         return !!selectedService
+      case 'format':
+        return !!selectedFormat
       case 'datetime':
         return !!selectedDate && !!selectedSlot
       case 'details':
@@ -679,12 +690,14 @@ export default function BookingPage() {
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
                 {currentStep === 'service' && t(locale, { en: 'Choose a Session', fr: 'Choisir une séance' })}
+                {currentStep === 'format' && t(locale, { en: 'Session Format', fr: 'Format de séance' })}
                 {currentStep === 'datetime' && t(locale, { en: 'Choose Date & Time', fr: 'Choisir la date et l\'heure' })}
                 {currentStep === 'details' && t(locale, { en: 'Your Details', fr: 'Vos coordonnées' })}
                 {currentStep === 'confirm' && t(locale, { en: 'Confirm Booking', fr: 'Confirmer la réservation' })}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
                 {currentStep === 'service' && t(locale, { en: 'Choose the type of session you\'d like to book', fr: 'Choisissez le type de séance que vous souhaitez réserver' })}
+                {currentStep === 'format' && t(locale, { en: 'How would you like to attend?', fr: 'Comment souhaitez-vous consulter ?' })}
                 {currentStep === 'datetime' && t(locale, { en: 'Pick an available time that works for you', fr: 'Sélectionnez un créneau qui vous convient' })}
                 {currentStep === 'details' && t(locale, { en: 'We\'ll use this to confirm your appointment', fr: 'Ces informations serviront à confirmer votre rendez-vous' })}
                 {currentStep === 'confirm' && t(locale, { en: 'Review everything before confirming', fr: 'Vérifiez les détails avant de confirmer' })}
@@ -745,19 +758,63 @@ export default function BookingPage() {
               </div>
             )}
 
+            {/* Format Selection */}
+            {currentStep === 'format' && (
+              <div className="space-y-3">
+                {(!practitioner?.availableFormats || practitioner.availableFormats.includes('in_person')) && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0 }}
+                    onClick={() => setSelectedFormat('in_person')}
+                    className={`w-full p-5 rounded-xl border-2 text-left transition-all ${
+                      selectedFormat === 'in_person'
+                        ? 'border-teal-500 bg-teal-50/50 shadow-md shadow-teal-100/50'
+                        : 'border-gray-100 hover:border-gray-200 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center">
+                        <Building2 className="w-5 h-5 text-teal-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{t(locale, { en: 'In person', fr: 'En personne' })}</p>
+                        <p className="text-sm text-gray-500">{t(locale, { en: 'At the practitioner\'s office', fr: 'Au cabinet du praticien' })}</p>
+                      </div>
+                    </div>
+                  </motion.button>
+                )}
+                {(!practitioner?.availableFormats || practitioner.availableFormats.includes('video')) && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 }}
+                    onClick={() => setSelectedFormat('video')}
+                    className={`w-full p-5 rounded-xl border-2 text-left transition-all ${
+                      selectedFormat === 'video'
+                        ? 'border-teal-500 bg-teal-50/50 shadow-md shadow-teal-100/50'
+                        : 'border-gray-100 hover:border-gray-200 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center">
+                        <Video className="w-5 h-5 text-teal-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{t(locale, { en: 'Video call', fr: 'Vidéo' })}</p>
+                        <p className="text-sm text-gray-500">{t(locale, { en: 'Remote session via video', fr: 'Séance à distance par vidéo' })}</p>
+                      </div>
+                    </div>
+                  </motion.button>
+                )}
+              </div>
+            )}
+
             {/* Date & Time Selection */}
             {currentStep === 'datetime' && (
               <div className="space-y-6">
                 {/* View toggle */}
                 <div className="flex bg-gray-100 rounded-lg p-1">
-                  <button
-                    onClick={() => setDateViewMode('quick')}
-                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
-                      dateViewMode === 'quick' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {t(locale, { en: 'Next available', fr: 'Prochaines dispos' })}
-                  </button>
                   <button
                     onClick={() => setDateViewMode('calendar')}
                     className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
@@ -765,6 +822,14 @@ export default function BookingPage() {
                     }`}
                   >
                     {t(locale, { en: 'Calendar', fr: 'Calendrier' })}
+                  </button>
+                  <button
+                    onClick={() => setDateViewMode('quick')}
+                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+                      dateViewMode === 'quick' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {t(locale, { en: 'Next available', fr: 'Prochaines dispos' })}
                   </button>
                 </div>
 
@@ -1040,6 +1105,20 @@ export default function BookingPage() {
                       <p className="text-sm text-gray-500">{selectedService?.duration} minutes</p>
                     </div>
                   </div>
+                  {selectedFormat && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center shrink-0">
+                        {selectedFormat === 'video' ? <Video className="w-4.5 h-4.5 text-teal-500" /> : <Building2 className="w-4.5 h-4.5 text-teal-500" />}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {selectedFormat === 'video'
+                            ? t(locale, { en: 'Video call', fr: 'Vidéo' })
+                            : t(locale, { en: 'In person', fr: 'En personne' })}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center shrink-0">
                       <Clock className="w-4.5 h-4.5 text-teal-500" />

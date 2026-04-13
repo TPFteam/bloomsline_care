@@ -169,7 +169,7 @@ export async function POST(
       if (googleAuth) {
         try {
           const response = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all`,
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,
             {
               method: 'POST',
               headers: {
@@ -182,6 +182,12 @@ export async function POST(
                 start: { dateTime: newSlotStart, timeZone: booking.timezone },
                 end: { dateTime: newSlotEnd, timeZone: booking.timezone },
                 attendees: [{ email: booking.client_email, displayName: booking.client_name }],
+                conferenceData: {
+                  createRequest: {
+                    requestId: `bloomsline-reschedule-${newBooking.id}`,
+                    conferenceSolutionKey: { type: 'hangoutsMeet' },
+                  },
+                },
               }),
             }
           );

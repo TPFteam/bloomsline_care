@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     // Get available days of week
     const { data: availDays } = await adminClient
       .from('availability_schedules')
-      .select('day_of_week')
+      .select('day_of_week, session_format')
       .eq('user_id', profile.user_id)
       .eq('is_active', true)
 
@@ -52,11 +52,34 @@ export async function GET(request: NextRequest) {
     }
     const activeDays = availDays ? [...new Set(availDays.map(d => dayNameToNumber[d.day_of_week]))] : []
 
+    // Build format map per day: { 0: ['video'], 1: ['in_person', 'video'], ... }
+    const dayFormats: Record<number, string[]> = {}
+    const formats = new Set<string>()
+    if (availDays) {
+      for (const d of availDays) {
+        const dayNum = dayNameToNumber[d.day_of_week]
+        const fmt = (d as any).session_format || 'both'
+        if (!dayFormats[dayNum]) dayFormats[dayNum] = []
+        if (fmt === 'both') {
+          if (!dayFormats[dayNum].includes('in_person')) dayFormats[dayNum].push('in_person')
+          if (!dayFormats[dayNum].includes('video')) dayFormats[dayNum].push('video')
+          formats.add('in_person')
+          formats.add('video')
+        } else {
+          if (!dayFormats[dayNum].includes(fmt)) dayFormats[dayNum].push(fmt)
+          formats.add(fmt)
+        }
+      }
+    }
+    const availableFormats = [...formats]
+
     return NextResponse.json({
       profile,
       settings,
       user: user || { full_name: 'Practitioner', avatar_url: null },
       activeDays,
+      availableFormats,
+      dayFormats,
     })
   } catch (error) {
     console.error('Error fetching booking info:', error)

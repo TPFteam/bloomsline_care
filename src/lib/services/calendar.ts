@@ -124,6 +124,7 @@ export async function bulkUpdateAvailability(
     end_time: string;
     is_active: boolean;
     timezone: string;
+    session_format?: string;
   }>
 ): Promise<boolean> {
   const supabase = createClient();
@@ -180,6 +181,7 @@ export async function bulkUpdateAvailability(
       end_time: s.end_time,
       is_active: s.is_active,
       timezone: s.timezone,
+      session_format: s.session_format || 'both',
     }))
 
     console.log('[availability] Inserting', insertData.length, 'slots:', insertData.map(s => `${s.day_of_week} ${s.start_time}-${s.end_time}`))

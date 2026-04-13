@@ -212,7 +212,7 @@ export async function PATCH(
           const sessionType = sessionTypes.find(st => st.id === booking.session_type);
           const sessionTypeName = sessionType?.name || booking.session_type;
 
-          const calendarEvent: GoogleCalendarEvent = {
+          const calendarEvent = {
             summary: `Session with ${booking.client_name}`,
             description: `Session Type: ${sessionTypeName}\n\nClient: ${booking.client_name}\nEmail: ${booking.client_email}${booking.client_phone ? `\nPhone: ${booking.client_phone}` : ''}${booking.notes ? `\n\nNotes: ${booking.notes}` : ''}`,
             start: {
@@ -226,6 +226,12 @@ export async function PATCH(
             attendees: [
               { email: booking.client_email, displayName: booking.client_name },
             ],
+            conferenceData: {
+              createRequest: {
+                requestId: `bloomsline-${booking.id}`,
+                conferenceSolutionKey: { type: 'hangoutsMeet' },
+              },
+            },
             reminders: {
               useDefault: false,
               overrides: [
@@ -236,7 +242,7 @@ export async function PATCH(
           };
 
           const response = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all`,
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,
             {
               method: 'POST',
               headers: {
