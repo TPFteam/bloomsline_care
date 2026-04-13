@@ -9,14 +9,38 @@ export async function getGoogleCalendarBusyTimes(
   accessToken: string,
   _calendarId: string,
   dateStr: string,
-  _timezone: string
+  timezone: string
 ): Promise<BusyInterval[]> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
 
-    const timeMin = `${dateStr}T00:00:00Z`
-    const timeMax = `${dateStr}T23:59:59Z`
+    // Convert practitioner's local day boundaries to UTC for the API query
+    // e.g., Paris (UTC+2): April 15 00:00 local = April 14 22:00 UTC
+    function localDayToUtc(dateStr: string, time: string, tz: string): string {
+      const refUtc = Date.UTC(
+        parseInt(dateStr.slice(0, 4)),
+        parseInt(dateStr.slice(5, 7)) - 1,
+        parseInt(dateStr.slice(8, 10)),
+        parseInt(time.slice(0, 2)),
+        parseInt(time.slice(3, 5)),
+        0
+      )
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false,
+      }).formatToParts(new Date(refUtc))
+      const get = (type: string) => parseInt(parts.find(p => p.type === type)?.value || '0')
+      const localMs = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') === 24 ? 0 : get('hour'), get('minute'), get('second'))
+      const offsetMs = localMs - refUtc
+      return new Date(refUtc - offsetMs).toISOString()
+    }
+
+    const tz = timezone || 'UTC'
+    const timeMin = localDayToUtc(dateStr, '00:00', tz)
+    const timeMax = localDayToUtc(dateStr, '23:59', tz)
 
     // Use Events List API on primary calendar (works with calendar.events scope)
     const params = new URLSearchParams({
