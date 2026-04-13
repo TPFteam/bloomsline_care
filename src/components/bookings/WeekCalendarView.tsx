@@ -47,6 +47,48 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
   const [googleEvents, setGoogleEvents] = useState<CalendarEvent[]>([])
   const [googleConnected, setGoogleConnected] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null)
+  const [practitionerTz, setPractitionerTz] = useState<string | null>(null)
+
+  // Fetch practitioner timezone
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase
+        .from('availability_schedules')
+        .select('timezone')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.timezone) setPractitionerTz(data.timezone)
+        })
+    })
+  }, [])
+
+  // Helper: get hours/minutes in practitioner's timezone
+  const getHoursInTz = (isoStr: string): number => {
+    const d = new Date(isoStr)
+    const tz = practitionerTz || Intl.DateTimeFormat().resolvedOptions().timeZone
+    const h = parseInt(d.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
+    const m = parseInt(d.toLocaleString('en-US', { timeZone: tz, minute: '2-digit' }))
+    return (h === 24 ? 0 : h) + m / 60
+  }
+
+  const formatTimeInTz = (isoStr: string): string => {
+    const d = new Date(isoStr)
+    const tz = practitionerTz || Intl.DateTimeFormat().resolvedOptions().timeZone
+    return d.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+      timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: locale !== 'fr',
+    })
+  }
+
+  const isSameDayInTz = (isoStr: string, day: Date): boolean => {
+    const tz = practitionerTz || Intl.DateTimeFormat().resolvedOptions().timeZone
+    const d = new Date(isoStr)
+    const eventDate = d.toLocaleDateString('en-CA', { timeZone: tz }) // YYYY-MM-DD
+    const dayDate = format(day, 'yyyy-MM-dd')
+    return eventDate === dayDate
+  }
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
@@ -86,13 +128,11 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
   })
 
   const allEvents = [...bookingEvents, ...dedupedGoogleEvents]
-  const getEventsForDay = (day: Date) => allEvents.filter(e => isSameDay(parseISO(e.start), day))
+  const getEventsForDay = (day: Date) => allEvents.filter(e => isSameDayInTz(e.start, day))
 
   const getEventPosition = (event: CalendarEvent) => {
-    const start = parseISO(event.start)
-    const end = parseISO(event.end)
-    const startHour = start.getHours() + start.getMinutes() / 60
-    const endHour = end.getHours() + end.getMinutes() / 60
+    const startHour = getHoursInTz(event.start)
+    const endHour = getHoursInTz(event.end)
     return {
       top: (startHour - START_HOUR) * HOUR_HEIGHT,
       height: Math.max((endHour - startHour) * HOUR_HEIGHT, 28),
@@ -149,6 +189,11 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
           <button onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))} className="text-xs text-teal-600 hover:text-teal-700 font-medium px-2.5 py-1 rounded-lg hover:bg-teal-50 transition-colors">
             {locale === 'fr' ? "Aujourd'hui" : 'Today'}
           </button>
+          {practitionerTz && (
+            <span className="text-[11px] text-gray-400 ml-1">
+              ({practitionerTz.replace(/_/g, ' ').split('/').pop()})
+            </span>
+          )}
         </div>
         {/* Legend */}
         <div className="flex items-center gap-4">
@@ -206,7 +251,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
               {/* Now line */}
               {today && (() => {
                 const now = new Date()
-                const h = now.getHours() + now.getMinutes() / 60
+                const h = getHoursInTz(now.toISOString())
                 if (h < START_HOUR || h > END_HOUR) return null
                 return (
                   <div className="absolute left-0 right-0 z-30 pointer-events-none" style={{ top: (h - START_HOUR) * HOUR_HEIGHT }}>
@@ -248,7 +293,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
                       <p className="text-[11px] font-semibold truncate leading-tight">{event.title}</p>
                       {height > 32 && (
                         <p className="text-[10px] opacity-60 truncate mt-0.5">
-                          {format(parseISO(event.start), 'h:mm a')}
+                          {formatTimeInTz(event.start)}
                         </p>
                       )}
                     </div>
@@ -265,7 +310,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
                           <div className="space-y-1 text-xs text-gray-500 mb-3">
                             <p className="flex items-center gap-1.5">
                               <Clock className="w-3 h-3" />
-                              {format(parseISO(event.start), 'h:mm a')} – {format(parseISO(event.end), 'h:mm a')}
+                              {formatTimeInTz(event.start)} – {formatTimeInTz(event.end)}
                             </p>
                             {event.email && (
                               <p className="flex items-center gap-1.5">
