@@ -299,13 +299,42 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       const timeToUse = scheduleMode === 'manual' ? manualTime : selectedTime!
       const durationToUse = scheduleMode === 'manual' ? manualDuration : selectedSessionType!.duration
 
-      // Parse the selected time
+      // Parse the selected time in the practitioner's timezone (not browser timezone)
       const [hours, minutes] = timeToUse.split(':').map(Number)
-      const startTime = new Date(selectedDate)
-      startTime.setHours(hours, minutes, 0, 0)
+      const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
+      const tz = practitionerTz || Intl.DateTimeFormat().resolvedOptions().timeZone
 
-      const endTime = new Date(startTime)
-      endTime.setMinutes(endTime.getMinutes() + durationToUse)
+      // Build a date string in the practitioner's timezone and convert to UTC
+      // Create the datetime as if in practitioner's timezone
+      const localDateStr = `${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
+
+      // Get the UTC offset for the practitioner's timezone on this date
+      function tzToUtc(dateTimeStr: string, timezone: string): Date {
+        // Parse as local, then find the offset by comparing with Intl formatting
+        const refUtc = Date.UTC(
+          parseInt(dateTimeStr.slice(0, 4)),
+          parseInt(dateTimeStr.slice(5, 7)) - 1,
+          parseInt(dateTimeStr.slice(8, 10)),
+          parseInt(dateTimeStr.slice(11, 13)),
+          parseInt(dateTimeStr.slice(14, 16)),
+          0
+        )
+        // Format refUtc in the target timezone to find the offset
+        const parts = new Intl.DateTimeFormat('en-US', {
+          timeZone: timezone,
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+          hour12: false,
+        }).formatToParts(new Date(refUtc))
+        const get = (type: string) => parseInt(parts.find(p => p.type === type)?.value || '0')
+        const tzMs = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') === 24 ? 0 : get('hour'), get('minute'), get('second'))
+        const offsetMs = tzMs - refUtc // positive = timezone is ahead of UTC
+        // The desired local time in this timezone = refUtc, so UTC = refUtc - offset
+        return new Date(refUtc - offsetMs)
+      }
+
+      const startTime = tzToUtc(localDateStr, tz)
+      const endTime = new Date(startTime.getTime() + durationToUse * 60 * 1000)
 
       // Backdated session: skip notifications and emails — the session already happened
       const isBackdated = startTime.getTime() < Date.now()
