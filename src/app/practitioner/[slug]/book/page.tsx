@@ -85,7 +85,8 @@ export default function BookingPage() {
   const [practitionerTimezone, setPractitionerTimezone] = useState<string | null>(null)
 
   // Timezone helpers
-  const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const [clientTimezone, setClientTimezone] = useState<string>('UTC')
+  useEffect(() => { setClientTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone) }, [])
   const isSameTimezone = practitionerTimezone === clientTimezone
 
   // Form state

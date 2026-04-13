@@ -67,7 +67,10 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [use24Hour, setUse24Hour] = useState(locale === 'fr')
   const [hasExternalBooking, setHasExternalBooking] = useState(false)
   const [practitionerTz, setPractitionerTz] = useState<string | null>(null)
-  const browserTz = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : null
+  const [browserTz, setBrowserTz] = useState<string | null>(null)
+  useEffect(() => {
+    setBrowserTz(Intl.DateTimeFormat().resolvedOptions().timeZone)
+  }, [])
   const [baseDisabledDays, setBaseDisabledDays] = useState<number[]>([])
   const [scheduleDayFormats, setScheduleDayFormats] = useState<Record<string, string[]>>({})
   const [dateViewMode, setDateViewMode] = useState<'calendar' | 'quick'>('calendar')
