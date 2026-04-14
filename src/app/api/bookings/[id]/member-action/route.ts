@@ -270,7 +270,7 @@ export async function POST(
           end_time: newSlotEnd,
           timezone: booking.timezone,
           status: settings?.require_approval ? 'pending' : 'confirmed',
-          notes: booking.notes,
+          notes: reason.trim() ? `Rescheduled: ${reason.trim()}${booking.notes ? `\n\n${booking.notes}` : ''}` : booking.notes,
           rescheduled_from: id,
           rescheduled_by: 'member',
         })

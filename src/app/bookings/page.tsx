@@ -60,6 +60,9 @@ interface Booking {
   notes: string | null
   practitioner_notes: string | null
   google_event_id: string | null
+  cancelled_at: string | null
+  cancelled_by: string | null
+  cancellation_reason: string | null
   created_at: string
 }
 
@@ -955,10 +958,23 @@ export default function BookingsPage() {
                                     </div>
                                   </div>
 
+                                  {/* Cancellation reason */}
+                                  {booking.status === 'cancelled' && booking.cancellation_reason && (
+                                    <div className="mt-2 ml-24 pl-5 border-l-2 border-red-200">
+                                      <p className="text-xs text-red-500">
+                                        {locale === 'fr' ? 'Annulé' : 'Cancelled'}{booking.cancelled_by === 'member' ? (locale === 'fr' ? ' par le patient' : ' by patient') : ''}: {booking.cancellation_reason}
+                                      </p>
+                                      {booking.cancelled_at && (
+                                        <p className="text-[10px] text-gray-400 mt-0.5">
+                                          {new Date(booking.cancelled_at).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+                                        </p>
+                                      )}
+                                    </div>
+                                  )}
                                   {/* Notes — compact */}
-                                  {booking.notes && (
-                                    <div className="mt-2 ml-24 pl-5 border-l-2 border-gray-100">
-                                      <p className="text-xs text-gray-500 italic">{booking.notes}</p>
+                                  {booking.notes && booking.status !== 'cancelled' && (
+                                    <div className={`mt-2 ml-24 pl-5 border-l-2 ${booking.notes.startsWith('Rescheduled:') ? 'border-amber-200' : 'border-gray-100'}`}>
+                                      <p className={`text-xs ${booking.notes.startsWith('Rescheduled:') ? 'text-amber-600' : 'text-gray-500 italic'}`}>{booking.notes}</p>
                                     </div>
                                   )}
                                 </motion.div>

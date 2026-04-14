@@ -14,6 +14,8 @@ import {
   MessageSquare,
   Trash2,
   Share2,
+  XCircle,
+  RefreshCw,
 } from 'lucide-react'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useRouter, usePathname } from 'next/navigation'
@@ -39,8 +41,11 @@ const notificationIcons: Record<string, React.ElementType> = {
   session_rescheduled: Calendar,
   booking_request: Calendar,
   booking_confirmed: Calendar,
-  booking_cancelled: Calendar,
-  reschedule_requested: Clock,
+  booking_cancelled: XCircle,
+  booking_cancelled_by_member: XCircle,
+  booking_rescheduled_by_member: RefreshCw,
+  booking_rescheduled_by_practitioner: RefreshCw,
+  reschedule_requested: RefreshCw,
   member_invitation_accepted: UserPlus,
   member_invitation_rejected: UserPlus,
   member_inactive: UserPlus,
@@ -55,6 +60,11 @@ const notificationColors: Record<string, string> = {
   resource_submitted: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
   session_scheduled: 'bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400',
   booking_request: 'bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400',
+  booking_cancelled: 'bg-red-100 text-red-500 dark:bg-red-500/20 dark:text-red-400',
+  booking_cancelled_by_member: 'bg-red-100 text-red-500 dark:bg-red-500/20 dark:text-red-400',
+  booking_rescheduled_by_member: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
+  booking_rescheduled_by_practitioner: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
+  reschedule_requested: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
   member_invitation_accepted: 'bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400',
   default: 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-white/60',
 }
@@ -62,6 +72,7 @@ const notificationColors: Record<string, string> = {
 export function NotificationBell({ className = '' }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [swipedId, setSwipedId] = useState<string | null>(null)
+  const [detailNotification, setDetailNotification] = useState<typeof notifications[0] | null>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const router = useRouter()
@@ -106,6 +117,11 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
   const handleNotificationClick = async (notification: typeof notifications[0]) => {
     if (!notification.read) {
       await markAsRead(notification.id)
+    }
+    // For cancel notifications, show detail popup instead of navigating
+    if (notification.type === 'booking_cancelled_by_member') {
+      setDetailNotification(notification)
+      return
     }
     if (notification.action_url) {
       // Security: Only navigate to internal paths (starting with /)
@@ -367,6 +383,78 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Cancellation detail popup */}
+      {detailNotification && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/20 backdrop-blur-sm" onClick={() => setDetailNotification(null)}>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[380px] mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Header accent */}
+            <div className="bg-gradient-to-r from-red-50 to-rose-50 px-6 pt-6 pb-5">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-white shadow-sm flex items-center justify-center">
+                    <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-gray-900">{locale === 'fr' ? 'Séance annulée' : 'Session cancelled'}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">{new Date(detailNotification.created_at).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                  </div>
+                </div>
+                <button onClick={() => setDetailNotification(null)} className="p-1 hover:bg-white/60 rounded-lg transition-colors">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-5 space-y-4">
+              {(detailNotification.metadata as any)?.clientName && (
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600 text-sm font-bold">
+                    {((detailNotification.metadata as any).clientName as string).charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{(detailNotification.metadata as any).clientName}</p>
+                    <p className="text-[11px] text-gray-400">{locale === 'fr' ? 'Patient' : 'Patient'}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
+                {(detailNotification.metadata as any)?.scheduledAt && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-400 font-medium">{locale === 'fr' ? 'Date prévue' : 'Scheduled'}</span>
+                    <span className="text-xs font-semibold text-gray-700">{(detailNotification.metadata as any).scheduledAt}</span>
+                  </div>
+                )}
+                {(detailNotification.metadata as any)?.sessionType && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-400 font-medium">{locale === 'fr' ? 'Type' : 'Type'}</span>
+                    <span className="text-xs font-semibold text-gray-700">{(detailNotification.metadata as any).sessionType}</span>
+                  </div>
+                )}
+              </div>
+
+              {(detailNotification.metadata as any)?.reason && (
+                <div className="bg-red-50/60 rounded-2xl p-4">
+                  <p className="text-[11px] text-red-400 font-medium uppercase tracking-wider mb-1.5">{locale === 'fr' ? 'Raison de l\'annulation' : 'Cancellation reason'}</p>
+                  <p className="text-sm text-gray-800 leading-relaxed">{(detailNotification.metadata as any).reason}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-6">
+              <button
+                onClick={() => setDetailNotification(null)}
+                className="w-full py-3 text-sm font-semibold text-white bg-gradient-to-r from-teal-500 to-teal-600 rounded-2xl hover:shadow-lg hover:shadow-teal-200/40 transition-all"
+              >
+                {locale === 'fr' ? 'Compris' : 'Got it'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
