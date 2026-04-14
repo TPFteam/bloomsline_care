@@ -1738,12 +1738,12 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       {/* Force consistent quote styling on all verbatim marks (overrides old inline styles from DB) */}
       <style>{`
         .rte-editor mark[data-verbatim] {
-          display: block !important;
+          display: inline !important;
           background-color: #f0f7ff !important;
           border-left: none !important;
-          padding: 6px 10px !important;
-          margin: 8px 0 !important;
-          border-radius: 6px !important;
+          padding: 2px 8px !important;
+          margin: 0 2px !important;
+          border-radius: 4px !important;
           font-style: italic !important;
           color: #1e3a5f !important;
         }
@@ -2223,7 +2223,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
               onClick={handleEditorClick}
               onMouseOver={handleEditorMouseOver}
               onMouseLeave={handleEditorMouseLeave}
-              className={`rte-editor ${showLabels ? 'show-labels' : ''} w-full px-6 ${compact ? 'py-2' : 'py-4'} text-sm bg-white outline-none [line-height:1.8] ${compact ? 'min-h-[60px] max-h-[140px]' : 'min-h-[300px]'} overflow-y-auto [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-gray-900 [&_h1]:mt-2 [&_h1]:mb-0.5 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-gray-900 [&_h2]:mt-2 [&_h2]:mb-0.5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-gray-900 [&_h3]:mt-2 [&_h3]:mb-0.5 [&_hr]:border-gray-200 [&_hr]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5`}
+              className={`rte-editor ${showLabels ? 'show-labels' : ''} w-full px-6 ${compact ? 'py-2' : 'py-4'} text-sm bg-white outline-none [line-height:2.2] ${compact ? 'min-h-[60px] max-h-[140px]' : 'min-h-[300px]'} overflow-y-auto [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-gray-900 [&_h1]:mt-2 [&_h1]:mb-0.5 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-gray-900 [&_h2]:mt-2 [&_h2]:mb-0.5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-gray-900 [&_h3]:mt-2 [&_h3]:mb-0.5 [&_hr]:border-gray-200 [&_hr]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5`}
             />
             {isEmpty && (
               <div className="absolute top-4 left-6 text-sm text-gray-400 pointer-events-none">

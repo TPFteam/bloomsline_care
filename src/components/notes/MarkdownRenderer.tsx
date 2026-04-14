@@ -17,7 +17,7 @@ interface MarkdownRendererProps {
   highlightTag?: string
 }
 
-const RICH_TEXT_STYLES = 'text-sm text-gray-700 [line-height:1.8] [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-gray-900 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-gray-900 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-gray-900 [&_hr]:border-gray-200 [&_hr]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_b]:font-semibold [&_strong]:font-semibold [&_i]:italic [&_em]:italic'
+const RICH_TEXT_STYLES = 'text-sm text-gray-700 [line-height:2.2] [&_p]:mb-1 [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-gray-900 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-gray-900 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-gray-900 [&_hr]:border-gray-200 [&_hr]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_b]:font-semibold [&_strong]:font-semibold [&_i]:italic [&_em]:italic'
 
 function isHtml(text: string): boolean {
   return /<\/?(?:b|strong|i|em|h[1-6]|ul|ol|li|p|br|hr|div|mark)\b/i.test(text)
@@ -201,12 +201,12 @@ export function MarkdownRenderer({ content, className, onContentChange, onEdit, 
         {hasAnnotations && (
           <style>{`
             .rte-read mark[data-verbatim] {
-              display: block !important;
+              display: inline !important;
               background-color: #f0f7ff !important;
               border-left: none !important;
-              padding: 6px 10px !important;
-              margin: 8px 0 !important;
-              border-radius: 6px !important;
+              padding: 2px 8px !important;
+              margin: 0 2px !important;
+              border-radius: 4px !important;
               font-style: italic !important;
               color: #1e3a5f !important;
             }

@@ -420,7 +420,18 @@ export function getEngagementColor(level: EngagementLevel): string {
   }
 }
 
-export function getSessionTypeLabel(type: SessionType): string {
+export function getSessionTypeLabel(type: SessionType, locale?: string): string {
+  if (locale === 'fr') {
+    const labels: Record<SessionType, string> = {
+      initial_consultation: 'Consultation initiale',
+      follow_up: 'Suivi',
+      check_in: 'Point de situation',
+      crisis: 'Crise',
+      group: 'Séance de groupe',
+      other: 'Autre'
+    }
+    return labels[type] || type
+  }
   const labels: Record<SessionType, string> = {
     initial_consultation: 'Initial Consultation',
     follow_up: 'Follow-up',
@@ -432,10 +443,18 @@ export function getSessionTypeLabel(type: SessionType): string {
   return labels[type] || type
 }
 
-export function getSessionFormatLabel(format: SessionFormat): string {
+export function getSessionFormatLabel(format: SessionFormat, locale?: string): string {
+  if (locale === 'fr') {
+    const labels: Record<SessionFormat, string> = {
+      in_person: 'En personne',
+      virtual: 'Vidéo',
+      phone: 'Téléphone'
+    }
+    return labels[format] || format
+  }
   const labels: Record<SessionFormat, string> = {
     in_person: 'In Person',
-    virtual: 'Virtual',
+    virtual: 'Video call',
     phone: 'Phone Call'
   }
   return labels[format] || format

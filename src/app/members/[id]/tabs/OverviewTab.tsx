@@ -785,7 +785,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
                       {sessionFormatIcons[session.session_format]}
-                      {getSessionFormatLabel(session.session_format)}
+                      {getSessionFormatLabel(session.session_format, locale)}
                     </span>
                     <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${
                       session.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
@@ -793,12 +793,14 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                       session.status === 'no_show' ? 'bg-amber-50 text-amber-700' :
                       'bg-blue-50 text-blue-700'
                     }`}>
-                      {session.status}
+                      {locale === 'fr'
+                        ? ({ scheduled: 'planifié', completed: 'terminé', cancelled: 'annulé', no_show: 'absent' }[session.status] || session.status)
+                        : session.status}
                     </span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
                 </div>
-                <p className="font-medium text-gray-900 text-sm mb-1">{getSessionTypeLabel(session.session_type)}</p>
+                <p className="font-medium text-gray-900 text-sm mb-1">{getSessionTypeLabel(session.session_type, locale)}</p>
                 <p className="text-xs text-gray-500">{formatRelativeTime(session.scheduled_at)}</p>
               </motion.div>
             ))}
