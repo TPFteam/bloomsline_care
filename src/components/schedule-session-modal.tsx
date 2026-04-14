@@ -401,29 +401,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         toast.success(`Session scheduled with ${selectedMember.first_name} ${selectedMember.last_name}`)
         analytics.sessionScheduled({ format: manualSessionFormat, duration: manualDuration })
       } else {
-        // Calendar mode: create session + booking + calendar sync
+        // Calendar mode: create booking first, then session (avoids orphan sessions)
 
-        // 1. Create session entry (for member tracking / upcoming sessions)
-        const sessionData = {
-          practitioner_id: userId,
-          member_id: selectedMember.id,
-          session_type: 'follow_up' as const,
-          session_format: (selectedSessionFormat === 'in_person' ? 'in_person' : 'video') as 'in_person' | 'virtual',
-          scheduled_at: startTime.toISOString(),
-          duration_minutes: durationToUse,
-          status: 'scheduled',
-          notes: notes ? `${selectedSessionType!.name}\n\n${notes}` : selectedSessionType!.name,
-        }
-
-        const { error: sessionError } = await supabase
-          .from('sessions')
-          .insert(sessionData)
-
-        if (sessionError) {
-          console.warn('Could not create session entry:', sessionError)
-        }
-
-        // 2. Create booking entry (for bookings page + calendar)
+        // 1. Create booking entry (source of truth)
         const bookingData = {
           practitioner_id: userId,
           client_name: `${selectedMember.first_name} ${selectedMember.last_name}`,
@@ -457,7 +437,21 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
         console.log('Booking created:', data)
 
-        // Google Calendar sends its own invite via sendUpdates=all — no separate email needed
+        // 2. Create session entry (for member tracking — only after booking succeeds)
+        try {
+          await supabase.from('sessions').insert({
+            practitioner_id: userId,
+            member_id: selectedMember.id,
+            session_type: 'follow_up' as const,
+            session_format: (selectedSessionFormat === 'in_person' ? 'in_person' : 'video') as 'in_person' | 'virtual',
+            scheduled_at: startTime.toISOString(),
+            duration_minutes: durationToUse,
+            status: 'scheduled',
+            notes: notes ? `${selectedSessionType!.name}\n\n${notes}` : selectedSessionType!.name,
+          })
+        } catch (sessionErr) {
+          console.warn('Could not create session entry:', sessionErr)
+        }
 
         // Sync to Google Calendar via API
         if (data?.id) {
