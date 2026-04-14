@@ -24,6 +24,8 @@ import {
   Copy,
   ExternalLink,
   RefreshCw,
+  Video,
+  Building2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -63,6 +65,7 @@ interface Booking {
   cancelled_at: string | null
   cancelled_by: string | null
   cancellation_reason: string | null
+  session_format: string | null
   created_at: string
 }
 
@@ -868,17 +871,22 @@ export default function BookingsPage() {
                                   transition={{ duration: 0.3, delay: index * 0.03 }}
                                   className="bg-white rounded-xl p-4 border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
                                 >
-                                  <div className="flex items-center gap-4">
-                                    {/* Time */}
-                                    <div className="w-20 flex-shrink-0 text-center">
-                                      <p className="text-sm font-semibold text-gray-900">{format(startTime, 'h:mm a')}</p>
-                                      <p className="text-xs text-gray-400">
-                                        {Math.round((parseISO(booking.end_time).getTime() - startTime.getTime()) / 60000)} min
-                                      </p>
+                                  <div className="flex items-stretch gap-4">
+                                    {/* Format icon + Time */}
+                                    <div className="w-24 flex-shrink-0 flex items-center gap-2">
+                                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${booking.session_format === 'in_person' ? 'bg-amber-50 text-amber-500' : 'bg-blue-50 text-blue-500'}`}>
+                                        {booking.session_format === 'in_person' ? <Building2 className="w-3.5 h-3.5" /> : <Video className="w-3.5 h-3.5" />}
+                                      </div>
+                                      <div className="text-center">
+                                        <p className="text-sm font-semibold text-gray-900">{format(startTime, 'h:mm a')}</p>
+                                        <p className="text-xs text-gray-400">
+                                          {Math.round((parseISO(booking.end_time).getTime() - startTime.getTime()) / 60000)} min
+                                        </p>
+                                      </div>
                                     </div>
 
                                     {/* Divider */}
-                                    <div className={`w-1 h-10 rounded-full ${booking.status === 'pending' ? 'bg-amber-400' : booking.status === 'confirmed' ? 'bg-teal-400' : booking.status === 'completed' ? 'bg-gray-300' : booking.status === 'cancelled' ? 'bg-red-300' : 'bg-gray-300'}`} />
+                                    <div className={`w-1 rounded-full self-stretch ${booking.status === 'pending' ? 'bg-amber-400' : booking.status === 'confirmed' ? 'bg-teal-400' : booking.status === 'completed' ? 'bg-gray-300' : booking.status === 'cancelled' ? 'bg-red-300' : 'bg-gray-300'}`} />
 
                                     {/* Client + Session */}
                                     <div className="flex-1 min-w-0">
@@ -960,7 +968,7 @@ export default function BookingsPage() {
 
                                   {/* Cancellation reason */}
                                   {booking.status === 'cancelled' && booking.cancellation_reason && (
-                                    <div className="mt-2 ml-24 pl-5 border-l-2 border-red-200">
+                                    <div className="mt-2 ml-[136px] pl-5 border-l-2 border-red-200">
                                       <p className="text-xs text-red-500">
                                         {locale === 'fr' ? 'Annulé' : 'Cancelled'}{booking.cancelled_by === 'member' ? (locale === 'fr' ? ' par le patient' : ' by patient') : ''}: {booking.cancellation_reason}
                                       </p>
@@ -973,7 +981,7 @@ export default function BookingsPage() {
                                   )}
                                   {/* Notes — compact */}
                                   {booking.notes && booking.status !== 'cancelled' && (
-                                    <div className={`mt-2 ml-24 pl-5 border-l-2 ${booking.notes.startsWith('Rescheduled:') ? 'border-amber-200' : 'border-gray-100'}`}>
+                                    <div className={`mt-2 ml-[136px] pl-5 border-l-2 ${booking.notes.startsWith('Rescheduled:') ? 'border-amber-200' : 'border-gray-100'}`}>
                                       <p className={`text-xs ${booking.notes.startsWith('Rescheduled:') ? 'text-amber-600' : 'text-gray-500 italic'}`}>{booking.notes}</p>
                                     </div>
                                   )}

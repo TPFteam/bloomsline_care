@@ -106,6 +106,7 @@ export interface CreateBookingInput {
   client_email: string;
   client_phone?: string;
   notes?: string;
+  session_format?: string;
   member_id?: string;
 }
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
-import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useLanguage } from '@/lib/i18n/context'
 
@@ -48,19 +48,34 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
   const [googleConnected, setGoogleConnected] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null)
   const [practitionerTz, setPractitionerTz] = useState<string | null>(null)
+  const [dayFormats, setDayFormats] = useState<Record<number, string[]>>({})
 
-  // Fetch practitioner timezone
+  // Fetch practitioner timezone + day formats
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
       supabase
         .from('availability_schedules')
-        .select('timezone')
+        .select('timezone, day_of_week, session_format')
         .eq('user_id', user.id)
-        .limit(1)
-        .maybeSingle()
+        .eq('is_active', true)
         .then(({ data }) => {
-          if (data?.timezone) setPractitionerTz(data.timezone)
+          if (!data || data.length === 0) return
+          setPractitionerTz(data[0].timezone)
+          const dayMap: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 }
+          const dfMap: Record<number, string[]> = {}
+          for (const d of data) {
+            const num = dayMap[d.day_of_week]
+            const fmt = (d as any).session_format || 'both'
+            if (!dfMap[num]) dfMap[num] = []
+            if (fmt === 'both') {
+              if (!dfMap[num].includes('in_person')) dfMap[num].push('in_person')
+              if (!dfMap[num].includes('video')) dfMap[num].push('video')
+            } else {
+              if (!dfMap[num].includes(fmt)) dfMap[num].push(fmt)
+            }
+          }
+          setDayFormats(dfMap)
         })
     })
   }, [])
@@ -228,6 +243,20 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
             <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center ${todayCheck(day) ? 'bg-teal-600 text-white' : 'text-gray-800'}`}>
               <span className="text-sm font-semibold">{format(day, 'd')}</span>
             </div>
+            {dayFormats[day.getDay()] && (
+              <div className="flex items-center justify-center gap-1 mt-1.5">
+                {dayFormats[day.getDay()].includes('video') && (
+                  <div className="w-4 h-4 rounded bg-blue-50 flex items-center justify-center" title={locale === 'fr' ? 'Vidéo' : 'Video'}>
+                    <Video className="w-2.5 h-2.5 text-blue-400" />
+                  </div>
+                )}
+                {dayFormats[day.getDay()].includes('in_person') && (
+                  <div className="w-4 h-4 rounded bg-amber-50 flex items-center justify-center" title={locale === 'fr' ? 'En personne' : 'In person'}>
+                    <Building2 className="w-2.5 h-2.5 text-amber-400" />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>
