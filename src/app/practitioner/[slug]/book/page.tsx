@@ -336,7 +336,7 @@ export default function BookingPage() {
           client_email: clientEmail,
           client_phone: clientPhone || undefined,
           notes: notes || undefined,
-          session_format: selectedFormat === 'in_person' ? 'in_person' : 'virtual',
+          session_format: selectedFormat === 'in_person' ? 'in_person' : 'video',
         }),
       })
 

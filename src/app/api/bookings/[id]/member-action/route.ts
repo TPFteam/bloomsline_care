@@ -300,7 +300,7 @@ export async function POST(
         practitioner_id: booking.practitioner_id,
         member_id: booking.member_id,
         session_type: sessionTypeMap[booking.session_type] || 'check_in',
-        session_format: 'virtual',
+        session_format: 'video',
         scheduled_at: newSlotStart,
         duration_minutes: durationMinutes,
         status: 'scheduled',

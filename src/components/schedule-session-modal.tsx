@@ -408,7 +408,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           practitioner_id: userId,
           member_id: selectedMember.id,
           session_type: 'follow_up' as const,
-          session_format: (selectedSessionFormat === 'in_person' ? 'in_person' : 'virtual') as 'in_person' | 'virtual',
+          session_format: (selectedSessionFormat === 'in_person' ? 'in_person' : 'video') as 'in_person' | 'virtual',
           scheduled_at: startTime.toISOString(),
           duration_minutes: durationToUse,
           status: 'scheduled',
@@ -434,7 +434,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           end_time: endTime.toISOString(),
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           notes: notes || null,
-          session_format: selectedSessionFormat === 'in_person' ? 'in_person' : 'virtual',
+          session_format: selectedSessionFormat === 'in_person' ? 'in_person' : 'video',
           status: 'confirmed',
           member_id: selectedMember.id,
         }

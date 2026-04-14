@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
         client_email: body.client_email,
         client_phone: body.client_phone || null,
         notes: body.notes || null,
-        session_format: body.session_format || 'virtual',
+        session_format: body.session_format || 'video',
         status: bookingStatus,
         member_id: memberId,
       })
