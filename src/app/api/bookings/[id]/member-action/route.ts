@@ -37,9 +37,20 @@ export async function POST(
       return NextResponse.json({ error: 'New slot start and end are required for reschedule' }, { status: 400 });
     }
 
-    // Authenticate member
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    // Authenticate member (support both cookie auth and Bearer token from mobile)
+    let user = null;
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7);
+      const adminSupabaseAuth = createAdminClient();
+      const { data } = await adminSupabaseAuth.auth.getUser(token);
+      user = data?.user || null;
+    }
+    if (!user) {
+      const supabase = await createClient();
+      const { data } = await supabase.auth.getUser();
+      user = data?.user || null;
+    }
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -78,7 +89,7 @@ export async function POST(
     // Check practitioner settings
     const { data: settings } = await adminSupabase
       .from('booking_settings')
-      .select('allow_patient_reschedule, allow_patient_cancel, modification_notice_hours, session_types')
+      .select('allow_patient_reschedule, allow_patient_cancel, modification_notice_hours, session_types, require_approval')
       .eq('user_id', booking.practitioner_id)
       .single();
 
@@ -201,7 +212,7 @@ export async function POST(
         entity_type: 'booking',
         entity_id: id,
         metadata,
-        action_url: '/bookings',
+        action_url: `/bookings?highlight=${id}`,
       });
 
       return NextResponse.json({ success: true, action: 'cancelled' });
@@ -258,7 +269,7 @@ export async function POST(
           start_time: newSlotStart,
           end_time: newSlotEnd,
           timezone: booking.timezone,
-          status: 'confirmed',
+          status: settings?.require_approval ? 'pending' : 'confirmed',
           notes: booking.notes,
           rescheduled_from: id,
           rescheduled_by: 'member',
@@ -271,7 +282,8 @@ export async function POST(
         return NextResponse.json({ error: 'Failed to create new booking' }, { status: 500 });
       }
 
-      // Create new session record
+      // Create new session record (skip if approval required — session created on approval)
+      if (!settings?.require_approval) {
       const durationMinutes = Math.round(
         (new Date(newSlotEnd).getTime() - new Date(newSlotStart).getTime()) / 60000
       );
@@ -294,9 +306,10 @@ export async function POST(
         status: 'scheduled',
         member_confirmed: true,
       });
+      }
 
-      // Sync new booking to Google Calendar
-      const googleAuth = await getValidGoogleToken(booking.practitioner_id, adminSupabase);
+      // Sync new booking to Google Calendar (skip if pending approval)
+      const googleAuth = !settings?.require_approval ? await getValidGoogleToken(booking.practitioner_id, adminSupabase) : null;
       if (googleAuth) {
         try {
           const response = await fetch(
@@ -400,7 +413,7 @@ export async function POST(
         entity_type: 'booking',
         entity_id: newBooking.id,
         metadata,
-        action_url: '/bookings',
+        action_url: `/bookings?highlight=${newBooking.id}`,
       });
 
       return NextResponse.json({ success: true, action: 'rescheduled', newBookingId: newBooking.id });

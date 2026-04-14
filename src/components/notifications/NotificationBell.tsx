@@ -109,7 +109,11 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
     }
     if (notification.action_url) {
       // Security: Only navigate to internal paths (starting with /)
-      const url = notification.action_url
+      let url = notification.action_url
+      // Add highlight param for booking notifications if not already present
+      if (url === '/bookings' && notification.entity_id && notification.entity_type === 'booking') {
+        url = `/bookings?highlight=${notification.entity_id}`
+      }
       if (url.startsWith('/') && !url.startsWith('//')) {
         router.push(url)
         setIsOpen(false)

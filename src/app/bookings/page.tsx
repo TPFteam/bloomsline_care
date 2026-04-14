@@ -150,6 +150,24 @@ export default function BookingsPage() {
 
   // Appointments state
   const [bookings, setBookings] = useState<Booking[]>([])
+
+  // Highlight a specific booking (from notification deep link)
+  const [highlightId, setHighlightId] = useState<string | null>(searchParams.get('highlight'))
+  useEffect(() => {
+    if (highlightId && bookings.length > 0) {
+      setTimeout(() => {
+        const el = document.getElementById(`booking-${highlightId}`)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          el.classList.add('ring-2', 'ring-teal-400', 'ring-offset-2', 'transition-all')
+          setTimeout(() => {
+            el.classList.remove('ring-2', 'ring-teal-400', 'ring-offset-2')
+            setHighlightId(null)
+          }, 3000)
+        }
+      }, 500)
+    }
+  }, [highlightId, bookings])
   const [sessionTypes, setSessionTypes] = useState<SessionType[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [appointmentFilter, setAppointmentFilter] = useState<AppointmentFilter>('upcoming')
@@ -840,6 +858,7 @@ export default function BookingsPage() {
 
                               return (
                                 <motion.div
+                                  id={`booking-${booking.id}`}
                                   key={booking.id}
                                   initial={{ opacity: 0, y: 10 }}
                                   animate={{ opacity: 1, y: 0 }}

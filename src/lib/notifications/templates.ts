@@ -373,7 +373,7 @@ const templates: Record<NotificationType, NotificationTemplate> = {
         : locale === 'es'
           ? `${m.clientName} solicitó un ${m.sessionType} el ${m.requestedTime}`
           : `${m.clientName} requested a ${m.sessionType} on ${m.requestedTime}`,
-    actionUrl: () => '/bookings',
+    actionUrl: (m) => m.bookingId ? `/bookings?highlight=${m.bookingId}` : '/bookings',
     emailSubject: (m, locale) =>
       locale === 'fr'
         ? `Nouvelle réservation de ${m.clientName}`

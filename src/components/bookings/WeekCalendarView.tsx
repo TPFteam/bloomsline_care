@@ -111,6 +111,11 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
 
   useEffect(() => { fetchGoogleEvents() }, [fetchGoogleEvents])
 
+  // Sync check: cancel bookings that were removed from Google Calendar
+  useEffect(() => {
+    fetch('/api/calendar/sync-check', { method: 'POST' }).catch(() => {})
+  }, [])
+
   const bookingEvents: CalendarEvent[] = bookings
     .filter(b => b.status !== 'cancelled')
     .map(b => ({ id: b.id, title: b.client_name, start: b.start_time, end: b.end_time, source: 'booking' as const, status: b.status, email: b.client_email, sessionType: b.session_type, notes: b.notes || undefined }))

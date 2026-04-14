@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server-client';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
 import { getGoogleCalendarBusyTimes } from '@/lib/services/google-calendar';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
+import { syncCancelledGoogleEvents } from '@/lib/services/google-calendar-sync';
 import type { TimeSlot } from '@/types/calendar';
 
 /**
@@ -49,6 +50,14 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createAdminClient();
+
+  // Sync: check if any confirmed bookings were cancelled on Google Calendar
+  // Fire-and-forget to not block the response, but await briefly
+  try {
+    await syncCancelledGoogleEvents(practitionerId, supabase)
+  } catch (err) {
+    console.error('[available-slots] Google sync check failed:', err)
+  }
 
   let slots: TimeSlot[];
   let knownTz: string | null = null;
