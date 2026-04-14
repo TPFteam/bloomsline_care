@@ -223,7 +223,7 @@ export default function SharedResourcesPage() {
 
   const getStatusBadge = (status: string | null) => {
     if (!status) return { label: locale === 'fr' ? 'En attente' : 'Pending', bg: 'bg-amber-50', text: 'text-amber-600', icon: Clock }
-    if (status === 'submitted') return { label: locale === 'fr' ? 'Soumis' : 'Submitted', bg: 'bg-blue-50', text: 'text-blue-600', icon: CheckCircle2 }
+    if (status === 'submitted') return { label: locale === 'fr' ? 'Complété' : 'Completed', bg: 'bg-emerald-50', text: 'text-emerald-600', icon: CheckCircle2 }
     if (status === 'reviewed') return { label: locale === 'fr' ? 'Relu' : 'Reviewed', bg: 'bg-emerald-50', text: 'text-emerald-600', icon: Eye }
     if (status === 'draft') return { label: locale === 'fr' ? 'En cours' : 'In progress', bg: 'bg-blue-50', text: 'text-blue-500', icon: Clock }
     return { label: status, bg: 'bg-gray-100', text: 'text-gray-500', icon: Clock }
@@ -314,7 +314,7 @@ export default function SharedResourcesPage() {
                 >
                   {s === 'all' ? (locale === 'fr' ? 'Tous' : 'All') :
                    s === 'pending' ? (locale === 'fr' ? 'En attente' : 'Pending') :
-                   s === 'submitted' ? (locale === 'fr' ? 'Soumis' : 'Submitted') :
+                   s === 'submitted' ? (locale === 'fr' ? 'Complété' : 'Completed') :
                    locale === 'fr' ? 'Relu' : 'Reviewed'}
                   <span className="ml-1 text-gray-400">{statusCounts[s]}</span>
                 </button>

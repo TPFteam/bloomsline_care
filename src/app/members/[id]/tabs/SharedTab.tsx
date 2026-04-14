@@ -591,14 +591,14 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                                     return (
                                       <span className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
                                         <Eye className="w-3 h-3" />
-                                        {locale === 'fr' ? 'Lu le' : 'Read on'} {new Date(submission.submitted_at || submission.created_at).toLocaleDateString()}
+                                        {locale === 'fr' ? 'Complété le' : 'Completed on'} {new Date(submission.submitted_at || submission.created_at).toLocaleDateString()}
                                       </span>
                                     )
                                   }
                                   return (
                                     <span className="flex items-center gap-1.5 text-xs text-teal-600 bg-teal-50 px-2.5 py-1 rounded-lg">
                                       <CheckCircle className="w-3 h-3" />
-                                      {locale === 'fr' ? 'Soumis le' : 'Submitted on'} {new Date(submission.submitted_at || submission.created_at).toLocaleDateString()}
+                                      {locale === 'fr' ? 'Complété le' : 'Completed on'} {new Date(submission.submitted_at || submission.created_at).toLocaleDateString()}
                                     </span>
                                   )
                                 }
@@ -609,7 +609,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                                     <span className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
                                       <Eye className="w-3 h-3" />
                                       {isPsychoeducation
-                                        ? (locale === 'fr' ? 'Lu le' : 'Read on')
+                                        ? (locale === 'fr' ? 'Complété le' : 'Completed on')
                                         : (locale === 'fr' ? 'Vu le' : 'Viewed on')
                                       } {new Date(resource.viewed_at).toLocaleDateString()}
                                     </span>

@@ -1197,9 +1197,13 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
               >
                 <div className="flex items-start justify-between mb-2">
                   <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${
-                    resource.viewed_at ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                    (resource.status === 'submitted' || resource.viewed_at) ? 'bg-emerald-50 text-emerald-700' :
+                    resource.status === 'draft' ? 'bg-blue-50 text-blue-600' :
+                    'bg-gray-100 text-gray-600'
                   }`}>
-                    {resource.viewed_at ? (locale === 'fr' ? 'Vu' : 'Viewed') : (locale === 'fr' ? 'Non vu' : 'Not viewed')}
+                    {(resource.status === 'submitted' || resource.viewed_at) ? (locale === 'fr' ? 'Complété' : 'Completed') :
+                     resource.status === 'draft' ? (locale === 'fr' ? 'En cours' : 'In progress') :
+                     (locale === 'fr' ? 'En attente' : 'Pending')}
                   </span>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-400">

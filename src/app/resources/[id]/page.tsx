@@ -2657,7 +2657,7 @@ export default function ResourceDetailPage() {
                       </h2>
                       <p className="text-sm text-gray-500">
                         {resource.type === 'psychoeducation'
-                          ? `${sharedMembers.length} ${locale === 'fr' ? 'membre(s)' : 'member(s)'} · ${sharedMembers.filter(s => s.viewed_at).length} ${locale === 'fr' ? 'lu(s)' : 'read'}`
+                          ? `${sharedMembers.length} ${locale === 'fr' ? 'membre(s)' : 'member(s)'} · ${sharedMembers.filter(s => s.viewed_at).length} ${locale === 'fr' ? 'complété(s)' : 'completed'}`
                           : `${sharedMembers.length} ${locale === 'fr' ? 'partagé(s)' : 'shared'} · ${submissions.length} ${locale === 'fr' ? 'réponse(s)' : 'response(s)'}`}
                       </p>
                     </div>
@@ -2725,7 +2725,7 @@ export default function ResourceDetailPage() {
                         statusBadge = shared.viewed_at ? (
                           <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border">
                             <Eye className="w-3 h-3 mr-1" />
-                            {locale === 'fr' ? 'Lu' : 'Read'}
+                            {locale === 'fr' ? 'Complété' : 'Completed'}
                           </Badge>
                         ) : (
                           <Badge className="bg-gray-100 text-gray-500 border-gray-200 border">
@@ -2747,9 +2747,9 @@ export default function ResourceDetailPage() {
                             {locale === 'fr' ? 'Brouillon' : 'Draft'}
                           </Badge>
                         ) : (
-                          <Badge className="bg-amber-50 text-amber-700 border-amber-200 border">
+                          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border">
                             <CheckCircle className="w-3 h-3 mr-1" />
-                            {locale === 'fr' ? 'Soumis' : 'Submitted'}
+                            {locale === 'fr' ? 'Complété' : 'Completed'}
                           </Badge>
                         )
                       } else {
@@ -2789,10 +2789,10 @@ export default function ResourceDetailPage() {
                                 <p className="text-xs text-gray-400">
                                   {isPsychoeducation
                                     ? (shared.viewed_at
-                                      ? `${locale === 'fr' ? 'Lu le' : 'Read'} ${dateStr}`
+                                      ? `${locale === 'fr' ? 'Complété le' : 'Completed'} ${dateStr}`
                                       : `${locale === 'fr' ? 'Partagé le' : 'Shared'} ${dateStr}`)
                                     : (submission
-                                      ? `${submission.status === 'draft' ? (locale === 'fr' ? 'Brouillon' : 'Draft') : (locale === 'fr' ? 'Soumis le' : 'Submitted')} ${dateStr}`
+                                      ? `${submission.status === 'draft' ? (locale === 'fr' ? 'Brouillon' : 'Draft') : (locale === 'fr' ? 'Complété le' : 'Completed')} ${dateStr}`
                                       : `${locale === 'fr' ? 'Partagé le' : 'Shared'} ${dateStr}`)}
                                 </p>
                               </div>
