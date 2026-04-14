@@ -151,14 +151,26 @@ export async function POST(request: NextRequest) {
     let emailError: string | null = null
     try {
       let recipientEmail = fallbackEmail
+      console.log(`[notifications/send] Email lookup: userId=${userId}, fallbackEmail=${fallbackEmail || 'none'}, type=${type}`)
       try {
         const { data: { user: recipientUser } } = await supabaseAdmin.auth.admin.getUserById(userId)
+        console.log(`[notifications/send] auth.users result: email=${recipientUser?.email || 'none'}`)
         if (recipientUser?.email) {
           recipientEmail = recipientUser.email
         }
-      } catch {
-        // userId may not exist in auth.users (e.g. member without account)
-        console.warn(`[notifications/send] auth.users lookup failed for userId=${userId}, using fallbackEmail=${fallbackEmail || 'none'}`)
+      } catch (lookupErr) {
+        console.warn(`[notifications/send] auth.users lookup failed for userId=${userId}:`, lookupErr)
+      }
+
+      // If still no email, try members table
+      if (!recipientEmail) {
+        const { data: memberData } = await supabaseAdmin
+          .from('members')
+          .select('email')
+          .eq('user_id', userId)
+          .limit(1)
+          .maybeSingle()
+        if (memberData?.email) recipientEmail = memberData.email
       }
 
       if (!recipientEmail) {
@@ -190,6 +202,21 @@ export async function POST(request: NextRequest) {
     } catch (err) {
       emailError = String(err)
       console.error('[notifications/send] Error in email sending:', err)
+    }
+
+    // Create delivery record for tracking
+    if (notification?.id) {
+      try {
+        await supabaseAdmin.from('notification_deliveries').insert({
+          notification_id: notification.id,
+          channel: 'email',
+          status: emailSent ? 'sent' : (emailError === 'no_email_found' ? 'failed' : 'failed'),
+          recipient_address: emailSent ? undefined : null,
+          error_message: emailError,
+        })
+      } catch {
+        // Non-critical, don't fail the request
+      }
     }
 
     return NextResponse.json({ notification, emailSent, emailError })
