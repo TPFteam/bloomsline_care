@@ -169,13 +169,13 @@ export async function POST(
         }
       }
 
-      // Send emails to both sides (fire-and-forget)
+      // Send emails to both sides
       const metadata = { clientName: booking.client_name, scheduledAt, reason: reason.trim(), sessionType: sessionTypeName };
 
-      ;(async () => {
-        try {
+      try {
           // Email to practitioner
           if (practitionerEmail) {
+            console.log(`[member-action] Sending cancel email to practitioner: ${practitionerEmail}`)
             const content = getNotificationContent('booking_cancelled_by_member', metadata, 'en');
             const htmlBody = generateEmailHtml({
               subject: content.emailSubject,
@@ -183,11 +183,15 @@ export async function POST(
               actionUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://care.bloomsline.com'}/bookings`,
               actionText: 'View Bookings',
             });
-            await sendEmail({ to: practitionerEmail, subject: content.emailSubject, htmlBody, tag: 'booking_cancelled_by_member' });
+            const result = await sendEmail({ to: practitionerEmail, subject: content.emailSubject, htmlBody, tag: 'booking_cancelled_by_member' });
+            console.log(`[member-action] Practitioner email result:`, result)
+          } else {
+            console.warn(`[member-action] No practitioner email found`)
           }
 
           // Email to patient
           if (booking.client_email) {
+            console.log(`[member-action] Sending cancel email to patient: ${booking.client_email}`)
             const content = getNotificationContent('booking_cancelled', metadata, 'en');
             const htmlBody = generateEmailHtml({
               subject: content.emailSubject,
@@ -195,12 +199,12 @@ export async function POST(
               actionUrl: '',
               actionText: '',
             });
-            await sendEmail({ to: booking.client_email, subject: content.emailSubject, htmlBody, tag: 'booking_cancelled_member_confirm' });
+            const result = await sendEmail({ to: booking.client_email, subject: content.emailSubject, htmlBody, tag: 'booking_cancelled_member_confirm' });
+            console.log(`[member-action] Patient email result:`, result)
           }
         } catch (err) {
           console.error('Error sending cancellation emails:', err);
         }
-      })();
 
       // Create in-app notification for practitioner
       await adminSupabase.from('notifications').insert({
