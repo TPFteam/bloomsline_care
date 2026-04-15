@@ -93,9 +93,20 @@ export async function POST(
       const sessionType = sessionTypes.find(st => st.id === booking.session_type);
       const sessionTypeName = sessionType?.name || booking.session_type;
 
-      // Get practitioner name and locale
-      const { data: practUser } = await adminSupabase.from('users').select('full_name, preferred_language, email, phone').eq('id', user.id).single();
-      const practitionerName = practUser?.full_name || 'Practitioner';
+      // Get practitioner name and locale from public.users (has the Bloomsline profile name)
+      const { data: practUser, error: practErr } = await adminSupabase.from('users').select('full_name, preferred_language, email, phone').eq('id', user.id).single();
+      console.log(`[sync-calendar] userId=${user.id}, practUser=${JSON.stringify(practUser)}, err=${practErr?.message || 'none'}`);
+      // Try practitioner_profiles if users table fails
+      let practitionerName = practUser?.full_name || '';
+      if (!practitionerName) {
+        const { data: profile } = await adminSupabase.from('practitioner_profiles').select('slug').eq('user_id', user.id).maybeSingle();
+        if (profile?.slug) {
+          // Use the slug-based name as fallback
+          practitionerName = profile.slug.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+        }
+      }
+      if (!practitionerName) practitionerName = 'Practitioner';
+      console.log(`[sync-calendar] final practitionerName=${practitionerName}`);
       const locale = practUser?.preferred_language || 'fr';
 
       const calendarEvent = buildCalendarEvent({
@@ -148,6 +159,7 @@ export async function POST(
           calendarSynced: true,
           calendarError: null,
           eventId: event.id,
+          debug: { practitionerName, practUserFound: !!practUser, practFullName: practUser?.full_name, practErr: practErr?.message },
         });
       } else {
         const errorData = await response.json();

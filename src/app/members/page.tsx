@@ -3091,13 +3091,18 @@ function InviteCard({ member, locale, onInviteClick }: { member: Member; locale:
     <>
       <button
         onClick={(e) => { e.stopPropagation(); setShowPopup(true) }}
-        className="flex items-center gap-2 w-full hover:opacity-80 transition-opacity"
+        className="flex items-center justify-between w-full px-3 py-2 rounded-lg bg-teal-50/50 hover:bg-teal-50 border border-teal-100 transition-colors cursor-pointer group"
       >
-        <Mail className="w-4 h-4 text-teal-500 flex-shrink-0" />
-        <span className="text-sm text-gray-500">
-          {locale === 'fr'
-            ? `${member.first_name} n'a pas encore rejoint Bloomsline`
-            : `${member.first_name} hasn't joined Bloomsline yet`}
+        <div className="flex items-center gap-2">
+          <Mail className="w-4 h-4 text-teal-500 flex-shrink-0" />
+          <span className="text-sm text-teal-700">
+            {locale === 'fr'
+              ? `${member.first_name} n'a pas encore rejoint Bloomsline`
+              : `${member.first_name} hasn't joined Bloomsline yet`}
+          </span>
+        </div>
+        <span className="text-xs font-medium text-teal-600 group-hover:text-teal-700">
+          {isResend ? (locale === 'fr' ? 'Renvoyer' : 'Resend') : (locale === 'fr' ? 'Inviter' : 'Invite')}
         </span>
       </button>
 

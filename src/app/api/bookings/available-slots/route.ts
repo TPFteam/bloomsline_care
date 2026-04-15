@@ -197,9 +197,13 @@ export async function GET(request: NextRequest) {
       const startUtc = new Date(startLocal.getTime() - tzOffsetMs);
       const endUtc = new Date(endLocal.getTime() - tzOffsetMs);
 
+      const now = Date.now();
       for (let t = startUtc.getTime(); t + durationMs <= endUtc.getTime(); t += stepMs) {
         const slotStart = new Date(t);
         const slotEnd = new Date(t + durationMs);
+
+        // Skip past slots
+        if (slotStart.getTime() < now) continue;
 
         // Check for conflicts with existing bookings + sessions
         const hasConflict = allConflicts.some((c) => {

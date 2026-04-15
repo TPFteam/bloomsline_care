@@ -36,35 +36,8 @@ export async function GET() {
         </div>
 
         {/* Tagline */}
-        <p style={{ fontSize: 28, color: '#6B7280', fontWeight: 400, margin: 0, marginBottom: 48 }}>
-          The platform for care between sessions.
-        </p>
-
-        {/* Three pillars */}
-        <div style={{ display: 'flex', gap: 40, alignItems: 'center' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: '#F0FDFA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 24 }}>📅</span>
-            </div>
-            <span style={{ fontSize: 16, color: '#374151', fontWeight: 600 }}>Sessions</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: '#F0FDFA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 24 }}>📋</span>
-            </div>
-            <span style={{ fontSize: 16, color: '#374151', fontWeight: 600 }}>Resources</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: '#F0FDFA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 24 }}>💚</span>
-            </div>
-            <span style={{ fontSize: 16, color: '#374151', fontWeight: 600 }}>Connection</span>
-          </div>
-        </div>
-
-        {/* URL */}
-        <p style={{ position: 'absolute', bottom: 32, fontSize: 16, color: '#9CA3AF' }}>
-          bloomsline.com
+        <p style={{ fontSize: 28, color: '#9CA3AF', fontWeight: 400, margin: 0 }}>
+          A simpler way to manage your practice.
         </p>
       </div>
     ),

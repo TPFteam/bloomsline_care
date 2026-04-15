@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Bloomsline",
-    description: "The platform for care between sessions. Sessions, resources, and what actually happens between them.",
+    description: "A simpler way to manage your practice. Sessions, resources, and what actually happens between them.",
     siteName: "Bloomsline",
     url: "https://www.bloomsline.com",
     type: "website",

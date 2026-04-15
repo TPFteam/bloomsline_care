@@ -213,12 +213,14 @@ export async function PATCH(
           const sessionType = sessionTypes.find(st => st.id === booking.session_type);
           const sessionTypeName = sessionType?.name || booking.session_type;
 
-          // Get practitioner name and locale
-          const { data: practUser } = await adminSupabase.from('users').select('full_name, preferred_language, email, phone').eq('id', user.id).single();
+          // Get practitioner name and locale from public.users
+          const { data: practUser, error: practErr } = await adminSupabase.from('users').select('full_name, preferred_language, email, phone').eq('id', user.id).single();
+          console.log(`[bookings/approve] userId=${user.id}, practUser=${JSON.stringify(practUser)}, err=${practErr?.message || 'none'}`);
+          const practName = practUser?.full_name || 'Practitioner';
 
           const calendarEvent = buildCalendarEvent({
             bookingId: booking.id,
-            practitionerName: practUser?.full_name || 'Practitioner',
+            practitionerName: practName,
             clientName: booking.client_name,
             clientEmail: booking.client_email,
             clientPhone: booking.client_phone,
@@ -287,6 +289,27 @@ export async function PATCH(
         } catch (err) {
           console.error('Failed to delete calendar event:', err);
         }
+      }
+    }
+
+    // Send cancellation email to patient (Google Calendar is unreliable)
+    if (status === 'cancelled' && booking.client_email && !isBackdatedBooking) {
+      try {
+        const { data: pUser } = await adminSupabase.from('users').select('full_name').eq('id', user.id).single();
+        const pName = pUser?.full_name || 'Your practitioner';
+        const cancelDate = new Date(booking.start_time).toLocaleString('en-US', {
+          weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+          hour: 'numeric', minute: '2-digit', hour12: true,
+        });
+        const htmlBody = generateEmailHtml({
+          subject: `Session cancelled`,
+          body: `Your session with ${pName} on ${cancelDate} has been cancelled.`,
+          practitionerName: pName,
+          recipientName: booking.client_name,
+        });
+        await sendEmail({ to: booking.client_email, subject: `Session cancelled: ${cancelDate}`, htmlBody, tag: 'booking_cancelled_by_practitioner' });
+      } catch (err) {
+        console.error('Error sending cancellation email:', err);
       }
     }
 
