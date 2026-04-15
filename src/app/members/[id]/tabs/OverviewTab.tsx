@@ -693,14 +693,14 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                 <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
                   <FileText className="w-6 h-6 text-gray-400" />
                 </div>
-                <p className="text-sm text-gray-500 mb-3">No notes added yet</p>
+                <p className="text-sm text-gray-500 mb-3">{locale === 'fr' ? 'Aucune note ajoutée' : 'No notes added yet'}</p>
                 <Button
                   size="sm"
                   onClick={() => setEditingAbout(true)}
                   className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
                 >
                   <Plus className="w-4 h-4 mr-1" />
-                  Add Notes
+                  {locale === 'fr' ? 'Ajouter des notes' : 'Add Notes'}
                 </Button>
               </motion.div>
             )}
@@ -1099,14 +1099,14 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                 <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
                   <Heart className="w-6 h-6 text-gray-400" />
                 </div>
-                <p className="text-sm text-gray-500 mb-3">No preferences set yet</p>
+                <p className="text-sm text-gray-500 mb-3">{locale === 'fr' ? 'Aucune préférence définie' : 'No preferences set yet'}</p>
                 <Button
                   size="sm"
                   onClick={() => setEditingPreferences(true)}
                   className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
                 >
                   <Plus className="w-4 h-4 mr-1" />
-                  Add Preferences
+                  {locale === 'fr' ? 'Ajouter des préférences' : 'Add Preferences'}
                 </Button>
               </motion.div>
             )}
