@@ -7,6 +7,7 @@ import { getNotificationContent } from '@/lib/notifications/templates';
 import { generateEmailHtml, getEmailContent } from '@/lib/notifications/email';
 import { sendEmail } from '@/lib/email';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
+import { buildCalendarEvent } from '@/lib/services/calendar-event';
 
 // PATCH /api/bookings/[id] - Update booking status (approve/reject)
 export async function PATCH(
@@ -212,34 +213,24 @@ export async function PATCH(
           const sessionType = sessionTypes.find(st => st.id === booking.session_type);
           const sessionTypeName = sessionType?.name || booking.session_type;
 
-          const calendarEvent = {
-            summary: `Session with ${booking.client_name}`,
-            description: `Session Type: ${sessionTypeName}\n\nClient: ${booking.client_name}\nEmail: ${booking.client_email}${booking.client_phone ? `\nPhone: ${booking.client_phone}` : ''}${booking.notes ? `\n\nNotes: ${booking.notes}` : ''}`,
-            start: {
-              dateTime: booking.start_time,
-              timeZone: booking.timezone,
-            },
-            end: {
-              dateTime: booking.end_time,
-              timeZone: booking.timezone,
-            },
-            attendees: [
-              { email: booking.client_email, displayName: booking.client_name },
-            ],
-            conferenceData: {
-              createRequest: {
-                requestId: `bloomsline-${booking.id}`,
-                conferenceSolutionKey: { type: 'hangoutsMeet' },
-              },
-            },
-            reminders: {
-              useDefault: false,
-              overrides: [
-                { method: 'email', minutes: 1440 },
-                { method: 'popup', minutes: 30 },
-              ],
-            },
-          };
+          // Get practitioner name and locale
+          const { data: practUser } = await adminSupabase.from('users').select('full_name, preferred_language, email, phone').eq('id', user.id).single();
+
+          const calendarEvent = buildCalendarEvent({
+            bookingId: booking.id,
+            practitionerName: practUser?.full_name || 'Practitioner',
+            clientName: booking.client_name,
+            clientEmail: booking.client_email,
+            clientPhone: booking.client_phone,
+            sessionTypeName,
+            startTime: booking.start_time,
+            endTime: booking.end_time,
+            timezone: booking.timezone,
+            notes: booking.notes,
+            locale: practUser?.preferred_language || 'fr',
+            practitionerEmail: practUser?.email,
+            practitionerPhone: practUser?.phone,
+          });
 
           const response = await fetch(
             `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,

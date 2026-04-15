@@ -177,12 +177,40 @@ export async function POST(request: NextRequest) {
         console.warn(`[notifications/send] No email found for userId=${userId}, fallbackEmail=${fallbackEmail || 'none'} — skipping email`)
         emailError = 'no_email_found'
       } else {
+        // Get practitioner info for email template
+        let practitionerName: string | undefined
+        let practitionerAvatar: string | undefined
+        try {
+          const { data: practProfile } = await supabaseAdmin
+            .from('users')
+            .select('full_name, avatar_url')
+            .eq('id', user.id)
+            .single()
+          practitionerName = practProfile?.full_name || undefined
+          practitionerAvatar = practProfile?.avatar_url || undefined
+        } catch {}
+
+        // Get recipient name
+        let recipientName: string | undefined
+        try {
+          const { data: memberData } = await supabaseAdmin
+            .from('members')
+            .select('first_name, last_name')
+            .eq('user_id', userId)
+            .limit(1)
+            .maybeSingle()
+          if (memberData) recipientName = `${memberData.first_name} ${memberData.last_name}`.trim()
+        } catch {}
+
         const emailContent = getEmailContent(type, metadata, recipientLocale)
         const htmlBody = generateEmailHtml({
           subject: content.emailSubject,
           body: content.body,
           actionUrl: content.actionUrl,
           actionText: emailContent.actionText,
+          practitionerName,
+          practitionerAvatar,
+          recipientName,
         })
 
         const result = await sendEmail({

@@ -64,7 +64,7 @@ export async function sendEmail(params: SendEmailParams): Promise<boolean> {
 }
 
 /**
- * Generate HTML email template
+ * Generate HTML email template — clean, modern design
  */
 export function generateEmailHtml(params: {
   subject: string
@@ -72,20 +72,44 @@ export function generateEmailHtml(params: {
   actionUrl?: string
   actionText?: string
   preheader?: string
+  practitionerName?: string
+  practitionerAvatar?: string
+  recipientName?: string
 }): string {
-  const { subject, body, actionUrl, actionText, preheader } = params
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.bloomsline.care'
+  const { subject, body, actionUrl, actionText, preheader, practitionerName, practitionerAvatar, recipientName } = params
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.bloomsline.com'
 
   const buttonHtml = actionUrl
     ? `
       <tr>
-        <td style="padding: 24px 0;">
-          <a href="${actionUrl.startsWith('http') ? actionUrl : `${appUrl}${actionUrl}`}"
-             style="display: inline-block; background: linear-gradient(135deg, #10B981, #14B8A6);
-                    color: white; padding: 14px 28px; border-radius: 12px;
-                    text-decoration: none; font-weight: 600; font-size: 15px;">
-            ${actionText || 'View'}
-          </a>
+        <td style="padding: 28px 0 8px;">
+          <table cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="background-color: #0D9488; border-radius: 28px;">
+                <a href="${actionUrl.startsWith('http') ? actionUrl : `${appUrl}${actionUrl}`}"
+                   style="display: inline-block; color: #ffffff; padding: 14px 32px;
+                          text-decoration: none; font-weight: 600; font-size: 14px;
+                          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                          letter-spacing: 0.3px;">
+                  ${actionText || 'View'}
+                </a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    `
+    : ''
+
+  const practitionerHtml = practitionerName
+    ? `
+      <tr>
+        <td style="padding: 0 0 24px; text-align: center;">
+          ${practitionerAvatar
+            ? `<img src="${practitionerAvatar}" alt="" width="56" height="56" style="border-radius: 50%; display: block; margin: 0 auto 12px; object-fit: cover;" />`
+            : `<div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #0D9488, #14B8A6); margin: 0 auto 12px; line-height: 56px; text-align: center; color: white; font-size: 22px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">${practitionerName.charAt(0).toUpperCase()}</div>`
+          }
+          <p style="margin: 0; font-size: 16px; font-weight: 600; color: #1F2937; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">${practitionerName}</p>
         </td>
       </tr>
     `
@@ -108,58 +132,81 @@ export function generateEmailHtml(params: {
     </xml>
   </noscript>
   <![endif]-->
-  <style>
-    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
-    .wrapper { background-color: #f4f4f5; padding: 40px 20px; }
-    .container { max-width: 560px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-    .header { background: linear-gradient(135deg, #10B981, #14B8A6); padding: 32px; text-align: center; }
-    .header h1 { color: white; margin: 0; font-size: 24px; font-weight: 600; }
-    .content { padding: 32px; }
-    .footer { padding: 24px 32px; background: #f9fafb; text-align: center; }
-    .footer p { color: #6b7280; font-size: 13px; margin: 0; }
-    .footer a { color: #10B981; text-decoration: none; }
-    @media (prefers-color-scheme: dark) {
-      .wrapper { background-color: #1a1a1c !important; }
-    }
-  </style>
 </head>
-<body>
-  ${preheader ? `<span style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${preheader}</span>` : ''}
+<body style="margin: 0; padding: 0; background-color: #FAF9F7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  ${preheader ? `<span style="display:none;font-size:1px;color:#FAF9F7;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${preheader}</span>` : ''}
 
-  <div class="wrapper">
-    <table class="container" cellpadding="0" cellspacing="0" width="100%">
-      <!-- Header -->
-      <tr>
-        <td class="header">
-          <h1>Bloomsline Care</h1>
-        </td>
-      </tr>
+  <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #FAF9F7; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <table cellpadding="0" cellspacing="0" border="0" width="520" style="max-width: 520px; margin: 0 auto;">
 
-      <!-- Content -->
-      <tr>
-        <td class="content">
-          <table cellpadding="0" cellspacing="0" width="100%">
-            <tr>
-              <td style="color: #374151; font-size: 15px; line-height: 1.7;">
-                ${body.replace(/\n/g, '<br>')}
-              </td>
-            </tr>
-            ${buttonHtml}
-          </table>
-        </td>
-      </tr>
+          <!-- Logo -->
+          <tr>
+            <td style="padding: 0 0 32px; text-align: center;">
+              <p style="margin: 0; font-size: 22px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                <span style="font-weight: 700; color: #1F2937;">blooms</span><span style="font-weight: 700; color: #0D9488;">line</span>
+              </p>
+            </td>
+          </tr>
 
-      <!-- Footer -->
-      <tr>
-        <td class="footer">
-          <p>
-            You received this email because you have an account with Bloomsline Care.<br>
-            <a href="${appUrl}/settings">Manage notification preferences</a>
-          </p>
-        </td>
-      </tr>
-    </table>
-  </div>
+          <!-- Card -->
+          <tr>
+            <td>
+              <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+
+                <!-- Accent line -->
+                <tr>
+                  <td style="height: 3px; background: linear-gradient(90deg, #0D9488, #14B8A6, #5EEAD4);"></td>
+                </tr>
+
+                <!-- Card content -->
+                <tr>
+                  <td style="padding: 36px 36px 32px;">
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+
+                      <!-- Practitioner -->
+                      ${practitionerHtml}
+
+                      <!-- Greeting -->
+                      ${recipientName ? `
+                      <tr>
+                        <td style="color: #1F2937; font-size: 16px; font-weight: 600; padding-bottom: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                          Hi ${recipientName.split(' ')[0]},
+                        </td>
+                      </tr>
+                      ` : ''}
+
+                      <!-- Body -->
+                      <tr>
+                        <td style="color: #4B5563; font-size: 15px; line-height: 1.8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                          ${body.replace(/\n/g, '<br>')}
+                        </td>
+                      </tr>
+
+                      <!-- Button -->
+                      ${buttonHtml}
+
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 28px 0 0; text-align: center;">
+              <p style="margin: 0; font-size: 12px; color: #9CA3AF; line-height: 1.6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                bloomsline.com
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
   `

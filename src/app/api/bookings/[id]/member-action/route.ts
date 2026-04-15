@@ -5,6 +5,7 @@ import { getNotificationContent } from '@/lib/notifications/templates';
 import { generateEmailHtml } from '@/lib/notifications/email';
 import { sendEmail } from '@/lib/email';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
+import { buildCalendarEvent } from '@/lib/services/calendar-event';
 
 /**
  * POST /api/bookings/[id]/member-action
@@ -324,19 +325,20 @@ export async function POST(
                 Authorization: `Bearer ${googleAuth.accessToken}`,
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({
-                summary: `Session with ${booking.client_name}`,
-                description: `${sessionTypeName} (rescheduled)\n\nClient: ${booking.client_name}\nEmail: ${booking.client_email}`,
-                start: { dateTime: newSlotStart, timeZone: booking.timezone },
-                end: { dateTime: newSlotEnd, timeZone: booking.timezone },
-                attendees: [{ email: booking.client_email, displayName: booking.client_name }],
-                conferenceData: {
-                  createRequest: {
-                    requestId: `bloomsline-member-${newBooking.id}`,
-                    conferenceSolutionKey: { type: 'hangoutsMeet' },
-                  },
-                },
-              }),
+              body: JSON.stringify(buildCalendarEvent({
+                bookingId: newBooking.id,
+                practitionerName: practitioner?.raw_user_meta_data?.full_name || practitioner?.email || 'Practitioner',
+                clientName: booking.client_name,
+                clientEmail: booking.client_email,
+                clientPhone: booking.client_phone,
+                sessionTypeName,
+                startTime: newSlotStart,
+                endTime: newSlotEnd,
+                timezone: booking.timezone,
+                notes: booking.notes,
+                locale: 'fr',
+                isRescheduled: true,
+              })),
             }
           );
           if (response.ok) {

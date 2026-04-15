@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server-client';
-import type { GoogleCalendarEvent } from '@/types/calendar';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
+import { buildCalendarEvent } from '@/lib/services/calendar-event';
 
 // POST /api/bookings/[id]/sync-calendar - Sync a booking to Google Calendar
 export async function POST(
@@ -93,28 +93,26 @@ export async function POST(
       const sessionType = sessionTypes.find(st => st.id === booking.session_type);
       const sessionTypeName = sessionType?.name || booking.session_type;
 
-      const calendarEvent: GoogleCalendarEvent = {
-        summary: `Session with ${booking.client_name}`,
-        description: `Session Type: ${sessionTypeName}\n\nClient: ${booking.client_name}\nEmail: ${booking.client_email}${booking.client_phone ? `\nPhone: ${booking.client_phone}` : ''}${booking.notes ? `\n\nNotes: ${booking.notes}` : ''}`,
-        start: {
-          dateTime: booking.start_time,
-          timeZone: booking.timezone,
-        },
-        end: {
-          dateTime: booking.end_time,
-          timeZone: booking.timezone,
-        },
-        attendees: [
-          { email: booking.client_email, displayName: booking.client_name },
-        ],
-        reminders: {
-          useDefault: false,
-          overrides: [
-            { method: 'email', minutes: 1440 },
-            { method: 'popup', minutes: 30 },
-          ],
-        },
-      };
+      // Get practitioner name and locale
+      const { data: practUser } = await adminSupabase.from('users').select('full_name, preferred_language, email, phone').eq('id', user.id).single();
+      const practitionerName = practUser?.full_name || 'Practitioner';
+      const locale = practUser?.preferred_language || 'fr';
+
+      const calendarEvent = buildCalendarEvent({
+        bookingId: id,
+        practitionerName,
+        clientName: booking.client_name,
+        clientEmail: booking.client_email,
+        clientPhone: booking.client_phone,
+        sessionTypeName,
+        startTime: booking.start_time,
+        endTime: booking.end_time,
+        timezone: booking.timezone,
+        notes: booking.notes,
+        locale,
+        practitionerEmail: practUser?.email,
+        practitionerPhone: practUser?.phone,
+      });
 
       // Backdated session: create the event for the practitioner's historical record
       // but don't send Google Calendar invites to attendees
@@ -122,7 +120,7 @@ export async function POST(
       const sendUpdates = isBackdated ? 'none' : 'all';
 
       const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=${sendUpdates}`,
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=${sendUpdates}&conferenceDataVersion=1`,
         {
           method: 'POST',
           headers: {
