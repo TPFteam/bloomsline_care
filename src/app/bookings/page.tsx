@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { TutorialVideo } from '@/components/ui/tutorial-video'
 import { Button } from '@/components/ui/button'
 import { TimeSelect } from '@/components/ui/time-select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -1058,6 +1059,10 @@ export default function BookingsPage() {
                   <CardTitle className="flex items-center gap-2">
                     <Calendar className="w-5 h-5" />
                     {locale === 'fr' ? 'Intégration Calendrier' : 'Calendar Integration'}
+                    <TutorialVideo
+                      url="https://sfzlbjdjqbzxruwzebjc.supabase.co/storage/v1/object/public/tutorials/short-video-demo-practitioners-app/Comment%20synchroniser%20son%20Google%20Agenda%20avec%20Bloomsline.mp4"
+                      title={locale === 'fr' ? 'Comment synchroniser son Google Agenda avec Bloomsline' : 'How to sync Google Calendar with Bloomsline'}
+                    />
                   </CardTitle>
                   <CardDescription>
                     {locale === 'fr' ? 'Connectez votre Google Calendar pour synchroniser les rendez-vous et afficher vos disponibilités' : 'Connect your Google Calendar to sync appointments and show real-time availability'}
@@ -1141,6 +1146,10 @@ export default function BookingsPage() {
                   <CardTitle className="flex items-center gap-2">
                     <Clock className="w-5 h-5 text-gray-600" />
                     {locale === 'fr' ? 'Types de séance' : 'Session Types'}
+                    <TutorialVideo
+                      url="https://sfzlbjdjqbzxruwzebjc.supabase.co/storage/v1/object/public/tutorials/short-video-demo-practitioners-app/Personnaliser%20les%20noms%20de%20vos%20seances.mov"
+                      title={locale === 'fr' ? 'Personnaliser les noms de vos séances' : 'Customize your session type names'}
+                    />
                   </CardTitle>
                   <CardDescription>
                     {locale === 'fr' ? 'Configurez les types de séances que vous proposez et leur durée' : 'Configure the types of sessions you offer and their durations'}
@@ -1267,6 +1276,10 @@ export default function BookingsPage() {
                   <CardTitle className="flex items-center gap-2">
                     <Clock className="w-5 h-5" />
                     {locale === 'fr' ? 'Horaires de disponibilité' : 'Availability Schedule'}
+                    <TutorialVideo
+                      url="https://sfzlbjdjqbzxruwzebjc.supabase.co/storage/v1/object/public/tutorials/short-video-demo-practitioners-app/Personnaliser%20vos%20horaires%20de%20pratique.mov"
+                      title={locale === 'fr' ? 'Personnaliser vos horaires de pratique' : 'Customize your practice hours'}
+                    />
                   </CardTitle>
                   <CardDescription>
                     {locale === 'fr' ? 'Définissez vos disponibilités hebdomadaires pour les réservations' : 'Set your weekly availability for client bookings'}

@@ -39,6 +39,7 @@ import { AppHeader, AppSidebar } from '@/components/layout'
 import type { User } from '@/types/user'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
+import { TutorialVideo } from '@/components/ui/tutorial-video'
 import { EditMemberModal } from '@/components/members/EditMemberModal'
 import type { Member, MemberFilter, MemberHubStats, Session } from '@/types/member'
 import { getMemberFullName, getMemberInitials } from '@/types/member'
@@ -1294,6 +1295,12 @@ export default function MembersPage() {
                 >
                   <Upload className="w-4 h-4" />
                 </Button>
+
+                <TutorialVideo
+                  url="https://sfzlbjdjqbzxruwzebjc.supabase.co/storage/v1/object/public/tutorials/short-video-demo-practitioners-app/Inviter%20un%20patient%20a%20une%20seance%20(google%20calendar%20synchronise).mov"
+                  title={locale === 'fr' ? 'Inviter un patient à une séance (Google Calendar synchronisé)' : 'Invite a patient to a session (Google Calendar synced)'}
+                  size="md"
+                />
 
                 {/* Add Member / Group Button */}
                 <Button
