@@ -29,6 +29,8 @@ import {
   UserPlus,
   Send,
   Lock,
+  ChevronDown,
+  Heart,
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
@@ -2920,26 +2922,9 @@ function MemberCard({
           )}
         </div>
 
-        {/* App status */}
+        {/* App status — expandable invitation card */}
         {!member.user_id && member.email && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onInviteClick?.(member) }}
-            className="flex items-center justify-between w-full hover:opacity-80 transition-opacity"
-          >
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-teal-500 flex-shrink-0" />
-              <span className="text-sm text-teal-600">
-                {locale === 'fr'
-                  ? `${member.first_name} n'est pas encore sur l'app`
-                  : `${member.first_name} is not on the app yet`}
-              </span>
-            </div>
-            <span className="text-xs font-medium text-teal-600">
-              {(member as any).invitation_sent
-                ? (locale === 'fr' ? 'Renvoyer' : 'Resend')
-                : (locale === 'fr' ? 'Inviter' : 'Invite')}
-            </span>
-          </button>
+          <InviteCard member={member} locale={locale} onInviteClick={onInviteClick} />
         )}
 
       </div>
@@ -3095,5 +3080,94 @@ function MemberListItem({
         </button>
       </div>
     </motion.div>
+  )
+}
+
+function InviteCard({ member, locale, onInviteClick }: { member: Member; locale: string; onInviteClick?: (m: Member) => void }) {
+  const [showPopup, setShowPopup] = useState(false)
+  const isResend = !!(member as any).invitation_sent
+
+  return (
+    <>
+      <button
+        onClick={(e) => { e.stopPropagation(); setShowPopup(true) }}
+        className="flex items-center gap-2 w-full hover:opacity-80 transition-opacity"
+      >
+        <Mail className="w-4 h-4 text-teal-500 flex-shrink-0" />
+        <span className="text-sm text-gray-500">
+          {locale === 'fr'
+            ? `${member.first_name} n'a pas encore rejoint Bloomsline`
+            : `${member.first_name} hasn't joined Bloomsline yet`}
+        </span>
+      </button>
+
+      {showPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={(e) => { e.stopPropagation(); setShowPopup(false) }}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-8" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-6">
+              <p className="text-xl font-semibold text-gray-900 mb-1">
+                <span className="font-bold">blooms</span><span className="font-bold text-teal-600">line</span>
+              </p>
+              <p className="text-sm text-gray-400">
+                {locale === 'fr' ? 'Petits moments, grande compréhension' : 'Small moments, big understanding'}
+              </p>
+            </div>
+
+            <p className="text-sm text-gray-600 text-center mb-6">
+              {locale === 'fr'
+                ? `Invitez ${member.first_name} à rejoindre Bloomsline. Voici ce qu'il/elle pourra faire :`
+                : `Invite ${member.first_name} to join Bloomsline. Here's what they'll be able to do:`}
+            </p>
+
+            <div className="space-y-4 mb-8">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Calendar className="w-4 h-4 text-teal-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{locale === 'fr' ? 'Gérer leurs séances' : 'Manage sessions'}</p>
+                  <p className="text-xs text-gray-500">{locale === 'fr' ? 'Voir, confirmer, reprogrammer ou annuler leurs rendez-vous.' : 'View, confirm, reschedule, or cancel appointments.'}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <FileText className="w-4 h-4 text-teal-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{locale === 'fr' ? 'Accéder aux ressources' : 'Access resources'}</p>
+                  <p className="text-xs text-gray-500">{locale === 'fr' ? 'Compléter les exercices et fiches partagés par leur praticien.' : 'Complete exercises and worksheets shared by their practitioner.'}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Heart className="w-4 h-4 text-teal-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{locale === 'fr' ? 'Rester connecté' : 'Stay connected'}</p>
+                  <p className="text-xs text-gray-500">{locale === 'fr' ? 'Capturer des moments, suivre leur progression et préparer les séances.' : 'Capture moments, track progress, and prepare for sessions.'}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowPopup(false)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onInviteClick?.(member); setShowPopup(false) }}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-teal-600 rounded-xl hover:bg-teal-700 transition-colors"
+              >
+                {isResend
+                  ? (locale === 'fr' ? 'Renvoyer' : 'Resend')
+                  : (locale === 'fr' ? 'Envoyer' : 'Send')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

@@ -24,8 +24,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bloomsline — A simpler way to manage your practice.",
-  description: "Sessions, progress, and resources. All in one calm, organized space built for mental health practitioners.",
+  title: "Bloomsline — The platform for care between sessions.",
+  description: "Sessions, resources, and what actually happens between them. Built for mental health practitioners and their patients.",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -34,6 +34,27 @@ export const metadata: Metadata = {
       { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    title: "Bloomsline",
+    description: "The platform for care between sessions. Sessions, resources, and what actually happens between them.",
+    siteName: "Bloomsline",
+    url: "https://www.bloomsline.com",
+    type: "website",
+    images: [
+      {
+        url: "/api/og",
+        width: 1200,
+        height: 630,
+        alt: "Bloomsline — The platform for care between sessions",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bloomsline",
+    description: "The platform for care between sessions.",
+    images: ["/api/og"],
   },
 };
 

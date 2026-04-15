@@ -972,7 +972,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           {session.member_confirmed && (
                             <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium flex items-center gap-1">
                               <Check className="w-3 h-3" />
-                              Confirmed
+                              {locale === 'fr' ? 'Confirmé' : 'Confirmed'}
                             </span>
                           )}
                         </div>

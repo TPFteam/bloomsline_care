@@ -794,7 +794,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                       'bg-blue-50 text-blue-700'
                     }`}>
                       {locale === 'fr'
-                        ? ({ scheduled: 'planifié', completed: 'terminé', cancelled: 'annulé', no_show: 'absent' }[session.status] || session.status)
+                        ? ({ scheduled: 'planifié', confirmed: 'confirmé', completed: 'terminé', cancelled: 'annulé', no_show: 'absent' }[session.status?.toLowerCase()] || session.status)
                         : session.status}
                     </span>
                   </div>
