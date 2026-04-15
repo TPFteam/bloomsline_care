@@ -1862,24 +1862,6 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       toolbarActions={
                         <div className="flex items-center gap-1.5">
                           {snSessionSummaryNotes[selectedItemId] && (
-                            deletingNoteId === snSessionSummaryNotes[selectedItemId]?.id ? (
-                              <div className="flex items-center gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteSessionNote(selectedItemId)}
-                                  className="px-2 py-1 rounded text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
-                                >
-                                  {locale === 'fr' ? 'Confirmer' : locale === 'es' ? 'Confirmar' : 'Confirm'}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setDeletingNoteId(null)}
-                                  className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            ) : (
                               <button
                                 type="button"
                                 onClick={() => setDeletingNoteId(snSessionSummaryNotes[selectedItemId]!.id)}
@@ -1888,7 +1870,6 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
-                            )
                           )}
                           <button
                             type="button"
@@ -1927,23 +1908,6 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     }}
                     onDelete={() => setDeletingNoteId(snSessionSummaryNotes[selectedItemId]!.id)}
                   />
-                  {deletingNoteId === snSessionSummaryNotes[selectedItemId]?.id && (
-                    <div className="flex items-center gap-2 mt-3 p-2 bg-red-50 rounded-lg">
-                      <span className="text-xs text-red-700">{locale === 'fr' ? 'Supprimer cette note ?' : locale === 'es' ? '¿Eliminar esta nota?' : 'Delete this note?'}</span>
-                      <button
-                        onClick={() => handleDeleteSessionNote(selectedItemId)}
-                        className="px-2 py-1 rounded text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
-                      >
-                        {locale === 'fr' ? 'Confirmer' : locale === 'es' ? 'Confirmar' : 'Confirm'}
-                      </button>
-                      <button
-                        onClick={() => setDeletingNoteId(null)}
-                        className="px-2 py-1 rounded text-xs text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
-                      </button>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="flex flex-col">
@@ -2737,6 +2701,40 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
       </div>
       </div>
+
+      {/* Delete confirmation modal */}
+      {deletingNoteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setDeletingNoteId(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-5 h-5 text-red-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {locale === 'fr' ? 'Supprimer cette note ?' : 'Delete this note?'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              {locale === 'fr' ? 'Cette action est irréversible.' : 'This action cannot be undone.'}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletingNoteId(null)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={() => {
+                  handleDeleteSessionNote(selectedItemId!)
+                  setDeletingNoteId(null)
+                }}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors"
+              >
+                {locale === 'fr' ? 'Supprimer' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
