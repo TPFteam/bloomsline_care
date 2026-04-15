@@ -114,7 +114,7 @@ export async function POST(
     // Get practitioner info for emails
     const { data: practitioner } = await adminSupabase
       .from('users')
-      .select('email, raw_user_meta_data')
+      .select('email, full_name, raw_user_meta_data')
       .eq('id', booking.practitioner_id)
       .single();
 
@@ -327,7 +327,7 @@ export async function POST(
               },
               body: JSON.stringify(buildCalendarEvent({
                 bookingId: newBooking.id,
-                practitionerName: practitioner?.raw_user_meta_data?.full_name || practitioner?.email || 'Practitioner',
+                practitionerName: (practitioner as any)?.full_name || (practitioner as any)?.raw_user_meta_data?.full_name || practitioner?.email || 'Practitioner',
                 clientName: booking.client_name,
                 clientEmail: booking.client_email,
                 clientPhone: booking.client_phone,
