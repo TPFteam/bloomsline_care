@@ -652,8 +652,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
           {/* Content */}
           <div className="p-6 overflow-y-auto max-h-[50vh]">
-            {/* Manual mode banner — visible on every step */}
-            {scheduleMode === 'manual' && (
+            {/* Manual mode banner — on non-session steps (session step renders it below the tab) */}
+            {scheduleMode === 'manual' && step !== 'session' && (
               <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-xs text-amber-700 mb-4">
                 <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>
@@ -758,6 +758,16 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                       <Settings className="w-4 h-4" />
                     </button>
                   </div>
+                  {scheduleMode === 'manual' && (
+                    <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-xs text-amber-700">
+                      <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      <span>
+                        {locale === 'fr'
+                          ? 'Saisie manuelle : aucun email de confirmation ne sera envoyé au patient. La séance ne sera pas synchronisée avec Google Agenda.'
+                          : 'Manual entry: no confirmation email will be sent to the patient. The session will not sync with Google Calendar.'}
+                      </span>
+                    </div>
+                  )}
                 </>)}
                 {hasExternalBooking && (
                   <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-500">
