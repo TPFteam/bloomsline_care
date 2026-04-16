@@ -658,8 +658,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                 <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>
                   {locale === 'fr'
-                    ? 'Saisie manuelle : aucun email de confirmation ne sera envoyé au patient. La séance ne sera pas synchronisée avec Google Agenda.'
-                    : 'Manual entry: no confirmation email will be sent to the patient. The session will not sync with Google Calendar.'}
+                    ? 'Aucun email ne sera envoyé. Pas de synchronisation Google Agenda.'
+                    : 'No emails will be sent. No Google Calendar sync.'}
                 </span>
               </div>
             )}
@@ -758,13 +758,22 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                       <Settings className="w-4 h-4" />
                     </button>
                   </div>
-                  {scheduleMode === 'manual' && (
+                  {scheduleMode === 'manual' ? (
                     <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-xs text-amber-700">
                       <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                       <span>
                         {locale === 'fr'
-                          ? 'Saisie manuelle : aucun email de confirmation ne sera envoyé au patient. La séance ne sera pas synchronisée avec Google Agenda.'
-                          : 'Manual entry: no confirmation email will be sent to the patient. The session will not sync with Google Calendar.'}
+                          ? 'Aucun email ne sera envoyé. Pas de synchronisation Google Agenda.'
+                          : 'No emails will be sent. No Google Calendar sync.'}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2 bg-teal-50 border border-teal-200 rounded-xl px-3 py-2.5 text-xs text-teal-700">
+                      <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      <span>
+                        {locale === 'fr'
+                          ? 'Un email de confirmation sera envoyé au patient et la séance sera ajoutée à Google Agenda.'
+                          : 'A confirmation email will be sent to the patient and the session will be added to Google Calendar.'}
                       </span>
                     </div>
                   )}
