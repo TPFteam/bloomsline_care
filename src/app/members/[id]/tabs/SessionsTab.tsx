@@ -1529,7 +1529,8 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   setConfirmReason('')
                   setConfirmNotes('')
                 }}
-                className={`rounded-xl ${confirmAction.action === 'delete' ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}
+                disabled={confirmAction.action === 'cancel' && !confirmReason}
+                className={`rounded-xl ${confirmAction.action === 'delete' ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'} disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {confirmAction.action === 'complete' ? (locale === 'fr' ? 'Confirmer' : 'Confirm') :
                  confirmAction.action === 'cancel' ? (locale === 'fr' ? 'Annuler la séance' : 'Cancel session') :
