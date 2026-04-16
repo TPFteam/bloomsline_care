@@ -170,13 +170,14 @@ export async function GET(request: NextRequest) {
         .neq('status', 'cancelled'),
       supabase
         .from('booking_settings')
-        .select('buffer_before, buffer_after, min_notice_hours')
+        .select('buffer_before, buffer_after, min_notice_hours, hour_aligned_slots')
         .eq('user_id', practitionerId)
         .single(),
     ]);
     const bookings = bookingsRes.data;
     const sessionConflicts = sessionConflictsRes.data;
     const bufferSettings = bufferSettingsRes.data;
+    const hourAligned = !!(bufferSettings as Record<string, unknown> | null)?.hour_aligned_slots;
 
     const bufBefore = (bufferSettings?.buffer_before || 0) * 60 * 1000;
     const bufAfter = (bufferSettings?.buffer_after || 0) * 60 * 1000;
@@ -212,6 +213,17 @@ export async function GET(request: NextRequest) {
 
         // Skip past slots AND slots within the minimum notice window
         if (slotStart.getTime() < noticeCutoff) continue;
+
+        // Hour-aligned filter: only keep slots starting at :00 in the
+        // practitioner's local timezone. Computed via Intl so DST is handled.
+        if (hourAligned) {
+          const localMinute = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            minute: '2-digit',
+            hour12: false,
+          }).format(slotStart);
+          if (parseInt(localMinute, 10) !== 0) continue;
+        }
 
         // Check for conflicts with existing bookings + sessions
         const hasConflict = allConflicts.some((c) => {

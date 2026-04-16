@@ -61,8 +61,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
   // Manual scheduling (without calendar)
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>('calendar')
-  const [manualSessionType, setManualSessionType] = useState<string>('follow_up')
-  const [manualSessionFormat, setManualSessionFormat] = useState<'in_person' | 'virtual'>('in_person')
+  const [manualSessionType, setManualSessionType] = useState<string>('')
   const [manualDuration, setManualDuration] = useState(60)
   const [manualTime, setManualTime] = useState('10:00')
   const [use24Hour, setUse24Hour] = useState(locale === 'fr')
@@ -129,14 +128,22 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   }
 
   const getSessionTypeLabel = (value: string) => {
+    // First check the practitioner's DB session types (their custom names)
+    const dbType = sessionTypes.find(t => t.id === value)
+    if (dbType) return getLocaleName(dbType)
+    // Fallback to hardcoded options
     return sessionTypeOptions.find(opt => opt.value === value)?.label || value
   }
 
-  // Session format options
-  const sessionFormatOptions = [
-    { value: 'in_person', label: 'In Person', labelFr: 'En personne', labelEs: 'Presencial', Icon: Building2 },
-    { value: 'virtual', label: 'Virtual', labelFr: 'Virtuel', labelEs: 'Virtual', Icon: Video },
-  ]
+  // Map a practitioner's custom session-type id (from booking_settings JSON)
+  // to a valid sessions.session_type enum value. The DB enum only accepts:
+  // initial_consultation, follow_up, check_in, crisis, group, other.
+  const VALID_SESSION_ENUMS = new Set(['initial_consultation', 'follow_up', 'check_in', 'crisis', 'group', 'other'])
+  const ID_TO_ENUM: Record<string, string> = { initial: 'initial_consultation' }
+  const toSessionEnum = (id: string): string => {
+    if (VALID_SESSION_ENUMS.has(id)) return id
+    return ID_TO_ENUM[id] || 'other'
+  }
 
   const supabase = createClient()
 
@@ -159,8 +166,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       setQuickLoading(false)
       setDateViewMode('calendar')
       setScheduleMode(hasExternalBooking ? 'manual' : 'calendar')
-      setManualSessionType('follow_up')
-      setManualSessionFormat('in_person')
+      setManualSessionType('')
       setManualDuration(60)
       setManualTime('10:00')
       fetchInitialData()
@@ -363,13 +369,15 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       const isBackdated = startTime.getTime() < Date.now()
 
       if (scheduleMode === 'manual') {
-        // Save to sessions table for member tracking
+        // Save to sessions table for member tracking. Format comes from the
+        // step-3 picker (selectedSessionFormat) — same source as calendar mode.
         const sessionTypeLabel = getSessionTypeLabel(manualSessionType)
+        const manualFormat: 'in_person' | 'video' = selectedSessionFormat === 'in_person' ? 'in_person' : 'video'
         const sessionData = {
           practitioner_id: userId,
           member_id: selectedMember.id,
-          session_type: manualSessionType as 'initial_consultation' | 'follow_up' | 'check_in' | 'crisis' | 'group' | 'other',
-          session_format: manualSessionFormat,
+          session_type: toSessionEnum(manualSessionType) as 'initial_consultation' | 'follow_up' | 'check_in' | 'crisis' | 'group' | 'other',
+          session_format: manualFormat as 'in_person' | 'virtual',
           scheduled_at: startTime.toISOString(),
           duration_minutes: durationToUse,
           status: 'scheduled',
@@ -422,7 +430,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         // Google Calendar sends its own invite via sendUpdates=all — no separate email needed
 
         toast.success(`Session scheduled with ${selectedMember.first_name} ${selectedMember.last_name}`)
-        analytics.sessionScheduled({ format: manualSessionFormat, duration: manualDuration })
+        analytics.sessionScheduled({ format: manualFormat, duration: manualDuration })
       } else {
         // Calendar mode: create booking first, then session (avoids orphan sessions)
 
@@ -465,7 +473,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           await supabase.from('sessions').insert({
             practitioner_id: userId,
             member_id: selectedMember.id,
-            session_type: 'follow_up' as const,
+            session_type: toSessionEnum(selectedSessionType!.id) as 'initial_consultation' | 'follow_up' | 'check_in' | 'crisis' | 'group' | 'other',
             session_format: (selectedSessionFormat === 'in_person' ? 'in_person' : 'video') as 'in_person' | 'virtual',
             scheduled_at: startTime.toISOString(),
             duration_minutes: durationToUse,
@@ -600,10 +608,15 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
             </button>
           </div>
 
-          {/* Progress Steps */}
+          {/* Progress Steps — hide the Member step from the indicator when a
+              member is preselected, so the user sees the actual flow they'll go
+              through (1 of 4) instead of a mysterious pre-checked step 1 of 5. */}
           <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
             <div className="flex items-center justify-center">
-              {['member', 'session', 'format', 'datetime', 'confirm'].map((s, index, arr) => {
+              {(preselectedMember
+                ? ['session', 'format', 'datetime', 'confirm']
+                : ['member', 'session', 'format', 'datetime', 'confirm']
+              ).map((s, index, arr) => {
                 const currentIndex = arr.indexOf(step)
                 return (
                 <div key={s} className="flex items-center">
@@ -761,26 +774,19 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                     </button>
                   </div>
                 ) : scheduleMode === 'calendar' ? (
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {sessionTypes.map((type) => (
                       <button
                         key={type.id}
                         onClick={() => setSelectedSessionType(type)}
-                        className={`w-full p-4 rounded-xl border text-left transition-all ${
+                        className={`px-3 py-2.5 rounded-xl border text-sm font-medium transition-all text-left ${
                           selectedSessionType?.id === type.id
-                            ? 'border-mint-500 bg-mint-50'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            ? 'border-mint-500 bg-mint-50 text-mint-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-gray-900">{getLocaleName(type)}</p>
-                            <p className="text-sm text-gray-500">{type.duration} minutes</p>
-                          </div>
-                          {selectedSessionType?.id === type.id && (
-                            <Check className="w-5 h-5 text-mint-500" />
-                          )}
-                        </div>
+                        <span className="block">{getLocaleName(type)}</span>
+                        <span className="block text-xs text-gray-400 mt-0.5">{type.duration} min</span>
                       </button>
                     ))}
                   </div>
@@ -817,30 +823,6 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                               {isDbType && (
                                 <span className="block text-xs text-gray-400 mt-0.5">{(option as SessionType).duration} min</span>
                               )}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        {locale === 'fr' ? 'Format de séance' : locale === 'es' ? 'Formato de sesión' : 'Session Format'}
-                      </label>
-                      <div className="flex gap-2">
-                        {sessionFormatOptions.map((option) => {
-                          const IconComponent = option.Icon
-                          return (
-                            <button
-                              key={option.value}
-                              onClick={() => setManualSessionFormat(option.value as 'in_person' | 'virtual')}
-                              className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-                                manualSessionFormat === option.value
-                                  ? 'border-mint-500 bg-mint-50 text-mint-700'
-                                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                              }`}
-                            >
-                              <IconComponent className="w-4 h-4" />
-                              <span>{locale === 'fr' ? option.labelFr : locale === 'es' ? (option.labelEs || option.label) : option.label}</span>
                             </button>
                           )
                         })}
@@ -901,27 +883,30 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
             {/* Step: Select Date & Time */}
             {step === 'datetime' && (
               <div className="space-y-4">
-                {/* View toggle */}
-                <div className="flex bg-gray-100 rounded-lg p-1">
-                  <button
-                    type="button"
-                    onClick={() => setDateViewMode('calendar')}
-                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
-                      dateViewMode === 'calendar' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {locale === 'fr' ? 'Calendrier' : 'Calendar'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDateViewMode('quick')}
-                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
-                      dateViewMode === 'quick' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {locale === 'fr' ? 'Prochaines dispos' : 'Next available'}
-                  </button>
-                </div>
+                {/* View toggle — only useful in calendar-driven scheduling.
+                    Manual entry just needs a date + time picker. */}
+                {scheduleMode !== 'manual' && (
+                  <div className="flex bg-gray-100 rounded-lg p-1">
+                    <button
+                      type="button"
+                      onClick={() => setDateViewMode('calendar')}
+                      className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+                        dateViewMode === 'calendar' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      {locale === 'fr' ? 'Calendrier' : 'Calendar'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDateViewMode('quick')}
+                      className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+                        dateViewMode === 'quick' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      {locale === 'fr' ? 'Prochaines dispos' : 'Next available'}
+                    </button>
+                  </div>
+                )}
 
                 {/* Quick view */}
                 {dateViewMode === 'quick' && (
@@ -1126,12 +1111,12 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                         {scheduleMode === 'manual' ? manualDuration : selectedSessionType?.duration} min
                       </span>
                     </div>
-                    {scheduleMode === 'manual' && (
+                    {selectedSessionFormat && (
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">{locale === 'fr' ? 'Format' : locale === 'es' ? 'Formato' : 'Format'}</span>
                         <span className="font-medium text-gray-900 flex items-center gap-1.5">
-                          {manualSessionFormat === 'virtual' ? (
-                            <><Video className="w-4 h-4" /> {locale === 'fr' ? 'Virtuel' : locale === 'es' ? 'Virtual' : 'Virtual'}</>
+                          {selectedSessionFormat === 'video' ? (
+                            <><Video className="w-4 h-4" /> {locale === 'fr' ? 'Vidéo' : locale === 'es' ? 'Video' : 'Video'}</>
                           ) : (
                             <><Building2 className="w-4 h-4" /> {locale === 'fr' ? 'En personne' : locale === 'es' ? 'Presencial' : 'In Person'}</>
                           )}
