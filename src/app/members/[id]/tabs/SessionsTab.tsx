@@ -425,6 +425,40 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
       if (error) throw error
 
+      // When cancelling, also cancel the matching booking so the patient
+      // gets a cancellation email + Google Calendar event is removed.
+      // The booking PATCH endpoint handles both of those.
+      if (newStatus === 'cancelled') {
+        try {
+          // Find the session to get its scheduled_at for matching
+          const session = sessions.find(s => s.id === sessionId)
+          if (session) {
+            // Find the matching booking by member + start time
+            const { data: matchingBooking } = await supabase
+              .from('bookings')
+              .select('id, status')
+              .eq('member_id', memberId)
+              .eq('start_time', session.scheduled_at)
+              .neq('status', 'cancelled')
+              .maybeSingle()
+
+            if (matchingBooking) {
+              await fetch(`/api/bookings/${matchingBooking.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  status: 'cancelled',
+                  practitioner_notes: reason || undefined,
+                }),
+              })
+            }
+          }
+        } catch (bookingErr) {
+          console.warn('Could not cancel matching booking:', bookingErr)
+          // Don't block — session was already cancelled successfully
+        }
+      }
+
       toast.success(t.members.success.sessionUpdated)
       onSessionsUpdate()
     } catch (error) {

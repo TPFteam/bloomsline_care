@@ -295,19 +295,30 @@ export async function PATCH(
     // Send cancellation email to patient (Google Calendar is unreliable)
     if (status === 'cancelled' && booking.client_email && !isBackdatedBooking) {
       try {
-        const { data: pUser } = await adminSupabase.from('users').select('full_name').eq('id', user.id).single();
+        const { data: pUser } = await adminSupabase.from('users').select('full_name, preferred_language').eq('id', user.id).single();
         const pName = pUser?.full_name || 'Your practitioner';
-        const cancelDate = new Date(booking.start_time).toLocaleString('en-US', {
+        const isFr = pUser?.preferred_language === 'fr';
+        const cancelDate = new Date(booking.start_time).toLocaleString(isFr ? 'fr-FR' : 'en-US', {
           weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-          hour: 'numeric', minute: '2-digit', hour12: true,
+          hour: 'numeric', minute: '2-digit', hour12: !isFr,
         });
+        const reasonText = practitioner_notes
+          ? (isFr ? `\n\nRaison : ${practitioner_notes}` : `\n\nReason: ${practitioner_notes}`)
+          : '';
         const htmlBody = generateEmailHtml({
-          subject: `Session cancelled`,
-          body: `Your session with ${pName} on ${cancelDate} has been cancelled.`,
+          subject: isFr ? 'Séance annulée' : 'Session cancelled',
+          body: (isFr
+            ? `Votre séance avec ${pName} le ${cancelDate} a été annulée.${reasonText}\n\nSi vous souhaitez reprogrammer, contactez votre praticien.`
+            : `Your session with ${pName} on ${cancelDate} has been cancelled.${reasonText}\n\nIf you'd like to reschedule, please contact your practitioner.`),
           practitionerName: pName,
           recipientName: booking.client_name,
         });
-        await sendEmail({ to: booking.client_email, subject: `Session cancelled: ${cancelDate}`, htmlBody, tag: 'booking_cancelled_by_practitioner' });
+        await sendEmail({
+          to: booking.client_email,
+          subject: isFr ? `Séance annulée : ${cancelDate}` : `Session cancelled: ${cancelDate}`,
+          htmlBody,
+          tag: 'booking_cancelled_by_practitioner',
+        });
       } catch (err) {
         console.error('Error sending cancellation email:', err);
       }
