@@ -271,56 +271,59 @@ export async function PATCH(
       }
     }
 
-    // If cancelling and there's a Google event, delete it
+    // If cancelling and there's a Google event:
+    // 1. Update the event description with the cancellation reason (sendUpdates=none)
+    // 2. Delete the event (sendUpdates=all) → Google sends the cancellation email
+    //    which now includes the reason in the description.
+    // No separate Bloomsline email — Google's notification is sufficient.
     // Backdated bookings: skip calendar deletion entirely (historical record only)
     if (status === 'cancelled' && booking.google_event_id && !isBackdatedBooking) {
       const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
       if (googleAuth) {
-        try {
-          await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${booking.google_event_id}?sendUpdates=all`,
-            {
-              method: 'DELETE',
-              headers: {
-                Authorization: `Bearer ${googleAuth.accessToken}`,
-              },
-            }
-          );
-        } catch (err) {
-          console.error('Failed to delete calendar event:', err);
-        }
-      }
-    }
+        const calendarUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${booking.google_event_id}`;
+        const authHeaders = { Authorization: `Bearer ${googleAuth.accessToken}`, 'Content-Type': 'application/json' };
 
-    // Send cancellation email to patient (Google Calendar is unreliable)
-    if (status === 'cancelled' && booking.client_email && !isBackdatedBooking) {
-      try {
-        const { data: pUser } = await adminSupabase.from('users').select('full_name, preferred_language').eq('id', user.id).single();
-        const pName = pUser?.full_name || 'Your practitioner';
-        const isFr = pUser?.preferred_language === 'fr';
-        const cancelDate = new Date(booking.start_time).toLocaleString(isFr ? 'fr-FR' : 'en-US', {
-          weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-          hour: 'numeric', minute: '2-digit', hour12: !isFr,
-        });
-        const reasonText = practitioner_notes
-          ? (isFr ? `\n\nRaison : ${practitioner_notes}` : `\n\nReason: ${practitioner_notes}`)
-          : '';
-        const htmlBody = generateEmailHtml({
-          subject: isFr ? 'Séance annulée' : 'Session cancelled',
-          body: (isFr
-            ? `Votre séance avec ${pName} le ${cancelDate} a été annulée.${reasonText}\n\nSi vous souhaitez reprogrammer, contactez votre praticien.`
-            : `Your session with ${pName} on ${cancelDate} has been cancelled.${reasonText}\n\nIf you'd like to reschedule, please contact your practitioner.`),
-          practitionerName: pName,
-          recipientName: booking.client_name,
-        });
-        await sendEmail({
-          to: booking.client_email,
-          subject: isFr ? `Séance annulée : ${cancelDate}` : `Session cancelled: ${cancelDate}`,
-          htmlBody,
-          tag: 'booking_cancelled_by_practitioner',
-        });
-      } catch (err) {
-        console.error('Error sending cancellation email:', err);
+        // Map raw reason keys to human-readable labels
+        const reasonLabels: Record<string, { en: string; fr: string }> = {
+          client_request: { en: 'Client request', fr: 'Demande du patient' },
+          practitioner_unavailable: { en: 'Practitioner unavailable', fr: 'Praticien indisponible' },
+          scheduling_conflict: { en: 'Scheduling conflict', fr: 'Conflit d\'agenda' },
+          personal_reasons: { en: 'Personal reasons', fr: 'Raisons personnelles' },
+        };
+
+        try {
+          // Fetch practitioner's language for the reason label
+          const { data: pUser } = await adminSupabase.from('users').select('preferred_language').eq('id', user.id).single();
+          const isFr = pUser?.preferred_language === 'fr';
+
+          // Build the cancellation note for the event description
+          const reasonKey = practitioner_notes || '';
+          const reasonLabel = reasonLabels[reasonKey]
+            ? (isFr ? reasonLabels[reasonKey].fr : reasonLabels[reasonKey].en)
+            : reasonKey; // custom text or unknown key → pass through
+          const cancelNote = reasonLabel
+            ? (isFr ? `\n\n❌ Séance annulée — Raison : ${reasonLabel}` : `\n\n❌ Session cancelled — Reason: ${reasonLabel}`)
+            : (isFr ? '\n\n❌ Séance annulée' : '\n\n❌ Session cancelled');
+
+          // 1. Update description with reason (no notification yet)
+          const eventRes = await fetch(`${calendarUrl}`, { headers: authHeaders });
+          if (eventRes.ok) {
+            const event = await eventRes.json();
+            await fetch(`${calendarUrl}?sendUpdates=none`, {
+              method: 'PATCH',
+              headers: authHeaders,
+              body: JSON.stringify({ description: (event.description || '') + cancelNote }),
+            });
+          }
+
+          // 2. Delete event → Google sends cancellation email with updated description
+          await fetch(`${calendarUrl}?sendUpdates=all`, {
+            method: 'DELETE',
+            headers: authHeaders,
+          });
+        } catch (err) {
+          console.error('Failed to update/delete calendar event:', err);
+        }
       }
     }
 
