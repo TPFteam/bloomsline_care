@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { analytics } from '@/lib/analytics/events'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video, Settings, Loader2 } from 'lucide-react'
+import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video, Settings, Loader2, Info } from 'lucide-react'
 import { CalendarPicker } from '@/components/ui/calendar-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -712,7 +712,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
             {step === 'session' && (
               <div className="space-y-4">
                 {/* Mode Toggle — hide "From Calendar" entirely when external booking is active */}
-                {sessionTypes.length > 0 && !hasExternalBooking && (
+                {sessionTypes.length > 0 && !hasExternalBooking && (<>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 flex gap-2 p-1 bg-gray-100 rounded-xl">
                       <button
@@ -747,7 +747,17 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                       <Settings className="w-4 h-4" />
                     </button>
                   </div>
-                )}
+                  {scheduleMode === 'manual' && (
+                    <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-xs text-amber-700">
+                      <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      <span>
+                        {locale === 'fr'
+                          ? 'Saisie manuelle : aucun email de confirmation ne sera envoyé au patient. La séance ne sera pas synchronisée avec Google Agenda.'
+                          : 'Manual entry: no confirmation email will be sent to the patient. The session will not sync with Google Calendar.'}
+                      </span>
+                    </div>
+                  )}
+                </>)}
                 {hasExternalBooking && (
                   <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-500">
                     <Calendar className="w-4 h-4 shrink-0" />
