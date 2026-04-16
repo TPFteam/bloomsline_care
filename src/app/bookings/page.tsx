@@ -183,6 +183,7 @@ export default function BookingsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [showSavedModal, setShowSavedModal] = useState(false)
   const [showSettingsSavedModal, setShowSettingsSavedModal] = useState(false)
+  const [settingsTab, setSettingsTab] = useState<'general' | 'sessions' | 'availability' | 'preferences'>('general')
 
   // User state
   const [user, setUser] = useState<UserType | null>(null)
@@ -1005,6 +1006,31 @@ export default function BookingsPage() {
           {/* Settings Tab Content */}
           {mainTab === 'settings' && (
             <div className="space-y-6">
+              {/* Settings sub-tabs */}
+              <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                {([
+                  { key: 'general' as const, label: locale === 'fr' ? 'Général' : 'General', icon: LinkIcon },
+                  { key: 'sessions' as const, label: locale === 'fr' ? 'Séances' : 'Sessions', icon: Clock },
+                  { key: 'availability' as const, label: locale === 'fr' ? 'Disponibilités' : 'Availability', icon: Calendar },
+                  { key: 'preferences' as const, label: locale === 'fr' ? 'Préférences' : 'Preferences', icon: Settings },
+                ]).map(({ key, label, icon: Icon }) => (
+                  <button
+                    key={key}
+                    onClick={() => setSettingsTab(key)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-medium rounded-lg transition-all ${
+                      settingsTab === key
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* ─── General tab: Booking Link + Calendar ─── */}
+              {settingsTab === 'general' && (<>
               {/* Booking Link — only for native booking */}
               {!bookingSettings?.external_booking_url && practitionerSlug && bookingSettings?.booking_page_enabled && (
                 <Card className="border-gray-200 bg-white">
@@ -1139,7 +1165,10 @@ export default function BookingsPage() {
                 </CardContent>
               </Card>
               )}
+              </>)}
 
+              {/* ─── Sessions tab ─── */}
+              {settingsTab === 'sessions' && (<>
               {/* Session Types — only for native booking */}
               {!bookingSettings?.external_booking_url && (
               <Card id="session-types">
@@ -1270,6 +1299,10 @@ export default function BookingsPage() {
               </Card>
               )}
 
+              </>)}
+
+              {/* ─── Availability tab ─── */}
+              {settingsTab === 'availability' && (<>
               {/* Availability Schedule — only for native booking */}
               {!bookingSettings?.external_booking_url && (
               <Card>
@@ -1377,6 +1410,10 @@ export default function BookingsPage() {
               </Card>
               )}
 
+              </>)}
+
+              {/* ─── Preferences tab ─── */}
+              {settingsTab === 'preferences' && (<>
               {/* Booking Settings */}
               <Card>
                 <CardHeader>
@@ -1609,10 +1646,8 @@ export default function BookingsPage() {
                     </div>
                   </div>
 
-                  {/* Hour-aligned slots — when on, only offer top-of-the-hour
-                      start times (9:00, 10:00, 11:00). Useful for practitioners
-                      who don't want :30 bookings cluttering their calendar. */}
-                  <div className="mt-4">
+                  {/* Slot alignment */}
+                  <div className="mt-2">
                     <label className="flex items-start gap-3 cursor-pointer">
                       <div
                         className={`relative w-10 h-5 rounded-full transition-colors shrink-0 mt-0.5 ${(bookingSettings as any)?.hour_aligned_slots ? 'bg-teal-600' : 'bg-gray-300'}`}
@@ -1640,13 +1675,16 @@ export default function BookingsPage() {
 
                   {/* Patient modification settings */}
                   <div className="mt-6 pt-6 border-t border-gray-200">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-4">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-1">
                       {locale === 'fr' ? 'Modifications par le patient' : 'Patient modifications'}
                     </h4>
+                    <p className="text-xs text-gray-500 mb-4">
+                      {locale === 'fr' ? 'Autorisez vos patients à gérer leurs rendez-vous eux-mêmes' : 'Let your patients manage their own appointments'}
+                    </p>
                     <div className="space-y-4">
-                      <label className="flex items-center gap-3 cursor-pointer">
+                      <label className="flex items-start gap-3 cursor-pointer">
                         <div
-                          className={`relative w-10 h-5 rounded-full transition-colors ${(bookingSettings as any)?.allow_patient_cancel ? 'bg-teal-600' : 'bg-gray-300'}`}
+                          className={`relative w-10 h-5 rounded-full transition-colors shrink-0 mt-0.5 ${(bookingSettings as any)?.allow_patient_cancel ? 'bg-teal-600' : 'bg-gray-300'}`}
                           onClick={() =>
                             setBookingSettings((prev: any) => ({
                               ...prev!,
@@ -1656,13 +1694,18 @@ export default function BookingsPage() {
                         >
                           <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${(bookingSettings as any)?.allow_patient_cancel ? 'translate-x-5' : 'translate-x-0.5'}`} />
                         </div>
-                        <span className="text-sm text-gray-700">
-                          {locale === 'fr' ? 'Autoriser le patient à annuler' : 'Allow patient to cancel'}
-                        </span>
+                        <div>
+                          <span className="text-sm text-gray-700">
+                            {locale === 'fr' ? 'Autoriser le patient à annuler' : 'Allow patient to cancel'}
+                          </span>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {locale === 'fr' ? 'Le patient peut annuler depuis son espace' : 'Patient can cancel from their booking page'}
+                          </p>
+                        </div>
                       </label>
-                      <label className="flex items-center gap-3 cursor-pointer">
+                      <label className="flex items-start gap-3 cursor-pointer">
                         <div
-                          className={`relative w-10 h-5 rounded-full transition-colors ${(bookingSettings as any)?.allow_patient_reschedule ? 'bg-teal-600' : 'bg-gray-300'}`}
+                          className={`relative w-10 h-5 rounded-full transition-colors shrink-0 mt-0.5 ${(bookingSettings as any)?.allow_patient_reschedule ? 'bg-teal-600' : 'bg-gray-300'}`}
                           onClick={() =>
                             setBookingSettings((prev: any) => ({
                               ...prev!,
@@ -1672,14 +1715,19 @@ export default function BookingsPage() {
                         >
                           <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${(bookingSettings as any)?.allow_patient_reschedule ? 'translate-x-5' : 'translate-x-0.5'}`} />
                         </div>
-                        <span className="text-sm text-gray-700">
-                          {locale === 'fr' ? 'Autoriser le patient à reprogrammer' : 'Allow patient to reschedule'}
-                        </span>
+                        <div>
+                          <span className="text-sm text-gray-700">
+                            {locale === 'fr' ? 'Autoriser le patient à reprogrammer' : 'Allow patient to reschedule'}
+                          </span>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {locale === 'fr' ? 'Le patient peut choisir un nouveau créneau' : 'Patient can pick a new time slot'}
+                          </p>
+                        </div>
                       </label>
                       {((bookingSettings as any)?.allow_patient_cancel || (bookingSettings as any)?.allow_patient_reschedule) && (
-                        <div>
+                        <div className="pl-13">
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            {locale === 'fr' ? 'Délai minimum pour modifications (heures)' : 'Minimum notice for changes (hours)'}
+                            {locale === 'fr' ? 'Délai minimum pour modifications' : 'Minimum notice for changes'}
                           </label>
                           <select
                             value={(bookingSettings as any)?.modification_notice_hours ?? 48}
@@ -1689,12 +1737,12 @@ export default function BookingsPage() {
                                 modification_notice_hours: parseInt(e.target.value),
                               }))
                             }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                           >
-                            <option value={12}>12h</option>
-                            <option value={24}>24h</option>
-                            <option value={48}>48h</option>
-                            <option value={72}>72h</option>
+                            <option value={12}>12 {locale === 'fr' ? 'heures' : 'hours'}</option>
+                            <option value={24}>24 {locale === 'fr' ? 'heures' : 'hours'}</option>
+                            <option value={48}>48 {locale === 'fr' ? 'heures' : 'hours'}</option>
+                            <option value={72}>72 {locale === 'fr' ? 'heures' : 'hours'}</option>
                           </select>
                         </div>
                       )}
@@ -1716,6 +1764,7 @@ export default function BookingsPage() {
                   </Button>
                 </CardContent>
               </Card>
+              </>)}
             </div>
           )}
           </div>
