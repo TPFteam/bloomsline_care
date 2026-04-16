@@ -53,6 +53,12 @@ export function CalendarPicker({
     setMounted(true)
   }, [])
 
+  // Keep the displayed month in sync when selectedDate changes externally
+  // (e.g. auto-advance when format changes disables the current day)
+  useEffect(() => {
+    setCurrentMonth(startOfMonth(selectedDate))
+  }, [selectedDate])
+
   // Calculate dropdown position when opening
   useEffect(() => {
     if (isOpen && triggerRef.current) {

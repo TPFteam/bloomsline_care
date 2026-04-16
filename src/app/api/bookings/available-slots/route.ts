@@ -51,13 +51,13 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminClient();
 
-  // Sync: check if any confirmed bookings were cancelled on Google Calendar
-  // Fire-and-forget to not block the response, but await briefly
-  try {
-    await syncCancelledGoogleEvents(practitionerId, supabase)
-  } catch (err) {
+  // Sync: check if any confirmed bookings were cancelled on Google Calendar.
+  // Truly fire-and-forget — this makes one Google API call per upcoming booking,
+  // which previously added 1-3s to every date change. Any cancellations it finds
+  // will be picked up on the next fetch; we don't block the user on it.
+  syncCancelledGoogleEvents(practitionerId, supabase).catch((err) => {
     console.error('[available-slots] Google sync check failed:', err)
-  }
+  })
 
   let slots: TimeSlot[];
   let knownTz: string | null = null;
@@ -151,32 +151,39 @@ export async function GET(request: NextRequest) {
     const dayStartUtc = new Date(dayStartLocal.getTime() - tzOffsetMs).toISOString();
     const dayEndUtc = new Date(dayEndLocal.getTime() - tzOffsetMs).toISOString();
 
-    // Get existing bookings for conflict check (using timezone-aware day boundaries)
-    const { data: bookings } = await supabase
-      .from('bookings')
-      .select('start_time, end_time')
-      .eq('practitioner_id', practitionerId)
-      .gte('start_time', dayStartUtc)
-      .lte('start_time', dayEndUtc)
-      .neq('status', 'cancelled');
-
-    // Also check sessions table for conflicts (sessions without bookings)
-    const { data: sessionConflicts } = await supabase
-      .from('sessions')
-      .select('scheduled_at, duration_minutes')
-      .eq('practitioner_id', practitionerId)
-      .gte('scheduled_at', dayStartUtc)
-      .lte('scheduled_at', dayEndUtc)
-      .neq('status', 'cancelled');
-
-    const { data: bufferSettings } = await supabase
-      .from('booking_settings')
-      .select('buffer_before, buffer_after')
-      .eq('user_id', practitionerId)
-      .single();
+    // Run independent queries in parallel — bookings, sessions, and settings
+    // don't depend on each other, so there's no reason to wait sequentially.
+    const [bookingsRes, sessionConflictsRes, bufferSettingsRes] = await Promise.all([
+      supabase
+        .from('bookings')
+        .select('start_time, end_time')
+        .eq('practitioner_id', practitionerId)
+        .gte('start_time', dayStartUtc)
+        .lte('start_time', dayEndUtc)
+        .neq('status', 'cancelled'),
+      supabase
+        .from('sessions')
+        .select('scheduled_at, duration_minutes')
+        .eq('practitioner_id', practitionerId)
+        .gte('scheduled_at', dayStartUtc)
+        .lte('scheduled_at', dayEndUtc)
+        .neq('status', 'cancelled'),
+      supabase
+        .from('booking_settings')
+        .select('buffer_before, buffer_after, min_notice_hours')
+        .eq('user_id', practitionerId)
+        .single(),
+    ]);
+    const bookings = bookingsRes.data;
+    const sessionConflicts = sessionConflictsRes.data;
+    const bufferSettings = bufferSettingsRes.data;
 
     const bufBefore = (bufferSettings?.buffer_before || 0) * 60 * 1000;
     const bufAfter = (bufferSettings?.buffer_after || 0) * 60 * 1000;
+    // Practitioners can opt out of min_notice (e.g. for same-day bookings), but by default
+    // the notice window they set applies to their own scheduling too — consistent with what
+    // their patients see, so their schedule stays realistic.
+    const minNoticeMs = (bufferSettings?.min_notice_hours || 0) * 60 * 60 * 1000;
 
     // Merge bookings + sessions into one conflict list
     const allConflicts = [
@@ -198,12 +205,13 @@ export async function GET(request: NextRequest) {
       const endUtc = new Date(endLocal.getTime() - tzOffsetMs);
 
       const now = Date.now();
+      const noticeCutoff = now + minNoticeMs;
       for (let t = startUtc.getTime(); t + durationMs <= endUtc.getTime(); t += stepMs) {
         const slotStart = new Date(t);
         const slotEnd = new Date(t + durationMs);
 
-        // Skip past slots
-        if (slotStart.getTime() < now) continue;
+        // Skip past slots AND slots within the minimum notice window
+        if (slotStart.getTime() < noticeCutoff) continue;
 
         // Check for conflicts with existing bookings + sessions
         const hasConflict = allConflicts.some((c) => {

@@ -169,7 +169,39 @@ export default function BookingPage() {
     }
 
     loadSlots()
-  }, [selectedDate, practitioner, selectedService])
+  }, [selectedDate, practitioner, selectedService, selectedFormat])
+
+  // When the format changes, drop any previously-picked date/slot that doesn't fit
+  // (e.g. user picked a Thursday for Video, then went back and switched to In-person
+  // which is only on Mondays) — and jump the calendar to a month that has availability.
+  useEffect(() => {
+    if (!selectedFormat || !practitioner?.dayFormats) return
+    if (selectedDate) {
+      const dayFmts = practitioner.dayFormats[String(selectedDate.getDay())]
+      if (!dayFmts || !dayFmts.includes(selectedFormat)) {
+        setSelectedDate(null)
+        setSelectedSlot(null)
+      }
+    }
+    // Advance the calendar if the displayed month has no enabled days for this format
+    const hasAnyInMonth = (() => {
+      const days = getDaysInMonth(currentMonth)
+      return days.some((d) => d && !isDateDisabled(d))
+    })()
+    if (!hasAnyInMonth) {
+      // Find the next month with at least one enabled day (scan up to 12 months)
+      for (let i = 1; i <= 12; i++) {
+        const candidate = new Date(currentMonth)
+        candidate.setMonth(candidate.getMonth() + i)
+        const days = getDaysInMonth(candidate)
+        if (days.some((d) => d && !isDateDisabled(d))) {
+          setCurrentMonth(candidate)
+          break
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFormat, practitioner])
 
   // Load quick view (next available days)
   useEffect(() => {
@@ -185,7 +217,28 @@ export default function BookingPage() {
       })
       .catch(() => setQuickDays([]))
       .finally(() => setQuickLoading(false))
-  }, [dateViewMode, practitioner, selectedService])
+  }, [dateViewMode, practitioner, selectedService, selectedFormat])
+
+  // Pre-select the first bookable date so the calendar never opens blank.
+  // Runs whenever practitioner/service/format is ready and no date is picked
+  // yet — scanning client-side through calendar rules (active days, max advance,
+  // format fit) so it works even if the next-available endpoint is slow.
+  useEffect(() => {
+    if (selectedDate || !practitioner) return
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const maxAdvance = practitioner.settings?.max_advance_days || 60
+    for (let i = 0; i < maxAdvance; i++) {
+      const candidate = new Date(today)
+      candidate.setDate(today.getDate() + i)
+      if (!isDateDisabled(candidate)) {
+        setSelectedDate(candidate)
+        setCurrentMonth(new Date(candidate.getFullYear(), candidate.getMonth(), 1))
+        return
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [practitioner, selectedService, selectedFormat, selectedDate])
 
   // Calendar helpers
   const getDaysInMonth = (date: Date) => {

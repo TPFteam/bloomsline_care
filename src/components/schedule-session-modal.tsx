@@ -45,6 +45,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [members, setMembers] = useState<Member[]>([])
   const [sessionTypes, setSessionTypes] = useState<SessionType[]>([])
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([])
+  const [slotsLoading, setSlotsLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [selectedSessionFormat, setSelectedSessionFormat] = useState<'in_person' | 'video' | null>(null)
   const [availSessionFormats, setAvailSessionFormats] = useState<string[]>(['in_person', 'video'])
@@ -86,6 +87,23 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
     }
     return disabled
   }, [baseDisabledDays, selectedSessionFormat, scheduleDayFormats])
+
+  // Auto-advance selectedDate if the current day is disabled for the chosen format
+  // (e.g. user picks "In person" on a Thursday when Thursdays are Video-only → jump to next Monday)
+  useEffect(() => {
+    if (disabledDaysOfWeek.length === 0 || disabledDaysOfWeek.length >= 7) return
+    if (!disabledDaysOfWeek.includes(selectedDate.getDay())) return
+    // Scan forward up to 14 days for the first enabled day
+    for (let offset = 1; offset <= 14; offset++) {
+      const candidate = new Date(selectedDate)
+      candidate.setDate(candidate.getDate() + offset)
+      if (!disabledDaysOfWeek.includes(candidate.getDay())) {
+        setSelectedDate(startOfDay(candidate))
+        setSelectedTime(null)
+        return
+      }
+    }
+  }, [disabledDaysOfWeek, selectedDate])
   const [quickDays, setQuickDays] = useState<{ date: string; dayLabel: string; slots: { slot_start: string; slot_end: string }[] }[]>([])
   const [quickLoading, setQuickLoading] = useState(false)
   const [quickExpandedDate, setQuickExpandedDate] = useState<string | null>(null)
@@ -122,32 +140,30 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
   const supabase = createClient()
 
-  // Fetch members and session types on open
+  // Fetch members and session types on open — and reset all state so a
+  // reopened modal never inherits values from a previously-closed attempt.
   useEffect(() => {
     if (isOpen) {
-      // Set preselected member and start at appropriate step
-      if (preselectedMember) {
-        setSelectedMember(preselectedMember)
-        setStep('session')
-      } else {
-        setStep('member')
-        setSelectedMember(null)
-      }
-      fetchInitialData()
-    } else {
-      // Reset state when modal closes
+      // Reset selections to a clean slate
       setStep(preselectedMember ? 'session' : 'member')
       setSelectedMember(preselectedMember || null)
       setSelectedSessionType(null)
+      setSelectedSessionFormat(null)
       setSelectedDate(startOfDay(new Date()))
       setSelectedTime(null)
       setNotes('')
       setSearchQuery('')
+      setAvailableSlots([])
+      setQuickDays([])
+      setQuickExpandedDate(null)
+      setQuickLoading(false)
+      setDateViewMode('calendar')
       setScheduleMode(hasExternalBooking ? 'manual' : 'calendar')
       setManualSessionType('follow_up')
       setManualSessionFormat('in_person')
       setManualDuration(60)
       setManualTime('10:00')
+      fetchInitialData()
     }
   }, [isOpen, preselectedMember])
 
@@ -236,6 +252,11 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       return
     }
 
+    // Clear stale slots immediately so the user never sees the previous date's
+    // times while the new ones are in flight.
+    setAvailableSlots([])
+    setSelectedTime(null)
+    setSlotsLoading(true)
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd')
       const url = `/api/bookings/available-slots?practitionerId=${userId}&date=${dateStr}&duration=${selectedSessionType.duration}&skipNotice=true${selectedSessionFormat ? `&format=${selectedSessionFormat}` : ''}`
@@ -250,6 +271,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
     } catch (error) {
       console.error('[modal] Error fetching slots:', error)
       setAvailableSlots([])
+    } finally {
+      setSlotsLoading(false)
     }
   }
 
@@ -1017,6 +1040,11 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                       value={manualTime}
                       onChange={(time) => setManualTime(time)}
                     />
+                  ) : slotsLoading ? (
+                    <div className="py-8 text-center">
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto text-teal-500 mb-2" />
+                      <p className="text-sm text-gray-500">{locale === 'fr' ? 'Chargement des créneaux...' : locale === 'es' ? 'Cargando horarios...' : 'Loading times...'}</p>
+                    </div>
                   ) : availableSlots.length === 0 ? (
                     <div className="py-6 text-center text-gray-500">
                       <Clock className="w-8 h-8 mx-auto mb-2 text-gray-300" />
@@ -1155,7 +1183,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               <button
                 onClick={handleBookSession}
                 disabled={loading}
-                className="w-full py-3 bg-gradient-to-r from-mint-500 to-mint-600 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-mint-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-teal-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading
                   ? (locale === 'fr' ? 'Planification...' : locale === 'es' ? 'Programando...' : 'Scheduling...')
@@ -1170,7 +1198,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                   else if (step === 'datetime') setStep('confirm')
                 }}
                 disabled={!canProceed()}
-                className="w-full py-3 bg-gradient-to-r from-mint-500 to-mint-600 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-mint-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-3 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-teal-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {locale === 'fr' ? 'Continuer' : locale === 'es' ? 'Continuar' : 'Continue'}
                 <ChevronRight className="w-5 h-5" />

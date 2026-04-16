@@ -58,38 +58,47 @@ export async function GET(request: NextRequest) {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const result: { date: string; dayLabel: string; slots: { slot_start: string; slot_end: string }[] }[] = [];
 
-  for (let dayOffset = 0; dayOffset < 60 && result.length < limit; dayOffset++) {
+  // Build the list of candidate dates up front (only days with active schedule
+  // for the selected format), then fetch them in parallel. Previously this was
+  // sequential — 6 candidate days × ~300ms each = ~2s. In parallel it's ~300ms.
+  const candidateDates: { dateStr: string; scanDate: Date }[] = [];
+  for (let dayOffset = 0; dayOffset < 60; dayOffset++) {
     const scanDate = new Date(today);
     scanDate.setDate(today.getDate() + dayOffset);
-
-    // Skip days without schedules
     if (!activeDayNumbers.has(scanDate.getDay())) continue;
-
     const dateStr = `${scanDate.getFullYear()}-${String(scanDate.getMonth() + 1).padStart(2, '0')}-${String(scanDate.getDate()).padStart(2, '0')}`;
+    candidateDates.push({ dateStr, scanDate });
+    // Fetch a bit more than limit so we have options if some days return empty
+    if (candidateDates.length >= limit * 3) break;
+  }
 
-    // Call the existing available-slots API for this day
-    try {
-      const res = await fetch(
+  const dayResults = await Promise.all(
+    candidateDates.map(({ dateStr, scanDate }) =>
+      fetch(
         `${baseUrl}/api/bookings/available-slots?practitionerId=${practitionerId}&date=${dateStr}&duration=${duration}&skipNotice=${skipNotice}${formatFilter ? `&format=${formatFilter}` : ''}`,
         { headers: { 'Content-Type': 'application/json' } }
-      );
-      const data = await res.json();
-      const slots = data.slots || [];
+      )
+        .then((res) => res.json())
+        .then((data) => ({ dateStr, scanDate, slots: data.slots || [] as { slot_start: string; slot_end: string }[] }))
+        .catch((err) => {
+          console.error(`[next-available] Error fetching slots for ${dateStr}:`, err);
+          return { dateStr, scanDate, slots: [] as { slot_start: string; slot_end: string }[] };
+        })
+    )
+  );
 
-      if (slots.length > 0) {
-        result.push({
-          date: dateStr,
-          dayLabel: scanDate.toLocaleDateString('en-US', {
-            weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-          }),
-          slots,
-        });
-      }
-    } catch (err) {
-      console.error(`[next-available] Error fetching slots for ${dateStr}:`, err);
-    }
+  const result: { date: string; dayLabel: string; slots: { slot_start: string; slot_end: string }[] }[] = [];
+  for (const { dateStr, scanDate, slots } of dayResults) {
+    if (slots.length === 0) continue;
+    result.push({
+      date: dateStr,
+      dayLabel: scanDate.toLocaleDateString('en-US', {
+        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+      }),
+      slots,
+    });
+    if (result.length >= limit) break;
   }
 
   return NextResponse.json({ days: result, practitionerTimezone: tz });
