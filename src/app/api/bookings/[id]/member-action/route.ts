@@ -155,59 +155,58 @@ export async function POST(
         .eq('scheduled_at', booking.start_time)
         .eq('status', 'scheduled');
 
-      // Delete Google Calendar event
+      // Delete Google Calendar event — update description with reason first,
+      // then delete with sendUpdates=all so Google notifies both sides.
+      // No separate Bloomsline email — Google's notification is sufficient.
       if (booking.google_event_id) {
         const googleAuth = await getValidGoogleToken(booking.practitioner_id, adminSupabase);
         if (googleAuth) {
+          const calendarUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${booking.google_event_id}`;
+          const authHeaders = { Authorization: `Bearer ${googleAuth.accessToken}`, 'Content-Type': 'application/json' };
+
+          // Map reason keys to human-readable labels
+          const reasonLabels: Record<string, { en: string; fr: string }> = {
+            schedule_conflict: { en: 'Schedule conflict', fr: 'Conflit d\'horaire' },
+            personal_emergency: { en: 'Personal emergency', fr: 'Imprévu personnel' },
+            availability_change: { en: 'Availability change', fr: 'Changement de disponibilité' },
+            other: { en: 'Other', fr: 'Autre' },
+          };
+
           try {
-            await fetch(
-              `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${booking.google_event_id}?sendUpdates=all`,
-              { method: 'DELETE', headers: { Authorization: `Bearer ${googleAuth.accessToken}` } }
-            );
+            const { data: pUser } = await adminSupabase.from('users').select('preferred_language').eq('id', booking.practitioner_id).single();
+            const isFr = pUser?.preferred_language === 'fr';
+            const reasonText = reason.trim();
+            const reasonLabel = reasonLabels[reasonText]
+              ? (isFr ? reasonLabels[reasonText].fr : reasonLabels[reasonText].en)
+              : reasonText;
+            const cancelNote = isFr
+              ? `\n\n❌ Séance annulée par ${booking.client_name} — Raison : ${reasonLabel}`
+              : `\n\n❌ Session cancelled by ${booking.client_name} — Reason: ${reasonLabel}`;
+
+            // 1. Update description with reason (no notification yet)
+            const eventRes = await fetch(calendarUrl, { headers: authHeaders });
+            if (eventRes.ok) {
+              const event = await eventRes.json();
+              await fetch(`${calendarUrl}?sendUpdates=none`, {
+                method: 'PATCH',
+                headers: authHeaders,
+                body: JSON.stringify({ description: (event.description || '') + cancelNote }),
+              });
+            }
+
+            // 2. Delete event → Google sends cancellation email to both sides
+            await fetch(`${calendarUrl}?sendUpdates=all`, {
+              method: 'DELETE',
+              headers: authHeaders,
+            });
           } catch (err) {
-            console.error('Failed to delete calendar event:', err);
+            console.error('Failed to update/delete calendar event:', err);
           }
         }
       }
 
-      // Send emails to both sides
-      const metadata = { clientName: booking.client_name, scheduledAt, reason: reason.trim(), sessionType: sessionTypeName };
-
-      try {
-          // Email to practitioner
-          if (practitionerEmail) {
-            console.log(`[member-action] Sending cancel email to practitioner: ${practitionerEmail}`)
-            const content = getNotificationContent('booking_cancelled_by_member', metadata, 'en');
-            const htmlBody = generateEmailHtml({
-              subject: content.emailSubject,
-              body: content.body,
-              actionUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://care.bloomsline.com'}/bookings`,
-              actionText: 'View Bookings',
-            });
-            const result = await sendEmail({ to: practitionerEmail, subject: content.emailSubject, htmlBody, tag: 'booking_cancelled_by_member' });
-            console.log(`[member-action] Practitioner email result:`, result)
-          } else {
-            console.warn(`[member-action] No practitioner email found`)
-          }
-
-          // Email to patient
-          if (booking.client_email) {
-            console.log(`[member-action] Sending cancel email to patient: ${booking.client_email}`)
-            const content = getNotificationContent('booking_cancelled', metadata, 'en');
-            const htmlBody = generateEmailHtml({
-              subject: content.emailSubject,
-              body: `Your ${sessionTypeName} on ${scheduledAt} has been cancelled as requested.`,
-              actionUrl: '',
-              actionText: '',
-            });
-            const result = await sendEmail({ to: booking.client_email, subject: content.emailSubject, htmlBody, tag: 'booking_cancelled_member_confirm' });
-            console.log(`[member-action] Patient email result:`, result)
-          }
-        } catch (err) {
-          console.error('Error sending cancellation emails:', err);
-        }
-
       // Create in-app notification for practitioner
+      const cancelMetadata = { clientName: booking.client_name, scheduledAt, reason: reason.trim(), sessionType: sessionTypeName };
       await adminSupabase.from('notifications').insert({
         user_id: booking.practitioner_id,
         user_type: 'practitioner',
@@ -216,7 +215,7 @@ export async function POST(
         body: `${booking.client_name} cancelled their ${sessionTypeName} on ${scheduledAt}. Reason: ${reason.trim()}`,
         entity_type: 'booking',
         entity_id: id,
-        metadata,
+        metadata: cancelMetadata,
         action_url: `/bookings?highlight=${id}`,
       });
 
