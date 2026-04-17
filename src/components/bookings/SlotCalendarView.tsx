@@ -265,10 +265,12 @@ export function SlotCalendarView({
                 )
               })}
 
-              {/* Available slots — individual cards showing full time range */}
+              {/* Available slots — expand to full duration on hover */}
               {!disabled && slots.map(slot => {
                 const startHour = getHoursInTz(slot.slot_start)
+                const endHour = getHoursInTz(slot.slot_end)
                 const top = (startHour - START_HOUR) * HOUR_HEIGHT
+                const fullHeight = Math.max((endHour - startHour) * HOUR_HEIGHT, 24)
                 const isHovered = hoveredSlot === slot.slot_start
                 return (
                   <div
@@ -276,19 +278,28 @@ export function SlotCalendarView({
                     onClick={() => handleSlotClick(slot, day)}
                     onMouseEnter={() => setHoveredSlot(slot.slot_start)}
                     onMouseLeave={() => setHoveredSlot(null)}
-                    className={`absolute left-1 right-1 rounded-md border cursor-pointer transition-all z-20 px-1.5 flex items-center gap-1 ${
+                    className={`absolute left-1 right-1 rounded-lg border cursor-pointer z-20 px-2 overflow-hidden ${
                       isHovered
-                        ? 'bg-teal-500 border-teal-600 shadow-md text-white'
+                        ? 'bg-teal-500 border-teal-600 shadow-lg text-white z-30'
                         : 'bg-teal-50 border-teal-200 hover:bg-teal-100 text-teal-700'
                     }`}
-                    style={{ top: top + 1, height: 24 }}
+                    style={{
+                      top: top + 1,
+                      height: isHovered ? fullHeight - 2 : 24,
+                      transition: 'height 0.15s ease-out, background-color 0.15s, box-shadow 0.15s',
+                    }}
                   >
-                    <p className="text-[10px] font-semibold whitespace-nowrap">
-                      {formatTimeInTz(slot.slot_start)}
-                    </p>
-                    <p className={`text-[9px] whitespace-nowrap ${isHovered ? 'text-teal-100' : 'text-teal-400'}`}>
-                      → {formatTimeInTz(slot.slot_end)}
-                    </p>
+                    <div className="flex items-center gap-1 h-6">
+                      <p className="text-[10px] font-semibold whitespace-nowrap">
+                        {formatTimeInTz(slot.slot_start)}
+                      </p>
+                      <p className={`text-[9px] whitespace-nowrap ${isHovered ? 'text-teal-100' : 'text-teal-400'}`}>
+                        → {formatTimeInTz(slot.slot_end)}
+                      </p>
+                    </div>
+                    {isHovered && fullHeight > 40 && (
+                      <p className="text-[10px] text-teal-100 mt-0.5">{sessionDuration} min</p>
+                    )}
                   </div>
                 )
               })}
