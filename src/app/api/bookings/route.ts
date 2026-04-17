@@ -7,6 +7,7 @@ import { sendEmail } from '@/lib/email';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
+import { buildCalendarEvent } from '@/lib/services/calendar-event';
 
 // POST /api/bookings - Create a new booking (public)
 export async function POST(request: NextRequest) {
@@ -141,15 +142,17 @@ export async function POST(request: NextRequest) {
     // Backdated booking: skip notifications and confirmation emails — already happened
     const isBackdated = new Date(body.start_time).getTime() < Date.now();
 
+    // Practitioner profile — needed for locale-aware emails + calendar event titles
+    const { data: practitionerProfile } = await supabase
+      .from('users')
+      .select('preferred_language, full_name')
+      .eq('id', body.practitioner_id)
+      .single();
+    const practitionerLocale = (practitionerProfile?.preferred_language as 'en' | 'fr' | 'es') || 'en';
+    const practitionerName = practitionerProfile?.full_name || 'Practitioner';
+
     // Send notification + email to practitioner about new booking request
     if (!isBackdated) try {
-      // Look up practitioner's preferred language
-      const { data: practitionerProfile } = await supabase
-        .from('users')
-        .select('preferred_language')
-        .eq('id', body.practitioner_id)
-        .single();
-      const practitionerLocale = (practitionerProfile?.preferred_language as 'en' | 'fr' | 'es') || 'en';
 
       // Format the requested time in the practitioner's locale
       const formattedTime = new Date(body.start_time).toLocaleString(
@@ -282,31 +285,22 @@ export async function POST(request: NextRequest) {
             .single();
           const eventTimezone = scheduleData?.timezone || body.timezone;
 
-          const calendarEvent: GoogleCalendarEvent = {
-            summary: `Session with ${body.client_name}`,
-            description: `Session Type: ${sessionType.name}\n\nClient: ${body.client_name}\nEmail: ${body.client_email}${body.client_phone ? `\nPhone: ${body.client_phone}` : ''}${body.notes ? `\n\nNotes: ${body.notes}` : ''}`,
-            start: {
-              dateTime: body.start_time,
-              timeZone: eventTimezone,
-            },
-            end: {
-              dateTime: body.end_time,
-              timeZone: eventTimezone,
-            },
-            attendees: [
-              { email: body.client_email, displayName: body.client_name },
-            ],
-            reminders: {
-              useDefault: false,
-              overrides: [
-                { method: 'email', minutes: 1440 },
-                { method: 'popup', minutes: 30 },
-              ],
-            },
-          };
+          const calendarEvent = buildCalendarEvent({
+            bookingId: booking.id,
+            practitionerName,
+            clientName: body.client_name,
+            clientEmail: body.client_email,
+            clientPhone: body.client_phone,
+            sessionTypeName: sessionType.name,
+            startTime: body.start_time,
+            endTime: body.end_time,
+            timezone: eventTimezone,
+            notes: body.notes,
+            locale: practitionerLocale,
+          });
 
           const response = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all`,
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,
             {
               method: 'POST',
               headers: {
