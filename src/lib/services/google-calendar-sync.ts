@@ -15,7 +15,7 @@ export async function syncCancelledGoogleEvents(
   // Get bookings with google_event_id that are still confirmed
   const { data: bookings } = await supabase
     .from('bookings')
-    .select('id, google_event_id, start_time')
+    .select('id, google_event_id, start_time, member_id')
     .eq('practitioner_id', practitionerId)
     .not('google_event_id', 'is', null)
     .in('status', ['confirmed', 'pending'])
@@ -43,13 +43,13 @@ export async function syncCancelledGoogleEvents(
 
       if (res.status === 404 || res.status === 410) {
         // Event deleted from Google Calendar — cancel on our side
-        await cancelBookingAndSession(booking.id, booking.start_time, practitionerId, supabase)
+        await cancelBookingAndSession(booking.id, booking.start_time, practitionerId, booking.member_id, supabase)
         cancelledCount++
       } else if (res.ok) {
         const event = await res.json()
         if (event.status === 'cancelled') {
           // Event cancelled on Google Calendar
-          await cancelBookingAndSession(booking.id, booking.start_time, practitionerId, supabase)
+          await cancelBookingAndSession(booking.id, booking.start_time, practitionerId, booking.member_id, supabase)
           cancelledCount++
         }
       }
@@ -69,6 +69,7 @@ async function cancelBookingAndSession(
   bookingId: string,
   startTime: string,
   practitionerId: string,
+  memberId: string | null,
   supabase: SupabaseClient
 ) {
   // Cancel the booking
@@ -82,11 +83,15 @@ async function cancelBookingAndSession(
     })
     .eq('id', bookingId)
 
-  // Cancel the linked session
-  await supabase
+  // Cancel the linked session — match by practitioner + time + optional member
+  let sessionQuery = supabase
     .from('sessions')
-    .update({ status: 'cancelled' })
+    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
     .eq('practitioner_id', practitionerId)
     .eq('scheduled_at', startTime)
-    .eq('status', 'scheduled')
+    .in('status', ['scheduled', 'confirmed'])
+  if (memberId) {
+    sessionQuery = sessionQuery.eq('member_id', memberId)
+  }
+  await sessionQuery
 }

@@ -327,6 +327,25 @@ export async function PATCH(
       }
     }
 
+    // When a booking is cancelled, also cancel the matching session so the
+    // member's Sessions tab stays in sync. Match by practitioner + start time.
+    if (status === 'cancelled') {
+      try {
+        let sessionQuery = adminSupabase
+          .from('sessions')
+          .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+          .eq('practitioner_id', booking.practitioner_id)
+          .eq('scheduled_at', booking.start_time)
+          .in('status', ['scheduled', 'confirmed'])
+        if (booking.member_id) {
+          sessionQuery = sessionQuery.eq('member_id', booking.member_id)
+        }
+        await sessionQuery
+      } catch (err) {
+        console.warn('Could not cancel matching session:', err)
+      }
+    }
+
     // Send confirmation email to client when booking is approved
     // Skip for backdated bookings — the session already happened
     if (status === 'confirmed' && booking.status === 'pending' && booking.client_email && !isBackdatedBooking) {

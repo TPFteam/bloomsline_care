@@ -532,6 +532,9 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
   const handleDeleteSession = async (sessionId: string) => {
     try {
+      // Look up session data before deleting so we can find the matching booking
+      const session = sessions.find(s => s.id === sessionId)
+
       const { error } = await supabase
         .from('sessions')
         .delete()
@@ -539,12 +542,39 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
       if (error) throw error
 
-      toast.success('Session deleted')
+      // Cancel the matching booking + Google Calendar event so the Bookings
+      // page / calendar view stays in sync.
+      if (session) {
+        try {
+          let bookingQuery = supabase
+            .from('bookings')
+            .select('id, status')
+            .eq('practitioner_id', session.practitioner_id)
+            .eq('start_time', session.scheduled_at)
+            .neq('status', 'cancelled')
+          if (session.member_id) {
+            bookingQuery = bookingQuery.eq('member_id', session.member_id)
+          }
+          const { data: matchingBooking } = await bookingQuery.maybeSingle()
+
+          if (matchingBooking) {
+            await fetch(`/api/bookings/${matchingBooking.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: 'cancelled' }),
+            })
+          }
+        } catch (bookingErr) {
+          console.warn('Could not cancel matching booking:', bookingErr)
+        }
+      }
+
+      toast.success(locale === 'fr' ? 'Séance supprimée' : 'Session deleted')
       setDeletingSessionId(null)
       onSessionsUpdate()
     } catch (error) {
       console.error('Error deleting session:', error)
-      toast.error('Failed to delete session')
+      toast.error(locale === 'fr' ? 'Échec de la suppression' : 'Failed to delete session')
     }
   }
 
