@@ -549,6 +549,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   })
 
   const goBack = () => {
+    setShowSlotCalendar(false)
     if (step === 'session' && !preselectedMember) setStep('member')
     else if (step === 'format') setStep('session')
     else if (step === 'datetime') setStep('format')
