@@ -613,6 +613,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
             </button>
           </div>
 
+          {/* Progress Steps — hidden when slot calendar is expanded */}
+          {!showSlotCalendar && (
+          <>
           {/* Progress Steps — hide the Member step from the indicator when a
               member is preselected, so the user sees the actual flow they'll go
               through (1 of 4) instead of a mysterious pre-checked step 1 of 5. */}
@@ -654,9 +657,11 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               })}
             </div>
           </div>
+          </>
+          )}
 
           {/* Content */}
-          <div className="p-6 overflow-y-auto max-h-[50vh]">
+          <div className={`p-6 overflow-y-auto ${showSlotCalendar ? 'max-h-[80vh]' : 'max-h-[50vh]'}`}>
             {/* Manual mode banner — on non-session steps (session step renders it below the tab) */}
             {scheduleMode === 'manual' && step !== 'session' && (
               <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-xs text-amber-700 mb-4">
@@ -1238,7 +1243,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
             )}
           </div>
 
-          {/* Footer */}
+          {/* Footer — hidden when slot calendar is expanded */}
+          {!showSlotCalendar && (
           <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
             {step === 'confirm' ? (
               <button
@@ -1266,6 +1272,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               </button>
             )}
           </div>
+          )}
         </motion.div>
       </motion.div>
     </AnimatePresence>
