@@ -184,7 +184,7 @@ export default function BookingsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [showSavedModal, setShowSavedModal] = useState(false)
   const [showSettingsSavedModal, setShowSettingsSavedModal] = useState(false)
-  const [settingsTab, setSettingsTab] = useState<'availability' | 'sessions' | 'preferences' | 'general'>('availability')
+  const [settingsTab, setSettingsTab] = useState<'availability' | 'sessions' | 'preferences'>('availability')
 
   // User state
   const [user, setUser] = useState<UserType | null>(null)
@@ -1013,7 +1013,6 @@ export default function BookingsPage() {
                   { key: 'availability' as const, label: locale === 'fr' ? 'Disponibilités' : 'Availability', icon: Calendar },
                   { key: 'sessions' as const, label: locale === 'fr' ? 'Séances' : 'Sessions', icon: Clock },
                   { key: 'preferences' as const, label: locale === 'fr' ? 'Préférences' : 'Preferences', icon: SlidersHorizontal },
-                  { key: 'general' as const, label: locale === 'fr' ? 'Général' : 'General', icon: Settings },
                 ]).map(({ key, label, icon: Icon }) => (
                   <button
                     key={key}
@@ -1030,96 +1029,6 @@ export default function BookingsPage() {
                 ))}
               </div>
 
-              {/* ─── General tab: Calendar Integration ─── */}
-              {settingsTab === 'general' && (<>
-              {/* Calendar Connection — only for native booking */}
-              {!bookingSettings?.external_booking_url && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5" />
-                    {locale === 'fr' ? 'Intégration Calendrier' : 'Calendar Integration'}
-                    <TutorialVideo
-                      url="https://sfzlbjdjqbzxruwzebjc.supabase.co/storage/v1/object/public/tutorials/short-video-demo-practitioners-app/Comment%20synchroniser%20son%20Google%20Agenda%20avec%20Bloomsline.mp4"
-                      title={locale === 'fr' ? 'Comment synchroniser son Google Agenda avec Bloomsline' : 'How to sync Google Calendar with Bloomsline'}
-                    />
-                  </CardTitle>
-                  <CardDescription>
-                    {locale === 'fr' ? 'Connectez votre Google Calendar pour synchroniser les rendez-vous et afficher vos disponibilités' : 'Connect your Google Calendar to sync appointments and show real-time availability'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isLoadingSettings ? (
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      {locale === 'fr' ? 'Chargement...' : 'Loading...'}
-                    </div>
-                  ) : calendarConnection ? (
-                    <div>
-                      {(calendarConnection as any).sync_status === 'broken' && (
-                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
-                          <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <AlertCircle className="w-4 h-4 text-red-500" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-red-800">
-                              {locale === 'fr' ? 'Connexion expirée' : 'Connection expired'}
-                            </p>
-                            <p className="text-xs text-red-600">
-                              {locale === 'fr' ? 'Veuillez reconnecter votre Google Calendar pour synchroniser vos disponibilités.' : 'Please reconnect your Google Calendar to sync your availability.'}
-                            </p>
-                          </div>
-                          <Button size="sm" onClick={async () => { await handleDisconnect(); handleConnectGoogle() }} className="bg-red-600 hover:bg-red-700 text-white text-xs">
-                            {locale === 'fr' ? 'Reconnecter' : 'Reconnect'}
-                          </Button>
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${(calendarConnection as any).sync_status === 'broken' ? 'bg-red-100' : 'bg-green-100'}`}>
-                            {(calendarConnection as any).sync_status === 'broken' ? (
-                              <AlertCircle className="w-5 h-5 text-red-500" />
-                            ) : (
-                              <Check className="w-5 h-5 text-green-600" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-medium">
-                              {(calendarConnection as any).sync_status === 'broken'
-                                ? (locale === 'fr' ? 'Google Calendar — connexion perdue' : 'Google Calendar — connection lost')
-                                : (locale === 'fr' ? 'Google Calendar connecté' : 'Google Calendar Connected')}
-                            </p>
-                            <p className="text-sm text-gray-500">{calendarConnection.provider_email}</p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          onClick={handleDisconnect}
-                          disabled={isDisconnecting}
-                        >
-                          {isDisconnecting ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            locale === 'fr' ? 'Déconnecter' : 'Disconnect'
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <Button onClick={handleConnectGoogle} disabled={isConnecting}>
-                      {isConnecting ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      ) : (
-                        <Calendar className="w-4 h-4 mr-2" />
-                      )}
-                      {locale === 'fr' ? 'Connecter Google Calendar' : 'Connect Google Calendar'}
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-              )}
-
-              </>)}
 
               {/* ─── Sessions tab ─── */}
               {settingsTab === 'sessions' && (<>
@@ -1486,6 +1395,73 @@ export default function BookingsPage() {
                   </Button>
                 </CardContent>
               </Card>
+
+              {/* Calendar Integration */}
+              {!bookingSettings?.external_booking_url && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5" />
+                    {locale === 'fr' ? 'Intégration Calendrier' : 'Calendar Integration'}
+                    <TutorialVideo
+                      url="https://sfzlbjdjqbzxruwzebjc.supabase.co/storage/v1/object/public/tutorials/short-video-demo-practitioners-app/Comment%20synchroniser%20son%20Google%20Agenda%20avec%20Bloomsline.mp4"
+                      title={locale === 'fr' ? 'Comment synchroniser son Google Agenda avec Bloomsline' : 'How to sync Google Calendar with Bloomsline'}
+                    />
+                  </CardTitle>
+                  <CardDescription>
+                    {locale === 'fr' ? 'Connectez votre Google Calendar pour synchroniser les rendez-vous et afficher vos disponibilités' : 'Connect your Google Calendar to sync appointments and show real-time availability'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingSettings ? (
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {locale === 'fr' ? 'Chargement...' : 'Loading...'}
+                    </div>
+                  ) : calendarConnection ? (
+                    <div>
+                      {(calendarConnection as any).sync_status === 'broken' && (
+                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
+                          <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <AlertCircle className="w-4 h-4 text-red-500" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-red-800">{locale === 'fr' ? 'Connexion expirée' : 'Connection expired'}</p>
+                            <p className="text-xs text-red-600">{locale === 'fr' ? 'Veuillez reconnecter votre Google Calendar.' : 'Please reconnect your Google Calendar.'}</p>
+                          </div>
+                          <Button size="sm" onClick={async () => { await handleDisconnect(); handleConnectGoogle() }} className="bg-red-600 hover:bg-red-700 text-white text-xs">
+                            {locale === 'fr' ? 'Reconnecter' : 'Reconnect'}
+                          </Button>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${(calendarConnection as any).sync_status === 'broken' ? 'bg-red-100' : 'bg-green-100'}`}>
+                            {(calendarConnection as any).sync_status === 'broken' ? <AlertCircle className="w-5 h-5 text-red-500" /> : <Check className="w-5 h-5 text-green-600" />}
+                          </div>
+                          <div>
+                            <p className="font-medium">
+                              {(calendarConnection as any).sync_status === 'broken'
+                                ? (locale === 'fr' ? 'Google Calendar — connexion perdue' : 'Google Calendar — connection lost')
+                                : (locale === 'fr' ? 'Google Calendar connecté' : 'Google Calendar Connected')}
+                            </p>
+                            <p className="text-sm text-gray-500">{calendarConnection.provider_email}</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" onClick={handleDisconnect} disabled={isDisconnecting}>
+                          {isDisconnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : (locale === 'fr' ? 'Déconnecter' : 'Disconnect')}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button onClick={handleConnectGoogle} disabled={isConnecting}>
+                      {isConnecting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Calendar className="w-4 h-4 mr-2" />}
+                      {locale === 'fr' ? 'Connecter Google Calendar' : 'Connect Google Calendar'}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+              )}
 
               {/* Scheduling rules */}
               <Card>
