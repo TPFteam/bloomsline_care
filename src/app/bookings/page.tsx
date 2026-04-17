@@ -184,7 +184,7 @@ export default function BookingsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [showSavedModal, setShowSavedModal] = useState(false)
   const [showSettingsSavedModal, setShowSettingsSavedModal] = useState(false)
-  const [settingsTab, setSettingsTab] = useState<'general' | 'sessions' | 'availability' | 'preferences'>('general')
+  const [settingsTab, setSettingsTab] = useState<'availability' | 'sessions' | 'preferences' | 'general'>('availability')
 
   // User state
   const [user, setUser] = useState<UserType | null>(null)
@@ -1010,10 +1010,10 @@ export default function BookingsPage() {
               {/* Settings sub-tabs */}
               <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
                 {([
-                  { key: 'general' as const, label: locale === 'fr' ? 'Général' : 'General', icon: LinkIcon },
                   { key: 'availability' as const, label: locale === 'fr' ? 'Disponibilités' : 'Availability', icon: Calendar },
                   { key: 'sessions' as const, label: locale === 'fr' ? 'Séances' : 'Sessions', icon: Clock },
                   { key: 'preferences' as const, label: locale === 'fr' ? 'Préférences' : 'Preferences', icon: SlidersHorizontal },
+                  { key: 'general' as const, label: locale === 'fr' ? 'Général' : 'General', icon: Settings },
                 ]).map(({ key, label, icon: Icon }) => (
                   <button
                     key={key}
@@ -1030,56 +1030,8 @@ export default function BookingsPage() {
                 ))}
               </div>
 
-              {/* ─── General tab: Booking Link + Calendar ─── */}
+              {/* ─── General tab: Calendar Integration ─── */}
               {settingsTab === 'general' && (<>
-              {/* Booking Link — only for native booking */}
-              {!bookingSettings?.external_booking_url && practitionerSlug && bookingSettings?.booking_page_enabled && (
-                <Card className="border-gray-200 bg-white">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <LinkIcon className="w-5 h-5 text-gray-600" />
-                      {locale === 'fr' ? 'Votre lien de réservation' : 'Your Booking Link'}
-                    </CardTitle>
-                    <CardDescription>
-                      {locale === 'fr' ? 'Partagez ce lien avec vos clients pour qu\'ils puissent prendre rendez-vous' : 'Share this link with clients so they can book appointments with you'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 bg-white border rounded-lg px-4 py-2.5 font-mono text-sm text-gray-700 truncate">
-                        bloomsline.com/practitioner/{practitionerSlug}/book
-                      </div>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          navigator.clipboard.writeText(`https://bloomsline.com/practitioner/${practitionerSlug}/book`)
-                          setLinkCopied(true)
-                          setTimeout(() => setLinkCopied(false), 2000)
-                        }}
-                      >
-                        {linkCopied ? (
-                          <>
-                            <Check className="w-4 h-4 mr-2 text-green-600" />
-                            {locale === 'fr' ? 'Copié !' : 'Copied!'}
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-4 h-4 mr-2" />
-                            {locale === 'fr' ? 'Copier' : 'Copy'}
-                          </>
-                        )}
-                      </Button>
-                      <Link href={`/practitioner/${practitionerSlug}/book`} target="_blank">
-                        <Button variant="outline">
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          {locale === 'fr' ? 'Aperçu' : 'Preview'}
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
               {/* Calendar Connection — only for native booking */}
               {!bookingSettings?.external_booking_url && (
               <Card>
@@ -1167,100 +1119,6 @@ export default function BookingsPage() {
               </Card>
               )}
 
-              {/* Booking setup: enable/disable, external, approval */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>{locale === 'fr' ? 'Configuration de la réservation' : 'Booking Setup'}</CardTitle>
-                  <CardDescription>
-                    {locale === 'fr' ? 'Activez ou désactivez la prise de rendez-vous en ligne' : 'Enable or disable online appointment booking'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{locale === 'fr' ? 'Activer la page de réservation' : 'Enable Booking Page'}</p>
-                      <p className="text-sm text-gray-500">
-                        {locale === 'fr' ? 'Permettre aux clients de prendre rendez-vous via votre profil public' : 'Allow clients to book appointments through your public profile'}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        const turningOn = !bookingSettings?.booking_page_enabled
-                        const externalIsActive = !!bookingSettings?.external_booking_url
-                        if (turningOn && externalIsActive) {
-                          if (!window.confirm(locale === 'fr' ? 'Cela désactivera le système de réservation externe. Continuer ?' : 'This will disable the external booking system. Continue?')) return
-                          setBookingSettings((prev) => ({ ...prev!, booking_page_enabled: true, external_booking_url: null }))
-                        } else {
-                          setBookingSettings((prev) => ({ ...prev!, booking_page_enabled: !prev?.booking_page_enabled }))
-                        }
-                      }}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${bookingSettings?.booking_page_enabled ? 'bg-teal-600' : 'bg-gray-200'}`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${bookingSettings?.booking_page_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
-                  </div>
-
-                  <div className="space-y-3 border border-gray-100 rounded-xl p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{locale === 'fr' ? 'Utiliser un système de réservation externe' : 'Use external booking system'}</p>
-                        <p className="text-sm text-gray-500">
-                          {locale === 'fr' ? 'Rediriger les clients vers Calendly, Doctolib ou un autre outil' : 'Redirect clients to Calendly, Doctolib, or another booking tool'}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          const isCurrentlyOff = bookingSettings?.external_booking_url === null || bookingSettings?.external_booking_url === undefined
-                          const nativeIsActive = !!bookingSettings?.booking_page_enabled
-                          if (isCurrentlyOff && nativeIsActive) {
-                            if (!window.confirm(locale === 'fr' ? 'Cela désactivera la page de réservation intégrée. Continuer ?' : 'This will disable the built-in booking page. Continue?')) return
-                            setBookingSettings((prev) => ({ ...prev!, booking_page_enabled: false, external_booking_url: '' }))
-                          } else {
-                            setBookingSettings((prev) => ({ ...prev!, external_booking_url: prev?.external_booking_url !== null && prev?.external_booking_url !== undefined ? null : '' }))
-                          }
-                        }}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${bookingSettings?.external_booking_url !== null && bookingSettings?.external_booking_url !== undefined ? 'bg-teal-600' : 'bg-gray-200'}`}
-                      >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${bookingSettings?.external_booking_url !== null && bookingSettings?.external_booking_url !== undefined ? 'translate-x-6' : 'translate-x-1'}`} />
-                      </button>
-                    </div>
-                    {bookingSettings?.external_booking_url !== null && bookingSettings?.external_booking_url !== undefined && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Booking URL</label>
-                        <div className="flex items-center gap-2">
-                          <ExternalLink className="w-4 h-4 text-gray-400 shrink-0" />
-                          <input type="url" value={bookingSettings.external_booking_url || ''} onChange={(e) => setBookingSettings((prev) => ({ ...prev!, external_booking_url: e.target.value }))} placeholder="https://calendly.com/your-link" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-                        </div>
-                        <p className="text-xs text-gray-400 mt-1.5">
-                          {locale === 'fr' ? 'Le bouton « Réserver » sur votre profil public ouvrira ce lien.' : 'The "Book" button on your public profile will open this URL.'}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {!(bookingSettings?.external_booking_url) && (
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{locale === 'fr' ? 'Approbation requise' : 'Require Approval'}</p>
-                        <p className="text-sm text-gray-500">
-                          {locale === 'fr' ? 'Approuver manuellement les demandes de rendez-vous avant confirmation' : 'Manually approve booking requests before they are confirmed'}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => setBookingSettings((prev) => ({ ...prev!, require_approval: !prev?.require_approval }))}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${bookingSettings?.require_approval ? 'bg-teal-600' : 'bg-gray-200'}`}
-                      >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${bookingSettings?.require_approval ? 'translate-x-6' : 'translate-x-1'}`} />
-                      </button>
-                    </div>
-                  )}
-
-                  <Button type="button" onClick={() => handleSaveBookingSettings()} disabled={isSavingSettings}>
-                    {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    {locale === 'fr' ? 'Enregistrer' : 'Save'}
-                  </Button>
-                </CardContent>
-              </Card>
               </>)}
 
               {/* ─── Sessions tab ─── */}
@@ -1399,6 +1257,30 @@ export default function BookingsPage() {
 
               {/* ─── Availability tab ─── */}
               {settingsTab === 'availability' && (<>
+              {/* Booking Link at top */}
+              {!bookingSettings?.external_booking_url && practitionerSlug && bookingSettings?.booking_page_enabled && (
+                <Card className="border-gray-200 bg-white">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <LinkIcon className="w-4 h-4 text-gray-600" />
+                      {locale === 'fr' ? 'Votre lien de réservation' : 'Your Booking Link'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 bg-white border rounded-lg px-4 py-2.5 font-mono text-sm text-gray-700 truncate">
+                        bloomsline.com/practitioner/{practitionerSlug}/book
+                      </div>
+                      <Button variant="outline" onClick={() => { navigator.clipboard.writeText(`https://bloomsline.com/practitioner/${practitionerSlug}/book`); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000) }}>
+                        {linkCopied ? (<><Check className="w-4 h-4 mr-2 text-green-600" />{locale === 'fr' ? 'Copié !' : 'Copied!'}</>) : (<><Copy className="w-4 h-4 mr-2" />{locale === 'fr' ? 'Copier' : 'Copy'}</>)}
+                      </Button>
+                      <Link href={`/practitioner/${practitionerSlug}/book`} target="_blank">
+                        <Button variant="outline"><ExternalLink className="w-4 h-4 mr-2" />{locale === 'fr' ? 'Aperçu' : 'Preview'}</Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               {/* Availability Schedule — only for native booking */}
               {!bookingSettings?.external_booking_url && (
               <Card>
@@ -1510,6 +1392,101 @@ export default function BookingsPage() {
 
               {/* ─── Preferences tab ─── */}
               {settingsTab === 'preferences' && (<>
+              {/* Booking setup: enable/disable, external, approval */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{locale === 'fr' ? 'Configuration de la réservation' : 'Booking Setup'}</CardTitle>
+                  <CardDescription>
+                    {locale === 'fr' ? 'Activez ou désactivez la prise de rendez-vous en ligne' : 'Enable or disable online appointment booking'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{locale === 'fr' ? 'Activer la page de réservation' : 'Enable Booking Page'}</p>
+                      <p className="text-sm text-gray-500">
+                        {locale === 'fr' ? 'Permettre aux clients de prendre rendez-vous via votre profil public' : 'Allow clients to book appointments through your public profile'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const turningOn = !bookingSettings?.booking_page_enabled
+                        const externalIsActive = !!bookingSettings?.external_booking_url
+                        if (turningOn && externalIsActive) {
+                          if (!window.confirm(locale === 'fr' ? 'Cela désactivera le système de réservation externe. Continuer ?' : 'This will disable the external booking system. Continue?')) return
+                          setBookingSettings((prev) => ({ ...prev!, booking_page_enabled: true, external_booking_url: null }))
+                        } else {
+                          setBookingSettings((prev) => ({ ...prev!, booking_page_enabled: !prev?.booking_page_enabled }))
+                        }
+                      }}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${bookingSettings?.booking_page_enabled ? 'bg-teal-600' : 'bg-gray-200'}`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${bookingSettings?.booking_page_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 border border-gray-100 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{locale === 'fr' ? 'Utiliser un système de réservation externe' : 'Use external booking system'}</p>
+                        <p className="text-sm text-gray-500">
+                          {locale === 'fr' ? 'Rediriger les clients vers Calendly, Doctolib ou un autre outil' : 'Redirect clients to Calendly, Doctolib, or another booking tool'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const isCurrentlyOff = bookingSettings?.external_booking_url === null || bookingSettings?.external_booking_url === undefined
+                          const nativeIsActive = !!bookingSettings?.booking_page_enabled
+                          if (isCurrentlyOff && nativeIsActive) {
+                            if (!window.confirm(locale === 'fr' ? 'Cela désactivera la page de réservation intégrée. Continuer ?' : 'This will disable the built-in booking page. Continue?')) return
+                            setBookingSettings((prev) => ({ ...prev!, booking_page_enabled: false, external_booking_url: '' }))
+                          } else {
+                            setBookingSettings((prev) => ({ ...prev!, external_booking_url: prev?.external_booking_url !== null && prev?.external_booking_url !== undefined ? null : '' }))
+                          }
+                        }}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${bookingSettings?.external_booking_url !== null && bookingSettings?.external_booking_url !== undefined ? 'bg-teal-600' : 'bg-gray-200'}`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${bookingSettings?.external_booking_url !== null && bookingSettings?.external_booking_url !== undefined ? 'translate-x-6' : 'translate-x-1'}`} />
+                      </button>
+                    </div>
+                    {bookingSettings?.external_booking_url !== null && bookingSettings?.external_booking_url !== undefined && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Booking URL</label>
+                        <div className="flex items-center gap-2">
+                          <ExternalLink className="w-4 h-4 text-gray-400 shrink-0" />
+                          <input type="url" value={bookingSettings.external_booking_url || ''} onChange={(e) => setBookingSettings((prev) => ({ ...prev!, external_booking_url: e.target.value }))} placeholder="https://calendly.com/your-link" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1.5">
+                          {locale === 'fr' ? 'Le bouton « Réserver » sur votre profil public ouvrira ce lien.' : 'The "Book" button on your public profile will open this URL.'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {!(bookingSettings?.external_booking_url) && (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{locale === 'fr' ? 'Approbation requise' : 'Require Approval'}</p>
+                        <p className="text-sm text-gray-500">
+                          {locale === 'fr' ? 'Approuver manuellement les demandes de rendez-vous avant confirmation' : 'Manually approve booking requests before they are confirmed'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setBookingSettings((prev) => ({ ...prev!, require_approval: !prev?.require_approval }))}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${bookingSettings?.require_approval ? 'bg-teal-600' : 'bg-gray-200'}`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${bookingSettings?.require_approval ? 'translate-x-6' : 'translate-x-1'}`} />
+                      </button>
+                    </div>
+                  )}
+
+                  <Button type="button" onClick={() => handleSaveBookingSettings()} disabled={isSavingSettings}>
+                    {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                  </Button>
+                </CardContent>
+              </Card>
+
               {/* Scheduling rules */}
               <Card>
                 <CardHeader>
