@@ -1609,7 +1609,13 @@ export default function BookingsPage() {
                   </div>
 
                   {/* Slot alignment */}
-                  <div className="mt-2">
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                      {locale === 'fr' ? 'Intervalles de créneaux' : 'Slot Intervals'}
+                    </h4>
+                    <p className="text-xs text-gray-500 mb-4">
+                      {locale === 'fr' ? 'Contrôlez à quelle fréquence les créneaux sont proposés aux patients' : 'Control how frequently time slots are offered to patients'}
+                    </p>
                     <label className="flex items-start gap-3 cursor-pointer">
                       <div
                         className={`relative w-10 h-5 rounded-full transition-colors shrink-0 mt-0.5 ${(bookingSettings as any)?.hour_aligned_slots ? 'bg-teal-600' : 'bg-gray-300'}`}
