@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { analytics } from '@/lib/analytics/events'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video, Settings, Loader2, Info } from 'lucide-react'
+import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video, Settings, Loader2, Info, Maximize2 } from 'lucide-react'
+import { SlotCalendarView } from '@/components/bookings/SlotCalendarView'
 import { CalendarPicker } from '@/components/ui/calendar-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -51,6 +52,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [availSessionFormats, setAvailSessionFormats] = useState<string[]>(['in_person', 'video'])
   const [searchQuery, setSearchQuery] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
+  const [showSlotCalendar, setShowSlotCalendar] = useState(false)
 
   // Selected values
   const [selectedMember, setSelectedMember] = useState<Member | null>(preselectedMember || null)
@@ -165,6 +167,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       setQuickExpandedDate(null)
       setQuickLoading(false)
       setDateViewMode('calendar')
+      setShowSlotCalendar(false)
       setScheduleMode(hasExternalBooking ? 'manual' : 'calendar')
       setManualSessionType('')
       setManualDuration(60)
@@ -582,7 +585,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ type: 'spring', duration: 0.3 }}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden"
+          className={`bg-white rounded-2xl shadow-2xl w-full max-h-[90vh] overflow-hidden transition-all duration-300 ${
+            showSlotCalendar ? 'max-w-6xl' : 'max-w-lg'
+          }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -913,27 +918,67 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
             {/* Step: Select Date & Time */}
             {step === 'datetime' && (
               <div className="space-y-4">
+                {/* Full-week slot calendar view */}
+                {showSlotCalendar && userId && (scheduleMode === 'calendar') && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setShowSlotCalendar(false)}
+                      className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-3 transition-colors"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      {locale === 'fr' ? 'Retour au sélecteur' : 'Back to picker'}
+                    </button>
+                    <SlotCalendarView
+                      userId={userId}
+                      sessionDuration={selectedSessionType?.duration || 60}
+                      selectedFormat={selectedSessionFormat}
+                      disabledDaysOfWeek={disabledDaysOfWeek}
+                      practitionerTz={practitionerTz}
+                      dayFormats={scheduleDayFormats}
+                      locale={locale}
+                      onSelectSlot={(date, time) => {
+                        setSelectedDate(startOfDay(date))
+                        setSelectedTime(time)
+                        setShowSlotCalendar(false)
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Normal picker (hidden when full calendar is open) */}
+                {!showSlotCalendar && (<>
                 {/* View toggle — only useful in calendar-driven scheduling.
                     Manual entry just needs a date + time picker. */}
                 {scheduleMode !== 'manual' && (
-                  <div className="flex bg-gray-100 rounded-lg p-1">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 flex bg-gray-100 rounded-lg p-1">
+                      <button
+                        type="button"
+                        onClick={() => setDateViewMode('calendar')}
+                        className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+                          dateViewMode === 'calendar' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        {locale === 'fr' ? 'Calendrier' : 'Calendar'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDateViewMode('quick')}
+                        className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
+                          dateViewMode === 'quick' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        {locale === 'fr' ? 'Prochaines dispos' : 'Next available'}
+                      </button>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => setDateViewMode('calendar')}
-                      className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
-                        dateViewMode === 'calendar' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
-                      }`}
+                      onClick={() => setShowSlotCalendar(true)}
+                      className="p-2 rounded-lg border border-gray-200 hover:border-teal-300 hover:bg-teal-50 text-gray-400 hover:text-teal-600 transition-colors"
+                      title={locale === 'fr' ? 'Vue calendrier semaine' : 'Week calendar view'}
                     >
-                      {locale === 'fr' ? 'Calendrier' : 'Calendar'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDateViewMode('quick')}
-                      className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${
-                        dateViewMode === 'quick' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      {locale === 'fr' ? 'Prochaines dispos' : 'Next available'}
+                      <Maximize2 className="w-4 h-4" />
                     </button>
                   </div>
                 )}
@@ -1098,6 +1143,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                     </div>
                   )}
                 </div>
+              </>)}
               </>)}
               </div>
             )}
