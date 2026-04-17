@@ -47,6 +47,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [sessionTypes, setSessionTypes] = useState<SessionType[]>([])
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
+  const [dayBookings, setDayBookings] = useState<Array<{ start_time: string; end_time: string; client_name: string; session_format?: string; member_id?: string }>>([])
+
   const [loading, setLoading] = useState(false)
   const [selectedSessionFormat, setSelectedSessionFormat] = useState<'in_person' | 'video' | null>(null)
   const [availSessionFormats, setAvailSessionFormats] = useState<string[]>(['in_person', 'video'])
@@ -264,22 +266,32 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
     // Clear stale slots immediately so the user never sees the previous date's
     // times while the new ones are in flight.
     setAvailableSlots([])
+    setDayBookings([])
     setSelectedTime(null)
     setSlotsLoading(true)
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd')
-      const url = `/api/bookings/available-slots?practitionerId=${userId}&date=${dateStr}&duration=${selectedSessionType.duration}&skipNotice=true${selectedSessionFormat ? `&format=${selectedSessionFormat}` : ''}`
-      console.log('[modal] fetching:', url)
-      const res = await fetch(url)
-      const json = await res.json()
-      console.log('[modal] response:', json)
 
-      if (!res.ok) throw new Error(json.error || 'Failed to fetch slots')
-      setAvailableSlots(json.slots || [])
-      if (json.practitionerTimezone) setPractitionerTz(json.practitionerTimezone)
+      // Fetch available slots + existing bookings for the day in parallel
+      const [slotsRes, bookingsRes] = await Promise.all([
+        fetch(`/api/bookings/available-slots?practitionerId=${userId}&date=${dateStr}&duration=${selectedSessionType.duration}&skipNotice=true${selectedSessionFormat ? `&format=${selectedSessionFormat}` : ''}`)
+          .then(r => r.json()),
+        supabase
+          .from('bookings')
+          .select('start_time, end_time, client_name, session_format, member_id')
+          .eq('practitioner_id', userId)
+          .gte('start_time', `${dateStr}T00:00:00`)
+          .lte('start_time', `${dateStr}T23:59:59`)
+          .neq('status', 'cancelled'),
+      ])
+
+      setAvailableSlots(slotsRes.slots || [])
+      if (slotsRes.practitionerTimezone) setPractitionerTz(slotsRes.practitionerTimezone)
+      setDayBookings(bookingsRes.data || [])
     } catch (error) {
       console.error('[modal] Error fetching slots:', error)
       setAvailableSlots([])
+      setDayBookings([])
     } finally {
       setSlotsLoading(false)
     }
@@ -1111,41 +1123,77 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                       <Loader2 className="w-5 h-5 animate-spin mx-auto text-teal-500 mb-2" />
                       <p className="text-sm text-gray-500">{locale === 'fr' ? 'Chargement des créneaux...' : locale === 'es' ? 'Cargando horarios...' : 'Loading times...'}</p>
                     </div>
-                  ) : availableSlots.length === 0 ? (
+                  ) : availableSlots.length === 0 && dayBookings.length === 0 ? (
                     <div className="py-6 text-center text-gray-500">
                       <Clock className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                       <p className="text-sm">{locale === 'fr' ? 'Aucun créneau disponible pour cette date' : locale === 'es' ? 'No hay horarios disponibles para esta fecha' : 'No available slots for this date'}</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 gap-2">
-                      {availableSlots.map((slot) => {
-                        const slotDate = new Date(slot.slot_start)
-                        const tz = practitionerTz || 'UTC'
-                        // Always display in practitioner's timezone
-                        const timeDisplay = slotDate.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
-                          timeZone: tz,
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: !use24Hour,
-                        })
-                        // Store time in practitioner's timezone for booking
-                        const h = parseInt(slotDate.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
-                        const m = slotDate.toLocaleString('en-US', { timeZone: tz, minute: '2-digit' })
-                        const timeStr = `${String(h === 24 ? 0 : h).padStart(2, '0')}:${m.padStart(2, '0')}`
-                        return (
-                          <button
-                            key={slot.slot_start}
-                            onClick={() => setSelectedTime(timeStr)}
-                            className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
-                              selectedTime === timeStr
-                                ? 'border-mint-500 bg-mint-50 text-mint-700'
-                                : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                          >
-                            {timeDisplay}
-                          </button>
-                        )
-                      })}
+                    <div className="space-y-2">
+                      {/* Existing bookings for context */}
+                      {dayBookings.length > 0 && (
+                        <div className="space-y-1.5">
+                          {dayBookings
+                            .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+                            .map((b, i) => {
+                              const tz = practitionerTz || 'UTC'
+                              const startD = new Date(b.start_time)
+                              const endD = new Date(b.end_time)
+                              const startStr = startD.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: !use24Hour })
+                              const endStr = endD.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: !use24Hour })
+                              const isSamePatient = selectedMember && b.member_id === selectedMember.id
+                              const isPast = startD.getTime() < Date.now()
+                              return (
+                                <div key={`booking-${i}`} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isSamePatient ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100'} ${isPast ? 'opacity-40' : ''}`}>
+                                  {b.session_format === 'video' ? <Video className="w-3 h-3 text-blue-400 shrink-0" /> : <Building2 className="w-3 h-3 text-amber-400 shrink-0" />}
+                                  <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap">{startStr}–{endStr}</span>
+                                  <span className="text-[11px] text-gray-500 truncate">{b.client_name}</span>
+                                  {isSamePatient && (
+                                    <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium shrink-0">
+                                      {locale === 'fr' ? 'même patient' : 'same patient'}
+                                    </span>
+                                  )}
+                                </div>
+                              )
+                            })}
+                        </div>
+                      )}
+
+                      {/* Available slots */}
+                      {availableSlots.length === 0 ? (
+                        <div className="py-4 text-center text-gray-500">
+                          <p className="text-sm">{locale === 'fr' ? 'Aucun créneau disponible' : 'No available slots'}</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          {availableSlots.map((slot) => {
+                            const slotDate = new Date(slot.slot_start)
+                            const tz = practitionerTz || 'UTC'
+                            const timeDisplay = slotDate.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                              timeZone: tz,
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              hour12: !use24Hour,
+                            })
+                            const h = parseInt(slotDate.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
+                            const m = slotDate.toLocaleString('en-US', { timeZone: tz, minute: '2-digit' })
+                            const timeStr = `${String(h === 24 ? 0 : h).padStart(2, '0')}:${m.padStart(2, '0')}`
+                            return (
+                              <button
+                                key={slot.slot_start}
+                                onClick={() => setSelectedTime(timeStr)}
+                                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+                                  selectedTime === timeStr
+                                    ? 'border-teal-500 bg-teal-50 text-teal-700'
+                                    : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                              >
+                                {timeDisplay}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
