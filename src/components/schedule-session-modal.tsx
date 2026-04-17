@@ -700,7 +700,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           )}
 
           {/* Content */}
-          <div className={`p-6 overflow-y-auto ${showSlotCalendar ? 'max-h-[80vh]' : 'max-h-[50vh]'}`}>
+          <div className={`p-6 overflow-y-auto scrollbar-minimal-light ${showSlotCalendar ? 'max-h-[80vh]' : 'max-h-[50vh]'}`}>
             {/* Manual mode banner — on non-session steps (session step renders it below the tab) */}
             {scheduleMode === 'manual' && step !== 'session' && (
               <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-xs text-amber-700 mb-4">
