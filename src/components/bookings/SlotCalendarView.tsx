@@ -265,31 +265,57 @@ export function SlotCalendarView({
                 )
               })}
 
-              {/* Available slots (clickable) — rendered as thin strips at the
-                  start time so they don't overlap when intervals < duration */}
-              {!disabled && slots.map(slot => {
-                const startHour = getHoursInTz(slot.slot_start)
-                const top = (startHour - START_HOUR) * HOUR_HEIGHT
-                const isHovered = hoveredSlot === slot.slot_start
-                return (
-                  <div
-                    key={slot.slot_start}
-                    onClick={() => handleSlotClick(slot, day)}
-                    onMouseEnter={() => setHoveredSlot(slot.slot_start)}
-                    onMouseLeave={() => setHoveredSlot(null)}
-                    className={`absolute left-1 right-1 rounded-md border cursor-pointer transition-all z-20 px-2 flex items-center ${
-                      isHovered
-                        ? 'bg-teal-200 border-teal-400 shadow-sm'
-                        : 'bg-teal-50 border-teal-200/60 hover:bg-teal-100'
-                    }`}
-                    style={{ top: top + 1, height: 24 }}
-                  >
-                    <p className={`text-[11px] font-medium ${isHovered ? 'text-teal-800' : 'text-teal-600'}`}>
-                      {formatTimeInTz(slot.slot_start)}
-                    </p>
-                  </div>
-                )
-              })}
+              {/* Available slots — grouped into continuous windows with
+                  clickable time markers inside */}
+              {!disabled && (() => {
+                // Group consecutive slots into windows
+                const windows: { start: string; end: string; slots: TimeSlot[] }[] = []
+                for (const slot of slots) {
+                  const last = windows[windows.length - 1]
+                  // Consecutive if this slot starts where the previous one started + 30min (or matches the prev end)
+                  if (last && Math.abs(new Date(slot.slot_start).getTime() - new Date(last.slots[last.slots.length - 1].slot_start).getTime()) <= 31 * 60 * 1000) {
+                    last.end = slot.slot_end
+                    last.slots.push(slot)
+                  } else {
+                    windows.push({ start: slot.slot_start, end: slot.slot_end, slots: [slot] })
+                  }
+                }
+                return windows.map(win => {
+                  const { top, height } = getBlockPosition(win.start, win.end)
+                  return (
+                    <div key={win.start}>
+                      {/* Background window showing full available range */}
+                      <div
+                        className="absolute left-1 right-1 rounded-lg bg-teal-50/60 border border-teal-100"
+                        style={{ top, height: Math.max(height, 22) }}
+                      />
+                      {/* Clickable time markers */}
+                      {win.slots.map(slot => {
+                        const slotTop = (getHoursInTz(slot.slot_start) - START_HOUR) * HOUR_HEIGHT
+                        const isHovered = hoveredSlot === slot.slot_start
+                        return (
+                          <div
+                            key={slot.slot_start}
+                            onClick={() => handleSlotClick(slot, day)}
+                            onMouseEnter={() => setHoveredSlot(slot.slot_start)}
+                            onMouseLeave={() => setHoveredSlot(null)}
+                            className={`absolute left-2 right-2 rounded-md cursor-pointer transition-all z-20 px-2 flex items-center ${
+                              isHovered
+                                ? 'bg-teal-200 shadow-sm'
+                                : 'hover:bg-teal-100'
+                            }`}
+                            style={{ top: slotTop + 1, height: 22 }}
+                          >
+                            <p className={`text-[11px] font-medium ${isHovered ? 'text-teal-800' : 'text-teal-600'}`}>
+                              {formatTimeInTz(slot.slot_start)}
+                            </p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                })
+              })()}
             </div>
           )
         })}
