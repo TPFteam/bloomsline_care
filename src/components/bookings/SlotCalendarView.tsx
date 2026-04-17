@@ -265,9 +265,11 @@ export function SlotCalendarView({
                 )
               })}
 
-              {/* Available slots (clickable) */}
+              {/* Available slots (clickable) — rendered as thin strips at the
+                  start time so they don't overlap when intervals < duration */}
               {!disabled && slots.map(slot => {
-                const { top, height } = getBlockPosition(slot.slot_start, slot.slot_end)
+                const startHour = getHoursInTz(slot.slot_start)
+                const top = (startHour - START_HOUR) * HOUR_HEIGHT
                 const isHovered = hoveredSlot === slot.slot_start
                 return (
                   <div
@@ -275,21 +277,16 @@ export function SlotCalendarView({
                     onClick={() => handleSlotClick(slot, day)}
                     onMouseEnter={() => setHoveredSlot(slot.slot_start)}
                     onMouseLeave={() => setHoveredSlot(null)}
-                    className={`absolute left-1 right-1 rounded-lg border cursor-pointer transition-all z-20 px-2 py-1 ${
+                    className={`absolute left-1 right-1 rounded-md border cursor-pointer transition-all z-20 px-2 flex items-center ${
                       isHovered
-                        ? 'bg-teal-100 border-teal-400 shadow-md ring-1 ring-teal-300'
-                        : 'bg-teal-50/80 border-teal-200/60 hover:bg-teal-100'
+                        ? 'bg-teal-200 border-teal-400 shadow-sm'
+                        : 'bg-teal-50 border-teal-200/60 hover:bg-teal-100'
                     }`}
-                    style={{ top, height: Math.max(height, 22) }}
+                    style={{ top: top + 1, height: 24 }}
                   >
-                    <p className={`text-[10px] font-medium ${isHovered ? 'text-teal-800' : 'text-teal-600'}`}>
+                    <p className={`text-[11px] font-medium ${isHovered ? 'text-teal-800' : 'text-teal-600'}`}>
                       {formatTimeInTz(slot.slot_start)}
                     </p>
-                    {height > 28 && (
-                      <p className="text-[9px] text-teal-500">
-                        {sessionDuration} min
-                      </p>
-                    )}
                   </div>
                 )
               })}
