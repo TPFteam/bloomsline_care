@@ -276,13 +276,26 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       const [slotsRes, bookingsRes] = await Promise.all([
         fetch(`/api/bookings/available-slots?practitionerId=${userId}&date=${dateStr}&duration=${selectedSessionType.duration}&skipNotice=true${selectedSessionFormat ? `&format=${selectedSessionFormat}` : ''}`)
           .then(r => r.json()),
-        supabase
-          .from('bookings')
-          .select('start_time, end_time, client_name, session_format, member_id')
-          .eq('practitioner_id', userId)
-          .gte('start_time', `${dateStr}T00:00:00`)
-          .lte('start_time', `${dateStr}T23:59:59`)
-          .neq('status', 'cancelled'),
+        // Use timezone-aware boundaries so we only get bookings for the
+        // selected day in the practitioner's timezone, not UTC.
+        (async () => {
+          const tz = practitionerTz || Intl.DateTimeFormat().resolvedOptions().timeZone
+          // Convert local day boundaries to UTC using Intl
+          const refNoon = Date.UTC(parseInt(dateStr.slice(0, 4)), parseInt(dateStr.slice(5, 7)) - 1, parseInt(dateStr.slice(8, 10)), 12, 0, 0)
+          const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(new Date(refNoon))
+          const get = (type: string) => parseInt(parts.find(p => p.type === type)?.value || '0')
+          const localMs = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') === 24 ? 0 : get('hour'), get('minute'), get('second'))
+          const offsetMs = localMs - refNoon
+          const dayStartUtc = new Date(Date.UTC(parseInt(dateStr.slice(0, 4)), parseInt(dateStr.slice(5, 7)) - 1, parseInt(dateStr.slice(8, 10)), 0, 0, 0) - offsetMs).toISOString()
+          const dayEndUtc = new Date(Date.UTC(parseInt(dateStr.slice(0, 4)), parseInt(dateStr.slice(5, 7)) - 1, parseInt(dateStr.slice(8, 10)), 23, 59, 59) - offsetMs).toISOString()
+          return supabase
+            .from('bookings')
+            .select('start_time, end_time, client_name, session_format, member_id')
+            .eq('practitioner_id', userId)
+            .gte('start_time', dayStartUtc)
+            .lte('start_time', dayEndUtc)
+            .neq('status', 'cancelled')
+        })(),
       ])
 
       setAvailableSlots(slotsRes.slots || [])
