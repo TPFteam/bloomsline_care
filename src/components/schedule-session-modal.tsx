@@ -413,7 +413,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         // Save to sessions table for member tracking. Format comes from the
         // step-3 picker (selectedSessionFormat) — same source as calendar mode.
         const sessionTypeLabel = getSessionTypeLabel(manualSessionType)
-        const manualFormat: 'in_person' | 'video' = selectedSessionFormat === 'in_person' ? 'in_person' : 'video'
+        // DB enum is 'in_person' | 'virtual' (not 'video')
+        const manualFormat: 'in_person' | 'virtual' = selectedSessionFormat === 'in_person' ? 'in_person' : 'virtual'
         const sessionData = {
           practitioner_id: userId,
           member_id: selectedMember.id,
@@ -486,7 +487,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           end_time: endTime.toISOString(),
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           notes: notes || null,
-          session_format: selectedSessionFormat === 'in_person' ? 'in_person' : 'video',
+          session_format: selectedSessionFormat === 'in_person' ? 'in_person' : 'virtual',
           status: 'confirmed',
           member_id: selectedMember.id,
         }
@@ -515,7 +516,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
             practitioner_id: userId,
             member_id: selectedMember.id,
             session_type: toSessionEnum(selectedSessionType!.id) as 'initial_consultation' | 'follow_up' | 'check_in' | 'crisis' | 'group' | 'other',
-            session_format: (selectedSessionFormat === 'in_person' ? 'in_person' : 'video') as 'in_person' | 'virtual',
+            session_format: selectedSessionFormat === 'in_person' ? 'in_person' : 'virtual',
             scheduled_at: startTime.toISOString(),
             duration_minutes: durationToUse,
             status: 'scheduled',

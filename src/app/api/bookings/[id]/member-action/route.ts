@@ -324,7 +324,7 @@ export async function POST(
         practitioner_id: booking.practitioner_id,
         member_id: booking.member_id,
         session_type: sessionTypeMap[booking.session_type] || 'check_in',
-        session_format: 'video',
+        session_format: booking.session_format === 'in_person' ? 'in_person' : 'virtual',
         scheduled_at: newSlotStart,
         duration_minutes: durationMinutes,
         status: 'scheduled',
