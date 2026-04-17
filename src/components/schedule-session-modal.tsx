@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { analytics } from '@/lib/analytics/events'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video, Settings, Loader2, Info, Maximize2 } from 'lucide-react'
+import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video, Settings, Loader2, Info, Maximize2, AlertCircle } from 'lucide-react'
 import { SlotCalendarView } from '@/components/bookings/SlotCalendarView'
 import { CalendarPicker } from '@/components/ui/calendar-picker'
 import { TimePicker } from '@/components/ui/time-picker'
@@ -47,7 +47,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [sessionTypes, setSessionTypes] = useState<SessionType[]>([])
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
-  const [dayBookings, setDayBookings] = useState<Array<{ start_time: string; end_time: string; client_name: string; session_format?: string; member_id?: string }>>([])
+  const [dayBookings, setDayBookings] = useState<Array<{ id: string; start_time: string; end_time: string; client_name: string; session_format?: string; member_id?: string; google_event_id?: string | null; _mismatch?: boolean }>>([])
 
   const [loading, setLoading] = useState(false)
   const [selectedSessionFormat, setSelectedSessionFormat] = useState<'in_person' | 'video' | null>(null)
@@ -290,7 +290,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           const dayEndUtc = new Date(Date.UTC(parseInt(dateStr.slice(0, 4)), parseInt(dateStr.slice(5, 7)) - 1, parseInt(dateStr.slice(8, 10)), 23, 59, 59) - offsetMs).toISOString()
           return supabase
             .from('bookings')
-            .select('start_time, end_time, client_name, session_format, member_id')
+            .select('id, start_time, end_time, client_name, session_format, member_id, google_event_id')
             .eq('practitioner_id', userId)
             .gte('start_time', dayStartUtc)
             .lte('start_time', dayEndUtc)
@@ -300,7 +300,20 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
       setAvailableSlots(slotsRes.slots || [])
       if (slotsRes.practitionerTimezone) setPractitionerTz(slotsRes.practitionerTimezone)
-      setDayBookings(bookingsRes.data || [])
+
+      // Check bookings with google_event_id for mismatches (deleted from Google)
+      const dayBookingsData = bookingsRes.data || []
+      const bookingsWithGoogleId = dayBookingsData.filter((b: any) => b.google_event_id)
+      if (bookingsWithGoogleId.length > 0) {
+        try {
+          const mismatchRes = await fetch('/api/calendar/check-mismatches').then(r => r.json())
+          const mismatchIds = new Set((mismatchRes.mismatches || []).map((m: any) => m.bookingId))
+          for (const b of dayBookingsData) {
+            if (mismatchIds.has(b.id)) (b as any)._mismatch = true
+          }
+        } catch { /* skip mismatch check if it fails */ }
+      }
+      setDayBookings(dayBookingsData)
     } catch (error) {
       console.error('[modal] Error fetching slots:', error)
       setAvailableSlots([])
@@ -1156,16 +1169,50 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                               const endStr = endD.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: !use24Hour })
                               const isSamePatient = selectedMember && b.member_id === selectedMember.id
                               const isPast = startD.getTime() < Date.now()
+                              const isMismatch = !!(b as any)._mismatch
                               return (
-                                <div key={`booking-${i}`} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isSamePatient ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100'} ${isPast ? 'opacity-40' : ''}`}>
-                                  {b.session_format === 'video' ? <Video className="w-3 h-3 text-blue-400 shrink-0" /> : <Building2 className="w-3 h-3 text-amber-400 shrink-0" />}
+                                <div key={`booking-${i}`} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
+                                  isMismatch ? 'bg-red-50 border-red-200' : isSamePatient ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100'
+                                } ${isPast ? 'opacity-40' : ''}`}>
+                                  {isMismatch ? <AlertCircle className="w-3 h-3 text-red-400 shrink-0" /> : b.session_format === 'video' ? <Video className="w-3 h-3 text-blue-400 shrink-0" /> : <Building2 className="w-3 h-3 text-amber-400 shrink-0" />}
                                   <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap">{startStr}–{endStr}</span>
-                                  <span className="text-[11px] text-gray-500 truncate">{b.client_name}</span>
-                                  {isSamePatient && (
+                                  <span className={`text-[11px] truncate ${isMismatch ? 'text-red-600' : 'text-gray-500'}`}>{b.client_name}</span>
+                                  {isMismatch ? (
+                                    <div className="flex items-center gap-1 shrink-0 ml-auto">
+                                      <span className="text-[9px] text-red-500 whitespace-nowrap">{locale === 'fr' ? 'supprimé de Google' : 'removed from Google'}</span>
+                                      <button
+                                        type="button"
+                                        onClick={async (e) => {
+                                          e.stopPropagation()
+                                          try {
+                                            await fetch(`/api/bookings/${b.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'cancelled' }) })
+                                            setDayBookings(prev => prev.filter(x => x.id !== b.id))
+                                            fetchAvailableSlots()
+                                          } catch {}
+                                        }}
+                                        className="text-[9px] font-medium text-red-600 hover:bg-red-100 px-1.5 py-0.5 rounded transition-colors"
+                                      >
+                                        {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={async (e) => {
+                                          e.stopPropagation()
+                                          try {
+                                            await supabase.from('bookings').update({ google_event_id: null }).eq('id', b.id)
+                                            setDayBookings(prev => prev.map(x => x.id === b.id ? { ...x, _mismatch: false, google_event_id: null } : x))
+                                          } catch {}
+                                        }}
+                                        className="text-[9px] font-medium text-gray-500 hover:bg-gray-100 px-1.5 py-0.5 rounded transition-colors"
+                                      >
+                                        {locale === 'fr' ? 'Garder' : 'Keep'}
+                                      </button>
+                                    </div>
+                                  ) : isSamePatient ? (
                                     <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium shrink-0">
                                       {locale === 'fr' ? 'même patient' : 'same patient'}
                                     </span>
-                                  )}
+                                  ) : null}
                                 </div>
                               )
                             })}
