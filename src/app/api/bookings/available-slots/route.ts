@@ -3,7 +3,6 @@ import { createAdminClient } from '@/lib/supabase/server-client';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
 import { getGoogleCalendarBusyTimes } from '@/lib/services/google-calendar';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
-import { syncCancelledGoogleEvents } from '@/lib/services/google-calendar-sync';
 import type { TimeSlot } from '@/types/calendar';
 
 /**
@@ -51,13 +50,10 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminClient();
 
-  // Sync: check if any confirmed bookings were cancelled on Google Calendar.
-  // Truly fire-and-forget — this makes one Google API call per upcoming booking,
-  // which previously added 1-3s to every date change. Any cancellations it finds
-  // will be picked up on the next fetch; we don't block the user on it.
-  syncCancelledGoogleEvents(practitionerId, supabase).catch((err) => {
-    console.error('[available-slots] Google sync check failed:', err)
-  })
+  // Google Calendar mismatch detection is now handled by the explicit
+  // banner on the Bookings page (/api/calendar/check-mismatches) instead
+  // of auto-cancelling here. This keeps the slot endpoint fast and gives
+  // practitioners control over what happens to mismatched bookings.
 
   let slots: TimeSlot[];
   let knownTz: string | null = null;

@@ -203,6 +203,20 @@ export default function BookingsPage() {
   const [isSavingAvailability, setIsSavingAvailability] = useState(false)
   const [isSavingSettings, setIsSavingSettings] = useState(false)
 
+  // Google Calendar mismatch detection
+  const [calendarMismatches, setCalendarMismatches] = useState<Array<{
+    bookingId: string; clientName: string; sessionType: string; startTime: string; endTime: string
+  }>>([])
+  const [mismatchProcessing, setMismatchProcessing] = useState<string | null>(null)
+
+  // Check for Google Calendar mismatches on page load
+  useEffect(() => {
+    fetch('/api/calendar/check-mismatches')
+      .then(r => r.json())
+      .then(data => { if (data.mismatches?.length > 0) setCalendarMismatches(data.mismatches) })
+      .catch(() => {})
+  }, [])
+
   // Show toast for calendar OAuth callback results
   useEffect(() => {
     if (searchParams.get('calendar_connected') === 'true') {
@@ -746,6 +760,131 @@ export default function BookingsPage() {
           {/* Appointments Tab Content */}
           {mainTab === 'appointments' && (
             <>
+              {/* Google Calendar mismatch banner */}
+              {calendarMismatches.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                  <div className="flex items-start gap-3 mb-3">
+                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-amber-800">
+                        {locale === 'fr'
+                          ? `${calendarMismatches.length} séance${calendarMismatches.length > 1 ? 's' : ''} supprimée${calendarMismatches.length > 1 ? 's' : ''} de Google Agenda`
+                          : `${calendarMismatches.length} session${calendarMismatches.length > 1 ? 's' : ''} removed from Google Calendar`}
+                      </p>
+                      <p className="text-xs text-amber-700 mt-0.5">
+                        {locale === 'fr'
+                          ? 'Ces séances existent sur Bloomsline mais plus sur votre Google Agenda.'
+                          : 'These sessions exist on Bloomsline but no longer on your Google Calendar.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2 ml-8">
+                    {calendarMismatches.map(m => {
+                      const d = new Date(m.startTime)
+                      const dateStr = d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                        weekday: 'short', day: 'numeric', month: 'short',
+                      })
+                      const timeStr = d.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                        hour: 'numeric', minute: '2-digit', hour12: locale !== 'fr',
+                      })
+                      const isProcessing = mismatchProcessing === m.bookingId
+                      return (
+                        <div key={m.bookingId} className="flex items-center justify-between bg-white rounded-lg border border-amber-100 px-3 py-2">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{m.clientName}</p>
+                            <p className="text-xs text-gray-500">{m.sessionType} · {dateStr} · {timeStr}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              disabled={isProcessing}
+                              onClick={async () => {
+                                setMismatchProcessing(m.bookingId)
+                                try {
+                                  await fetch(`/api/bookings/${m.bookingId}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ status: 'cancelled' }),
+                                  })
+                                  setCalendarMismatches(prev => prev.filter(x => x.bookingId !== m.bookingId))
+                                  setBookings(prev => prev.map(b => b.id === m.bookingId ? { ...b, status: 'cancelled' } : b))
+                                  toast.success(locale === 'fr' ? 'Séance annulée' : 'Session cancelled')
+                                } catch { toast.error('Failed') }
+                                setMismatchProcessing(null)
+                              }}
+                              className="text-xs font-medium text-red-600 hover:bg-red-50 px-2.5 py-1.5 rounded-lg border border-red-200 transition-colors disabled:opacity-50"
+                            >
+                              {isProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : (locale === 'fr' ? 'Annuler' : 'Cancel')}
+                            </button>
+                            <button
+                              disabled={isProcessing}
+                              onClick={async () => {
+                                setMismatchProcessing(m.bookingId)
+                                try {
+                                  const { createClient } = await import('@/lib/supabase/browser-client')
+                                  const sb = createClient()
+                                  await sb.from('bookings').update({ google_event_id: null }).eq('id', m.bookingId)
+                                  setCalendarMismatches(prev => prev.filter(x => x.bookingId !== m.bookingId))
+                                  toast.success(locale === 'fr' ? 'Séance conservée' : 'Session kept')
+                                } catch { toast.error('Failed') }
+                                setMismatchProcessing(null)
+                              }}
+                              className="text-xs font-medium text-gray-600 hover:bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-200 transition-colors disabled:opacity-50"
+                            >
+                              {locale === 'fr' ? 'Conserver' : 'Keep'}
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {calendarMismatches.length > 1 && (
+                    <div className="flex gap-2 mt-3 ml-8">
+                      <button
+                        disabled={!!mismatchProcessing}
+                        onClick={async () => {
+                          setMismatchProcessing('all')
+                          for (const m of calendarMismatches) {
+                            try {
+                              await fetch(`/api/bookings/${m.bookingId}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ status: 'cancelled' }),
+                              })
+                              setBookings(prev => prev.map(b => b.id === m.bookingId ? { ...b, status: 'cancelled' } : b))
+                            } catch {}
+                          }
+                          setCalendarMismatches([])
+                          toast.success(locale === 'fr' ? 'Toutes les séances annulées' : 'All sessions cancelled')
+                          setMismatchProcessing(null)
+                        }}
+                        className="text-xs font-medium text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 transition-colors disabled:opacity-50"
+                      >
+                        {locale === 'fr' ? 'Tout annuler' : 'Cancel all'}
+                      </button>
+                      <button
+                        disabled={!!mismatchProcessing}
+                        onClick={async () => {
+                          setMismatchProcessing('all')
+                          try {
+                            const { createClient } = await import('@/lib/supabase/browser-client')
+                            const sb = createClient()
+                            for (const m of calendarMismatches) {
+                              await sb.from('bookings').update({ google_event_id: null }).eq('id', m.bookingId)
+                            }
+                          } catch {}
+                          setCalendarMismatches([])
+                          toast.success(locale === 'fr' ? 'Toutes les séances conservées' : 'All sessions kept')
+                          setMismatchProcessing(null)
+                        }}
+                        className="text-xs font-medium text-gray-600 hover:bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 transition-colors disabled:opacity-50"
+                      >
+                        {locale === 'fr' ? 'Tout conserver' : 'Keep all'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* External booking info banner */}
               {bookingSettings?.external_booking_url && (
                 <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
