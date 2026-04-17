@@ -98,14 +98,34 @@ export async function POST(
       .eq('status', 'scheduled');
 
     // Delete old Google Calendar event (only for future bookings)
+    // Patch description with reschedule reason first so the cancellation email shows why.
     if (booking.google_event_id && isFutureBooking) {
       const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
       if (googleAuth) {
+        const calendarUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${booking.google_event_id}`;
+        const authHeaders = { Authorization: `Bearer ${googleAuth.accessToken}`, 'Content-Type': 'application/json' };
         try {
-          await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${booking.google_event_id}?sendUpdates=all`,
-            { method: 'DELETE', headers: { Authorization: `Bearer ${googleAuth.accessToken}` } }
-          );
+          const { data: pUser } = await adminSupabase.from('users').select('preferred_language').eq('id', user.id).single();
+          const isFr = pUser?.preferred_language === 'fr';
+          const reasonText = reason?.trim() || '';
+          const rescheduleNote = reasonText
+            ? (isFr ? `\n\n⟳ Séance reprogrammée — Raison : ${reasonText}` : `\n\n⟳ Session rescheduled — Reason: ${reasonText}`)
+            : (isFr ? '\n\n⟳ Séance reprogrammée' : '\n\n⟳ Session rescheduled');
+
+          const eventRes = await fetch(calendarUrl, { headers: authHeaders });
+          if (eventRes.ok) {
+            const event = await eventRes.json();
+            await fetch(`${calendarUrl}?sendUpdates=none`, {
+              method: 'PATCH',
+              headers: authHeaders,
+              body: JSON.stringify({ description: (event.description || '') + rescheduleNote }),
+            });
+          }
+
+          await fetch(`${calendarUrl}?sendUpdates=all`, {
+            method: 'DELETE',
+            headers: authHeaders,
+          });
         } catch (err) {
           console.error('Failed to delete old calendar event:', err);
         }
@@ -203,69 +223,9 @@ export async function POST(
       }
     }
 
-    // Send emails only for future bookings — past session edits are silent
-    if (isFutureBooking) {
-      const metadata = {
-        clientName: booking.client_name,
-        originalTime,
-        newTime,
-        reason: reason?.trim() || '',
-        sessionType: sessionTypeName,
-        scheduledAt: newTime,
-      };
-
-      ;(async () => {
-        try {
-          // Email to patient
-          if (booking.client_email) {
-            const content = getNotificationContent('booking_rescheduled_by_practitioner', metadata, 'en');
-            const calendarAttachment = generateCalendarAttachment({
-              uid: newBooking.id,
-              summary: `${sessionTypeName} — Bloomsline Care`,
-              startTime: newSlotStart,
-              endTime: newSlotEnd,
-              description: `Your rescheduled ${sessionTypeName} session`,
-              attendeeEmail: booking.client_email,
-              attendeeName: booking.client_name,
-            });
-
-            const htmlBody = generateEmailHtml({
-              subject: content.emailSubject,
-              body: content.body,
-              actionUrl: '',
-              actionText: '',
-            });
-
-            await sendEmail({
-              to: booking.client_email,
-              subject: content.emailSubject,
-              htmlBody,
-              tag: 'booking_rescheduled_by_practitioner',
-              attachments: [calendarAttachment],
-            });
-          }
-
-          // Confirmation email to practitioner
-          if (user.email) {
-            const htmlBody = generateEmailHtml({
-              subject: `Session rescheduled: ${booking.client_name}`,
-              body: `Your ${sessionTypeName} with ${booking.client_name} has been rescheduled from ${originalTime} to ${newTime}.`,
-              actionUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://care.bloomsline.com'}/bookings`,
-              actionText: 'View Bookings',
-            });
-
-            await sendEmail({
-              to: user.email,
-              subject: `Session rescheduled: ${booking.client_name}`,
-              htmlBody,
-              tag: 'booking_rescheduled_practitioner_confirm',
-            });
-          }
-        } catch (err) {
-          console.error('Error sending reschedule emails:', err);
-        }
-      })();
-    }
+    // No Bloomsline emails — Google Calendar handles notifications:
+    // - Old event DELETE with sendUpdates=all → cancellation email (with reason)
+    // - New event POST with sendUpdates=all → invitation email (with new time)
 
     return NextResponse.json({ success: true, newBookingId: newBooking.id });
   } catch (err) {
