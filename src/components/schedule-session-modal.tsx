@@ -29,17 +29,30 @@ interface TimeSlot {
   slot_end: string
 }
 
+interface RescheduleBooking {
+  id: string
+  practitioner_id: string
+  member_id: string | null
+  client_name: string
+  client_email: string
+  session_type: string
+  session_format?: string
+  start_time: string
+  end_time: string
+}
+
 interface ScheduleSessionModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess?: () => void
   preselectedMember?: Member | null
+  rescheduleBooking?: RescheduleBooking | null
 }
 
 type Step = 'member' | 'session' | 'format' | 'datetime' | 'confirm'
 type ScheduleMode = 'calendar' | 'manual'
 
-export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMember }: ScheduleSessionModalProps) {
+export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMember, rescheduleBooking: rescheduleData }: ScheduleSessionModalProps) {
   const { locale } = useLanguage()
   const router = useRouter()
   const [step, setStep] = useState<Step>(preselectedMember ? 'session' : 'member')
@@ -151,32 +164,60 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
   const supabase = createClient()
 
+  const isReschedule = !!rescheduleData
+
   // Fetch members and session types on open — and reset all state so a
   // reopened modal never inherits values from a previously-closed attempt.
   useEffect(() => {
     if (isOpen) {
       // Reset selections to a clean slate
-      setStep(preselectedMember ? 'session' : 'member')
-      setSelectedMember(preselectedMember || null)
-      setSelectedSessionType(null)
-      setSelectedSessionFormat(null)
-      setSelectedDate(startOfDay(new Date()))
-      setSelectedTime(null)
-      setNotes('')
+      if (rescheduleData) {
+        // Reschedule mode: skip to datetime step with pre-filled data
+        setStep('datetime')
+        setSelectedMember(null) // not needed for reschedule
+        setSelectedSessionType(null) // will be set after fetchInitialData
+        setSelectedSessionFormat(
+          rescheduleData.session_format === 'in_person' ? 'in_person'
+          : rescheduleData.session_format === 'video' || rescheduleData.session_format === 'virtual' ? 'video'
+          : null
+        )
+        setSelectedDate(startOfDay(new Date()))
+        setSelectedTime(null)
+        setNotes('')
+        setScheduleMode('calendar')
+      } else {
+        setStep(preselectedMember ? 'session' : 'member')
+        setSelectedMember(preselectedMember || null)
+        setSelectedSessionType(null)
+        setSelectedSessionFormat(null)
+        setSelectedDate(startOfDay(new Date()))
+        setSelectedTime(null)
+        setNotes('')
+        setScheduleMode(hasExternalBooking ? 'manual' : 'calendar')
+        setManualSessionType('')
+        setManualDuration(60)
+        setManualTime('10:00')
+      }
       setSearchQuery('')
       setAvailableSlots([])
+      setDayBookings([])
       setQuickDays([])
       setQuickExpandedDate(null)
       setQuickLoading(false)
       setDateViewMode('calendar')
       setShowSlotCalendar(false)
-      setScheduleMode(hasExternalBooking ? 'manual' : 'calendar')
-      setManualSessionType('')
-      setManualDuration(60)
-      setManualTime('10:00')
       fetchInitialData()
     }
-  }, [isOpen, preselectedMember])
+  }, [isOpen, preselectedMember, rescheduleData])
+
+  // In reschedule mode, auto-select the session type once session types load
+  useEffect(() => {
+    if (rescheduleData && sessionTypes.length > 0 && !selectedSessionType) {
+      const match = sessionTypes.find(t => t.id === rescheduleData.session_type)
+      if (match) setSelectedSessionType(match)
+      else if (sessionTypes[0]) setSelectedSessionType(sessionTypes[0])
+    }
+  }, [rescheduleData, sessionTypes, selectedSessionType])
 
   // Fetch available slots when date or session type changes
   useEffect(() => {
@@ -339,6 +380,52 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   }, [dateViewMode, userId, selectedSessionType])
 
   const handleBookSession = async () => {
+    // Reschedule mode: call the reschedule API instead of creating fresh
+    if (isReschedule && rescheduleData && selectedTime) {
+      setLoading(true)
+      try {
+        const timeToUse = selectedTime
+        const [hours, minutes] = timeToUse.split(':').map(Number)
+        const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
+        const tz = practitionerTz || Intl.DateTimeFormat().resolvedOptions().timeZone
+
+        function tzToUtc(dateTimeStr: string, timezone: string): Date {
+          const refUtc = Date.UTC(parseInt(dateTimeStr.slice(0, 4)), parseInt(dateTimeStr.slice(5, 7)) - 1, parseInt(dateTimeStr.slice(8, 10)), parseInt(dateTimeStr.slice(11, 13)), parseInt(dateTimeStr.slice(14, 16)), 0)
+          const parts = new Intl.DateTimeFormat('en-US', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(new Date(refUtc))
+          const get = (type: string) => parseInt(parts.find(p => p.type === type)?.value || '0')
+          const tzMs = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') === 24 ? 0 : get('hour'), get('minute'), get('second'))
+          const offsetMs = tzMs - refUtc
+          return new Date(refUtc - offsetMs)
+        }
+
+        const localDateStr = `${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
+        const startTime = tzToUtc(localDateStr, tz)
+        const duration = selectedSessionType?.duration || Math.round((new Date(rescheduleData.end_time).getTime() - new Date(rescheduleData.start_time).getTime()) / 60000)
+        const endTime = new Date(startTime.getTime() + duration * 60 * 1000)
+
+        const response = await fetch(`/api/bookings/${rescheduleData.id}/reschedule`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            newSlotStart: startTime.toISOString(),
+            newSlotEnd: endTime.toISOString(),
+            reason: notes || undefined,
+          }),
+        })
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'Failed to reschedule')
+
+        toast.success(locale === 'fr' ? 'Séance reprogrammée' : 'Session rescheduled')
+        onSuccess?.()
+        onClose()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to reschedule')
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
     if (!selectedMember || !userId) return
 
     // For calendar mode, require selectedSessionType and selectedTime
@@ -642,7 +729,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                 </button>
               )}
               <h2 className="text-lg font-semibold text-gray-900">
-                {locale === 'fr' ? 'Planifier une séance' : locale === 'es' ? 'Programar sesión' : 'Schedule Session'}
+                {isReschedule
+                  ? (locale === 'fr' ? 'Reprogrammer la séance' : 'Reschedule Session')
+                  : (locale === 'fr' ? 'Planifier une séance' : locale === 'es' ? 'Programar sesión' : 'Schedule Session')}
               </h2>
             </div>
             <button
@@ -661,7 +750,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               through (1 of 4) instead of a mysterious pre-checked step 1 of 5. */}
           <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
             <div className="flex items-center justify-center">
-              {(preselectedMember
+              {(isReschedule
+                ? ['datetime', 'confirm']
+                : preselectedMember
                 ? ['session', 'format', 'datetime', 'confirm']
                 : ['member', 'session', 'format', 'datetime', 'confirm']
               ).map((s, index, arr) => {
@@ -1266,16 +1357,29 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
             {/* Step 4: Confirm */}
             {step === 'confirm' && (
               <div className="space-y-4">
+                {/* Reschedule: show old → new info */}
+                {isReschedule && rescheduleData && (
+                  <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-xs text-amber-700">
+                    <Info className="w-3.5 h-3.5 shrink-0" />
+                    <span>
+                      {locale === 'fr'
+                        ? `Reprogrammation de la séance de ${rescheduleData.client_name}`
+                        : `Rescheduling ${rescheduleData.client_name}'s session`}
+                    </span>
+                  </div>
+                )}
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-lavender-400 to-lavender-600 flex items-center justify-center text-white font-medium">
-                      {selectedMember?.first_name[0]}{selectedMember?.last_name[0]}
+                      {isReschedule
+                        ? rescheduleData!.client_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                        : `${selectedMember?.first_name[0]}${selectedMember?.last_name[0]}`}
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">
-                        {selectedMember?.first_name} {selectedMember?.last_name}
+                        {isReschedule ? rescheduleData!.client_name : `${selectedMember?.first_name} ${selectedMember?.last_name}`}
                       </p>
-                      <p className="text-sm text-gray-500">{selectedMember?.email}</p>
+                      <p className="text-sm text-gray-500">{isReschedule ? rescheduleData!.client_email : selectedMember?.email}</p>
                     </div>
                   </div>
 
@@ -1364,6 +1468,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               >
                 {loading
                   ? (locale === 'fr' ? 'Planification...' : locale === 'es' ? 'Programando...' : 'Scheduling...')
+                  : isReschedule
+                  ? (locale === 'fr' ? 'Reprogrammer' : 'Reschedule')
                   : (locale === 'fr' ? 'Confirmer et planifier' : locale === 'es' ? 'Confirmar y programar' : 'Confirm & Schedule')}
               </button>
             ) : (

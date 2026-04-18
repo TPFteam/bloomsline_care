@@ -39,6 +39,7 @@ import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
 import { format, parseISO, isToday, isTomorrow, isPast } from 'date-fns'
 import { WeekCalendarView } from '@/components/bookings/WeekCalendarView'
+import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import {
   getCalendarConnection,
   disconnectCalendar,
@@ -1831,103 +1832,30 @@ export default function BookingsPage() {
         </div>
       </main>
 
-      {/* Reschedule Modal */}
-      {rescheduleBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setRescheduleBooking(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
-              {locale === 'fr' ? 'Reprogrammer la séance' : 'Reschedule session'}
-            </h3>
-            <p className="text-sm text-gray-500 mb-4">
-              {rescheduleBooking.client_name}
-            </p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {locale === 'fr' ? 'Nouvelle date' : 'New date'}
-                </label>
-                <input
-                  type="date"
-                  value={rescheduleDate}
-                  onChange={(e) => {
-                    setRescheduleDate(e.target.value)
-                    loadRescheduleSlots(e.target.value)
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-              </div>
-
-              {rescheduleDate && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {locale === 'fr' ? 'Créneau disponible' : 'Available slot'}
-                  </label>
-                  {isLoadingSlots ? (
-                    <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      {locale === 'fr' ? 'Chargement...' : 'Loading...'}
-                    </div>
-                  ) : rescheduleSlots.length === 0 ? (
-                    <p className="text-sm text-gray-500 py-2">
-                      {locale === 'fr' ? 'Aucun créneau disponible' : 'No available slots'}
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-                      {rescheduleSlots.map((slot) => {
-                        const time = new Date(slot.slot_start).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
-                        return (
-                          <button
-                            key={slot.slot_start}
-                            onClick={() => setRescheduleTime(slot.slot_start)}
-                            className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                              rescheduleTime === slot.slot_start
-                                ? 'bg-teal-600 text-white border-teal-600'
-                                : 'border-gray-200 hover:border-teal-300 hover:bg-teal-50'
-                            }`}
-                          >
-                            {time}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {locale === 'fr' ? 'Raison (optionnel)' : 'Reason (optional)'}
-                </label>
-                <input
-                  type="text"
-                  value={rescheduleReason}
-                  onChange={(e) => setRescheduleReason(e.target.value)}
-                  placeholder={locale === 'fr' ? 'Ex: conflit d\'horaire' : 'e.g. scheduling conflict'}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setRescheduleBooking(null)}
-                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                {locale === 'fr' ? 'Annuler' : 'Cancel'}
-              </button>
-              <button
-                onClick={handleReschedule}
-                disabled={!rescheduleTime || processingId === rescheduleBooking.id}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {processingId === rescheduleBooking.id && <Loader2 className="w-4 h-4 animate-spin" />}
-                {locale === 'fr' ? 'Reprogrammer' : 'Reschedule'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Reschedule Modal — reuses ScheduleSessionModal in reschedule mode */}
+      <ScheduleSessionModal
+        isOpen={!!rescheduleBooking}
+        onClose={() => setRescheduleBooking(null)}
+        onSuccess={() => {
+          setRescheduleBooking(null)
+          // Refresh bookings
+          const sb = createClient()
+          sb.from('bookings').select('*').eq('practitioner_id', userId).order('start_time', { ascending: true }).then(({ data }: { data: any }) => {
+            if (data) setBookings(data)
+          })
+        }}
+        rescheduleBooking={rescheduleBooking ? {
+          id: rescheduleBooking.id,
+          practitioner_id: rescheduleBooking.practitioner_id,
+          member_id: rescheduleBooking.member_id,
+          client_name: rescheduleBooking.client_name,
+          client_email: rescheduleBooking.client_email,
+          session_type: rescheduleBooking.session_type,
+          session_format: rescheduleBooking.session_format,
+          start_time: rescheduleBooking.start_time,
+          end_time: rescheduleBooking.end_time,
+        } : null}
+      />
 
       {/* Settings Saved Confirmation Modal */}
       {showSettingsSavedModal && (
