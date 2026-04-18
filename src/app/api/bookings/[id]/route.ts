@@ -345,93 +345,10 @@ export async function PATCH(
       }
     }
 
-    // Send confirmation email to client when booking is approved
-    // Skip for backdated bookings — the session already happened
-    if (status === 'confirmed' && booking.status === 'pending' && booking.client_email && !isBackdatedBooking) {
-      ;(async () => {
-        try {
-          const { data: settings } = await adminSupabase
-            .from('booking_settings')
-            .select('session_types')
-            .eq('user_id', user.id)
-            .single();
-
-          const sessionTypes = settings?.session_types as Array<{ id: string; name: string }> || [];
-          const sessionType = sessionTypes.find(st => st.id === booking.session_type);
-          const sessionTypeName = sessionType?.name || booking.session_type;
-
-          const scheduledAt = new Date(booking.start_time).toLocaleString('en-US', {
-            weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-            hour: 'numeric', minute: '2-digit', hour12: true,
-          });
-
-          const metadata = {
-            bookingId: booking.id,
-            sessionType: sessionTypeName,
-            scheduledAt,
-            clientName: booking.client_name,
-          };
-
-          const content = getNotificationContent('booking_confirmed', metadata, 'en');
-          const emailContent = getEmailContent('booking_confirmed', metadata, 'en');
-          const patientAppUrl = process.env.NEXT_PUBLIC_PATIENT_APP_URL || 'https://app.bloomsline.com';
-          const htmlBody = generateEmailHtml({
-            subject: content.emailSubject,
-            body: content.body,
-            actionUrl: `${patientAppUrl}/practitioner`,
-            actionText: emailContent.actionText,
-          });
-
-          const calendarAttachment = generateCalendarAttachment({
-            uid: booking.id,
-            summary: `${sessionTypeName} — Bloomsline Care`,
-            startTime: booking.start_time,
-            endTime: booking.end_time,
-            description: `Your ${sessionTypeName} session with your practitioner`,
-            attendeeEmail: booking.client_email,
-            attendeeName: booking.client_name,
-          });
-
-          await sendEmail({
-            to: booking.client_email,
-            subject: content.emailSubject,
-            htmlBody,
-            tag: 'booking_confirmed',
-            attachments: [calendarAttachment],
-          });
-          // Also send .ics confirmation to the practitioner
-          if (user.email) {
-            const practitionerCalendarAttachment = generateCalendarAttachment({
-              uid: booking.id,
-              summary: `${sessionTypeName} — ${booking.client_name}`,
-              startTime: booking.start_time,
-              endTime: booking.end_time,
-              description: `${sessionTypeName} with ${booking.client_name}\nEmail: ${booking.client_email}${booking.client_phone ? `\nPhone: ${booking.client_phone}` : ''}`,
-              attendeeEmail: booking.client_email,
-              attendeeName: booking.client_name,
-              organizerEmail: user.email,
-            });
-
-            const practitionerHtmlBody = generateEmailHtml({
-              subject: `Booking confirmed: ${sessionTypeName} with ${booking.client_name}`,
-              body: `Your ${sessionTypeName} with ${booking.client_name} is confirmed for ${scheduledAt}.`,
-              actionUrl: `/bookings`,
-              actionText: 'View Bookings',
-            });
-
-            await sendEmail({
-              to: user.email,
-              subject: `Booking confirmed: ${sessionTypeName} with ${booking.client_name}`,
-              htmlBody: practitionerHtmlBody,
-              tag: 'booking_confirmed_practitioner',
-              attachments: [practitionerCalendarAttachment],
-            });
-          }
-        } catch (emailError) {
-          console.error('Error sending booking confirmation email:', emailError);
-        }
-      })();
-    }
+    // No Bloomsline confirmation emails — Google Calendar handles it:
+    // The event created above with sendUpdates=all sends an invitation
+    // to both the patient and the practitioner with the correct title,
+    // time, Google Meet link, and event description.
 
     return NextResponse.json({
       booking: updatedBooking,
