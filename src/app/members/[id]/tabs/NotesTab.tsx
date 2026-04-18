@@ -996,7 +996,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
       const { data, error } = await supabase
         .from('progress_notes')
-        .select('id, content, created_at, session_id')
+        .select('id, content, created_at, session_id, attachments')
         .in('session_id', sessionIds)
         .eq('note_type', 'session_summary')
         .order('created_at', { ascending: false })
@@ -1921,16 +1921,39 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       ))}
                     </div>
                   )}
-                  <MarkdownRenderer
-                    content={snSessionSummaryNotes[selectedItemId]!.content.replace(/&nbsp;/g, ' ')}
-                    className="leading-relaxed"
-                    onEdit={() => {
-                      setSnSummaryDraft(snSessionSummaryNotes[selectedItemId]!.content)
-                      setSnAttachments(snSessionSummaryNotes[selectedItemId]!.attachments || [])
-                      setSnIsEditing(true)
-                    }}
-                    onDelete={() => setDeletingNoteId(snSessionSummaryNotes[selectedItemId]!.id)}
-                  />
+                  {snSessionSummaryNotes[selectedItemId]!.content.trim() ? (
+                    <MarkdownRenderer
+                      content={snSessionSummaryNotes[selectedItemId]!.content.replace(/&nbsp;/g, ' ')}
+                      className="leading-relaxed"
+                      onEdit={() => {
+                        setSnSummaryDraft(snSessionSummaryNotes[selectedItemId]!.content)
+                        setSnAttachments(snSessionSummaryNotes[selectedItemId]!.attachments || [])
+                        setSnIsEditing(true)
+                      }}
+                      onDelete={() => setDeletingNoteId(snSessionSummaryNotes[selectedItemId]!.id)}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSnSummaryDraft(snSessionSummaryNotes[selectedItemId]!.content)
+                          setSnAttachments(snSessionSummaryNotes[selectedItemId]!.attachments || [])
+                          setSnIsEditing(true)
+                        }}
+                        className="text-xs text-teal-600 hover:text-teal-700 font-medium px-2 py-1 rounded-lg hover:bg-teal-50 transition-colors"
+                      >
+                        {locale === 'fr' ? 'Modifier' : 'Edit'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeletingNoteId(snSessionSummaryNotes[selectedItemId]!.id)}
+                        className="text-xs text-red-500 hover:text-red-600 font-medium px-2 py-1 rounded-lg hover:bg-red-50 transition-colors"
+                      >
+                        {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col">
