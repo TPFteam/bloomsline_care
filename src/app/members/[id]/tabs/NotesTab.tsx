@@ -2764,32 +2764,31 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
         if (!currentUrl) return null
         return (
           <div className="fixed inset-0 z-[300] bg-black/90 flex flex-col items-center justify-center" onClick={() => { setSnLightboxIndex(null); setSnLightboxZoom(1) }}>
-            {/* Top bar: counter + zoom + close */}
-            <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-6 z-10" onClick={(e) => e.stopPropagation()}>
-              <span className="text-white/70 text-sm">{idx + 1} / {images.length}</span>
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={() => setSnLightboxZoom(z => Math.max(0.5, z - 0.25))} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-lg">−</button>
-                <span className="text-white/70 text-xs w-12 text-center">{Math.round(snLightboxZoom * 100)}%</span>
-                <button type="button" onClick={() => setSnLightboxZoom(z => Math.min(3, z + 0.25))} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-lg">+</button>
-                <button type="button" onClick={() => { setSnLightboxIndex(null); setSnLightboxZoom(1) }} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center ml-2">
-                  <X className="w-5 h-5" />
+            {/* Close button — top right */}
+            <button type="button" onClick={() => { setSnLightboxIndex(null); setSnLightboxZoom(1) }} className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10">
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Bottom center: navigation + zoom */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 z-10" onClick={(e) => e.stopPropagation()}>
+              {images.length > 1 && (
+                <button type="button" disabled={idx <= 0} onClick={() => { setSnLightboxIndex(idx - 1); setSnLightboxZoom(1) }} className="w-8 h-8 rounded-full hover:bg-white/20 text-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed">
+                  <ChevronLeft className="w-5 h-5" />
                 </button>
-              </div>
+              )}
+              {images.length > 1 && (
+                <span className="text-white/70 text-xs min-w-[2rem] text-center">{idx + 1}/{images.length}</span>
+              )}
+              {images.length > 1 && (
+                <button type="button" disabled={idx >= images.length - 1} onClick={() => { setSnLightboxIndex(idx + 1); setSnLightboxZoom(1) }} className="w-8 h-8 rounded-full hover:bg-white/20 text-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed">
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              )}
+              {images.length > 1 && <div className="w-px h-5 bg-white/20" />}
+              <button type="button" onClick={() => setSnLightboxZoom(z => Math.max(0.5, z - 0.25))} className="w-8 h-8 rounded-full hover:bg-white/20 text-white flex items-center justify-center text-lg">−</button>
+              <span className="text-white/70 text-xs min-w-[2.5rem] text-center">{Math.round(snLightboxZoom * 100)}%</span>
+              <button type="button" onClick={() => setSnLightboxZoom(z => Math.min(3, z + 0.25))} className="w-8 h-8 rounded-full hover:bg-white/20 text-white flex items-center justify-center text-lg">+</button>
             </div>
-
-            {/* Left arrow */}
-            {images.length > 1 && idx > 0 && (
-              <button type="button" onClick={(e) => { e.stopPropagation(); setSnLightboxIndex(idx - 1); setSnLightboxZoom(1) }} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10">
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-            )}
-
-            {/* Right arrow */}
-            {images.length > 1 && idx < images.length - 1 && (
-              <button type="button" onClick={(e) => { e.stopPropagation(); setSnLightboxIndex(idx + 1); setSnLightboxZoom(1) }} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10">
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            )}
 
             {/* Image */}
             <div className="flex-1 flex items-center justify-center overflow-auto p-8" onClick={(e) => e.stopPropagation()}>
