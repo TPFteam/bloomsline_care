@@ -1054,7 +1054,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   }, [supabase, t])
 
   const handleSaveSessionNote = async (sessionId: string, content: string) => {
-    if (!content.trim()) return
+    if (!content.trim() && snAttachments.length === 0) return
 
     setSnSavingSummary(true)
     try {
@@ -1891,7 +1891,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                           <button
                             type="button"
                             onClick={() => handleSaveSessionNote(selectedItemId, snSummaryDraft)}
-                            disabled={snSavingSummary || !snSummaryDraft.trim()}
+                            disabled={snSavingSummary || (!snSummaryDraft.trim() && snAttachments.length === 0)}
                             className="px-2.5 py-1 rounded-md text-xs bg-gray-900 text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
                           >
                             {snSavingSummary ? (
@@ -1952,7 +1952,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       <button
                         type="button"
                         onClick={() => handleSaveSessionNote(selectedItemId, snSummaryDraft)}
-                        disabled={snSavingSummary || !snSummaryDraft.trim()}
+                        disabled={snSavingSummary || (!snSummaryDraft.trim() && snAttachments.length === 0)}
                         className="px-2.5 py-1 rounded-md text-xs bg-gray-900 text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
                       >
                         {snSavingSummary ? (
