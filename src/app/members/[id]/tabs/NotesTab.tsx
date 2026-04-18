@@ -258,6 +258,17 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [snEditSessionType, setSnEditSessionType] = useState('')
   const [snEditSessionFormat, setSnEditSessionFormat] = useState('')
   const [snEditDuration, setSnEditDuration] = useState(60)
+  const [practitionerSessionTypes, setPractitionerSessionTypes] = useState<{ id: string; name: string; duration: number }[]>([])
+
+  // Fetch practitioner's configured session types
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase.from('booking_settings').select('session_types').eq('user_id', user.id).single().then(({ data }) => {
+        if (data?.session_types) setPractitionerSessionTypes(data.session_types as { id: string; name: string; duration: number }[])
+      })
+    })
+  }, [supabase])
 
   // ==============================
   // BROWSE MODE STATE
@@ -1898,13 +1909,20 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                   <div className="grid grid-cols-3 gap-2 mb-3 pb-3 border-b border-gray-100">
                     <div>
                       <label className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{locale === 'fr' ? 'Type' : 'Type'}</label>
-                      <select value={snEditSessionType} onChange={(e) => setSnEditSessionType(e.target.value)} className="w-full mt-0.5 px-2 py-1.5 text-xs border border-gray-200 rounded-lg bg-white">
-                        <option value="initial_consultation">{locale === 'fr' ? 'Consultation initiale' : 'Initial Consultation'}</option>
-                        <option value="follow_up">{locale === 'fr' ? 'Séance de suivi' : 'Follow-up'}</option>
-                        <option value="check_in">{locale === 'fr' ? 'Point de situation' : 'Check-in'}</option>
-                        <option value="crisis">{locale === 'fr' ? 'Intervention de crise' : 'Crisis'}</option>
-                        <option value="group">{locale === 'fr' ? 'Séance de groupe' : 'Group'}</option>
-                        <option value="other">{locale === 'fr' ? 'Autre' : 'Other'}</option>
+                      <select value={snEditSessionType} onChange={(e) => { setSnEditSessionType(e.target.value); const match = practitionerSessionTypes.find(t => t.id === e.target.value); if (match) setSnEditDuration(match.duration) }} className="w-full mt-0.5 px-2 py-1.5 text-xs border border-gray-200 rounded-lg bg-white">
+                        {practitionerSessionTypes.length > 0 ? (
+                          practitionerSessionTypes.map(st => {
+                            const frNames: Record<string, string> = { initial: 'Consultation initiale', follow_up: 'Séance de suivi', check_in: 'Point de situation' }
+                            const label = locale === 'fr' && frNames[st.id] ? frNames[st.id] : st.name
+                            return <option key={st.id} value={st.id}>{label}</option>
+                          })
+                        ) : (
+                          <>
+                            <option value="initial_consultation">{locale === 'fr' ? 'Consultation initiale' : 'Initial Consultation'}</option>
+                            <option value="follow_up">{locale === 'fr' ? 'Séance de suivi' : 'Follow-up'}</option>
+                            <option value="check_in">{locale === 'fr' ? 'Point de situation' : 'Check-in'}</option>
+                          </>
+                        )}
                       </select>
                     </div>
                     <div>
