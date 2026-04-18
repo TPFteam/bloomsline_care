@@ -981,10 +981,10 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
       } else if (data.code === 'INSUFFICIENT_DATA') {
         toast.error(locale === 'fr' ? 'Pas assez de données' : locale === 'es' ? 'Datos insuficientes' : 'Not enough data yet')
       } else {
-        toast.error(data.error || 'Failed to generate')
+        toast.error(data.error || (locale === 'fr' ? 'Impossible de générer' : 'Failed to generate'))
       }
     } catch {
-      toast.error('Something went wrong')
+      toast.error(locale === 'fr' ? 'Une erreur est survenue' : 'Something went wrong')
     } finally {
       setGeneratingPulse(false)
     }
@@ -1218,7 +1218,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
 
   const handleAddMilestone = async () => {
     if (!title.trim()) {
-      toast.error('Title is required')
+      toast.error(locale === 'fr' ? 'Le titre est requis' : 'Title is required')
       return
     }
 
@@ -1255,7 +1255,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
         })
       }
 
-      toast.success('Journey added')
+      toast.success(locale === 'fr' ? 'Parcours ajouté' : 'Journey added')
       setShowAddMilestone(false)
       setTitle('')
       setDescription('')
@@ -1263,7 +1263,7 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
       fetchMilestones()
     } catch (error) {
       console.error('Error adding milestone:', error)
-      toast.error('Failed to add journey')
+      toast.error(locale === 'fr' ? 'Impossible d\'ajouter le parcours' : 'Failed to add journey')
     } finally {
       setSaving(false)
     }
@@ -1297,7 +1297,12 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
         })
       }
 
-      const statusMessages: Record<MilestoneStatus, string> = {
+      const statusMessages: Record<MilestoneStatus, string> = locale === 'fr' ? {
+        discovery: 'Déplacé vers Découverte',
+        building: 'Déplacé vers Construction',
+        thriving: 'Déplacé vers Épanouissement',
+        independent: 'Parcours terminé ! 🎉',
+      } : {
         discovery: 'Moved to Discovery',
         building: 'Moved to Building',
         thriving: 'Moved to Thriving',
@@ -1307,12 +1312,12 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
       fetchMilestones()
     } catch (error) {
       console.error('Error updating milestone:', error)
-      toast.error('Failed to update journey')
+      toast.error(locale === 'fr' ? 'Impossible de mettre à jour le parcours' : 'Failed to update journey')
     }
-  }, [supabase])
+  }, [supabase, locale])
 
   const handleDelete = useCallback(async (milestoneId: string) => {
-    if (!confirm('Are you sure you want to delete this journey?')) return
+    if (!confirm(locale === 'fr' ? 'Êtes-vous sûr de vouloir supprimer ce parcours ?' : 'Are you sure you want to delete this journey?')) return
 
     try {
       const { error } = await supabase
@@ -1322,13 +1327,13 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
 
       if (error) throw error
 
-      toast.success('Journey deleted')
+      toast.success(locale === 'fr' ? 'Parcours supprimé' : 'Journey deleted')
       fetchMilestones()
     } catch (error) {
       console.error('Error deleting milestone:', error)
-      toast.error('Failed to delete journey')
+      toast.error(locale === 'fr' ? 'Impossible de supprimer le parcours' : 'Failed to delete journey')
     }
-  }, [supabase])
+  }, [supabase, locale])
 
   const handleUpdateMilestone = useCallback(async (milestoneId: string, title: string, description: string) => {
     try {

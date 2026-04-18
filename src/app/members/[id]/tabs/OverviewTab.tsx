@@ -441,12 +441,12 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
 
       if (error) throw error
 
-      toast.success('About section updated')
+      toast.success(locale === 'fr' ? 'Section À propos mise à jour' : 'About section updated')
       setEditingAbout(false)
       onMemberUpdate()
     } catch (error) {
       console.error('Error updating about:', error)
-      toast.error('Failed to update')
+      toast.error(locale === 'fr' ? 'Impossible de mettre à jour' : 'Failed to update')
     } finally {
       setSaving(false)
     }
@@ -472,12 +472,12 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
 
       if (error) throw error
 
-      toast.success('Preferences updated')
+      toast.success(locale === 'fr' ? 'Préférences mises à jour' : 'Preferences updated')
       setEditingPreferences(false)
       onMemberUpdate()
     } catch (error) {
       console.error('Error updating preferences:', error)
-      toast.error('Failed to update')
+      toast.error(locale === 'fr' ? 'Impossible de mettre à jour' : 'Failed to update')
     } finally {
       setSaving(false)
     }

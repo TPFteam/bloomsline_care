@@ -37,7 +37,7 @@ type ContactMethod = 'email' | 'phone' | 'text'
 
 export default function EditMemberPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const router = useRouter()
   const supabase = createClient()
 
@@ -159,7 +159,7 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
     e.preventDefault()
 
     if (!firstName.trim() || !lastName.trim()) {
-      toast.error('First name and last name are required')
+      toast.error(locale === 'fr' ? 'Le prénom et le nom sont requis' : 'First name and last name are required')
       return
     }
 

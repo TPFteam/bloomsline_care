@@ -361,7 +361,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                             onClick={(e) => {
                               e.preventDefault()
                               navigator.clipboard.writeText(member.email!)
-                              toast.success('Email copied')
+                              toast.success(locale === 'fr' ? 'Email copié' : 'Email copied')
                             }}
                             className="p-1 rounded hover:bg-gray-300 transition-colors flex-shrink-0"
                           >
@@ -381,7 +381,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                             onClick={(e) => {
                               e.preventDefault()
                               navigator.clipboard.writeText(member.phone!)
-                              toast.success('Phone copied')
+                              toast.success(locale === 'fr' ? 'Téléphone copié' : 'Phone copied')
                             }}
                             className="p-1 rounded hover:bg-gray-300 transition-colors flex-shrink-0"
                           >

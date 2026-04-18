@@ -74,7 +74,7 @@ export default function OnboardingPage() {
 
   const handleSubmit = async () => {
     if (!selectedType) {
-      toast.error('Please select a user type')
+      toast.error(locale === 'fr' ? 'Veuillez sélectionner un type d\'utilisateur' : 'Please select a user type')
       return
     }
 
@@ -110,7 +110,7 @@ export default function OnboardingPage() {
       }
     } catch (error) {
       console.error('Error:', error)
-      toast.error(error instanceof Error ? error.message : 'Something went wrong')
+      toast.error(error instanceof Error ? error.message : (locale === 'fr' ? 'Une erreur est survenue' : 'Something went wrong'))
       setIsLoading(false)
     }
   }

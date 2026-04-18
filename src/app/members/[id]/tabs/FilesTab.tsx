@@ -385,7 +385,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
       window.open(data.signedUrl, '_blank')
     } catch (error) {
       console.error('Error viewing file:', error)
-      toast.error('Failed to view file')
+      toast.error(locale === 'fr' ? 'Impossible d\'afficher le fichier' : 'Failed to view file')
     }
   }
 
@@ -406,7 +406,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
       URL.revokeObjectURL(url)
     } catch (error) {
       console.error('Error downloading file:', error)
-      toast.error('Failed to download file')
+      toast.error(locale === 'fr' ? 'Impossible de télécharger le fichier' : 'Failed to download file')
     }
   }
 
@@ -437,12 +437,12 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
 
       toast.success(file.is_folder
         ? (locale === 'fr' ? 'Dossier supprimé' : 'Folder deleted')
-        : 'File deleted'
+        : (locale === 'fr' ? 'Fichier supprimé' : 'File deleted')
       )
       fetchFolderContents(currentFolderId)
     } catch (error) {
       console.error('Error deleting:', error)
-      toast.error('Failed to delete')
+      toast.error(locale === 'fr' ? 'Impossible de supprimer' : 'Failed to delete')
     }
   }
 
@@ -494,12 +494,12 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
 
       if (error) throw error
 
-      toast.success('Emergency contact updated')
+      toast.success(locale === 'fr' ? 'Contact d\'urgence mis à jour' : 'Emergency contact updated')
       setEditingEmergency(false)
       onMemberUpdate()
     } catch (error) {
       console.error('Error updating emergency contact:', error)
-      toast.error('Failed to update')
+      toast.error(locale === 'fr' ? 'Impossible de mettre à jour' : 'Failed to update')
     } finally {
       setSavingEmergency(false)
     }

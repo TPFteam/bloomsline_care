@@ -91,7 +91,7 @@ function SignInContent() {
 
       setMagicSent(true)
     } catch {
-      toast.error('Something went wrong')
+      toast.error(locale === 'fr' ? 'Une erreur est survenue' : 'Something went wrong')
     }
     setMagicLoading(false)
   }
@@ -115,7 +115,7 @@ function SignInContent() {
         setLoadingProvider(null)
       }
     } catch (error) {
-      toast.error('An unexpected error occurred')
+      toast.error(locale === 'fr' ? 'Une erreur inattendue est survenue' : 'An unexpected error occurred')
       setLoadingProvider(null)
     }
   }
@@ -136,7 +136,7 @@ function SignInContent() {
         setLoadingProvider(null)
       }
     } catch (error) {
-      toast.error('An unexpected error occurred')
+      toast.error(locale === 'fr' ? 'Une erreur inattendue est survenue' : 'An unexpected error occurred')
       setLoadingProvider(null)
     }
   }

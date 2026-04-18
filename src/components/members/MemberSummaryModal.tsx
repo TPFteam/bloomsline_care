@@ -82,7 +82,7 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        setError('Please sign in to view summaries')
+        setError(locale === 'fr' ? 'Veuillez vous connecter pour voir les résumés' : 'Please sign in to view summaries')
         return
       }
 
@@ -97,11 +97,11 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
         setSummary(data.summary)
       } else if (response.status !== 404) {
         const data = await response.json()
-        setError(data.error || 'Failed to fetch summary')
+        setError(data.error || (locale === 'fr' ? 'Impossible de charger le résumé' : 'Failed to fetch summary'))
       }
     } catch (err) {
       console.error('Error fetching summary:', err)
-      setError('Failed to load summary')
+      setError(locale === 'fr' ? 'Impossible de charger le résumé' : 'Failed to load summary')
     } finally {
       setLoading(false)
     }
@@ -134,7 +134,7 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        setError('Please sign in to generate summaries')
+        setError(locale === 'fr' ? 'Veuillez vous connecter pour générer des résumés' : 'Please sign in to generate summaries')
         return
       }
 
@@ -161,11 +161,11 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
       } else if (data.code === 'INSUFFICIENT_DATA') {
         setError(locale === 'fr' ? 'Pas assez de données pour générer un résumé. Ajoutez d\'abord des séances ou des notes.' : locale === 'es' ? 'No hay suficientes datos para generar un resumen. Primero añada sesiones o notas.' : 'Not enough data to generate a summary. Add sessions or notes first.')
       } else {
-        setError(data.error || 'Failed to generate summary')
+        setError(data.error || (locale === 'fr' ? 'Impossible de générer le résumé' : 'Failed to generate summary'))
       }
     } catch (err) {
       console.error('Error generating summary:', err)
-      setError('An error occurred while generating the summary')
+      setError(locale === 'fr' ? 'Une erreur est survenue lors de la génération du résumé' : 'An error occurred while generating the summary')
     } finally {
       setGenerating(false)
     }

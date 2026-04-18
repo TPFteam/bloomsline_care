@@ -268,7 +268,7 @@ export default function ProfilePage() {
 
       if (error) {
         if (error.code === '42P01') {
-          toast.error('Profile system is being set up. Please try again later.')
+          toast.error(locale === 'fr' ? 'Le système de profil est en cours de configuration. Veuillez réessayer plus tard.' : 'Profile system is being set up. Please try again later.')
           return
         }
         throw error
@@ -308,13 +308,13 @@ export default function ProfilePage() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file')
+      toast.error(locale === 'fr' ? 'Veuillez sélectionner un fichier image' : 'Please select an image file')
       return
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB')
+      toast.error(locale === 'fr' ? 'L\'image doit faire moins de 5 Mo' : 'Image must be less than 5MB')
       return
     }
 
@@ -333,7 +333,7 @@ export default function ProfilePage() {
       if (uploadError) {
         // If bucket doesn't exist, create it or show friendly error
         if (uploadError.message.includes('not found')) {
-          toast.error('Avatar storage is being set up. Please try again later.')
+          toast.error(locale === 'fr' ? 'Le stockage des avatars est en cours de configuration. Veuillez réessayer plus tard.' : 'Avatar storage is being set up. Please try again later.')
           return
         }
         throw uploadError
@@ -354,10 +354,10 @@ export default function ProfilePage() {
 
       // Update local state
       setUser(prev => prev ? { ...prev, avatar_url: publicUrl } : null)
-      toast.success('Profile photo updated!')
+      toast.success(locale === 'fr' ? 'Photo de profil mise à jour !' : 'Profile photo updated!')
     } catch (error) {
       console.error('Error uploading avatar:', error)
-      toast.error('Failed to upload image. Please try again.')
+      toast.error(locale === 'fr' ? 'Impossible de télécharger l\'image. Veuillez réessayer.' : 'Failed to upload image. Please try again.')
     } finally {
       setUploadingAvatar(false)
     }
@@ -467,11 +467,11 @@ export default function ProfilePage() {
     if (!file) return
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file')
+      toast.error(locale === 'fr' ? 'Veuillez sélectionner un fichier image' : 'Please select an image file')
       return
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB')
+      toast.error(locale === 'fr' ? 'L\'image doit faire moins de 5 Mo' : 'Image must be less than 5MB')
       return
     }
 
@@ -486,7 +486,7 @@ export default function ProfilePage() {
 
       if (uploadError) {
         if (uploadError.message.includes('not found')) {
-          toast.error('Storage is being set up. Please try again later.')
+          toast.error(locale === 'fr' ? 'Le stockage est en cours de configuration. Veuillez réessayer plus tard.' : 'Storage is being set up. Please try again later.')
           return
         }
         throw uploadError
@@ -497,10 +497,10 @@ export default function ProfilePage() {
         .getPublicUrl(fileName)
 
       updatePublication(pubId, 'image_url', publicUrl)
-      toast.success('Image uploaded!')
+      toast.success(locale === 'fr' ? 'Image téléchargée !' : 'Image uploaded!')
     } catch (error) {
       console.error('Error uploading publication image:', error)
-      toast.error('Failed to upload image')
+      toast.error(locale === 'fr' ? 'Impossible de télécharger l\'image' : 'Failed to upload image')
     } finally {
       setUploadingPubImage(null)
     }

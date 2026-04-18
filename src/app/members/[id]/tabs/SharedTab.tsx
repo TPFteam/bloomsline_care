@@ -264,7 +264,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
 
   const handleShareStory = async () => {
     if (!selectedStory) {
-      toast.error('Please select a story')
+      toast.error(locale === 'fr' ? 'Veuillez sélectionner une histoire' : 'Please select a story')
       return
     }
 
@@ -292,14 +292,14 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
       fetchData()
     } catch (error) {
       console.error('Error sharing story:', error)
-      toast.error('Failed to share story')
+      toast.error(locale === 'fr' ? 'Impossible de partager l\'histoire' : 'Failed to share story')
     } finally {
       setSaving(false)
     }
   }
 
   const handleUnshare = async (resourceId: string) => {
-    if (!confirm('Are you sure you want to unshare this resource?')) return
+    if (!confirm(locale === 'fr' ? 'Êtes-vous sûr de vouloir retirer le partage de cette ressource ?' : 'Are you sure you want to unshare this resource?')) return
 
     try {
       const { error } = await supabase
@@ -309,11 +309,11 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
 
       if (error) throw error
 
-      toast.success('Resource unshared')
+      toast.success(locale === 'fr' ? 'Partage retiré' : 'Resource unshared')
       fetchData()
     } catch (error) {
       console.error('Error unsharing resource:', error)
-      toast.error('Failed to unshare resource')
+      toast.error(locale === 'fr' ? 'Impossible de retirer le partage' : 'Failed to unshare resource')
     }
   }
 

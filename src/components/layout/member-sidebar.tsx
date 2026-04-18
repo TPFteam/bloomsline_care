@@ -13,12 +13,12 @@ import { Logo } from '@/components/ui/logo'
 export function MemberSidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const supabase = createClient()
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
-    toast.success('Signed out successfully')
+    toast.success(locale === 'fr' ? 'Déconnexion réussie' : 'Signed out successfully')
     router.push('/')
   }
 

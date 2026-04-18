@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import type { ContentBlock, ContentBlockType } from '@/types/story'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
+import { useLanguage } from '@/lib/i18n/context'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface BlockEditorProps {
@@ -31,6 +32,7 @@ interface BlockEditorProps {
 export function BlockEditor({ blocks, onChange }: BlockEditorProps) {
   const [showBlockMenu, setShowBlockMenu] = useState(false)
   const [uploadingBlockId, setUploadingBlockId] = useState<string | null>(null)
+  const { locale } = useLanguage()
   const supabase = createClient()
 
   const generateBlockId = () => Math.random().toString(36).substring(7)
@@ -96,7 +98,7 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps) {
 
       // Validate file
       if (file.size > 50 * 1024 * 1024) {
-        toast.error('File is too large. Max size is 50MB')
+        toast.error(locale === 'fr' ? 'Fichier trop volumineux. Taille max : 50 Mo' : 'File is too large. Max size is 50MB')
         return
       }
 
@@ -138,10 +140,10 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps) {
         })
       }
 
-      toast.success('File uploaded successfully')
+      toast.success(locale === 'fr' ? 'Fichier téléchargé avec succès' : 'File uploaded successfully')
     } catch (error) {
       console.error('Upload error:', error)
-      toast.error('Failed to upload file')
+      toast.error(locale === 'fr' ? 'Impossible de télécharger le fichier' : 'Failed to upload file')
     } finally {
       setUploadingBlockId(null)
     }

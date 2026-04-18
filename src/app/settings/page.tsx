@@ -28,7 +28,7 @@ const TABS: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
 ]
 
 function SettingsContent() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const router = useRouter()
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('legal')
@@ -59,10 +59,10 @@ function SettingsContent() {
       // Sign out and redirect
       const supabase = createClient()
       await supabase.auth.signOut()
-      toast.success('Your account has been deactivated.')
+      toast.success(locale === 'fr' ? 'Votre compte a été désactivé.' : 'Your account has been deactivated.')
       router.push('/')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to deactivate account')
+      toast.error(err instanceof Error ? err.message : (locale === 'fr' ? 'Impossible de désactiver le compte' : 'Failed to deactivate account'))
     } finally {
       setIsDeactivating(false)
       setDeleteDialogOpen(false)

@@ -373,7 +373,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
   const handleAddSession = async () => {
     if (!scheduledAt) {
-      toast.error('Please select a date and time')
+      toast.error(locale === 'fr' ? 'Veuillez sélectionner une date et une heure' : 'Please select a date and time')
       return
     }
 
@@ -593,7 +593,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
   const handleProposeNewDate = async () => {
     if (!proposingSession || !proposedDate || !proposedTime) {
-      toast.error('Please select a date and time')
+      toast.error(locale === 'fr' ? 'Veuillez sélectionner une date et une heure' : 'Please select a date and time')
       return
     }
 
@@ -612,14 +612,14 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
       if (error) throw error
 
-      toast.success('New date proposed to member')
+      toast.success(locale === 'fr' ? 'Nouvelle date proposée au membre' : 'New date proposed to member')
       setProposingSession(null)
       setProposedDate('')
       setProposedTime('')
       onSessionsUpdate()
     } catch (error) {
       console.error('Error proposing new date:', error)
-      toast.error('Failed to propose new date')
+      toast.error(locale === 'fr' ? 'Impossible de proposer une nouvelle date' : 'Failed to propose new date')
     } finally {
       setProposalSaving(false)
     }
@@ -642,11 +642,11 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
       if (error) throw error
 
-      toast.success('Reschedule accepted - session updated to member\'s suggested date')
+      toast.success(locale === 'fr' ? 'Report accepté — séance mise à jour avec la date suggérée par le membre' : 'Reschedule accepted - session updated to member\'s suggested date')
       onSessionsUpdate()
     } catch (error) {
       console.error('Error accepting reschedule:', error)
-      toast.error('Failed to accept reschedule')
+      toast.error(locale === 'fr' ? 'Impossible d\'accepter le report' : 'Failed to accept reschedule')
     }
   }
 
@@ -663,11 +663,11 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
       if (error) throw error
 
-      toast.success('Reschedule request declined')
+      toast.success(locale === 'fr' ? 'Demande de report refusée' : 'Reschedule request declined')
       onSessionsUpdate()
     } catch (error) {
       console.error('Error declining reschedule:', error)
-      toast.error('Failed to decline reschedule')
+      toast.error(locale === 'fr' ? 'Impossible de refuser le report' : 'Failed to decline reschedule')
     }
   }
 
