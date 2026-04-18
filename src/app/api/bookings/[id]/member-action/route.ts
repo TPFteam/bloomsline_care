@@ -219,6 +219,50 @@ export async function POST(
         action_url: `/bookings?highlight=${id}`,
       });
 
+      // Email the practitioner — Google's sendUpdates=all only notifies
+      // attendees, not the calendar owner. The practitioner is the owner,
+      // so they don't get Google's cancellation email. This Bloomsline
+      // email is the only way they find out in real-time.
+      if (practitionerEmail) {
+        try {
+          const { data: pUser } = await adminSupabase.from('users').select('preferred_language').eq('id', booking.practitioner_id).single();
+          const isFr = pUser?.preferred_language === 'fr';
+
+          const reasonLabelsEmail: Record<string, { en: string; fr: string }> = {
+            schedule_conflict: { en: 'Schedule conflict', fr: 'Conflit d\'horaire' },
+            personal_emergency: { en: 'Personal emergency', fr: 'Imprévu personnel' },
+            availability_change: { en: 'Availability change', fr: 'Changement de disponibilité' },
+            other: { en: 'Other', fr: 'Autre' },
+          };
+          const reasonKey = reason.trim();
+          const reasonDisplay = reasonLabelsEmail[reasonKey]
+            ? (isFr ? reasonLabelsEmail[reasonKey].fr : reasonLabelsEmail[reasonKey].en)
+            : reasonKey;
+
+          const htmlBody = generateEmailHtml({
+            subject: isFr ? 'Séance annulée par le patient' : 'Session cancelled by patient',
+            body: isFr
+              ? `${booking.client_name} a annulé sa séance du ${scheduledAt}.\n\nRaison : ${reasonDisplay}\n\nLe créneau est de nouveau disponible.`
+              : `${booking.client_name} cancelled their ${sessionTypeName} on ${scheduledAt}.\n\nReason: ${reasonDisplay}\n\nThe time slot is now available again.`,
+            practitionerName: practitioner?.full_name || booking.client_name,
+            recipientName: practitioner?.full_name || undefined,
+            actionUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://care.bloomsline.com'}/bookings`,
+            actionText: isFr ? 'Voir les réservations' : 'View Bookings',
+          });
+
+          await sendEmail({
+            to: practitionerEmail,
+            subject: isFr
+              ? `Annulation : ${booking.client_name} — ${scheduledAt}`
+              : `Cancellation: ${booking.client_name} — ${scheduledAt}`,
+            htmlBody,
+            tag: 'booking_cancelled_by_member_practitioner',
+          });
+        } catch (err) {
+          console.error('Error sending cancellation email to practitioner:', err);
+        }
+      }
+
       return NextResponse.json({ success: true, action: 'cancelled' });
     }
 
