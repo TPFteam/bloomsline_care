@@ -250,6 +250,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const snAutoSavedId = useRef<string | null>(null) // track autosaved note id without triggering re-render
   const [snShowPast, setSnShowPast] = useState(false)
   const [snAttachments, setSnAttachments] = useState<{ url: string; filename: string; size: number }[]>([])
+  const [snLightboxUrl, setSnLightboxUrl] = useState<string | null>(null)
 
   // ==============================
   // BROWSE MODE STATE
@@ -1913,7 +1914,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                         <button
                           key={i}
                           type="button"
-                          onClick={() => window.open(att.url, '_blank')}
+                          onClick={() => setSnLightboxUrl(att.url)}
                           className="w-16 h-16 rounded-lg border border-gray-200 overflow-hidden hover:border-teal-300 hover:shadow-sm transition-all bg-white"
                         >
                           <img src={att.url} alt={att.filename} className="w-full h-full object-cover" />
@@ -2752,6 +2753,16 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       </div>
 
       {/* Delete confirmation modal */}
+      {/* Image lightbox */}
+      {snLightboxUrl && (
+        <div className="fixed inset-0 z-[300] bg-black/80 flex items-center justify-center p-8" onClick={() => setSnLightboxUrl(null)}>
+          <button type="button" onClick={() => setSnLightboxUrl(null)} className="absolute top-6 right-6 text-white/80 hover:text-white">
+            <X className="w-8 h-8" />
+          </button>
+          <img src={snLightboxUrl} alt="" className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
+
       {deletingNoteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setDeletingNoteId(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
