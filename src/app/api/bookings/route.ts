@@ -8,6 +8,7 @@ import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
 import { buildCalendarEvent, getPractitionerName } from '@/lib/services/calendar-event';
+import { waitUntil } from '@vercel/functions';
 
 // POST /api/bookings - Create a new booking (public)
 export async function POST(request: NextRequest) {
@@ -184,8 +185,10 @@ export async function POST(request: NextRequest) {
         action_url: content.actionUrl,
       });
 
-      // Send email via Postmark (fire-and-forget)
-      ;(async () => {
+      // Send email via Postmark — use waitUntil so the response is sent
+      // immediately but the function stays alive to complete the email.
+      // Previously fire-and-forget which got killed by the serverless runtime.
+      waitUntil((async () => {
         try {
           const { data: { user: practitionerUser } } = await supabase.auth.admin.getUserById(body.practitioner_id);
           const practitionerEmail = practitionerUser?.email;
@@ -208,7 +211,7 @@ export async function POST(request: NextRequest) {
         } catch (emailError) {
           console.error('Error sending booking email:', emailError);
         }
-      })();
+      })());
     } catch (notifyError) {
       console.error('Error sending booking notification:', notifyError);
       // Don't fail the booking if notification fails
