@@ -1,3 +1,38 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+/**
+ * Robust practitioner name lookup — tries multiple sources so we never
+ * fall back to the literal string "Practitioner" in calendar events.
+ *
+ * Priority:
+ * 1. public.users.full_name (primary — set via profile page)
+ * 2. auth.users.raw_user_meta_data.full_name (set at signup / OAuth)
+ * 3. email prefix (last resort — better than "Practitioner")
+ */
+export async function getPractitionerName(
+  userId: string,
+  adminSupabase: SupabaseClient
+): Promise<string> {
+  // 1. Check public.users
+  const { data: pubUser } = await adminSupabase
+    .from('users')
+    .select('full_name')
+    .eq('id', userId)
+    .maybeSingle()
+  if (pubUser?.full_name?.trim()) return pubUser.full_name.trim()
+
+  // 2. Check auth.users metadata
+  try {
+    const { data: { user: authUser } } = await adminSupabase.auth.admin.getUserById(userId)
+    const metaName = authUser?.user_metadata?.full_name
+    if (metaName?.trim()) return metaName.trim()
+    // 3. Email prefix
+    if (authUser?.email) return authUser.email.split('@')[0]
+  } catch { /* admin API not available — skip */ }
+
+  return 'Practitioner'
+}
+
 /**
  * Build a standardized Google Calendar event object for Bloomsline bookings.
  * Used across all calendar sync points for consistency.

@@ -5,7 +5,7 @@ import { getNotificationContent } from '@/lib/notifications/templates';
 import { generateEmailHtml } from '@/lib/notifications/email';
 import { sendEmail } from '@/lib/email';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
-import { buildCalendarEvent } from '@/lib/services/calendar-event';
+import { buildCalendarEvent, getPractitionerName } from '@/lib/services/calendar-event';
 
 /**
  * POST /api/bookings/[id]/member-action
@@ -346,7 +346,7 @@ export async function POST(
               },
               body: JSON.stringify(buildCalendarEvent({
                 bookingId: newBooking.id,
-                practitionerName: (practitioner as any)?.full_name || (practitioner as any)?.raw_user_meta_data?.full_name || practitioner?.email || 'Practitioner',
+                practitionerName: await getPractitionerName(booking.practitioner_id, adminSupabase),
                 clientName: booking.client_name,
                 clientEmail: booking.client_email,
                 clientPhone: booking.client_phone,

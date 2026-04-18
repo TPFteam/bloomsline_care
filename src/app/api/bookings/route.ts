@@ -7,7 +7,7 @@ import { sendEmail } from '@/lib/email';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
-import { buildCalendarEvent } from '@/lib/services/calendar-event';
+import { buildCalendarEvent, getPractitionerName } from '@/lib/services/calendar-event';
 
 // POST /api/bookings - Create a new booking (public)
 export async function POST(request: NextRequest) {
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
       .eq('id', body.practitioner_id)
       .single();
     const practitionerLocale = (practitionerProfile?.preferred_language as 'en' | 'fr' | 'es') || 'en';
-    const practitionerName = practitionerProfile?.full_name || 'Practitioner';
+    const practitionerName = await getPractitionerName(body.practitioner_id, supabase);
 
     // Send notification + email to practitioner about new booking request
     if (!isBackdated) try {

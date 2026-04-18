@@ -7,7 +7,7 @@ import { getNotificationContent } from '@/lib/notifications/templates';
 import { generateEmailHtml, getEmailContent } from '@/lib/notifications/email';
 import { sendEmail } from '@/lib/email';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
-import { buildCalendarEvent } from '@/lib/services/calendar-event';
+import { buildCalendarEvent, getPractitionerName } from '@/lib/services/calendar-event';
 
 // PATCH /api/bookings/[id] - Update booking status (approve/reject)
 export async function PATCH(
@@ -213,10 +213,9 @@ export async function PATCH(
           const sessionType = sessionTypes.find(st => st.id === booking.session_type);
           const sessionTypeName = sessionType?.name || booking.session_type;
 
-          // Get practitioner name and locale from public.users
-          const { data: practUser, error: practErr } = await adminSupabase.from('users').select('full_name, preferred_language, email, phone').eq('id', user.id).single();
-          console.log(`[bookings/approve] userId=${user.id}, practUser=${JSON.stringify(practUser)}, err=${practErr?.message || 'none'}`);
-          const practName = practUser?.full_name || 'Practitioner';
+          // Get practitioner name (robust fallback) and locale
+          const { data: practUser } = await adminSupabase.from('users').select('full_name, preferred_language, email, phone').eq('id', user.id).single();
+          const practName = await getPractitionerName(user.id, adminSupabase);
 
           const calendarEvent = buildCalendarEvent({
             bookingId: booking.id,
