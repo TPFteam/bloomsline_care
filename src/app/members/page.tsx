@@ -1287,14 +1287,15 @@ export default function MembersPage() {
                 </div>
 
                 {/* Import CSV Button */}
-                <Button
+                {/* CSV import button — hidden for now, re-enable when needed */}
+                {/* <Button
                   variant="outline"
                   onClick={() => setShowImportModal(true)}
                   className="rounded-xl px-2.5 border-gray-200"
                   title={locale === 'fr' ? 'Importer CSV' : locale === 'es' ? 'Importar CSV' : 'Import CSV'}
                 >
                   <Upload className="w-4 h-4" />
-                </Button>
+                </Button> */}
 
                 <TutorialVideo
                   url="https://sfzlbjdjqbzxruwzebjc.supabase.co/storage/v1/object/public/tutorials/short-video-demo-practitioners-app/Inviter%20un%20patient%20a%20une%20seance%20(google%20calendar%20synchronise).mov"
