@@ -114,7 +114,7 @@ export async function POST(
     // Get practitioner info for emails
     const { data: practitioner } = await adminSupabase
       .from('users')
-      .select('full_name, preferred_language')
+      .select('full_name, preferred_language, avatar_url')
       .eq('id', booking.practitioner_id)
       .single();
 
@@ -232,6 +232,12 @@ export async function POST(
         try {
           const isFr = practitioner?.preferred_language === 'fr';
 
+          // Format date in practitioner's locale
+          const localDate = new Date(booking.start_time).toLocaleString(isFr ? 'fr-FR' : 'en-US', {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+            hour: 'numeric', minute: '2-digit', hour12: !isFr,
+          });
+
           const reasonLabelsEmail: Record<string, { en: string; fr: string }> = {
             schedule_conflict: { en: 'Schedule conflict', fr: 'Conflit d\'horaire' },
             personal_emergency: { en: 'Personal emergency', fr: 'Imprévu personnel' },
@@ -246,10 +252,11 @@ export async function POST(
           const htmlBody = generateEmailHtml({
             subject: isFr ? 'Séance annulée par le patient' : 'Session cancelled by patient',
             body: isFr
-              ? `${booking.client_name} a annulé sa séance du ${scheduledAt}.\n\nRaison : ${reasonDisplay}\n\nLe créneau est de nouveau disponible.`
-              : `${booking.client_name} cancelled their ${sessionTypeName} on ${scheduledAt}.\n\nReason: ${reasonDisplay}\n\nThe time slot is now available again.`,
-            practitionerName: practitioner?.full_name || booking.client_name,
-            recipientName: practitioner?.full_name || undefined,
+              ? `${booking.client_name} a annulé sa séance du ${localDate}.\n\nRaison : ${reasonDisplay}\n\nLe créneau est de nouveau disponible.`
+              : `${booking.client_name} cancelled their ${sessionTypeName} on ${localDate}.\n\nReason: ${reasonDisplay}\n\nThe time slot is now available again.`,
+            practitionerName: practitioner?.full_name || undefined,
+            practitionerAvatar: (practitioner as any)?.avatar_url || undefined,
+            recipientName: practitioner?.full_name?.split(' ')[0] || undefined,
             actionUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://care.bloomsline.com'}/bookings`,
             actionText: isFr ? 'Voir les réservations' : 'View Bookings',
           });
@@ -257,8 +264,8 @@ export async function POST(
           await sendEmail({
             to: practitionerEmail,
             subject: isFr
-              ? `Annulation : ${booking.client_name} — ${scheduledAt}`
-              : `Cancellation: ${booking.client_name} — ${scheduledAt}`,
+              ? `Annulation : ${booking.client_name} — ${localDate}`
+              : `Cancellation: ${booking.client_name} — ${localDate}`,
             htmlBody,
             tag: 'booking_cancelled_by_member_practitioner',
           });
