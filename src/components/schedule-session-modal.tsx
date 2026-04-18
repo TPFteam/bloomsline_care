@@ -172,9 +172,10 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
     if (isOpen) {
       // Reset selections to a clean slate
       if (rescheduleData) {
-        // Reschedule mode: skip to datetime step with pre-filled data
-        setStep('datetime')
-        setSelectedMember(null) // not needed for reschedule
+        // Reschedule mode: start at session step with pre-filled data
+        // so practitioner can change type/format if needed
+        setStep('session')
+        setSelectedMember(null)
         setSelectedSessionType(null) // will be set after fetchInitialData
         setSelectedSessionFormat(
           rescheduleData.session_format === 'in_person' ? 'in_person'
@@ -751,7 +752,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
             <div className="flex items-center justify-center">
               {(isReschedule
-                ? ['datetime', 'confirm']
+                ? ['session', 'format', 'datetime', 'confirm']
                 : preselectedMember
                 ? ['session', 'format', 'datetime', 'confirm']
                 : ['member', 'session', 'format', 'datetime', 'confirm']
