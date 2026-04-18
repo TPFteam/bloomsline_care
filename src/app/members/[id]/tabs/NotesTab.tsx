@@ -254,6 +254,10 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [snAttachments, setSnAttachments] = useState<{ url: string; filename: string; size: number }[]>([])
   const [snLightboxIndex, setSnLightboxIndex] = useState<number | null>(null)
   const [snLightboxZoom, setSnLightboxZoom] = useState(1)
+  // Session detail editing (unified with note editing)
+  const [snEditSessionType, setSnEditSessionType] = useState('')
+  const [snEditSessionFormat, setSnEditSessionFormat] = useState('')
+  const [snEditDuration, setSnEditDuration] = useState(60)
 
   // ==============================
   // BROWSE MODE STATE
@@ -1107,13 +1111,29 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
         }))
       }
 
+      // Also update session details if changed
+      try {
+        await supabase
+          .from('sessions')
+          .update({
+            session_type: snEditSessionType,
+            session_format: snEditSessionFormat,
+            duration_minutes: snEditDuration,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', sessionId)
+      } catch (sessionErr) {
+        console.warn('Could not update session details:', sessionErr)
+      }
+
       snAutoSavedId.current = null
       setSnIsEditing(false)
       setSnSummaryDraft('')
       setSnAttachments([])
       fetchAllNotes()
       onNotesUpdate()
-      toast.success(locale === 'fr' ? 'Note de séance enregistrée' : locale === 'es' ? 'Nota de sesión guardada' : 'Session note saved')
+      onSessionsUpdate?.()
+      toast.success(locale === 'fr' ? 'Séance enregistrée' : locale === 'es' ? 'Sesión guardada' : 'Session saved')
     } catch (error) {
       console.error('Error saving session summary:', error)
       toast.error(locale === 'fr' ? 'Échec de l\'enregistrement' : locale === 'es' ? 'Error al guardar' : 'Failed to save note')
@@ -1786,13 +1806,6 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                   {selectedSession.duration_minutes} {t.members.sessions.minutes}
                 </p>
               </div>
-              <button
-                onClick={() => setEditingSessionModal(true)}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0"
-                title={locale === 'fr' ? 'Modifier la séance' : 'Edit session'}
-              >
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${
                 selectedSession.status === 'completed' ? 'bg-emerald-50 text-emerald-700'
                 : selectedSession.status === 'scheduled' ? 'bg-blue-50 text-blue-700'
@@ -1847,8 +1860,71 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
             {/* Editor / read content */}
             <div className="flex-1 overflow-y-auto px-5">
+              {/* Unified action bar — always visible */}
+              {!snIsEditing && (
+                <div className="flex items-center justify-end gap-1 py-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const existing = snSessionSummaryNotes[selectedItemId]
+                      setSnSummaryDraft(existing?.content || '')
+                      setSnAttachments(existing?.attachments || [])
+                      setSnEditSessionType(selectedSession.session_type)
+                      setSnEditSessionFormat(selectedSession.session_format)
+                      setSnEditDuration(selectedSession.duration_minutes)
+                      setSnIsEditing(true)
+                    }}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors"
+                    title={locale === 'fr' ? 'Modifier' : 'Edit'}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  {snSessionSummaryNotes[selectedItemId] && (
+                    <button
+                      type="button"
+                      onClick={() => setDeletingNoteId(snSessionSummaryNotes[selectedItemId]!.id)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      title={locale === 'fr' ? 'Supprimer' : 'Delete'}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              )}
+
               {snIsEditing ? (
                 <div className="flex flex-col">
+                  {/* Session detail fields */}
+                  <div className="grid grid-cols-3 gap-2 mb-3 pb-3 border-b border-gray-100">
+                    <div>
+                      <label className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{locale === 'fr' ? 'Type' : 'Type'}</label>
+                      <select value={snEditSessionType} onChange={(e) => setSnEditSessionType(e.target.value)} className="w-full mt-0.5 px-2 py-1.5 text-xs border border-gray-200 rounded-lg bg-white">
+                        <option value="initial_consultation">{locale === 'fr' ? 'Consultation initiale' : 'Initial Consultation'}</option>
+                        <option value="follow_up">{locale === 'fr' ? 'Séance de suivi' : 'Follow-up'}</option>
+                        <option value="check_in">{locale === 'fr' ? 'Point de situation' : 'Check-in'}</option>
+                        <option value="crisis">{locale === 'fr' ? 'Intervention de crise' : 'Crisis'}</option>
+                        <option value="group">{locale === 'fr' ? 'Séance de groupe' : 'Group'}</option>
+                        <option value="other">{locale === 'fr' ? 'Autre' : 'Other'}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{locale === 'fr' ? 'Format' : 'Format'}</label>
+                      <select value={snEditSessionFormat} onChange={(e) => setSnEditSessionFormat(e.target.value)} className="w-full mt-0.5 px-2 py-1.5 text-xs border border-gray-200 rounded-lg bg-white">
+                        <option value="in_person">{locale === 'fr' ? 'En personne' : 'In person'}</option>
+                        <option value="virtual">{locale === 'fr' ? 'Vidéo' : 'Video'}</option>
+                        <option value="phone">{locale === 'fr' ? 'Téléphone' : 'Phone'}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{locale === 'fr' ? 'Durée' : 'Duration'}</label>
+                      <select value={snEditDuration} onChange={(e) => setSnEditDuration(parseInt(e.target.value))} className="w-full mt-0.5 px-2 py-1.5 text-xs border border-gray-200 rounded-lg bg-white">
+                        {[15, 20, 25, 30, 45, 50, 60, 75, 90, 120].map(d => (
+                          <option key={d} value={d}>{d} min</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
                   <div>
                     <RichTextEditor
                       value={snSummaryDraft}
@@ -1925,38 +2001,11 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       ))}
                     </div>
                   )}
-                  {snSessionSummaryNotes[selectedItemId]!.content.trim() ? (
+                  {snSessionSummaryNotes[selectedItemId]!.content.trim() && (
                     <MarkdownRenderer
                       content={snSessionSummaryNotes[selectedItemId]!.content.replace(/&nbsp;/g, ' ')}
                       className="leading-relaxed"
-                      onEdit={() => {
-                        setSnSummaryDraft(snSessionSummaryNotes[selectedItemId]!.content)
-                        setSnAttachments(snSessionSummaryNotes[selectedItemId]!.attachments || [])
-                        setSnIsEditing(true)
-                      }}
-                      onDelete={() => setDeletingNoteId(snSessionSummaryNotes[selectedItemId]!.id)}
                     />
-                  ) : (
-                    <div className="flex items-center gap-2 mt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSnSummaryDraft(snSessionSummaryNotes[selectedItemId]!.content)
-                          setSnAttachments(snSessionSummaryNotes[selectedItemId]!.attachments || [])
-                          setSnIsEditing(true)
-                        }}
-                        className="text-xs text-teal-600 hover:text-teal-700 font-medium px-2 py-1 rounded-lg hover:bg-teal-50 transition-colors"
-                      >
-                        {locale === 'fr' ? 'Modifier' : 'Edit'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeletingNoteId(snSessionSummaryNotes[selectedItemId]!.id)}
-                        className="text-xs text-red-500 hover:text-red-600 font-medium px-2 py-1 rounded-lg hover:bg-red-50 transition-colors"
-                      >
-                        {locale === 'fr' ? 'Supprimer' : 'Delete'}
-                      </button>
-                    </div>
                   )}
                 </div>
               ) : (
