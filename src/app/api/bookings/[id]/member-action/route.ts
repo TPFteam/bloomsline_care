@@ -114,11 +114,16 @@ export async function POST(
     // Get practitioner info for emails
     const { data: practitioner } = await adminSupabase
       .from('users')
-      .select('email, full_name, raw_user_meta_data')
+      .select('full_name, preferred_language')
       .eq('id', booking.practitioner_id)
       .single();
 
-    const practitionerEmail = practitioner?.email;
+    // Email lives in auth.users, not public.users
+    let practitionerEmail: string | null = null;
+    try {
+      const { data: { user: authUser } } = await adminSupabase.auth.admin.getUserById(booking.practitioner_id);
+      practitionerEmail = authUser?.email || null;
+    } catch { /* skip */ }
 
     // Format dates for notifications
     const formatDate = (dateStr: string) =>
@@ -225,8 +230,7 @@ export async function POST(
       // email is the only way they find out in real-time.
       if (practitionerEmail) {
         try {
-          const { data: pUser } = await adminSupabase.from('users').select('preferred_language').eq('id', booking.practitioner_id).single();
-          const isFr = pUser?.preferred_language === 'fr';
+          const isFr = practitioner?.preferred_language === 'fr';
 
           const reasonLabelsEmail: Record<string, { en: string; fr: string }> = {
             schedule_conflict: { en: 'Schedule conflict', fr: 'Conflit d\'horaire' },
