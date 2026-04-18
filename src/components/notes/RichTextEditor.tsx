@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Bold, Italic, ChevronDown, List, ListOrdered, Minus, ScanLine, FileUp, Loader2, Type, Target, Tag, Quote, X, Eye, EyeOff, Undo2, Redo2, Lock, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Bold, Italic, ChevronDown, List, ListOrdered, Minus, ScanLine, FileUp, Loader2, Type, Target, Tag, Quote, X, Eye, EyeOff, Undo2, Redo2, Lock, Plus, Pencil, Trash2, ImagePlus, ZoomIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 
@@ -142,6 +142,11 @@ interface RichTextEditorProps {
   onAutoSave?: (html: string) => void | Promise<void>
   autoSaveDelay?: number
   toolbarActions?: React.ReactNode
+  /** Image attachments for the note (stored separately from note content) */
+  attachments?: { url: string; filename: string; size: number }[]
+  onAttachmentsChange?: (attachments: { url: string; filename: string; size: number }[]) => void
+  /** Supabase storage path prefix for uploads (e.g. practitionerId/memberId/sessionId) */
+  attachmentStoragePath?: string
   compact?: boolean
   onSubmit?: () => void
   /** Called when user inserts an inline @tag — receives the tag type string */
@@ -150,7 +155,7 @@ interface RichTextEditorProps {
   activeTagType?: string
 }
 
-export function RichTextEditor({ value, onChange, placeholder, memberId, locale, autoFocus, milestones, noteTypes, memberName, onAutoSave, autoSaveDelay = 2000, toolbarActions, compact, onSubmit, lockedTypes, onAddType, onRenameType, onDeleteType, getTagNoteCount, maxTypes = 10, onTagInsert, activeTagType }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, placeholder, memberId, locale, autoFocus, milestones, noteTypes, memberName, onAutoSave, autoSaveDelay = 2000, toolbarActions, compact, onSubmit, lockedTypes, onAddType, onRenameType, onDeleteType, getTagNoteCount, maxTypes = 10, onTagInsert, activeTagType, attachments = [], onAttachmentsChange, attachmentStoragePath }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textFileInputRef = useRef<HTMLInputElement>(null)
@@ -165,7 +170,51 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
   const [activeTag, setActiveTag] = useState<{ type: string; label: string } | null>(null)
   const [activeVerbatim, setActiveVerbatim] = useState(false)
   const [showLabels, setShowLabels] = useState(true)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
+
+  // Image attachment upload handler
+  const handleImageUpload = async (files: FileList | null) => {
+    if (!files || !onAttachmentsChange || !attachmentStoragePath) return
+    const MAX_IMAGES = 5
+    const MAX_SIZE = 5 * 1024 * 1024 // 5MB
+    const currentCount = attachments.length
+    const remaining = MAX_IMAGES - currentCount
+    if (remaining <= 0) {
+      toast.error(fr ? 'Maximum 5 images atteint' : 'Maximum 5 images reached')
+      return
+    }
+    const toUpload = Array.from(files).slice(0, remaining)
+    setUploadingImage(true)
+    const newAttachments = [...attachments]
+    for (const file of toUpload) {
+      if (!file.type.startsWith('image/')) continue
+      if (file.size > MAX_SIZE) {
+        toast.error(fr ? `${file.name} est trop volumineux (max 5 Mo)` : `${file.name} is too large (max 5MB)`)
+        continue
+      }
+      const sanitized = file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-')
+      const path = `${attachmentStoragePath}/${Date.now()}-${sanitized}`
+      const { error } = await supabase.storage.from('session-notes-attachments').upload(path, file)
+      if (error) {
+        toast.error(fr ? `Impossible de télécharger ${file.name}` : `Failed to upload ${file.name}`)
+        continue
+      }
+      const { data: urlData } = supabase.storage.from('session-notes-attachments').getPublicUrl(path)
+      newAttachments.push({ url: urlData.publicUrl, filename: file.name, size: file.size })
+    }
+    onAttachmentsChange(newAttachments)
+    setUploadingImage(false)
+    if (imageInputRef.current) imageInputRef.current.value = ''
+  }
+
+  const handleRemoveAttachment = (index: number) => {
+    if (!onAttachmentsChange) return
+    const updated = attachments.filter((_, i) => i !== index)
+    onAttachmentsChange(updated)
+  }
   const initialized = useRef(false)
   const fr = locale === 'fr'
   const es = locale === 'es'
@@ -1906,6 +1955,61 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
           {toolbarActions}
         </div>
       </div>
+      )}
+
+      {/* Image attachments strip */}
+      {onAttachmentsChange && (
+        <div className="px-3 py-2 border-b border-gray-100 bg-gray-50/50">
+          <div className="flex items-center gap-2 flex-wrap">
+            {attachments.map((att, i) => (
+              <div key={i} className="relative group">
+                <button
+                  type="button"
+                  onClick={() => setLightboxUrl(att.url)}
+                  className="w-14 h-14 rounded-lg border border-gray-200 overflow-hidden hover:border-teal-300 hover:shadow-sm transition-all bg-white"
+                >
+                  <img src={att.url} alt={att.filename} className="w-full h-full object-cover" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveAttachment(i)}
+                  className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            ))}
+            {attachments.length < 5 && (
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={uploadingImage}
+                className="w-14 h-14 rounded-lg border-2 border-dashed border-gray-200 hover:border-teal-300 hover:bg-teal-50/50 flex flex-col items-center justify-center text-gray-400 hover:text-teal-600 transition-all"
+              >
+                {uploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+                <span className="text-[9px] mt-0.5">{attachments.length}/5</span>
+              </button>
+            )}
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              multiple
+              className="hidden"
+              onChange={(e) => handleImageUpload(e.target.files)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightboxUrl && (
+        <div className="fixed inset-0 z-[300] bg-black/80 flex items-center justify-center p-8" onClick={() => setLightboxUrl(null)}>
+          <button type="button" onClick={() => setLightboxUrl(null)} className="absolute top-6 right-6 text-white/80 hover:text-white">
+            <X className="w-8 h-8" />
+          </button>
+          <img src={lightboxUrl} alt="" className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
+        </div>
       )}
 
       {/* Editable area with side rail */}

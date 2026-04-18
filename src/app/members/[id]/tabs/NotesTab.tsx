@@ -244,11 +244,12 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [snSelectedSessionId, setSnSelectedSessionId] = useState<string>('')
   const [snSummaryDraft, setSnSummaryDraft] = useState('')
   const [snSavingSummary, setSnSavingSummary] = useState(false)
-  const [snSessionSummaryNotes, setSnSessionSummaryNotes] = useState<Record<string, { id: string; content: string; created_at: string } | null>>({})
+  const [snSessionSummaryNotes, setSnSessionSummaryNotes] = useState<Record<string, { id: string; content: string; created_at: string; attachments?: { url: string; filename: string; size: number }[] } | null>>({})
   const [snEditorNoteTypes, setSnEditorNoteTypes] = useState<{ type: string; label: string }[]>([])
   const [snIsEditing, setSnIsEditing] = useState(false)
   const snAutoSavedId = useRef<string | null>(null) // track autosaved note id without triggering re-render
   const [snShowPast, setSnShowPast] = useState(false)
+  const [snAttachments, setSnAttachments] = useState<{ url: string; filename: string; size: number }[]>([])
 
   // ==============================
   // BROWSE MODE STATE
@@ -1001,7 +1002,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
         .order('created_at', { ascending: false })
 
       if (!error && data) {
-        const summaryBySession: Record<string, { id: string; content: string; created_at: string } | null> = {}
+        const summaryBySession: Record<string, { id: string; content: string; created_at: string; attachments?: { url: string; filename: string; size: number }[] } | null> = {}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data.forEach((note: any) => {
           if (note.session_id && !summaryBySession[note.session_id]) {
@@ -1009,6 +1010,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
               id: note.id,
               content: note.content,
               created_at: note.created_at,
+              attachments: note.attachments || [],
             }
           }
         })
@@ -1065,7 +1067,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       if (existingId) {
         const { error } = await supabase
           .from('progress_notes')
-          .update({ content: content.trim(), updated_at: new Date().toISOString() })
+          .update({ content: content.trim(), attachments: snAttachments, updated_at: new Date().toISOString() })
           .eq('id', existingId)
 
         if (error) throw error
@@ -1084,6 +1086,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
             content: content.trim(),
             note_type: 'session_summary',
             is_private: true,
+            attachments: snAttachments,
           })
           .select('id, content, created_at')
           .single()
@@ -1103,6 +1106,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       snAutoSavedId.current = null
       setSnIsEditing(false)
       setSnSummaryDraft('')
+      setSnAttachments([])
       fetchAllNotes()
       onNotesUpdate()
       toast.success(locale === 'fr' ? 'Note de séance enregistrée' : locale === 'es' ? 'Nota de sesión guardada' : 'Session note saved')
@@ -1858,6 +1862,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       getTagNoteCount={getTagNoteCount}
                       maxTypes={10}
                       memberName={member?.first_name}
+                      attachments={snAttachments}
+                      onAttachmentsChange={setSnAttachments}
+                      attachmentStoragePath={`notes/${memberId}/${selectedItemId}`}
                       onAutoSave={handleAutoSaveSessionNote}
                       toolbarActions={
                         <div className="flex items-center gap-1.5">
@@ -1899,11 +1906,27 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                 </div>
               ) : snSessionSummaryNotes[selectedItemId] ? (
                 <div className="py-4">
+                  {/* Read-only attachment thumbnails */}
+                  {(snSessionSummaryNotes[selectedItemId]!.attachments || []).length > 0 && (
+                    <div className="flex items-center gap-2 flex-wrap mb-4 pb-3 border-b border-gray-100">
+                      {(snSessionSummaryNotes[selectedItemId]!.attachments || []).map((att, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => window.open(att.url, '_blank')}
+                          className="w-16 h-16 rounded-lg border border-gray-200 overflow-hidden hover:border-teal-300 hover:shadow-sm transition-all bg-white"
+                        >
+                          <img src={att.url} alt={att.filename} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <MarkdownRenderer
                     content={snSessionSummaryNotes[selectedItemId]!.content.replace(/&nbsp;/g, ' ')}
                     className="leading-relaxed"
                     onEdit={() => {
                       setSnSummaryDraft(snSessionSummaryNotes[selectedItemId]!.content)
+                      setSnAttachments(snSessionSummaryNotes[selectedItemId]!.attachments || [])
                       setSnIsEditing(true)
                     }}
                     onDelete={() => setDeletingNoteId(snSessionSummaryNotes[selectedItemId]!.id)}
@@ -1921,6 +1944,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     milestones={milestones}
                     noteTypes={snEditorNoteTypes}
                     memberName={member?.first_name}
+                    attachments={snAttachments}
+                    onAttachmentsChange={setSnAttachments}
+                    attachmentStoragePath={`notes/${memberId}/${selectedItemId}`}
                     onAutoSave={handleAutoSaveSessionNote}
                     toolbarActions={
                       <button
