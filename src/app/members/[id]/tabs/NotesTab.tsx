@@ -31,6 +31,8 @@ import {
   ZoomIn,
   ZoomOut,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -250,7 +252,8 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const snAutoSavedId = useRef<string | null>(null) // track autosaved note id without triggering re-render
   const [snShowPast, setSnShowPast] = useState(false)
   const [snAttachments, setSnAttachments] = useState<{ url: string; filename: string; size: number }[]>([])
-  const [snLightboxUrl, setSnLightboxUrl] = useState<string | null>(null)
+  const [snLightboxIndex, setSnLightboxIndex] = useState<number | null>(null)
+  const [snLightboxZoom, setSnLightboxZoom] = useState(1)
 
   // ==============================
   // BROWSE MODE STATE
@@ -1914,7 +1917,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                         <button
                           key={i}
                           type="button"
-                          onClick={() => setSnLightboxUrl(att.url)}
+                          onClick={() => { setSnLightboxIndex(i); setSnLightboxZoom(1) }}
                           className="w-16 h-16 rounded-lg border border-gray-200 overflow-hidden hover:border-teal-300 hover:shadow-sm transition-all bg-white"
                         >
                           <img src={att.url} alt={att.filename} className="w-full h-full object-cover" />
@@ -2753,15 +2756,53 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       </div>
 
       {/* Delete confirmation modal */}
-      {/* Image lightbox */}
-      {snLightboxUrl && (
-        <div className="fixed inset-0 z-[300] bg-black/80 flex items-center justify-center p-8" onClick={() => setSnLightboxUrl(null)}>
-          <button type="button" onClick={() => setSnLightboxUrl(null)} className="absolute top-6 right-6 text-white/80 hover:text-white">
-            <X className="w-8 h-8" />
-          </button>
-          <img src={snLightboxUrl} alt="" className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
-        </div>
-      )}
+      {/* Image lightbox gallery with navigation + zoom */}
+      {snLightboxIndex !== null && (() => {
+        const idx = snLightboxIndex!
+        const images = (selectedItemId ? snSessionSummaryNotes[selectedItemId]?.attachments : null) || snAttachments || []
+        const currentUrl = images[idx]?.url
+        if (!currentUrl) return null
+        return (
+          <div className="fixed inset-0 z-[300] bg-black/90 flex flex-col items-center justify-center" onClick={() => { setSnLightboxIndex(null); setSnLightboxZoom(1) }}>
+            {/* Top bar: counter + zoom + close */}
+            <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-6 z-10" onClick={(e) => e.stopPropagation()}>
+              <span className="text-white/70 text-sm">{idx + 1} / {images.length}</span>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setSnLightboxZoom(z => Math.max(0.5, z - 0.25))} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-lg">−</button>
+                <span className="text-white/70 text-xs w-12 text-center">{Math.round(snLightboxZoom * 100)}%</span>
+                <button type="button" onClick={() => setSnLightboxZoom(z => Math.min(3, z + 0.25))} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-lg">+</button>
+                <button type="button" onClick={() => { setSnLightboxIndex(null); setSnLightboxZoom(1) }} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center ml-2">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Left arrow */}
+            {images.length > 1 && idx > 0 && (
+              <button type="button" onClick={(e) => { e.stopPropagation(); setSnLightboxIndex(idx - 1); setSnLightboxZoom(1) }} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10">
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
+
+            {/* Right arrow */}
+            {images.length > 1 && idx < images.length - 1 && (
+              <button type="button" onClick={(e) => { e.stopPropagation(); setSnLightboxIndex(idx + 1); setSnLightboxZoom(1) }} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10">
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            )}
+
+            {/* Image */}
+            <div className="flex-1 flex items-center justify-center overflow-auto p-8" onClick={(e) => e.stopPropagation()}>
+              <img
+                src={currentUrl}
+                alt=""
+                className="rounded-lg shadow-2xl transition-transform duration-200"
+                style={{ transform: `scale(${snLightboxZoom})`, maxWidth: snLightboxZoom <= 1 ? '100%' : 'none', maxHeight: snLightboxZoom <= 1 ? '100%' : 'none' }}
+              />
+            </div>
+          </div>
+        )
+      })()}
 
       {deletingNoteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setDeletingNoteId(null)}>
