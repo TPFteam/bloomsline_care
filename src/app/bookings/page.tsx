@@ -38,6 +38,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
 import { format, parseISO, isToday, isTomorrow, isPast } from 'date-fns'
+import { fr as frLocale } from 'date-fns/locale'
 import { WeekCalendarView } from '@/components/bookings/WeekCalendarView'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import {
@@ -221,11 +222,11 @@ export default function BookingsPage() {
   // Show toast for calendar OAuth callback results
   useEffect(() => {
     if (searchParams.get('calendar_connected') === 'true') {
-      toast.success('Google Calendar connected successfully')
+      toast.success(locale === 'fr' ? 'Google Agenda connecté avec succès' : 'Google Calendar connected successfully')
     }
     const calError = searchParams.get('calendar_error')
     if (calError) {
-      toast.error(`Calendar connection failed: ${calError}`)
+      toast.error(locale === 'fr' ? `Connexion échouée : ${calError}` : `Calendar connection failed: ${calError}`)
     }
   }, [searchParams])
 
@@ -339,9 +340,14 @@ export default function BookingsPage() {
   }, [])
 
   // Get session type name
+  const lockedNameFr: Record<string, string> = { initial: 'Consultation initiale', follow_up: 'Séance de suivi', check_in: 'Point de situation', 'Initial Consultation': 'Consultation initiale', 'Follow-up Session': 'Séance de suivi', 'Follow-up': 'Séance de suivi', 'Check-in': 'Point de situation' }
   const getSessionTypeName = (typeId: string) => {
     const type = sessionTypes.find(st => st.id === typeId)
-    if (locale === 'fr' && type?.name_fr) return type.name_fr
+    if (locale === 'fr') {
+      if (type?.name_fr) return type.name_fr
+      if (lockedNameFr[typeId]) return lockedNameFr[typeId]
+      if (type?.name && lockedNameFr[type.name]) return lockedNameFr[type.name]
+    }
     return type?.name || typeId
   }
 
@@ -404,14 +410,14 @@ export default function BookingsPage() {
       )
 
       if (data.calendarSynced) {
-        setMessage({ type: 'success', text: 'Booking approved and synced to Google Calendar!' })
+        setMessage({ type: 'success', text: locale === 'fr' ? 'Rendez-vous approuvé et synchronisé avec Google Agenda !' : 'Booking approved and synced to Google Calendar!' })
       } else if (data.calendarError) {
-        setMessage({ type: 'success', text: `Booking approved. Calendar sync: ${data.calendarError}` })
+        setMessage({ type: 'success', text: locale === 'fr' ? `Rendez-vous approuvé. Sync agenda : ${data.calendarError}` : `Booking approved. Calendar sync: ${data.calendarError}` })
       } else {
-        setMessage({ type: 'success', text: 'Booking approved!' })
+        setMessage({ type: 'success', text: locale === 'fr' ? 'Rendez-vous approuvé !' : 'Booking approved!' })
       }
     } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to approve booking' })
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : (locale === 'fr' ? 'Impossible d\'approuver le rendez-vous' : 'Failed to approve booking') })
     }
 
     setProcessingId(null)
@@ -438,9 +444,9 @@ export default function BookingsPage() {
         prev.map(b => (b.id === bookingId ? { ...b, status: 'cancelled' } : b))
       )
 
-      setMessage({ type: 'success', text: 'Booking rejected.' })
+      setMessage({ type: 'success', text: locale === 'fr' ? 'Rendez-vous annulé.' : 'Booking rejected.' })
     } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to reject booking' })
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : (locale === 'fr' ? 'Impossible d\'annuler le rendez-vous' : 'Failed to reject booking') })
     }
 
     setProcessingId(null)
@@ -469,7 +475,7 @@ export default function BookingsPage() {
 
       setMessage({ type: 'success', text: locale === 'fr' ? `Rendez-vous marqué comme ${STATUS_LABELS[status]?.fr?.toLowerCase()}.` : `Booking marked as ${STATUS_LABELS[status]?.en?.toLowerCase()}.` })
     } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update booking' })
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : (locale === 'fr' ? 'Impossible de mettre à jour le rendez-vous' : 'Failed to update booking') })
     }
 
     setProcessingId(null)
@@ -477,6 +483,7 @@ export default function BookingsPage() {
 
   // Reschedule
   const [rescheduleBooking, setRescheduleBooking] = useState<any | null>(null)
+  const [cancelConfirmBooking, setCancelConfirmBooking] = useState<any | null>(null)
   const [rescheduleDate, setRescheduleDate] = useState('')
   const [rescheduleTime, setRescheduleTime] = useState('')
   const [rescheduleReason, setRescheduleReason] = useState('')
@@ -547,7 +554,7 @@ export default function BookingsPage() {
       const { url } = await response.json()
       window.location.href = url
     } catch {
-      setMessage({ type: 'error', text: 'Failed to initiate calendar connection' })
+      setMessage({ type: 'error', text: locale === 'fr' ? 'Impossible d\'initier la connexion' : 'Failed to initiate calendar connection' })
       setIsConnecting(false)
     }
   }
@@ -557,9 +564,9 @@ export default function BookingsPage() {
     const success = await disconnectCalendar()
     if (success) {
       setCalendarConnection(null)
-      setMessage({ type: 'success', text: 'Calendar disconnected' })
+      setMessage({ type: 'success', text: locale === 'fr' ? 'Google Agenda déconnecté' : 'Calendar disconnected' })
     } else {
-      setMessage({ type: 'error', text: 'Failed to disconnect calendar' })
+      setMessage({ type: 'error', text: locale === 'fr' ? 'Impossible de déconnecter Google Agenda' : 'Failed to disconnect calendar' })
     }
     setIsDisconnecting(false)
   }
@@ -600,7 +607,7 @@ export default function BookingsPage() {
     if (success) {
       setShowSavedModal(true)
     } else {
-      setMessage({ type: 'error', text: 'Failed to save availability' })
+      setMessage({ type: 'error', text: locale === 'fr' ? 'Impossible d\'enregistrer la disponibilité' : 'Failed to save availability' })
     }
     setIsSavingAvailability(false)
   }
@@ -608,7 +615,7 @@ export default function BookingsPage() {
   const handleSaveBookingSettings = async () => {
     console.log('[bookings/handleSave] Called! userId:', userId)
     if (!userId) {
-      toast.error('No user ID found. Please refresh the page.')
+      toast.error(locale === 'fr' ? 'Aucun utilisateur trouvé. Veuillez actualiser la page.' : 'No user ID found. Please refresh the page.')
       return
     }
 
@@ -641,11 +648,11 @@ export default function BookingsPage() {
         setBookingSettings(saved)
         setShowSettingsSavedModal(true)
       } else {
-        toast.error('Failed to save booking settings.')
+        toast.error(locale === 'fr' ? 'Impossible d\'enregistrer les paramètres.' : 'Failed to save booking settings.')
       }
     } catch (err) {
       console.error('[bookings/handleSave] Exception:', err)
-      toast.error('Error saving settings.')
+      toast.error(locale === 'fr' ? 'Erreur lors de l\'enregistrement.' : 'Error saving settings.')
     }
     setIsSavingSettings(false)
   }
@@ -809,7 +816,7 @@ export default function BookingsPage() {
                                   setCalendarMismatches(prev => prev.filter(x => x.bookingId !== m.bookingId))
                                   setBookings(prev => prev.map(b => b.id === m.bookingId ? { ...b, status: 'cancelled' } : b))
                                   toast.success(locale === 'fr' ? 'Séance annulée' : 'Session cancelled')
-                                } catch { toast.error('Failed') }
+                                } catch { toast.error(locale === 'fr' ? 'Échoué' : 'Failed') }
                                 setMismatchProcessing(null)
                               }}
                               className="text-xs font-medium text-red-600 hover:bg-red-50 px-2.5 py-1.5 rounded-lg border border-red-200 transition-colors disabled:opacity-50"
@@ -826,7 +833,7 @@ export default function BookingsPage() {
                                   await sb.from('bookings').update({ google_event_id: null }).eq('id', m.bookingId)
                                   setCalendarMismatches(prev => prev.filter(x => x.bookingId !== m.bookingId))
                                   toast.success(locale === 'fr' ? 'Séance conservée' : 'Session kept')
-                                } catch { toast.error('Failed') }
+                                } catch { toast.error(locale === 'fr' ? 'Échoué' : 'Failed') }
                                 setMismatchProcessing(null)
                               }}
                               className="text-xs font-medium text-gray-600 hover:bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-200 transition-colors disabled:opacity-50"
@@ -993,7 +1000,7 @@ export default function BookingsPage() {
                                 ? (locale === 'fr' ? "Aujourd'hui" : 'Today')
                                 : isTmrw
                                   ? (locale === 'fr' ? 'Demain' : 'Tomorrow')
-                                  : format(dateObj, locale === 'fr' ? 'EEEE d MMMM' : 'EEEE, MMM d')}
+                                  : format(dateObj, locale === 'fr' ? 'EEEE d MMMM' : 'EEEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })}
                             </h3>
                             <div className="flex-1 h-px bg-gray-200" />
                             <span className="text-xs text-gray-400">{dayBookings.length}</span>
@@ -1058,7 +1065,7 @@ export default function BookingsPage() {
                                             {locale === 'fr' ? 'Accepter' : 'Approve'}
                                           </button>
                                           <button
-                                            onClick={() => handleReject(booking.id)}
+                                            onClick={() => setCancelConfirmBooking(booking)}
                                             disabled={processingId === booking.id}
                                             className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
                                           >
@@ -1099,7 +1106,7 @@ export default function BookingsPage() {
                                       )}
                                       {booking.status === 'confirmed' && !isPastBooking && (
                                         <button
-                                          onClick={() => handleReject(booking.id)}
+                                          onClick={() => setCancelConfirmBooking(booking)}
                                           disabled={processingId === booking.id}
                                           className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
                                         >
@@ -1831,6 +1838,43 @@ export default function BookingsPage() {
           </div>
         </div>
       </main>
+
+      {/* Cancel Confirmation Modal */}
+      {cancelConfirmBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setCancelConfirmBooking(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              {locale === 'fr' ? 'Annuler ce rendez-vous ?' : 'Cancel this booking?'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              {cancelConfirmBooking.client_name} — {new Date(cancelConfirmBooking.start_time).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })}
+            </p>
+            <p className="text-xs text-gray-400 mb-6">
+              {locale === 'fr' ? 'Cette action est irréversible. Le patient sera notifié.' : 'This action cannot be undone. The patient will be notified.'}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setCancelConfirmBooking(null)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                {locale === 'fr' ? 'Retour' : 'Back'}
+              </button>
+              <button
+                onClick={async () => {
+                  const id = cancelConfirmBooking.id
+                  setCancelConfirmBooking(null)
+                  await handleReject(id)
+                }}
+                disabled={processingId === cancelConfirmBooking.id}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+              >
+                {processingId === cancelConfirmBooking.id && <Loader2 className="w-4 h-4 animate-spin" />}
+                {locale === 'fr' ? 'Annuler le rendez-vous' : 'Cancel booking'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reschedule Modal — reuses ScheduleSessionModal in reschedule mode */}
       <ScheduleSessionModal
