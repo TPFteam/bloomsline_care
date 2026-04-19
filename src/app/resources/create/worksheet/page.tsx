@@ -6378,29 +6378,31 @@ function CreateWorksheetContent() {
                 <div key={i} className="flex items-center gap-2">
                   <span className="text-xs font-medium text-gray-400 w-5">{i + 1}.</span>
                   <div className="flex items-center gap-1.5 flex-1">
-                    <input
-                      type="number"
-                      min={1}
-                      max={splitTotalPages}
+                    <select
                       value={range.from}
                       onChange={e => {
-                        const val = Math.max(1, Math.min(splitTotalPages, parseInt(e.target.value) || 1))
+                        const val = parseInt(e.target.value)
                         setSplitRanges(prev => prev.map((r, j) => j === i ? { ...r, from: val, to: Math.max(val, r.to) } : r))
                       }}
-                      className="w-16 h-9 px-2 text-center text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-                    />
+                      className="h-9 px-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white"
+                    >
+                      {Array.from({ length: splitTotalPages }, (_, p) => p + 1).map(p => (
+                        <option key={p} value={p}>Page {p}</option>
+                      ))}
+                    </select>
                     <span className="text-xs text-gray-400">{locale === 'fr' ? 'à' : 'to'}</span>
-                    <input
-                      type="number"
-                      min={range.from}
-                      max={splitTotalPages}
+                    <select
                       value={range.to}
                       onChange={e => {
-                        const val = Math.max(range.from, Math.min(splitTotalPages, parseInt(e.target.value) || range.from))
+                        const val = parseInt(e.target.value)
                         setSplitRanges(prev => prev.map((r, j) => j === i ? { ...r, to: val } : r))
                       }}
-                      className="w-16 h-9 px-2 text-center text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-                    />
+                      className="h-9 px-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white"
+                    >
+                      {Array.from({ length: splitTotalPages - range.from + 1 }, (_, p) => range.from + p).map(p => (
+                        <option key={p} value={p}>Page {p}</option>
+                      ))}
+                    </select>
                   </div>
                   {splitRanges.length > 1 && (
                     <button
