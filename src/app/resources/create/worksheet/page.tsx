@@ -461,6 +461,8 @@ function CreateWorksheetContent() {
   const [splitRanges, setSplitRanges] = useState<{ from: number; to: number }[]>([{ from: 1, to: 1 }])
   const [isSplitting, setIsSplitting] = useState(false)
   const [splitTotalPages, setSplitTotalPages] = useState(1)
+  const [splitThumbnails, setSplitThumbnails] = useState<string[]>([])
+  const [splitThumbsLoading, setSplitThumbsLoading] = useState(false)
 
   // Detect language from PDF text
   const detectLanguage = (text: string): string => {
@@ -3624,20 +3626,43 @@ function CreateWorksheetContent() {
                       {(block as any).mediaFile && (
                         <button
                           onClick={async () => {
-                            // Detect total pages
+                            const pdfSrc = (block as any).originalPdfUrl || (block as any).mediaFile
+                            setSplitBlockId(block.id)
+                            setShowPdfSplit(true)
+                            setSplitThumbnails([])
+                            setSplitThumbsLoading(true)
+
                             try {
-                              const res = await fetch((block as any).originalPdfUrl || (block as any).mediaFile)
+                              // Get page count
+                              const res = await fetch(pdfSrc)
                               const buf = await res.arrayBuffer()
                               const { PDFDocument } = await import('pdf-lib')
                               const pdf = await PDFDocument.load(buf)
-                              setSplitTotalPages(pdf.getPageCount())
-                              setSplitRanges([{ from: 1, to: Math.min(3, pdf.getPageCount()) }])
+                              const pageCount = pdf.getPageCount()
+                              setSplitTotalPages(pageCount)
+                              setSplitRanges([{ from: 1, to: Math.min(3, pageCount) }])
+
+                              // Render thumbnails via pdfjs
+                              const pdfjsLib = await import('pdfjs-dist')
+                              pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
+                              const pdfDoc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise
+                              const thumbs: string[] = []
+                              for (let i = 1; i <= pageCount; i++) {
+                                const page = await pdfDoc.getPage(i)
+                                const vp = page.getViewport({ scale: 0.3 })
+                                const canvas = document.createElement('canvas')
+                                canvas.width = vp.width
+                                canvas.height = vp.height
+                                await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp } as any).promise
+                                thumbs.push(canvas.toDataURL('image/jpeg', 0.6))
+                              }
+                              setSplitThumbnails(thumbs)
                             } catch {
                               setSplitTotalPages(40)
                               setSplitRanges([{ from: 1, to: 3 }])
+                            } finally {
+                              setSplitThumbsLoading(false)
                             }
-                            setSplitBlockId(block.id)
-                            setShowPdfSplit(true)
                           }}
                           className="w-full flex items-center justify-center gap-2 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                         >
@@ -6373,58 +6398,80 @@ function CreateWorksheetContent() {
               </div>
             </div>
 
-            <div className="p-6 space-y-3">
-              {splitRanges.map((range, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-gray-400 w-5">{i + 1}.</span>
-                  <div className="flex items-center gap-1.5 flex-1">
-                    <select
-                      value={range.from}
-                      onChange={e => {
-                        const val = parseInt(e.target.value)
-                        setSplitRanges(prev => prev.map((r, j) => j === i ? { ...r, from: val, to: Math.max(val, r.to) } : r))
-                      }}
-                      className="h-9 px-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white"
-                    >
-                      {Array.from({ length: splitTotalPages }, (_, p) => p + 1).map(p => (
-                        <option key={p} value={p}>Page {p}</option>
-                      ))}
-                    </select>
-                    <span className="text-xs text-gray-400">{locale === 'fr' ? 'à' : 'to'}</span>
-                    <select
-                      value={range.to}
-                      onChange={e => {
-                        const val = parseInt(e.target.value)
-                        setSplitRanges(prev => prev.map((r, j) => j === i ? { ...r, to: val } : r))
-                      }}
-                      className="h-9 px-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white"
-                    >
-                      {Array.from({ length: splitTotalPages - range.from + 1 }, (_, p) => range.from + p).map(p => (
-                        <option key={p} value={p}>Page {p}</option>
-                      ))}
-                    </select>
-                  </div>
-                  {splitRanges.length > 1 && (
-                    <button
-                      onClick={() => setSplitRanges(prev => prev.filter((_, j) => j !== i))}
-                      className="p-1.5 text-gray-300 hover:text-red-400 transition-colors"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              ))}
+            <div className="p-6 space-y-4">
+              {/* Page range selector */}
+              <div className="flex items-center justify-center gap-2">
+                <select
+                  value={splitRanges[0]?.from || 1}
+                  onChange={e => {
+                    const val = parseInt(e.target.value)
+                    setSplitRanges([{ from: val, to: Math.max(val, splitRanges[0]?.to || val) }])
+                  }}
+                  className="h-9 px-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white"
+                >
+                  {Array.from({ length: splitTotalPages }, (_, p) => p + 1).map(p => (
+                    <option key={p} value={p}>Page {p}</option>
+                  ))}
+                </select>
+                <span className="text-xs text-gray-400">{locale === 'fr' ? 'à' : 'to'}</span>
+                <select
+                  value={splitRanges[0]?.to || 1}
+                  onChange={e => {
+                    const val = parseInt(e.target.value)
+                    setSplitRanges([{ from: splitRanges[0]?.from || 1, to: val }])
+                  }}
+                  className="h-9 px-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white"
+                >
+                  {Array.from({ length: splitTotalPages - (splitRanges[0]?.from || 1) + 1 }, (_, p) => (splitRanges[0]?.from || 1) + p).map(p => (
+                    <option key={p} value={p}>Page {p}</option>
+                  ))}
+                </select>
+              </div>
 
-              <button
-                onClick={() => {
-                  const lastTo = splitRanges[splitRanges.length - 1]?.to || 0
-                  const nextFrom = Math.min(lastTo + 1, splitTotalPages)
-                  setSplitRanges(prev => [...prev, { from: nextFrom, to: splitTotalPages }])
-                }}
-                className="w-full py-2 text-xs font-medium text-gray-500 hover:text-gray-700 border border-dashed border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
-              >
-                + {locale === 'fr' ? 'Ajouter une section' : 'Add section'}
-              </button>
+              {/* Page thumbnails */}
+              <div className="max-h-64 overflow-y-auto rounded-xl border border-gray-100 bg-gray-50 p-2">
+                {splitThumbsLoading ? (
+                  <div className="flex items-center justify-center py-8 gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                    <span className="text-xs text-gray-400">{locale === 'fr' ? 'Chargement des pages...' : 'Loading pages...'}</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-4 gap-2">
+                    {splitThumbnails.map((thumb, i) => {
+                      const pageNum = i + 1
+                      const isSelected = pageNum >= (splitRanges[0]?.from || 1) && pageNum <= (splitRanges[0]?.to || 1)
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            const current = splitRanges[0] || { from: 1, to: 1 }
+                            // Click to set from or expand to
+                            if (pageNum < current.from || pageNum > current.to) {
+                              if (pageNum < current.from) {
+                                setSplitRanges([{ from: pageNum, to: current.to }])
+                              } else {
+                                setSplitRanges([{ from: current.from, to: pageNum }])
+                              }
+                            }
+                          }}
+                          className={`relative rounded-lg overflow-hidden border-2 transition-all ${
+                            isSelected
+                              ? 'border-gray-900 shadow-sm'
+                              : 'border-transparent opacity-40 hover:opacity-70'
+                          }`}
+                        >
+                          <img src={thumb} alt={`Page ${pageNum}`} className="w-full h-auto" />
+                          <span className={`absolute bottom-0 left-0 right-0 text-center text-[10px] py-0.5 ${
+                            isSelected ? 'bg-gray-900 text-white' : 'bg-black/40 text-white'
+                          }`}>
+                            {pageNum}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-3 px-6 pb-6">
