@@ -3627,6 +3627,7 @@ function CreateWorksheetContent() {
                         <button
                           onClick={async () => {
                             const pdfSrc = (block as any).originalPdfUrl || (block as any).mediaFile
+                            const existingRange = (block as any).pageRange as number[] | undefined
                             setSplitBlockId(block.id)
                             setShowPdfSplit(true)
                             setSplitThumbnails([])
@@ -3640,7 +3641,10 @@ function CreateWorksheetContent() {
                               const pdf = await PDFDocument.load(buf)
                               const pageCount = pdf.getPageCount()
                               setSplitTotalPages(pageCount)
-                              setSplitRanges([{ from: 1, to: Math.min(3, pageCount) }])
+                              // Pre-select the block's current page range
+                              const initFrom = existingRange?.[0] || 1
+                              const initTo = existingRange?.[existingRange.length - 1] || Math.min(3, pageCount)
+                              setSplitRanges([{ from: initFrom, to: initTo }])
 
                               // Render thumbnails via pdfjs
                               const pdfjsLib = await import('pdfjs-dist')
