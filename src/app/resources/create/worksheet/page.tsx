@@ -440,9 +440,25 @@ function CreateWorksheetContent() {
 
   // PDF import state
   const [isImportingPdf, setIsImportingPdf] = useState(false)
+  const [showPdfSetup, setShowPdfSetup] = useState(false)
+  const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [pdfDetectedLang, setPdfDetectedLang] = useState<string>('fr')
+  const [pdfLang, setPdfLang] = useState<string>('fr')
+  const [pdfLength, setPdfLength] = useState<'short' | 'medium' | 'long'>('medium')
+  const [pdfPrompt, setPdfPrompt] = useState('')
   const pdfInputRef = useRef<HTMLInputElement>(null)
 
-  const handlePdfImport = async (file: File) => {
+  // Detect language from PDF text
+  const detectLanguage = (text: string): string => {
+    const frWords = ['le', 'la', 'les', 'des', 'une', 'est', 'dans', 'pour', 'qui', 'que', 'pas', 'sur', 'avec', 'son', 'ses', 'par', 'vous', 'nous', 'ce', 'cette']
+    const enWords = ['the', 'is', 'are', 'with', 'for', 'and', 'that', 'this', 'have', 'from', 'was', 'were', 'been', 'your', 'they', 'will', 'can', 'not', 'but', 'what']
+    const lower = text.toLowerCase()
+    const frCount = frWords.filter(w => lower.includes(` ${w} `)).length
+    const enCount = enWords.filter(w => lower.includes(` ${w} `)).length
+    return frCount > enCount ? 'fr' : enCount > frCount ? 'en' : 'fr'
+  }
+
+  const handlePdfFileSelect = async (file: File) => {
     if (!file || !file.type.includes('pdf')) {
       toast.error(locale === 'fr' ? 'Veuillez sélectionner un fichier PDF' : 'Please select a PDF file')
       return
@@ -452,7 +468,35 @@ function CreateWorksheetContent() {
       return
     }
 
+    setPdfFile(file)
+    setPdfLang(resourceLanguage || 'fr')
+    setPdfLength('medium')
+    setPdfPrompt('')
+    setShowPdfSetup(true)
+
+    // Try to detect language from first page text
+    try {
+      const pdfjsLib = await import('pdfjs-dist')
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
+      const arrayBuffer = await file.arrayBuffer()
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+      const page = await pdf.getPage(1)
+      const textContent = await page.getTextContent()
+      const text = textContent.items.map((item: any) => item.str).join(' ')
+      const detected = detectLanguage(text)
+      setPdfDetectedLang(detected)
+      setPdfLang(detected)
+    } catch {
+      // Detection failed — keep default
+    }
+  }
+
+  const handlePdfImport = async () => {
+    const file = pdfFile
+    if (!file) return
+    setShowPdfSetup(false)
     setIsImportingPdf(true)
+
     try {
       // Convert PDF pages to images using canvas (via pdf.js)
       const pdfjsLib = await import('pdfjs-dist')
@@ -475,11 +519,16 @@ function CreateWorksheetContent() {
         pageImages.push(base64)
       }
 
-      // Send to conversion API
+      // Send to conversion API with settings
       const res = await fetch('/api/resources/convert-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pages: pageImages, language: resourceLanguage }),
+        body: JSON.stringify({
+          pages: pageImages,
+          language: pdfLang,
+          length: pdfLength,
+          customPrompt: pdfPrompt.trim() || undefined,
+        }),
       })
 
       if (!res.ok) {
@@ -4653,7 +4702,7 @@ function CreateWorksheetContent() {
                             className="hidden"
                             onChange={(e) => {
                               const file = e.target.files?.[0]
-                              if (file) handlePdfImport(file)
+                              if (file) handlePdfFileSelect(file)
                             }}
                           />
                         </div>
@@ -5792,6 +5841,110 @@ function CreateWorksheetContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* PDF Import Setup Dialog */}
+      {showPdfSetup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setShowPdfSetup(false); setPdfFile(null) }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              {locale === 'fr' ? 'Importer un PDF' : 'Import PDF'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-5">
+              {pdfFile?.name}
+            </p>
+
+            {/* Language */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {locale === 'fr' ? 'Langue de l\'exercice' : 'Exercise language'}
+                <span className="text-xs text-gray-400 ml-2">
+                  ({locale === 'fr' ? 'détecté' : 'detected'}: {pdfDetectedLang === 'fr' ? '🇫🇷 Français' : '🇬🇧 English'})
+                </span>
+              </label>
+              <div className="flex gap-2">
+                {[
+                  { code: 'fr', label: '🇫🇷 Français' },
+                  { code: 'en', label: '🇬🇧 English' },
+                  { code: 'es', label: '🇪🇸 Español' },
+                ].map(lang => (
+                  <button
+                    key={lang.code}
+                    onClick={() => setPdfLang(lang.code)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      pdfLang === lang.code
+                        ? 'bg-teal-50 border-2 border-teal-500 text-teal-700'
+                        : 'bg-gray-50 border-2 border-gray-100 text-gray-600 hover:border-gray-200'
+                    }`}
+                  >
+                    {lang.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Length */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {locale === 'fr' ? 'Longueur de l\'exercice' : 'Exercise length'}
+              </label>
+              <div className="flex gap-2">
+                {[
+                  { value: 'short' as const, label: locale === 'fr' ? 'Court' : 'Short', desc: '5-7' },
+                  { value: 'medium' as const, label: locale === 'fr' ? 'Moyen' : 'Medium', desc: '8-12' },
+                  { value: 'long' as const, label: locale === 'fr' ? 'Long' : 'Long', desc: '13-18' },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setPdfLength(opt.value)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      pdfLength === opt.value
+                        ? 'bg-teal-50 border-2 border-teal-500 text-teal-700'
+                        : 'bg-gray-50 border-2 border-gray-100 text-gray-600 hover:border-gray-200'
+                    }`}
+                  >
+                    <span className="block">{opt.label}</span>
+                    <span className="block text-[10px] text-gray-400 mt-0.5">{opt.desc} {locale === 'fr' ? 'blocs' : 'blocks'}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom prompt */}
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {locale === 'fr' ? 'Instructions pour l\'IA' : 'Instructions for AI'}
+                <span className="text-xs text-gray-400 ml-1">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
+              </label>
+              <textarea
+                value={pdfPrompt}
+                onChange={e => setPdfPrompt(e.target.value.slice(0, 500))}
+                placeholder={locale === 'fr'
+                  ? 'Ex : Concentre-toi sur les techniques d\'ancrage pour l\'anxiété...'
+                  : 'e.g., Focus on grounding techniques for anxiety...'}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm resize-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none"
+                rows={3}
+              />
+              <p className="text-[10px] text-gray-400 text-right mt-1">{pdfPrompt.length}/500</p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowPdfSetup(false); setPdfFile(null) }}
+                className="flex-1 py-2.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={handlePdfImport}
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-teal-600 rounded-xl hover:bg-teal-700 transition-colors flex items-center justify-center gap-2"
+              >
+                {locale === 'fr' ? 'Générer' : 'Generate'} →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

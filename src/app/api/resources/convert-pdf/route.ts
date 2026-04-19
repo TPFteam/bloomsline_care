@@ -21,7 +21,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { pages, language } = body as { pages: string[]; language?: string }
+    const { pages, language, length, customPrompt } = body as {
+      pages: string[]
+      language?: string
+      length?: 'short' | 'medium' | 'long'
+      customPrompt?: string
+    }
+
+    const blockRange = length === 'short' ? '5-7' : length === 'long' ? '13-18' : '8-12'
 
     if (!pages || !Array.isArray(pages) || pages.length === 0) {
       return NextResponse.json({ error: 'No PDF pages provided' }, { status: 400 })
@@ -65,7 +72,8 @@ INTERACTIVE BLOCKS:
 - {"id": "unique", "type": "ordering", "content": "Put in order:", "items": ["First", "Second", "Third"], "correctOrder": [0, 1, 2]}
 
 GUIDELINES:
-- Keep the ORIGINAL language of the PDF (${language || 'auto-detect'})
+- Output language: ${language || 'auto-detect from the PDF'}
+- Generate ${blockRange} interactive blocks (this is a ${length || 'medium'} exercise)
 - Educational content → heading + paragraph + tip
 - Vocabulary/term pairs → matching_pairs
 - Key concepts to memorize → flashcard
@@ -74,10 +82,10 @@ GUIDELINES:
 - Self-assessment → scale or likert
 - Selection exercises → multiple_choice or checklist
 - Fill-in exercises → fill_blank
-- Generate 5-15 interactive blocks maximum
 - Every block must have a unique "id" (use "b1", "b2", etc.)
 - Alternate between content blocks and interactive blocks
-- Make it engaging — not just a form, but an interactive experience`
+- Make it engaging — not just a form, but an interactive experience
+${customPrompt ? `\nPRACTITIONER'S INSTRUCTIONS:\n${customPrompt.slice(0, 500)}` : ''}`
 
     // Build the message with PDF page images
     const imageContent: Anthropic.Messages.ContentBlockParam[] = limitedPages.map((pageBase64, i) => ({
