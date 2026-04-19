@@ -3626,7 +3626,7 @@ function CreateWorksheetContent() {
                           onClick={async () => {
                             // Detect total pages
                             try {
-                              const res = await fetch((block as any).mediaFile)
+                              const res = await fetch((block as any).originalPdfUrl || (block as any).mediaFile)
                               const buf = await res.arrayBuffer()
                               const { PDFDocument } = await import('pdf-lib')
                               const pdf = await PDFDocument.load(buf)
