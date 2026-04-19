@@ -623,6 +623,7 @@ function CreateWorksheetContent() {
 
   // UI state
   const [showBlockPicker, setShowBlockPicker] = useState(false)
+  const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null)
   const [showMoreContentBlocks, setShowMoreContentBlocks] = useState(false)
   const [showMoreMediaBlocks, setShowMoreMediaBlocks] = useState(false)
   const [showMoreQuestionBlocks, setShowMoreQuestionBlocks] = useState(false)
@@ -2402,11 +2403,9 @@ function CreateWorksheetContent() {
               {block.content || (locale === 'fr' ? 'Document original' : 'Original document')}
             </label>
             {(block as any).mediaFile ? (
-              <a
-                href={(block as any).mediaFile}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors"
+              <button
+                onClick={() => setPdfViewerUrl((block as any).mediaFile)}
+                className="w-full flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors text-left"
               >
                 <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
                   <FileText className="w-5 h-5 text-red-500" />
@@ -2415,8 +2414,8 @@ function CreateWorksheetContent() {
                   <p className="text-sm font-medium text-gray-900 truncate">{(block as any).fileName || 'document.pdf'}</p>
                   <p className="text-xs text-gray-500">{locale === 'fr' ? 'Cliquer pour ouvrir le PDF' : 'Click to open PDF'}</p>
                 </div>
-                <ExternalLink className="w-4 h-4 text-gray-400" />
-              </a>
+                <Eye className="w-4 h-4 text-gray-400" />
+              </button>
             ) : (
               <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl text-center">
                 <p className="text-sm text-gray-400">{locale === 'fr' ? 'PDF non disponible' : 'PDF not available'}</p>
@@ -5906,6 +5905,26 @@ function CreateWorksheetContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* PDF Viewer Popup */}
+      {pdfViewerUrl && (
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center" onClick={() => setPdfViewerUrl(null)}>
+          <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+            <a href={pdfViewerUrl} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors">
+              <ExternalLink className="w-5 h-5" />
+            </a>
+            <button onClick={() => setPdfViewerUrl(null)} className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <iframe
+            src={pdfViewerUrl}
+            className="w-[90%] h-[85vh] rounded-xl bg-white shadow-2xl"
+            title="PDF Document"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
 
       {/* PDF Import Setup Dialog */}
       {showPdfSetup && (
