@@ -34,8 +34,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No PDF pages provided' }, { status: 400 })
     }
 
-    // Limit to 20 pages
-    const limitedPages = pages.slice(0, 20)
+    // Limit to 40 pages
+    const limitedPages = pages.slice(0, 40)
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -66,7 +66,11 @@ How to identify question types in the PDF:
 - Instructional paragraphs above questions → {"id": "b8", "type": "paragraph", "content": "exact text"}
 
 Every block must have a unique "id" (use "b1", "b2", etc.).
-Extract questions IN ORDER as they appear in the document.`
+IMPORTANT:
+- Extract ALL questions from ALL pages — do not stop after a few.
+- Scan the ENTIRE document from first page to last.
+- Extract questions IN ORDER as they appear in the document.
+- If the document has 20 questions, output all 20. If it has 5, output 5.`
 
     // Build the message with PDF page images
     const imageContent: Anthropic.Messages.ContentBlockParam[] = limitedPages.map((pageBase64, i) => ({
@@ -80,12 +84,12 @@ Extract questions IN ORDER as they appear in the document.`
 
     imageContent.push({
       type: 'text' as const,
-      text: 'Convert this PDF document into an interactive exercise. Output ONLY the JSON object with title, description, and blocks array. No markdown, no explanation.',
+      text: 'Extract ALL fillable questions from this entire PDF document. Scan EVERY page. Output ONLY the JSON object with title, description, and blocks array. No markdown, no explanation.',
     })
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
+      max_tokens: 16384,
       system: systemPrompt,
       messages: [{ role: 'user', content: imageContent }],
     })

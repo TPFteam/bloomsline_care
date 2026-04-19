@@ -508,7 +508,7 @@ function CreateWorksheetContent() {
 
       const arrayBuffer = await file.arrayBuffer()
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-      const numPages = Math.min(pdf.numPages, 20)
+      const numPages = Math.min(pdf.numPages, 40)
       const pageImages: string[] = []
 
       for (let i = 1; i <= numPages; i++) {
